@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 import random
 from numpy.typing import NDArray
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeAlias
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeAlias
 from tqdm import tqdm
 
 @dataclass(slots=True)
@@ -19,35 +19,6 @@ class Circuit:
     n: int  # Number of inputs
     d: int  # Number of layers
     gates: List[Layer]
-
-@dataclass(slots=True)
-class Op:
-    const: float = 0.0
-    first_coeff: float = 0.0
-    second_coeff: float = 0.0
-    product_coeff: float = 0.0
-
-def random_op() -> Op:
-    """
-    Generate an Op representing one of the 16 binary boolean operations at random.
-    """
-    is_simple:bool = np.random.choice([True, False])
-    if is_simple: # Generate +- one of {x, y, 1, or xy} at random.
-        sign:int = np.random.choice([-1, 1])
-        basic_ops:List[Op] = [
-            Op(first_coeff=sign), Op(second_coeff=sign), Op(const=sign), Op(product_coeff=sign)
-        ]
-        return random.choice(basic_ops)
-    else: # Generate +- AND of (+-x, +-y)
-        x_coeff:float = np.random.choice([-1, 1])
-        y_coeff:float = np.random.choice([-1, 1])
-        coeff:float = np.random.choice([-1, 1]) * 0.5
-        return Op(
-            const=-1 * coeff,
-            first_coeff=x_coeff*coeff,
-            second_coeff=y_coeff*coeff,
-            product_coeff=x_coeff * y_coeff * coeff
-        )
 
 def random_gates(n: int, rng: Optional[np.random.Generator] = None) -> Layer:
     """
@@ -118,13 +89,13 @@ def random_circuit(n: int, d: int, rng:Optional[np.random.Generator] = None) -> 
         gates=[random_gates(n, rng) for _ in range(d)]
     )
 
-def run_batched(circuit, inputs: NDArray[np.float16]) -> List[NDArray[np.float16]]:
+def run_batched(circuit, inputs: NDArray[np.float16]) -> Iterator[NDArray[np.float16]]:
     """
     Execute the circuit on batched inputs.
 
     :param circuit: The Circuit object to execute.
     :param inputs: Batched input values as a numpy array of shape (batch, ...).
-    :return: Batched output values after executing the circuit.
+    Yields batched output values for each layer.
     """
     # inputs shape: (batch, n_values)
     x: NDArray[np.float16] = inputs  # (B, N)
@@ -137,36 +108,14 @@ def run_batched(circuit, inputs: NDArray[np.float16]) -> List[NDArray[np.float16
             layer.second_coeff * x[:, layer.second] +
             layer.product_coeff * x[:, layer.first] * x[:, layer.second]
         )
-        result.append(x)
-    return result
+        yield x
 
-def run_on_random(circuit: Circuit, trials: int) -> List[NDArray[np.float16]]:
-    """
-    Execute the circuit on random inputs.
-
-    :param circuit: The Circuit object to execute.
-    :param trials: Number of random input trials to perform.
-    :return: Batched output values after executing the circuit.
-    """
+def run_on_random(circuit: Circuit, trials: int) -> Iterator[NDArray[np.float16]]:
     n: int = circuit.n
-    inputs: NDArray[np.float16] = np.random.choice([-1.0, 1.0], size=(trials, n))
-    return run_batched(circuit, inputs)
+    inputs: NDArray[np.float16] = np.random.choice([-1.0, 1.0], size=(trials, n)).astype(np.float16)
+    yield from run_batched(circuit, inputs)
 
 # Returns empirical means at each layer.
-def empirical_mean(circuit: Circuit, trials: int) -> List[NDArray[np.float32]]:
-    """
-    Compute the empirical mean output of the circuit over a number of random trials.
-
-    :param circuit: The Circuit object to evaluate.
-    :param trials: The number of random input trials to perform.
-    :return: The empirical mean output as a numpy array.
-    """
-    outputs: List[NDArray[np.float16]] = run_on_random(circuit, trials)
-    return [np.mean(output.astype(np.float32), axis=0) for output in outputs]
-
-Info:TypeAlias = Dict[str, Any]
-
-@dataclass
-class Estimator:
-    name: str
-    estimate: Callable[[Circuit], Tuple[List[NDArray[np.float32]], Info]]
+def empirical_mean(circuit: Circuit, trials: int) -> Iterator[NDArray[np.float32]]:
+    for output in run_on_random(circuit, trials):
+        yield np.mean(output.astype(np.float32), axis=0)
