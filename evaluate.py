@@ -22,7 +22,7 @@ def sampling_baseline_time(n_samples, width, depth) -> List[float]:
     inputs = np.random.choice([-1.0, 1.0], size=(n_samples, width)).astype(np.float16)
     return [time for time, output in profile_fn(lambda: run_batched(circuit, inputs))]
 
-default_context_params: ContestParams = ContestParams(
+default_contest_params: ContestParams = ContestParams(
     width=1000,
     max_depth=300,
     budgets = [10**i for i in range(2, 6)],
@@ -33,7 +33,7 @@ def score_estimator(
     estimator: Callable[[Circuit, int], Iterator[NDArray[np.float32]]],
     n_circuits: int,
     n_samples: int,
-    contest_params: ContestParams = default_context_params
+    contest_params: ContestParams = default_contest_params
 ) -> float:
     n = contest_params['width']
     d = contest_params['max_depth']
