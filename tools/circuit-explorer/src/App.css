@@ -428,24 +428,18 @@ body {
 
 /* Indeterminate progress pulse */
 .estimator-progress {
-  height: 3px;
+  height: 6px;
   background: var(--gray-100);
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
   margin-top: 6px;
+  position: relative;
 }
 
 .estimator-progress-bar {
   height: 100%;
-  width: 40%;
   background: var(--coral);
-  border-radius: 2px;
-  animation: estimator-pulse 1s ease-in-out infinite;
-}
-
-@keyframes estimator-pulse {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(350%); }
+  border-radius: 3px;
 }
 
 
