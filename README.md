@@ -129,10 +129,12 @@ Scoring API compatibility:
 See the starter tutorial guide:
 
 - `internal context docs/participant-streaming-estimator-guide.md`
+- `examples/estimators/` for full class-based starter implementations
 
 Recommended extension path:
 
-- add new estimators under `src/circuit_estimation/estimators.py` (or new module),
+- copy a starter from `examples/estimators/` into your own `estimator.py`,
+- keep estimator-specific helper methods inside your estimator class,
 - evaluate locally with `score_estimator(...)` or `score_estimator_report(...)`,
 - compare via `cestim --detail full --profile` (or `uv run --with-editable . cestim --detail full --profile`).
 

@@ -59,9 +59,9 @@ def test_critical_public_apis_have_docstrings() -> None:
         simulation.run_batched,
         simulation.run_on_random,
         simulation.empirical_mean,
-        estimators.mean_propagation,
-        estimators.covariance_propagation,
-        estimators.combined_estimator,
+        estimators.MeanPropagationEstimator.predict,
+        estimators.CovariancePropagationEstimator.predict,
+        estimators.CombinedEstimator.predict,
         scoring.ContestParams.validate,
         scoring.score_estimator_report,
         scoring.score_estimator,
@@ -115,3 +115,11 @@ def test_readme_documents_cestim_install_and_usage() -> None:
     assert "cestim --agent-mode" in text
     assert "uv run --with-editable . cestim" in text
     assert "uv run cestim --" not in text
+
+
+def test_examples_estimators_folder_contains_starter_classes() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    examples_dir = repo_root / "examples/estimators"
+    assert (examples_dir / "mean_propagation.py").exists()
+    assert (examples_dir / "covariance_propagation.py").exists()
+    assert (examples_dir / "combined_estimator.py").exists()

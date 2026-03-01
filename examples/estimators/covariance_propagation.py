@@ -1,13 +1,3 @@
-"""Class-based reference estimators for per-depth wire-mean prediction.
-
-This module provides three tutorial estimators:
-
-- ``MeanPropagationEstimator``: first-moment propagation only (fast, coarse).
-- ``CovariancePropagationEstimator``: tracks means plus an approximate covariance matrix
-  using pairwise moment closure (slower, usually more accurate).
-- ``CombinedEstimator``: selects between them using runtime budget.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -15,55 +5,18 @@ from collections.abc import Iterator
 import numpy as np
 from numpy.typing import NDArray
 
-from .domain import Circuit, Layer
-from .sdk import BaseEstimator
+from circuit_estimation import BaseEstimator
+from circuit_estimation.domain import Circuit, Layer
 
 
-class MeanPropagationEstimator(BaseEstimator):
-    """Mean propagation baseline.
+class Estimator(BaseEstimator):
+    """Covariance propagation starter estimator.
 
-    Tracks only wire means ``E[x]`` and applies ``E[x_i x_j] ~= E[x_i] E[x_j]``.
-    Runtime is ``O(depth * width)`` and works well in low budget regimes.
+    Maintains mean and covariance state per depth and applies pairwise moment
+    closure for bilinear terms.
     """
 
     def predict(self, circuit: Circuit, budget: int) -> Iterator[NDArray[np.float32]]:
-        """Yield one mean vector per depth."""
-        _ = budget
-        x_mean: NDArray[np.float32] = np.zeros(circuit.n, dtype=np.float32)
-        for layer in circuit.gates:
-            x_mean = self._propagate_layer_mean(layer, x_mean)
-            yield x_mean
-
-    @staticmethod
-    def _propagate_layer_mean(layer: Layer, x_mean: NDArray[np.float32]) -> NDArray[np.float32]:
-        """Propagate means through one layer under first-moment closure."""
-        first_mean = np.take(x_mean, layer.first)
-        second_mean = np.take(x_mean, layer.second)
-        return (
-            layer.first_coeff * first_mean
-            + layer.second_coeff * second_mean
-            + layer.const
-            + layer.product_coeff * first_mean * second_mean
-        ).astype(np.float32)
-
-
-class CovariancePropagationEstimator(BaseEstimator):
-    """Pairwise moment closure baseline (mean + covariance propagation).
-
-    Maintains per-depth state:
-    - ``m = E[x]`` (shape ``n``)
-    - ``C = Cov[x]`` (shape ``n x n``)
-
-    Mean update uses:
-
-        E[y_i] = a_i * m_f + b_i * m_s + c_i + p_i * (m_f * m_s + C_fs)
-
-    Covariance update is decomposed into linear-linear, 1v2, and 2v2 terms.
-    Runtime is ``O(depth * n^2)`` and tends to be more accurate at larger budgets.
-    """
-
-    def predict(self, circuit: Circuit, budget: int) -> Iterator[NDArray[np.float32]]:
-        """Yield one mean vector per depth while propagating covariance state."""
         _ = budget
         n = circuit.n
         x_mean: NDArray[np.float32] = np.zeros(n, dtype=np.float32)
@@ -79,13 +32,11 @@ class CovariancePropagationEstimator(BaseEstimator):
         x_mean: NDArray[np.float32],
         x_cov: NDArray[np.float32],
     ) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
-        """Return ``(new_mean, new_cov)`` for one layer under pairwise closure."""
         n = x_mean.shape[0]
         first_mean = x_mean[layer.first]
         second_mean = x_mean[layer.second]
         pair_cov = x_cov[layer.first, layer.second]
 
-        # Mean update with covariance-aware product expectation.
         new_mean: NDArray[np.float32] = (
             layer.first_coeff * first_mean
             + layer.second_coeff * second_mean
@@ -94,10 +45,8 @@ class CovariancePropagationEstimator(BaseEstimator):
             + layer.product_coeff * pair_cov
         ).astype(np.float32)
 
-        # Linear-linear covariance terms.
         new_cov: NDArray[np.float32] = self._linear_linear_covariance(layer, x_cov, n)
 
-        # Linear-bilinear (1v2) terms.
         result_1v2_first = np.outer(
             layer.first_coeff, layer.product_coeff
         ) * self._one_v_two_covariance(
@@ -115,7 +64,6 @@ class CovariancePropagationEstimator(BaseEstimator):
         ) * self._one_v_two_covariance(layer.second, layer.first, layer.second, x_cov, x_mean)
         new_cov += result_1v2_second + result_1v2_second.T
 
-        # Bilinear-bilinear (2v2) term.
         new_cov += np.outer(layer.product_coeff, layer.product_coeff) * self._two_v_two_covariance(
             layer.first,
             layer.second,
@@ -134,7 +82,6 @@ class CovariancePropagationEstimator(BaseEstimator):
         x_cov: NDArray[np.float32],
         n: int,
     ) -> NDArray[np.float32]:
-        """Compute covariance contribution from linear terms only."""
         new_cov = np.zeros((n, n), dtype=np.float32)
         new_cov += (
             np.outer(layer.first_coeff, layer.first_coeff) * x_cov[np.ix_(layer.first, layer.first)]
@@ -161,7 +108,6 @@ class CovariancePropagationEstimator(BaseEstimator):
         x_cov: NDArray[np.float32],
         x_mean: NDArray[np.float32],
     ) -> NDArray[np.float32]:
-        """Approximate ``Cov(x[a], x[b] * x[c])`` under pairwise closure."""
         return (
             x_mean[b][None, :] * x_cov[np.ix_(a, c)] + x_mean[c][None, :] * x_cov[np.ix_(a, b)]
         ).astype(np.float32)
@@ -175,7 +121,6 @@ class CovariancePropagationEstimator(BaseEstimator):
         cov: NDArray[np.float32],
         mean: NDArray[np.float32],
     ) -> NDArray[np.float32]:
-        """Approximate ``Cov(x[a]x[b], x[c]x[d])`` under pairwise closure."""
         cov_ac = cov[np.ix_(a, c)]
         cov_ad = cov[np.ix_(a, d)]
         cov_bc = cov[np.ix_(b, c)]
@@ -195,7 +140,6 @@ class CovariancePropagationEstimator(BaseEstimator):
 
     @staticmethod
     def _clip_moments(mean: NDArray[np.float32], cov: NDArray[np.float32]) -> None:
-        """Project moments to feasible bounds for ``{-1, +1}`` wire values."""
         n = len(mean)
         np.clip(mean, -1.0, 1.0, out=mean)
         var = 1.0 - mean * mean
@@ -203,30 +147,3 @@ class CovariancePropagationEstimator(BaseEstimator):
         std = np.sqrt(np.clip(var, 0.0, None))
         max_cov = np.outer(std, std)
         np.clip(cov, -max_cov, max_cov, out=cov)
-
-
-class CombinedEstimator(BaseEstimator):
-    """Budget-aware hybrid estimator.
-
-    Policy:
-    - use mean propagation for low budget,
-    - switch to covariance propagation when budget is large enough.
-    """
-
-    _COVARIANCE_BUDGET_MULTIPLIER = 30
-
-    def __init__(
-        self,
-        *,
-        mean_estimator: BaseEstimator | None = None,
-        covariance_estimator: BaseEstimator | None = None,
-    ) -> None:
-        self._mean_estimator = mean_estimator or MeanPropagationEstimator()
-        self._covariance_estimator = covariance_estimator or CovariancePropagationEstimator()
-
-    def predict(self, circuit: Circuit, budget: int) -> Iterator[NDArray[np.float32]]:
-        """Choose path by budget and stream depth rows."""
-        if budget >= self._COVARIANCE_BUDGET_MULTIPLIER * circuit.n:
-            yield from self._covariance_estimator.predict(circuit, budget)
-            return
-        yield from self._mean_estimator.predict(circuit, budget)
