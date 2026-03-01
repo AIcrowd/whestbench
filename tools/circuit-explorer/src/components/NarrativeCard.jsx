@@ -20,10 +20,12 @@ const Ewire = () => (
   <MathTerm
     tip={
       <>
-        <strong>E[wire]</strong> = the <em>expected value</em> of a wire&apos;s
-        output. If you fed every possible ±1 input combination into the circuit
-        and averaged the results, that average is E[wire]. For small circuits
-        you can compute it exactly; for large ones you must estimate.
+        <strong>E[wire]</strong> = the <em>expected value</em> (average output)
+        of a wire over all possible ±1 inputs. With <em>n</em> input wires
+        there are 2<sup>n</sup> combinations — for 4 wires that&apos;s just 16,
+        but for 1,000 wires it&apos;s 2<sup>1000</sup>, far too many to
+        enumerate. So we <em>estimate</em> by sampling random inputs and
+        averaging.
       </>
     }
   >
