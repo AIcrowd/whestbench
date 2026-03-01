@@ -59,60 +59,12 @@ function makeRng(seed = 42) {
 }
 
 /**
- * Run circuit on batched inputs using TF.js tensors.
- * inputs: tf.Tensor2D of shape [trials, n]
- * Returns: array of tf.Tensor2D (one per layer, each [trials, n])
- *
- * Caller must dispose returned tensors.
- */
-export function runBatchedTF(circuit, inputTensor) {
-  const results = [];
-  let x = inputTensor;
-
-  for (const layer of circuit.gates) {
-    // Convert layer arrays to tensors (1D, will broadcast across trials)
-    const firstIdx = tf.tensor1d(Array.from(layer.first), 'int32');
-    const secondIdx = tf.tensor1d(Array.from(layer.second), 'int32');
-    const constT = tf.tensor1d(layer.const);
-    const firstCoeffT = tf.tensor1d(layer.firstCoeff);
-    const secondCoeffT = tf.tensor1d(layer.secondCoeff);
-    const productCoeffT = tf.tensor1d(layer.productCoeff);
-
-    const newX = tf.tidy(() => {
-      const xFirst = tf.gather(x, firstIdx, 1);    // [trials, n]
-      const xSecond = tf.gather(x, secondIdx, 1);   // [trials, n]
-
-      // out = const + firstCoeff * xFirst + secondCoeff * xSecond
-      //       + productCoeff * xFirst * xSecond
-      return tf.add(
-        tf.add(
-          tf.add(constT, tf.mul(firstCoeffT, xFirst)),
-          tf.mul(secondCoeffT, xSecond)
-        ),
-        tf.mul(productCoeffT, tf.mul(xFirst, xSecond))
-      );
-    });
-
-    // Dispose layer tensors
-    firstIdx.dispose();
-    secondIdx.dispose();
-    constT.dispose();
-    firstCoeffT.dispose();
-    secondCoeffT.dispose();
-    productCoeffT.dispose();
-
-    // Dispose previous x (but not the original inputs)
-    if (x !== inputTensor) x.dispose();
-    x = newX;
-    results.push(tf.keep(newX));
-  }
-
-  return results;
-}
-
-/**
  * GPU-accelerated empirical mean estimation.
  * Generates random ±1 inputs, runs through circuit, returns per-layer means.
+ *
+ * Instead of storing all layer output tensors, we compute the mean inline
+ * per layer and immediately pull results to CPU. This avoids complex tensor
+ * lifecycle issues and keeps GPU memory minimal.
  *
  * Returns: Float32Array[] — one per layer, each of length n.
  * Compatible with the CPU empiricalMean function's return type.
@@ -127,21 +79,63 @@ export async function empiricalMeanTF(circuit, trials, seed = 99) {
     inputData[i] = rng.random() < 0.5 ? -1.0 : 1.0;
   }
 
-  const inputTensor = tf.tensor2d(inputData, [trials, circuit.n]);
-
-  // Run batched through all layers on GPU
-  const layerOutputs = runBatchedTF(circuit, inputTensor);
-  inputTensor.dispose();
-
-  // Compute mean per wire for each layer, then pull back to CPU
+  let x = tf.tensor2d(inputData, [trials, circuit.n]);
   const means = [];
-  for (let l = 0; l < layerOutputs.length; l++) {
-    const meanTensor = tf.mean(layerOutputs[l], 0); // [n]
-    const data = await meanTensor.data();             // Float32Array
+
+  for (let li = 0; li < circuit.gates.length; li++) {
+    const layer = circuit.gates[li];
+
+    // Extract layer data into plain JS arrays to avoid typed array issues
+    const n = circuit.n;
+    const firstArr = new Array(n);
+    const secondArr = new Array(n);
+    const constArr = new Array(n);
+    const aArr = new Array(n);
+    const bArr = new Array(n);
+    const pArr = new Array(n);
+
+    for (let i = 0; i < n; i++) {
+      firstArr[i] = layer.first[i];
+      secondArr[i] = layer.second[i];
+      constArr[i] = layer['const'][i];
+      aArr[i] = layer.firstCoeff[i];
+      bArr[i] = layer.secondCoeff[i];
+      pArr[i] = layer.productCoeff[i];
+    }
+
+    // Compute newX = c + a*x[first] + b*x[second] + p*x[first]*x[second]
+    // All inside tf.tidy except the result, which we return from tidy
+    const newX = tf.tidy(() => {
+      const idx1 = tf.tensor1d(firstArr, 'int32');
+      const idx2 = tf.tensor1d(secondArr, 'int32');
+      const c = tf.tensor1d(constArr);
+      const a = tf.tensor1d(aArr);
+      const b = tf.tensor1d(bArr);
+      const p = tf.tensor1d(pArr);
+
+      const xf = tf.gather(x, idx1, 1);
+      const xs = tf.gather(x, idx2, 1);
+      const xfxs = tf.mul(xf, xs);
+
+      return tf.add(
+        tf.add(c, tf.mul(a, xf)),
+        tf.add(tf.mul(b, xs), tf.mul(p, xfxs))
+      );
+    });
+
+    // Compute mean of this layer and pull to CPU
+    const meanT = tf.mean(newX, 0);
+    const data = await meanT.data();
     means.push(Float32Array.from(data));
-    meanTensor.dispose();
-    layerOutputs[l].dispose();
+    meanT.dispose();
+
+    // Dispose old x (but tidy should have cleaned intermediates)
+    x.dispose();
+    x = newX;
   }
+
+  // Dispose final layer output
+  x.dispose();
 
   return means;
 }
@@ -156,3 +150,4 @@ export function isTFReady() {
 export function getTFBackend() {
   return backendName;
 }
+
