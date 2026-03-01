@@ -3,6 +3,34 @@
  * Shows step-specific text with a colored left border and Back/Next nav.
  */
 
+/**
+ * MathTerm — inline highlighted term with a hover tooltip.
+ * Used for jargon like E[wire] to give users an intuitive explanation.
+ */
+function MathTerm({ children, tip }) {
+  return (
+    <span className="math-term">
+      {children}
+      <span className="math-term-tip">{tip}</span>
+    </span>
+  );
+}
+
+const Ewire = () => (
+  <MathTerm
+    tip={
+      <>
+        <strong>E[wire]</strong> = the <em>expected value</em> of a wire&apos;s
+        output. If you fed every possible ±1 input combination into the circuit
+        and averaged the results, that average is E[wire]. For small circuits
+        you can compute it exactly; for large ones you must estimate.
+      </>
+    }
+  >
+    E[wire]
+  </MathTerm>
+);
+
 const STEP_CONTENT = {
   1: {
     border: "var(--gray-400)",
@@ -20,9 +48,10 @@ const STEP_CONTENT = {
     text: (
       <>
         <strong>Your challenge:</strong> if we feed random ±1 inputs, what is
-        the <strong>expected output</strong> E[wire] of each wire? The outputs
+        the <strong>expected output</strong> <Ewire /> of each wire? The outputs
         are highlighted on the right (y₀, y₁, …). Each one is a complex
-        function of all inputs.
+        function of all inputs — and the circuit makes it hard to reason about
+        analytically.
       </>
     ),
   },
@@ -45,10 +74,10 @@ const STEP_CONTENT = {
     border: "var(--coral)",
     text: (
       <>
-        <strong>Mean Propagation</strong> doesn&apos;t sample at all. It computes
-        E[wire] analytically, propagating expected values through each gate&apos;s
-        algebra. <strong>Instant</strong> · No sampling noise · But is it always
-        accurate? This is the starting point.{" "}
+        <strong>Mean Propagation</strong> doesn&apos;t sample at all. It computes{" "}
+        <Ewire /> analytically, propagating expected values through each
+        gate&apos;s algebra. <strong>Instant</strong> · No sampling noise · But
+        is it always accurate? This is the starting point.{" "}
         <strong>Can you do better?</strong>
       </>
     ),
