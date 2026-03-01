@@ -62,29 +62,30 @@ export default function GateStats({ circuit }) {
   const layerData = [];
   for (let l = 0; l < d; l++) {
     const layer = gates[l];
-    let constants = 0;     // |const| > others
-    let linear = 0;        // |first| + |second| > |const| + |product|
-    let products = 0;      // |product| > others
-    let mixed = 0;
+    let cCount = 0;  // |c| is largest
+    let aCount = 0;  // |a| is largest
+    let bCount = 0;  // |b| is largest
+    let pCount = 0;  // |p| is largest
 
     for (let i = 0; i < n; i++) {
-      const c = Math.abs(layer.const[i]);
-      const f = Math.abs(layer.firstCoeff[i]);
-      const s = Math.abs(layer.secondCoeff[i]);
-      const p = Math.abs(layer.productCoeff[i]);
+      const cv = Math.abs(layer.const[i]);
+      const av = Math.abs(layer.firstCoeff[i]);
+      const bv = Math.abs(layer.secondCoeff[i]);
+      const pv = Math.abs(layer.productCoeff[i]);
 
-      if (p >= c && p >= f && p >= s) products++;
-      else if (c >= f && c >= s && c >= p) constants++;
-      else if (f + s > c + p) linear++;
-      else mixed++;
+      const max = Math.max(cv, av, bv, pv);
+      if (max === pv) pCount++;
+      else if (max === cv) cCount++;
+      else if (max === av) aCount++;
+      else bCount++;
     }
 
     layerData.push({
       layer: `L${l}`,
-      "c — bias": constants,
-      "a,b — linear": linear,
-      "p — interaction": products,
-      Mixed: mixed,
+      "c — bias": cCount,
+      "a — first": aCount,
+      "b — second": bCount,
+      "p — interaction": pCount,
     });
   }
 
@@ -150,9 +151,9 @@ export default function GateStats({ circuit }) {
                 }}
               />
               <Bar dataKey="c — bias" fill={COLORS.const} stackId="a" />
-              <Bar dataKey="a,b — linear" fill={COLORS.first} stackId="a" />
+              <Bar dataKey="a — first" fill={COLORS.first} stackId="a" />
+              <Bar dataKey="b — second" fill={COLORS.second} stackId="a" />
               <Bar dataKey="p — interaction" fill={COLORS.product} stackId="a" />
-              <Bar dataKey="Mixed" fill={COLORS.mixed} stackId="a" />
             </BarChart>
           </ResponsiveContainer>
         </div>
