@@ -295,7 +295,6 @@ def test_by_budget_raw_contains_scalar_and_depth_runtime_fields() -> None:
     assert len(row["timeout_rate_by_depth"]) == params.max_depth
     assert len(row["time_floor_rate_by_depth"]) == params.max_depth
 
-
 def test_detail_full_includes_budget_and_layer_aggregates() -> None:
     params = ContestParams(width=2, max_depth=2, budgets=[10, 100], time_tolerance=0.1)
     circuits = [_constant_circuit(n=2, d=2, value=1.0) for _ in range(2)]
