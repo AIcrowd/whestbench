@@ -126,4 +126,5 @@ export default function NarrativeCard({ step, onNext, onBack, children }) {
   );
 }
 
-export { STEP_CONTENT };
+export { Ewire, STEP_CONTENT };
+
