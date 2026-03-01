@@ -52,35 +52,29 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict[str, Any]:
     return report
 
 
-def test_default_mode_outputs_human_report(
+def test_default_mode_launches_textual_dashboard_when_supported(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict[str, Any] = {}
-    render_observed: dict[str, Any] = {}
+    launch_observed: dict[str, Any] = {}
 
     def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
         observed["profile"] = kwargs.get("profile")
         observed["detail"] = kwargs.get("detail")
-        return _sample_report(profile_enabled=False, detail=str(kwargs.get("detail", "raw")))
+        return _sample_report(profile_enabled=True, detail=str(kwargs.get("detail", "raw")))
 
     monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "_supports_textual_dashboard", lambda: True)
     monkeypatch.setattr(
         cli,
-        "render_agent_report",
-        lambda _report: pytest.fail("agent renderer should not be called"),
+        "_launch_textual_dashboard",
+        lambda report: launch_observed.update({"mode": report.get("mode")}),
     )
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: (
-            (render_observed.update({"show_diagnostic_plots": show_diagnostic_plots}) or "")
-            + (
-                "Circuit Estimation Report\n"
-                "Readiness Scorecard\n"
-                "Run Context\n"
-                "Hardware & Runtime\n"
-                "Tip: Use --agent-mode\n"
-            )
+        lambda _report, *, show_diagnostic_plots=False: pytest.fail(
+            "static fallback should not render when textual works"
         ),
     )
 
@@ -88,14 +82,68 @@ def test_default_mode_outputs_human_report(
     captured = capsys.readouterr()
 
     assert exit_code == 0
+    assert captured.out == ""
     assert captured.err == ""
-    assert "Circuit Estimation Report" in captured.out
-    assert "Readiness Scorecard" in captured.out
-    assert "Run Context" in captured.out
-    assert "Hardware & Runtime" in captured.out
-    assert "Use --agent-mode" in captured.out
-    assert observed == {"profile": False, "detail": "raw"}
-    assert render_observed == {"show_diagnostic_plots": False}
+    assert observed == {"profile": True, "detail": "full"}
+    assert launch_observed == {"mode": "human"}
+
+
+def test_default_mode_falls_back_to_static_when_textual_unsupported(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    observed: dict[str, Any] = {}
+
+    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        observed["profile"] = kwargs.get("profile")
+        observed["detail"] = kwargs.get("detail")
+        return _sample_report(profile_enabled=True, detail=str(kwargs.get("detail", "raw")))
+
+    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "_supports_textual_dashboard", lambda: False)
+    monkeypatch.setattr(
+        cli,
+        "render_human_report",
+        lambda _report, *, show_diagnostic_plots=False: "fallback\n",
+    )
+
+    exit_code = cli.main([])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Textual UI unavailable" in captured.err
+    assert captured.out == "fallback\n"
+    assert observed == {"profile": True, "detail": "full"}
+
+
+def test_default_mode_falls_back_when_textual_launch_raises(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "score_estimator_report",
+        lambda *_args, **kwargs: _sample_report(
+            profile_enabled=True, detail=str(kwargs.get("detail", "raw"))
+        ),
+    )
+    monkeypatch.setattr(cli, "_supports_textual_dashboard", lambda: True)
+
+    def fake_launch(_report: dict[str, Any]) -> None:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(cli, "_launch_textual_dashboard", fake_launch)
+    monkeypatch.setattr(
+        cli,
+        "render_human_report",
+        lambda _report, *, show_diagnostic_plots=False: "fallback\n",
+    )
+
+    exit_code = cli.main([])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Textual UI unavailable" in captured.err
+    assert "boom" in captured.err
+    assert captured.out == "fallback\n"
 
 
 def test_agent_mode_stdout_is_json_only(
@@ -106,17 +154,13 @@ def test_agent_mode_stdout_is_json_only(
     def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
         observed["profile"] = kwargs.get("profile")
         observed["detail"] = kwargs.get("detail")
-        return _sample_report(
-            profile_enabled=bool(kwargs.get("profile")), detail=str(kwargs.get("detail", "raw"))
-        )
+        return _sample_report(profile_enabled=False, detail=str(kwargs.get("detail", "raw")))
 
     monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
     monkeypatch.setattr(
         cli,
-        "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: pytest.fail(
-            "human renderer should not be called"
-        ),
+        "_launch_textual_dashboard",
+        lambda _report: pytest.fail("textual dashboard should not launch in agent mode"),
     )
     monkeypatch.setattr(
         cli,
@@ -124,44 +168,17 @@ def test_agent_mode_stdout_is_json_only(
         lambda _report: '{\n  "mode": "agent"\n}\n',
     )
 
-    exit_code = cli.main(["--agent-mode", "--profile", "--detail", "full"])
+    exit_code = cli.main(["--agent-mode"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert captured.err == ""
     assert captured.out == '{\n  "mode": "agent"\n}\n'
     assert json.loads(captured.out) == {"mode": "agent"}
-    assert observed == {"profile": True, "detail": "full"}
+    assert observed == {"profile": False, "detail": "raw"}
 
 
-def test_show_diagnostic_plots_flag_enables_human_plots(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    observed: dict[str, Any] = {}
-
-    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
-        return _sample_report(
-            profile_enabled=bool(kwargs.get("profile")), detail=str(kwargs.get("detail", "raw"))
-        )
-
-    def fake_render_human_report(
-        _report: dict[str, Any], *, show_diagnostic_plots: bool = False
-    ) -> str:
-        observed["show_diagnostic_plots"] = show_diagnostic_plots
-        return "human\n"
-
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
-    monkeypatch.setattr(cli, "render_human_report", fake_render_human_report)
-    monkeypatch.setattr(
-        cli,
-        "render_agent_report",
-        lambda _report: pytest.fail("agent renderer should not be called"),
-    )
-
-    exit_code = cli.main(["--show-diagnostic-plots"])
-    captured = capsys.readouterr()
-
-    assert exit_code == 0
-    assert captured.err == ""
-    assert captured.out == "human\n"
-    assert observed == {"show_diagnostic_plots": True}
+@pytest.mark.parametrize("removed_flag", ["--detail", "--profile", "--show-diagnostic-plots"])
+def test_removed_human_flags_are_rejected(removed_flag: str) -> None:
+    with pytest.raises(SystemExit):
+        cli.main([removed_flag])
