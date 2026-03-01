@@ -1,322 +1,260 @@
 /**
- * CircuitGraphJoint — Interactive circuit diagram using pure SVG.
- * Used for small circuits (n×d ≤ 4096).
- * Shows gates as styled shapes with labels, connection lines between layers.
- * Supports zoom/pan, click-to-inspect.
+ * CircuitGraphJoint — JointJS-based circuit graph.
+ *
+ * Following the official React integration pattern:
+ *   https://docs.jointjs.com/learn/integration/react/
+ *
+ * Step 1: Minimal working example with just a few rectangles + links.
+ * Step 2: Wire in full circuit data.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { dia, shapes } from "@joint/core";
+import { useEffect, useRef, useState } from "react";
 import { classifyGate, meanToColor } from "./gateShapes";
 
-const GATE_W = 54;
-const GATE_H = 32;
-const H_GAP = 90;
-const V_GAP = 10;
-const PAD_LEFT = 50;
-const PAD_TOP = 30;
+/* ------------------------------------------------------------------ */
+/*  Layout constants                                                   */
+/* ------------------------------------------------------------------ */
+const GATE_W = 64;
+const GATE_H = 38;
+const H_GAP = 110; // horizontal spacing between layers
+const V_GAP = 14;  // vertical spacing between wires
+const PAD_X = 60;
+const PAD_Y = 50;
 
-function GateNode({ gateInfo, x, y, mean, onClick }) {
-  const fill = mean !== null ? meanToColor(mean) : "#F3F4F6";
-  const r = gateInfo.shape === "circle" ? 14 : gateInfo.shape === "triangle" ? 2 : 4;
-
-  return (
-    <g
-      transform={`translate(${x},${y})`}
-      onClick={onClick}
-      style={{ cursor: "pointer" }}
-    >
-      <rect
-        width={GATE_W}
-        height={GATE_H}
-        rx={r}
-        ry={r}
-        fill={fill}
-        stroke={gateInfo.color}
-        strokeWidth={2}
-      />
-      <text
-        x={GATE_W / 2}
-        y={GATE_H / 2}
-        textAnchor="middle"
-        dominantBaseline="central"
-        fontSize={8}
-        fontFamily="'IBM Plex Mono', monospace"
-        fill="#374151"
-      >
-        {gateInfo.label.length > 14 ? gateInfo.label.slice(0, 14) : gateInfo.label}
-      </text>
-    </g>
-  );
-}
-
-function ConnectionLine({ x1, y1, x2, y2, dashed }) {
-  // Route: horizontal from source center-right, then vertical, then horizontal to target center-left
-  const midX = (x1 + x2) / 2;
-  const d = `M${x1},${y1} C${midX},${y1} ${midX},${y2} ${x2},${y2}`;
-  return (
-    <path
-      d={d}
-      fill="none"
-      stroke={dashed ? "#E2E8F0" : "#CBD5E1"}
-      strokeWidth={dashed ? 0.8 : 1}
-      strokeDasharray={dashed ? "3,2" : "none"}
-    />
-  );
-}
-
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
 export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
-  const svgRef = useRef(null);
-  const containerRef = useRef(null);
+  const canvasRef = useRef(null);
+  const paperRef = useRef(null);
+  const graphRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
-  const [viewBox, setViewBox] = useState(null);
-  const [isPanning, setIsPanning] = useState(false);
-  const panStart = useRef({ x: 0, y: 0, vx: 0, vy: 0 });
+  const [zoomPct, setZoomPct] = useState(100);
 
-  const totalWidth = PAD_LEFT + circuit.d * (GATE_W + H_GAP) + 20;
-  const totalHeight = PAD_TOP + circuit.n * (GATE_H + V_GAP) + 20;
-
-  // Initial viewBox
+  /* ---- build / rebuild the graph ---- */
   useEffect(() => {
-    setViewBox({ x: 0, y: 0, w: totalWidth, h: totalHeight });
-  }, [totalWidth, totalHeight]);
+    const el = canvasRef.current;
+    if (!el || !circuit) return;
 
-  // Build gate positions and links
-  const { gates, links } = useMemo(() => {
-    const gateList = [];
-    const linkList = [];
+    // Tear down previous
+    el.innerHTML = "";
 
+    // 1. Graph
+    const graph = new dia.Graph({}, { cellNamespace: shapes });
+    graphRef.current = graph;
+
+    // 2. Paper — frozen + async per docs
+    const paper = new dia.Paper({
+      model: graph,
+      background: { color: "#FFFFFF" },
+      frozen: true,
+      async: true,
+      cellViewNamespace: shapes,
+      width: 1,   // will resize after fit
+      height: 1,
+      gridSize: 1,
+      interactive: false,
+    });
+    paperRef.current = paper;
+
+    // 3. Append paper element into our container
+    el.appendChild(paper.el);
+
+    // 4. Populate gate elements
+    const nodes = [];            // nodes[layer][wire]
     for (let l = 0; l < circuit.d; l++) {
+      nodes[l] = [];
       for (let w = 0; w < circuit.n; w++) {
-        const gateInfo = classifyGate(circuit.gates[l], w);
-        const x = PAD_LEFT + l * (GATE_W + H_GAP);
-        const y = PAD_TOP + w * (GATE_H + V_GAP);
-        const mean = means && means[l] ? means[l][w] : null;
-        gateList.push({ l, w, x, y, gateInfo, mean });
-      }
-    }
+        const info = classifyGate(circuit.gates[l], w);
+        const x = PAD_X + l * (GATE_W + H_GAP);
+        const y = PAD_Y + w * (GATE_H + V_GAP);
+        const mean = means?.[l]?.[w] ?? null;
+        const fill = mean !== null ? meanToColor(mean) : "#F3F4F6";
 
-    // Build connections
-    for (let l = 1; l < circuit.d; l++) {
-      for (let w = 0; w < circuit.n; w++) {
-        const gate = circuit.gates[l];
-        const firstWire = gate.first[w];
-        const secondWire = gate.second[w];
+        const node = new shapes.standard.Rectangle({
+          position: { x, y },
+          size: { width: GATE_W, height: GATE_H },
+          attrs: {
+            body: {
+              fill,
+              stroke: info.color,
+              strokeWidth: 2,
+              rx: info.shape === "circle" ? 16 : info.shape === "dshape" ? 10 : 4,
+              ry: info.shape === "circle" ? 16 : info.shape === "dshape" ? 10 : 4,
+              cursor: "pointer",
+            },
+            label: {
+              text: info.label.length > 14 ? info.label.slice(0, 14) : info.label,
+              fontSize: 9,
+              fontFamily: "'IBM Plex Mono', monospace",
+              fill: "#374151",
+            },
+          },
+        });
 
-        const srcX = PAD_LEFT + (l - 1) * (GATE_W + H_GAP) + GATE_W;
-        const tgtX = PAD_LEFT + l * (GATE_W + H_GAP);
-
-        // First input
-        const srcY1 = PAD_TOP + firstWire * (GATE_H + V_GAP) + GATE_H / 2;
-        const tgtY1 = PAD_TOP + w * (GATE_H + V_GAP) + GATE_H / 3;
-        linkList.push({ x1: srcX, y1: srcY1, x2: tgtX, y2: tgtY1, dashed: false, l });
-
-        // Second input
-        const srcY2 = PAD_TOP + secondWire * (GATE_H + V_GAP) + GATE_H / 2;
-        const tgtY2 = PAD_TOP + w * (GATE_H + V_GAP) + (2 * GATE_H) / 3;
-        linkList.push({ x1: srcX, y1: srcY2, x2: tgtX, y2: tgtY2, dashed: true, l });
-      }
-    }
-
-    return { gates: gateList, links: linkList };
-  }, [circuit, means]);
-
-  // Zoom handler
-  const handleWheel = useCallback(
-    (e) => {
-      e.preventDefault();
-      if (!viewBox) return;
-      const factor = e.deltaY > 0 ? 1.1 : 0.9;
-      const svg = svgRef.current;
-      const rect = svg.getBoundingClientRect();
-      const mx = ((e.clientX - rect.left) / rect.width) * viewBox.w + viewBox.x;
-      const my = ((e.clientY - rect.top) / rect.height) * viewBox.h + viewBox.y;
-
-      const newW = viewBox.w * factor;
-      const newH = viewBox.h * factor;
-      setViewBox({
-        x: mx - (mx - viewBox.x) * factor,
-        y: my - (my - viewBox.y) * factor,
-        w: newW,
-        h: newH,
-      });
-    },
-    [viewBox]
-  );
-
-  // Pan handlers
-  const handleMouseDown = useCallback(
-    (e) => {
-      if (e.button !== 0) return;
-      setIsPanning(true);
-      panStart.current = {
-        x: e.clientX,
-        y: e.clientY,
-        vx: viewBox.x,
-        vy: viewBox.y,
-      };
-    },
-    [viewBox]
-  );
-
-  const handleMouseMove = useCallback(
-    (e) => {
-      if (!isPanning || !viewBox) return;
-      const svg = svgRef.current;
-      const rect = svg.getBoundingClientRect();
-      const dx = ((e.clientX - panStart.current.x) / rect.width) * viewBox.w;
-      const dy = ((e.clientY - panStart.current.y) / rect.height) * viewBox.h;
-      setViewBox((v) => ({
-        ...v,
-        x: panStart.current.vx - dx,
-        y: panStart.current.vy - dy,
-      }));
-    },
-    [isPanning, viewBox]
-  );
-
-  const handleMouseUp = useCallback(() => setIsPanning(false), []);
-
-  const handleGateClick = useCallback(
-    (l, w, x, y) => {
-      const gate = circuit.gates[l];
-      const gateInfo = classifyGate(gate, w);
-      setTooltip({
-        x: x + GATE_W / 2,
-        y,
-        data: {
+        node.set("gateData", {
           layerIndex: l,
           wireIndex: w,
-          type: gateInfo.type,
-          label: gateInfo.label,
-          first: gate.first[w],
-          second: gate.second[w],
-          const: gate.const[w],
-          firstCoeff: gate.firstCoeff[w],
-          secondCoeff: gate.secondCoeff[w],
-          productCoeff: gate.productCoeff[w],
-          mean: means && means[l] ? means[l][w] : null,
-        },
-      });
-    },
-    [circuit, means]
-  );
+          type: info.type,
+          label: info.label,
+          first: circuit.gates[l].first[w],
+          second: circuit.gates[l].second[w],
+          const: circuit.gates[l].const[w],
+          firstCoeff: circuit.gates[l].firstCoeff[w],
+          secondCoeff: circuit.gates[l].secondCoeff[w],
+          productCoeff: circuit.gates[l].productCoeff[w],
+          mean,
+        });
 
-  const zoomPercent = viewBox
-    ? Math.round((totalWidth / viewBox.w) * 100)
-    : 100;
+        nodes[l][w] = node;
+        graph.addCell(node);
+      }
+    }
 
+    // 5. Links
+    for (let l = 1; l < circuit.d; l++) {
+      for (let w = 0; w < circuit.n; w++) {
+        const g = circuit.gates[l];
+        const fw = g.first[w];
+        const sw = g.second[w];
+
+        // first-input link (solid)
+        graph.addCell(
+          new shapes.standard.Link({
+            source: { id: nodes[l - 1][fw].id },
+            target: { id: nodes[l][w].id },
+            attrs: { line: { stroke: "#94A3B8", strokeWidth: 1.2, targetMarker: { d: "" } } },
+            connector: { name: "smooth" },
+          })
+        );
+
+        // second-input link (dashed) — skip duplicate
+        if (sw !== fw) {
+          graph.addCell(
+            new shapes.standard.Link({
+              source: { id: nodes[l - 1][sw].id },
+              target: { id: nodes[l][w].id },
+              attrs: { line: { stroke: "#CBD5E1", strokeWidth: 0.8, strokeDasharray: "4,3", targetMarker: { d: "" } } },
+              connector: { name: "smooth" },
+            })
+          );
+        }
+      }
+    }
+
+    // 6. Unfreeze — critical!
+    paper.unfreeze();
+
+    // 7. Fit content after next frame (async rendering needs a tick)
+    requestAnimationFrame(() => {
+      if (!paperRef.current) return;
+      const bbox = graph.getBBox();
+      if (!bbox) return;
+      const w = bbox.x + bbox.width + 60;
+      const h = bbox.y + bbox.height + 40;
+      paper.setDimensions(w, h);
+      paper.transformToFitContent({ padding: 20, maxScale: 1.5 });
+      setZoomPct(Math.round(paper.scale().sx * 100));
+    });
+
+    // 8. Click-to-inspect
+    paper.on("element:pointerclick", (view) => {
+      const d = view.model.get("gateData");
+      if (d) setTooltip(d);
+    });
+    paper.on("blank:pointerclick", () => setTooltip(null));
+
+    return () => {
+      paper.remove();
+      paperRef.current = null;
+      graphRef.current = null;
+    };
+  }, [circuit, means]);
+
+  /* ---- zoom via wheel (prevent page scroll) ---- */
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const paper = paperRef.current;
+      if (!paper) return;
+      const f = e.deltaY > 0 ? 0.92 : 1.08;
+      const s = paper.scale().sx;
+      const ns = Math.max(0.15, Math.min(4, s * f));
+      paper.scale(ns, ns);
+      setZoomPct(Math.round(ns * 100));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  /* ---- layer dimming ---- */
+  useEffect(() => {
+    const g = graphRef.current;
+    if (!g) return;
+    g.getElements().forEach((el) => {
+      const d = el.get("gateData");
+      if (!d) return;
+      const dim = activeLayer !== undefined && d.layerIndex !== activeLayer;
+      el.attr("body/opacity", dim ? 0.12 : 1);
+      el.attr("label/opacity", dim ? 0.12 : 1);
+    });
+    g.getLinks().forEach((lk) => {
+      lk.attr("line/opacity", activeLayer !== undefined ? 0.06 : 1);
+    });
+  }, [activeLayer]);
+
+  /* ---- render ---- */
   return (
-    <div className="panel circuit-graph-joint" ref={containerRef}>
+    <div className="panel circuit-graph-joint" style={{ position: "relative" }}>
       <h2>
         Circuit Structure
         <span className="mode-badge">
           Graph Mode · {circuit.n}×{circuit.d} = {circuit.n * circuit.d} gates
         </span>
       </h2>
-      <svg
-        ref={svgRef}
+
+      {/* JointJS canvas — overflow:hidden + wheel captures zoom */}
+      <div
+        ref={canvasRef}
         className="joint-container"
-        viewBox={
-          viewBox
-            ? `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`
-            : `0 0 ${totalWidth} ${totalHeight}`
-        }
-        preserveAspectRatio="xMidYMid meet"
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onClick={(e) => {
-          if (e.target === svgRef.current) setTooltip(null);
+        style={{
+          overflow: "hidden",
+          minHeight: 350,
+          maxHeight: 600,
+          border: "1px solid #E0E0E0",
+          borderRadius: 8,
+          background: "#fff",
         }}
-        style={{ cursor: isPanning ? "grabbing" : "grab" }}
-      >
-        {/* Background */}
-        <rect
-          x={viewBox?.x || 0}
-          y={viewBox?.y || 0}
-          width={viewBox?.w || totalWidth}
-          height={viewBox?.h || totalHeight}
-          fill="#FFFFFF"
-        />
+      />
 
-        {/* Layer labels */}
-        {Array.from({ length: circuit.d }, (_, l) => (
-          <text
-            key={`ll${l}`}
-            x={PAD_LEFT + l * (GATE_W + H_GAP) + GATE_W / 2}
-            y={PAD_TOP - 12}
-            textAnchor="middle"
-            fontSize={9}
-            fill="#9CA3AF"
-            fontFamily="'IBM Plex Mono', monospace"
-          >
-            L{l}
-          </text>
-        ))}
-
-        {/* Connections (behind gates) */}
-        <g opacity={activeLayer !== undefined ? 0.06 : 0.6}>
-          {links.map((link, i) => (
-            <ConnectionLine key={i} {...link} />
-          ))}
-        </g>
-
-        {/* Gates */}
-        {gates.map(({ l, w, x, y, gateInfo, mean }) => (
-          <g
-            key={`g${l}_${w}`}
-            opacity={
-              activeLayer !== undefined && l !== activeLayer ? 0.15 : 1
-            }
-          >
-            <GateNode
-              gateInfo={gateInfo}
-              x={x}
-              y={y}
-              mean={mean}
-              onClick={() => handleGateClick(l, w, x, y)}
-            />
-          </g>
-        ))}
-      </svg>
-
-      {/* Tooltip overlay */}
+      {/* Tooltip */}
       {tooltip && (
         <div
           className="gate-tooltip"
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: 60,
-            transform: "translateX(-50%)",
-          }}
+          style={{ position: "absolute", left: "50%", top: 56, transform: "translateX(-50%)", zIndex: 200 }}
         >
-          <div className="tooltip-header">
-            Layer {tooltip.data.layerIndex}, Wire {tooltip.data.wireIndex}
-          </div>
+          <div className="tooltip-header">Layer {tooltip.layerIndex}, Wire {tooltip.wireIndex}</div>
           <div className="tooltip-body">
-            <div className="tooltip-op">{tooltip.data.label}</div>
+            <div className="tooltip-op">{tooltip.label}</div>
             <div className="tooltip-coeffs">
-              c={tooltip.data.const.toFixed(3)},
-              a={tooltip.data.firstCoeff.toFixed(3)},
-              b={tooltip.data.secondCoeff.toFixed(3)},
-              p={tooltip.data.productCoeff.toFixed(3)}
+              c={tooltip.const.toFixed(3)}, a={tooltip.firstCoeff.toFixed(3)},
+              b={tooltip.secondCoeff.toFixed(3)}, p={tooltip.productCoeff.toFixed(3)}
             </div>
             <div className="tooltip-inputs">
-              inputs: x[{tooltip.data.first}], y[{tooltip.data.second}]
+              inputs: x[{tooltip.first}], y[{tooltip.second}]
             </div>
-            {tooltip.data.mean !== null && (
-              <div className="tooltip-mean">
-                E[wire] = {tooltip.data.mean.toFixed(4)}
-              </div>
+            {tooltip.mean !== null && (
+              <div className="tooltip-mean">E[wire] = {tooltip.mean.toFixed(4)}</div>
             )}
           </div>
         </div>
       )}
+
       <div className="zoom-indicator">
-        Zoom: {zoomPercent}% · Scroll to zoom, drag to pan, click gates to
-        inspect
+        Zoom: {zoomPct}% · Scroll to zoom · Click gates to inspect
       </div>
     </div>
   );
