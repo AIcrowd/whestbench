@@ -226,46 +226,6 @@ export default function App() {
               onResult={handleEstimatorResult}
             />
           </div>
-
-          {/* Layer stepper — only in explore mode + graph mode */}
-          {!isTour && useGraphMode && (
-            <div className="layer-stepper">
-              <h3>Step Through</h3>
-              <div className="stepper-buttons">
-                <button
-                  onClick={() =>
-                    setActiveLayer((l) =>
-                      l === undefined ? 0 : Math.max(0, l - 1)
-                    )
-                  }
-                >
-                  ◀ Prev
-                </button>
-                <span className="layer-indicator">
-                  {activeLayer === undefined
-                    ? "All layers"
-                    : `Layer ${activeLayer}`}
-                </span>
-                <button
-                  onClick={() =>
-                    setActiveLayer((l) =>
-                      l === undefined
-                        ? 0
-                        : Math.min(circuit.d - 1, l + 1)
-                    )
-                  }
-                >
-                  Next ▶
-                </button>
-              </div>
-              <button
-                className="reset-btn"
-                onClick={() => setActiveLayer(undefined)}
-              >
-                Show All
-              </button>
-            </div>
-          )}
         </aside>
 
         <main className="main-content">
