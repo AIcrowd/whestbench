@@ -45,9 +45,9 @@ The default human report is a tri-objective dashboard with:
 
 Layout is adaptive:
 
-- wide terminals (`>=120` columns): multi-column pane layout,
-- medium terminals (`90-119`): compressed multi-row layout,
-- narrow terminals (`<90`): stacked pane layout in the same narrative order.
+- wide terminals (`>=180` columns): full three-pane top row plus multi-column lanes,
+- medium terminals (`110-179`): two-pane top row with hardware stacked below,
+- narrow terminals (`<110`): stacked pane layout in the same narrative order.
 
 Examples:
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import io
 import json
+import os
+import shutil
 from collections.abc import Sequence
 from datetime import datetime, timezone
 from statistics import fmean
@@ -30,12 +32,13 @@ def render_agent_report(report: dict[str, Any]) -> str:
 def render_human_report(report: dict[str, Any]) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
     buffer = io.StringIO()
+    width = _dashboard_width()
     console = Console(
         record=True,
         file=buffer,
         force_terminal=True,
         color_system="truecolor",
-        width=120,
+        _environ=_rich_console_environ(width),
     )
 
     console.print(
@@ -64,10 +67,19 @@ def _render_top_row(console: Console, report: dict[str, Any]) -> None:
     hardware = _hardware_runtime_panel(report)
 
     if mode == "wide":
-        console.print(Columns([run_context, readiness, hardware], equal=True, expand=True))
+        grid = Table.grid(expand=True)
+        grid.add_column(ratio=1)
+        grid.add_column(ratio=1)
+        grid.add_column(ratio=1)
+        grid.add_row(run_context, readiness, hardware)
+        console.print(grid)
         return
     if mode == "medium":
-        console.print(Columns([run_context, readiness], equal=True, expand=True))
+        grid = Table.grid(expand=True)
+        grid.add_column(ratio=1)
+        grid.add_column(ratio=1)
+        grid.add_row(run_context, readiness)
+        console.print(grid)
         console.print(hardware)
         return
     console.print(run_context)
@@ -75,10 +87,22 @@ def _render_top_row(console: Console, report: dict[str, Any]) -> None:
     console.print(hardware)
 
 
+def _dashboard_width() -> int:
+    columns = shutil.get_terminal_size((120, 40)).columns
+    return max(80, columns)
+
+
+def _rich_console_environ(width: int) -> dict[str, str]:
+    environ = dict(os.environ)
+    environ["COLUMNS"] = str(width)
+    environ.setdefault("LINES", "40")
+    return environ
+
+
 def _layout_mode(console_width: int) -> str:
-    if console_width >= 120:
+    if console_width >= 180:
         return "wide"
-    if console_width >= 90:
+    if console_width >= 110:
         return "medium"
     return "narrow"
 
@@ -93,21 +117,21 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
 
     rows = [
         (
-            "Run Started (UTC) [run_started_at_utc]",
+            "Started [run_started_at_utc]",
             _human_utc(str(run_meta.get("run_started_at_utc", "n/a"))),
         ),
         (
-            "Run Finished (UTC) [run_finished_at_utc]",
+            "Finished [run_finished_at_utc]",
             _human_utc(str(run_meta.get("run_finished_at_utc", "n/a"))),
         ),
-        ("Run Duration(s) [run_duration_s]", _fmt_float(run_meta.get("run_duration_s", 0.0), 6)),
-        ("Number of Circuits [n_circuits]", str(run_config.get("n_circuits", "n/a"))),
-        ("Samples per Circuit [n_samples]", str(run_config.get("n_samples", "n/a"))),
-        ("Circuit Width / Wire Count [width]", str(run_config.get("width", "n/a"))),
-        ("Maximum Depth [max_depth]", str(run_config.get("max_depth", "n/a"))),
-        ("Layer Count [layer_count]", str(run_config.get("layer_count", "n/a"))),
+        ("Duration(s) [run_duration_s]", _fmt_float(run_meta.get("run_duration_s", 0.0), 6)),
+        ("Circuits [n_circuits]", str(run_config.get("n_circuits", "n/a"))),
+        ("Samples/Circuit [n_samples]", str(run_config.get("n_samples", "n/a"))),
+        ("Width/Wires [width]", str(run_config.get("width", "n/a"))),
+        ("Max Depth [max_depth]", str(run_config.get("max_depth", "n/a"))),
+        ("Layers [layer_count]", str(run_config.get("layer_count", "n/a"))),
         ("Budgets [budgets]", str(run_config.get("budgets", []))),
-        ("Time Tolerance [time_tolerance]", str(run_config.get("time_tolerance", "n/a"))),
+        ("Tolerance [time_tolerance]", str(run_config.get("time_tolerance", "n/a"))),
     ]
     for key, value in rows:
         table.add_row(_render_context_label(key), value)
@@ -123,12 +147,12 @@ def _hardware_runtime_panel(report: dict[str, Any]) -> Panel:
     table.add_column("field")
     table.add_column("value")
     rows = [
-        ("Host Name [host.hostname]", str(host_meta.get("hostname", "n/a"))),
-        ("Operating System [host.os]", str(host_meta.get("os", "n/a"))),
-        ("OS Release [host.os_release]", str(host_meta.get("os_release", "n/a"))),
+        ("Host [host.hostname]", str(host_meta.get("hostname", "n/a"))),
+        ("OS [host.os]", str(host_meta.get("os", "n/a"))),
+        ("Release [host.os_release]", str(host_meta.get("os_release", "n/a"))),
         ("Platform [host.platform]", str(host_meta.get("platform", "n/a"))),
-        ("Machine Architecture [host.machine]", str(host_meta.get("machine", "n/a"))),
-        ("Python Runtime [host.python_version]", str(host_meta.get("python_version", "n/a"))),
+        ("Arch [host.machine]", str(host_meta.get("machine", "n/a"))),
+        ("Python [host.python_version]", str(host_meta.get("python_version", "n/a"))),
     ]
     for label, value in rows:
         table.add_row(_render_context_label(label), value)
@@ -149,7 +173,7 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
     summary.add_column("metric")
     summary.add_column("value", justify="right")
     summary.add_row(
-        _label_with_code("Final Score (Adjusted MSE Mean)", "final_score", "bold bright_green"),
+        _label_with_code("Final Score", "final_score", "bold bright_green"),
         f"[bold bright_green]✓ {_fmt_float(final_score, 8)}[/]",
     )
     if mse_means:
@@ -167,7 +191,7 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
             f"[yellow]{_fmt_float(max(budget_scores), 8)}[/]",
         )
 
-    footnote = Text("Footnote: lower score is better.", style="dim")
+    footnote = Text("Footnote: lower score is better; final score is adjusted MSE mean.", style="dim")
     return Panel(Group(summary, footnote), title="Readiness Scorecard", border_style="bright_cyan")
 
 
