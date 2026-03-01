@@ -215,3 +215,6 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Node (tools/circuit-explorer)
+node_modules/
+
