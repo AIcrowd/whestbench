@@ -71,7 +71,13 @@ def test_default_mode_outputs_human_report(
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report: "Circuit Estimation Report\nTip: Use --agent-mode\n",
+        lambda _report: (
+            "Circuit Estimation Report\n"
+            "Readiness Scorecard\n"
+            "Run Context\n"
+            "Hardware & Runtime\n"
+            "Tip: Use --agent-mode\n"
+        ),
     )
 
     exit_code = cli.main([])
@@ -80,6 +86,9 @@ def test_default_mode_outputs_human_report(
     assert exit_code == 0
     assert captured.err == ""
     assert "Circuit Estimation Report" in captured.out
+    assert "Readiness Scorecard" in captured.out
+    assert "Run Context" in captured.out
+    assert "Hardware & Runtime" in captured.out
     assert "Use --agent-mode" in captured.out
     assert observed == {"profile": False, "detail": "raw"}
 
