@@ -217,28 +217,32 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
     paperRef.current = paper;
     el.appendChild(paper.el);
 
-    // --- Create input wire nodes (column before layer 0) ---
+    // --- Create input wire markers (column before layer 0) ---
+    // Standard circuit notation: prominent labeled markers on the left
     const inputNodes = [];
-    const INPUT_W = 24;
-    const INPUT_H = 24;
+    const INPUT_W = 40;
+    const INPUT_H = GATE_H;
     for (let w = 0; w < circuit.n; w++) {
       const x = PAD_X;
-      const y = PAD_Y + w * (GATE_H + ROW_GAP) + (GATE_H - INPUT_H) / 2;
+      const y = PAD_Y + w * (GATE_H + ROW_GAP);
 
-      const node = new shapes.standard.Circle({
+      const node = new shapes.standard.Rectangle({
         position: { x, y },
         size: { width: INPUT_W, height: INPUT_H },
         attrs: {
           body: {
-            fill: "#F3F4F6",
-            stroke: GATE_STROKE,
-            strokeWidth: 1,
+            fill: "#FEF2F2",
+            stroke: "#F0524D",
+            strokeWidth: 2,
+            rx: 3,
+            ry: 3,
           },
           label: {
             text: `x${w}`,
-            fontSize: 7,
+            fontSize: 9,
+            fontWeight: "bold",
             fontFamily: "'IBM Plex Mono', monospace",
-            fill: "#64748B",
+            fill: "#991B1B",
           },
         },
         ports: {
@@ -377,6 +381,60 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
           new shapes.standard.Link({
             source: { id: nodes[l - 1][sw].id, port: "out" },
             target: { id: nodes[l][w].id, port: "in2" },
+            attrs: {
+              line: {
+                stroke: WIRE_COLOR,
+                strokeWidth: 0.8,
+                targetMarker: { d: "" },
+              },
+            },
+            connector: { name: "smooth" },
+          })
+        );
+      }
+    }
+
+    // --- Create output wire markers (column after last layer) ---
+    const OUTPUT_W = 40;
+    const lastLayer = circuit.d - 1;
+    const outputX = PAD_X + GATE_X_OFFSET + (circuit.d) * (GATE_W + COL_GAP);
+    for (let w = 0; w < circuit.n; w++) {
+      const y = PAD_Y + w * (GATE_H + ROW_GAP);
+
+      const outNode = new shapes.standard.Rectangle({
+        position: { x: outputX, y },
+        size: { width: OUTPUT_W, height: GATE_H },
+        attrs: {
+          body: {
+            fill: "#F8FAFC",
+            stroke: "#334155",
+            strokeWidth: 2,
+            rx: 3,
+            ry: 3,
+          },
+          label: {
+            text: `y${w}`,
+            fontSize: 9,
+            fontWeight: "bold",
+            fontFamily: "'IBM Plex Mono', monospace",
+            fill: "#334155",
+          },
+        },
+        ports: {
+          groups: PORT_GROUPS,
+          items: [{ id: "in1", group: "in" }],
+        },
+      });
+      outNode.set("isOutput", true);
+      outNode.set("wireIndex", w);
+      graph.addCell(outNode);
+
+      // Link from last layer gate to output node
+      if (nodes[lastLayer]?.[w]) {
+        graph.addCell(
+          new shapes.standard.Link({
+            source: { id: nodes[lastLayer][w].id, port: "out" },
+            target: { id: outNode.id, port: "in1" },
             attrs: {
               line: {
                 stroke: WIRE_COLOR,
