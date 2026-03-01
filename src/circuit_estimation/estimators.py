@@ -19,7 +19,7 @@ def mean_propagation(circuit: Circuit) -> Iterator[NDArray[np.float32]]:
             + layer.second_coeff * np.take(x_mean, layer.second)
             + layer.const
             + layer.product_coeff * np.take(x_mean, layer.first) * np.take(x_mean, layer.second)
-        )
+        ).astype(np.float32)
         yield x_mean
 
 
@@ -31,7 +31,9 @@ def one_v_two_covariance(
     x_mean: NDArray[np.float32],
 ) -> NDArray[np.float32]:
     """Approximate Cov(x[a[i]], x[b[j]]*x[c[j]]) under pairwise moment closure."""
-    return x_mean[b][None, :] * x_cov[np.ix_(a, c)] + x_mean[c][None, :] * x_cov[np.ix_(a, b)]
+    return (
+        x_mean[b][None, :] * x_cov[np.ix_(a, c)] + x_mean[c][None, :] * x_cov[np.ix_(a, b)]
+    ).astype(np.float32)
 
 
 def two_v_two_covariance(
@@ -58,7 +60,7 @@ def two_v_two_covariance(
         + (mu_a * mu_d) * cov_bc
         + (mu_b * mu_c) * cov_ad
         + (mu_b * mu_d) * cov_ac
-    )
+    ).astype(np.float32)
 
 
 def clip(mean: NDArray[np.float32], cov: NDArray[np.float32]) -> None:
@@ -84,28 +86,33 @@ def covariance_propagation(circuit: Circuit) -> Iterator[NDArray[np.float32]]:
             + layer.const
             + layer.product_coeff * x_mean[layer.first] * x_mean[layer.second]
             + layer.product_coeff * x_cov[layer.first, layer.second]
-        )
+        ).astype(np.float32)
 
         new_cov: NDArray[np.float32] = np.zeros((n, n), dtype=np.float32)
-        new_cov += np.outer(layer.first_coeff, layer.first_coeff) * x_cov[np.ix_(layer.first, layer.first)]
-        new_cov += np.outer(layer.second_coeff, layer.second_coeff) * x_cov[
-            np.ix_(layer.second, layer.second)
-        ]
-        new_cov += np.outer(layer.first_coeff, layer.second_coeff) * x_cov[
-            np.ix_(layer.first, layer.second)
-        ]
-        new_cov += np.outer(layer.second_coeff, layer.first_coeff) * x_cov[
-            np.ix_(layer.second, layer.first)
-        ]
+        new_cov += (
+            np.outer(layer.first_coeff, layer.first_coeff) * x_cov[np.ix_(layer.first, layer.first)]
+        )
+        new_cov += (
+            np.outer(layer.second_coeff, layer.second_coeff)
+            * x_cov[np.ix_(layer.second, layer.second)]
+        )
+        new_cov += (
+            np.outer(layer.first_coeff, layer.second_coeff)
+            * x_cov[np.ix_(layer.first, layer.second)]
+        )
+        new_cov += (
+            np.outer(layer.second_coeff, layer.first_coeff)
+            * x_cov[np.ix_(layer.second, layer.first)]
+        )
 
         result_1v2_first = np.outer(layer.first_coeff, layer.product_coeff) * one_v_two_covariance(
             layer.first, layer.first, layer.second, x_cov, x_mean
         )
         new_cov += result_1v2_first + result_1v2_first.T
 
-        result_1v2_second = np.outer(layer.second_coeff, layer.product_coeff) * one_v_two_covariance(
-            layer.second, layer.first, layer.second, x_cov, x_mean
-        )
+        result_1v2_second = np.outer(
+            layer.second_coeff, layer.product_coeff
+        ) * one_v_two_covariance(layer.second, layer.first, layer.second, x_cov, x_mean)
         new_cov += result_1v2_second + result_1v2_second.T
 
         new_cov += np.outer(layer.product_coeff, layer.product_coeff) * two_v_two_covariance(

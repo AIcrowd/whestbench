@@ -28,6 +28,14 @@ uv run main.py
 
 That's it. `uv` reads `pyproject.toml`, auto-creates a venv, installs dependencies, and runs the script — no manual setup needed.
 
+### Optional profiling run
+
+```bash
+uv run main.py --profile
+```
+
+This prints the score plus per-layer diagnostics (`wall_time_s`, `cpu_time_s`, `rss_bytes`, `peak_rss_bytes`).
+
 ## Test Harness
 
 This repository now includes a `pytest`-based test harness with:
@@ -48,6 +56,18 @@ This repository now includes a `pytest`-based test harness with:
 ```
 
 The script uses `uv run --group dev pytest ...` and installs `pytest` from the `dev` dependency group automatically when needed.
+
+## Release Quality Gates
+
+Run all checks before release:
+
+```bash
+uv run --group dev ruff check .
+uv run --group dev ruff format --check .
+uv run --group dev pyright
+uv run --group dev pytest -m "not exhaustive"
+uv run --group dev pytest -m exhaustive
+```
 
 ---
 

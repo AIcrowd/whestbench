@@ -48,7 +48,9 @@ def score_estimator(
     performance_by_budget: list[float] = []
 
     for budget in contest_params.budgets:
-        baseline_times: NDArray[np.float32] = np.array(sampling_baseline_time(budget, n, d), dtype=np.float32)
+        baseline_times: NDArray[np.float32] = np.array(
+            sampling_baseline_time(budget, n, d), dtype=np.float32
+        )
         baseline_times = np.maximum(baseline_times, np.float32(1e-9))
 
         runtimes = np.zeros(d, dtype=np.float32)

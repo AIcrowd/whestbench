@@ -19,7 +19,7 @@ def run_batched(circuit: Circuit, inputs: NDArray[np.float16]) -> Iterator[NDArr
             + layer.first_coeff * x[:, layer.first]
             + layer.second_coeff * x[:, layer.second]
             + layer.product_coeff * x[:, layer.first] * x[:, layer.second]
-        )
+        ).astype(np.float16)
         yield x
 
 

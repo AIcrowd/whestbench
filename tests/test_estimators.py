@@ -59,10 +59,7 @@ def test_one_v_two_covariance_matches_manual_formula() -> None:
     expected = np.zeros((len(a), len(b)), dtype=np.float32)
     for i in range(len(a)):
         for j in range(len(b)):
-            expected[i, j] = (
-                x_mean[b[j]] * x_cov[a[i], c[j]]
-                + x_mean[c[j]] * x_cov[a[i], b[j]]
-            )
+            expected[i, j] = x_mean[b[j]] * x_cov[a[i], c[j]] + x_mean[c[j]] * x_cov[a[i], b[j]]
     np.testing.assert_allclose(observed, expected)
 
 

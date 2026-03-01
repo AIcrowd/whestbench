@@ -4,10 +4,18 @@ from __future__ import annotations
 
 import argparse
 import json
-from typing import Any
+from typing import Any, Literal, overload
 
 from .estimators import combined_estimator
 from .scoring import ContestParams, score_estimator
+
+
+@overload
+def run_default_score(profile: Literal[False] = False) -> float: ...
+
+
+@overload
+def run_default_score(profile: Literal[True]) -> tuple[float, list[dict[str, Any]]]: ...
 
 
 def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[str, Any]]]:

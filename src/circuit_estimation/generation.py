@@ -44,7 +44,9 @@ def random_gates(n: int, rng: np.random.Generator | None = None) -> Layer:
 
     first: NDArray[np.int32] = rng.integers(0, n, size=n, dtype=np.int32)
     second_raw: NDArray[np.int32] = rng.integers(0, n - 1, size=n, dtype=np.int32)
-    second: NDArray[np.int32] = (second_raw + (second_raw >= first).astype(np.int32)).astype(np.int32)
+    second: NDArray[np.int32] = (second_raw + (second_raw >= first).astype(np.int32)).astype(
+        np.int32
+    )
 
     layer = Layer(
         first=first,
