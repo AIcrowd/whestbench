@@ -196,13 +196,15 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
     // Unfreeze
     paper.unfreeze();
 
-    // Fit content
+    // Fit content to fill available container width
     requestAnimationFrame(() => {
-      if (!paperRef.current) return;
+      if (!paperRef.current || !canvasRef.current) return;
       const bbox = graph.getBBox();
       if (!bbox) return;
-      paper.setDimensions(bbox.x + bbox.width + 60, bbox.y + bbox.height + 50);
-      paper.transformToFitContent({ padding: 20, maxScale: 1.5 });
+      const containerW = canvasRef.current.clientWidth;
+      const contentH = bbox.y + bbox.height + 40;
+      paper.setDimensions(containerW, contentH);
+      paper.transformToFitContent({ padding: 20 });
       setZoomPct(Math.round(paper.scale().sx * 100));
     });
 
@@ -285,9 +287,9 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
         style={{
           overflow: "hidden",
           minHeight: 350,
-          maxHeight: 600,
           border: "1px solid #E5E7EB",
           borderRadius: 8,
+          width: "100%",
           background: "#FCFCFC",
         }}
       />
