@@ -8,6 +8,11 @@ Last updated: 2026-03-01
 - `src/circuit_estimation/generation.py`: random gate/circuit sampling (seedable RNG path).
 - `src/circuit_estimation/simulation.py`: batched execution + empirical mean helpers.
 - `src/circuit_estimation/estimators.py`: mean/covariance propagation + combined estimator.
+- `src/circuit_estimation/sdk.py`: participant-facing estimator base class + setup context.
+- `src/circuit_estimation/loader.py`: deterministic class loading from participant `estimator.py`.
+- `src/circuit_estimation/runner.py`: in-process/subprocess runner interfaces and outcomes.
+- `src/circuit_estimation/subprocess_worker.py`: isolated worker protocol endpoint.
+- `src/circuit_estimation/packaging.py`: manifest + artifact packaging for submissions.
 - `src/circuit_estimation/scoring.py`: contest params, baseline timing, scoring loop, optional profiler hook.
 - `src/circuit_estimation/protocol.py`: serializable request/response DTOs for future RPC integration.
 - `src/circuit_estimation/cli.py`: local run entrypoint used by `main.py`.
@@ -42,6 +47,29 @@ From `src/circuit_estimation/estimators.py`:
   - otherwise uses mean propagation.
 
 The in-repo estimator implementations are examples for local development only. Future hosted evaluation must treat participant estimators as black box, potentially adversarial/malicious implementations.
+
+## Participant Submission Interface (Current Local Contract)
+
+- primary participant file: `estimator.py`
+- optional participant files: `requirements.txt`, `submission.yaml`, `APPROACH.md`
+- required class: `Estimator(BaseEstimator)` (or explicit class override)
+- required method: `predict(circuit, budget)` returning `(depth, width)` ndarray
+- optional methods: `setup(context)`, `predict_batch(circuits, budget)`, `teardown()`
+
+Installable CLI contract:
+
+- `cestim init`
+- `cestim validate`
+- `cestim run`
+- `cestim package`
+
+`--agent-mode` output is JSON-only for both success and failure payloads.
+
+Runner boundary:
+
+- local in-process and subprocess runners share one `PredictOutcome` contract,
+- setup lifecycle is separate from predict scoring lifecycle,
+- scorer now supports a runner-based path (`score_submission_report`) while preserving legacy callable compatibility.
 
 ## Current Scoring Logic
 

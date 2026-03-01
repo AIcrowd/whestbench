@@ -81,3 +81,31 @@ Decision owner: Starter-kit maintainers
   - `adjusted_mse` is budget-level scalar only (no per-layer adjusted fields).
   - `results.by_layer_overall` / `results.by_budget_layer_matrix` now include only MSE-derived layer aggregates.
   - Human reporting layer diagnostics are MSE-only; runtime visuals are budget-level and profile-call-level only.
+
+### 2026-03-01 - Participant-first estimator SDK and loader contract
+
+- **Decision:** Move participant estimator integration to a class-based SDK (`BaseEstimator`) with deterministic file/class loading.
+- **Why:** Decouple participant code from evaluator internals and keep the participant contract lightweight.
+- **Implementation impact:**
+  - Added `SetupContext` + `BaseEstimator` API in `sdk.py`.
+  - Added loader contract (`Estimator` default class name, explicit class override, ambiguity errors).
+  - Added packaging manifest entrypoint freeze so cloud evaluation does not rely on runtime autodiscovery.
+
+### 2026-03-01 - Runner boundary and subprocess worker protocol
+
+- **Decision:** Introduce runner abstractions so scorer no longer depends on direct estimator call semantics.
+- **Why:** Align local execution with future cloud isolation and allow resource-bound subprocess execution.
+- **Implementation impact:**
+  - Added `InProcessRunner` and `SubprocessRunner`.
+  - Added `PredictOutcome` with explicit status codes (`ok`, `timeout`, `oom`, `runtime_error`, `protocol_error`).
+  - Added subprocess JSON-line worker endpoint for startup/predict/close lifecycle.
+  - Added runner-based scorer path (`score_submission_report`) with fallback zero-tensor handling on failed predict statuses.
+
+### 2026-03-01 - Installable participant CLI contract
+
+- **Decision:** Support installable command entrypoints from day 1 (`cestim`, `circuit-estimation`).
+- **Why:** Participant UX should focus on `estimator.py` development, not repository internals.
+- **Implementation impact:**
+  - Added participant subcommands: `init`, `validate`, `run`, `package`.
+  - Enforced JSON-only `--agent-mode` behavior across participant commands.
+  - Added structured error payloads with stage/code/message and optional traceback behind `--debug`.

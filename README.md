@@ -92,21 +92,39 @@ uv run main.py --show-diagnostic-plots
 
 ## Extending the Estimator
 
-Implement a callable with signature:
+Participant estimators now use a stateful class API:
 
-- `Callable[[Circuit, int], NDArray[np.float32]]`
+- class base: `BaseEstimator`
+- required: `Estimator.predict(circuit, budget) -> np.ndarray`
+- optional: `setup(context)` and `predict_batch(circuits, budget)`
 
 Contract:
 
-- input: one circuit + one budget
-- output: rank-2 ndarray of shape `(max_depth, width)`
-- each row: predicted wire means for one layer depth
+- `predict` returns rank-2 ndarray shape `(max_depth, width)`
+- values must be finite
+- setup is allowed and treated as a separate lifecycle phase
 
-Recommended extension path:
+Local participant workflow (installable CLI):
 
-- add new estimators under `src/circuit_estimation/estimators.py` (or new module),
-- evaluate locally with `score_estimator(...)` or `score_estimator_report(...)`,
-- compare via `uv run main.py --detail full --profile`.
+```bash
+# scaffold estimator.py + optional requirements.txt
+cestim init my-estimator
+
+# validate estimator contract (JSON-only with --agent-mode)
+cestim validate --estimator my-estimator/estimator.py --agent-mode
+
+# run local scoring (human report by default; JSON-only in --agent-mode)
+cestim run --estimator my-estimator/estimator.py --runner subprocess
+
+# build submission artifact with generated manifest.json
+cestim package --estimator my-estimator/estimator.py --output submission.tar.gz
+```
+
+Submission artifact contract:
+
+- required machine contract: `manifest.json` (generated)
+- participant code: `estimator.py`
+- optional participant files: `requirements.txt`, `submission.yaml`, `APPROACH.md`
 
 ## Verification Commands
 

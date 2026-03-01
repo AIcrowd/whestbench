@@ -1,0 +1,10 @@
+from __future__ import annotations
+
+import numpy as np
+
+from circuit_estimation import BaseEstimator
+
+
+class Estimator(BaseEstimator):
+    def predict(self, circuit, budget: int) -> np.ndarray:
+        return np.zeros((circuit.d, circuit.n), dtype=np.float32)
