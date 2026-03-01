@@ -717,6 +717,15 @@ body {
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-sm);
   background: #fff;
+  cursor: grab;
+}
+
+.joint-container .joint-element {
+  cursor: pointer;
+}
+
+.joint-container .joint-link {
+  cursor: default;
 }
 
 .mode-badge {
