@@ -95,4 +95,3 @@ Estimator migration tests will move from function imports to file/class-based be
 - default local run can execute combined example via entrypoint
 - estimator/CLI/scoring tests pass with class-based examples
 - docs consistently describe class-based file-entrypoint workflow
-
