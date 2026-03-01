@@ -11,7 +11,7 @@ Last updated: 2026-03-01
 - `src/circuit_estimation/scoring.py`: contest params, baseline timing, scoring loop, optional profiler hook.
 - `src/circuit_estimation/protocol.py`: serializable request/response DTOs for future RPC integration.
 - `src/circuit_estimation/cli.py`: local run entrypoint used by `main.py`.
-- `main.py`: local smoke run with default human dashboard output, `--agent-mode` JSON mode, `--detail raw|full`, and optional `--profile`.
+- `main.py`: local smoke run with default Textual human dashboard output and `--agent-mode` JSON mode.
 
 ## Current Mathematical Representation
 
@@ -53,15 +53,22 @@ From `scoring.py` / `README.md`:
   - `budgets`
   - `time_tolerance`
 - For each budget:
-  - baseline total runtime is measured by batched sampling (`sampling_baseline_time`).
+  - `budget` is interpreted as sampling trial count.
+  - sampling baseline defines a budget-by-depth runtime envelope:
+    - `time_budget_by_depth_s[i]`: cumulative sampling runtime to depth `i`.
   - estimator is run once per `(circuit, budget)` and must return one tensor for all layers.
-  - if estimator runtime exceeds `(1 + tolerance) * baseline_total_time`, output is zeroed for the full tensor.
-  - if estimator runtime is below `(1 - tolerance) * baseline_total_time`, runtime is floored at that bound.
+  - runtime enforcement is applied depth-wise against the envelope:
+    - depth `i` is zeroed when wall time exceeds `(1 + tolerance) * time_budget_by_depth_s[i]`.
+    - depth `i` runtime is floored to `(1 - tolerance) * time_budget_by_depth_s[i]` when faster than that bound.
+    - because estimator API returns one tensor per call, the same observed call wall time is compared at each depth index.
   - MSE is computed vs empirical means (`mse_by_layer` + `mse_mean`).
-  - Runtime adjustment is call-level scalar only:
+  - Runtime-adjusted score uses depth-wise runtime ratios, with call-level scalar summaries exposed:
+    - `time_budget_by_depth_s`
+    - `time_ratio_by_depth_mean`
+    - `effective_time_s_by_depth_mean`
     - `call_time_ratio_mean`
     - `call_effective_time_s_mean`
-    - `adjusted_mse = mse_mean * call_time_ratio_mean`
+    - `adjusted_mse = mean(mse_by_depth * time_ratio_by_depth_mean)`
 
 Final score = average budget-level `adjusted_mse` across budgets.
 
@@ -75,7 +82,7 @@ Additional scorer behavior:
   - `peak_rss_bytes`.
 - report path (`score_estimator_report`) can return:
   - raw mode payloads for machine use (`--agent-mode`),
-  - full mode payloads with computed aggregates (`detail full`), where layer aggregates are MSE-only,
+  - full mode payloads with computed aggregates for human dashboard tabs, where layer aggregates are MSE-only,
   - run metadata including host/machine/os details.
 
 ## Local Smoke Result (Observed)
@@ -88,9 +95,9 @@ UV_CACHE_DIR=/tmp/uv-cache uv run main.py
 
 Observed output format:
 
-- default emits a Rich multi-section terminal report.
+- default emits a Textual multi-tab terminal dashboard (or static fallback when Textual is unavailable).
 - `--agent-mode` emits pretty JSON with `results.final_score` and raw per-budget/per-layer metrics.
-  - `by_budget_raw` includes `mse_by_layer` plus call-level scalar runtime metrics (no synthetic per-layer runtime attribution).
+  - `by_budget_raw` includes `mse_by_layer`, budget-by-depth runtime arrays, and call-level scalar runtime summaries.
 
 This is a local sanity surface, not a stable benchmark number.
 

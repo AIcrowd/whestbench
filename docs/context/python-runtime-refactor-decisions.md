@@ -36,8 +36,8 @@ Decision owner: Starter-kit maintainers
 - **Implementation impact:**
   - Profiling is collected at estimator call boundaries (one `(circuit, budget)` invocation), not per-depth internals.
   - `score_estimator_report(..., profile=True)` includes `profile_calls`, and `detail full` includes `profile_summary`.
-  - `main.py --profile` surfaces structured diagnostics in both agent and human reporting modes.
-  - Profiling remains opt-in to avoid affecting default baseline behavior.
+  - Default human CLI mode now enables profiling to populate the Textual `Performance` tab.
+  - Programmatic callers can still choose opt-in profiling via scorer API parameters.
 
 ### 2026-03-01 - Strict estimator output tensor contract
 
@@ -51,13 +51,13 @@ Decision owner: Starter-kit maintainers
 ### 2026-03-01 - Dual-mode report rendering contract
 
 - **Decision:** Standardize CLI/report output into:
-  - default human dashboard: Rich multi-section terminal report with trend plots.
+  - default human dashboard: Textual multi-tab terminal UI with summary-first layout.
   - `--agent-mode`: pretty JSON only for machine consumers.
 - **Why:** Support both machine consumers (future UI/agents) and local human debugging without changing scorer internals.
 - **Implementation impact:**
-  - Added `src/circuit_estimation/reporting.py` renderers.
-  - Added CLI flags: `--agent-mode`, `--detail`, `--profile`.
-  - Added `detail full` aggregate sections for downstream consumers.
+  - Added `src/circuit_estimation/textual_dashboard/*` UI package for default human mode.
+  - `src/circuit_estimation/reporting.py` remains for agent JSON and static fallback rendering.
+  - CLI surface simplified to `--agent-mode` only (removed `--detail`, `--profile`, `--show-diagnostic-plots`).
 
 ### 2026-03-01 - Future-agent black-box policy note
 
@@ -71,13 +71,29 @@ Decision owner: Starter-kit maintainers
 ### 2026-03-01 - Remove synthetic per-layer runtime diagnostics from report schema
 
 - **Decision:** Drop per-layer runtime-derived report fields (`time_ratio_by_layer`, `effective_time_s_by_layer`, `adjusted_mse_by_layer`, and related aggregates).
-- **Why:** Estimator implementations are black boxes with call-level timing only; per-layer runtime attribution is not observable or trustworthy for adversarial submissions.
+- **Why:** Estimator implementations are black boxes with call-level timing only; runtime fields tied to internal layer instrumentation are not observable or trustworthy for adversarial submissions.
 - **Implementation impact:**
-  - `results.by_budget_raw` now carries call-level scalar runtime metrics:
+  - `results.by_budget_raw` carries depth-indexed runtime metrics derived from external timing against the baseline budget-by-depth envelope (not internal instrumentation), plus call-level scalar summaries:
+    - `time_budget_by_depth_s`
+    - `time_ratio_by_depth_mean`
+    - `effective_time_s_by_depth_mean`
+    - `timeout_rate_by_depth`
+    - `time_floor_rate_by_depth`
+  - `results.by_budget_raw` also carries scalar runtime summaries:
     - `call_time_ratio_mean`
     - `call_effective_time_s_mean`
     - `timeout_rate`
     - `time_floor_rate`
-  - `adjusted_mse` is budget-level scalar only (no per-layer adjusted fields).
+  - `adjusted_mse` remains budget-level scalar (no `adjusted_mse_by_layer` field).
   - `results.by_layer_overall` / `results.by_budget_layer_matrix` now include only MSE-derived layer aggregates.
   - Human reporting layer diagnostics are MSE-only; runtime visuals are budget-level and profile-call-level only.
+
+### 2026-03-01 - Restore original budget semantics as budget-by-depth envelopes
+
+- **Decision:** Define `budget` exactly as in the original MVP: a sampling trial count that induces a depth-wise runtime envelope.
+- **Why:** This aligns participant tuning with the challenge reference implementation and removes ambiguity around budget units.
+- **Implementation impact:**
+  - Scoring computes `time_budget_by_depth_s` via `sampling_baseline_time(budget, width, depth)`.
+  - Timeout/floor is applied per depth index against that envelope with `time_tolerance`.
+  - Runtime-adjusted loss uses depth-wise ratios and then aggregates to budget-level `adjusted_mse`.
+  - Documentation and terminology standardize on **budget-by-depth** (instead of budget-by-layer wording).
