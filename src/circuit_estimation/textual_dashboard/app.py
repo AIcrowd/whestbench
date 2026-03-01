@@ -29,6 +29,8 @@ class DashboardApp(App[None]):
         Binding("5", "tab_data", "Data", show=True),
         Binding("r", "reload_report", "Reload", show=False),
         Binding("?", "toggle_help", "Help", show=False),
+        Binding("escape", "quit", "Quit", show=False),
+        Binding("ctrl+c", "quit", "Quit", show=False),
         Binding("q", "quit", "Quit", show=False),
     ]
 
@@ -98,7 +100,7 @@ class DashboardApp(App[None]):
 
     def _tab_content(self) -> str:
         if self.show_help_overlay:
-            return "Keyboard: 1-5 switch tabs, r reload, q quit, ? help"
+            return "Keyboard: 1-5 switch tabs, r reload, q/esc/Ctrl+C quit, ? help"
         mapping = {
             "summary": render_summary_view,
             "budgets": render_budgets_view,

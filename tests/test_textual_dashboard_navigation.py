@@ -47,3 +47,5 @@ def test_bindings_include_numeric_tab_shortcuts() -> None:
     assert keys["3"] == "tab_layers"
     assert keys["4"] == "tab_performance"
     assert keys["5"] == "tab_data"
+    assert keys["escape"] == "quit"
+    assert keys["ctrl+c"] == "quit"
