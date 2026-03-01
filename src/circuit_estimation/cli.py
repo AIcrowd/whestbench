@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import argparse
-import json
 from typing import Any, Literal, overload
 
 from .estimators import combined_estimator
-from .scoring import ContestParams, score_estimator
+from .reporting import render_agent_report, render_human_report
+from .scoring import ContestParams, score_estimator_report
 
 
 @overload
@@ -19,10 +19,17 @@ def run_default_score(profile: Literal[True]) -> tuple[float, list[dict[str, Any
 
 
 def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[str, Any]]]:
-    """Run the default local score scenario, optionally collecting profile events."""
-    events: list[dict[str, Any]] = []
-    profiler = events.append if profile else None
-    score = score_estimator(
+    """Backward-compatible numeric entrypoint for starter-kit callers."""
+    report = run_default_report(profile=profile, detail="raw")
+    score = float(report["results"]["final_score"])
+    if profile:
+        return score, list(report.get("profile_calls", []))
+    return score
+
+
+def run_default_report(*, profile: bool = False, detail: str = "raw") -> dict[str, Any]:
+    """Run the default local score scenario and return structured report data."""
+    return score_estimator_report(
         combined_estimator,
         n_circuits=10,
         n_samples=10000,
@@ -32,27 +39,38 @@ def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[s
             budgets=[10, 100, 1000, 10000],
             time_tolerance=0.1,
         ),
-        profiler=profiler,
+        profile=profile,
+        detail=detail,
     )
-    if profile:
-        return score, events
-    return score
 
 
 def main(argv: list[str] | None = None) -> int:
     """CLI entrypoint used by ``main.py``."""
     parser = argparse.ArgumentParser(description="Run local circuit-estimator scoring.")
     parser.add_argument(
+        "--mode",
+        choices=("agent", "human"),
+        default="agent",
+        help="Output mode: machine-parseable JSON (agent) or rich human report (human).",
+    )
+    parser.add_argument(
+        "--detail",
+        choices=("raw", "full"),
+        default="raw",
+        help="Report detail level. Use `full` for extra derived metrics.",
+    )
+    parser.add_argument(
         "--profile",
         action="store_true",
-        help="Emit per-layer profiling diagnostics (time, cpu, rss, peak_rss).",
+        help="Emit per-call profiling diagnostics (wall, cpu, rss, peak_rss).",
     )
     args = parser.parse_args(argv)
 
-    if args.profile:
-        score, events = run_default_score(profile=True)
-        print(score)
-        print(json.dumps(events))
+    report = run_default_report(profile=args.profile, detail=args.detail)
+    report["mode"] = args.mode
+    if args.mode == "human":
+        output = render_human_report(report)
     else:
-        print(run_default_score())
+        output = render_agent_report(report)
+    print(output, end="" if output.endswith("\n") else "\n")
     return 0
