@@ -4,6 +4,10 @@ Last updated: 2026-03-01
 
 This file lists unresolved decisions that block a production starter-kit + evaluator pipeline.
 
+## Resolved Decisions
+
+- 2026-03-01: Final starter kit must be explicitly compatible with agent-led exploration workflows (including Claude/Codex/Antigravity-style usage). See `agent-first-starter-kit-requirements.md` for implementation checklist.
+
 ## A. Benchmark and Scoring Spec
 
 1. What is the final participant output contract?
@@ -34,6 +38,11 @@ This file lists unresolved decisions that block a production starter-kit + evalu
    - optimized baseline,
    - optional native-accelerated baseline.
 
+4. What approach classes are explicitly allowed/disallowed?
+   - purely per-instance reasoning,
+   - offline-trained predictors,
+   - hybrid approaches with precomputed artifacts.
+
 ## C. Evaluator Runtime and Infrastructure
 
 1. Should evaluator jobs use SageMaker Training Jobs or Processing Jobs?
@@ -52,6 +61,11 @@ This file lists unresolved decisions that block a production starter-kit + evalu
    - detection of hardware-specific overfitting,
    - randomization/holdout rotation policy,
    - repeated-submission probing limits.
+
+5. What red-teaming protocol is required before public launch?
+   - invite-only cohort size,
+   - number of beta rounds,
+   - promotion criteria from beta to public release.
 
 ## D. Governance, Legal, and Competition Design
 
@@ -72,4 +86,3 @@ When a question above is resolved, append:
 - Decision owner
 - Final decision
 - Implementation impact (files/services/processes)
-

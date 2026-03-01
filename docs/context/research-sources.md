@@ -4,12 +4,17 @@ Last updated: 2026-03-01
 
 ## Local Repository Sources
 
-- `CHALLENGE-CONTEXT.md`
+- `docs/context/*.md` (primary durable context)
 - `README.md`
 - `circuit.py`
 - `estimators.py`
 - `evaluate.py`
 - `main.py`
+
+## Legacy Migration Source (Optional)
+
+- `CHALLENGE-CONTEXT.md` was used as a migration input.
+- Future agents should not assume it exists.
 
 ## External Primary Sources
 
@@ -51,4 +56,3 @@ Last updated: 2026-03-01
 
 - Several AIcrowd pages are challenge-specific and may reflect historical submission modes.
 - Verify final host-side submission contract directly with AIcrowd during implementation.
-

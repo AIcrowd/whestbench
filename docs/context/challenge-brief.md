@@ -8,12 +8,17 @@ The challenge is a theoretical computer science benchmark centered on mechanisti
 
 Participants are expected to estimate expected wire/output values under uniformly random inputs, under explicit runtime constraints, and outperform naive sampling baselines.
 
-Primary proposal reference: `CHALLENGE-CONTEXT.md` (proposal section and email thread).
-
 ## Key People and Roles
 
 - ARC (Jacob Hilton, Paul Christiano): benchmark/problem owners and baseline authors.
 - AIcrowd (Sharada Mohanty + team): challenge operations, infra, participant support, evaluator hardening, and leaderboard ops.
+
+## Proposal Metadata (Migrated)
+
+- Proposal title: Mechanistic Estimation for Boolean Circuits
+- Organization: Alignment Research Center (ARC)
+- Initial proposal submission window: February 2026
+- Reported prize pool target range in proposal discussions: USD 50,000 to USD 100,000
 
 ## Core Intent (From Discussions)
 
@@ -21,6 +26,21 @@ Primary proposal reference: `CHALLENGE-CONTEXT.md` (proposal section and email t
 - Runtime/resource constraints are part of the objective, not just pass/fail gating.
 - The starter kit should be highly accessible while still supporting serious optimization.
 - A private beta / red-team phase is expected before public launch.
+
+## Problem Formulation (Migrated)
+
+- Inputs are randomly generated circuits with width/depth controls.
+- Generator concept discussed:
+  - start with `n` wires,
+  - for each of `L` layers, build new wires from random wire pairs using random 2-input Boolean gates,
+  - target is expectation/probability of output wires under uniform random inputs.
+- Difficulty control is expected primarily through stratification knobs like depth (and potentially other generator variants).
+
+## Example Parameter Regime Discussed
+
+- Example width mentioned: around `n = 1024`.
+- Example depth range mentioned: `L = 1..256`.
+- Target error range discussed in early framing: roughly `1e-3` to `1e-6` MSE depending on regime/budget.
 
 ## Evaluation Philosophy (Current)
 
@@ -30,6 +50,15 @@ Recurring preferences from the thread/transcript:
 - Runtime should be integrated into scoring, likely with a tolerance band (discussion mentions +/-10%).
 - Difficulty should be stratified (notably by depth), avoiding early benchmark saturation.
 - Multiple rounds/phases are plausible, potentially including a later NeurIPS-affiliated phase.
+
+## Runtime/Resource Philosophy (Migrated)
+
+- Compute budgets should be explicit in evaluation.
+- Methods may need to adapt behavior to budget inputs.
+- Discussion considered both:
+  - soft penalties for going out of budget, and
+  - hard constraints at runtime.
+- CPU/memory/resource accounting and participant feedback dashboards were considered important.
 
 ## Operational Expectations Mentioned
 
@@ -56,6 +85,7 @@ Concrete dates mentioned in context docs:
 - A participant-facing starter kit that is easy to run locally.
 - A production evaluator that can safely run potentially adversarial submissions.
 - Clear, reproducible scoring behavior between local and hosted evaluation.
+- The starter kit must be agent-first for participant workflows (Claude/Codex/Antigravity-style exploration support).
 
 ## Non-Goals at Current Stage
 
@@ -63,3 +93,9 @@ Concrete dates mentioned in context docs:
 - No finalized public submission interface contract yet.
 - No finalized decision between all candidate model domains (Boolean circuits vs potential later MLP/RNN variants) for future rounds.
 
+## Where to Find Remaining Detail
+
+- Discussion rationale and trade-offs: `discussion-rationale-summary.md`
+- Concrete technical status of current code: `mvp-technical-snapshot.md`
+- Agent-first starter-kit requirements: `agent-first-starter-kit-requirements.md`
+- Open unresolved decisions: `open-questions.md`

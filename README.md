@@ -6,7 +6,9 @@ If you are iterating on starter-kit/evaluator design, begin with:
 
 - `docs/context/README.md`
 
-This folder contains distilled challenge context, MVP technical notes, infrastructure research, and open questions.
+This folder contains the durable challenge context, MVP technical notes, infrastructure research, and open questions.
+Future agents should treat it as the primary source even if `CHALLENGE-CONTEXT.md` is removed.
+The folder also includes mandatory `agent-first` starter-kit requirements for participant agent workflows.
 
 ## Getting Started
 
@@ -25,6 +27,41 @@ uv run main.py
 ```
 
 That's it. `uv` reads `pyproject.toml`, auto-creates a venv, installs dependencies, and runs the script — no manual setup needed.
+
+## Test Harness
+
+This repository now includes a `pytest`-based test harness with:
+- Core unit/integration checks for `circuit.py`, `estimators.py`, and `evaluate.py`
+- Exhaustive validation checks that compare estimator behavior against exact enumeration on small circuits
+
+### Run the harness
+
+```bash
+# Run only fast checks (default for local iteration)
+./scripts/run-test-harness.sh quick
+
+# Run fast checks + exhaustive checks (recommended before PR/merge)
+./scripts/run-test-harness.sh full
+
+# Run only exhaustive checks
+./scripts/run-test-harness.sh exhaustive
+```
+
+The script uses `uv run --group dev pytest ...` and installs `pytest` from the `dev` dependency group automatically when needed.
+
+---
+
+## Tools
+
+### Circuit Explorer (Interactive UI)
+
+Visual tool for exploring small circuits — see how gate operations, signal statistics, and estimator accuracy evolve with depth.
+
+```bash
+cd tools/circuit-explorer && npm install && npm run dev
+```
+
+See [`tools/circuit-explorer/README.md`](tools/circuit-explorer/README.md) for details.
 
 ---
 

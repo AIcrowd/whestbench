@@ -6,3 +6,8 @@ dependencies = [
     "numpy",
     "tqdm",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2.0",
+]
