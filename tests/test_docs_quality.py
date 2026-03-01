@@ -39,8 +39,16 @@ def test_core_modules_have_descriptive_module_docstrings() -> None:
 
 
 def test_critical_public_apis_have_docstrings() -> None:
-    from circuit_estimation import domain, generation, simulation
-    from circuit_estimation import estimators, scoring, reporting, cli, protocol
+    from circuit_estimation import (
+        cli,
+        domain,
+        estimators,
+        generation,
+        protocol,
+        reporting,
+        scoring,
+        simulation,
+    )
 
     required = [
         domain.Layer.identity,

@@ -22,6 +22,7 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     _plotext = None
 
+
 def render_agent_report(report: dict[str, Any]) -> str:
     """Return stable pretty JSON for machine parsing."""
     return f"{json.dumps(report, indent=2)}\n"
@@ -253,7 +254,9 @@ def _render_profile_section(console: Console, report: dict[str, Any]) -> None:
     summary = Table(box=box.SIMPLE_HEAVY, show_header=False)
     summary.add_column("field", style="bold bright_white")
     summary.add_column("value")
-    summary.add_row(_label_with_code("Estimator Calls", "calls", "bold bright_white"), str(len(profile_calls)))
+    summary.add_row(
+        _label_with_code("Estimator Calls", "calls", "bold bright_white"), str(len(profile_calls))
+    )
     summary.add_row(
         _label_with_code("Mean Wall Time (s)", "wall_time_s", "bold bright_white"),
         _fmt_float(fmean(wall) if wall else 0.0, 6),
