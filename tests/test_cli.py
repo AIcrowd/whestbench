@@ -58,12 +58,14 @@ def test_default_mode_outputs_human_report(
     observed: dict[str, Any] = {}
     render_observed: dict[str, Any] = {}
 
-    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+    def fake_score_submission_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
         observed["profile"] = kwargs.get("profile")
         observed["detail"] = kwargs.get("detail")
+        entrypoint = _args[1]
+        observed["entrypoint"] = str(entrypoint.file_path).replace("\\", "/")
         return _sample_report(profile_enabled=False, detail=str(kwargs.get("detail", "raw")))
 
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "score_submission_report", fake_score_submission_report)
     monkeypatch.setattr(
         cli,
         "render_agent_report",
@@ -94,7 +96,9 @@ def test_default_mode_outputs_human_report(
     assert "Run Context" in captured.out
     assert "Hardware & Runtime" in captured.out
     assert "Use --agent-mode" in captured.out
-    assert observed == {"profile": False, "detail": "raw"}
+    assert observed["profile"] is False
+    assert observed["detail"] == "raw"
+    assert observed["entrypoint"].endswith("/examples/estimators/combined_estimator.py")
     assert render_observed == {"show_diagnostic_plots": False}
 
 
@@ -103,14 +107,14 @@ def test_agent_mode_stdout_is_json_only(
 ) -> None:
     observed: dict[str, Any] = {}
 
-    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+    def fake_score_submission_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
         observed["profile"] = kwargs.get("profile")
         observed["detail"] = kwargs.get("detail")
         return _sample_report(
             profile_enabled=bool(kwargs.get("profile")), detail=str(kwargs.get("detail", "raw"))
         )
 
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "score_submission_report", fake_score_submission_report)
     monkeypatch.setattr(
         cli,
         "render_human_report",
@@ -139,7 +143,7 @@ def test_show_diagnostic_plots_flag_enables_human_plots(
 ) -> None:
     observed: dict[str, Any] = {}
 
-    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+    def fake_score_submission_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
         return _sample_report(
             profile_enabled=bool(kwargs.get("profile")), detail=str(kwargs.get("detail", "raw"))
         )
@@ -150,7 +154,7 @@ def test_show_diagnostic_plots_flag_enables_human_plots(
         observed["show_diagnostic_plots"] = show_diagnostic_plots
         return "human\n"
 
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "score_submission_report", fake_score_submission_report)
     monkeypatch.setattr(cli, "render_human_report", fake_render_human_report)
     monkeypatch.setattr(
         cli,
