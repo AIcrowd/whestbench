@@ -1152,6 +1152,7 @@ body {
   padding: 14px 20px;
   max-width: 720px;
   animation: narrative-enter 0.25s ease-out;
+  overflow: visible;
 }
 
 @keyframes narrative-enter {
@@ -1193,7 +1194,7 @@ body {
 .math-term-tip {
   display: none;
   position: absolute;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
   width: 300px;
@@ -1214,11 +1215,11 @@ body {
 .math-term-tip::after {
   content: "";
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
-  border-top-color: var(--gray-900);
+  border-bottom-color: var(--gray-900);
 }
 
 .math-term-tip strong {
