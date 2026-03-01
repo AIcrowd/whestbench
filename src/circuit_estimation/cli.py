@@ -11,7 +11,6 @@ from typing import Any, Literal, overload
 import numpy as np
 
 from .domain import Circuit, Layer
-from .estimators import combined_estimator
 from .loader import load_estimator_from_path
 from .packaging import package_submission
 from .reporting import render_agent_report, render_human_report
@@ -22,7 +21,7 @@ from .runner import (
     RunnerError,
     SubprocessRunner,
 )
-from .scoring import ContestParams, score_estimator_report, score_submission_report
+from .scoring import ContestParams, score_submission_report
 from .sdk import SetupContext
 
 
@@ -58,11 +57,22 @@ def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[s
 
 def run_default_report(*, profile: bool = False, detail: str = "raw") -> dict[str, Any]:
     """Run the default local evaluator scenario and return report payload."""
-    return score_estimator_report(
-        combined_estimator,
+    repo_root = Path(__file__).resolve().parents[2]
+    entrypoint = EstimatorEntrypoint(
+        file_path=repo_root / "examples" / "estimators" / "combined_estimator.py"
+    )
+    return score_submission_report(
+        InProcessRunner(),
+        entrypoint,
         n_circuits=10,
         n_samples=10000,
         contest_params=_default_contest_params(),
+        limits=ResourceLimits(
+            setup_timeout_s=5.0,
+            predict_timeout_s=30.0,
+            memory_limit_mb=4096,
+            cpu_time_limit_s=None,
+        ),
         profile=profile,
         detail=detail,
     )
