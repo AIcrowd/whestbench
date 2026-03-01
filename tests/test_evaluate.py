@@ -78,9 +78,7 @@ def test_score_estimator_applies_timeout_zeroing(monkeypatch: pytest.MonkeyPatch
     assert score == pytest.approx(1.2)
 
 
-def test_streaming_predict_uses_per_depth_cumulative_timing(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_score_estimator_applies_timeout_zeroing_by_depth(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         scoring, "random_circuit", lambda n, d: _constant_circuit(n=n, d=d, value=1.0)
     )
@@ -90,26 +88,11 @@ def test_streaming_predict_uses_per_depth_cumulative_timing(
     monkeypatch.setattr(scoring, "_rss_bytes", lambda: 0)
     monkeypatch.setattr(scoring, "_peak_rss_bytes", lambda: 0)
 
-    wall_values = [0.0, 0.0, 1.5, 1.6, 2.0]
-    wall_last = wall_values[-1]
-
-    def _fake_wall() -> float:
-        nonlocal wall_values, wall_last
-        if wall_values:
-            wall_last = wall_values.pop(0)
-        return wall_last
-
-    cpu_values = [0.0, 0.0]
-    cpu_last = cpu_values[-1]
-
-    def _fake_cpu() -> float:
-        nonlocal cpu_values, cpu_last
-        if cpu_values:
-            cpu_last = cpu_values.pop(0)
-        return cpu_last
-
-    monkeypatch.setattr(scoring.time, "time", _fake_wall)
-    monkeypatch.setattr(scoring.time, "process_time", _fake_cpu)
+    # run_start_wall, circuit start, depth0 elapsed, depth1 elapsed, run_duration-end
+    wall_times = iter([0.0, 0.0, 1.5, 2.0, 2.5])
+    cpu_times = iter([0.0, 0.0])
+    monkeypatch.setattr(scoring.time, "time", lambda: next(wall_times))
+    monkeypatch.setattr(scoring.time, "process_time", lambda: next(cpu_times))
 
     params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
 
@@ -119,8 +102,8 @@ def test_streaming_predict_uses_per_depth_cumulative_timing(
 
     score = score_estimator(estimator, n_circuits=1, n_samples=4, contest_params=params)
 
-    # depth 0 timed out: mse=1, ratio=1.5
-    # depth 1 not timed out: mse=0, ratio=max(1.6,1.8)/2.0=0.9
+    # Depth 0 times out and is zeroed; depth 1 remains valid.
+    # adjusted_mse_by_depth = [1.0 * 1.5, 0.0 * 0.9] -> mean = 0.75.
     assert score == pytest.approx(0.75)
 
 
