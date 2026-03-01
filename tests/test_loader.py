@@ -1,0 +1,79 @@
+from pathlib import Path
+from textwrap import dedent
+
+import pytest
+
+from circuit_estimation.loader import load_estimator_from_path
+
+
+def _write_estimator_module(tmp_path: Path, source: str) -> Path:
+    module_path = tmp_path / "submission.py"
+    module_path.write_text(dedent(source), encoding="utf-8")
+    return module_path
+
+
+def test_loader_prefers_default_estimator_class_name(tmp_path: Path) -> None:
+    module_path = _write_estimator_module(
+        tmp_path,
+        """
+        import numpy as np
+        from circuit_estimation import BaseEstimator
+
+        class Alternative(BaseEstimator):
+            def predict(self, circuit: object, budget: int) -> np.ndarray:
+                return np.zeros((1, 1), dtype=np.float32)
+
+        class Estimator(BaseEstimator):
+            def predict(self, circuit: object, budget: int) -> np.ndarray:
+                return np.ones((1, 1), dtype=np.float32)
+        """,
+    )
+
+    estimator, metadata = load_estimator_from_path(module_path)
+
+    assert estimator.__class__.__name__ == "Estimator"
+    assert metadata.class_name == "Estimator"
+
+
+def test_loader_allows_explicit_class_override(tmp_path: Path) -> None:
+    module_path = _write_estimator_module(
+        tmp_path,
+        """
+        import numpy as np
+        from circuit_estimation import BaseEstimator
+
+        class Estimator(BaseEstimator):
+            def predict(self, circuit: object, budget: int) -> np.ndarray:
+                return np.ones((1, 1), dtype=np.float32)
+
+        class CustomEstimator(BaseEstimator):
+            def predict(self, circuit: object, budget: int) -> np.ndarray:
+                return np.full((1, 1), 2.0, dtype=np.float32)
+        """,
+    )
+
+    estimator, metadata = load_estimator_from_path(module_path, class_name="CustomEstimator")
+
+    assert estimator.__class__.__name__ == "CustomEstimator"
+    assert metadata.class_name == "CustomEstimator"
+
+
+def test_loader_errors_on_ambiguous_multiple_classes(tmp_path: Path) -> None:
+    module_path = _write_estimator_module(
+        tmp_path,
+        """
+        import numpy as np
+        from circuit_estimation import BaseEstimator
+
+        class AlphaEstimator(BaseEstimator):
+            def predict(self, circuit: object, budget: int) -> np.ndarray:
+                return np.zeros((1, 1), dtype=np.float32)
+
+        class BetaEstimator(BaseEstimator):
+            def predict(self, circuit: object, budget: int) -> np.ndarray:
+                return np.zeros((1, 1), dtype=np.float32)
+        """,
+    )
+
+    with pytest.raises(ValueError, match="Ambiguous estimator classes"):
+        load_estimator_from_path(module_path)
