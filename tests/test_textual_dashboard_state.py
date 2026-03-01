@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from circuit_estimation.textual_dashboard.state import build_dashboard_state
 
 
@@ -11,6 +13,14 @@ def _sample_report(*, include_profile: bool = True) -> dict[str, Any]:
             "run_started_at_utc": "2026-03-01T00:00:00+00:00",
             "run_finished_at_utc": "2026-03-01T00:00:01+00:00",
             "run_duration_s": 1.0,
+            "host": {
+                "hostname": "example-host",
+                "os": "Darwin",
+                "os_release": "25.3.0",
+                "platform": "macOS-26.3-arm64-arm-64bit-Mach-O",
+                "machine": "arm64",
+                "python_version": "3.13.7",
+            },
         },
         "run_config": {
             "n_circuits": 2,
@@ -70,3 +80,25 @@ def test_state_profile_flag_tracks_profile_presence() -> None:
     state = build_dashboard_state(_sample_report(include_profile=False))
 
     assert state.derived.has_profile is False
+
+
+def test_state_exposes_host_metadata_for_hardware_pane() -> None:
+    state = build_dashboard_state(_sample_report())
+
+    assert state.derived.host_hostname == "example-host"
+    assert state.derived.host_os == "Darwin"
+    assert state.derived.host_release == "25.3.0"
+    assert state.derived.host_platform == "macOS-26.3-arm64-arm-64bit-Mach-O"
+    assert state.derived.host_machine == "arm64"
+    assert state.derived.host_python_version == "3.13.7"
+
+
+def test_state_derives_layer_summary_stats() -> None:
+    state = build_dashboard_state(_sample_report())
+
+    assert state.derived.layer_count == 3
+    assert state.derived.layer_mse_min == pytest.approx(0.075)
+    assert state.derived.layer_mse_max == pytest.approx(0.165)
+    assert state.derived.layer_mse_mean == pytest.approx(0.12)
+    assert state.derived.layer_mse_p05 == pytest.approx(0.075)
+    assert state.derived.layer_mse_p95 == pytest.approx(0.165)

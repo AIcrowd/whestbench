@@ -26,6 +26,18 @@ class DashboardDerivedState:
     profile_cpu_s: list[float]
     profile_rss_mb: list[float]
     profile_peak_rss_mb: list[float]
+    host_hostname: str
+    host_os: str
+    host_release: str
+    host_platform: str
+    host_machine: str
+    host_python_version: str
+    layer_count: int
+    layer_mse_min: float
+    layer_mse_max: float
+    layer_mse_mean: float
+    layer_mse_p05: float
+    layer_mse_p95: float
 
 
 @dataclass(slots=True)
@@ -69,6 +81,9 @@ def build_dashboard_state(report: dict[str, Any]) -> DashboardState:
     profile_peak_rss_mb = [
         _as_float(entry.get("peak_rss_bytes", 0.0)) / (1024 * 1024) for entry in profile_entries
     ]
+    host = report.get("run_meta", {}).get("host", {})
+    host_meta = host if isinstance(host, dict) else {}
+    layer_count = len(layer_mse_mean_by_index)
 
     derived = DashboardDerivedState(
         final_score=_as_float(results.get("final_score", 0.0)),
@@ -86,6 +101,18 @@ def build_dashboard_state(report: dict[str, Any]) -> DashboardState:
         profile_cpu_s=profile_cpu_s,
         profile_rss_mb=profile_rss_mb,
         profile_peak_rss_mb=profile_peak_rss_mb,
+        host_hostname=str(host_meta.get("hostname", "n/a")),
+        host_os=str(host_meta.get("os", "n/a")),
+        host_release=str(host_meta.get("os_release", "n/a")),
+        host_platform=str(host_meta.get("platform", "n/a")),
+        host_machine=str(host_meta.get("machine", "n/a")),
+        host_python_version=str(host_meta.get("python_version", "n/a")),
+        layer_count=layer_count,
+        layer_mse_min=min(layer_mse_mean_by_index) if layer_mse_mean_by_index else 0.0,
+        layer_mse_max=max(layer_mse_mean_by_index) if layer_mse_mean_by_index else 0.0,
+        layer_mse_mean=fmean(layer_mse_mean_by_index) if layer_mse_mean_by_index else 0.0,
+        layer_mse_p05=_percentile(layer_mse_mean_by_index, 0.05),
+        layer_mse_p95=_percentile(layer_mse_mean_by_index, 0.95),
     )
     return DashboardState(raw_report=report, derived=derived)
 
@@ -97,3 +124,12 @@ def _as_float(value: Any) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _percentile(values: list[float], q: float) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    idx = int(round((len(ordered) - 1) * q))
+    idx = max(0, min(idx, len(ordered) - 1))
+    return ordered[idx]
