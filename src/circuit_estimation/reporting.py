@@ -13,6 +13,12 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
+from rich.text import Text
+
+try:
+    import plotext as _plotext  # pyright: ignore[reportMissingModuleSource]
+except ImportError:  # pragma: no cover - optional dependency
+    _plotext = None
 
 _SPARK_CHARS = " .:-=+*#%@"
 
@@ -26,7 +32,14 @@ def render_human_report(report: dict[str, Any]) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
     buffer = io.StringIO()
     console = Console(record=True, file=buffer)
-    console.print(Panel("Circuit Estimation Report", expand=False))
+    console.print(Panel("Circuit Estimation Report", expand=False, border_style="cyan"))
+    console.print(
+        Panel(
+            "Use --agent-mode for JSON output when calling from automated agents or UIs.",
+            title="Agent Tip",
+            border_style="green",
+        )
+    )
     _render_run_context(console, report)
     _render_score_summary(console, report)
     _render_budget_breakdown(console, report)
@@ -89,6 +102,7 @@ def _render_budget_breakdown(console: Console, report: dict[str, Any]) -> None:
             _fmt_float(fmean(effective) if effective else 0.0, 6),
         )
     console.print(table)
+    _render_budget_frontier_plot(console, by_budget)
 
 
 def _render_layer_diagnostics(console: Console, report: dict[str, Any]) -> None:
@@ -121,6 +135,7 @@ def _render_layer_diagnostics(console: Console, report: dict[str, Any]) -> None:
             _fmt_float(fmean(values) if values else 0.0, 6),
         )
     console.print(table)
+    _render_layer_trend_plot(console, avg_mse, avg_ratio, avg_adj)
 
 
 def _render_profile(console: Console, report: dict[str, Any]) -> None:
@@ -166,6 +181,140 @@ def _render_profile(console: Console, report: dict[str, Any]) -> None:
     trend.add_row("rss_bytes", _sparkline(rss))
     trend.add_row("peak_rss_bytes", _sparkline(peak))
     console.print(trend)
+    _render_profile_runtime_plot(console, wall, cpu, rss, peak)
+
+
+def _render_budget_frontier_plot(console: Console, by_budget: Sequence[dict[str, Any]]) -> None:
+    budgets = [_as_float(entry.get("budget", 0.0)) for entry in by_budget]
+    scores = [_as_float(entry.get("score", 0.0)) for entry in by_budget]
+    mean_mse = [
+        fmean(_to_float_list(entry.get("mse_by_layer", [])))
+        if _to_float_list(entry.get("mse_by_layer", []))
+        else 0.0
+        for entry in by_budget
+    ]
+    mean_ratio = [
+        fmean(_to_float_list(entry.get("time_ratio_by_layer", [])))
+        if _to_float_list(entry.get("time_ratio_by_layer", []))
+        else 0.0
+        for entry in by_budget
+    ]
+    _render_plot_panel(
+        console=console,
+        title="Budget Frontier Plot",
+        x=budgets,
+        series=[
+            ("score", scores),
+            ("avg_mse", mean_mse),
+            ("avg_time_ratio", mean_ratio),
+        ],
+        x_label="budget",
+        y_label="value",
+    )
+
+
+def _render_layer_trend_plot(
+    console: Console,
+    avg_mse: Sequence[float],
+    avg_ratio: Sequence[float],
+    avg_adj: Sequence[float],
+) -> None:
+    x = list(range(len(avg_mse)))
+    _render_plot_panel(
+        console=console,
+        title="Layer Trend Plot",
+        x=x,
+        series=[
+            ("mse", avg_mse),
+            ("time_ratio", avg_ratio),
+            ("adjusted_mse", avg_adj),
+        ],
+        x_label="layer",
+        y_label="value",
+    )
+
+
+def _render_profile_runtime_plot(
+    console: Console,
+    wall: Sequence[float],
+    cpu: Sequence[float],
+    rss: Sequence[float],
+    peak: Sequence[float],
+) -> None:
+    x = list(range(len(wall)))
+    _render_plot_panel(
+        console=console,
+        title="Profile Runtime Plot",
+        x=x,
+        series=[
+            ("wall_time_s", wall),
+            ("cpu_time_s", cpu),
+            ("rss_bytes", rss),
+            ("peak_rss_bytes", peak),
+        ],
+        x_label="call_index",
+        y_label="metric_value",
+    )
+
+
+def _render_plot_panel(
+    *,
+    console: Console,
+    title: str,
+    x: Sequence[float],
+    series: Sequence[tuple[str, Sequence[float]]],
+    x_label: str,
+    y_label: str,
+) -> None:
+    chart = _build_plotext_line_chart(x=x, series=series, x_label=x_label, y_label=y_label)
+    if chart is None:
+        body: str | Text = (
+            "Plot rendering unavailable (missing optional dependency `plotext` or unsupported terminal)."
+        )
+    else:
+        body = Text.from_ansi(chart)
+    console.print(Panel(body, title=title, box=box.ROUNDED))
+
+
+def _build_plotext_line_chart(
+    *,
+    x: Sequence[float],
+    series: Sequence[tuple[str, Sequence[float]]],
+    x_label: str,
+    y_label: str,
+) -> str | None:
+    if _plotext is None or not x:
+        return None
+
+    valid_series: list[tuple[str, Sequence[float]]] = [
+        (label, values) for label, values in series if len(values) == len(x) and len(values) > 0
+    ]
+    if not valid_series:
+        return None
+
+    try:
+        _plotext.clear_data()
+        _plotext.clear_figure()
+        _plotext.theme("pro")
+        width = max(72, min(128, 24 + len(x) * 2))
+        _plotext.plotsize(width, 14)
+        for label, values in valid_series:
+            _plotext.plot(x, values, label=label)
+        _plotext.xlabel(x_label)
+        _plotext.ylabel(y_label)
+        _plotext.grid(True, True)
+        legend_fn = getattr(_plotext, "legend", None)
+        if callable(legend_fn):
+            legend_fn(True)
+        return str(_plotext.build())
+    except Exception:  # pragma: no cover - terminal backends vary by environment
+        return None
+    finally:
+        try:
+            _plotext.clear_data()
+            _plotext.clear_figure()
+        except Exception:  # pragma: no cover - best-effort cleanup
+            pass
 
 
 def _budget_rows(report: dict[str, Any]) -> list[dict[str, Any]]:

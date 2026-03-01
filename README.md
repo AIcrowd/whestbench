@@ -26,29 +26,29 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv run main.py
 ```
 
-That's it. `uv` reads `pyproject.toml`, auto-creates a venv, installs dependencies, and runs the script with **agent mode** output by default.
+That's it. `uv` reads `pyproject.toml`, auto-creates a venv, installs dependencies, and runs the script with the **human dashboard** output by default.
 
 ### CLI Output Modes
 
-- `mode agent` (default): pretty JSON only, machine-parseable.
-- `mode human`: Rich terminal report with multi-section summaries and terminal trend plots.
+- default: Rich human dashboard with tables and terminal plots.
+- `--agent-mode`: pretty JSON only, machine-parseable (recommended for automated agents/UIs).
 - `detail raw` (default): raw per-budget/per-layer data only.
 - `detail full`: includes derived aggregates (`by_budget_summary`, `by_layer_overall`, `by_budget_layer_matrix`) and `profile_summary` when profiling is enabled.
 
 Examples:
 
 ```bash
-# default: mode agent + detail raw
+# default: human dashboard + detail raw
 uv run main.py
 
-# rich human-readable report
-uv run main.py --mode human
+# machine-parseable JSON for agents
+uv run main.py --agent-mode
 
 # include call-level profiling metrics
 uv run main.py --profile
 
 # rich report + full computed aggregates + profiling
-uv run main.py --mode human --detail full --profile
+uv run main.py --detail full --profile
 ```
 
 Profiling is call-level (per estimator invocation on one `(circuit, budget)` pair) and records `wall_time_s`, `cpu_time_s`, `rss_bytes`, and `peak_rss_bytes`.
