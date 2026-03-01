@@ -81,7 +81,7 @@ def test_example_estimators_have_tutorial_walkthrough_markers() -> None:
     ]
     text = "\n".join(path.read_text(encoding="utf-8") for path in files)
     required_phrases = [
-        "first-moment",
+        "mean propagation",
         "pairwise moment closure",
         "covariance",
         "budget",
