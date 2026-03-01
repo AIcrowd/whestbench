@@ -71,11 +71,57 @@ def test_score_estimator_applies_timeout_zeroing(monkeypatch: pytest.MonkeyPatch
     params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
 
     def estimator(_circuit, _budget):
-        return np.array([[0.0, 0.0]], dtype=np.float32)
+        yield np.array([0.0, 0.0], dtype=np.float32)
 
     score = score_estimator(estimator, n_circuits=2, n_samples=4, contest_params=params)
 
     assert score == pytest.approx(1.2)
+
+
+def test_streaming_predict_uses_per_depth_cumulative_timing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        scoring, "random_circuit", lambda n, d: _constant_circuit(n=n, d=d, value=1.0)
+    )
+    monkeypatch.setattr(
+        scoring, "sampling_baseline_time", lambda n_samples, width, depth: [1.0, 2.0]
+    )
+    monkeypatch.setattr(scoring, "_rss_bytes", lambda: 0)
+    monkeypatch.setattr(scoring, "_peak_rss_bytes", lambda: 0)
+
+    wall_values = [0.0, 0.0, 1.5, 1.6, 2.0]
+    wall_last = wall_values[-1]
+
+    def _fake_wall() -> float:
+        nonlocal wall_values, wall_last
+        if wall_values:
+            wall_last = wall_values.pop(0)
+        return wall_last
+
+    cpu_values = [0.0, 0.0]
+    cpu_last = cpu_values[-1]
+
+    def _fake_cpu() -> float:
+        nonlocal cpu_values, cpu_last
+        if cpu_values:
+            cpu_last = cpu_values.pop(0)
+        return cpu_last
+
+    monkeypatch.setattr(scoring.time, "time", _fake_wall)
+    monkeypatch.setattr(scoring.time, "process_time", _fake_cpu)
+
+    params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
+
+    def estimator(_circuit, _budget):
+        yield np.array([1.0, 1.0], dtype=np.float32)
+        yield np.array([1.0, 1.0], dtype=np.float32)
+
+    score = score_estimator(estimator, n_circuits=1, n_samples=4, contest_params=params)
+
+    # depth 0 timed out: mse=1, ratio=1.5
+    # depth 1 not timed out: mse=0, ratio=max(1.6,1.8)/2.0=0.9
+    assert score == pytest.approx(0.75)
 
 
 def test_score_estimator_applies_minimum_time_floor(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -96,7 +142,7 @@ def test_score_estimator_applies_minimum_time_floor(monkeypatch: pytest.MonkeyPa
     params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
 
     def estimator(_circuit, _budget):
-        return np.array([[0.0, 0.0]], dtype=np.float32)
+        yield np.array([0.0, 0.0], dtype=np.float32)
 
     score = score_estimator(estimator, n_circuits=3, n_samples=8, contest_params=params)
 

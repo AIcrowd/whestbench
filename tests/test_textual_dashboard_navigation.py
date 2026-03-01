@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from circuit_estimation.textual_dashboard.app import DashboardApp
+from textual.binding import Binding
 
 
 def _sample_report() -> dict[str, Any]:
@@ -37,7 +38,13 @@ def test_tab_actions_switch_active_tab() -> None:
 
 
 def test_bindings_include_numeric_tab_shortcuts() -> None:
-    keys = {binding.key: binding.action for binding in DashboardApp.BINDINGS}
+    keys: dict[str, str] = {}
+    for binding in DashboardApp.BINDINGS:
+        if isinstance(binding, tuple) and len(binding) >= 2:
+            keys[str(binding[0])] = str(binding[1])
+            continue
+        normalized = cast(Binding, binding)
+        keys[str(normalized.key)] = str(normalized.action)
 
     assert keys["1"] == "tab_summary"
     assert keys["2"] == "tab_budgets"

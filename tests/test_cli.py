@@ -165,3 +165,80 @@ def test_show_diagnostic_plots_flag_enables_human_plots(
     assert captured.err == ""
     assert captured.out == "human\n"
     assert observed == {"show_diagnostic_plots": True}
+
+
+def test_human_mode_surfaces_stream_contract_errors_readably(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_score_estimator_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise ValueError("Estimator emitted more than max_depth rows.")
+
+    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(
+        cli,
+        "render_human_report",
+        lambda *_args, **_kwargs: pytest.fail("human renderer should not be called on failure"),
+    )
+    monkeypatch.setattr(
+        cli,
+        "render_agent_report",
+        lambda *_args, **_kwargs: pytest.fail("agent renderer should not be called on failure"),
+    )
+
+    exit_code = cli.main([])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Error [scoring:ESTIMATOR_STREAM_TOO_MANY_ROWS]" in captured.out
+    assert "Estimator emitted more than max_depth rows." in captured.out
+    assert "Use --debug to include a traceback." in captured.out
+    assert "Traceback" not in captured.out
+    assert captured.err == ""
+
+
+def test_agent_mode_surfaces_stream_contract_errors_as_json(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_score_estimator_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise ValueError("Estimator row at depth 0 must have shape (4,), got (1,).")
+
+    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(
+        cli,
+        "render_human_report",
+        lambda *_args, **_kwargs: pytest.fail("human renderer should not be called on failure"),
+    )
+    monkeypatch.setattr(
+        cli,
+        "render_agent_report",
+        lambda *_args, **_kwargs: pytest.fail("agent renderer should not be called on failure"),
+    )
+
+    exit_code = cli.main(["--agent-mode"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert captured.err == ""
+    payload = json.loads(captured.out)
+    assert payload["ok"] is False
+    assert payload["error"]["stage"] == "scoring"
+    assert payload["error"]["code"] == "ESTIMATOR_STREAM_BAD_ROW_SHAPE"
+    assert "shape (4,)" in payload["error"]["message"]
+
+
+def test_agent_mode_debug_includes_traceback_field(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_score_estimator_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+
+    exit_code = cli.main(["--agent-mode", "--debug"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert captured.err == ""
+    payload = json.loads(captured.out)
+    assert payload["error"]["code"] == "SCORING_RUNTIME_ERROR"
+    assert "RuntimeError: boom" in payload["error"]["traceback"]

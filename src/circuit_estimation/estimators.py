@@ -11,13 +11,15 @@ This module provides two complementary approaches:
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+
 import numpy as np
 from numpy.typing import NDArray
 
 from .domain import Circuit
 
 
-def mean_propagation(circuit: Circuit) -> NDArray[np.float32]:
+def mean_propagation(circuit: Circuit) -> Iterator[NDArray[np.float32]]:
     """Run first-moment propagation through all layers.
 
     This approximation only tracks ``E[x]`` for each wire and substitutes
@@ -25,8 +27,7 @@ def mean_propagation(circuit: Circuit) -> NDArray[np.float32]:
     useful at low budget where covariance tracking is too expensive.
     """
     x_mean: NDArray[np.float32] = np.zeros(circuit.n, dtype=np.float32)
-    outputs = np.zeros((circuit.d, circuit.n), dtype=np.float32)
-    for i, layer in enumerate(circuit.gates):
+    for layer in circuit.gates:
         # Tutorial note: this is the direct layer equation with random wires
         # replaced by their current means.
         first_mean = np.take(x_mean, layer.first)
@@ -37,8 +38,7 @@ def mean_propagation(circuit: Circuit) -> NDArray[np.float32]:
             + layer.const
             + layer.product_coeff * first_mean * second_mean
         ).astype(np.float32)
-        outputs[i] = x_mean
-    return outputs
+        yield x_mean
 
 
 def one_v_two_covariance(
@@ -107,7 +107,7 @@ def clip(mean: NDArray[np.float32], cov: NDArray[np.float32]) -> None:
     np.clip(cov, -max_cov, max_cov, out=cov)
 
 
-def covariance_propagation(circuit: Circuit) -> NDArray[np.float32]:
+def covariance_propagation(circuit: Circuit) -> Iterator[NDArray[np.float32]]:
     """Run mean+covariance propagation using pairwise closure approximations.
 
     Walkthrough:
@@ -123,9 +123,8 @@ def covariance_propagation(circuit: Circuit) -> NDArray[np.float32]:
     n = circuit.n
     x_mean: NDArray[np.float32] = np.zeros(n, dtype=np.float32)
     x_cov: NDArray[np.float32] = np.eye(n, dtype=np.float32)
-    outputs = np.zeros((circuit.d, n), dtype=np.float32)
 
-    for i, layer in enumerate(circuit.gates):
+    for layer in circuit.gates:
         first_mean = x_mean[layer.first]
         second_mean = x_mean[layer.second]
         pair_cov = x_cov[layer.first, layer.second]
@@ -177,12 +176,10 @@ def covariance_propagation(circuit: Circuit) -> NDArray[np.float32]:
         # Keep moments feasible for signed wire variables before next step.
         clip(new_mean, new_cov)
         x_mean, x_cov = new_mean, new_cov
-        outputs[i] = x_mean
-
-    return outputs
+        yield x_mean
 
 
-def combined_estimator(circuit: Circuit, budget: int) -> NDArray[np.float32]:
+def combined_estimator(circuit: Circuit, budget: int) -> Iterator[NDArray[np.float32]]:
     """Dispatch estimator mode by budget.
 
     Heuristic:
@@ -191,5 +188,6 @@ def combined_estimator(circuit: Circuit, budget: int) -> NDArray[np.float32]:
       the extra ``O(n^2)`` state updates.
     """
     if budget >= 30 * circuit.n:
-        return covariance_propagation(circuit)
-    return mean_propagation(circuit)
+        yield from covariance_propagation(circuit)
+        return
+    yield from mean_propagation(circuit)
