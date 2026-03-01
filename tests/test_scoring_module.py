@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from circuit_estimation.domain import Circuit, Layer
-from circuit_estimation.scoring import ContestParams, score_estimator
+from circuit_estimation.scoring import ContestParams, score_estimator, score_estimator_report
 
 
 def _constant_circuit(n: int, d: int, value: float = 1.0) -> Circuit:
@@ -83,7 +83,17 @@ def test_score_estimator_profile_hook_collects_runtime_cpu_and_memory() -> None:
 
     assert collected
     last = collected[-1]
-    assert {"wall_time_s", "cpu_time_s", "rss_bytes", "peak_rss_bytes"} <= set(last.keys())
+    assert {
+        "budget",
+        "circuit_index",
+        "wire_count",
+        "layer_count",
+        "wall_time_s",
+        "cpu_time_s",
+        "rss_bytes",
+        "peak_rss_bytes",
+    } <= set(last.keys())
+    assert "depth_index" not in last
 
 
 def test_score_estimator_raises_when_estimator_stops_early() -> None:
@@ -102,3 +112,34 @@ def test_score_estimator_raises_when_estimator_stops_early() -> None:
             contest_params=params,
             circuits=[circuit],
         )
+
+
+def test_score_estimator_report_collects_one_profile_call_per_circuit_budget() -> None:
+    params = ContestParams(width=2, max_depth=2, budgets=[10, 100], time_tolerance=0.1)
+    circuits = [_constant_circuit(n=2, d=2, value=1.0) for _ in range(3)]
+
+    def estimator(_circuit: Circuit, _budget: int) -> np.ndarray:
+        return np.ones((2, 2), dtype=np.float32)
+
+    report = score_estimator_report(
+        estimator,
+        n_circuits=3,
+        n_samples=4,
+        contest_params=params,
+        circuits=circuits,
+        profile=True,
+    )
+
+    profile_calls = report["profile_calls"]
+    assert len(profile_calls) == len(circuits) * len(params.budgets)
+    sample = profile_calls[0]
+    assert {
+        "budget",
+        "circuit_index",
+        "wire_count",
+        "layer_count",
+        "wall_time_s",
+        "cpu_time_s",
+        "rss_bytes",
+        "peak_rss_bytes",
+    } <= set(sample.keys())
