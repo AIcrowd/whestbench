@@ -59,6 +59,7 @@ def render_human_report(report: dict[str, Any]) -> str:
 
 
 def _run_context_panel(report: dict[str, Any]) -> Panel:
+    """Build the run-context panel (timestamps, config, host metadata)."""
     run_meta = report.get("run_meta", {})
     run_config = report.get("run_config", {})
     host_meta = run_meta.get("host", {}) if isinstance(run_meta.get("host"), dict) else {}
@@ -97,6 +98,7 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
 
 
 def _score_summary_panel(report: dict[str, Any]) -> Panel:
+    """Build top-level score summary panel with key aggregates."""
     results = report.get("results", {})
     final_score = _as_float(results.get("final_score", 0.0))
     by_budget = _budget_rows(report)
@@ -133,6 +135,7 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
 
 
 def _render_budget_section(console: Console, report: dict[str, Any]) -> None:
+    """Render per-budget table and frontier/runtime plots."""
     console.print(Rule("Budget Breakdown", style="bright_cyan"))
     by_budget = _budget_rows(report)
     best_score = min((_as_float(entry.get("score", 0.0)) for entry in by_budget), default=0.0)
@@ -174,6 +177,7 @@ def _render_budget_section(console: Console, report: dict[str, Any]) -> None:
 
 
 def _render_layer_section(console: Console, report: dict[str, Any]) -> None:
+    """Render layer-wise aggregate stats and trend/runtime plots."""
     console.print(Rule("Layer Diagnostics", style="bright_cyan"))
     by_budget = _budget_rows(report)
     mse_series = [_to_float_list(entry.get("mse_by_layer", [])) for entry in by_budget]
@@ -221,6 +225,7 @@ def _render_layer_section(console: Console, report: dict[str, Any]) -> None:
 
 
 def _render_profile_section(console: Console, report: dict[str, Any]) -> None:
+    """Render profiling tables and distributions when profile data exists."""
     profile_calls = report.get("profile_calls")
     if not isinstance(profile_calls, list) or not profile_calls:
         return
@@ -316,6 +321,7 @@ def _render_profile_section(console: Console, report: dict[str, Any]) -> None:
 
 
 def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
+    """Create a panel showing budget vs. score/MSE frontier."""
     budgets = [_as_float(entry.get("budget", 0.0)) for entry in by_budget]
     scores = [_as_float(entry.get("score", 0.0)) for entry in by_budget]
     mean_mse = [
@@ -338,6 +344,7 @@ def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
 
 
 def _budget_runtime_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
+    """Create a normalized runtime-vs-budget plot panel."""
     budgets = [_as_float(entry.get("budget", 0.0)) for entry in by_budget]
     mean_ratio = [
         fmean(_to_float_list(entry.get("time_ratio_by_layer", [])))
@@ -366,6 +373,7 @@ def _budget_runtime_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
 
 
 def _layer_trend_plot_panel(avg_mse: Sequence[float], avg_adj: Sequence[float]) -> Panel:
+    """Create per-layer accuracy trend panel (MSE and adjusted MSE)."""
     x = list(range(len(avg_mse)))
     return _make_plot_panel(
         title="Layer Trend Plot",
@@ -380,6 +388,7 @@ def _layer_trend_plot_panel(avg_mse: Sequence[float], avg_adj: Sequence[float]) 
 
 
 def _layer_runtime_plot_panel(avg_ratio: Sequence[float]) -> Panel:
+    """Create per-layer time-ratio trend panel."""
     x = list(range(len(avg_ratio)))
     return _make_plot_panel(
         title="Layer Runtime Plot",
@@ -391,6 +400,7 @@ def _layer_runtime_plot_panel(avg_ratio: Sequence[float]) -> Panel:
 
 
 def _profile_runtime_plot_panel(wall: Sequence[float], cpu: Sequence[float]) -> Panel:
+    """Create profiling runtime plot (wall vs CPU by call index)."""
     x = list(range(len(wall)))
     return _make_plot_panel(
         title="Profile Runtime Plot",
@@ -405,6 +415,7 @@ def _profile_runtime_plot_panel(wall: Sequence[float], cpu: Sequence[float]) -> 
 
 
 def _profile_memory_plot_panel(rss: Sequence[float], peak: Sequence[float]) -> Panel:
+    """Create profiling memory plot, collapsing duplicate rss/peak series."""
     x = list(range(len(rss)))
     series: list[tuple[str, Sequence[float], str]] = [("rss_bytes", rss, "yellow+")]
     if not _series_nearly_equal(rss, peak):
@@ -430,6 +441,7 @@ def _make_plot_panel(
     x_scale: str | None = None,
     y_scale: str | None = None,
 ) -> Panel:
+    """Build a plot panel, falling back to percentile table when plotting fails."""
     chart = _build_plotext_line_chart(
         x=x,
         series=series,
@@ -480,6 +492,7 @@ def _build_plotext_line_chart(
     x_scale: str | None = None,
     y_scale: str | None = None,
 ) -> str | None:
+    """Render a plotext chart to ANSI text, returning ``None`` on failure."""
     if _plotext is None or not x:
         return None
 
@@ -552,6 +565,7 @@ def _build_plotext_line_chart(
 
 
 def _legend_table(series: Sequence[tuple[str, Sequence[float], str]]) -> Table:
+    """Build a compact legend table for plot series and value ranges."""
     legend = Table(box=box.SIMPLE, show_header=False, pad_edge=False)
     legend.add_column("key")
     legend.add_column("range")
@@ -566,6 +580,7 @@ def _legend_table(series: Sequence[tuple[str, Sequence[float], str]]) -> Table:
 
 
 def _human_utc(value: str) -> str:
+    """Format ISO datetime-like strings as readable UTC timestamps."""
     try:
         dt = datetime.fromisoformat(value)
     except ValueError:
@@ -577,6 +592,7 @@ def _human_utc(value: str) -> str:
 
 
 def _context_key_style(key: str) -> str:
+    """Pick consistent Rich styles for context-table key categories."""
     if "[" in key and "]" in key:
         key = key[key.find("[") + 1 : key.rfind("]")]
     if key.startswith("run_"):
@@ -595,6 +611,7 @@ def _context_key_style(key: str) -> str:
 
 
 def _render_context_label(label: str) -> Text:
+    """Render mixed human/code labels with style differentiation."""
     if "[" not in label or "]" not in label:
         return Text(label, style=_context_key_style(label))
 
@@ -608,12 +625,14 @@ def _render_context_label(label: str) -> Text:
 
 
 def _label_with_code(human: str, code: str, style: str) -> Text:
+    """Render ``human [code_name]`` labels with configurable style."""
     text = Text(human + " ", style=style)
     text.append(f"[{code}]", style="bold dim")
     return text
 
 
 def _rich_style_for_plot_color(color: str) -> str:
+    """Map plotext-like color tokens to Rich color names."""
     mapping = {
         "green+": "bright_green",
         "cyan+": "bright_cyan",
@@ -625,6 +644,7 @@ def _rich_style_for_plot_color(color: str) -> str:
 
 
 def _budget_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
+    """Safely extract per-budget raw result rows from report payload."""
     results = report.get("results")
     if not isinstance(results, dict):
         return []
@@ -635,6 +655,7 @@ def _budget_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _mean_series(series_list: Sequence[Sequence[float]]) -> list[float]:
+    """Compute elementwise means across equally intended metric series."""
     if not series_list:
         return []
     length = min(len(series) for series in series_list)
@@ -644,6 +665,7 @@ def _mean_series(series_list: Sequence[Sequence[float]]) -> list[float]:
 
 
 def _normalize(values: Sequence[float]) -> list[float]:
+    """Min-max normalize a sequence into [0, 1]."""
     if not values:
         return []
     low = min(values)
@@ -656,12 +678,14 @@ def _normalize(values: Sequence[float]) -> list[float]:
 def _series_nearly_equal(
     lhs: Sequence[float], rhs: Sequence[float], *, tolerance: float = 1e-12
 ) -> bool:
+    """Return whether two numeric series are elementwise near-equal."""
     if len(lhs) != len(rhs):
         return False
     return all(abs(left - right) <= tolerance for left, right in zip(lhs, rhs, strict=True))
 
 
 def _percentile(values: Sequence[float], q: float) -> float:
+    """Compute percentile by linear interpolation on sorted values."""
     if not values:
         return 0.0
     ordered = sorted(values)
@@ -675,12 +699,14 @@ def _percentile(values: Sequence[float], q: float) -> float:
 
 
 def _to_float_list(value: object) -> list[float]:
+    """Convert list-like payload entries to floats; non-lists map to empty."""
     if not isinstance(value, list):
         return []
     return [_as_float(item) for item in value]
 
 
 def _as_float(value: Any) -> float:
+    """Best-effort float conversion returning 0.0 on parse failure."""
     try:
         return float(value)
     except (TypeError, ValueError):
@@ -688,4 +714,5 @@ def _as_float(value: Any) -> float:
 
 
 def _fmt_float(value: object, decimals: int) -> str:
+    """Format numeric-like values with fixed decimal precision."""
     return f"{_as_float(value):.{decimals}f}"

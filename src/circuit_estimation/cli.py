@@ -19,7 +19,11 @@ def run_default_score(profile: Literal[True]) -> tuple[float, list[dict[str, Any
 
 
 def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[str, Any]]]:
-    """Backward-compatible numeric entrypoint for starter-kit callers."""
+    """Run default scenario and return score-only compatibility output.
+
+    When ``profile`` is true, this mirrors legacy behavior by returning
+    ``(score, profile_calls)`` instead of just the numeric score.
+    """
     report = run_default_report(profile=profile, detail="raw")
     score = float(report["results"]["final_score"])
     if profile:
@@ -28,7 +32,7 @@ def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[s
 
 
 def run_default_report(*, profile: bool = False, detail: str = "raw") -> dict[str, Any]:
-    """Run the default local score scenario and return structured report data."""
+    """Run the default local evaluator scenario and return report payload."""
     return score_estimator_report(
         combined_estimator,
         n_circuits=10,
@@ -45,7 +49,7 @@ def run_default_report(*, profile: bool = False, detail: str = "raw") -> dict[st
 
 
 def main(argv: list[str] | None = None) -> int:
-    """CLI entrypoint used by ``main.py``."""
+    """Parse CLI flags, run default report, and print selected output mode."""
     parser = argparse.ArgumentParser(description="Run local circuit-estimator scoring.")
     parser.add_argument(
         "--agent-mode",
