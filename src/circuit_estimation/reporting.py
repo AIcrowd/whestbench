@@ -66,15 +66,7 @@ def _render_top_row(console: Console, report: dict[str, Any]) -> None:
     readiness = _score_summary_panel(report)
     hardware = _hardware_runtime_panel(report)
 
-    if mode == "wide":
-        grid = Table.grid(expand=True)
-        grid.add_column(ratio=1)
-        grid.add_column(ratio=1)
-        grid.add_column(ratio=1)
-        grid.add_row(run_context, readiness, hardware)
-        console.print(grid)
-        return
-    if mode == "medium":
+    if mode == "two_col":
         grid = Table.grid(expand=True)
         grid.add_column(ratio=1)
         grid.add_column(ratio=1)
@@ -100,10 +92,8 @@ def _rich_console_environ(width: int) -> dict[str, str]:
 
 
 def _layout_mode(console_width: int) -> str:
-    if console_width >= 180:
-        return "wide"
     if console_width >= 110:
-        return "medium"
+        return "two_col"
     return "narrow"
 
 
@@ -191,7 +181,7 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
             f"[yellow]{_fmt_float(max(budget_scores), 8)}[/]",
         )
 
-    footnote = Text("Footnote: lower score is better; final score is adjusted MSE mean.", style="dim")
+    footnote = Text("Footnote: lower score is better; final score is adjusted MSE mean.", style="white")
     return Panel(Group(summary, footnote), title="Readiness Scorecard", border_style="bright_cyan")
 
 
@@ -210,8 +200,6 @@ def _budget_lane_panel(report: dict[str, Any]) -> Panel:
     table.add_column("MSE Mean [avg_mse]", justify="right")
     table.add_column("Time Ratio Mean [avg_time_ratio]", justify="right")
     table.add_column("Effective Time Mean (s) [avg_effective_time_s]", justify="right")
-    table.row_styles = ["none", "dim"]
-
     for entry in by_budget:
         mse = _to_float_list(entry.get("mse_by_layer", []))
         time_ratio = _to_float_list(entry.get("time_ratio_by_layer", []))
@@ -230,12 +218,12 @@ def _budget_lane_panel(report: dict[str, Any]) -> Panel:
     runtime_plot = _budget_runtime_plot_panel(by_budget)
     return Panel(
         Columns(
-            [Panel(table, title="Budget Table", border_style="bright_black"), Group(accuracy_plot, runtime_plot)],
+            [Panel(table, title="Budget Table", border_style="cyan"), Group(accuracy_plot, runtime_plot)],
             equal=False,
             expand=True,
         ),
         title="Budget Intelligence",
-        border_style="bright_black",
+        border_style="bright_cyan",
     )
 
 
@@ -280,12 +268,12 @@ def _layer_lane_panel(report: dict[str, Any]) -> Panel:
     runtime_plot = _layer_runtime_plot_panel(avg_ratio)
     return Panel(
         Columns(
-            [Panel(table, title="Layer Metric Table", border_style="bright_black"), Group(accuracy_plot, runtime_plot)],
+            [Panel(table, title="Layer Metric Table", border_style="magenta"), Group(accuracy_plot, runtime_plot)],
             equal=False,
             expand=True,
         ),
         title="Layer Intelligence",
-        border_style="bright_black",
+        border_style="bright_magenta",
     )
 
 
@@ -375,7 +363,7 @@ def _render_profile_section(console: Console, report: dict[str, Any]) -> None:
     console.print(
         Columns(
             [
-                Panel(Group(summary, dist), title="Profile Summary", border_style="bright_black"),
+                Panel(Group(summary, dist), title="Profile Summary", border_style="bright_blue"),
                 Group(runtime_plot, memory_plot),
             ],
             equal=False,
@@ -534,7 +522,7 @@ def _make_plot_panel(
         body,
         title=title,
         box=box.ROUNDED,
-        border_style="bright_black",
+        border_style="bright_white",
         title_align="left",
         expand=False,
     )
@@ -629,7 +617,7 @@ def _legend_table(series: Sequence[tuple[str, Sequence[float], str]]) -> Table:
         key.append(label, style="bold")
         legend.add_row(
             key,
-            f"[dim]{_fmt_float(min(values) if values else 0.0, 6)} -> {_fmt_float(max(values) if values else 0.0, 6)}[/dim]",
+            f"[white]{_fmt_float(min(values) if values else 0.0, 6)} -> {_fmt_float(max(values) if values else 0.0, 6)}[/white]",
         )
     return legend
 
@@ -672,13 +660,13 @@ def _render_context_label(label: str) -> Text:
     human = label[:start].rstrip()
     code = label[start + 1 : end]
     text = Text(human + " ", style=_context_key_style(code))
-    text.append(f"[{code}]", style="bold dim")
+    text.append(f"[{code}]", style="bold bright_white")
     return text
 
 
 def _label_with_code(human: str, code: str, style: str) -> Text:
     text = Text(human + " ", style=style)
-    text.append(f"[{code}]", style="bold dim")
+    text.append(f"[{code}]", style="bold bright_white")
     return text
 
 

@@ -111,7 +111,7 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     assert "Profiling" not in rendered
 
 
-def test_human_report_uses_three_column_top_row_on_wide_layout(
+def test_human_report_uses_two_column_top_row_on_wide_layout(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("COLUMNS", "220")
@@ -127,6 +127,10 @@ def test_human_report_uses_three_column_top_row_on_wide_layout(
     assert "Readiness Scorecard" in rendered
     assert "Hardware & Runtime" in rendered
     assert any(
+        "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" not in line
+        for line in title_lines
+    )
+    assert not any(
         "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" in line
         for line in title_lines
     )
