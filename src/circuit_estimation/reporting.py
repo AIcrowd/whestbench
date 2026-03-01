@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 from collections.abc import Iterable, Sequence
 from statistics import fmean
@@ -23,14 +24,15 @@ def render_agent_report(report: dict[str, Any]) -> str:
 
 def render_human_report(report: dict[str, Any]) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
-    console = Console(record=True)
+    buffer = io.StringIO()
+    console = Console(record=True, file=buffer)
     console.print(Panel("Circuit Estimation Report", expand=False))
     _render_run_context(console, report)
     _render_score_summary(console, report)
     _render_budget_breakdown(console, report)
     _render_layer_diagnostics(console, report)
     _render_profile(console, report)
-    return console.export_text()
+    return buffer.getvalue()
 
 
 def _render_run_context(console: Console, report: dict[str, Any]) -> None:
@@ -127,10 +129,24 @@ def _render_profile(console: Console, report: dict[str, Any]) -> None:
         return
 
     console.print(Rule("Profiling"))
-    wall = [_as_float(entry.get("wall_time_s", 0.0)) for entry in profile_calls if isinstance(entry, dict)]
-    cpu = [_as_float(entry.get("cpu_time_s", 0.0)) for entry in profile_calls if isinstance(entry, dict)]
-    rss = [_as_float(entry.get("rss_bytes", 0.0)) for entry in profile_calls if isinstance(entry, dict)]
-    peak = [_as_float(entry.get("peak_rss_bytes", 0.0)) for entry in profile_calls if isinstance(entry, dict)]
+    wall = [
+        _as_float(entry.get("wall_time_s", 0.0))
+        for entry in profile_calls
+        if isinstance(entry, dict)
+    ]
+    cpu = [
+        _as_float(entry.get("cpu_time_s", 0.0))
+        for entry in profile_calls
+        if isinstance(entry, dict)
+    ]
+    rss = [
+        _as_float(entry.get("rss_bytes", 0.0)) for entry in profile_calls if isinstance(entry, dict)
+    ]
+    peak = [
+        _as_float(entry.get("peak_rss_bytes", 0.0))
+        for entry in profile_calls
+        if isinstance(entry, dict)
+    ]
 
     summary = Table(box=box.SIMPLE_HEAVY, show_header=False)
     summary.add_column("field", style="bold")

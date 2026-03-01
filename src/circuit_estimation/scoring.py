@@ -224,12 +224,12 @@ def score_estimator_report(
                 "mse_by_layer": mse.astype(np.float64).tolist(),
                 "time_ratio_by_layer": time_ratios.astype(np.float64).tolist(),
                 "adjusted_mse_by_layer": adjusted_mse.astype(np.float64).tolist(),
-                "timeout_flag_by_layer": (
-                    timeout_counts / np.float32(n_circuits_effective)
-                ).astype(np.float64).tolist(),
-                "time_floor_flag_by_layer": (
-                    floor_counts / np.float32(n_circuits_effective)
-                ).astype(np.float64).tolist(),
+                "timeout_flag_by_layer": (timeout_counts / np.float32(n_circuits_effective))
+                .astype(np.float64)
+                .tolist(),
+                "time_floor_flag_by_layer": (floor_counts / np.float32(n_circuits_effective))
+                .astype(np.float64)
+                .tolist(),
                 "baseline_time_s_by_layer": baseline_times.astype(np.float64).tolist(),
                 "effective_time_s_by_layer": average_times.astype(np.float64).tolist(),
             }
@@ -366,9 +366,7 @@ def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dic
         "adjusted_mse_mean_by_layer": np.mean(adjusted_mse_matrix, axis=0)
         .astype(np.float64)
         .tolist(),
-        "time_ratio_mean_by_layer": np.mean(time_ratio_matrix, axis=0)
-        .astype(np.float64)
-        .tolist(),
+        "time_ratio_mean_by_layer": np.mean(time_ratio_matrix, axis=0).astype(np.float64).tolist(),
         "baseline_time_s_mean_by_layer": np.mean(baseline_time_matrix, axis=0)
         .astype(np.float64)
         .tolist(),
