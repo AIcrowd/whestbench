@@ -39,14 +39,14 @@ That's it. `uv` reads `pyproject.toml`, auto-creates a venv, installs dependenci
 
 The default human report is a tri-objective dashboard with:
 
-- top row: `Run Context`, `Readiness Scorecard`, `Hardware & Runtime`,
+- top row: `Run Context` + `Readiness Scorecard`,
+- second row: `Hardware & Runtime`,
 - core lanes: `Budget Intelligence` and `Layer Intelligence`,
 - profile lane (only with `--profile`): `Profile Summary`, runtime plot, memory plot.
 
 Layout is adaptive:
 
-- wide terminals (`>=180` columns): full three-pane top row plus multi-column lanes,
-- medium terminals (`110-179`): two-pane top row with hardware stacked below,
+- wide/medium terminals (`>=110` columns): two-pane top row with hardware stacked below,
 - narrow terminals (`<110`): stacked pane layout in the same narrative order.
 
 Examples:
