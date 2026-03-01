@@ -61,6 +61,6 @@ Practical approach:
 
 ## Local Debugging Checklist
 
-1. Run `uv run main.py --agent-mode` and inspect JSON for `time_budget_by_depth_s`, `timeout_rate_by_depth`, and score.
-2. Run `uv run main.py --detail full --profile` to inspect profile diagnostics.
+1. Run `cestim --agent-mode` and inspect JSON for `time_budget_by_depth_s`, `timeout_rate_by_depth`, and score.
+2. Run `cestim --detail full --profile` to inspect profile diagnostics.
 3. If evaluation fails, fix row shape/count/finite issues first before tuning math quality.

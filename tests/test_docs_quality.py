@@ -107,3 +107,10 @@ def test_readme_links_streaming_participant_guide() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
     assert "participant-streaming-estimator-guide.md" in text
+
+
+def test_readme_documents_cestim_install_and_usage() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
+    assert "uv tool install -e ." in text
+    assert "cestim --agent-mode" in text

@@ -10,8 +10,8 @@ Last updated: 2026-03-01
 - `src/circuit_estimation/estimators.py`: mean/covariance propagation + combined estimator.
 - `src/circuit_estimation/scoring.py`: contest params, baseline timing, scoring loop, optional profiler hook.
 - `src/circuit_estimation/protocol.py`: serializable request/response DTOs for future RPC integration.
-- `src/circuit_estimation/cli.py`: local run entrypoint used by `main.py`.
-- `main.py`: local smoke run with default human dashboard output, `--agent-mode` JSON mode, `--detail raw|full`, and optional `--profile`.
+- `src/circuit_estimation/cli.py`: local CLI entrypoint implementation exposed as `cestim`.
+- `main.py`: fallback launcher for local smoke runs.
 
 ## Current Mathematical Representation
 
@@ -86,7 +86,7 @@ Additional scorer behavior:
 Command run:
 
 ```bash
-UV_CACHE_DIR=/tmp/uv-cache uv run main.py
+UV_CACHE_DIR=/tmp/uv-cache uv run --with-editable . cestim
 ```
 
 Observed output format:

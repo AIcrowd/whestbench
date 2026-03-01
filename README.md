@@ -52,7 +52,7 @@ Report payload:
 4. `src/circuit_estimation/estimators.py`: reference estimators and budget switch logic.
 5. `src/circuit_estimation/scoring.py`: scoring loop, runtime enforcement, profiling hook.
 6. `src/circuit_estimation/reporting.py`: human dashboard and agent JSON rendering.
-7. `src/circuit_estimation/cli.py` and `main.py`: local CLI entrypoints.
+7. `src/circuit_estimation/cli.py` and `main.py`: CLI entrypoint implementation and fallback launcher.
 8. `src/circuit_estimation/protocol.py`: DTOs for future RPC-style integration.
 
 ## Quickstart
@@ -65,29 +65,45 @@ Install [uv](https://docs.astral.sh/uv/):
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+### Install CLI (recommended)
+
+From repository root:
+
+```bash
+uv tool install -e .
+```
+
+This installs the `cestim` command globally from your local checkout.
+
 ### Run default local report
 
 ```bash
-uv run main.py
+cestim
 ```
 
 Default output is a Rich human dashboard. For machine consumers:
 
 ```bash
-uv run main.py --agent-mode
+cestim --agent-mode
 ```
 
 Useful flags:
 
 ```bash
 # full derived aggregates
-uv run main.py --detail full
+cestim --detail full
 
 # include call-level profiling metrics
-uv run main.py --profile
+cestim --profile
 
 # show optional diagnostic plots in human mode
-uv run main.py --show-diagnostic-plots
+cestim --show-diagnostic-plots
+```
+
+Without installing globally, you can still run the CLI via:
+
+```bash
+uv run --with-editable . cestim --agent-mode
 ```
 
 ## Extending the Estimator
@@ -111,7 +127,7 @@ Recommended extension path:
 
 - add new estimators under `src/circuit_estimation/estimators.py` (or new module),
 - evaluate locally with `score_estimator(...)` or `score_estimator_report(...)`,
-- compare via `uv run main.py --detail full --profile`.
+- compare via `cestim --detail full --profile` (or `uv run cestim --detail full --profile`).
 
 ## Verification Commands
 

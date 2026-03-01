@@ -10,6 +10,10 @@ dependencies = [
     "tqdm",
 ]
 
+[project.scripts]
+cestim = "circuit_estimation.cli:main"
+circuit-estimation = "circuit_estimation.cli:main"
+
 [dependency-groups]
 dev = [
     "pytest>=8.2.0",
