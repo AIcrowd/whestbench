@@ -13,11 +13,10 @@ import {
     BarChart,
     CartesianGrid,
     Cell,
-    Legend,
     ResponsiveContainer,
     Tooltip,
     XAxis,
-    YAxis,
+    YAxis
 } from "recharts";
 
 /* ── Strict palette from circuit gate colors (gateShapes.js) ── */
@@ -28,6 +27,32 @@ const COLORS = {
   product: "#F0524D", // coral (product / and gate)
   mixed:   "#F7A09D", // coral-light tint
 };
+
+/* Unified coefficient labels */
+const COEFF_META = {
+  c: { label: "constant bias",    fill: COLORS.const },
+  a: { label: "first input (x)",  fill: COLORS.first },
+  b: { label: "second input (y)", fill: COLORS.second },
+  p: { label: "interaction (x·y)", fill: COLORS.product },
+};
+
+/* Custom x-axis tick — color-coded coefficient key + description */
+function ColoredTick({ x, y, payload }) {
+  const meta = COEFF_META[payload.value];
+  if (!meta) return null;
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text x={0} y={0} dy={12} textAnchor="middle" fontSize={11}
+        fontWeight={700} fontFamily="'IBM Plex Mono', monospace" fill={meta.fill}>
+        {payload.value}
+      </text>
+      <text x={0} y={0} dy={24} textAnchor="middle" fontSize={9}
+        fill="#9CA3AF" fontFamily="'DM Sans', sans-serif">
+        {meta.label}
+      </text>
+    </g>
+  );
+}
 
 export default function GateStats({ circuit }) {
   if (!circuit) return null;
@@ -56,9 +81,9 @@ export default function GateStats({ circuit }) {
 
     layerData.push({
       layer: `L${l}`,
-      Constant: constants,
-      Linear: linear,
-      Product: products,
+      "c — bias": constants,
+      "a,b — linear": linear,
+      "p — interaction": products,
       Mixed: mixed,
     });
   }
@@ -78,10 +103,10 @@ export default function GateStats({ circuit }) {
   }
 
   const coeffData = [
-    { name: "c (const)",   avg: totals.const / count,   fill: COLORS.const },
-    { name: "a (first)",   avg: totals.first / count,   fill: COLORS.first },
-    { name: "b (second)",  avg: totals.second / count,  fill: COLORS.second },
-    { name: "p (product)", avg: totals.product / count,  fill: COLORS.product },
+    { key: "c", avg: totals.const / count,   fill: COLORS.const },
+    { key: "a", avg: totals.first / count,   fill: COLORS.first },
+    { key: "b", avg: totals.second / count,  fill: COLORS.second },
+    { key: "p", avg: totals.product / count,  fill: COLORS.product },
   ];
 
   return (
@@ -124,10 +149,9 @@ export default function GateStats({ circuit }) {
                   fontSize: 11,
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: 10 }} />
-              <Bar dataKey="Constant" fill={COLORS.const} stackId="a" />
-              <Bar dataKey="Linear" fill={COLORS.first} stackId="a" />
-              <Bar dataKey="Product" fill={COLORS.product} stackId="a" />
+              <Bar dataKey="c — bias" fill={COLORS.const} stackId="a" />
+              <Bar dataKey="a,b — linear" fill={COLORS.first} stackId="a" />
+              <Bar dataKey="p — interaction" fill={COLORS.product} stackId="a" />
               <Bar dataKey="Mixed" fill={COLORS.mixed} stackId="a" />
             </BarChart>
           </ResponsiveContainer>
@@ -135,14 +159,15 @@ export default function GateStats({ circuit }) {
 
         <div>
           <h3 className="subheading">Avg |Coefficient| Magnitude</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={coeffData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
+          <ResponsiveContainer width="100%" height={210}>
+            <BarChart data={coeffData} margin={{ top: 4, right: 8, bottom: 32, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
               <XAxis
-                dataKey="name"
-                tick={{ fontSize: 10, fill: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace" }}
+                dataKey="key"
+                tick={<ColoredTick />}
                 axisLine={{ stroke: "#E0E0E0" }}
                 tickLine={false}
+                interval={0}
               />
               <YAxis
                 tick={{ fontSize: 10, fill: "#9CA3AF" }}
@@ -157,10 +182,12 @@ export default function GateStats({ circuit }) {
                   borderRadius: 8,
                   fontSize: 11,
                 }}
-                formatter={(value) => [value.toFixed(4), "Avg |coeff|"]}
+                formatter={(value, name, props) => {
+                  const meta = COEFF_META[props.payload.key];
+                  return [value.toFixed(4), meta ? `${props.payload.key} — ${meta.label}` : "Avg |coeff|"];
+                }}
               />
-              {/* Each bar gets its own color from the data */}
-              <Bar dataKey="avg" name="Avg |coeff|" radius={[3, 3, 0, 0]}>
+              <Bar dataKey="avg" radius={[3, 3, 0, 0]}>
                 {coeffData.map((entry, idx) => (
                   <Cell key={idx} fill={entry.fill} />
                 ))}

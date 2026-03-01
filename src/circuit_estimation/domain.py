@@ -1,4 +1,13 @@
-"""Domain entities and invariants for random Boolean-like circuit layers."""
+"""Core circuit data structures and invariant checks.
+
+This module defines the canonical in-memory representation used throughout
+generation, simulation, and scoring:
+
+- ``Layer`` stores vectorized gate wiring and coefficients for one depth step.
+- ``Circuit`` stores a sequence of layers plus declared width/depth metadata.
+
+All evaluator code assumes these objects pass validation before use.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +19,16 @@ from numpy.typing import NDArray
 
 @dataclass(slots=True)
 class Layer:
-    """A single layer of affine-bilinear gate coefficients over indexed inputs."""
+    """One vectorized layer of affine-bilinear gate updates.
+
+    For each output wire ``i``, the layer applies:
+
+    ``y[i] = const[i] + a[i] * x[first[i]] + b[i] * x[second[i]] + p[i] * x[first[i]] * x[second[i]]``
+
+    The index arrays (``first`` and ``second``) select input wires and the
+    coefficient arrays (``first_coeff``, ``second_coeff``, ``const``,
+    ``product_coeff``) define the gate rule per output position.
+    """
 
     first: NDArray[np.int32]
     second: NDArray[np.int32]
@@ -21,7 +39,13 @@ class Layer:
 
     @staticmethod
     def identity(n: int) -> "Layer":
-        """Return an identity-like layer where each output copies its indexed first input."""
+        """Return a deterministic pass-through style layer for width ``n``.
+
+        Each output wire copies one selected input wire via ``first`` with unit
+        linear coefficient and all other coefficients set to zero. ``second``
+        remains populated with valid indices so the resulting layer still
+        satisfies the standard structural contract.
+        """
         first = np.arange(n, dtype=np.int32)
         second = np.roll(first, -1).astype(np.int32)
         return Layer(
@@ -34,7 +58,12 @@ class Layer:
         )
 
     def validate(self, n: int) -> None:
-        """Validate shape and index bounds relative to a circuit width ``n``."""
+        """Validate layer shape consistency and index bounds for width ``n``.
+
+        Raises:
+            ValueError: if coefficient/index vectors do not share one shape,
+                or if any ``first``/``second`` index falls outside ``[0, n)``.
+        """
         shapes = (
             self.first.shape,
             self.second.shape,
@@ -54,14 +83,26 @@ class Layer:
 
 @dataclass(slots=True)
 class Circuit:
-    """Circuit-level container for layer sequence and declared dimensions."""
+    """Validated circuit container with fixed width and layer depth.
+
+    Attributes:
+        n: Wire count (width) shared by every layer.
+        d: Number of transition layers in the circuit.
+        gates: Ordered list of ``Layer`` instances of length ``d``.
+    """
 
     n: int
     d: int
     gates: list[Layer]
 
     def validate(self) -> None:
-        """Validate depth and delegate per-layer validation."""
+        """Validate circuit metadata and all layer invariants.
+
+        Raises:
+            ValueError: if width/depth declarations are invalid, if ``d`` does
+                not match ``len(gates)``, or if any layer violates ``Layer``
+                bounds/shape requirements.
+        """
         if self.n <= 0:
             raise ValueError("Circuit width n must be positive.")
         if self.d < 0:
