@@ -1,5 +1,25 @@
 This repository is intended to illustrate the basic mechanics of the competition.
 
+## Getting Started
+
+### Prerequisites
+
+Install [uv](https://docs.astral.sh/uv/) if you haven't already:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Run
+
+```bash
+uv run main.py
+```
+
+That's it. `uv` reads `pyproject.toml`, auto-creates a venv, installs dependencies, and runs the script — no manual setup needed.
+
+---
+
 ## Parameters
 
 The contest definition depends on: max_depth, width, budgets, time_tolerance
