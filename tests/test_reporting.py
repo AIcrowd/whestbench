@@ -256,6 +256,82 @@ def test_plotext_chart_uses_high_contrast_sparse_scatter_style(
     assert spy.scatter_calls[-1][3] == "●"
 
 
+def test_plotext_chart_uses_hd_line_style_for_dense_series(monkeypatch: pytest.MonkeyPatch) -> None:
+    class PlotextSpy:
+        def __init__(self) -> None:
+            self.plot_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
+            self.scatter_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
+
+        def clear_data(self) -> None:
+            return None
+
+        def clear_figure(self) -> None:
+            return None
+
+        def theme(self, _name: str) -> None:
+            return None
+
+        def plotsize(self, _w: int, _h: int) -> None:
+            return None
+
+        def canvas_color(self, _name: str) -> None:
+            return None
+
+        def axes_color(self, _name: str) -> None:
+            return None
+
+        def ticks_color(self, _name: str) -> None:
+            return None
+
+        def xscale(self, _name: str) -> None:
+            return None
+
+        def yscale(self, _name: str) -> None:
+            return None
+
+        def ylim(self, _low: float, _high: float) -> None:
+            return None
+
+        def plot(
+            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+        ) -> None:
+            self.plot_calls.append((x, y, color, marker))
+
+        def scatter(
+            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+        ) -> None:
+            self.scatter_calls.append((x, y, color, marker))
+
+        def xlabel(self, _label: str) -> None:
+            return None
+
+        def ylabel(self, _label: str) -> None:
+            return None
+
+        def grid(self, _enabled: bool, _vertical: bool) -> None:
+            return None
+
+        def xticks(self, _ticks: list[float]) -> None:
+            return None
+
+        def build(self) -> str:
+            return "chart"
+
+    spy = PlotextSpy()
+    monkeypatch.setattr(reporting, "_plotext", spy)
+
+    output = reporting._build_plotext_line_chart(
+        x=[float(i) for i in range(14)],
+        series=[("wall_time_s", [float(i) for i in range(14)], "cyan+")],
+        x_label="call_index",
+        y_label="seconds",
+    )
+
+    assert output == "chart"
+    assert spy.scatter_calls == []
+    assert spy.plot_calls[-1][3] == "hd"
+
+
 def _render_panel(panel: object) -> str:
     buffer = io.StringIO()
     console = Console(record=True, file=buffer, force_terminal=True, color_system="truecolor", width=120)
