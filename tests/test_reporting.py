@@ -104,6 +104,14 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     assert "Profiling" not in rendered
 
 
+def test_human_report_uses_three_column_top_row_on_wide_layout() -> None:
+    rendered = render_human_report(_sample_report(include_profile=False))
+
+    assert "Run Context" in rendered
+    assert "Readiness" in rendered
+    assert "Hardware & Runtime" in rendered
+
+
 def test_render_human_mode_includes_profile_section_when_available() -> None:
     rendered = render_human_report(_sample_report(include_profile=True))
 
