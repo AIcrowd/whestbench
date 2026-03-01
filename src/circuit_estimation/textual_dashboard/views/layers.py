@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from rich.table import Table
-from textual.containers import Horizontal, VerticalScroll
+from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import Static
 
+from ..plots import build_layer_trend_plot
 from ..state import DashboardState
-from ..widgets import panel, sparkline_block
+from ..widgets import panel
 
 
 def render_layers_view(state: DashboardState) -> str:
@@ -29,30 +30,21 @@ def build_layers_pane(state: DashboardState) -> Widget:
     """Build the Layers tab with depth-wise diagnostics."""
 
     values = state.derived.layer_mse_mean_by_index
-    plot_row = Horizontal(
-        sparkline_block(
-            "Layer MSE Trend",
-            values,
-            note=f"layers={len(values)} | {_range(values)}",
-            id="layers-plot-mse",
-            min_color="#93c5fd",
-            max_color="#38bdf8",
-        ),
-        sparkline_block(
-            "Layer Runtime Pressure",
-            _runtime_pressure_proxy(values),
-            note="proxy derived from MSE shape for skim diagnostics",
-            id="layers-plot-runtime-proxy",
-            min_color="#fcd34d",
-            max_color="#fb923c",
-        ),
-        classes="pane-row",
-        id="layers-plot-row",
+    trend_chart, trend_legend = build_layer_trend_plot(
+        mse_by_layer=values,
+        width=86,
+        height=14,
     )
     stats = panel(
         "Layer Stats",
         Static(_layer_table(values), classes="table-static"),
         id="layers-stats-panel",
+    )
+    trend = panel(
+        "Layer Trend",
+        Static(trend_chart, classes="plot-body"),
+        Static(trend_legend, classes="plot-legend"),
+        id="layers-trend-panel",
     )
     insight = panel(
         "Layer Insight",
@@ -61,11 +53,11 @@ def build_layers_pane(state: DashboardState) -> Widget:
             "Use this with Budget and Performance tabs to determine if runtime limits or model bias dominate error.",
             classes="insight-text",
         ),
-        id="layers-insight",
+        id="layers-insight-panel",
     )
     return VerticalScroll(
-        plot_row,
         stats,
+        trend,
         insight,
         classes="tab-scroll",
         id="layers-pane",
@@ -84,15 +76,6 @@ def _layer_table(values: list[float]) -> Table:
     return table
 
 
-def _runtime_pressure_proxy(values: list[float]) -> list[float]:
-    if not values:
-        return [0.0]
-    baseline = sum(values) / len(values)
-    if baseline <= 0:
-        return values
-    return [value / baseline for value in values]
-
-
 def _percentile(values: list[float], q: float) -> float:
     if not values:
         return 0.0
@@ -100,9 +83,3 @@ def _percentile(values: list[float], q: float) -> float:
     idx = int(round((len(ordered) - 1) * q))
     idx = max(0, min(idx, len(ordered) - 1))
     return ordered[idx]
-
-
-def _range(values: list[float]) -> str:
-    if not values:
-        return "range: n/a"
-    return f"range: {min(values):.6f} -> {max(values):.6f}"

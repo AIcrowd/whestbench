@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 from statistics import fmean
+from typing import Any
 
 from rich.table import Table
-from textual.containers import Horizontal, VerticalScroll
+from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import Static
 
+from ..plots import build_profile_memory_plot, build_profile_runtime_plot
 from ..state import DashboardState
-from ..widgets import panel, sparkline_block
+from ..widgets import panel
 
 
 def render_performance_view(state: DashboardState) -> str:
@@ -47,48 +49,57 @@ def build_performance_pane(state: DashboardState) -> Widget:
     if not state.derived.has_profile:
         return VerticalScroll(
             panel(
-                "Performance",
+                "Profile Unavailable",
                 Static("No profiling calls available for this run.", classes="insight-text"),
-                id="performance-empty",
+                id="performance-unavailable-panel",
             ),
             classes="tab-scroll",
             id="performance-pane",
         )
 
-    summary = panel(
+    runtime_chart, runtime_legend = build_profile_runtime_plot(
+        wall_s=state.derived.profile_wall_s,
+        cpu_s=state.derived.profile_cpu_s,
+        width=86,
+        height=12,
+    )
+    memory_chart, memory_legend = build_profile_memory_plot(
+        rss_mb=state.derived.profile_rss_mb,
+        peak_mb=state.derived.profile_peak_rss_mb,
+        width=86,
+        height=12,
+    )
+
+    summary_panel = panel(
         "Profile Summary",
         Static(_profile_table(state), classes="table-static"),
-        id="performance-summary",
+        id="performance-summary-panel",
     )
-    plots = Horizontal(
-        sparkline_block(
-            "Wall Time (s)",
-            state.derived.profile_wall_s,
-            note=_range_note(state.derived.profile_wall_s, "wall"),
-            id="performance-plot-wall",
-            min_color="#67e8f9",
-            max_color="#38bdf8",
-        ),
-        sparkline_block(
-            "CPU Time (s)",
-            state.derived.profile_cpu_s,
-            note=_range_note(state.derived.profile_cpu_s, "cpu"),
-            id="performance-plot-cpu",
-            min_color="#a7f3d0",
-            max_color="#34d399",
-        ),
-        sparkline_block(
-            "Memory (MB)",
-            state.derived.profile_peak_rss_mb,
-            note=_range_note(state.derived.profile_peak_rss_mb, "peak rss"),
-            id="performance-plot-memory",
-            min_color="#fcd34d",
-            max_color="#fb923c",
-        ),
-        classes="pane-row",
-        id="performance-plot-row",
+    runtime_panel = panel(
+        "Runtime Plot",
+        Static(runtime_chart, classes="plot-body"),
+        Static(runtime_legend, classes="plot-legend"),
+        id="performance-runtime-plot",
     )
-    return VerticalScroll(summary, plots, classes="tab-scroll", id="performance-pane")
+    memory_panel = panel(
+        "Memory Plot",
+        Static(memory_chart, classes="plot-body"),
+        Static(memory_legend, classes="plot-legend"),
+        id="performance-memory-plot",
+    )
+    outlier_panel = panel(
+        "Outlier Spotlight",
+        Static(_outlier_text(state), classes="insight-text"),
+        id="performance-outlier-panel",
+    )
+    return VerticalScroll(
+        summary_panel,
+        runtime_panel,
+        memory_panel,
+        outlier_panel,
+        classes="tab-scroll",
+        id="performance-pane",
+    )
 
 
 def _profile_table(state: DashboardState) -> Table:
@@ -121,12 +132,26 @@ def _range_note(values: list[float], label: str) -> str:
     return f"{label}: {min(values):.6f} -> {max(values):.6f}"
 
 
-def _as_float(value: object) -> float:
-    if isinstance(value, (int, float)):
+def _outlier_text(state: DashboardState) -> str:
+    wall = state.derived.profile_wall_s
+    cpu = state.derived.profile_cpu_s
+    peak = state.derived.profile_peak_rss_mb
+    if not wall or not cpu or not peak:
+        return "Insufficient profile series to compute outliers."
+
+    max_wall_index = max(range(len(wall)), key=wall.__getitem__)
+    max_cpu_index = max(range(len(cpu)), key=cpu.__getitem__)
+    max_peak_index = max(range(len(peak)), key=peak.__getitem__)
+
+    return (
+        f"Highest wall-time call: idx={max_wall_index}, wall={wall[max_wall_index]:.6f}s\n"
+        f"Highest cpu-time call: idx={max_cpu_index}, cpu={cpu[max_cpu_index]:.6f}s\n"
+        f"Highest peak memory call: idx={max_peak_index}, peak={peak[max_peak_index]:.2f}MB"
+    )
+
+
+def _as_float(value: Any) -> float:
+    try:
         return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return 0.0
-    return 0.0
+    except (TypeError, ValueError):
+        return 0.0

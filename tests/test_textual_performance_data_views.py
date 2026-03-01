@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from circuit_estimation.textual_dashboard.app import DashboardApp
@@ -28,24 +29,28 @@ def _sample_report(*, include_profile: bool = True) -> dict[str, Any]:
     return report
 
 
-def test_performance_and_data_tabs_render() -> None:
-    app = DashboardApp(report=_sample_report(include_profile=True))
+def test_performance_and_data_tabs_render_structured_panes() -> None:
+    async def _run() -> None:
+        app = DashboardApp(report=_sample_report(include_profile=True))
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            app.query_one("#performance-summary-panel")
+            app.query_one("#performance-runtime-plot")
+            app.query_one("#performance-memory-plot")
+            app.query_one("#performance-outlier-panel")
+            app.query_one("#data-run-meta-section")
+            app.query_one("#data-run-config-section")
+            app.query_one("#data-results-section")
+            app.query_one("#data-profile-calls-section")
 
-    app.action_tab_performance()
-    performance_text = app._tab_content()
-    assert "Performance" in performance_text
-    assert "Profile Runtime Plot" in performance_text
-    assert "Profile Memory Plot" in performance_text
-
-    app.action_tab_data()
-    data_text = app._tab_content()
-    assert "Raw Data" in data_text
-    assert '"results"' in data_text
+    asyncio.run(_run())
 
 
 def test_performance_view_handles_missing_profile() -> None:
-    app = DashboardApp(report=_sample_report(include_profile=False))
+    async def _run() -> None:
+        app = DashboardApp(report=_sample_report(include_profile=False))
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            app.query_one("#performance-unavailable-panel")
 
-    app.action_tab_performance()
-    performance_text = app._tab_content()
-    assert "No profiling calls available" in performance_text
+    asyncio.run(_run())
