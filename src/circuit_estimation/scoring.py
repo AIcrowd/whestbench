@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import platform
+import socket
 import sys
 import time
 from collections.abc import Callable, Iterator, Sequence
@@ -235,6 +237,14 @@ def score_estimator_report(
 
     final_score = float(np.mean([entry["score"] for entry in by_budget_raw]))
     run_end = datetime.now(timezone.utc)
+    host_meta = {
+        "hostname": socket.gethostname(),
+        "os": platform.system(),
+        "os_release": platform.release(),
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "python_version": platform.python_version(),
+    }
     report: dict[str, Any] = {
         "schema_version": "1.0",
         "mode": "agent",
@@ -243,6 +253,7 @@ def score_estimator_report(
             "run_started_at_utc": run_start.isoformat(),
             "run_finished_at_utc": run_end.isoformat(),
             "run_duration_s": float(time.time() - run_start_wall),
+            "host": host_meta,
         },
         "run_config": {
             "n_circuits": int(n_circuits_effective),
@@ -264,6 +275,10 @@ def score_estimator_report(
     }
     if collect_profile:
         report["profile_calls"] = profile_calls
+        if detail == "full":
+            report["profile_summary"] = _profile_summary(profile_calls)
+    if detail == "full":
+        report["results"].update(_compute_full_detail(by_budget_raw, depth))
     return report
 
 
@@ -288,3 +303,131 @@ def score_estimator(
         profiler=profiler,
     )
     return float(report["results"]["final_score"])
+
+
+def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dict[str, Any]:
+    budgets = [int(entry["budget"]) for entry in by_budget_raw]
+    scores = [float(entry["score"]) for entry in by_budget_raw]
+    mse_matrix = np.array([entry["mse_by_layer"] for entry in by_budget_raw], dtype=np.float64)
+    adjusted_mse_matrix = np.array(
+        [entry["adjusted_mse_by_layer"] for entry in by_budget_raw],
+        dtype=np.float64,
+    )
+    time_ratio_matrix = np.array(
+        [entry["time_ratio_by_layer"] for entry in by_budget_raw],
+        dtype=np.float64,
+    )
+    timeout_matrix = np.array(
+        [entry["timeout_flag_by_layer"] for entry in by_budget_raw],
+        dtype=np.float64,
+    )
+    floor_matrix = np.array(
+        [entry["time_floor_flag_by_layer"] for entry in by_budget_raw],
+        dtype=np.float64,
+    )
+    baseline_time_matrix = np.array(
+        [entry["baseline_time_s_by_layer"] for entry in by_budget_raw],
+        dtype=np.float64,
+    )
+    effective_time_matrix = np.array(
+        [entry["effective_time_s_by_layer"] for entry in by_budget_raw],
+        dtype=np.float64,
+    )
+
+    by_budget_summary = [
+        {
+            "budget": int(budget),
+            "score": float(score),
+            "mse_mean": float(np.mean(mse)),
+            "adjusted_mse_mean": float(np.mean(adjusted)),
+            "time_ratio_mean": float(np.mean(ratio)),
+            "baseline_time_s_mean": float(np.mean(baseline)),
+            "effective_time_s_mean": float(np.mean(effective)),
+            "timeout_rate_mean": float(np.mean(timeout)),
+            "time_floor_rate_mean": float(np.mean(floor)),
+        }
+        for budget, score, mse, adjusted, ratio, baseline, effective, timeout, floor in zip(
+            budgets,
+            scores,
+            mse_matrix,
+            adjusted_mse_matrix,
+            time_ratio_matrix,
+            baseline_time_matrix,
+            effective_time_matrix,
+            timeout_matrix,
+            floor_matrix,
+            strict=True,
+        )
+    ]
+
+    by_layer_overall = {
+        "layer_index": list(range(depth)),
+        "mse_mean_by_layer": np.mean(mse_matrix, axis=0).astype(np.float64).tolist(),
+        "adjusted_mse_mean_by_layer": np.mean(adjusted_mse_matrix, axis=0)
+        .astype(np.float64)
+        .tolist(),
+        "time_ratio_mean_by_layer": np.mean(time_ratio_matrix, axis=0)
+        .astype(np.float64)
+        .tolist(),
+        "baseline_time_s_mean_by_layer": np.mean(baseline_time_matrix, axis=0)
+        .astype(np.float64)
+        .tolist(),
+        "effective_time_s_mean_by_layer": np.mean(effective_time_matrix, axis=0)
+        .astype(np.float64)
+        .tolist(),
+        "timeout_rate_mean_by_layer": np.mean(timeout_matrix, axis=0).astype(np.float64).tolist(),
+        "time_floor_rate_mean_by_layer": np.mean(floor_matrix, axis=0).astype(np.float64).tolist(),
+    }
+
+    by_budget_layer_matrix = {
+        "budgets": budgets,
+        "mse_by_budget_layer": mse_matrix.astype(np.float64).tolist(),
+        "adjusted_mse_by_budget_layer": adjusted_mse_matrix.astype(np.float64).tolist(),
+        "time_ratio_by_budget_layer": time_ratio_matrix.astype(np.float64).tolist(),
+        "baseline_time_s_by_budget_layer": baseline_time_matrix.astype(np.float64).tolist(),
+        "effective_time_s_by_budget_layer": effective_time_matrix.astype(np.float64).tolist(),
+        "timeout_rate_by_budget_layer": timeout_matrix.astype(np.float64).tolist(),
+        "time_floor_rate_by_budget_layer": floor_matrix.astype(np.float64).tolist(),
+    }
+
+    return {
+        "by_budget_summary": by_budget_summary,
+        "by_layer_overall": by_layer_overall,
+        "by_budget_layer_matrix": by_budget_layer_matrix,
+    }
+
+
+def _profile_summary(profile_calls: list[dict[str, float | int]]) -> dict[str, Any]:
+    if not profile_calls:
+        return {"call_count": 0}
+    wall = np.array([float(event["wall_time_s"]) for event in profile_calls], dtype=np.float64)
+    cpu = np.array([float(event["cpu_time_s"]) for event in profile_calls], dtype=np.float64)
+    rss = np.array([float(event["rss_bytes"]) for event in profile_calls], dtype=np.float64)
+    peak = np.array([float(event["peak_rss_bytes"]) for event in profile_calls], dtype=np.float64)
+    return {
+        "call_count": int(len(profile_calls)),
+        "wall_time_s": {
+            "mean": float(np.mean(wall)),
+            "min": float(np.min(wall)),
+            "max": float(np.max(wall)),
+            "p95": float(np.percentile(wall, 95)),
+        },
+        "cpu_time_s": {
+            "mean": float(np.mean(cpu)),
+            "min": float(np.min(cpu)),
+            "max": float(np.max(cpu)),
+            "p95": float(np.percentile(cpu, 95)),
+        },
+        "rss_bytes": {
+            "mean": float(np.mean(rss)),
+            "min": float(np.min(rss)),
+            "max": float(np.max(rss)),
+            "p95": float(np.percentile(rss, 95)),
+        },
+        "peak_rss_bytes": {
+            "mean": float(np.mean(peak)),
+            "min": float(np.min(peak)),
+            "max": float(np.max(peak)),
+            "p95": float(np.percentile(peak, 95)),
+        },
+    }
