@@ -15,9 +15,7 @@ def _sample_report() -> dict[str, Any]:
     }
 
 
-def test_human_mode_falls_back_to_static_when_textual_unsupported(
-    monkeypatch, capsys
-) -> None:
+def test_human_mode_falls_back_to_static_when_textual_unsupported(monkeypatch, capsys) -> None:
     monkeypatch.setattr(cli, "score_estimator_report", lambda *_a, **_k: _sample_report())
     monkeypatch.setattr(cli, "_supports_textual_dashboard", lambda: False)
     monkeypatch.setattr(
@@ -34,9 +32,7 @@ def test_human_mode_falls_back_to_static_when_textual_unsupported(
     assert "Circuit Estimation Report" in captured.out
 
 
-def test_human_mode_falls_back_to_static_when_textual_launch_fails(
-    monkeypatch, capsys
-) -> None:
+def test_human_mode_falls_back_to_static_when_textual_launch_fails(monkeypatch, capsys) -> None:
     monkeypatch.setattr(cli, "score_estimator_report", lambda *_a, **_k: _sample_report())
     monkeypatch.setattr(cli, "_supports_textual_dashboard", lambda: True)
 

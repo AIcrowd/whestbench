@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from statistics import fmean
+from typing import Any
 
 from ..state import DashboardState
 
@@ -17,7 +18,9 @@ def render_performance_view(state: DashboardState) -> str:
     wall = [_as_float(entry.get("wall_time_s", 0.0)) for entry in calls if isinstance(entry, dict)]
     cpu = [_as_float(entry.get("cpu_time_s", 0.0)) for entry in calls if isinstance(entry, dict)]
     rss = [_as_float(entry.get("rss_bytes", 0.0)) for entry in calls if isinstance(entry, dict)]
-    peak = [_as_float(entry.get("peak_rss_bytes", 0.0)) for entry in calls if isinstance(entry, dict)]
+    peak = [
+        _as_float(entry.get("peak_rss_bytes", 0.0)) for entry in calls if isinstance(entry, dict)
+    ]
     return (
         "Performance\n\n"
         "Profile\n"
@@ -33,7 +36,7 @@ def render_performance_view(state: DashboardState) -> str:
     )
 
 
-def _as_float(value: object) -> float:
+def _as_float(value: Any) -> float:
     try:
         return float(value)
     except (TypeError, ValueError):
