@@ -1017,6 +1017,25 @@ body {
 
 .circuit-heatmap {
   position: relative;
+  overflow: hidden;
+}
+
+.heatmap-canvas-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.heatmap-canvas-container canvas {
+  display: block;
+  max-width: 100%;
+}
+
+.heatmap-overlay-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: crosshair;
+  pointer-events: auto;
 }
 
 .heatmap-axes {
