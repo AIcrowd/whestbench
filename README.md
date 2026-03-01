@@ -74,6 +74,7 @@ uv tool install -e .
 ```
 
 This installs the `cestim` command globally from your local checkout.
+If you work with multiple worktrees, read [Worktrees and CLI](internal CLI note).
 
 ### Run default local report
 
@@ -81,21 +82,23 @@ This installs the `cestim` command globally from your local checkout.
 cestim
 ```
 
-Default output is the full-screen Textual human dashboard (with automatic static fallback when unsupported). For machine consumers:
+Default output is the Rich human dashboard. For machine consumers:
 
 ```bash
 cestim --agent-mode
 ```
 
-Default `uv run main.py` behavior:
+To run from the current checkout without relying on global `cestim`:
+
+```bash
+uv run main.py
+```
+
+To run `cestim` from the current checkout explicitly:
+
 ```bash
 uv run --with-editable . cestim --agent-mode
 ```
-
-Default `uv run main.py` behavior:
-
-- launches full-screen Textual dashboard in supported interactive terminals,
-- falls back to static terminal report when Textual is unavailable (for example non-TTY or limited terminal capabilities).
 
 ## Extending the Estimator
 
