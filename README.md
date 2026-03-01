@@ -27,7 +27,7 @@ Given `n_circuits`, `n_samples`, and contest params (`width`, `max_depth`, `budg
 2. Compute empirical layer-wise target means for each circuit via batched simulation.
 3. For each budget:
    - Measure baseline runtime by depth (`time_budget_by_depth_s`) using sampling.
-   - Call estimator once per circuit (`estimator(circuit, budget)`) and consume streamed depth rows.
+   - Call estimator once per `(circuit, budget)` invocation and consume streamed depth rows.
    - At each emitted depth row `i`:
      - if cumulative wall time > `(1 + time_tolerance) * time_budget_by_depth_s[i]`, zero that row;
      - if cumulative wall time < `(1 - time_tolerance) * time_budget_by_depth_s[i]`, floor effective time to that lower bound.
@@ -108,9 +108,10 @@ uv run --with-editable . cestim --agent-mode
 
 ## Extending the Estimator
 
-Implement a callable with signature:
+Canonical participant interface:
 
-- `Callable[[Circuit, int], Iterator[NDArray[np.float32]]]`
+- subclass `BaseEstimator`
+- implement `predict(self, circuit: Circuit, budget: int) -> Iterator[NDArray[np.float32]]`
 
 Contract:
 
@@ -118,6 +119,12 @@ Contract:
 - output: streamed depth rows via `yield`
 - each emitted row: `np.ndarray` with shape `(width,)`
 - required row count: exactly `max_depth` yields
+
+Scoring API compatibility:
+
+- `score_estimator(...)` accepts a callable with signature:
+  - `Callable[[Circuit, int], Iterator[NDArray[np.float32]]]`
+- for class-based estimators, pass `Estimator().predict`.
 
 See the starter tutorial guide:
 
@@ -127,7 +134,7 @@ Recommended extension path:
 
 - add new estimators under `src/circuit_estimation/estimators.py` (or new module),
 - evaluate locally with `score_estimator(...)` or `score_estimator_report(...)`,
-- compare via `cestim --detail full --profile` (or `uv run cestim --detail full --profile`).
+- compare via `cestim --detail full --profile` (or `uv run --with-editable . cestim --detail full --profile`).
 
 ## Verification Commands
 
