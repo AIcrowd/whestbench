@@ -1179,6 +1179,63 @@ body {
   color: var(--gray-600);
 }
 
+/* Math term with tooltip */
+.math-term {
+  position: relative;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--coral);
+  border-bottom: 1.5px dashed var(--coral);
+  cursor: help;
+  white-space: nowrap;
+}
+
+.math-term-tip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  padding: 10px 14px;
+  background: var(--gray-900);
+  color: var(--gray-100);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 300;
+  pointer-events: none;
+  white-space: normal;
+}
+
+.math-term-tip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--gray-900);
+}
+
+.math-term-tip strong {
+  color: var(--coral-light);
+  font-weight: 700;
+}
+
+.math-term-tip em {
+  color: #93C5FD;
+  font-style: italic;
+}
+
+.math-term:hover .math-term-tip {
+  display: block;
+  animation: narrative-enter 0.15s ease-out;
+}
+
 .narrative-nav {
   display: flex;
   justify-content: flex-end;
