@@ -7,8 +7,9 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widget import Widget
 from textual.widgets import Static
 
+from ..plots import build_budget_frontier_plot, build_budget_runtime_plot
 from ..state import DashboardState
-from ..widgets import panel, sparkline_block
+from ..widgets import panel
 
 
 def render_budgets_view(state: DashboardState) -> str:
@@ -40,25 +41,33 @@ def build_budgets_pane(state: DashboardState) -> Widget:
         Static(_budget_table(state), classes="table-static"),
         id="budgets-table-panel",
     )
-    plot_row = Horizontal(
-        sparkline_block(
-            "Adjusted MSE by Budget",
-            state.derived.budget_adjusted_scores,
-            note=f"budgets={state.derived.budgets}",
-            id="budgets-plot-adjusted",
-        ),
-        sparkline_block(
-            "Runtime Ratio by Budget",
-            state.derived.budget_time_ratio_means,
-            note=_range_note(state.derived.budget_time_ratio_means),
-            id="budgets-plot-runtime",
-            min_color="#fcd34d",
-            max_color="#fb923c",
-        ),
-        classes="pane-row",
-        id="budgets-plot-row",
+    frontier_chart, frontier_legend = build_budget_frontier_plot(
+        budgets=state.derived.budgets,
+        adjusted_mse=state.derived.budget_adjusted_scores,
+        mse_mean=state.derived.budget_mse_means,
+        width=64,
+        height=12,
     )
-    summary_panel = panel(
+    runtime_chart, runtime_legend = build_budget_runtime_plot(
+        budgets=state.derived.budgets,
+        time_ratio=state.derived.budget_time_ratio_means,
+        effective_time=state.derived.budget_effective_time_means,
+        width=64,
+        height=12,
+    )
+    frontier_panel = panel(
+        "Budget Frontier",
+        Static(frontier_chart, classes="plot-body"),
+        Static(frontier_legend, classes="plot-legend"),
+        id="budgets-frontier-panel",
+    )
+    runtime_panel = panel(
+        "Budget Runtime",
+        Static(runtime_chart, classes="plot-body"),
+        Static(runtime_legend, classes="plot-legend"),
+        id="budgets-runtime-panel",
+    )
+    insight_panel = panel(
         "Budget Insight",
         Static(
             f"Best budget score: {state.derived.best_budget_score:.8f}\n"
@@ -67,12 +76,17 @@ def build_budgets_pane(state: DashboardState) -> Widget:
             "Use this tab to pick an operating budget for quality/runtime tradeoff.",
             classes="insight-text",
         ),
-        id="budgets-insight",
+        id="budgets-insight-panel",
     )
     return VerticalScroll(
         table_panel,
-        plot_row,
-        summary_panel,
+        Horizontal(
+            frontier_panel,
+            runtime_panel,
+            classes="pane-row",
+            id="budgets-plot-row",
+        ),
+        insight_panel,
         classes="tab-scroll",
         id="budgets-pane",
     )
@@ -101,9 +115,3 @@ def _budget_table(state: DashboardState) -> Table:
             f"{effective:.6f}",
         )
     return table
-
-
-def _range_note(values: list[float]) -> str:
-    if not values:
-        return "range: n/a"
-    return f"range: {min(values):.4f} -> {max(values):.4f}"

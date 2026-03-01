@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, cast
+import asyncio
+from typing import Any
 
 from textual.binding import Binding
 
-from circuit_estimation.textual_dashboard.app import DashboardApp
+from circuit_estimation.textual_dashboard.app import DashboardApp, layout_mode_for_width
 
 
 def _sample_report() -> dict[str, Any]:
@@ -39,13 +40,8 @@ def test_tab_actions_switch_active_tab() -> None:
 
 
 def test_bindings_include_numeric_tab_shortcuts() -> None:
-    keys: dict[str, str] = {}
-    for binding in DashboardApp.BINDINGS:
-        if isinstance(binding, tuple) and len(binding) >= 2:
-            keys[str(binding[0])] = str(binding[1])
-            continue
-        normalized = cast(Binding, binding)
-        keys[str(normalized.key)] = str(normalized.action)
+    bindings = [binding for binding in DashboardApp.BINDINGS if isinstance(binding, Binding)]
+    keys = {binding.key: binding.action for binding in bindings}
 
     assert keys["1"] == "tab_summary"
     assert keys["2"] == "tab_budgets"
@@ -54,3 +50,25 @@ def test_bindings_include_numeric_tab_shortcuts() -> None:
     assert keys["5"] == "tab_data"
     assert keys["escape"] == "quit"
     assert keys["ctrl+c"] == "quit"
+
+
+def test_data_tab_sections_present_after_tab_switch() -> None:
+    async def _run() -> None:
+        app = DashboardApp(report=_sample_report())
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            app.action_tab_data()
+            await pilot.pause()
+            app.query_one("#data-run-meta-section")
+            app.query_one("#data-run-config-section")
+            app.query_one("#data-results-section")
+            app.query_one("#data-profile-calls-section")
+
+    asyncio.run(_run())
+
+
+def test_layout_mode_breakpoints_match_dashboard_contract() -> None:
+    assert layout_mode_for_width(160) == "wide"
+    assert layout_mode_for_width(159) == "medium"
+    assert layout_mode_for_width(110) == "medium"
+    assert layout_mode_for_width(109) == "narrow"

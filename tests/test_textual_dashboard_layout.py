@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from textual.widgets import Sparkline, TabbedContent
+from textual.widgets import Static, TabbedContent
 
 from circuit_estimation.textual_dashboard.app import DashboardApp
 
@@ -56,13 +56,19 @@ def _sample_report() -> dict[str, Any]:
     }
 
 
-def test_dashboard_uses_tabbed_pane_layout_with_real_plot_widgets() -> None:
+def test_dashboard_uses_tabbed_pane_layout_with_plotext_summary_charts() -> None:
     async def _run() -> None:
         app = DashboardApp(report=_sample_report())
         async with app.run_test() as pilot:
             await pilot.pause()
             app.query_one(TabbedContent)
-            assert len(list(app.query(".panel"))) >= 6
-            assert len(list(app.query(Sparkline))) >= 6
+            assert len(list(app.query(".panel"))) >= 10
+            frontier_plot = app.query_one("#summary-budget-frontier .plot-body", Static)
+            runtime_plot = app.query_one("#summary-budget-runtime .plot-body", Static)
+            layer_plot = app.query_one("#summary-layer-trend .plot-body", Static)
+            for plot_body in (frontier_plot, runtime_plot, layer_plot):
+                content = str(plot_body.render())
+                assert content.strip()
+                assert ("┤" in content) or ("|" in content) or ("plot unavailable" in content.lower())
 
     asyncio.run(_run())

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
+
+from textual.widgets import Static
 
 from circuit_estimation.textual_dashboard.app import DashboardApp
 
@@ -34,17 +37,37 @@ def _sample_report() -> dict[str, Any]:
     }
 
 
-def test_budget_and_layer_tabs_render_expected_headers() -> None:
-    app = DashboardApp(report=_sample_report())
+def test_budget_and_layer_tabs_follow_pane_contract() -> None:
+    async def _run() -> None:
+        app = DashboardApp(report=_sample_report())
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            app.query_one("#budgets-table-panel")
+            app.query_one("#budgets-frontier-panel")
+            app.query_one("#budgets-runtime-panel")
+            app.query_one("#budgets-insight-panel")
+            app.query_one("#layers-stats-panel")
+            app.query_one("#layers-trend-panel")
+            app.query_one("#layers-insight-panel")
 
-    app.action_tab_budgets()
-    budget_text = app._tab_content()
-    assert "Budget Analysis" in budget_text
-    assert "Budget Table" in budget_text
-    assert "Budget Frontier Plot" in budget_text
+    asyncio.run(_run())
 
-    app.action_tab_layers()
-    layer_text = app._tab_content()
-    assert "Layer Analysis" in layer_text
-    assert "Layer Diagnostics" in layer_text
-    assert "Layer Trend Plot" in layer_text
+
+def test_budget_and_layer_plot_panes_render_chart_like_content() -> None:
+    async def _run() -> None:
+        app = DashboardApp(report=_sample_report())
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            for selector in (
+                "#budgets-frontier-panel .plot-body",
+                "#budgets-runtime-panel .plot-body",
+                "#layers-trend-panel .plot-body",
+            ):
+                content = app.query_one(selector, Static)
+                chart_text = str(content.render())
+                assert chart_text.strip()
+                assert ("┤" in chart_text) or ("|" in chart_text) or (
+                    "plot unavailable" in chart_text.lower()
+                )
+
+    asyncio.run(_run())

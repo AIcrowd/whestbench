@@ -1,5 +1,5 @@
 Screen {
-    background: #060b16;
+    background: #000000;
     color: #e5e7eb;
 }
 
@@ -12,12 +12,12 @@ Header {
 
 Footer {
     background: #040814;
-    color: #fbbf24;
+    color: #f59e0b;
     border-top: tall #15253f;
 }
 
 #dashboard-tabs-content {
-    background: #060b16;
+    background: #000000;
     color: #e5e7eb;
 }
 
@@ -56,7 +56,7 @@ TabPane {
     width: 1fr;
     min-width: 32;
     border: round #1a2f52;
-    background: #0f172a;
+    background: #080f1f;
     color: #e2e8f0;
     padding: 0 1 1 1;
     margin: 1 1 0 1;
@@ -81,7 +81,7 @@ TabPane {
     min-width: 18;
     height: 100%;
     border: round #1a2f52;
-    background: #0f172a;
+    background: #080f1f;
     margin: 1 1 0 1;
     padding: 0 1;
 }
