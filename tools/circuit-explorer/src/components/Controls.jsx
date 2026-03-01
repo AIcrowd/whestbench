@@ -1,23 +1,43 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export default function Controls({ params, onParamsChange }) {
   const [localSeed, setLocalSeed] = useState(String(params.seed));
+  // Local slider state for instant visual feedback while debouncing actual generation
+  const [localParams, setLocalParams] = useState(params);
+  const debounceRef = useRef(null);
 
-  const slider = (label, key, min, max, step = 1) => (
+  // When parent params change (e.g., tour mode), sync local state
+  if (params.width !== localParams.width || params.depth !== localParams.depth) {
+    if (!debounceRef.current) {
+      setLocalParams(params);
+    }
+  }
+
+  const handleSliderChange = useCallback((key, value) => {
+    const next = { ...localParams, [key]: value };
+    setLocalParams(next);
+
+    // Debounce: wait 300ms after last change before triggering circuit generation
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      onParamsChange(next);
+    }, 300);
+  }, [localParams, onParamsChange]);
+
+  const slider = (label, key, min, max, step = 1, tooltip = "") => (
     <div className="control-row">
-      <label>
+      <label title={tooltip}>
         <span className="control-label">{label}</span>
-        <span className="control-value">{params[key]}</span>
+        <span className="control-value">{localParams[key]}</span>
       </label>
       <input
         type="range"
         min={min}
         max={max}
         step={step}
-        value={params[key]}
-        onChange={(e) =>
-          onParamsChange({ ...params, [key]: Number(e.target.value) })
-        }
+        value={localParams[key]}
+        onChange={(e) => handleSliderChange(key, Number(e.target.value))}
       />
     </div>
   );
@@ -25,8 +45,8 @@ export default function Controls({ params, onParamsChange }) {
   return (
     <div className="controls-panel">
       <h2>Circuit</h2>
-      {slider("Width (n)", "width", 2, 1024)}
-      {slider("Depth (d)", "depth", 1, 256)}
+      {slider("Width (n)", "width", 2, 1024, 1, "Number of wires (parallel values) per layer")}
+      {slider("Depth (d)", "depth", 1, 256, 1, "Number of gate layers in the circuit")}
 
       <div className="control-row">
         <label>
@@ -38,11 +58,11 @@ export default function Controls({ params, onParamsChange }) {
           value={localSeed}
           onChange={(e) => setLocalSeed(e.target.value)}
           onBlur={() =>
-            onParamsChange({ ...params, seed: Number(localSeed) || 42 })
+            onParamsChange({ ...localParams, seed: Number(localSeed) || 42 })
           }
           onKeyDown={(e) => {
             if (e.key === "Enter")
-              onParamsChange({ ...params, seed: Number(localSeed) || 42 });
+              onParamsChange({ ...localParams, seed: Number(localSeed) || 42 });
           }}
         />
       </div>
@@ -52,7 +72,9 @@ export default function Controls({ params, onParamsChange }) {
         onClick={() => {
           const newSeed = Math.floor(Math.random() * 100000);
           setLocalSeed(String(newSeed));
-          onParamsChange({ ...params, seed: newSeed });
+          const next = { ...localParams, seed: newSeed };
+          setLocalParams(next);
+          onParamsChange(next);
         }}
       >
         <svg className="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></svg> Regenerate

@@ -10,6 +10,7 @@
  * - Resolution cap: sub-pixel cells are rendered at reduced resolution
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { perfEnd, perfStart } from "../perf";
 import GateDetailOverlay from "./GateDetailOverlay";
 
 export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerClick }) {
@@ -29,6 +30,7 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
 
   // Render heatmap to canvas
   useEffect(() => {
+    perfStart('heatmap-paint');
     const canvas = canvasRef.current;
     const overlay = overlayCanvasRef.current;
     const container = containerRef.current;
@@ -127,6 +129,7 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
     for (let l = 0; l < d; l += labelStep) {
       ctx.fillText(`${l}`, l * cellW + cellW / 2, height - 2);
     }
+    perfEnd('heatmap-paint');
   }, [circuit, means, n, d]);
 
   // Draw crosshair + activeLayer column on overlay canvas

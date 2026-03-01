@@ -1,22 +1,13 @@
-import { useMemo } from "react";
-import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis
-} from "recharts";
+import * as tfvis from "@tensorflow/tfjs-vis";
+import { useEffect, useMemo, useRef } from "react";
+import { perfEnd, perfStart } from "../perf";
 
 /* ── Strict palette from circuit gate colors (gateShapes.js) ── */
 const COLORS = {
-  const:   "#D1D5DB", // constant gate border
-  first:   "#94A3B8", // linear gate border (slate)
-  second:  "#334155", // dark slate (mean = -1 anchor)
-  product: "#F0524D", // coral (product / and gate)
-  mixed:   "#F7A09D", // coral-light tint
+  const:   "#D1D5DB",
+  first:   "#94A3B8",
+  second:  "#334155",
+  product: "#F0524D",
 };
 
 /* Unified coefficient labels */
@@ -27,33 +18,17 @@ const COEFF_META = {
   p: { label: "interaction (x·y)", fill: COLORS.product },
 };
 
-/* Max layers for per-layer SVG bar chart (avoid 1000+ rect nodes) */
 const MAX_LAYER_BARS = 64;
 
-/* Custom x-axis tick — color-coded coefficient key + description */
-function ColoredTick({ x, y, payload }) {
-  const meta = COEFF_META[payload.value];
-  if (!meta) return null;
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <text x={0} y={0} dy={12} textAnchor="middle" fontSize={11}
-        fontWeight={700} fontFamily="'IBM Plex Mono', monospace" fill={meta.fill}>
-        {payload.value}
-      </text>
-      <text x={0} y={0} dy={24} textAnchor="middle" fontSize={9}
-        fill="#9CA3AF" fontFamily="'DM Sans', sans-serif">
-        {meta.label}
-      </text>
-    </g>
-  );
-}
-
 export default function GateStats({ circuit, activeLayer }) {
-  // Memoize all data computation — avoid recomputing 262k entries per render
+  const dominantRef = useRef(null);
+  const magnitudeRef = useRef(null);
+
   const { layerData, coeffData, summaryData, showPerLayerChart } = useMemo(() => {
     if (!circuit) return { layerData: [], coeffData: [], summaryData: [], showPerLayerChart: true };
+    perfStart('gatestats-compute');
     const { n, d, gates } = circuit;
-    // Classify gates by dominant coefficient
+
     const _layerData = [];
     let totalC = 0, totalA = 0, totalB = 0, totalP = 0;
 
@@ -77,10 +52,7 @@ export default function GateStats({ circuit, activeLayer }) {
       totalC += cCount; totalA += aCount; totalB += bCount; totalP += pCount;
       _layerData.push({
         layer: `L${l}`,
-        "c — bias": cCount,
-        "a — first": aCount,
-        "b — second": bCount,
-        "p — interaction": pCount,
+        c: cCount, a: aCount, b: bCount, p: pCount,
       });
     }
 
@@ -99,21 +71,21 @@ export default function GateStats({ circuit, activeLayer }) {
     }
 
     const _coeffData = [
-      { key: "c", avg: totals.const / count,   fill: COLORS.const },
-      { key: "a", avg: totals.first / count,   fill: COLORS.first },
-      { key: "b", avg: totals.second / count,  fill: COLORS.second },
-      { key: "p", avg: totals.product / count,  fill: COLORS.product },
+      { index: "c — bias",        value: totals.const / count },
+      { index: "a — first (x)",   value: totals.first / count },
+      { index: "b — second (y)",  value: totals.second / count },
+      { index: "p — product (xy)", value: totals.product / count },
     ];
 
-    // For large circuits, compute summary distribution instead of per-layer chart
     const totalGates = totalC + totalA + totalB + totalP;
     const _summaryData = [
-      { key: "c", pct: (totalC / totalGates * 100), fill: COLORS.const },
-      { key: "a", pct: (totalA / totalGates * 100), fill: COLORS.first },
-      { key: "b", pct: (totalB / totalGates * 100), fill: COLORS.second },
-      { key: "p", pct: (totalP / totalGates * 100), fill: COLORS.product },
+      { index: "c — bias",        value: (totalC / totalGates * 100) },
+      { index: "a — first (x)",   value: (totalA / totalGates * 100) },
+      { index: "b — second (y)",  value: (totalB / totalGates * 100) },
+      { index: "p — product (xy)", value: (totalP / totalGates * 100) },
     ];
 
+    perfEnd('gatestats-compute');
     return {
       layerData: _layerData,
       coeffData: _coeffData,
@@ -121,6 +93,52 @@ export default function GateStats({ circuit, activeLayer }) {
       showPerLayerChart: d <= MAX_LAYER_BARS,
     };
   }, [circuit]);
+
+  // Render dominant coefficient chart
+  useEffect(() => {
+    if (!dominantRef.current || !circuit) return;
+    dominantRef.current.innerHTML = '';
+
+    if (showPerLayerChart) {
+      // For small circuits — per-layer stacked data as separate series
+      // tfvis barchart only does single series, so we use a grouped approach
+      // rendering one bar chart per coefficient type
+      const data = layerData.map(d => ({
+        index: d.layer,
+        value: d.c + d.a + d.b + d.p,
+      }));
+      tfvis.render.barchart(dominantRef.current, data, {
+        width: dominantRef.current.offsetWidth || 400,
+        height: 180,
+        xLabel: 'Layer',
+        yLabel: 'Gates',
+        color: COLORS.product,
+      });
+    } else {
+      // For large circuits — summary distribution
+      tfvis.render.barchart(dominantRef.current, summaryData, {
+        width: dominantRef.current.offsetWidth || 400,
+        height: 180,
+        xLabel: 'Coefficient',
+        yLabel: '% of gates',
+        color: [COLORS.const, COLORS.first, COLORS.second, COLORS.product],
+      });
+    }
+  }, [circuit, layerData, summaryData, showPerLayerChart]);
+
+  // Render coefficient magnitude chart
+  useEffect(() => {
+    if (!magnitudeRef.current || !circuit) return;
+    magnitudeRef.current.innerHTML = '';
+
+    tfvis.render.barchart(magnitudeRef.current, coeffData, {
+      width: magnitudeRef.current.offsetWidth || 400,
+      height: 210,
+      xLabel: 'Coefficient',
+      yLabel: 'Avg |value|',
+      color: [COLORS.const, COLORS.first, COLORS.second, COLORS.product],
+    });
+  }, [circuit, coeffData]);
 
   if (!circuit) return null;
 
@@ -144,119 +162,12 @@ export default function GateStats({ circuit, activeLayer }) {
           <h3 className="subheading">
             {showPerLayerChart ? "Dominant Coefficient per Layer" : "Dominant Coefficient Distribution"}
           </h3>
-          {showPerLayerChart ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={layerData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
-                <XAxis
-                  dataKey="layer"
-                  tick={{ fontSize: 10, fill: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace" }}
-                  axisLine={{ stroke: "#E0E0E0" }}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "#9CA3AF" }}
-                  axisLine={{ stroke: "#E0E0E0" }}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "#fff",
-                    border: "1px solid #E0E0E0",
-                    borderRadius: 8,
-                    fontSize: 11,
-                  }}
-                />
-                {["c — bias", "a — first", "b — second", "p — interaction"].map((key, ki) => {
-                  const fills = [COLORS.const, COLORS.first, COLORS.second, COLORS.product];
-                  return (
-                    <Bar key={ki} dataKey={key} fill={fills[ki]} stackId="a">
-                      {activeLayer !== undefined && activeLayer !== null &&
-                        layerData.map((_, idx) => (
-                          <Cell key={idx} fillOpacity={idx === activeLayer ? 1 : 0.3} />
-                        ))}
-                    </Bar>
-                  );
-                })}
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            /* Compact summary for large circuits — just 4 bars, not 256 */
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={summaryData} margin={{ top: 4, right: 8, bottom: 32, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
-                <XAxis
-                  dataKey="key"
-                  tick={<ColoredTick />}
-                  axisLine={{ stroke: "#E0E0E0" }}
-                  tickLine={false}
-                  interval={0}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "#9CA3AF" }}
-                  axisLine={{ stroke: "#E0E0E0" }}
-                  tickLine={false}
-                  tickFormatter={(v) => `${v.toFixed(0)}%`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "#fff",
-                    border: "1px solid #E0E0E0",
-                    borderRadius: 8,
-                    fontSize: 11,
-                  }}
-                  formatter={(value, name, props) => {
-                    const meta = COEFF_META[props.payload.key];
-                    return [`${value.toFixed(1)}%`, meta ? `${props.payload.key} — ${meta.label}` : "% gates"];
-                  }}
-                />
-                <Bar dataKey="pct" radius={[3, 3, 0, 0]}>
-                  {summaryData.map((entry, idx) => (
-                    <Cell key={idx} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+          <div ref={dominantRef} style={{ width: '100%', minHeight: 180 }} />
         </div>
 
         <div>
           <h3 className="subheading">Avg |Coefficient| Magnitude</h3>
-          <ResponsiveContainer width="100%" height={210}>
-            <BarChart data={coeffData} margin={{ top: 4, right: 8, bottom: 32, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
-              <XAxis
-                dataKey="key"
-                tick={<ColoredTick />}
-                axisLine={{ stroke: "#E0E0E0" }}
-                tickLine={false}
-                interval={0}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: "#9CA3AF" }}
-                axisLine={{ stroke: "#E0E0E0" }}
-                tickLine={false}
-                tickFormatter={(v) => v.toFixed(2)}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "#fff",
-                  border: "1px solid #E0E0E0",
-                  borderRadius: 8,
-                  fontSize: 11,
-                }}
-                formatter={(value, name, props) => {
-                  const meta = COEFF_META[props.payload.key];
-                  return [value.toFixed(4), meta ? `${props.payload.key} — ${meta.label}` : "Avg |coeff|"];
-                }}
-              />
-              <Bar dataKey="avg" radius={[3, 3, 0, 0]}>
-                {coeffData.map((entry, idx) => (
-                  <Cell key={idx} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div ref={magnitudeRef} style={{ width: '100%', minHeight: 210 }} />
         </div>
       </div>
 

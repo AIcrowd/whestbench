@@ -1,55 +1,114 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { empiricalMeanTF, initTF } from "../circuit-tf";
+import { perfEnd, perfStart } from "../perf";
 
 /**
  * EstimatorRunner — lets users run estimators one at a time,
- * with timing stats. Computation runs in a Web Worker (off main thread).
+ * with timing stats. GPU estimators run on main thread via TF.js
+ * (WebGL/WebGPU need DOM context). CPU fallback via Web Worker.
  *
  * Ground Truth = empiricalMean with 10k samples (high-fidelity reference).
  * Sampling = empiricalMean with user-chosen budget.
- * Mean Propagation = analytic layer-wise estimation (instant).
+ * Mean Propagation = analytic layer-wise estimation (instant, always via worker).
  */
 export default function EstimatorRunner({ circuit, onResult, worker }) {
   const [budget, setBudget] = useState(1000);
   const [running, setRunning] = useState(null);
+  const [progress, setProgress] = useState(0); // 0..1 real progress
   const [results, setResults] = useState({});
+  const [tfBackend, setTfBackend] = useState(null);
 
-  const runEstimator = useCallback(async (key, type, workerParams, displayInfo) => {
-    if (!circuit || !worker) return;
+  // Initialize TF.js on mount
+  useEffect(() => {
+    initTF()
+      .then((backend) => setTfBackend(backend))
+      .catch(() => setTfBackend('unavailable'));
+  }, []);
+
+  // Run empiricalMean via TF.js (GPU), falling back to worker (CPU)
+  const runEmpirical = useCallback(async (key, trials, seed, displayInfo) => {
+    if (!circuit) return;
     setRunning(key);
+    setProgress(0);
 
     try {
-      const result = await worker.run(type, workerParams);
-      const enriched = { ...displayInfo, estimates: result.estimates, time: result.time };
+      let estimates, time;
+
+      if (tfBackend && tfBackend !== 'unavailable') {
+        // GPU path: TF.js on main thread with progress reporting
+        perfStart(`estimator-${key}`);
+        const t0 = performance.now();
+        estimates = await empiricalMeanTF(circuit, trials, seed, (p) => {
+          setProgress(p);
+        });
+        time = performance.now() - t0;
+        perfEnd(`estimator-${key}`);
+      } else {
+        // CPU fallback: worker (progress estimated based on typical timing)
+        perfStart(`estimator-${key}`);
+        const result = await worker.run('empiricalMean', { circuit, trials, seed });
+        estimates = result.estimates;
+        time = result.time;
+        perfEnd(`estimator-${key}`);
+      }
+
+      setProgress(1);
+      const enriched = { ...displayInfo, estimates, time };
       setResults((prev) => ({ ...prev, [key]: enriched }));
       onResult(key, enriched);
     } catch (err) {
       console.error(`Estimator ${key} failed:`, err);
+      // Try CPU fallback if GPU failed
+      if (tfBackend && tfBackend !== 'unavailable') {
+        console.warn(`[EstimatorRunner] TF.js failed, falling back to worker`);
+        try {
+          const result = await worker.run('empiricalMean', { circuit, trials, seed });
+          const enriched = { ...displayInfo, estimates: result.estimates, time: result.time };
+          setResults((prev) => ({ ...prev, [key]: enriched }));
+          onResult(key, enriched);
+        } catch (err2) {
+          console.error(`Worker fallback also failed:`, err2);
+        }
+      }
     } finally {
       setRunning(null);
+      setProgress(0);
+    }
+  }, [circuit, worker, onResult, tfBackend]);
+
+  // Mean propagation always uses the worker (analytic, instant, no GPU needed)
+  const runMeanProp = useCallback(async () => {
+    if (!circuit || !worker) return;
+    setRunning("meanprop");
+    setProgress(0);
+    try {
+      perfStart('estimator-meanprop');
+      const result = await worker.run('meanPropagation', { circuit });
+      perfEnd('estimator-meanprop');
+      setProgress(1);
+      const enriched = { name: "Mean Propagation", estimates: result.estimates, time: result.time };
+      setResults((prev) => ({ ...prev, meanprop: enriched }));
+      onResult("meanprop", enriched);
+    } catch (err) {
+      console.error("Mean propagation failed:", err);
+    } finally {
+      setRunning(null);
+      setProgress(0);
     }
   }, [circuit, worker, onResult]);
 
   const runGroundTruth = useCallback(() => {
     const gtBudget = 10000;
-    runEstimator("groundTruth", "empiricalMean",
-      { circuit, trials: gtBudget, seed: 7777 },
+    runEmpirical("groundTruth", gtBudget, 7777,
       { name: "Ground Truth (10k samples)", budget: gtBudget }
     );
-  }, [circuit, runEstimator]);
+  }, [runEmpirical]);
 
   const runSampling = useCallback(() => {
-    runEstimator("sampling", "empiricalMean",
-      { circuit, trials: budget, seed: 1234 },
+    runEmpirical("sampling", budget, 1234,
       { name: "Sampling", budget }
     );
-  }, [circuit, budget, runEstimator]);
-
-  const runMeanProp = useCallback(() => {
-    runEstimator("meanprop", "meanPropagation",
-      { circuit },
-      { name: "Mean Propagation" }
-    );
-  }, [circuit, runEstimator]);
+  }, [runEmpirical, budget]);
 
   const formatTime = (ms) => {
     if (ms < 0.01) return "<0.01ms";
@@ -58,9 +117,45 @@ export default function EstimatorRunner({ circuit, onResult, worker }) {
     return `${(ms / 1000).toFixed(2)}s`;
   };
 
+  const backendBadge = tfBackend === 'unavailable' ? 'CPU (worker)'
+    : tfBackend ? `GPU (${tfBackend})`
+    : 'loading…';
+
+  const progressPct = Math.round(progress * 100);
+
+  const renderProgressBar = (key) => {
+    if (running !== key) return null;
+    return (
+      <div className="estimator-progress">
+        <div
+          className="estimator-progress-bar"
+          style={{
+            width: `${progressPct}%`,
+            transition: 'width 0.15s ease-out',
+          }}
+        />
+        <span className="estimator-progress-label" style={{
+          position: 'absolute', right: 4, top: 0, fontSize: 9,
+          color: '#9CA3AF', fontFamily: "'IBM Plex Mono', monospace",
+          lineHeight: '6px',
+        }}>
+          {progressPct > 0 ? `${progressPct}%` : '…'}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className="estimator-runner">
       <h2>Run Estimators</h2>
+      <div className="estimator-backend-badge" style={{
+        fontSize: 10, color: '#9CA3AF', fontFamily: "'IBM Plex Mono', monospace",
+        marginBottom: 8, padding: '2px 0'
+      }}>
+        Backend: <span style={{
+          color: tfBackend === 'webgpu' ? '#10B981' : tfBackend === 'webgl' ? '#3B82F6' : '#F59E0B'
+        }}>{backendBadge}</span>
+      </div>
 
       {/* ① Ground Truth */}
       <div className="estimator-card estimator-card--gt">
@@ -70,18 +165,16 @@ export default function EstimatorRunner({ circuit, onResult, worker }) {
         </div>
         <p className="estimator-card-desc">
           Brute-force: samples <strong>10,000</strong> random inputs and averages
-          each wire. Slow but accurate.
+          each wire. {tfBackend && tfBackend !== 'unavailable' ? 'GPU-accelerated.' : 'Slow but accurate.'}
         </p>
         <button
           className="run-btn run-btn-gt"
           onClick={runGroundTruth}
           disabled={!!running}
         >
-          {running === "groundTruth" ? "Running…" : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Ground Truth (10k)</>}
+          {running === "groundTruth" ? `Running… ${progressPct}%` : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Ground Truth (10k)</>}
         </button>
-        {running === "groundTruth" && (
-          <div className="estimator-progress"><div className="estimator-progress-bar" /></div>
-        )}
+        {renderProgressBar("groundTruth")}
         {results.groundTruth && !running && (
           <div className="estimator-card-result">
             <span className="result-stat">{formatTime(results.groundTruth.time)}</span>
@@ -118,11 +211,9 @@ export default function EstimatorRunner({ circuit, onResult, worker }) {
           onClick={runSampling}
           disabled={!!running}
         >
-          {running === "sampling" ? "Running…" : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Sampling ({budget.toLocaleString()})</>}
+          {running === "sampling" ? `Running… ${progressPct}%` : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Sampling ({budget.toLocaleString()})</>}
         </button>
-        {running === "sampling" && (
-          <div className="estimator-progress"><div className="estimator-progress-bar" /></div>
-        )}
+        {renderProgressBar("sampling")}
         {results.sampling && !running && (
           <div className="estimator-card-result">
             <span className="result-stat">{formatTime(results.sampling.time)}</span>
@@ -147,9 +238,7 @@ export default function EstimatorRunner({ circuit, onResult, worker }) {
         >
           {running === "meanprop" ? "Running…" : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Mean Propagation</>}
         </button>
-        {running === "meanprop" && (
-          <div className="estimator-progress"><div className="estimator-progress-bar" /></div>
-        )}
+        {renderProgressBar("meanprop")}
         {results.meanprop && !running && (
           <div className="estimator-card-result">
             <span className="result-stat">{formatTime(results.meanprop.time)}</span>
