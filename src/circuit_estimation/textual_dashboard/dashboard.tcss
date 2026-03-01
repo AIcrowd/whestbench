@@ -1,0 +1,43 @@
+:root {
+    --surface-base: #f7f5ef;
+    --surface-panel: #fffdf8;
+    --border-subtle: #d6d3ce;
+    --ink-strong: #111111;
+    --ink-muted: #4b5563;
+    --accent-score: #166534;
+    --accent-accuracy: #1d4ed8;
+    --accent-runtime: #b45309;
+    --accent-warning: #b91c1c;
+}
+
+Screen {
+    background: var(--surface-base);
+    color: var(--ink-strong);
+}
+
+#dashboard-tabs {
+    dock: top;
+    padding: 1;
+    border: solid var(--border-subtle);
+    background: var(--surface-panel);
+    color: var(--ink-muted);
+    text-style: bold;
+}
+
+#dashboard-content {
+    padding: 1 2;
+    border: solid var(--border-subtle);
+    background: var(--surface-panel);
+    color: var(--ink-strong);
+    overflow-y: auto;
+}
+
+Header {
+    background: var(--surface-panel);
+    color: var(--accent-accuracy);
+}
+
+Footer {
+    background: var(--surface-panel);
+    color: var(--accent-runtime);
+}
