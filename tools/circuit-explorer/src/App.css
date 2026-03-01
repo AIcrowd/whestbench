@@ -81,6 +81,15 @@ body {
 .header-icon {
   color: var(--coral);
   font-size: 18px;
+  display: flex;
+  align-items: center;
+}
+
+/* Inline SVG icon utility for buttons */
+.btn-icon {
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
 }
 
 .subtitle {
@@ -502,6 +511,7 @@ body {
   font-size: 32px;
   display: block;
   margin-bottom: 8px;
+  color: var(--gray-400);
 }
 
 .empty-state p {
@@ -726,6 +736,26 @@ body {
   color: var(--gray-400);
   padding: 6px 0 0;
   font-family: var(--font-mono);
+}
+
+/* Gate type legend */
+.gate-legend {
+  display: flex;
+  gap: 16px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--gray-500);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-item svg {
+  flex-shrink: 0;
 }
 
 /* Gate tooltip (click-to-inspect) */
