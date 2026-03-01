@@ -4,10 +4,15 @@ Last updated: 2026-03-01
 
 ## Repository Layout
 
-- `circuit.py`: random circuit generation + batched forward simulation + empirical means.
-- `estimators.py`: mean propagation, covariance propagation, and a budget-switched combined estimator.
-- `evaluate.py`: scoring loop, baseline timing, contest params.
-- `main.py`: small local smoke run.
+- `src/circuit_estimation/domain.py`: `Layer`/`Circuit` entities and validation.
+- `src/circuit_estimation/generation.py`: random gate/circuit sampling (seedable RNG path).
+- `src/circuit_estimation/simulation.py`: batched execution + empirical mean helpers.
+- `src/circuit_estimation/estimators.py`: mean/covariance propagation + combined estimator.
+- `src/circuit_estimation/scoring.py`: contest params, baseline timing, scoring loop, optional profiler hook.
+- `src/circuit_estimation/protocol.py`: serializable request/response DTOs for future RPC integration.
+- `src/circuit_estimation/cli.py`: local run entrypoint used by `main.py`.
+- `circuit.py`, `estimators.py`, `evaluate.py`: compatibility wrappers that preserve legacy imports.
+- `main.py`: small local smoke run and `--profile` diagnostics mode.
 
 ## Current Mathematical Representation
 
@@ -15,17 +20,17 @@ Last updated: 2026-03-01
 - Gates are represented as affine/bilinear forms using coefficients:
   - `const`, `first_coeff`, `second_coeff`, `product_coeff`.
 
-This representation is compact for propagation-style estimators, but the participant-facing API still needs to define whether submission contracts use Boolean or signed-wire semantics.
+This representation is compact for propagation-style estimators. Participant-facing contracts now explicitly document estimator output shape/depth expectations in `README.md`.
 
 ## Circuit Generation and Execution
 
-From `circuit.py`:
+From `generation.py` + `simulation.py`:
 
-- `Layer` stores per-wire parent indices and gate coefficients.
 - `random_gates(n)` samples gate coefficients and wire connections.
 - `random_circuit(n, d)` builds `d` layers.
 - `run_batched(circuit, inputs)` yields layer outputs for a batch.
 - `empirical_mean(circuit, trials)` estimates per-layer mean vectors by Monte Carlo.
+- validation failures now raise explicit `ValueError` with stable messages.
 
 ## Estimators in Repo
 
@@ -39,7 +44,7 @@ From `estimators.py`:
 
 ## Current Scoring Logic
 
-From `evaluate.py` / `README.md`:
+From `scoring.py` / `README.md`:
 
 - Contest params currently include:
   - `width`
@@ -54,6 +59,15 @@ From `evaluate.py` / `README.md`:
   - MSE is computed vs empirical means; then multiplied by time ratio.
 
 Final score = average adjusted MSE across depths and budgets.
+
+Additional scorer behavior:
+
+- malformed estimator outputs (wrong width or wrong number of layers) now raise explicit errors,
+- optional profiler callback can emit per-layer diagnostics:
+  - `wall_time_s`,
+  - `cpu_time_s`,
+  - `rss_bytes`,
+  - `peak_rss_bytes`.
 
 ## Local Smoke Result (Observed)
 
@@ -71,14 +85,12 @@ This is just a toy sanity run, not a stable benchmark number.
 
 ## Important Gaps for Next Iterations
 
-1. No formal submission interface contract yet.
-2. No containerized/sandboxed execution path yet.
-3. No deterministic seeding policy for reproducible leaderboard recomputation.
-4. No unit/integration test suite for scoring invariants.
-5. Timing uses local wall-clock behavior; no production-grade resource accounting yet.
-6. Some score pipeline internals appear provisional (for example `baseline_performance` is computed but not used).
+1. Hosted evaluator resource envelope and enforcement policy are still unresolved (`open-questions.md`).
+2. No production containerized/sandboxed execution path in this repo yet.
+3. Deterministic seeded evaluation flow exists locally but final public seed policy is not frozen.
+4. Profiling metrics are local-process diagnostics, not yet equivalent to hosted infra accounting.
+5. Participant output contract is clearer locally but still needs final public challenge-spec freeze.
 
 ## Implication for Future Agents
 
-Treat current code as a toy reference for algorithm/evaluator shape, not as production evaluator code. The next phase should prioritize explicit interfaces, reproducibility, and secure isolated execution semantics.
-
+Treat current code as a strong local starter baseline with explicit interfaces and verification gates, but not yet a production hosted evaluator. Next phase should prioritize hosted isolation semantics and finalized public benchmark policy.

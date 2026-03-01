@@ -128,3 +128,40 @@ Scoring procedure:
 Your total loss is the average loss over all depths and time limits.
 
 (This is implemented in score_estimator)
+
+## Participant Contract (Current Local API)
+
+- Estimator signature:
+  - `Callable[[Circuit, int], Iterator[NDArray[np.float32]]]`
+- Input:
+  - a generated `Circuit`,
+  - one `budget` value from evaluator configuration.
+- Required output:
+  - exactly one `np.float32` vector per depth,
+  - each vector must have shape `(width,)`.
+
+Violating output shape/depth requirements raises explicit errors in scoring.
+
+## Extension Points
+
+- Implement custom estimators in `src/circuit_estimation/estimators.py` or a new module with the same callable signature.
+- Evaluate locally via:
+  - `score_estimator(...)` in `src/circuit_estimation/scoring.py`,
+  - `uv run main.py` for default baseline run.
+- Optional diagnostics:
+  - use `uv run main.py --profile` to emit per-layer runtime/resource events.
+
+## Failure Semantics
+
+Scoring applies the following runtime rules per depth:
+
+- If elapsed time exceeds `(1 + time_tolerance) * baseline_time`, estimator output for that depth is zeroed.
+- If elapsed time is below `(1 - time_tolerance) * baseline_time`, effective runtime is floored to `(1 - time_tolerance) * baseline_time`.
+- If estimator output width mismatches `width`, scoring raises `ValueError`.
+- If estimator yields fewer/more outputs than `max_depth`, scoring raises `ValueError`.
+
+## Deterministic Seed Policy
+
+- Circuit generation supports explicit seeded RNG objects (`np.random.default_rng(seed)`).
+- For reproducible local experiments, pass seeded RNGs when constructing circuits.
+- Default CLI flow remains stochastic unless a seeded circuit workflow is explicitly used.
