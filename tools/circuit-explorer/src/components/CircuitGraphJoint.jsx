@@ -56,7 +56,7 @@ const PORT_GROUPS = {
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
-export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
+export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOutputs }) {
   const canvasRef = useRef(null);
   const paperRef = useRef(null);
   const graphRef = useRef(null);
@@ -411,6 +411,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
             strokeWidth: 2,
             rx: 3,
             ry: 3,
+            class: pulseOutputs ? "output-node-pulse" : "",
           },
           label: {
             text: `y${w}`,
@@ -489,7 +490,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
       paperRef.current = null;
       graphRef.current = null;
     };
-  }, [circuit, means]);
+  }, [circuit, means, pulseOutputs]);
 
   /* ---- zoom ---- */
   useEffect(() => {
