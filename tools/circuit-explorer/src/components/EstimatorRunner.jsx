@@ -1,57 +1,54 @@
 import { useCallback, useState } from "react";
-import { empiricalMean } from "../circuit";
-import { meanPropagation } from "../estimators";
 
 /**
  * EstimatorRunner — lets users run estimators one at a time,
- * with timing stats. No artificial animation delays.
+ * with timing stats. Computation runs in a Web Worker (off main thread).
  *
  * Ground Truth = empiricalMean with 10k samples (high-fidelity reference).
  * Sampling = empiricalMean with user-chosen budget.
  * Mean Propagation = analytic layer-wise estimation (instant).
  */
-export default function EstimatorRunner({ circuit, onResult }) {
+export default function EstimatorRunner({ circuit, onResult, worker }) {
   const [budget, setBudget] = useState(1000);
   const [running, setRunning] = useState(null);
   const [results, setResults] = useState({});
 
-  const runEstimator = useCallback((key, computeFn) => {
-    if (!circuit) return;
+  const runEstimator = useCallback(async (key, type, workerParams, displayInfo) => {
+    if (!circuit || !worker) return;
     setRunning(key);
 
-    // Use requestAnimationFrame to let the "Running…" state render,
-    // then run the computation synchronously.
-    requestAnimationFrame(() => {
-      const t0 = performance.now();
-      const result = computeFn();
-      result.time = performance.now() - t0;
-
-      setResults((prev) => ({ ...prev, [key]: result }));
-      onResult(key, result);
+    try {
+      const result = await worker.run(type, workerParams);
+      const enriched = { ...displayInfo, estimates: result.estimates, time: result.time };
+      setResults((prev) => ({ ...prev, [key]: enriched }));
+      onResult(key, enriched);
+    } catch (err) {
+      console.error(`Estimator ${key} failed:`, err);
+    } finally {
       setRunning(null);
-    });
-  }, [circuit, onResult]);
+    }
+  }, [circuit, worker, onResult]);
 
   const runGroundTruth = useCallback(() => {
-    runEstimator("groundTruth", () => {
-      const gtBudget = 10000;
-      const estimates = empiricalMean(circuit, gtBudget, 7777);
-      return { name: "Ground Truth (10k samples)", estimates, budget: gtBudget };
-    });
+    const gtBudget = 10000;
+    runEstimator("groundTruth", "empiricalMean",
+      { circuit, trials: gtBudget, seed: 7777 },
+      { name: "Ground Truth (10k samples)", budget: gtBudget }
+    );
   }, [circuit, runEstimator]);
 
   const runSampling = useCallback(() => {
-    runEstimator("sampling", () => {
-      const estimates = empiricalMean(circuit, budget, 1234);
-      return { name: "Sampling", estimates, budget };
-    });
+    runEstimator("sampling", "empiricalMean",
+      { circuit, trials: budget, seed: 1234 },
+      { name: "Sampling", budget }
+    );
   }, [circuit, budget, runEstimator]);
 
   const runMeanProp = useCallback(() => {
-    runEstimator("meanprop", () => {
-      const estimates = meanPropagation(circuit);
-      return { name: "Mean Propagation", estimates };
-    });
+    runEstimator("meanprop", "meanPropagation",
+      { circuit },
+      { name: "Mean Propagation" }
+    );
   }, [circuit, runEstimator]);
 
   const formatTime = (ms) => {
@@ -163,4 +160,3 @@ export default function EstimatorRunner({ circuit, onResult }) {
     </div>
   );
 }
-
