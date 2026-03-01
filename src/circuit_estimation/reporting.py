@@ -217,6 +217,10 @@ def _budget_lane_panel(report: dict[str, Any]) -> Panel:
 
 def _render_layer_section(console: Console, report: dict[str, Any]) -> None:
     console.print(Rule("Layer Diagnostics", style="bright_cyan"))
+    console.print(_layer_lane_panel(report))
+
+
+def _layer_lane_panel(report: dict[str, Any]) -> Panel:
     by_budget = _budget_rows(report)
     mse_series = [_to_float_list(entry.get("mse_by_layer", [])) for entry in by_budget]
     ratio_series = [_to_float_list(entry.get("time_ratio_by_layer", [])) for entry in by_budget]
@@ -250,15 +254,14 @@ def _render_layer_section(console: Console, report: dict[str, Any]) -> None:
 
     accuracy_plot = _layer_trend_plot_panel(avg_mse, avg_adj)
     runtime_plot = _layer_runtime_plot_panel(avg_ratio)
-    console.print(
+    return Panel(
         Columns(
-            [
-                Panel(table, title="Layer Metric Table", border_style="bright_black"),
-                Group(accuracy_plot, runtime_plot),
-            ],
+            [Panel(table, title="Layer Metric Table", border_style="bright_black"), Group(accuracy_plot, runtime_plot)],
             equal=False,
             expand=True,
-        )
+        ),
+        title="Layer Intelligence",
+        border_style="bright_black",
     )
 
 
