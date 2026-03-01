@@ -7,7 +7,7 @@ import Controls from "./components/Controls";
 import EstimatorComparison from "./components/EstimatorComparison";
 import EstimatorRunner from "./components/EstimatorRunner";
 import GateStats from "./components/GateStats";
-import NarrativeCard from "./components/NarrativeCard";
+import NarrativeCard, { Ewire } from "./components/NarrativeCard";
 import SignalHeatmap from "./components/SignalHeatmap";
 import StepIndicator from "./components/StepIndicator";
 import WireStats from "./components/WireStats";
@@ -275,7 +275,8 @@ export default function App() {
               {tourGroundTruthTime ? (
                 <>
                   ✅ We sampled <strong>10,000 random inputs</strong> and
-                  averaged each wire. The circuit is now colored by E[wire].
+                  averaged each wire. The circuit is now colored by{" "}
+                  <Ewire />.
                   Accurate, but took{" "}
                   <strong>{formatTime(tourGroundTruthTime)}</strong>. Now
                   imagine <strong>1,000 wires × 256 layers</strong>…
