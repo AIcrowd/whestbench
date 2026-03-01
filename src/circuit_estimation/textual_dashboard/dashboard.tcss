@@ -1,43 +1,31 @@
-:root {
-    --surface-base: #f7f5ef;
-    --surface-panel: #fffdf8;
-    --border-subtle: #d6d3ce;
-    --ink-strong: #111111;
-    --ink-muted: #4b5563;
-    --accent-score: #166534;
-    --accent-accuracy: #1d4ed8;
-    --accent-runtime: #b45309;
-    --accent-warning: #b91c1c;
-}
-
 Screen {
-    background: var(--surface-base);
-    color: var(--ink-strong);
+    background: #f7f5ef;
+    color: #111111;
 }
 
 #dashboard-tabs {
     dock: top;
     padding: 1;
-    border: solid var(--border-subtle);
-    background: var(--surface-panel);
-    color: var(--ink-muted);
+    border: solid #d6d3ce;
+    background: #fffdf8;
+    color: #4b5563;
     text-style: bold;
 }
 
 #dashboard-content {
     padding: 1 2;
-    border: solid var(--border-subtle);
-    background: var(--surface-panel);
-    color: var(--ink-strong);
+    border: solid #d6d3ce;
+    background: #fffdf8;
+    color: #111111;
     overflow-y: auto;
 }
 
 Header {
-    background: var(--surface-panel);
-    color: var(--accent-accuracy);
+    background: #fffdf8;
+    color: #1d4ed8;
 }
 
 Footer {
-    background: var(--surface-panel);
-    color: var(--accent-runtime);
+    background: #fffdf8;
+    color: #b45309;
 }
