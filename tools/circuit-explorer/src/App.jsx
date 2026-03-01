@@ -1,49 +1,169 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { randomCircuit } from "./circuit";
+import { empiricalMean, randomCircuit } from "./circuit";
 import CircuitGraphJoint from "./components/CircuitGraphJoint";
 import CircuitHeatmap from "./components/CircuitHeatmap";
 import Controls from "./components/Controls";
 import EstimatorComparison from "./components/EstimatorComparison";
 import EstimatorRunner from "./components/EstimatorRunner";
 import GateStats from "./components/GateStats";
+import NarrativeCard, { Ewire } from "./components/NarrativeCard";
 import SignalHeatmap from "./components/SignalHeatmap";
+import StepIndicator from "./components/StepIndicator";
 import WireStats from "./components/WireStats";
+import { meanPropagation } from "./estimators";
 
 const DEFAULT_PARAMS = { width: 8, depth: 6, seed: 42 };
-const GRAPH_MODE_THRESHOLD = 4096; // n×d threshold for JointJS vs heatmap
+const TOUR_PARAMS = { width: 4, depth: 3, seed: 42 };
+const GRAPH_MODE_THRESHOLD = 4096;
+
+function formatTime(ms) {
+  if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
+  if (ms < 1000) return `${ms.toFixed(1)}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
+}
 
 export default function App() {
+  // ── Step state (tour) ──
+  const [step, setStep] = useState(() => {
+    const saved = localStorage.getItem("circuit-explorer-tour-step");
+    return saved === "done" ? 6 : 1;
+  });
+
+  const isTour = step < 6;
+
+  // ── Circuit params ──
   const [params, setParams] = useState(DEFAULT_PARAMS);
+  const effectiveParams = isTour ? TOUR_PARAMS : params;
+
   const [activeLayer, setActiveLayer] = useState(undefined);
   const [estimatorResults, setEstimatorResults] = useState({});
 
-  // Auto-regenerate circuit when params change
+  // ── Tour auto-run state ──
+  const [tourGroundTruth, setTourGroundTruth] = useState(null);
+  const [tourGroundTruthTime, setTourGroundTruthTime] = useState(null);
+  const [tourSampling, setTourSampling] = useState(null);
+  const [tourMeanProp, setTourMeanProp] = useState(null);
+  const [tourBudget, setTourBudget] = useState(1000);
+  const autoRunDone = useRef({ gt: false, sampling: false, meanprop: false });
+
+  // ── Circuit ──
   const circuit = useMemo(
-    () => randomCircuit(params.width, params.depth, params.seed),
-    [params.width, params.depth, params.seed]
+    () =>
+      randomCircuit(
+        effectiveParams.width,
+        effectiveParams.depth,
+        effectiveParams.seed
+      ),
+    [effectiveParams.width, effectiveParams.depth, effectiveParams.seed]
   );
 
-  // Determine rendering mode
-  const totalGates = params.width * params.depth;
+  const tourCircuit = useMemo(
+    () => randomCircuit(TOUR_PARAMS.width, TOUR_PARAMS.depth, TOUR_PARAMS.seed),
+    []
+  );
+
+  const totalGates = effectiveParams.width * effectiveParams.depth;
   const useGraphMode = totalGates <= GRAPH_MODE_THRESHOLD;
 
-  // Clear estimator results when circuit changes
+  // Clear estimator results when circuit changes (explore mode only)
   useEffect(() => {
-    setEstimatorResults({});
-    setActiveLayer(undefined);
-  }, [circuit]);
+    if (!isTour) {
+      setEstimatorResults({});
+      setActiveLayer(undefined);
+    }
+  }, [circuit, isTour]);
 
+  // ── Tour auto-run effects ──
+  // Step 3: auto-run ground truth
+  useEffect(() => {
+    if (step === 3 && !autoRunDone.current.gt) {
+      autoRunDone.current.gt = true;
+      const t0 = performance.now();
+      const means = empiricalMean(tourCircuit, 10000, 99);
+      const elapsed = performance.now() - t0;
+      setTourGroundTruth(means);
+      setTourGroundTruthTime(elapsed);
+    }
+  }, [step, tourCircuit]);
+
+  // Step 4: auto-run sampling
+  useEffect(() => {
+    if (step >= 4 && !autoRunDone.current.sampling) {
+      autoRunDone.current.sampling = true;
+      const means = empiricalMean(tourCircuit, tourBudget, 77);
+      setTourSampling(means);
+    }
+  }, [step, tourCircuit, tourBudget]);
+
+  const handleTourBudgetChange = useCallback(
+    (newBudget) => {
+      setTourBudget(newBudget);
+      const means = empiricalMean(tourCircuit, newBudget, 77);
+      setTourSampling(means);
+    },
+    [tourCircuit]
+  );
+
+  // Step 5: auto-run mean propagation
+  useEffect(() => {
+    if (step >= 5 && !autoRunDone.current.meanprop) {
+      autoRunDone.current.meanprop = true;
+      const means = meanPropagation(tourCircuit);
+      setTourMeanProp(means);
+    }
+  }, [step, tourCircuit]);
+
+  // ── Step navigation ──
+  const nextStep = useCallback(() => {
+    setStep((s) => {
+      const next = Math.min(6, s + 1);
+      if (next === 6) {
+        localStorage.setItem("circuit-explorer-tour-step", "done");
+      }
+      return next;
+    });
+  }, []);
+
+  const prevStep = useCallback(() => {
+    setStep((s) => Math.max(1, s - 1));
+  }, []);
+
+  const handleSkipTour = useCallback(
+    (action) => {
+      if (action === "restart") {
+        localStorage.removeItem("circuit-explorer-tour-step");
+        autoRunDone.current = { gt: false, sampling: false, meanprop: false };
+        setTourGroundTruth(null);
+        setTourGroundTruthTime(null);
+        setTourSampling(null);
+        setTourMeanProp(null);
+        setStep(1);
+      } else {
+        localStorage.setItem("circuit-explorer-tour-step", "done");
+        setStep(6);
+      }
+    },
+    []
+  );
+
+  // ── Explore mode estimator handler ──
   const handleEstimatorResult = useCallback((key, result) => {
     setEstimatorResults((prev) => ({ ...prev, [key]: result }));
   }, []);
 
-  // Derive visualization data from results
+  // ── Derived data ──
   const groundTruth = estimatorResults.groundTruth?.estimates || null;
   const samplingEst = estimatorResults.sampling?.estimates || null;
   const meanPropEst = estimatorResults.meanprop?.estimates || null;
-  const hasAnyEstimate = groundTruth || samplingEst || meanPropEst;
-  const displayMeans = groundTruth || samplingEst || meanPropEst;
+
+  // Tour display data
+  const tourDisplayMeans =
+    step >= 3 ? tourGroundTruth || tourSampling || tourMeanProp : null;
+
+  // Explore mode display data
+  const exploreDisplayMeans = groundTruth || samplingEst || meanPropEst;
+  const hasAnyExploreEstimate = !!(groundTruth || samplingEst || meanPropEst);
 
   return (
     <div className="app">
@@ -57,127 +177,181 @@ export default function App() {
         </p>
       </header>
 
+      {/* Step indicator — always visible */}
+      <StepIndicator currentStep={step} onSkipTour={handleSkipTour} />
+
       <div className="app-layout">
         <aside className="sidebar">
-          <Controls params={params} onParamsChange={setParams} />
+          {/* Controls — locked during tour */}
+          <div
+            className={`controls-panel ${isTour ? "controls-panel--locked" : ""}`}
+          >
+            <Controls params={isTour ? TOUR_PARAMS : params} onParamsChange={setParams} />
+            {isTour && (
+              <p className="locked-hint">🔒 Unlocks in Explore mode</p>
+            )}
+          </div>
 
-          <EstimatorRunner
-            circuit={circuit}
-            onResult={handleEstimatorResult}
-          />
-
-          {/* Layer stepper — only useful in graph mode */}
-          {useGraphMode && (
-            <div className="layer-stepper">
-              <h3>Step Through</h3>
-              <div className="stepper-buttons">
-                <button
-                  onClick={() =>
-                    setActiveLayer((l) =>
-                      l === undefined ? 0 : Math.max(0, l - 1)
-                    )
+          {/* Tour budget slider (step 4) */}
+          {isTour && step >= 4 && (
+            <div className="controls-panel panel-reveal">
+              <h2>Sampling Budget</h2>
+              <div className="control-row">
+                <label>
+                  <span className="control-label">Samples</span>
+                  <span className="control-value">
+                    {tourBudget.toLocaleString()}
+                  </span>
+                </label>
+                <input
+                  type="range"
+                  min={100}
+                  max={10000}
+                  step={100}
+                  value={tourBudget}
+                  onChange={(e) =>
+                    handleTourBudgetChange(Number(e.target.value))
                   }
-                >
-                  ◀ Prev
-                </button>
-                <span className="layer-indicator">
-                  {activeLayer === undefined
-                    ? "All layers"
-                    : `Layer ${activeLayer}`}
-                </span>
-                <button
-                  onClick={() =>
-                    setActiveLayer((l) =>
-                      l === undefined
-                        ? 0
-                        : Math.min(circuit.d - 1, l + 1)
-                    )
-                  }
-                >
-                  Next ▶
-                </button>
+                />
               </div>
-              <button
-                className="reset-btn"
-                onClick={() => setActiveLayer(undefined)}
-              >
-                Show All
-              </button>
             </div>
           )}
+
+          {/* Estimator runner — locked during tour */}
+          <div
+            className={isTour ? "estimator-runner--locked" : ""}
+          >
+            <EstimatorRunner
+              circuit={circuit}
+              onResult={handleEstimatorResult}
+            />
+          </div>
         </aside>
 
         <main className="main-content">
-          {/* Circuit visualization — adaptive mode */}
-          {useGraphMode ? (
+          {/* ── Narrative Card ── */}
+          {step === 3 ? (
+            <NarrativeCard step={3} onNext={nextStep} onBack={prevStep}>
+              {tourGroundTruthTime ? (
+                <>
+                  ✅ We sampled <strong>10,000 random inputs</strong> and
+                  averaged each wire. The circuit is now colored by{" "}
+                  <Ewire />.
+                  Accurate, but took{" "}
+                  <strong>{formatTime(tourGroundTruthTime)}</strong>. Now
+                  imagine <strong>1,000 wires × 256 layers</strong>…
+                </>
+              ) : (
+                <>Computing ground truth…</>
+              )}
+            </NarrativeCard>
+          ) : (
+            <NarrativeCard
+              step={step}
+              onNext={nextStep}
+              onBack={prevStep}
+            />
+          )}
+
+          {/* ── Circuit visualization ── */}
+          {isTour ? (
+            <CircuitGraphJoint
+              circuit={tourCircuit}
+              means={tourDisplayMeans}
+              activeLayer={activeLayer}
+              pulseOutputs={step === 2}
+            />
+          ) : useGraphMode ? (
             <CircuitGraphJoint
               circuit={circuit}
-              means={displayMeans}
+              means={exploreDisplayMeans}
               activeLayer={activeLayer}
             />
           ) : (
-            <CircuitHeatmap
-              circuit={circuit}
-              means={displayMeans}
-            />
+            <CircuitHeatmap circuit={circuit} means={exploreDisplayMeans} />
           )}
 
-          {/* Gate structure analysis — always visible */}
-          <GateStats circuit={circuit} />
+          {/* ── Tour: MSE Comparison (steps 4-5) ── */}
+          {isTour && step >= 4 && tourGroundTruth && (
+            <div className="panel-reveal">
+              <EstimatorComparison
+                groundTruth={tourGroundTruth}
+                samplingEstimates={tourSampling}
+                meanPropEstimates={step >= 5 ? tourMeanProp : null}
+                depth={TOUR_PARAMS.depth}
+              />
+            </div>
+          )}
 
-          {/* After estimates are available */}
-          {hasAnyEstimate && (
+          {/* ── Explore mode: all panels ── */}
+          {!isTour && (
             <>
-              <div className="panels-row">
-                <SignalHeatmap
-                  means={displayMeans}
-                  width={params.width}
-                  depth={params.depth}
-                />
-                <WireStats
-                  means={displayMeans}
-                  width={params.width}
-                  depth={params.depth}
-                />
-              </div>
+              <GateStats circuit={circuit} />
 
-              {groundTruth && (samplingEst || meanPropEst) && (
-                <EstimatorComparison
-                  groundTruth={groundTruth}
-                  samplingEstimates={samplingEst}
-                  meanPropEstimates={meanPropEst}
-                  depth={params.depth}
-                />
+              {hasAnyExploreEstimate && (
+                <>
+                  <div className="panels-row panel-reveal">
+                    <SignalHeatmap
+                      means={exploreDisplayMeans}
+                      width={params.width}
+                      depth={params.depth}
+                    />
+                    <WireStats
+                      means={exploreDisplayMeans}
+                      width={params.width}
+                      depth={params.depth}
+                    />
+                  </div>
+
+                  {groundTruth && (samplingEst || meanPropEst) && (
+                    <div className="panel-reveal">
+                      <EstimatorComparison
+                        groundTruth={groundTruth}
+                        samplingEstimates={samplingEst}
+                        meanPropEstimates={meanPropEst}
+                        depth={params.depth}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+
+              {!hasAnyExploreEstimate && (
+                <div className="empty-state">
+                  <div className="empty-state-inner">
+                    <span className="empty-icon">📊</span>
+                    <h3>Ready to Explore</h3>
+                    <p>
+                      This circuit has{" "}
+                      <strong>{params.width}</strong> wires and{" "}
+                      <strong>{params.depth}</strong> layers of random gates.
+                    </p>
+                    <p className="empty-hint">
+                      Run <strong>Ground Truth</strong> to see means, then
+                      compare <strong>Sampling</strong> and{" "}
+                      <strong>Mean Propagation</strong>.
+                    </p>
+                  </div>
+                </div>
               )}
             </>
-          )}
-
-          {!hasAnyEstimate && (
-            <div className="empty-state">
-              <div className="empty-state-inner">
-                <span className="empty-icon">📊</span>
-                <h3>Ready to Explore</h3>
-                <p>
-                  This circuit has <strong>{params.width}</strong> wires and{" "}
-                  <strong>{params.depth}</strong> layers of random gates.
-                </p>
-                <p className="empty-hint">
-                  Your goal: estimate the mean output E[wire] of each wire
-                  over uniform ±1 inputs.
-                </p>
-                <p className="empty-hint">
-                  Start with <strong>Ground Truth</strong> (10k samples) to
-                  see exact means, then compare{" "}
-                  <strong>Sampling</strong> and{" "}
-                  <strong>Mean Propagation</strong>.
-                </p>
-              </div>
-            </div>
           )}
         </main>
       </div>
 
       <footer className="app-footer">
+        {step === 6 && (
+          <p style={{ marginBottom: 4 }}>
+            Ready to compete? →{" "}
+            <a
+              href="https://www.aicrowd.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Join the Challenge on AIcrowd
+            </a>
+          </p>
+        )}
         <p>
           Part of the{" "}
           <a
