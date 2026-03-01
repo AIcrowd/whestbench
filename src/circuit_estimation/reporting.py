@@ -50,11 +50,7 @@ def render_human_report(report: dict[str, Any]) -> str:
         )
     )
     console.print(
-        Panel(
-            "Use --agent-mode for JSON output when calling from automated agents or UIs.",
-            title="Agent Tip",
-            border_style="green",
-        )
+        "[dim]Use --agent-mode for JSON output when calling from automated agents or UIs.[/dim]"
     )
 
     console.print(Columns([_run_context_panel(report), _score_summary_panel(report)], equal=True))
@@ -73,18 +69,18 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
     table.add_column("value")
 
     rows = [
-        ("run_started_at_utc", str(run_meta.get("run_started_at_utc", "n/a"))),
-        ("run_finished_at_utc", str(run_meta.get("run_finished_at_utc", "n/a"))),
-        ("run_duration_s", _fmt_float(run_meta.get("run_duration_s", 0.0), 6)),
-        ("n_circuits", str(run_config.get("n_circuits", "n/a"))),
-        ("n_samples", str(run_config.get("n_samples", "n/a"))),
-        ("width", str(run_config.get("width", "n/a"))),
-        ("layer_count", str(run_config.get("layer_count", "n/a"))),
-        ("budgets", str(run_config.get("budgets", []))),
-        ("time_tolerance", str(run_config.get("time_tolerance", "n/a"))),
+        ("Run Started [run_started_at_utc]", str(run_meta.get("run_started_at_utc", "n/a"))),
+        ("Run Finished [run_finished_at_utc]", str(run_meta.get("run_finished_at_utc", "n/a"))),
+        ("Run Duration, s [run_duration_s]", _fmt_float(run_meta.get("run_duration_s", 0.0), 6)),
+        ("Circuits [n_circuits]", str(run_config.get("n_circuits", "n/a"))),
+        ("Samples/Circuit [n_samples]", str(run_config.get("n_samples", "n/a"))),
+        ("Wire Count [width]", str(run_config.get("width", "n/a"))),
+        ("Layer Count [layer_count]", str(run_config.get("layer_count", "n/a"))),
+        ("Budgets [budgets]", str(run_config.get("budgets", []))),
+        ("Time Tolerance [time_tolerance]", str(run_config.get("time_tolerance", "n/a"))),
     ]
     for key, value in rows:
-        table.add_row(Text(key, style=_context_key_style(key)), value)
+        table.add_row(_render_context_label(key), value)
 
     return Panel(table, title="Run Context", border_style="bright_cyan")
 
@@ -94,38 +90,52 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
     final_score = _as_float(results.get("final_score", 0.0))
     by_budget = _budget_rows(report)
     budget_scores = [_as_float(entry.get("score", 0.0)) for entry in by_budget]
-
-    cards = [
-        Panel(
-            Text(_fmt_float(final_score, 8), justify="center", style="bold bright_green"),
-            title="final_score",
-            border_style="green",
-        ),
-        Panel(
-            Text(str(results.get("score_direction", "lower_is_better")), justify="center"),
-            title="score_direction",
-            border_style="blue",
-        ),
+    mse_means = [
+        fmean(_to_float_list(entry.get("mse_by_layer", [])))
+        for entry in by_budget
+        if _to_float_list(entry.get("mse_by_layer", []))
     ]
-    if budget_scores:
-        cards.append(
-            Panel(
-                Text(_fmt_float(min(budget_scores), 8), justify="center", style="bold green"),
-                title="best_budget_score",
-                border_style="green",
-            )
+    adjusted_means = [
+        fmean(_to_float_list(entry.get("adjusted_mse_by_layer", [])))
+        for entry in by_budget
+        if _to_float_list(entry.get("adjusted_mse_by_layer", []))
+    ]
+
+    summary = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
+    summary.add_column("metric")
+    summary.add_column("value", justify="right")
+    summary.add_column("status", justify="center")
+    summary.add_row(
+        _label_with_code("Final Score", "final_score", "bold bright_green"),
+        f"[bold bright_green]{_fmt_float(final_score, 8)}[/]",
+        "[green]✓[/]",
+    )
+    if mse_means:
+        summary.add_row(
+            _label_with_code("MSE Mean", "mse_mean", "bold bright_cyan"),
+            f"[cyan]{_fmt_float(fmean(mse_means), 8)}[/]",
+            "[green]good[/]",
         )
-        cards.append(
-            Panel(
-                Text(_fmt_float(max(budget_scores), 8), justify="center", style="bold yellow"),
-                title="worst_budget_score",
-                border_style="yellow",
-            )
+    if adjusted_means:
+        summary.add_row(
+            _label_with_code("Adjusted MSE Mean", "adjusted_mse_mean", "bold bright_cyan"),
+            f"[bright_cyan]{_fmt_float(fmean(adjusted_means), 8)}[/]",
+            "[green]good[/]",
+        )
+    if budget_scores:
+        summary.add_row(
+            _label_with_code("Best Budget Score", "best_budget_score", "bold green"),
+            f"[green]{_fmt_float(min(budget_scores), 8)}[/]",
+            "[green]✓[/]",
+        )
+        summary.add_row(
+            _label_with_code("Worst Budget Score", "worst_budget_score", "bold yellow"),
+            f"[yellow]{_fmt_float(max(budget_scores), 8)}[/]",
+            "[yellow]![/]",
         )
 
-    return Panel(
-        Columns(cards, equal=True, expand=True), title="Score Summary", border_style="bright_cyan"
-    )
+    footnote = Text("Footnote: lower score is better.", style="dim")
+    return Panel(Group(summary, footnote), title="Score Summary", border_style="bright_cyan")
 
 
 def _render_budget_section(console: Console, report: dict[str, Any]) -> None:
@@ -155,13 +165,13 @@ def _render_budget_section(console: Console, report: dict[str, Any]) -> None:
             style=row_style,
         )
 
-    raw_plot = _budget_frontier_plot_panel(by_budget)
-    norm_plot = _budget_frontier_normalized_plot_panel(by_budget)
+    accuracy_plot = _budget_frontier_plot_panel(by_budget)
+    runtime_plot = _budget_runtime_plot_panel(by_budget)
     console.print(
         Columns(
             [
                 Panel(table, title="Budget Table", border_style="bright_black"),
-                Group(raw_plot, norm_plot),
+                Group(accuracy_plot, runtime_plot),
             ],
             equal=False,
             expand=True,
@@ -200,14 +210,15 @@ def _render_layer_section(console: Console, report: dict[str, Any]) -> None:
             _fmt_float(fmean(values) if values else 0.0, 6),
         )
 
-    layer_plot = _layer_trend_plot_panel(avg_mse, avg_ratio, avg_adj)
+    accuracy_plot = _layer_trend_plot_panel(avg_mse, avg_adj)
+    runtime_plot = _layer_runtime_plot_panel(avg_ratio)
     console.print(
         Columns(
             [
                 Panel(table, title="Layer Metric Table", border_style="bright_black"),
-                layer_plot,
+                Group(accuracy_plot, runtime_plot),
             ],
-            equal=True,
+            equal=False,
             expand=True,
         )
     )
@@ -278,9 +289,9 @@ def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
         else 0.0
         for entry in by_budget
     ]
-    mean_ratio = [
-        fmean(_to_float_list(entry.get("time_ratio_by_layer", [])))
-        if _to_float_list(entry.get("time_ratio_by_layer", []))
+    mean_adjusted = [
+        fmean(_to_float_list(entry.get("adjusted_mse_by_layer", [])))
+        if _to_float_list(entry.get("adjusted_mse_by_layer", []))
         else 0.0
         for entry in by_budget
     ]
@@ -291,17 +302,16 @@ def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
         series=[
             ("score", scores, "green+"),
             ("avg_mse", mean_mse, "cyan+"),
-            ("avg_time_ratio", mean_ratio, "yellow+"),
+            ("avg_adjusted_mse", mean_adjusted, "magenta+"),
         ],
         x_label="budget",
-        y_label="raw value",
+        y_label="accuracy metrics",
         x_scale="log",
     )
 
 
-def _budget_frontier_normalized_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
+def _budget_runtime_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
     budgets = [_as_float(entry.get("budget", 0.0)) for entry in by_budget]
-    scores = [_as_float(entry.get("score", 0.0)) for entry in by_budget]
     mean_ratio = [
         fmean(_to_float_list(entry.get("time_ratio_by_layer", [])))
         if _to_float_list(entry.get("time_ratio_by_layer", []))
@@ -316,33 +326,40 @@ def _budget_frontier_normalized_plot_panel(by_budget: Sequence[dict[str, Any]]) 
     ]
 
     return _make_plot_panel(
-        title="Budget Frontier Plot (Normalized)",
+        title="Budget Runtime Plot",
         x=budgets,
         series=[
-            ("score_norm", _normalize(scores), "green+"),
             ("avg_time_ratio_norm", _normalize(mean_ratio), "yellow+"),
             ("avg_effective_time_norm", _normalize(mean_effective), "magenta+"),
         ],
         x_label="budget",
-        y_label="normalized [0,1]",
+        y_label="normalized runtime [0,1]",
         x_scale="log",
     )
 
 
-def _layer_trend_plot_panel(
-    avg_mse: Sequence[float], avg_ratio: Sequence[float], avg_adj: Sequence[float]
-) -> Panel:
+def _layer_trend_plot_panel(avg_mse: Sequence[float], avg_adj: Sequence[float]) -> Panel:
     x = list(range(len(avg_mse)))
     return _make_plot_panel(
         title="Layer Trend Plot",
         x=x,
         series=[
             ("mse", avg_mse, "cyan+"),
-            ("time_ratio", avg_ratio, "yellow+"),
             ("adjusted_mse", avg_adj, "green+"),
         ],
         x_label="layer",
-        y_label="value",
+        y_label="accuracy metrics",
+    )
+
+
+def _layer_runtime_plot_panel(avg_ratio: Sequence[float]) -> Panel:
+    x = list(range(len(avg_ratio)))
+    return _make_plot_panel(
+        title="Layer Runtime Plot",
+        x=x,
+        series=[("time_ratio", avg_ratio, "yellow+")],
+        x_label="layer",
+        y_label="time ratio",
     )
 
 
@@ -445,7 +462,7 @@ def _build_plotext_line_chart(
         _plotext.clear_data()
         _plotext.clear_figure()
         _plotext.theme("pro")
-        width = max(66, min(96, 28 + len(x) * 2))
+        width = max(66, min(96, 24 + len(x) * 2))
         _plotext.plotsize(width, 13)
         _plotext.canvas_color("default")
         _plotext.axes_color("default")
@@ -456,9 +473,13 @@ def _build_plotext_line_chart(
         if y_scale is not None:
             _plotext.yscale(y_scale)
 
+        scatter_fn = getattr(_plotext, "scatter", None)
         for _label, values, color in valid_series:
             # Keep legend external (Rich table), so we avoid in-plot overlap.
-            _plotext.plot(x, values, color=color)
+            if callable(scatter_fn):
+                scatter_fn(x, values, color=color, marker="dot")
+            else:
+                _plotext.plot(x, values, color=color, marker="dot")
 
         _plotext.xlabel(x_label)
         _plotext.ylabel(y_label)
@@ -498,6 +519,8 @@ def _legend_table(series: Sequence[tuple[str, Sequence[float], str]]) -> Table:
 
 
 def _context_key_style(key: str) -> str:
+    if "[" in key and "]" in key:
+        key = key[key.find("[") + 1 : key.rfind("]")]
     if key.startswith("run_"):
         return "bold bright_cyan"
     if key in {"n_circuits", "n_samples", "width", "layer_count"}:
@@ -509,6 +532,25 @@ def _context_key_style(key: str) -> str:
     if "tolerance" in key:
         return "bold bright_red"
     return "bold bright_white"
+
+
+def _render_context_label(label: str) -> Text:
+    if "[" not in label or "]" not in label:
+        return Text(label, style=_context_key_style(label))
+
+    start = label.find("[")
+    end = label.rfind("]")
+    human = label[:start].rstrip()
+    code = label[start + 1 : end]
+    text = Text(human + " ", style=_context_key_style(code))
+    text.append(f"[{code}]", style="bold dim")
+    return text
+
+
+def _label_with_code(human: str, code: str, style: str) -> Text:
+    text = Text(human + " ", style=style)
+    text.append(f"[{code}]", style="bold dim")
+    return text
 
 
 def _rich_style_for_plot_color(color: str) -> str:
