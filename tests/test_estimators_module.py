@@ -1,13 +1,11 @@
 import numpy as np
-import pytest
 
-import circuit_estimation.estimators as estimators_module
 from circuit_estimation.domain import Circuit, Layer
 from circuit_estimation.estimators import (
-    clip,
-    combined_estimator,
-    covariance_propagation,
-    mean_propagation,
+    BaseEstimator,
+    CombinedEstimator,
+    CovariancePropagationEstimator,
+    MeanPropagationEstimator,
 )
 
 
@@ -22,7 +20,7 @@ def test_clip_enforces_correlation_bounds() -> None:
         ],
         dtype=np.float32,
     )
-    clip(mean, cov)
+    CovariancePropagationEstimator._clip_moments(mean, cov)
     assert np.all(mean <= 1.0)
     assert np.all(mean >= -1.0)
     np.testing.assert_allclose(np.diag(cov), 1.0 - mean * mean)
@@ -39,7 +37,10 @@ def test_mean_propagation_exact_for_linear_layer() -> None:
         product_coeff=np.array([0.0, 0.0], dtype=np.float32),
     )
     circuit = Circuit(n=2, d=1, gates=[layer])
-    predicted = np.array(list(mean_propagation(circuit)), dtype=np.float32)
+    predicted = np.array(
+        list(MeanPropagationEstimator().predict(circuit, budget=10)),
+        dtype=np.float32,
+    )
     assert predicted.shape == (1, 2)
     np.testing.assert_allclose(predicted[0], np.array([0.0, 0.0], dtype=np.float32))
 
@@ -55,26 +56,31 @@ def test_covariance_propagation_depth_one_matches_linear_mean_case() -> None:
         product_coeff=np.array([0.0, 0.0], dtype=np.float32),
     )
     circuit = Circuit(n=2, d=1, gates=[layer])
-    predicted = np.array(list(covariance_propagation(circuit)), dtype=np.float32)
+    predicted = np.array(
+        list(CovariancePropagationEstimator().predict(circuit, budget=1000)),
+        dtype=np.float32,
+    )
     assert predicted.shape == (1, 2)
     np.testing.assert_allclose(predicted[0], np.array([0.0, 0.0], dtype=np.float32), atol=1e-5)
 
 
-def test_combined_estimator_switches_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_combined_estimator_switches_mode() -> None:
     # Budget gate must route to mean or covariance path deterministically.
     calls: list[str] = []
 
-    def fake_mean(_circuit: Circuit):
-        calls.append("mean")
-        yield np.array([0.0], dtype=np.float32)
+    class _Mean(BaseEstimator):
+        def predict(self, circuit: Circuit, budget: int):
+            _ = circuit
+            calls.append(f"mean:{budget}")
+            yield np.array([0.0], dtype=np.float32)
 
-    def fake_cov(_circuit: Circuit):
-        calls.append("cov")
-        yield np.array([1.0], dtype=np.float32)
+    class _Cov(BaseEstimator):
+        def predict(self, circuit: Circuit, budget: int):
+            _ = circuit
+            calls.append(f"cov:{budget}")
+            yield np.array([1.0], dtype=np.float32)
 
-    monkeypatch.setattr(estimators_module, "mean_propagation", fake_mean)
-    monkeypatch.setattr(estimators_module, "covariance_propagation", fake_cov)
-
+    estimator = CombinedEstimator(mean_estimator=_Mean(), covariance_estimator=_Cov())
     layer = Layer(
         first=np.array([0, 0], dtype=np.int32),
         second=np.array([1, 1], dtype=np.int32),
@@ -85,9 +91,9 @@ def test_combined_estimator_switches_mode(monkeypatch: pytest.MonkeyPatch) -> No
     )
     circuit = Circuit(n=2, d=1, gates=[layer])
 
-    low_budget = np.array(list(combined_estimator(circuit, budget=10)), dtype=np.float32)
-    high_budget = np.array(list(combined_estimator(circuit, budget=1000)), dtype=np.float32)
+    low_budget = np.array(list(estimator.predict(circuit, budget=10)), dtype=np.float32)
+    high_budget = np.array(list(estimator.predict(circuit, budget=1000)), dtype=np.float32)
 
     np.testing.assert_allclose(low_budget, np.array([[0.0]], dtype=np.float32))
     np.testing.assert_allclose(high_budget, np.array([[1.0]], dtype=np.float32))
-    assert calls == ["mean", "cov"]
+    assert calls == ["mean:10", "cov:1000"]

@@ -11,6 +11,7 @@ Last updated: 2026-03-01
 - `src/circuit_estimation/scoring.py`: contest params, baseline timing, scoring loop, optional profiler hook.
 - `src/circuit_estimation/protocol.py`: serializable request/response DTOs for future RPC integration.
 - `src/circuit_estimation/cli.py`: local CLI entrypoint implementation exposed as `cestim`.
+- `examples/estimators/*.py`: class-based starter estimators participants can copy into submissions.
 - `main.py`: fallback launcher for local smoke runs.
 
 ## Current Mathematical Representation
@@ -35,9 +36,9 @@ From `generation.py` + `simulation.py`:
 
 From `src/circuit_estimation/estimators.py`:
 
-- `mean_propagation(circuit)`: tracks only means, ignores higher-order dependencies.
-- `covariance_propagation(circuit)`: tracks means + full covariance matrix per layer.
-- `combined_estimator(circuit, budget)`:
+- `MeanPropagationEstimator.predict(circuit, budget)`: tracks only means, ignores higher-order dependencies.
+- `CovariancePropagationEstimator.predict(circuit, budget)`: tracks means + full covariance matrix per layer.
+- `CombinedEstimator.predict(circuit, budget)`:
   - uses covariance propagation when `budget >= 30 * circuit.n`;
   - otherwise uses mean propagation.
 

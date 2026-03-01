@@ -7,6 +7,7 @@ This guide explains the only contract you need to implement:
 - yield exactly `circuit.d` rows
 
 You do not need to edit scorer internals or runner logic.
+You can start from the class-based templates in `examples/estimators/`.
 
 ## Minimal Skeleton
 

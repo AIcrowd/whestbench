@@ -7,9 +7,11 @@ import json
 import traceback
 from typing import Any, Literal, overload
 
-from .estimators import combined_estimator
+from .estimators import CombinedEstimator
 from .reporting import render_agent_report, render_human_report
 from .scoring import ContestParams, score_estimator_report
+
+_DEFAULT_ESTIMATOR = CombinedEstimator()
 
 
 @overload
@@ -36,7 +38,7 @@ def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[s
 def run_default_report(*, profile: bool = False, detail: str = "raw") -> dict[str, Any]:
     """Run the default local evaluator scenario and return report payload."""
     return score_estimator_report(
-        combined_estimator,
+        _DEFAULT_ESTIMATOR.predict,
         n_circuits=10,
         n_samples=10000,
         contest_params=ContestParams(
