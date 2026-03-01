@@ -154,6 +154,15 @@ def test_budget_lane_contains_table_and_two_plots() -> None:
     assert "Budget Runtime Plot" in rendered
 
 
+def test_layer_lane_contains_stats_and_trend_plots() -> None:
+    rendered = render_human_report(_sample_report(include_profile=False))
+
+    assert "Layer Intelligence" in rendered
+    assert "Layer Metric Table" in rendered
+    assert "Layer Trend Plot" in rendered
+    assert "Layer Runtime Plot" in rendered
+
+
 def test_render_human_mode_includes_profile_section_when_available() -> None:
     rendered = render_human_report(_sample_report(include_profile=True))
 
