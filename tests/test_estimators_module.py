@@ -39,7 +39,8 @@ def test_mean_propagation_exact_for_linear_layer() -> None:
         product_coeff=np.array([0.0, 0.0], dtype=np.float32),
     )
     circuit = Circuit(n=2, d=1, gates=[layer])
-    predicted = list(mean_propagation(circuit))
+    predicted = mean_propagation(circuit)
+    assert predicted.shape == (1, 2)
     np.testing.assert_allclose(predicted[0], np.array([0.0, 0.0], dtype=np.float32))
 
 
@@ -54,7 +55,8 @@ def test_covariance_propagation_depth_one_matches_linear_mean_case() -> None:
         product_coeff=np.array([0.0, 0.0], dtype=np.float32),
     )
     circuit = Circuit(n=2, d=1, gates=[layer])
-    predicted = list(covariance_propagation(circuit))
+    predicted = covariance_propagation(circuit)
+    assert predicted.shape == (1, 2)
     np.testing.assert_allclose(predicted[0], np.array([0.0, 0.0], dtype=np.float32), atol=1e-5)
 
 
@@ -64,11 +66,11 @@ def test_combined_estimator_switches_mode(monkeypatch: pytest.MonkeyPatch) -> No
 
     def fake_mean(_circuit: Circuit):
         calls.append("mean")
-        yield np.array([0.0], dtype=np.float32)
+        return np.array([[0.0]], dtype=np.float32)
 
     def fake_cov(_circuit: Circuit):
         calls.append("cov")
-        yield np.array([1.0], dtype=np.float32)
+        return np.array([[1.0]], dtype=np.float32)
 
     monkeypatch.setattr(estimators_module, "mean_propagation", fake_mean)
     monkeypatch.setattr(estimators_module, "covariance_propagation", fake_cov)
@@ -83,9 +85,9 @@ def test_combined_estimator_switches_mode(monkeypatch: pytest.MonkeyPatch) -> No
     )
     circuit = Circuit(n=2, d=1, gates=[layer])
 
-    low_budget = list(combined_estimator(circuit, budget=10))
-    high_budget = list(combined_estimator(circuit, budget=1000))
+    low_budget = combined_estimator(circuit, budget=10)
+    high_budget = combined_estimator(circuit, budget=1000)
 
-    np.testing.assert_allclose(low_budget[0], np.array([0.0], dtype=np.float32))
-    np.testing.assert_allclose(high_budget[0], np.array([1.0], dtype=np.float32))
+    np.testing.assert_allclose(low_budget, np.array([[0.0]], dtype=np.float32))
+    np.testing.assert_allclose(high_budget, np.array([[1.0]], dtype=np.float32))
     assert calls == ["mean", "cov"]
