@@ -66,3 +66,17 @@ def test_critical_public_apis_have_docstrings() -> None:
     ]
     for obj in required:
         assert _doc_len(getattr(obj, "__doc__", None)) >= 30, repr(obj)
+
+
+def test_estimators_module_has_tutorial_walkthrough_markers() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    text = (repo_root / "src/circuit_estimation/estimators.py").read_text(encoding="utf-8")
+    required_phrases = [
+        "first-moment propagation",
+        "pairwise moment closure",
+        "covariance",
+        "budget",
+    ]
+    lowered = text.lower()
+    for phrase in required_phrases:
+        assert phrase in lowered
