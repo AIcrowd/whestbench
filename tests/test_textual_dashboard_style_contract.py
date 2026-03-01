@@ -12,10 +12,10 @@ DASHBOARD_CSS = Path("src/circuit_estimation/textual_dashboard/dashboard.tcss")
 def test_style_contract_includes_scientific_editorial_palette() -> None:
     css = DASHBOARD_CSS.read_text(encoding="utf-8")
 
-    assert "#f7f5ef" in css  # base canvas
-    assert "#fffdf8" in css  # panel surface
-    assert "#1d4ed8" in css  # accuracy accent
-    assert "#b45309" in css  # runtime accent
+    assert "#060b16" in css  # dark base canvas
+    assert "#0f172a" in css  # panel surface
+    assert "#38bdf8" in css  # emphasis accent
+    assert "#fbbf24" in css  # runtime accent
 
 
 def test_dashboard_stylesheet_parses_in_textual_runtime() -> None:
