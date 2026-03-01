@@ -12,6 +12,7 @@ Refactor the current Python implementation into a release-ready starter-kit base
 - cleaner architecture and explicit interfaces,
 - strict quality gates (lint, format-check, type-check, tests),
 - targeted behavior fixes where current behavior is ambiguous or inconsistent,
+- explicit profiling hooks for evaluator observability,
 - richer and more explanatory tests.
 
 Non-goal:
@@ -41,7 +42,7 @@ Rationale:
 - `src/circuit_estimation/estimators.py`
   - Mean propagation, covariance propagation, combined estimator.
 - `src/circuit_estimation/scoring.py`
-  - Contest params, profiling utilities, baseline timing, scoring.
+  - Contest params, optional profiling hooks, baseline timing, scoring.
 - `src/circuit_estimation/cli.py`
   - Thin local entrypoint and error boundary.
 - `main.py`
@@ -68,6 +69,15 @@ Each module should include:
 
 - `score_estimator(estimator: EstimatorFn, n_circuits: int, n_samples: int, contest_params: ContestParams) -> float`
 
+### Profiling hook interface
+
+- `score_estimator` accepts an optional profiler callback/adapter for per-layer metrics.
+- Profile payload includes:
+  - wall-time elapsed,
+  - process CPU time,
+  - resident memory (RSS),
+  - peak resident memory where available.
+
 ### Data flow
 
 1. `generation.py` creates circuits from explicit RNG/seed policy.
@@ -75,6 +85,13 @@ Each module should include:
 3. `estimators.py` emits per-layer estimates under budget.
 4. `scoring.py` profiles runtime against baseline and computes adjusted MSE.
 5. `cli.py` wires configuration and output for local workflows.
+
+### Profiling and performance impact policy
+
+- Profiling is **disabled by default** in scoring and CLI flows.
+- With profiling disabled, runtime behavior and score semantics are unchanged.
+- When profiling is enabled, some overhead is expected; metrics are diagnostic and should be documented as such.
+- The default local score path should avoid any profiler work unless explicitly requested.
 
 ### Behavioral-fix policy
 
@@ -106,6 +123,7 @@ Planned RPC-readiness constraints:
 - Raise clear typed errors (`ValueError`/`TypeError`) with stable messages.
 - Keep numerical kernels pure and side-effect free.
 - Provide structured failure boundary in CLI for future RPC mapping.
+- Validate profile payload structure when profiling is enabled.
 
 ### Constraint docs
 
@@ -124,9 +142,9 @@ Document numerical and scoring gotchas explicitly (dtype behavior, clipping sema
 - `tests/test_estimators.py`
   - Exactness for linear cases, covariance identities, clipping invariants, budget mode switch.
 - `tests/test_scoring.py`
-  - Timeout zeroing, minimum runtime floor, shape mismatch failures, deterministic scoring.
+  - Timeout zeroing, minimum runtime floor, shape mismatch failures, deterministic scoring, profiling payload shape.
 - `tests/test_cli.py`
-  - Entry-point smoke behavior and structured failure semantics.
+  - Entry-point smoke behavior, structured failure semantics, profile-mode output.
 
 ### Test writing style
 
@@ -148,6 +166,7 @@ Add strict project checks and document one-command workflows:
 - start-here commands,
 - contract and invariants,
 - failure semantics,
+- profiling diagnostics contract (`time`, `CPU`, `RSS`, peak memory),
 - extension points for custom estimators,
 - release verification steps.
 
@@ -173,3 +192,4 @@ Out-of-scope:
 4. Targeted behavior fixes permitted when backed by tests and rationale.
 5. Strict release gates required (lint + format-check + type-check + tests).
 6. Refactor should remain compatible with future RPC exposure via transport-agnostic core modules.
+7. Profiling diagnostics (`time`, `CPU`, `RSS`, peak memory) should be supported through an optional hook and remain off by default to avoid changing baseline behavior.

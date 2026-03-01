@@ -2,9 +2,9 @@
 
 > **For Codex:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Refactor the Python runtime into a documented package with strict quality gates, richer tests, and targeted behavior fixes while preserving starter-kit usability.
+**Goal:** Refactor the Python runtime into a documented package with strict quality gates, richer tests, targeted behavior fixes, and optional profiling diagnostics while preserving starter-kit usability.
 
-**Architecture:** Move runtime logic into `src/circuit_estimation/*` with transport-agnostic core modules (`domain`, `generation`, `simulation`, `estimators`, `scoring`) plus a thin `cli` boundary and compatibility wrappers. Use test-first incremental migration so behavior changes are explicit and justified.
+**Architecture:** Move runtime logic into `src/circuit_estimation/*` with transport-agnostic core modules (`domain`, `generation`, `simulation`, `estimators`, `scoring`) plus a thin `cli` boundary and compatibility wrappers. Add an optional scorer profiler seam for time/CPU/memory diagnostics without changing default scoring behavior. Use test-first incremental migration so behavior changes are explicit and justified.
 
 **Tech Stack:** Python 3.10+, NumPy, Pytest, Ruff, Pyright, uv
 
@@ -16,6 +16,7 @@
 - Use `@verification-before-completion` before claiming done.
 - Keep commits small and frequent (one task per commit).
 - Do not touch `CHALLENGE-CONTEXT.md`.
+- Keep profiling disabled by default; only collect diagnostics when explicitly requested.
 
 ### Task 1: Introduce package scaffold and validated domain entities
 
@@ -321,7 +322,7 @@ git add src/circuit_estimation/estimators.py tests/test_estimators.py
 git commit -m "feat: migrate estimator math into package module"
 ```
 
-### Task 5: Add scoring module and targeted behavior fixes
+### Task 5: Add scoring module, targeted behavior fixes, and profiler hook
 
 **Files:**
 - Create: `src/circuit_estimation/scoring.py`
@@ -346,6 +347,30 @@ def test_score_estimator_rejects_wrong_output_width():
 
     with pytest.raises(ValueError, match="output width"):
         score_estimator(bad_estimator, n_circuits=1, n_samples=4, contest_params=params, circuits=[circuit])
+
+def test_score_estimator_profile_hook_collects_runtime_cpu_and_memory():
+    params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
+    layer = Layer.identity(2)
+    circuit = Circuit(n=2, d=1, gates=[layer])
+    collected = []
+
+    def profiler(event):
+        collected.append(event)
+
+    def estimator(_circuit, _budget):
+        yield np.array([0.0, 0.0], dtype=np.float32)
+
+    score_estimator(
+        estimator,
+        n_circuits=1,
+        n_samples=4,
+        contest_params=params,
+        circuits=[circuit],
+        profiler=profiler,
+    )
+    assert collected
+    last = collected[-1]
+    assert {"wall_time_s", "cpu_time_s", "rss_bytes", "peak_rss_bytes"} <= set(last.keys())
 ```
 
 **Step 2: Run test to verify it fails**
@@ -378,14 +403,23 @@ class ContestParams:
 
 EstimatorFn = Callable[[Circuit, int], Iterator[NDArray[np.float32]]]
 
-def score_estimator(..., circuits: Sequence[Circuit] | None = None) -> float:
+ProfilerFn = Callable[[dict[str, float | int | str]], None]
+
+def score_estimator(
+    ...,
+    circuits: Sequence[Circuit] | None = None,
+    profiler: ProfilerFn | None = None,
+) -> float:
     # keep prior semantics, add explicit shape/depth validation
+    # when profiler is provided, emit per-layer diagnostics
     ...
 ```
 
 Include targeted fixes with tests for:
 - estimator output count less than `max_depth` (error),
 - shape mismatch (error),
+- profiler payload fields and types (`wall_time_s`, `cpu_time_s`, `rss_bytes`, `peak_rss_bytes`),
+- no-op overhead path when `profiler is None`,
 - deterministic test seam (`circuits` injection) for reproducible unit tests.
 
 **Step 4: Run test to verify it passes**
@@ -397,7 +431,7 @@ Expected: PASS.
 
 ```bash
 git add src/circuit_estimation/scoring.py tests/test_scoring.py
-git commit -m "feat: add scoring module with explicit estimator validation"
+git commit -m "feat: add scoring module with estimator validation and profiling hook"
 ```
 
 ### Task 6: Add RPC-ready protocol schemas (no RPC server)
@@ -469,6 +503,13 @@ from circuit_estimation.cli import run_default_score
 def test_run_default_score_returns_float():
     score = run_default_score()
     assert isinstance(score, float)
+
+def test_run_default_score_with_profile_returns_diagnostics():
+    score, profile = run_default_score(profile=True)
+    assert isinstance(score, float)
+    assert isinstance(profile, list)
+    assert profile
+    assert {"wall_time_s", "cpu_time_s", "rss_bytes", "peak_rss_bytes"} <= set(profile[0].keys())
 ```
 
 **Step 2: Run test to verify it fails**
@@ -483,18 +524,23 @@ Expected: FAIL because `cli.py` missing.
 from .estimators import combined_estimator
 from .scoring import ContestParams, score_estimator
 
-def run_default_score() -> float:
-    return score_estimator(
+def run_default_score(profile: bool = False):
+    events: list[dict[str, float | int | str]] = []
+    profiler = events.append if profile else None
+    score = score_estimator(
         combined_estimator,
         n_circuits=10,
         n_samples=10000,
         contest_params=ContestParams(width=100, max_depth=30, budgets=[10, 100, 1000, 10000], time_tolerance=0.1),
+        profiler=profiler,
     )
+    return (score, events) if profile else score
 ```
 
 Then:
 - make `main.py` print `run_default_score()`,
 - keep root modules as compatibility re-exports from package modules.
+- add optional CLI/profile pathway that emits structured diagnostics.
 
 **Step 4: Run test to verify it passes**
 
@@ -629,6 +675,7 @@ Expected: at least one required phrase not found.
 
 Add:
 - README sections: participant contract, extension points, failure semantics, deterministic seed policy, strict verification commands.
+- README profiling section documenting `time`, `CPU`, `RSS`, and peak memory fields and that profiling is opt-in.
 - Decision log in `docs/context/python-runtime-refactor-decisions.md` including date/owner/decision.
 - Snapshot update referencing new package layout.
 
@@ -640,8 +687,9 @@ Run:
 - `uv run --group dev ruff format --check .`
 - `uv run --group dev pyright`
 - `uv run main.py`
+- `uv run main.py --profile` (or equivalent profile-enabled command)
 
-Expected: all checks pass; `main.py` prints a numeric score.
+Expected: all checks pass; default run prints numeric score; profile-enabled run emits structured diagnostics.
 
 **Step 5: Commit**
 
@@ -660,6 +708,7 @@ uv run --group dev ruff check .
 uv run --group dev ruff format --check .
 uv run --group dev pyright
 uv run main.py
+uv run main.py --profile
 ```
 
 Expected: all green, deterministic command behavior, clear failure messages.
