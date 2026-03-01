@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from textual.binding import Binding
+
 from circuit_estimation.textual_dashboard.app import DashboardApp
 
 
@@ -37,7 +39,8 @@ def test_tab_actions_switch_active_tab() -> None:
 
 
 def test_bindings_include_numeric_tab_shortcuts() -> None:
-    keys = {binding.key: binding.action for binding in DashboardApp.BINDINGS}
+    bindings = [binding for binding in DashboardApp.BINDINGS if isinstance(binding, Binding)]
+    keys = {binding.key: binding.action for binding in bindings}
 
     assert keys["1"] == "tab_summary"
     assert keys["2"] == "tab_budgets"
