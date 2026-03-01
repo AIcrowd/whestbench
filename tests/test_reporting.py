@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import json
+import re
 from typing import Any, cast
 
 import pytest
@@ -110,12 +111,47 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     assert "Profiling" not in rendered
 
 
-def test_human_report_uses_three_column_top_row_on_wide_layout() -> None:
+def test_human_report_uses_three_column_top_row_on_wide_layout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("COLUMNS", "220")
     rendered = render_human_report(_sample_report(include_profile=False))
+    plain = _strip_ansi(rendered)
+    title_lines = [
+        line
+        for line in plain.splitlines()
+        if "Run Context" in line or "Readiness Scorecard" in line or "Hardware & Runtime" in line
+    ]
 
     assert "Run Context" in rendered
-    assert "Readiness" in rendered
+    assert "Readiness Scorecard" in rendered
     assert "Hardware & Runtime" in rendered
+    assert any(
+        "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" in line
+        for line in title_lines
+    )
+
+
+def test_human_report_uses_two_column_plus_stack_layout_on_medium_width(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("COLUMNS", "140")
+    rendered = render_human_report(_sample_report(include_profile=False))
+    plain = _strip_ansi(rendered)
+    title_lines = [
+        line
+        for line in plain.splitlines()
+        if "Run Context" in line or "Readiness Scorecard" in line or "Hardware & Runtime" in line
+    ]
+
+    assert any(
+        "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" not in line
+        for line in title_lines
+    )
+    assert any(
+        "Hardware & Runtime" in line and "Run Context" not in line and "Readiness Scorecard" not in line
+        for line in title_lines
+    )
 
 
 def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:
@@ -337,8 +373,20 @@ def test_plotext_chart_uses_hd_line_style_for_dense_series(monkeypatch: pytest.M
     assert spy.plot_calls[-1][3] == "hd"
 
 
+def test_dashboard_width_uses_terminal_columns(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("COLUMNS", "96")
+    assert reporting._dashboard_width() == 96
+
+    monkeypatch.setenv("COLUMNS", "40")
+    assert reporting._dashboard_width() == 80
+
+
 def _render_panel(panel: object) -> str:
     buffer = io.StringIO()
     console = Console(record=True, file=buffer, force_terminal=True, color_system="truecolor", width=120)
     console.print(panel)
     return buffer.getvalue()
+
+
+def _strip_ansi(value: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*m", "", value)
