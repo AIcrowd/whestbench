@@ -4,7 +4,7 @@
  * Returns { run, isRunning } where run(type, params) returns a Promise
  * that resolves with the worker's result.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export function useCircuitWorker() {
   const workerRef = useRef(null);
@@ -39,5 +39,7 @@ export function useCircuitWorker() {
     });
   }, []);
 
-  return { run, isRunning };
+  // Memoize to keep stable reference — prevents consumer useEffects
+  // from re-firing when isRunning toggles
+  return useMemo(() => ({ run, isRunning }), [run, isRunning]);
 }
