@@ -98,8 +98,8 @@ uv run main.py --show-diagnostic-plots
 Participant estimators now use a stateful class API:
 
 - class base: `BaseEstimator`
-- required: `Estimator.predict(circuit, budget) -> np.ndarray`
-- optional: `setup(context)` and `predict_batch(circuits, budget)`
+- required: `Estimator.predict(circuit: Circuit, budget: int) -> np.ndarray`
+- optional: `setup(context)` and `predict_batch(circuits: Iterable[Circuit], budget: int)`
 
 Contract:
 

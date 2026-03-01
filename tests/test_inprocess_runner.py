@@ -57,7 +57,7 @@ def test_inprocess_runner_calls_setup_once_before_predicts(tmp_path: Path) -> No
         tmp_path,
         """
         import numpy as np
-        from circuit_estimation import BaseEstimator
+        from circuit_estimation import BaseEstimator, Circuit
 
         class Estimator(BaseEstimator):
             setup_calls = 0
@@ -65,7 +65,7 @@ def test_inprocess_runner_calls_setup_once_before_predicts(tmp_path: Path) -> No
             def setup(self, context):
                 type(self).setup_calls += 1
 
-            def predict(self, circuit, budget: int):
+            def predict(self, circuit: Circuit, budget: int):
                 return np.full((circuit.d, circuit.n), float(type(self).setup_calls), dtype=np.float32)
         """,
     )
@@ -88,10 +88,10 @@ def test_inprocess_runner_collects_wall_cpu_and_memory_metrics(tmp_path: Path) -
         tmp_path,
         """
         import numpy as np
-        from circuit_estimation import BaseEstimator
+        from circuit_estimation import BaseEstimator, Circuit
 
         class Estimator(BaseEstimator):
-            def predict(self, circuit, budget: int):
+            def predict(self, circuit: Circuit, budget: int):
                 return np.zeros((circuit.d, circuit.n), dtype=np.float32)
         """,
     )
@@ -112,10 +112,10 @@ def test_inprocess_runner_returns_structured_runtime_error_status(tmp_path: Path
     module_path = _write_estimator_module(
         tmp_path,
         """
-        from circuit_estimation import BaseEstimator
+        from circuit_estimation import BaseEstimator, Circuit
 
         class Estimator(BaseEstimator):
-            def predict(self, circuit, budget: int):
+            def predict(self, circuit: Circuit, budget: int):
                 raise RuntimeError("boom")
         """,
     )
