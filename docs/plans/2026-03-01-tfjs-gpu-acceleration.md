@@ -2,11 +2,230 @@
 
 > **For Antigravity:** REQUIRED WORKFLOW: Use `.agent/workflows/execute-plan.md` to execute this plan in single-flow mode.
 
-**Goal:** Replace the scalar JS `empiricalMean` with TF.js GPU-accelerated tensor operations, achieving 10-50× speedup for large circuits, plus progressive streaming UX.
+**Goal:** Add in-app profiling to identify all performance bottlenecks, then replace the scalar JS `empiricalMean` with TF.js GPU-accelerated tensor operations, achieving 10-50× speedup for large circuits, plus progressive streaming UX.
 
-**Architecture:** New `circuit-tf.js` module with `runBatchedTF` and `empiricalMeanTF` — a 1:1 port of the Python numpy code using TF.js `tf.gather` + element-wise ops. The existing `circuit.js` remains as CPU fallback. Worker dispatches to TF.js path when available.
+**Architecture:** New `circuit-tf.js` module with `runBatchedTF` and `empiricalMeanTF` — a 1:1 port of the Python numpy code using TF.js `tf.gather` + element-wise ops. The existing `circuit.js` remains as CPU fallback. Worker dispatches to TF.js path when available. In-app perf overlay instruments all hot paths with `performance.mark/measure`.
 
 **Tech Stack:** TensorFlow.js (`@tensorflow/tfjs`), Vite, React
+
+---
+
+### Task 0: In-App Performance Profiling Overlay
+
+**Files:**
+- Create: `tools/circuit-explorer/src/perf.js`
+- Create: `tools/circuit-explorer/src/components/PerfOverlay.jsx`
+- Modify: `tools/circuit-explorer/src/App.jsx`
+- Modify: `tools/circuit-explorer/src/App.css`
+- Modify: `tools/circuit-explorer/src/components/CircuitHeatmap.jsx`
+- Modify: `tools/circuit-explorer/src/components/GateStats.jsx`
+
+**Step 1: Create `perf.js` — lightweight profiling utility**
+
+```javascript
+/**
+ * perf.js — Lightweight performance instrumentation.
+ * Uses performance.mark/measure under the hood.
+ * Only active in dev mode (import.meta.env.DEV).
+ */
+
+const enabled = typeof window !== 'undefined' && import.meta.env.DEV;
+const timings = new Map();   // name → { last, avg, count }
+const listeners = new Set();
+
+export function perfStart(name) {
+  if (!enabled) return;
+  performance.mark(`${name}-start`);
+}
+
+export function perfEnd(name) {
+  if (!enabled) return;
+  const startMark = `${name}-start`;
+  const endMark = `${name}-end`;
+  performance.mark(endMark);
+
+  try {
+    const measure = performance.measure(name, startMark, endMark);
+    const ms = measure.duration;
+
+    const prev = timings.get(name) || { last: 0, avg: 0, count: 0 };
+    prev.count++;
+    prev.last = ms;
+    prev.avg = prev.avg + (ms - prev.avg) / prev.count;
+    timings.set(name, prev);
+
+    // Notify listeners
+    listeners.forEach(fn => fn(new Map(timings)));
+  } catch {
+    // marks may have been cleared
+  } finally {
+    performance.clearMarks(startMark);
+    performance.clearMarks(endMark);
+    performance.clearMeasures(name);
+  }
+}
+
+/** Subscribe to timing updates. Returns unsubscribe function. */
+export function onPerfUpdate(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+/** Get all current timings. */
+export function getPerfTimings() {
+  return new Map(timings);
+}
+
+/** Reset all timings. */
+export function resetPerf() {
+  timings.clear();
+  listeners.forEach(fn => fn(new Map()));
+}
+```
+
+**Step 2: Create `PerfOverlay.jsx` — collapsible dev panel**
+
+```jsx
+import { useEffect, useState } from 'react';
+import { onPerfUpdate, resetPerf } from '../perf';
+
+function fmt(ms) {
+  if (ms < 0.01) return '<0.01ms';
+  if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
+  if (ms < 1000) return `${ms.toFixed(1)}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
+}
+
+function badge(ms) {
+  if (ms < 10) return '✅';
+  if (ms < 100) return '🟡';
+  return '🔴';
+}
+
+export default function PerfOverlay() {
+  const [timings, setTimings] = useState(new Map());
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => onPerfUpdate(setTimings), []);
+
+  if (!import.meta.env.DEV) return null;
+
+  return (
+    <div className="perf-overlay" data-open={open}>
+      <button className="perf-toggle" onClick={() => setOpen(!open)}>
+        ⚡ Perf
+      </button>
+      {open && (
+        <div className="perf-panel">
+          <table>
+            <thead>
+              <tr><th>Marker</th><th>Last</th><th>Avg</th><th></th></tr>
+            </thead>
+            <tbody>
+              {[...timings.entries()].map(([name, t]) => (
+                <tr key={name}>
+                  <td>{name}</td>
+                  <td>{fmt(t.last)}</td>
+                  <td>{fmt(t.avg)}</td>
+                  <td>{badge(t.last)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button className="perf-reset" onClick={resetPerf}>Reset</button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Step 3: Add perf overlay CSS to `App.css`**
+
+```css
+/* === Performance Overlay (dev only) === */
+.perf-overlay {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 9999;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+}
+.perf-toggle {
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+}
+.perf-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 4px;
+  min-width: 280px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.perf-panel table { width: 100%; border-collapse: collapse; }
+.perf-panel th { text-align: left; color: var(--text-muted); font-size: 9px; text-transform: uppercase; padding: 2px 6px; }
+.perf-panel td { padding: 2px 6px; }
+.perf-panel td:nth-child(2), .perf-panel td:nth-child(3) { text-align: right; font-variant-numeric: tabular-nums; }
+.perf-reset {
+  margin-top: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+}
+```
+
+**Step 4: Instrument hot paths**
+
+Add `perfStart` / `perfEnd` calls to:
+
+- `App.jsx` — `useMemo` for circuit generation: wrap the `randomCircuit` call
+- `CircuitHeatmap.jsx` — `useEffect` for canvas rendering
+- `GateStats.jsx` — `useMemo` for data computation
+- (Graph rendering is already in a React component lifecycle — instrument the JointJS paint if a `CircuitGraph` component exists)
+
+Example instrumentation in `CircuitHeatmap.jsx`:
+```javascript
+import { perfStart, perfEnd } from '../perf';
+
+// Inside the useEffect that does canvas rendering:
+perfStart('heatmap-paint');
+// ... existing putImageData logic ...
+perfEnd('heatmap-paint');
+```
+
+**Step 5: Mount `PerfOverlay` in App.jsx**
+
+```jsx
+import PerfOverlay from './components/PerfOverlay';
+
+// At the bottom of the App return JSX:
+<PerfOverlay />
+```
+
+**Step 6: Verify in browser**
+
+Open http://localhost:5179/, click `⚡ Perf` button in bottom-right corner. Should show timing rows for each instrumented operation. Change circuit size — timings should update.
+
+**Step 7: Commit**
+
+```bash
+git add src/perf.js src/components/PerfOverlay.jsx src/App.jsx src/App.css \
+  src/components/CircuitHeatmap.jsx src/components/GateStats.jsx
+git commit -m "feat: add in-app performance profiling overlay (dev mode)"
+```
 
 ---
 
