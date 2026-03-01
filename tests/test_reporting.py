@@ -325,9 +325,7 @@ def test_profile_summary_contains_two_structured_side_by_side_tables(
 
     assert "Summary" in plain
     assert "Distribution" in plain
-    assert any(
-        "Summary" in line and "Distribution" in line for line in plain.splitlines()
-    )
+    assert any("Summary" in line and "Distribution" in line for line in plain.splitlines())
 
 
 def test_profile_summary_prints_without_plots_by_default() -> None:
