@@ -2,25 +2,25 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-
 import numpy as np
 from numpy.typing import NDArray
 
 from .domain import Circuit
 
 
-def mean_propagation(circuit: Circuit) -> Iterator[NDArray[np.float32]]:
+def mean_propagation(circuit: Circuit) -> NDArray[np.float32]:
     """Propagate only first moments through each layer."""
     x_mean: NDArray[np.float32] = np.zeros(circuit.n, dtype=np.float32)
-    for layer in circuit.gates:
+    outputs = np.zeros((circuit.d, circuit.n), dtype=np.float32)
+    for i, layer in enumerate(circuit.gates):
         x_mean = (
             layer.first_coeff * np.take(x_mean, layer.first)
             + layer.second_coeff * np.take(x_mean, layer.second)
             + layer.const
             + layer.product_coeff * np.take(x_mean, layer.first) * np.take(x_mean, layer.second)
         ).astype(np.float32)
-        yield x_mean
+        outputs[i] = x_mean
+    return outputs
 
 
 def one_v_two_covariance(
@@ -74,12 +74,14 @@ def clip(mean: NDArray[np.float32], cov: NDArray[np.float32]) -> None:
     np.clip(cov, -max_cov, max_cov, out=cov)
 
 
-def covariance_propagation(circuit: Circuit) -> Iterator[NDArray[np.float32]]:
+def covariance_propagation(circuit: Circuit) -> NDArray[np.float32]:
     """Propagate means and covariance approximation through layers."""
     n = circuit.n
     x_mean: NDArray[np.float32] = np.zeros(n, dtype=np.float32)
     x_cov: NDArray[np.float32] = np.eye(n, dtype=np.float32)
-    for layer in circuit.gates:
+    outputs = np.zeros((circuit.d, n), dtype=np.float32)
+
+    for i, layer in enumerate(circuit.gates):
         new_mean: NDArray[np.float32] = (
             layer.first_coeff * x_mean[layer.first]
             + layer.second_coeff * x_mean[layer.second]
@@ -121,12 +123,13 @@ def covariance_propagation(circuit: Circuit) -> Iterator[NDArray[np.float32]]:
 
         clip(new_mean, new_cov)
         x_mean, x_cov = new_mean, new_cov
-        yield x_mean
+        outputs[i] = x_mean
+
+    return outputs
 
 
-def combined_estimator(circuit: Circuit, budget: int) -> Iterator[NDArray[np.float32]]:
+def combined_estimator(circuit: Circuit, budget: int) -> NDArray[np.float32]:
     """Switch estimators by budget: covariance mode for larger budgets."""
     if budget >= 30 * circuit.n:
-        yield from covariance_propagation(circuit)
-    else:
-        yield from mean_propagation(circuit)
+        return covariance_propagation(circuit)
+    return mean_propagation(circuit)

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-
+import numpy as np
 from numpy.typing import NDArray
 
 from circuit import Circuit
@@ -16,12 +15,11 @@ one_v_two_covariance = _impl.one_v_two_covariance
 two_v_two_covariance = _impl.two_v_two_covariance
 
 
-def combined_estimator(circuit: Circuit, budget: int) -> Iterator[NDArray]:
+def combined_estimator(circuit: Circuit, budget: int) -> NDArray[np.float32]:
     """Compatibility wrapper preserving monkeypatch behavior in legacy tests."""
     if budget >= 30 * circuit.n:
-        yield from covariance_propagation(circuit)
-    else:
-        yield from mean_propagation(circuit)
+        return covariance_propagation(circuit)
+    return mean_propagation(circuit)
 
 
 __all__ = [
