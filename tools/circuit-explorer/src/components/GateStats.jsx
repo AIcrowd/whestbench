@@ -1,13 +1,4 @@
-/**
- * GateStats — visualizes the distribution of gate coefficients across the circuit.
- * Shows what kinds of operations dominate: constants, linear terms, or products.
- *
- * Gate formula: out = c + a·x + b·y + p·x·y
- *   c (const)   — fixed bias, always the same regardless of inputs
- *   a (first)   — weight on the first input wire x
- *   b (second)  — weight on the second input wire y
- *   p (product)  — weight on the interaction x·y (non-linear)
- */
+import { useMemo } from "react";
 import {
     Bar,
     BarChart,
@@ -36,6 +27,9 @@ const COEFF_META = {
   p: { label: "interaction (x·y)", fill: COLORS.product },
 };
 
+/* Max layers for per-layer SVG bar chart (avoid 1000+ rect nodes) */
+const MAX_LAYER_BARS = 64;
+
 /* Custom x-axis tick — color-coded coefficient key + description */
 function ColoredTick({ x, y, payload }) {
   const meta = COEFF_META[payload.value];
@@ -55,60 +49,80 @@ function ColoredTick({ x, y, payload }) {
 }
 
 export default function GateStats({ circuit, activeLayer }) {
+  // Memoize all data computation — avoid recomputing 262k entries per render
+  const { layerData, coeffData, summaryData, showPerLayerChart } = useMemo(() => {
+    if (!circuit) return { layerData: [], coeffData: [], summaryData: [], showPerLayerChart: true };
+    const { n, d, gates } = circuit;
+    // Classify gates by dominant coefficient
+    const _layerData = [];
+    let totalC = 0, totalA = 0, totalB = 0, totalP = 0;
+
+    for (let l = 0; l < d; l++) {
+      const layer = gates[l];
+      let cCount = 0, aCount = 0, bCount = 0, pCount = 0;
+
+      for (let i = 0; i < n; i++) {
+        const cv = Math.abs(layer.const[i]);
+        const av = Math.abs(layer.firstCoeff[i]);
+        const bv = Math.abs(layer.secondCoeff[i]);
+        const pv = Math.abs(layer.productCoeff[i]);
+
+        const max = Math.max(cv, av, bv, pv);
+        if (max === pv) pCount++;
+        else if (max === cv) cCount++;
+        else if (max === av) aCount++;
+        else bCount++;
+      }
+
+      totalC += cCount; totalA += aCount; totalB += bCount; totalP += pCount;
+      _layerData.push({
+        layer: `L${l}`,
+        "c — bias": cCount,
+        "a — first": aCount,
+        "b — second": bCount,
+        "p — interaction": pCount,
+      });
+    }
+
+    // Overall coefficient magnitude stats
+    const totals = { const: 0, first: 0, second: 0, product: 0 };
+    let count = 0;
+    for (let l = 0; l < d; l++) {
+      const layer = gates[l];
+      for (let i = 0; i < n; i++) {
+        totals.const += Math.abs(layer.const[i]);
+        totals.first += Math.abs(layer.firstCoeff[i]);
+        totals.second += Math.abs(layer.secondCoeff[i]);
+        totals.product += Math.abs(layer.productCoeff[i]);
+        count++;
+      }
+    }
+
+    const _coeffData = [
+      { key: "c", avg: totals.const / count,   fill: COLORS.const },
+      { key: "a", avg: totals.first / count,   fill: COLORS.first },
+      { key: "b", avg: totals.second / count,  fill: COLORS.second },
+      { key: "p", avg: totals.product / count,  fill: COLORS.product },
+    ];
+
+    // For large circuits, compute summary distribution instead of per-layer chart
+    const totalGates = totalC + totalA + totalB + totalP;
+    const _summaryData = [
+      { key: "c", pct: (totalC / totalGates * 100), fill: COLORS.const },
+      { key: "a", pct: (totalA / totalGates * 100), fill: COLORS.first },
+      { key: "b", pct: (totalB / totalGates * 100), fill: COLORS.second },
+      { key: "p", pct: (totalP / totalGates * 100), fill: COLORS.product },
+    ];
+
+    return {
+      layerData: _layerData,
+      coeffData: _coeffData,
+      summaryData: _summaryData,
+      showPerLayerChart: d <= MAX_LAYER_BARS,
+    };
+  }, [circuit]);
+
   if (!circuit) return null;
-  const { n, d, gates } = circuit;
-
-  // Classify gates by dominant coefficient
-  const layerData = [];
-  for (let l = 0; l < d; l++) {
-    const layer = gates[l];
-    let cCount = 0;  // |c| is largest
-    let aCount = 0;  // |a| is largest
-    let bCount = 0;  // |b| is largest
-    let pCount = 0;  // |p| is largest
-
-    for (let i = 0; i < n; i++) {
-      const cv = Math.abs(layer.const[i]);
-      const av = Math.abs(layer.firstCoeff[i]);
-      const bv = Math.abs(layer.secondCoeff[i]);
-      const pv = Math.abs(layer.productCoeff[i]);
-
-      const max = Math.max(cv, av, bv, pv);
-      if (max === pv) pCount++;
-      else if (max === cv) cCount++;
-      else if (max === av) aCount++;
-      else bCount++;
-    }
-
-    layerData.push({
-      layer: `L${l}`,
-      "c — bias": cCount,
-      "a — first": aCount,
-      "b — second": bCount,
-      "p — interaction": pCount,
-    });
-  }
-
-  // Overall coefficient magnitude stats — use same color per coeff type
-  const totals = { const: 0, first: 0, second: 0, product: 0 };
-  let count = 0;
-  for (let l = 0; l < d; l++) {
-    const layer = gates[l];
-    for (let i = 0; i < n; i++) {
-      totals.const += Math.abs(layer.const[i]);
-      totals.first += Math.abs(layer.firstCoeff[i]);
-      totals.second += Math.abs(layer.secondCoeff[i]);
-      totals.product += Math.abs(layer.productCoeff[i]);
-      count++;
-    }
-  }
-
-  const coeffData = [
-    { key: "c", avg: totals.const / count,   fill: COLORS.const },
-    { key: "a", avg: totals.first / count,   fill: COLORS.first },
-    { key: "b", avg: totals.second / count,  fill: COLORS.second },
-    { key: "p", avg: totals.product / count,  fill: COLORS.product },
-  ];
 
   return (
     <div className="panel">
@@ -127,42 +141,83 @@ export default function GateStats({ circuit, activeLayer }) {
 
       <div className="gate-stats-grid">
         <div>
-          <h3 className="subheading">Dominant Coefficient per Layer</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={layerData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
-              <XAxis
-                dataKey="layer"
-                tick={{ fontSize: 10, fill: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace" }}
-                axisLine={{ stroke: "#E0E0E0" }}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 10, fill: "#9CA3AF" }}
-                axisLine={{ stroke: "#E0E0E0" }}
-                tickLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: "#fff",
-                  border: "1px solid #E0E0E0",
-                  borderRadius: 8,
-                  fontSize: 11,
-                }}
-              />
-              {["c — bias", "a — first", "b — second", "p — interaction"].map((key, ki) => {
-                const fills = [COLORS.const, COLORS.first, COLORS.second, COLORS.product];
-                return (
-                  <Bar key={ki} dataKey={key} fill={fills[ki]} stackId="a">
-                    {activeLayer !== undefined && activeLayer !== null &&
-                      layerData.map((_, idx) => (
-                        <Cell key={idx} fillOpacity={idx === activeLayer ? 1 : 0.3} />
-                      ))}
-                  </Bar>
-                );
-              })}
-            </BarChart>
-          </ResponsiveContainer>
+          <h3 className="subheading">
+            {showPerLayerChart ? "Dominant Coefficient per Layer" : "Dominant Coefficient Distribution"}
+          </h3>
+          {showPerLayerChart ? (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={layerData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
+                <XAxis
+                  dataKey="layer"
+                  tick={{ fontSize: 10, fill: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace" }}
+                  axisLine={{ stroke: "#E0E0E0" }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "#9CA3AF" }}
+                  axisLine={{ stroke: "#E0E0E0" }}
+                  tickLine={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#fff",
+                    border: "1px solid #E0E0E0",
+                    borderRadius: 8,
+                    fontSize: 11,
+                  }}
+                />
+                {["c — bias", "a — first", "b — second", "p — interaction"].map((key, ki) => {
+                  const fills = [COLORS.const, COLORS.first, COLORS.second, COLORS.product];
+                  return (
+                    <Bar key={ki} dataKey={key} fill={fills[ki]} stackId="a">
+                      {activeLayer !== undefined && activeLayer !== null &&
+                        layerData.map((_, idx) => (
+                          <Cell key={idx} fillOpacity={idx === activeLayer ? 1 : 0.3} />
+                        ))}
+                    </Bar>
+                  );
+                })}
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            /* Compact summary for large circuits — just 4 bars, not 256 */
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={summaryData} margin={{ top: 4, right: 8, bottom: 32, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
+                <XAxis
+                  dataKey="key"
+                  tick={<ColoredTick />}
+                  axisLine={{ stroke: "#E0E0E0" }}
+                  tickLine={false}
+                  interval={0}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "#9CA3AF" }}
+                  axisLine={{ stroke: "#E0E0E0" }}
+                  tickLine={false}
+                  tickFormatter={(v) => `${v.toFixed(0)}%`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#fff",
+                    border: "1px solid #E0E0E0",
+                    borderRadius: 8,
+                    fontSize: 11,
+                  }}
+                  formatter={(value, name, props) => {
+                    const meta = COEFF_META[props.payload.key];
+                    return [`${value.toFixed(1)}%`, meta ? `${props.payload.key} — ${meta.label}` : "% gates"];
+                  }}
+                />
+                <Bar dataKey="pct" radius={[3, 3, 0, 0]}>
+                  {summaryData.map((entry, idx) => (
+                    <Cell key={idx} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         <div>

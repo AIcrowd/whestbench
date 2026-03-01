@@ -4,22 +4,27 @@
  * Receives messages with { id, type, params } and posts back { id, result }.
  * Typed arrays (Float32Array, Int32Array) survive structured clone via postMessage.
  */
-import { empiricalMean } from './circuit';
+import { empiricalMean, randomCircuit } from './circuit';
 import { meanPropagation } from './estimators';
 
 self.onmessage = function (e) {
   const { id, type, params } = e.data;
-  const circuit = params.circuit;
 
   let result;
   const t0 = performance.now();
 
   switch (type) {
+    case 'randomCircuit': {
+      result = { circuit: randomCircuit(params.width, params.depth, params.seed) };
+      break;
+    }
     case 'empiricalMean': {
+      const circuit = params.circuit;
       result = { estimates: empiricalMean(circuit, params.trials, params.seed) };
       break;
     }
     case 'meanPropagation': {
+      const circuit = params.circuit;
       result = { estimates: meanPropagation(circuit) };
       break;
     }

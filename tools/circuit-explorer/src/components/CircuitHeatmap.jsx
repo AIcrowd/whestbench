@@ -11,7 +11,6 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import GateDetailOverlay from "./GateDetailOverlay";
-import { meanToColor } from "./gateShapes";
 
 export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerClick }) {
   const canvasRef = useRef(null);
@@ -36,53 +35,71 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
     if (!canvas || !overlay || !container) return;
 
     const rect = container.getBoundingClientRect();
-    // Constrain width to container (accounting for padding)
     const width = Math.floor(rect.width);
     const height = Math.min(MAX_HEIGHT, Math.max(200, Math.floor(n * 2)));
 
     const dpr = window.devicePixelRatio || 1;
-
-    // Resolution cap: if cells would be sub-pixel, render at lower resolution
-    // and let the browser scale the canvas
     const rawCellW = width / d;
     const rawCellH = height / n;
     const renderScale = (rawCellW < 1 || rawCellH < 1)
       ? Math.max(1, Math.min(dpr, 2))
       : dpr;
 
-    canvas.width = width * renderScale;
-    canvas.height = height * renderScale;
+    const canvasW = Math.round(width * renderScale);
+    const canvasH = Math.round(height * renderScale);
+
+    canvas.width = canvasW;
+    canvas.height = canvasH;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
 
-    // Match overlay canvas dimensions
     overlay.width = width * dpr;
     overlay.height = height * dpr;
     overlay.style.width = `${width}px`;
     overlay.style.height = `${height}px`;
 
     const ctx = canvas.getContext("2d");
-    ctx.scale(renderScale, renderScale);
 
     const cellW = width / d;
     const cellH = height / n;
     setDims({ cellW, cellH, width, height });
 
-    // Clear
-    ctx.fillStyle = "#F9FAFB";
-    ctx.fillRect(0, 0, width, height);
+    // ── putImageData path: write RGBA directly, 1 call instead of 262k ──
+    const imgData = ctx.createImageData(canvasW, canvasH);
+    const pixels = imgData.data;
 
-    // Draw cells
-    for (let l = 0; l < d; l++) {
-      for (let w = 0; w < n; w++) {
-        const mean = means && means[l] ? means[l][w] : null;
-        ctx.fillStyle = mean !== null ? meanToColor(mean) : "#E5E7EB";
-        ctx.fillRect(l * cellW, w * cellH, cellW + 0.5, cellH + 0.5);
+    for (let py = 0; py < canvasH; py++) {
+      const wire = Math.floor((py / canvasH) * n);
+      for (let px = 0; px < canvasW; px++) {
+        const layer = Math.floor((px / canvasW) * d);
+        const idx = (py * canvasW + px) * 4;
+        const mean = means && means[layer] ? means[layer][wire] : null;
+
+        if (mean !== null && mean !== undefined) {
+          const t = Math.max(-1, Math.min(1, mean));
+          if (t < 0) {
+            const s = 1 + t;
+            pixels[idx]     = 51 + (204 * s) | 0;
+            pixels[idx + 1] = 65 + (190 * s) | 0;
+            pixels[idx + 2] = 85 + (170 * s) | 0;
+          } else {
+            pixels[idx]     = 255 - (15 * t) | 0;
+            pixels[idx + 1] = 255 - (173 * t) | 0;
+            pixels[idx + 2] = 255 - (178 * t) | 0;
+          }
+        } else {
+          pixels[idx]     = 229;
+          pixels[idx + 1] = 231;
+          pixels[idx + 2] = 235;
+        }
+        pixels[idx + 3] = 255;
       }
     }
+    ctx.putImageData(imgData, 0, 0);
 
-    // Grid lines (only if cells are big enough)
+    // Grid lines (only if cells are big enough to see)
     if (cellW > 3 && cellH > 3) {
+      ctx.scale(renderScale, renderScale);
       ctx.strokeStyle = "rgba(255,255,255,0.3)";
       ctx.lineWidth = 0.5;
       for (let l = 0; l <= d; l++) {
@@ -100,6 +117,9 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
     }
 
     // Axis labels
+    if (!ctx.getTransform || ctx.getTransform().a === 1) {
+      ctx.scale(renderScale, renderScale);
+    }
     ctx.fillStyle = "#9CA3AF";
     ctx.font = "10px 'IBM Plex Mono', monospace";
     ctx.textAlign = "center";

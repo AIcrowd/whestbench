@@ -51,31 +51,58 @@ export default function App() {
   const autoRunDone = useRef({ gt: false, sampling: false, meanprop: false });
 
   // ── Circuit ──
-  const circuit = useMemo(
-    () =>
-      randomCircuit(
-        effectiveParams.width,
-        effectiveParams.depth,
-        effectiveParams.seed
-      ),
-    [effectiveParams.width, effectiveParams.depth, effectiveParams.seed]
-  );
-
+  // Tour circuit is tiny (8×6=48 gates) — keep synchronous
   const tourCircuit = useMemo(
     () => randomCircuit(TOUR_PARAMS.width, TOUR_PARAMS.depth, TOUR_PARAMS.seed),
     []
   );
 
+  // Explore circuit: async via worker for large sizes, sync for small
+  const [circuit, setCircuit] = useState(null);
+  const [circuitLoading, setCircuitLoading] = useState(false);
+  const circuitGenIdRef = useRef(0);
+
+  useEffect(() => {
+    if (isTour) return;
+    const { width, depth, seed } = effectiveParams;
+    const size = width * depth;
+
+    if (size <= GRAPH_MODE_THRESHOLD) {
+      // Small circuit — generate synchronously (instant)
+      setCircuit(randomCircuit(width, depth, seed));
+      setCircuitLoading(false);
+      setEstimatorResults({});
+      setActiveLayer(undefined);
+    } else {
+      // Large circuit — generate in worker
+      const genId = ++circuitGenIdRef.current;
+      setCircuitLoading(true);
+      setEstimatorResults({});
+      setActiveLayer(undefined);
+      worker.run('randomCircuit', { width, depth, seed })
+        .then(({ circuit: c }) => {
+          // Only apply if this is still the latest request
+          if (genId === circuitGenIdRef.current) {
+            setCircuit(c);
+            setCircuitLoading(false);
+          }
+        });
+    }
+  }, [effectiveParams.width, effectiveParams.depth, effectiveParams.seed, isTour, worker]);
+
+  // When entering tour mode, clear explore circuit
+  useEffect(() => {
+    if (isTour) {
+      setCircuit(null);
+      setCircuitLoading(false);
+    }
+  }, [isTour]);
+
   const totalGates = effectiveParams.width * effectiveParams.depth;
   const useGraphMode = totalGates <= GRAPH_MODE_THRESHOLD;
 
-  // Clear estimator results when circuit changes (explore mode only)
-  useEffect(() => {
-    if (!isTour) {
-      setEstimatorResults({});
-      setActiveLayer(undefined);
-    }
-  }, [circuit, isTour]);
+  // Effective circuit for display
+  const displayCircuit = isTour ? tourCircuit : circuit;
 
   // Escape key clears activeLayer
   useEffect(() => {
@@ -240,7 +267,7 @@ export default function App() {
             className={isTour ? "estimator-runner--locked" : ""}
           >
             <EstimatorRunner
-              circuit={circuit}
+              circuit={displayCircuit}
               onResult={handleEstimatorResult}
               worker={worker}
             />
@@ -273,6 +300,14 @@ export default function App() {
           )}
 
           {/* ── Circuit visualization ── */}
+          {circuitLoading && (
+            <div className="panel" style={{ textAlign: 'center', padding: '60px 20px', color: '#9CA3AF' }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                Generating {effectiveParams.width}×{effectiveParams.depth} circuit…
+              </div>
+            </div>
+          )}
           {isTour ? (
             <CircuitGraphJoint
               circuit={tourCircuit}
@@ -280,20 +315,20 @@ export default function App() {
               activeLayer={activeLayer}
               pulseOutputs={step === 2}
             />
-          ) : useGraphMode ? (
+          ) : !circuitLoading && displayCircuit && useGraphMode ? (
             <CircuitGraphJoint
-              circuit={circuit}
+              circuit={displayCircuit}
               means={exploreDisplayMeans}
               activeLayer={activeLayer}
             />
-          ) : (
+          ) : !circuitLoading && displayCircuit ? (
             <CircuitHeatmap
-              circuit={circuit}
+              circuit={displayCircuit}
               means={exploreDisplayMeans}
               activeLayer={activeLayer}
               onLayerClick={setActiveLayer}
             />
-          )}
+          ) : null}
 
           {/* ── Tour: MSE Comparison (steps 4-5) ── */}
           {isTour && step >= 4 && tourGroundTruth && (
@@ -310,7 +345,7 @@ export default function App() {
           {/* ── Explore mode: all panels ── */}
           {!isTour && (
             <>
-              <GateStats circuit={circuit} activeLayer={activeLayer} />
+              {displayCircuit && <GateStats circuit={displayCircuit} activeLayer={activeLayer} />}
 
               {hasAnyExploreEstimate && (
                 <>
