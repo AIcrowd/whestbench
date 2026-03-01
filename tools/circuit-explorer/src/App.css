@@ -1501,3 +1501,78 @@ body {
   padding: 12px 20px;
   border-radius: var(--radius) var(--radius) 0 0;
 }
+
+/* ============================================
+   Performance Overlay (dev only)
+   ============================================ */
+
+.perf-overlay {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 9999;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+}
+.perf-toggle {
+  background: var(--surface-2, #1E293B);
+  color: var(--text-muted, #9CA3AF);
+  border: 1px solid var(--border, #334155);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+}
+.perf-toggle:hover {
+  border-color: var(--coral, #F0524D);
+  color: var(--coral, #F0524D);
+}
+.perf-panel {
+  background: var(--surface-1, #0F172A);
+  border: 1px solid var(--border, #334155);
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 4px;
+  min-width: 320px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.perf-panel table { width: 100%; border-collapse: collapse; }
+.perf-panel th {
+  text-align: left;
+  color: var(--gray-400, #9CA3AF);
+  font-size: 9px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--gray-200, #E5E7EB);
+}
+.perf-panel td {
+  padding: 2px 6px;
+  color: var(--gray-600, #4B5563);
+}
+.perf-panel td:nth-child(2),
+.perf-panel td:nth-child(3) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.perf-panel td:nth-child(4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--gray-400, #9CA3AF);
+  font-size: 10px;
+}
+.perf-reset {
+  margin-top: 6px;
+  background: none;
+  border: 1px solid var(--gray-200, #E5E7EB);
+  color: var(--gray-400, #9CA3AF);
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  font-family: inherit;
+}
+.perf-reset:hover {
+  border-color: var(--coral, #F0524D);
+  color: var(--coral, #F0524D);
+}

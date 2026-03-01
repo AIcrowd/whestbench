@@ -9,6 +9,7 @@ import {
     XAxis,
     YAxis
 } from "recharts";
+import { perfEnd, perfStart } from "../perf";
 
 /* ── Strict palette from circuit gate colors (gateShapes.js) ── */
 const COLORS = {
@@ -52,6 +53,7 @@ export default function GateStats({ circuit, activeLayer }) {
   // Memoize all data computation — avoid recomputing 262k entries per render
   const { layerData, coeffData, summaryData, showPerLayerChart } = useMemo(() => {
     if (!circuit) return { layerData: [], coeffData: [], summaryData: [], showPerLayerChart: true };
+    perfStart('gatestats-compute');
     const { n, d, gates } = circuit;
     // Classify gates by dominant coefficient
     const _layerData = [];
@@ -114,6 +116,7 @@ export default function GateStats({ circuit, activeLayer }) {
       { key: "p", pct: (totalP / totalGates * 100), fill: COLORS.product },
     ];
 
+    perfEnd('gatestats-compute');
     return {
       layerData: _layerData,
       coeffData: _coeffData,
