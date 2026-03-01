@@ -769,8 +769,6 @@ body {
 /* Professional gate inspector tooltip */
 .gate-tooltip-pro {
   position: absolute;
-  right: 16px;
-  top: 80px;
   z-index: 200;
   background: white;
   border: 1px solid var(--gray-200);

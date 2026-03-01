@@ -54,7 +54,9 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
   const paperRef = useRef(null);
   const graphRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [zoomPct, setZoomPct] = useState(100);
+  const hasMeans = means && means.some((row) => row && row.some((v) => v !== null && v !== undefined));
 
   /* Helper: reset all highlights */
   function resetHighlights(graph) {
@@ -219,9 +221,9 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
             },
             label: {
               text: String(w),
-              fontSize: 10,
+              fontSize: 8,
               fontFamily: "'IBM Plex Mono', monospace",
-              fill: "#475569",
+              fill: "#94A3B8",
             },
           },
           ports: {
@@ -309,10 +311,18 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
       setZoomPct(Math.round(paper.scale().sx * 100));
     });
 
-    // Click handler — highlight connections + show tooltip
-    paper.on("element:pointerclick", (view) => {
+    // Click handler — highlight connections + show tooltip near gate
+    paper.on("element:pointerclick", (view, evt) => {
       const d = view.model.get("gateData");
       if (d) {
+        // Position tooltip near the clicked gate
+        const rect = el.getBoundingClientRect();
+        const clientX = evt.clientX || evt.originalEvent?.clientX || 0;
+        const clientY = evt.clientY || evt.originalEvent?.clientY || 0;
+        setTooltipPos({
+          x: clientX - rect.left + 20,
+          y: clientY - rect.top - 40,
+        });
         setTooltip(d);
         highlightGate(graph, d);
       }
@@ -373,11 +383,23 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
         </span>
       </h2>
 
-      {/* Compact formula reminder */}
-      <div className="gate-legend" style={{ fontSize: 11, color: "#64748B" }}>
+      {/* Compact legend bar */}
+      <div className="gate-legend" style={{ fontSize: 11, color: "#64748B", alignItems: "center" }}>
         <span>
           Each gate computes: <strong>out = c + a·x + b·y + p·x·y</strong>
         </span>
+        {hasMeans && (
+          <span style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 16 }}>
+            <span style={{ fontSize: 9 }}>−1</span>
+            <span style={{
+              width: 60, height: 10, borderRadius: 3,
+              background: "linear-gradient(to right, #3B82F6, #FFFFFF, #FF524D)",
+              border: "1px solid #E5E7EB",
+            }} />
+            <span style={{ fontSize: 9 }}>+1</span>
+            <span style={{ fontSize: 9, color: "#94A3B8" }}>E[wire]</span>
+          </span>
+        )}
         <span style={{ marginLeft: "auto", fontSize: 10 }}>
           Click gate to inspect · Scroll to zoom
         </span>
@@ -399,7 +421,10 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
 
       {/* Professional tooltip */}
       {tooltip && (
-        <div className="gate-tooltip-pro">
+        <div className="gate-tooltip-pro" style={{
+          left: Math.min(tooltipPos.x, (canvasRef.current?.clientWidth || 600) - 300),
+          top: Math.max(0, tooltipPos.y),
+        }}>
           <div className="tooltip-pro-header">
             <span className="tooltip-pro-title">
               Gate [{tooltip.layerIndex}, {tooltip.wireIndex}]
