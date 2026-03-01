@@ -156,12 +156,22 @@ def test_plotext_chart_uses_high_contrast_sparse_scatter_style(
             return None
 
         def plot(
-            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+            self,
+            x: list[float],
+            y: list[float],
+            *,
+            color: str | None = None,
+            marker: str | None = None,
         ) -> None:
             self.plot_calls.append((x, y, color, marker))
 
         def scatter(
-            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+            self,
+            x: list[float],
+            y: list[float],
+            *,
+            color: str | None = None,
+            marker: str | None = None,
         ) -> None:
             self.scatter_calls.append((x, y, color, marker))
 
