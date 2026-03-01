@@ -50,12 +50,37 @@ def render_human_report(report: dict[str, Any]) -> str:
     console.print(
         "[dim]Use --agent-mode for JSON output when calling from automated agents or UIs.[/dim]"
     )
-
-    console.print(Columns([_run_context_panel(report), _score_summary_panel(report)], equal=True))
+    _render_top_row(console, report)
     _render_budget_section(console, report)
     _render_layer_section(console, report)
     _render_profile_section(console, report)
     return buffer.getvalue()
+
+
+def _render_top_row(console: Console, report: dict[str, Any]) -> None:
+    mode = _layout_mode(console.width)
+    run_context = _run_context_panel(report)
+    readiness = _score_summary_panel(report)
+    hardware = _hardware_runtime_panel(report)
+
+    if mode == "wide":
+        console.print(Columns([run_context, readiness, hardware], equal=True, expand=True))
+        return
+    if mode == "medium":
+        console.print(Columns([run_context, readiness], equal=True, expand=True))
+        console.print(hardware)
+        return
+    console.print(run_context)
+    console.print(readiness)
+    console.print(hardware)
+
+
+def _layout_mode(console_width: int) -> str:
+    if console_width >= 120:
+        return "wide"
+    if console_width >= 90:
+        return "medium"
+    return "narrow"
 
 
 def _run_context_panel(report: dict[str, Any]) -> Panel:
@@ -96,6 +121,26 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
     return Panel(table, title="Run Context", border_style="bright_cyan")
 
 
+def _hardware_runtime_panel(report: dict[str, Any]) -> Panel:
+    host = report.get("run_meta", {}).get("host", {})
+    host_meta = host if isinstance(host, dict) else {}
+
+    table = Table(box=box.SIMPLE_HEAVY, show_header=False)
+    table.add_column("field")
+    table.add_column("value")
+    rows = [
+        ("Host Name [host.hostname]", str(host_meta.get("hostname", "n/a"))),
+        ("Operating System [host.os]", str(host_meta.get("os", "n/a"))),
+        ("OS Release [host.os_release]", str(host_meta.get("os_release", "n/a"))),
+        ("Platform [host.platform]", str(host_meta.get("platform", "n/a"))),
+        ("Machine Architecture [host.machine]", str(host_meta.get("machine", "n/a"))),
+        ("Python Runtime [host.python_version]", str(host_meta.get("python_version", "n/a"))),
+    ]
+    for label, value in rows:
+        table.add_row(_render_context_label(label), value)
+    return Panel(table, title="Hardware & Runtime", border_style="bright_blue")
+
+
 def _score_summary_panel(report: dict[str, Any]) -> Panel:
     results = report.get("results", {})
     final_score = _as_float(results.get("final_score", 0.0))
@@ -129,7 +174,7 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
         )
 
     footnote = Text("Footnote: lower score is better.", style="dim")
-    return Panel(Group(summary, footnote), title="Score Summary", border_style="bright_cyan")
+    return Panel(Group(summary, footnote), title="Readiness (Score Summary)", border_style="bright_cyan")
 
 
 def _render_budget_section(console: Console, report: dict[str, Any]) -> None:
