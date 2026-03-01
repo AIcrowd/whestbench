@@ -1,81 +1,58 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { empiricalMean } from "../circuit";
 import { meanPropagation } from "../estimators";
 
 /**
  * EstimatorRunner — lets users run estimators one at a time,
- * with timing stats and a progress bar.
+ * with timing stats. No artificial animation delays.
  *
- * Timing measures only the actual computation, not the animation.
  * Ground Truth = empiricalMean with 10k samples (high-fidelity reference).
- * Sampling = empiricalMean with user-chosen budget (what participants optimize).
- * Mean Propagation = analytic layer-wise estimation (no sampling).
+ * Sampling = empiricalMean with user-chosen budget.
+ * Mean Propagation = analytic layer-wise estimation (instant).
  */
 export default function EstimatorRunner({ circuit, onResult }) {
   const [budget, setBudget] = useState(1000);
   const [running, setRunning] = useState(null);
-  const [progress, setProgress] = useState(0);
   const [results, setResults] = useState({});
-  const cancelRef = useRef(false);
 
-  // Animate progress, then run computation at the end
-  const animateAndRun = useCallback((label, totalSteps, stepDelay, computeFn, key) => {
+  const runEstimator = useCallback((key, computeFn) => {
+    if (!circuit) return;
     setRunning(key);
-    setProgress(0);
-    cancelRef.current = false;
-    let step = 0;
 
-    const tick = () => {
-      if (cancelRef.current) { setRunning(null); return; }
-      step++;
-      setProgress(step / totalSteps);
+    // Use requestAnimationFrame to let the "Running…" state render,
+    // then run the computation synchronously.
+    requestAnimationFrame(() => {
+      const t0 = performance.now();
+      const result = computeFn();
+      result.time = performance.now() - t0;
 
-      if (step >= totalSteps) {
-        // Measure ONLY computation time
-        const t0 = performance.now();
-        const result = computeFn();
-        result.time = performance.now() - t0;
-
-        setResults((prev) => ({ ...prev, [key]: result }));
-        onResult(key, result);
-        setRunning(null);
-        setProgress(1);
-      } else {
-        if (stepDelay > 0) setTimeout(tick, stepDelay);
-        else requestAnimationFrame(tick);
-      }
-    };
-
-    requestAnimationFrame(tick);
-  }, [onResult]);
+      setResults((prev) => ({ ...prev, [key]: result }));
+      onResult(key, result);
+      setRunning(null);
+    });
+  }, [circuit, onResult]);
 
   const runGroundTruth = useCallback(() => {
-    if (!circuit) return;
-    const steps = 20;
-    animateAndRun("Computing ground truth", steps, 0, () => {
+    runEstimator("groundTruth", () => {
       const gtBudget = 10000;
       const estimates = empiricalMean(circuit, gtBudget, 7777);
       return { name: "Ground Truth (10k samples)", estimates, budget: gtBudget };
-    }, "groundTruth");
-  }, [circuit, animateAndRun]);
+    });
+  }, [circuit, runEstimator]);
 
   const runSampling = useCallback(() => {
-    if (!circuit) return;
-    const steps = 20;
-    animateAndRun("Sampling", steps, 0, () => {
+    runEstimator("sampling", () => {
       const estimates = empiricalMean(circuit, budget, 1234);
       return { name: "Sampling", estimates, budget };
-    }, "sampling");
-  }, [circuit, budget, animateAndRun]);
+    });
+  }, [circuit, budget, runEstimator]);
 
   const runMeanProp = useCallback(() => {
-    if (!circuit) return;
-    const steps = circuit.d;
-    animateAndRun("Propagating means", steps, 30, () => {
+    runEstimator("meanprop", () => {
       const estimates = meanPropagation(circuit);
       return { name: "Mean Propagation", estimates };
-    }, "meanprop");
-  }, [circuit, animateAndRun]);
+    });
+  }, [circuit, runEstimator]);
 
   const formatTime = (ms) => {
     if (ms < 0.01) return "<0.01ms";
@@ -111,7 +88,7 @@ export default function EstimatorRunner({ circuit, onResult }) {
           onClick={runGroundTruth}
           disabled={!!running}
         >
-          {running === "groundTruth" ? "Running…" : "⏱ Ground Truth (10k)"}
+          {running === "groundTruth" ? "Running…" : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Ground Truth (10k)</>}
         </button>
 
         <button
@@ -119,7 +96,7 @@ export default function EstimatorRunner({ circuit, onResult }) {
           onClick={runSampling}
           disabled={!!running}
         >
-          {running === "sampling" ? "Running…" : `⏱ Sampling (${budget.toLocaleString()})`}
+          {running === "sampling" ? "Running…" : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Sampling ({budget.toLocaleString()})</>}
         </button>
 
         <button
@@ -127,29 +104,9 @@ export default function EstimatorRunner({ circuit, onResult }) {
           onClick={runMeanProp}
           disabled={!!running}
         >
-          {running === "meanprop" ? "Running…" : "⏱ Mean Propagation"}
+          {running === "meanprop" ? "Running…" : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Mean Propagation</>}
         </button>
       </div>
-
-      {/* Progress bar */}
-      {running && (
-        <div className="progress-container">
-          <div className="progress-label">
-            {typeof running === "string" && running !== "groundTruth" && running !== "sampling" && running !== "meanprop"
-              ? running
-              : running === "groundTruth" ? "Computing ground truth"
-              : running === "sampling" ? "Sampling"
-              : "Propagating means"}
-            … {Math.round(progress * 100)}%
-          </div>
-          <div className="progress-track">
-            <div
-              className="progress-fill"
-              style={{ width: `${progress * 100}%` }}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Results */}
       {Object.keys(results).length > 0 && (
