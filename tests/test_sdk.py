@@ -1,4 +1,5 @@
 from dataclasses import FrozenInstanceError
+from typing import SupportsFloat, cast
 
 import numpy as np
 import pytest
@@ -12,7 +13,7 @@ class _RecordingEstimator(BaseEstimator):
 
     def predict(self, circuit: object, budget: int) -> np.ndarray:
         self.calls.append(circuit)
-        return np.array([float(circuit), float(budget)], dtype=np.float32)
+        return np.array([float(cast(SupportsFloat, circuit)), float(budget)], dtype=np.float32)
 
 
 def test_base_estimator_default_predict_batch_stacks_predict_outputs() -> None:
@@ -51,4 +52,4 @@ def test_setup_context_is_immutable_and_contains_required_fields() -> None:
     assert context.scratch_dir is None
 
     with pytest.raises(FrozenInstanceError):
-        context.width = 9
+        setattr(context, "width", 9)
