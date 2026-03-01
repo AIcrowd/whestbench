@@ -9,8 +9,15 @@ from textual.containers import Horizontal, VerticalScroll
 from textual.widget import Widget
 from textual.widgets import Static
 
+from ..plots import (
+    build_budget_frontier_plot,
+    build_budget_runtime_plot,
+    build_layer_trend_plot,
+    build_profile_memory_plot,
+    build_profile_runtime_plot,
+)
 from ..state import DashboardState
-from ..widgets import metric_card, metric_row, panel, sparkline_block
+from ..widgets import metric_card, metric_row, panel
 
 
 def render_summary_view(state: DashboardState) -> str:
@@ -74,51 +81,20 @@ def render_summary_view(state: DashboardState) -> str:
 
 
 def build_summary_pane(state: DashboardState) -> Widget:
-    """Build the Summary tab as a pane-based, skimmable dashboard."""
+    """Build the Summary tab with strict legacy-complete pane matrix."""
 
     run_meta = _as_dict(state.raw_report.get("run_meta"))
     run_config = _as_dict(state.raw_report.get("run_config"))
 
-    hero = metric_row(
+    status_strip = metric_row(
         metric_card("Final Score", f"{state.derived.final_score:.8f}", emphasis=True, id="metric-final"),
         metric_card("Best Budget", f"{state.derived.best_budget_score:.8f}"),
         metric_card("Worst Budget", f"{state.derived.worst_budget_score:.8f}"),
         metric_card("Spread", f"{state.derived.score_spread:.8f}"),
-        id="summary-metrics",
+        id="summary-status-strip",
     )
 
-    budget_note = _range_note(state.derived.budget_adjusted_scores, "adjusted MSE")
-    layer_note = _range_note(state.derived.layer_mse_mean_by_index, "mean layer MSE")
-    runtime_note = _range_note(state.derived.budget_time_ratio_means, "time ratio")
-
-    plots = Horizontal(
-        sparkline_block(
-            "Budget Frontier",
-            state.derived.budget_adjusted_scores,
-            note=f"{budget_note} | budgets={state.derived.budgets}",
-            id="summary-plot-budget",
-        ),
-        sparkline_block(
-            "Layer Trend",
-            state.derived.layer_mse_mean_by_index,
-            note=layer_note,
-            id="summary-plot-layer",
-            min_color="#93c5fd",
-            max_color="#38bdf8",
-        ),
-        sparkline_block(
-            "Runtime Spotlight",
-            state.derived.budget_time_ratio_means,
-            note=runtime_note,
-            id="summary-plot-runtime",
-            min_color="#fcd34d",
-            max_color="#fb923c",
-        ),
-        classes="pane-row",
-        id="summary-plots-row",
-    )
-
-    top_tables = Horizontal(
+    top_row = Horizontal(
         panel(
             "Run Context",
             Static(_context_table(run_meta, run_config), classes="table-static"),
@@ -129,38 +105,124 @@ def build_summary_pane(state: DashboardState) -> Widget:
             Static(_score_table(state), classes="table-static"),
             id="summary-readiness",
         ),
+        panel(
+            "Hardware & Runtime",
+            Static(_hardware_table(state), classes="table-static"),
+            id="summary-hardware-runtime",
+        ),
         classes="pane-row",
-        id="summary-top-tables",
+        id="summary-row-top",
     )
 
-    diagnostics = Horizontal(
+    frontier_chart, frontier_legend = build_budget_frontier_plot(
+        budgets=state.derived.budgets,
+        adjusted_mse=state.derived.budget_adjusted_scores,
+        mse_mean=state.derived.budget_mse_means,
+        width=64,
+        height=11,
+    )
+    runtime_chart, runtime_legend = build_budget_runtime_plot(
+        budgets=state.derived.budgets,
+        time_ratio=state.derived.budget_time_ratio_means,
+        effective_time=state.derived.budget_effective_time_means,
+        width=64,
+        height=11,
+    )
+    budget_row = Horizontal(
         panel(
-            "Budget Breakdown",
+            "Budget Table",
             Static(_budget_table(state), classes="table-static"),
-            id="summary-budget-breakdown",
+            id="summary-budget-table",
         ),
+        panel(
+            "Budget Frontier Plot",
+            Static(frontier_chart, classes="plot-body"),
+            Static(frontier_legend, classes="plot-legend"),
+            id="summary-budget-frontier",
+        ),
+        panel(
+            "Budget Runtime Plot",
+            Static(runtime_chart, classes="plot-body"),
+            Static(runtime_legend, classes="plot-legend"),
+            id="summary-budget-runtime",
+        ),
+        classes="pane-row",
+        id="summary-row-budget",
+    )
+
+    layer_chart, layer_legend = build_layer_trend_plot(
+        mse_by_layer=state.derived.layer_mse_mean_by_index,
+        width=64,
+        height=11,
+    )
+    layer_row = Horizontal(
         panel(
             "Layer Diagnostics",
             Static(_layer_table(state), classes="table-static"),
             id="summary-layer-diagnostics",
         ),
+        panel(
+            "Layer Trend Plot",
+            Static(layer_chart, classes="plot-body"),
+            Static(layer_legend, classes="plot-legend"),
+            id="summary-layer-trend",
+        ),
         classes="pane-row",
-        id="summary-diagnostics",
+        id="summary-row-layer",
     )
 
     children: list[Widget] = [
-        hero,
-        plots,
-        top_tables,
-        diagnostics,
+        status_strip,
+        top_row,
+        budget_row,
+        layer_row,
     ]
 
     if state.derived.has_profile:
+        profile_summary = panel(
+            "Profile Summary",
+            Static(_profile_table(state), classes="table-static"),
+            id="summary-profile-summary",
+        )
+        runtime_chart, runtime_legend = build_profile_runtime_plot(
+            wall_s=state.derived.profile_wall_s,
+            cpu_s=state.derived.profile_cpu_s,
+            width=64,
+            height=10,
+        )
+        profile_runtime = panel(
+            "Profile Runtime Plot",
+            Static(runtime_chart, classes="plot-body"),
+            Static(runtime_legend, classes="plot-legend"),
+            id="summary-profile-runtime",
+        )
+        memory_chart, memory_legend = build_profile_memory_plot(
+            rss_mb=state.derived.profile_rss_mb,
+            peak_mb=state.derived.profile_peak_rss_mb,
+            width=64,
+            height=10,
+        )
+        profile_memory = panel(
+            "Profile Memory Plot",
+            Static(memory_chart, classes="plot-body"),
+            Static(memory_legend, classes="plot-legend"),
+            id="summary-profile-memory",
+        )
+        children.append(
+            Horizontal(
+                profile_summary,
+                profile_runtime,
+                profile_memory,
+                classes="pane-row",
+                id="summary-row-profile",
+            )
+        )
+    else:
         children.append(
             panel(
-                "Profile Summary",
-                Static(_profile_table(state), classes="table-static"),
-                id="summary-profile",
+                "Profile Unavailable",
+                Static("Profiling data unavailable for this run.", classes="insight-text"),
+                id="summary-profile-unavailable",
             )
         )
 
@@ -193,6 +255,7 @@ def _context_table(run_meta: dict[str, Any], run_config: dict[str, Any]) -> Tabl
     table.add_row("Width", str(run_config.get("width", "n/a")))
     table.add_row("Max Depth", str(run_config.get("max_depth", "n/a")))
     table.add_row("Budgets", str(run_config.get("budgets", [])))
+    table.add_row("Time Tolerance", str(run_config.get("time_tolerance", "n/a")))
     return table
 
 
@@ -237,11 +300,12 @@ def _layer_table(state: DashboardState) -> Table:
     table = Table(box=None, expand=True, pad_edge=False, header_style="bold #9ca3af")
     table.add_column("stat")
     table.add_column("value", justify="right")
-    values = state.derived.layer_mse_mean_by_index
-    table.add_row("layer_count", str(len(values)))
-    table.add_row("min", f"{min(values) if values else 0.0:.6f}")
-    table.add_row("max", f"{max(values) if values else 0.0:.6f}")
-    table.add_row("mean", f"{sum(values) / len(values) if values else 0.0:.6f}")
+    table.add_row("layer_count", str(state.derived.layer_count))
+    table.add_row("p05", f"{state.derived.layer_mse_p05:.6f}")
+    table.add_row("min", f"{state.derived.layer_mse_min:.6f}")
+    table.add_row("mean", f"{state.derived.layer_mse_mean:.6f}")
+    table.add_row("p95", f"{state.derived.layer_mse_p95:.6f}")
+    table.add_row("max", f"{state.derived.layer_mse_max:.6f}")
     return table
 
 
@@ -273,6 +337,19 @@ def _range_note(values: list[float], label: str) -> str:
     if not values:
         return f"{label}: n/a"
     return f"{label}: {min(values):.6f} -> {max(values):.6f}"
+
+
+def _hardware_table(state: DashboardState) -> Table:
+    table = Table(box=None, show_header=False, expand=True, pad_edge=False)
+    table.add_column("field", style="bold #9ca3af")
+    table.add_column("value", style="#e5e7eb")
+    table.add_row("Host", state.derived.host_hostname)
+    table.add_row("OS", state.derived.host_os)
+    table.add_row("Release", state.derived.host_release)
+    table.add_row("Platform", state.derived.host_platform)
+    table.add_row("Machine", state.derived.host_machine)
+    table.add_row("Python", state.derived.host_python_version)
+    return table
 
 
 def _as_dict(value: Any) -> dict[str, Any]:
