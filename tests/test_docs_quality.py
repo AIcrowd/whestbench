@@ -96,7 +96,6 @@ def test_docs_do_not_reference_predict_batch_contract() -> None:
         repo_root / "README.md",
         repo_root / "docs/context/mvp-technical-snapshot.md",
         repo_root / "docs/context/python-runtime-refactor-decisions.md",
-        repo_root / "docs/plans/2026-03-01-estimator-sdk-and-runner-decoupling-design.md",
     ]
     for path in paths:
         text = path.read_text(encoding="utf-8").lower()

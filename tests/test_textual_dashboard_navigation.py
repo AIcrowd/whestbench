@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from circuit_estimation.textual_dashboard.app import DashboardApp
 from textual.binding import Binding
+
+from circuit_estimation.textual_dashboard.app import DashboardApp
 
 
 def _sample_report() -> dict[str, Any]:
