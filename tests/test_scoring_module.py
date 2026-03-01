@@ -145,6 +145,57 @@ def test_score_estimator_report_collects_one_profile_call_per_circuit_budget() -
     } <= set(sample.keys())
 
 
+def test_by_budget_raw_forbids_layer_runtime_fields() -> None:
+    params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
+    circuits = [_constant_circuit(n=2, d=2, value=1.0)]
+
+    def estimator(_circuit: Circuit, _budget: int) -> np.ndarray:
+        return np.ones((2, 2), dtype=np.float32)
+
+    report = score_estimator_report(
+        estimator,
+        n_circuits=1,
+        n_samples=4,
+        contest_params=params,
+        circuits=circuits,
+        detail="raw",
+    )
+
+    row = report["results"]["by_budget_raw"][0]
+    assert "time_ratio_by_layer" not in row
+    assert "adjusted_mse_by_layer" not in row
+    assert "baseline_time_s_by_layer" not in row
+    assert "effective_time_s_by_layer" not in row
+    assert "timeout_flag_by_layer" not in row
+    assert "time_floor_flag_by_layer" not in row
+
+
+def test_by_budget_raw_contains_scalar_runtime_fields() -> None:
+    params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
+    circuits = [_constant_circuit(n=2, d=2, value=1.0)]
+
+    def estimator(_circuit: Circuit, _budget: int) -> np.ndarray:
+        return np.ones((2, 2), dtype=np.float32)
+
+    report = score_estimator_report(
+        estimator,
+        n_circuits=1,
+        n_samples=4,
+        contest_params=params,
+        circuits=circuits,
+        detail="raw",
+    )
+
+    row = report["results"]["by_budget_raw"][0]
+    assert "mse_by_layer" in row
+    assert "mse_mean" in row
+    assert "adjusted_mse" in row
+    assert "call_time_ratio_mean" in row
+    assert "call_effective_time_s_mean" in row
+    assert "timeout_rate" in row
+    assert "time_floor_rate" in row
+
+
 def test_detail_full_includes_budget_and_layer_aggregates() -> None:
     params = ContestParams(width=2, max_depth=2, budgets=[10, 100], time_tolerance=0.1)
     circuits = [_constant_circuit(n=2, d=2, value=1.0) for _ in range(2)]
@@ -169,19 +220,31 @@ def test_detail_full_includes_budget_and_layer_aggregates() -> None:
 
     by_budget_summary = results["by_budget_summary"]
     assert len(by_budget_summary) == len(params.budgets)
-    assert {"budget", "score", "mse_mean", "adjusted_mse_mean", "time_ratio_mean"} <= set(
-        by_budget_summary[0].keys()
-    )
+    assert {
+        "budget",
+        "mse_mean",
+        "adjusted_mse",
+        "call_time_ratio_mean",
+        "call_effective_time_s_mean",
+        "timeout_rate",
+        "time_floor_rate",
+    } <= set(by_budget_summary[0].keys())
 
     by_layer_overall = results["by_layer_overall"]
     assert by_layer_overall["layer_index"] == [0, 1]
     assert len(by_layer_overall["mse_mean_by_layer"]) == params.max_depth
-    assert len(by_layer_overall["adjusted_mse_mean_by_layer"]) == params.max_depth
-    assert len(by_layer_overall["time_ratio_mean_by_layer"]) == params.max_depth
+    assert "adjusted_mse_mean_by_layer" not in by_layer_overall
+    assert "time_ratio_mean_by_layer" not in by_layer_overall
+    assert "baseline_time_s_mean_by_layer" not in by_layer_overall
+    assert "effective_time_s_mean_by_layer" not in by_layer_overall
 
     by_budget_layer_matrix = results["by_budget_layer_matrix"]
     assert by_budget_layer_matrix["budgets"] == params.budgets
     assert len(by_budget_layer_matrix["mse_by_budget_layer"]) == len(params.budgets)
+    assert "adjusted_mse_by_budget_layer" not in by_budget_layer_matrix
+    assert "time_ratio_by_budget_layer" not in by_budget_layer_matrix
+    assert "baseline_time_s_by_budget_layer" not in by_budget_layer_matrix
+    assert "effective_time_s_by_budget_layer" not in by_budget_layer_matrix
     assert all(
         len(row) == params.max_depth for row in by_budget_layer_matrix["mse_by_budget_layer"]
     )

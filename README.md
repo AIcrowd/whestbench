@@ -1,96 +1,116 @@
-This repository is intended to illustrate the basic mechanics of the competition.
+This repository is a starter-kit style implementation of the circuit-estimation problem used for local development and evaluator design iteration.
 
-## Planning Context for Future Agents
+## What This Repository Teaches
 
-If you are iterating on starter-kit/evaluator design, begin with:
+- How randomly generated boolean circuits are represented and simulated.
+- How estimators predict wire-mean trajectories across all layers in one call.
+- How scoring combines prediction quality and runtime constraints into a single objective.
+- How to inspect outcomes in either a human dashboard (default) or machine JSON (`--agent-mode`).
 
-- `docs/context/README.md`
+## Conceptual Problem Overview
 
-This folder contains the durable challenge context, MVP technical notes, infrastructure research, and open questions.
-Future agents should treat it as the primary source even if `CHALLENGE-CONTEXT.md` is removed.
-The folder also includes mandatory `agent-first` starter-kit requirements for participant agent workflows.
+We generate random circuits made of layered gates. For each circuit, the evaluator estimates per-layer wire means via Monte Carlo simulation (ground truth).
+Participants provide an estimator that receives:
 
-## Getting Started
+- one `Circuit`
+- one `budget`
 
-### Prerequisites
+and must return one `np.ndarray` with shape `(max_depth, width)` containing predictions for all layers in a single pass.
 
-Install [uv](https://docs.astral.sh/uv/) if you haven't already:
+Important security/architecture note: in-repo estimator implementations are examples only. Hosted evaluation should assume participant estimators may be adversarial/malicious and must be treated as black boxes.
+
+## How Evaluation Works (End-to-End)
+
+Given `n_circuits`, `n_samples`, and contest params (`width`, `max_depth`, `budgets`, `time_tolerance`):
+
+1. Sample or accept circuits.
+2. Compute empirical layer-wise target means for each circuit via batched simulation.
+3. For each budget:
+   - Measure baseline total runtime for sampling (`baseline_total_time`).
+   - Call estimator once per circuit (`estimator(circuit, budget)`), expecting full-depth predictions.
+   - Apply runtime enforcement at call level:
+     - if call wall time > `(1 + time_tolerance) * baseline_total_time`, zero the full returned tensor;
+     - if call wall time < `(1 - time_tolerance) * baseline_total_time`, floor effective time to that lower bound.
+   - Compute per-layer MSE and aggregate:
+     - `mse_mean`
+     - `call_time_ratio_mean`
+     - `call_effective_time_s_mean`
+     - `adjusted_mse = mse_mean * call_time_ratio_mean`
+4. Final score = mean `adjusted_mse` across budgets (lower is better).
+
+Report payload:
+
+- `results.by_budget_raw` contains raw per-budget metrics (including `mse_by_layer` and scalar call-level runtime metrics).
+- `detail=full` adds derived tables/matrices (`by_budget_summary`, `by_layer_overall`, `by_budget_layer_matrix`).
+- `--profile` adds call-level profiling events (`wall_time_s`, `cpu_time_s`, `rss_bytes`, `peak_rss_bytes`).
+
+## Codebase Map (Suggested Reading Order)
+
+1. `src/circuit_estimation/domain.py`: core `Layer` and `Circuit` entities + validation.
+2. `src/circuit_estimation/generation.py`: random gate/circuit sampling.
+3. `src/circuit_estimation/simulation.py`: batched execution and empirical means.
+4. `src/circuit_estimation/estimators.py`: reference estimators and budget switch logic.
+5. `src/circuit_estimation/scoring.py`: scoring loop, runtime enforcement, profiling hook.
+6. `src/circuit_estimation/reporting.py`: human dashboard and agent JSON rendering.
+7. `src/circuit_estimation/cli.py` and `main.py`: local CLI entrypoints.
+8. `src/circuit_estimation/protocol.py`: DTOs for future RPC-style integration.
+
+## Quickstart
+
+### Prerequisite
+
+Install [uv](https://docs.astral.sh/uv/):
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### Run
+### Run default local report
 
 ```bash
 uv run main.py
 ```
 
-That's it. `uv` reads `pyproject.toml`, auto-creates a venv, installs dependencies, and runs the script with the **human dashboard** output by default.
-
-### CLI Output Modes
-
-- default: Rich human dashboard with tables and terminal plots.
-- `--agent-mode`: pretty JSON only, machine-parseable (recommended for automated agents/UIs).
-- `detail raw` (default): raw per-budget/per-layer data only.
-- `detail full`: includes derived aggregates (`by_budget_summary`, `by_layer_overall`, `by_budget_layer_matrix`) and `profile_summary` when profiling is enabled.
-
-### Human dashboard structure
-
-The default human report is a tri-objective dashboard with:
-
-- top row: `Run Context` + `Readiness Scorecard`,
-- second row: `Hardware & Runtime`,
-- core lanes: `Budget Intelligence` and `Layer Intelligence`,
-- profile lane (only with `--profile`): `Profile Summary`, runtime plot, memory plot.
-
-Layout is adaptive:
-
-- wide/medium terminals (`>=110` columns): two-pane top row with hardware stacked below,
-- narrow terminals (`<110`): stacked pane layout in the same narrative order.
-
-Examples:
+Default output is a Rich human dashboard. For machine consumers:
 
 ```bash
-# default: human dashboard + detail raw
-uv run main.py
-
-# machine-parseable JSON for agents
 uv run main.py --agent-mode
+```
+
+Useful flags:
+
+```bash
+# full derived aggregates
+uv run main.py --detail full
 
 # include call-level profiling metrics
 uv run main.py --profile
 
-# rich report + full computed aggregates + profiling
-uv run main.py --detail full --profile
+# show optional diagnostic plots in human mode
+uv run main.py --show-diagnostic-plots
 ```
 
-Profiling is call-level (per estimator invocation on one `(circuit, budget)` pair) and records `wall_time_s`, `cpu_time_s`, `rss_bytes`, and `peak_rss_bytes`.
+## Extending the Estimator
 
-## Test Harness
+Implement a callable with signature:
 
-This repository now includes a `pytest`-based test harness with:
-- Core unit/integration checks for `src/circuit_estimation/domain.py`, `generation.py`, `simulation.py`, `estimators.py`, and `scoring.py`
-- Exhaustive validation checks that compare estimator behavior against exact enumeration on small circuits
+- `Callable[[Circuit, int], NDArray[np.float32]]`
 
-### Run the harness
+Contract:
 
-```bash
-# Run only fast checks (default for local iteration)
-./scripts/run-test-harness.sh quick
+- input: one circuit + one budget
+- output: rank-2 ndarray of shape `(max_depth, width)`
+- each row: predicted wire means for one layer depth
 
-# Run fast checks + exhaustive checks (recommended before PR/merge)
-./scripts/run-test-harness.sh full
+Recommended extension path:
 
-# Run only exhaustive checks
-./scripts/run-test-harness.sh exhaustive
-```
+- add new estimators under `src/circuit_estimation/estimators.py` (or new module),
+- evaluate locally with `score_estimator(...)` or `score_estimator_report(...)`,
+- compare via `uv run main.py --detail full --profile`.
 
-The script uses `uv run --group dev pytest ...` and installs `pytest` from the `dev` dependency group automatically when needed.
+## Verification Commands
 
-## Release Quality Gates
-
-Run all checks before release:
+Run before claiming release-ready status:
 
 ```bash
 uv run --group dev ruff check .
@@ -100,101 +120,20 @@ uv run --group dev pytest -m "not exhaustive"
 uv run --group dev pytest -m exhaustive
 ```
 
----
+## Planning Context for Future Agents
+
+If you are iterating on starter-kit/evaluator design, start from:
+
+- `docs/context/README.md`
+
+That folder contains durable challenge context, design decisions, and open questions. It is the primary source of truth for future changes.
 
 ## Tools
 
 ### Circuit Explorer (Interactive UI)
 
-Visual tool for exploring small circuits — see how gate operations, signal statistics, and estimator accuracy evolve with depth.
-
 ```bash
 cd tools/circuit-explorer && npm install && npm run dev
 ```
 
-See [`tools/circuit-explorer/README.md`](tools/circuit-explorer/README.md) for details.
-
----
-
-## Parameters
-
-The contest definition depends on: max_depth, width, budgets, time_tolerance
-
-These are defined in ContestParams.
-
-## Default values
-
-Here are some values, to be adjusted based on early feedback:
-- max_depth = 300
-- width = 1000
-- budgets = [1e2, 1e3, 1e4, 1e5, 1e6]
-- time_tolerance = 0.1
-
-These are defined in default_contest_params.
-
-## Circuit sampling
-
-The sampling procedure is: each gate has 2 random distinct inputs and implements a random boolean function.
-
-This is implemented in random_circuit.
-
-## Score function
-
-Scoring is defined in terms of n_circuits and n_samples. We can adaptively increase these parameters to increase precision of the estimates and hopefully ensure we have a statistically significant difference between top competitors. This should be relatively easy as long as we don't make the circuits too deep.
-
-Scoring procedure:
-
-- We draw n_circuits circuits at random. For each we draw n_samples inputs and take the average.
-- We then compute the target means for each wire in each circuit.
-- For each budget in budgets:
-  - We compute baseline sampling runtime per layer from a batched forward pass.
-  - We run your estimator once per circuit (single call) and expect predictions for all layers at once.
-  - Runtime enforcement is at call level:
-    - if call wall time is above `(1 + time_tolerance) * baseline_total_time`, the whole output tensor is zeroed.
-    - if call wall time is below `(1 - time_tolerance) * baseline_total_time`, effective runtime is floored to that lower bound.
-- For each budget and depth:
-  - MSE is computed against empirical means.
-  - Adjusted MSE = `MSE * (effective_time / baseline_time)`.
-- Final score is the mean adjusted MSE across budgets and layers.
-
-(This is implemented in score_estimator)
-
-## Participant Contract (Current Local API)
-
-- Estimator signature:
-  - `Callable[[Circuit, int], NDArray[np.float32]]`
-- Input:
-  - a generated `Circuit`,
-  - one `budget` value from evaluator configuration.
-- Required output:
-  - one rank-2 `np.ndarray` with shape `(max_depth, width)`,
-  - each row is the predicted wire means for one layer depth.
-
-Violating output shape/depth requirements raises explicit errors in scoring.
-
-Important: in-repo estimators are reference examples only. Future hosted evaluation should assume participant-submitted estimators may be adversarial or malicious and must be treated as black box implementations.
-
-## Extension Points
-
-- Implement custom estimators in `src/circuit_estimation/estimators.py` or a new module with the same callable signature.
-- Evaluate locally via:
-  - `score_estimator(...)` in `src/circuit_estimation/scoring.py`,
-  - `score_estimator_report(...)` in `src/circuit_estimation/scoring.py` for structured raw/full report payloads,
-  - `uv run main.py` for default baseline run.
-- Optional diagnostics:
-  - use `uv run main.py --profile` to emit call-level runtime/resource events.
-
-## Failure Semantics
-
-Scoring applies the following runtime rules per estimator call (single circuit + single budget):
-
-- If elapsed time exceeds `(1 + time_tolerance) * baseline_total_time`, estimator output tensor is zeroed.
-- If elapsed time is below `(1 - time_tolerance) * baseline_total_time`, effective runtime is floored to `(1 - time_tolerance) * baseline_total_time`.
-- If estimator output width mismatches `width`, scoring raises `ValueError`.
-- If estimator output depth mismatches `max_depth`, scoring raises `ValueError`.
-
-## Deterministic Seed Policy
-
-- Circuit generation supports explicit seeded RNG objects (`np.random.default_rng(seed)`).
-- For reproducible local experiments, pass seeded RNGs when constructing circuits.
-- Default CLI flow remains stochastic unless a seeded circuit workflow is explicitly used.
+See `tools/circuit-explorer/README.md` for details.

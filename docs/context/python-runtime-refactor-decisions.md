@@ -67,3 +67,17 @@ Decision owner: Starter-kit maintainers
   - Evaluator diagnostics are external only (call-level timing/resource observations).
   - No assumed per-layer internal event API for participant estimators.
   - In-repo estimators documented as examples, not trusted integration contracts.
+
+### 2026-03-01 - Remove synthetic per-layer runtime diagnostics from report schema
+
+- **Decision:** Drop per-layer runtime-derived report fields (`time_ratio_by_layer`, `effective_time_s_by_layer`, `adjusted_mse_by_layer`, and related aggregates).
+- **Why:** Estimator implementations are black boxes with call-level timing only; per-layer runtime attribution is not observable or trustworthy for adversarial submissions.
+- **Implementation impact:**
+  - `results.by_budget_raw` now carries call-level scalar runtime metrics:
+    - `call_time_ratio_mean`
+    - `call_effective_time_s_mean`
+    - `timeout_rate`
+    - `time_floor_rate`
+  - `adjusted_mse` is budget-level scalar only (no per-layer adjusted fields).
+  - `results.by_layer_overall` / `results.by_budget_layer_matrix` now include only MSE-derived layer aggregates.
+  - Human reporting layer diagnostics are MSE-only; runtime visuals are budget-level and profile-call-level only.

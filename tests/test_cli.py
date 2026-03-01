@@ -73,14 +73,14 @@ def test_default_mode_outputs_human_report(
         cli,
         "render_human_report",
         lambda _report, *, show_diagnostic_plots=False: (
-            render_observed.update({"show_diagnostic_plots": show_diagnostic_plots}) or ""
-        )
-        + (
-            "Circuit Estimation Report\n"
-            "Readiness Scorecard\n"
-            "Run Context\n"
-            "Hardware & Runtime\n"
-            "Tip: Use --agent-mode\n"
+            (render_observed.update({"show_diagnostic_plots": show_diagnostic_plots}) or "")
+            + (
+                "Circuit Estimation Report\n"
+                "Readiness Scorecard\n"
+                "Run Context\n"
+                "Hardware & Runtime\n"
+                "Tip: Use --agent-mode\n"
+            )
         ),
     )
 
@@ -114,7 +114,9 @@ def test_agent_mode_stdout_is_json_only(
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: pytest.fail("human renderer should not be called"),
+        lambda _report, *, show_diagnostic_plots=False: pytest.fail(
+            "human renderer should not be called"
+        ),
     )
     monkeypatch.setattr(
         cli,
@@ -138,9 +140,13 @@ def test_show_diagnostic_plots_flag_enables_human_plots(
     observed: dict[str, Any] = {}
 
     def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
-        return _sample_report(profile_enabled=bool(kwargs.get("profile")), detail=str(kwargs.get("detail", "raw")))
+        return _sample_report(
+            profile_enabled=bool(kwargs.get("profile")), detail=str(kwargs.get("detail", "raw"))
+        )
 
-    def fake_render_human_report(_report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> str:
+    def fake_render_human_report(
+        _report: dict[str, Any], *, show_diagnostic_plots: bool = False
+    ) -> str:
         observed["show_diagnostic_plots"] = show_diagnostic_plots
         return "human\n"
 

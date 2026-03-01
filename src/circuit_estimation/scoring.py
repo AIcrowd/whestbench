@@ -170,11 +170,11 @@ def score_estimator_report(
     for budget in contest_params.budgets:
         baseline_times = np.array(sampling_baseline_time(budget, width, depth), dtype=np.float32)
         baseline_times = np.maximum(baseline_times, np.float32(1e-9))
-        runtimes = np.zeros(depth, dtype=np.float32)
         all_outputs: list[list[NDArray[np.float32]]] = []
         baseline_total_time = float(np.sum(baseline_times))
-        timeout_counts = np.zeros(depth, dtype=np.float32)
-        floor_counts = np.zeros(depth, dtype=np.float32)
+        call_effective_times: list[float] = []
+        timeout_count = 0
+        floor_count = 0
 
         for circuit_index, circuit in enumerate(circuits_to_score):
             start_wall = time.time()
@@ -222,43 +222,38 @@ def score_estimator_report(
             timed_out = elapsed > baseline_total_time * (1.0 + tolerance)
             floored = elapsed < (1.0 - tolerance) * baseline_total_time
             effective_total_time = max(elapsed, (1.0 - tolerance) * baseline_total_time)
-            effective_time_per_depth = np.float32(effective_total_time / depth)
 
             if timed_out:
                 output_tensor = np.zeros_like(output_tensor)
-                timeout_counts += np.float32(1.0)
+                timeout_count += 1
             if floored:
-                floor_counts += np.float32(1.0)
+                floor_count += 1
 
-            runtimes += effective_time_per_depth
+            call_effective_times.append(float(effective_total_time))
             all_outputs.append([output_tensor[i] for i in range(depth)])
 
         estimates = np.array(all_outputs, dtype=np.float32)
-        average_times = runtimes / np.float32(n_circuits_effective)
-        time_ratios = average_times / baseline_times
         mse = ((estimates - means) ** 2).mean(axis=(0, 2))
-        adjusted_mse = mse * time_ratios
-
-        score = float(np.mean(adjusted_mse))
+        mse_mean = float(np.mean(mse))
+        call_effective_time_s_mean = float(np.mean(call_effective_times))
+        call_time_ratio_mean = float(call_effective_time_s_mean / max(baseline_total_time, 1e-9))
+        adjusted_mse = float(mse_mean * call_time_ratio_mean)
+        timeout_rate = float(timeout_count / n_circuits_effective)
+        time_floor_rate = float(floor_count / n_circuits_effective)
         by_budget_raw.append(
             {
                 "budget": int(budget),
-                "score": score,
                 "mse_by_layer": mse.astype(np.float64).tolist(),
-                "time_ratio_by_layer": time_ratios.astype(np.float64).tolist(),
-                "adjusted_mse_by_layer": adjusted_mse.astype(np.float64).tolist(),
-                "timeout_flag_by_layer": (timeout_counts / np.float32(n_circuits_effective))
-                .astype(np.float64)
-                .tolist(),
-                "time_floor_flag_by_layer": (floor_counts / np.float32(n_circuits_effective))
-                .astype(np.float64)
-                .tolist(),
-                "baseline_time_s_by_layer": baseline_times.astype(np.float64).tolist(),
-                "effective_time_s_by_layer": average_times.astype(np.float64).tolist(),
+                "mse_mean": mse_mean,
+                "adjusted_mse": adjusted_mse,
+                "call_time_ratio_mean": call_time_ratio_mean,
+                "call_effective_time_s_mean": call_effective_time_s_mean,
+                "timeout_rate": timeout_rate,
+                "time_floor_rate": time_floor_rate,
             }
         )
 
-    final_score = float(np.mean([entry["score"] for entry in by_budget_raw]))
+    final_score = float(np.mean([entry["adjusted_mse"] for entry in by_budget_raw]))
     run_end = datetime.now(timezone.utc)
     host_meta = {
         "hostname": socket.gethostname(),
@@ -331,55 +326,34 @@ def score_estimator(
 def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dict[str, Any]:
     """Derive aggregate tables/matrices from raw per-budget layer series."""
     budgets = [int(entry["budget"]) for entry in by_budget_raw]
-    scores = [float(entry["score"]) for entry in by_budget_raw]
     mse_matrix = np.array([entry["mse_by_layer"] for entry in by_budget_raw], dtype=np.float64)
-    adjusted_mse_matrix = np.array(
-        [entry["adjusted_mse_by_layer"] for entry in by_budget_raw],
-        dtype=np.float64,
-    )
-    time_ratio_matrix = np.array(
-        [entry["time_ratio_by_layer"] for entry in by_budget_raw],
-        dtype=np.float64,
-    )
-    timeout_matrix = np.array(
-        [entry["timeout_flag_by_layer"] for entry in by_budget_raw],
-        dtype=np.float64,
-    )
-    floor_matrix = np.array(
-        [entry["time_floor_flag_by_layer"] for entry in by_budget_raw],
-        dtype=np.float64,
-    )
-    baseline_time_matrix = np.array(
-        [entry["baseline_time_s_by_layer"] for entry in by_budget_raw],
-        dtype=np.float64,
-    )
-    effective_time_matrix = np.array(
-        [entry["effective_time_s_by_layer"] for entry in by_budget_raw],
-        dtype=np.float64,
-    )
+    mse_means = [float(entry["mse_mean"]) for entry in by_budget_raw]
+    adjusted_mse = [float(entry["adjusted_mse"]) for entry in by_budget_raw]
+    call_time_ratio_mean = [float(entry["call_time_ratio_mean"]) for entry in by_budget_raw]
+    call_effective_time_s_mean = [
+        float(entry["call_effective_time_s_mean"]) for entry in by_budget_raw
+    ]
+    timeout_rate = [float(entry["timeout_rate"]) for entry in by_budget_raw]
+    time_floor_rate = [float(entry["time_floor_rate"]) for entry in by_budget_raw]
 
     by_budget_summary = [
         {
             "budget": int(budget),
-            "score": float(score),
-            "mse_mean": float(np.mean(mse)),
-            "adjusted_mse_mean": float(np.mean(adjusted)),
-            "time_ratio_mean": float(np.mean(ratio)),
-            "baseline_time_s_mean": float(np.mean(baseline)),
-            "effective_time_s_mean": float(np.mean(effective)),
-            "timeout_rate_mean": float(np.mean(timeout)),
-            "time_floor_rate_mean": float(np.mean(floor)),
+            "mse_mean": mse_mean,
+            "adjusted_mse": adjusted,
+            "call_time_ratio_mean": ratio,
+            "call_effective_time_s_mean": effective,
+            "timeout_rate": timeout,
+            "time_floor_rate": floor,
         }
-        for budget, score, mse, adjusted, ratio, baseline, effective, timeout, floor in zip(
+        for budget, mse_mean, adjusted, ratio, effective, timeout, floor in zip(
             budgets,
-            scores,
-            mse_matrix,
-            adjusted_mse_matrix,
-            time_ratio_matrix,
-            baseline_time_matrix,
-            effective_time_matrix,
-            timeout_matrix,
-            floor_matrix,
+            mse_means,
+            adjusted_mse,
+            call_time_ratio_mean,
+            call_effective_time_s_mean,
+            timeout_rate,
+            time_floor_rate,
             strict=True,
         )
     ]
@@ -387,29 +361,11 @@ def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dic
     by_layer_overall = {
         "layer_index": list(range(depth)),
         "mse_mean_by_layer": np.mean(mse_matrix, axis=0).astype(np.float64).tolist(),
-        "adjusted_mse_mean_by_layer": np.mean(adjusted_mse_matrix, axis=0)
-        .astype(np.float64)
-        .tolist(),
-        "time_ratio_mean_by_layer": np.mean(time_ratio_matrix, axis=0).astype(np.float64).tolist(),
-        "baseline_time_s_mean_by_layer": np.mean(baseline_time_matrix, axis=0)
-        .astype(np.float64)
-        .tolist(),
-        "effective_time_s_mean_by_layer": np.mean(effective_time_matrix, axis=0)
-        .astype(np.float64)
-        .tolist(),
-        "timeout_rate_mean_by_layer": np.mean(timeout_matrix, axis=0).astype(np.float64).tolist(),
-        "time_floor_rate_mean_by_layer": np.mean(floor_matrix, axis=0).astype(np.float64).tolist(),
     }
 
     by_budget_layer_matrix = {
         "budgets": budgets,
         "mse_by_budget_layer": mse_matrix.astype(np.float64).tolist(),
-        "adjusted_mse_by_budget_layer": adjusted_mse_matrix.astype(np.float64).tolist(),
-        "time_ratio_by_budget_layer": time_ratio_matrix.astype(np.float64).tolist(),
-        "baseline_time_s_by_budget_layer": baseline_time_matrix.astype(np.float64).tolist(),
-        "effective_time_s_by_budget_layer": effective_time_matrix.astype(np.float64).tolist(),
-        "timeout_rate_by_budget_layer": timeout_matrix.astype(np.float64).tolist(),
-        "time_floor_rate_by_budget_layer": floor_matrix.astype(np.float64).tolist(),
     }
 
     return {

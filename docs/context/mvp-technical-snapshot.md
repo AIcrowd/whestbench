@@ -53,13 +53,17 @@ From `scoring.py` / `README.md`:
   - `budgets`
   - `time_tolerance`
 - For each budget:
-  - baseline per-depth runtime is measured by batched sampling (`sampling_baseline_time`).
+  - baseline total runtime is measured by batched sampling (`sampling_baseline_time`).
   - estimator is run once per `(circuit, budget)` and must return one tensor for all layers.
   - if estimator runtime exceeds `(1 + tolerance) * baseline_total_time`, output is zeroed for the full tensor.
   - if estimator runtime is below `(1 - tolerance) * baseline_total_time`, runtime is floored at that bound.
-  - MSE is computed vs empirical means; then multiplied by time ratio.
+  - MSE is computed vs empirical means (`mse_by_layer` + `mse_mean`).
+  - Runtime adjustment is call-level scalar only:
+    - `call_time_ratio_mean`
+    - `call_effective_time_s_mean`
+    - `adjusted_mse = mse_mean * call_time_ratio_mean`
 
-Final score = average adjusted MSE across depths and budgets.
+Final score = average budget-level `adjusted_mse` across budgets.
 
 Additional scorer behavior:
 
@@ -71,7 +75,7 @@ Additional scorer behavior:
   - `peak_rss_bytes`.
 - report path (`score_estimator_report`) can return:
   - raw mode payloads for machine use (`--agent-mode`),
-  - full mode payloads with computed aggregates (`detail full`),
+  - full mode payloads with computed aggregates (`detail full`), where layer aggregates are MSE-only,
   - run metadata including host/machine/os details.
 
 ## Local Smoke Result (Observed)
@@ -86,6 +90,7 @@ Observed output format:
 
 - default emits a Rich multi-section terminal report.
 - `--agent-mode` emits pretty JSON with `results.final_score` and raw per-budget/per-layer metrics.
+  - `by_budget_raw` includes `mse_by_layer` plus call-level scalar runtime metrics (no synthetic per-layer runtime attribution).
 
 This is a local sanity surface, not a stable benchmark number.
 
