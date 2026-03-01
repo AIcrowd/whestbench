@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@joint/core": "^4.2.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.7.0"
