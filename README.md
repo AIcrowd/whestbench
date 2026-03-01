@@ -49,11 +49,14 @@ Report payload:
 1. `src/circuit_estimation/domain.py`: core `Layer` and `Circuit` entities + validation.
 2. `src/circuit_estimation/generation.py`: random gate/circuit sampling.
 3. `src/circuit_estimation/simulation.py`: batched execution and empirical means.
-4. `src/circuit_estimation/estimators.py`: reference estimators and budget switch logic.
-5. `src/circuit_estimation/scoring.py`: scoring loop, runtime enforcement, profiling hook.
-6. `src/circuit_estimation/reporting.py`: human dashboard and agent JSON rendering.
-7. `src/circuit_estimation/cli.py` and `main.py`: local CLI entrypoints.
-8. `src/circuit_estimation/protocol.py`: DTOs for future RPC-style integration.
+4. `src/circuit_estimation/sdk.py`: participant-facing `BaseEstimator` and setup context.
+5. `src/circuit_estimation/loader.py`: deterministic loading of `Estimator(BaseEstimator)` from file.
+6. `src/circuit_estimation/runner.py`: in-process/subprocess runner contracts and outcomes.
+7. `examples/estimators/`: class-based starter estimators (`mean`, `covariance`, `combined`).
+8. `src/circuit_estimation/scoring.py`: scoring loop, runtime enforcement, profiling hook.
+9. `src/circuit_estimation/reporting.py`: human dashboard and agent JSON rendering.
+10. `src/circuit_estimation/cli.py` and `main.py`: local CLI entrypoints.
+11. `src/circuit_estimation/protocol.py`: DTOs for future RPC-style integration.
 
 ## Quickstart
 
@@ -103,6 +106,9 @@ Contract:
 - `predict` returns rank-2 ndarray shape `(max_depth, width)`
 - values must be finite
 - setup is allowed and treated as a separate lifecycle phase
+
+Starter examples for this API live under `examples/estimators/`.
+The old function-style estimator API is no longer the participant path.
 
 Local participant workflow (installable CLI):
 

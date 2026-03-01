@@ -82,6 +82,18 @@ Decision owner: Starter-kit maintainers
   - `results.by_layer_overall` / `results.by_budget_layer_matrix` now include only MSE-derived layer aggregates.
   - Human reporting layer diagnostics are MSE-only; runtime visuals are budget-level and profile-call-level only.
 
+### 2026-03-01 - Full migration to class-based starter estimator examples
+
+- **Decision:** Move starter estimators to `examples/estimators/` as `Estimator(BaseEstimator)` classes and stop exposing function-style estimator entrypoints for participants.
+- **Why:** Match the submission contract exactly, keep participant UX file-based, and harden the runner boundary for hosted evaluation.
+- **Implementation impact:**
+  - Added class-based starter files:
+    - `examples/estimators/mean_propagation.py`
+    - `examples/estimators/covariance_propagation.py`
+    - `examples/estimators/combined_estimator.py`
+  - `src/circuit_estimation/estimators.py` is now migration guidance only (`__all__ = []`).
+  - Default local scoring path in `main.py`/CLI uses runner + entrypoint (`score_submission_report` with `InProcessRunner`) targeting `examples/estimators/combined_estimator.py`.
+
 ### 2026-03-01 - Participant-first estimator SDK and loader contract
 
 - **Decision:** Move participant estimator integration to a class-based SDK (`BaseEstimator`) with deterministic file/class loading.

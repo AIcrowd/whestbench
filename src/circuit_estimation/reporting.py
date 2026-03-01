@@ -369,9 +369,7 @@ def _render_profile_section(
         equal=True,
         expand=False,
     )
-    console.print(
-        Panel(Align.center(profile_tables), title="Profile", border_style="bright_blue")
-    )
+    console.print(Panel(Align.center(profile_tables), title="Profile", border_style="bright_blue"))
     if show_diagnostic_plots:
         runtime_plot = _profile_runtime_plot_panel(wall, cpu)
         memory_plot = _profile_memory_plot_panel(rss, peak)

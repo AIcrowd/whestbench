@@ -7,12 +7,13 @@ Last updated: 2026-03-01
 - `src/circuit_estimation/domain.py`: `Layer`/`Circuit` entities and validation.
 - `src/circuit_estimation/generation.py`: random gate/circuit sampling (seedable RNG path).
 - `src/circuit_estimation/simulation.py`: batched execution + empirical mean helpers.
-- `src/circuit_estimation/estimators.py`: mean/covariance propagation + combined estimator.
+- `src/circuit_estimation/estimators.py`: migration-note module with no participant estimator exports.
 - `src/circuit_estimation/sdk.py`: participant-facing estimator base class + setup context.
 - `src/circuit_estimation/loader.py`: deterministic class loading from participant `estimator.py`.
 - `src/circuit_estimation/runner.py`: in-process/subprocess runner interfaces and outcomes.
 - `src/circuit_estimation/subprocess_worker.py`: isolated worker protocol endpoint.
 - `src/circuit_estimation/packaging.py`: manifest + artifact packaging for submissions.
+- `examples/estimators/`: class-based starter estimators used as participant examples.
 - `src/circuit_estimation/scoring.py`: contest params, baseline timing, scoring loop, optional profiler hook.
 - `src/circuit_estimation/protocol.py`: serializable request/response DTOs for future RPC integration.
 - `src/circuit_estimation/cli.py`: local run entrypoint used by `main.py`.
@@ -38,15 +39,15 @@ From `generation.py` + `simulation.py`:
 
 ## Estimators in Repo
 
-From `src/circuit_estimation/estimators.py`:
+From `examples/estimators/*.py`:
 
-- `mean_propagation(circuit)`: tracks only means, ignores higher-order dependencies.
-- `covariance_propagation(circuit)`: tracks means + full covariance matrix per layer.
-- `combined_estimator(circuit, budget)`:
+- `mean_propagation.py`: `Estimator(BaseEstimator)` tracks only means, ignores higher-order dependencies.
+- `covariance_propagation.py`: `Estimator(BaseEstimator)` tracks means + full covariance matrix per layer.
+- `combined_estimator.py`: `Estimator(BaseEstimator)` that:
   - uses covariance propagation when `budget >= 30 * circuit.n`;
   - otherwise uses mean propagation.
 
-The in-repo estimator implementations are examples for local development only. Future hosted evaluation must treat participant estimators as black box, potentially adversarial/malicious implementations.
+The in-repo estimator implementations are examples for local development only. Future hosted evaluation must treat participant estimators as black box, potentially adversarial/malicious implementations. Function-style estimator entrypoints are not part of the participant contract.
 
 ## Participant Submission Interface (Current Local Contract)
 
@@ -69,7 +70,7 @@ Runner boundary:
 
 - local in-process and subprocess runners share one `PredictOutcome` contract,
 - setup lifecycle is separate from predict scoring lifecycle,
-- scorer now supports a runner-based path (`score_submission_report`) while preserving legacy callable compatibility.
+- scorer uses runner-based scoring through `score_submission_report`.
 
 ## Current Scoring Logic
 
@@ -101,7 +102,7 @@ Additional scorer behavior:
   - `cpu_time_s`,
   - `rss_bytes`,
   - `peak_rss_bytes`.
-- report path (`score_estimator_report`) can return:
+- report path (`score_submission_report`) can return:
   - raw mode payloads for machine use (`--agent-mode`),
   - full mode payloads with computed aggregates (`detail full`), where layer aggregates are MSE-only,
   - run metadata including host/machine/os details.

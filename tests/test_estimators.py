@@ -4,8 +4,8 @@ from pathlib import Path
 
 import numpy as np
 
-from circuit_estimation.loader import load_estimator_from_path
 from circuit_estimation.generation import random_circuit
+from circuit_estimation.loader import load_estimator_from_path
 from tests.helpers import exhaustive_means, make_circuit, make_layer
 
 
