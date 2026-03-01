@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { empiricalMean, randomCircuit } from "./circuit";
+import { randomCircuit } from "./circuit";
 import CircuitGraphJoint from "./components/CircuitGraphJoint";
 import CircuitHeatmap from "./components/CircuitHeatmap";
 import Controls from "./components/Controls";
@@ -11,7 +11,7 @@ import NarrativeCard, { Ewire } from "./components/NarrativeCard";
 import SignalHeatmap from "./components/SignalHeatmap";
 import StepIndicator from "./components/StepIndicator";
 import WireStats from "./components/WireStats";
-import { meanPropagation } from "./estimators";
+import { useCircuitWorker } from "./useWorker";
 
 const DEFAULT_PARAMS = { width: 8, depth: 6, seed: 42 };
 const TOUR_PARAMS = { width: 8, depth: 6, seed: 42 };
@@ -24,6 +24,9 @@ function formatTime(ms) {
 }
 
 export default function App() {
+  // ── Web Worker ──
+  const worker = useCircuitWorker();
+
   // ── Step state (tour) ──
   const [step, setStep] = useState(() => {
     const saved = localStorage.getItem("circuit-explorer-tour-step");
@@ -74,45 +77,60 @@ export default function App() {
     }
   }, [circuit, isTour]);
 
-  // ── Tour auto-run effects ──
+  // Escape key clears activeLayer
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') setActiveLayer(undefined);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // ── Tour auto-run effects (via worker) ──
   // Step 3: auto-run ground truth
   useEffect(() => {
     if (step === 3 && !autoRunDone.current.gt) {
       autoRunDone.current.gt = true;
-      const t0 = performance.now();
-      const means = empiricalMean(tourCircuit, 10000, 99);
-      const elapsed = performance.now() - t0;
-      setTourGroundTruth(means);
-      setTourGroundTruthTime(elapsed);
+      worker.run('empiricalMean', { circuit: tourCircuit, trials: 10000, seed: 99 })
+        .then(({ estimates, time }) => {
+          setTourGroundTruth(estimates);
+          setTourGroundTruthTime(time);
+        });
     }
-  }, [step, tourCircuit]);
+  }, [step, tourCircuit, worker]);
 
   // Step 4: auto-run sampling
   useEffect(() => {
     if (step >= 4 && !autoRunDone.current.sampling) {
       autoRunDone.current.sampling = true;
-      const means = empiricalMean(tourCircuit, tourBudget, 77);
-      setTourSampling(means);
+      worker.run('empiricalMean', { circuit: tourCircuit, trials: tourBudget, seed: 77 })
+        .then(({ estimates }) => {
+          setTourSampling(estimates);
+        });
     }
-  }, [step, tourCircuit, tourBudget]);
+  }, [step, tourCircuit, tourBudget, worker]);
 
   const handleTourBudgetChange = useCallback(
     (newBudget) => {
       setTourBudget(newBudget);
-      const means = empiricalMean(tourCircuit, newBudget, 77);
-      setTourSampling(means);
+      worker.run('empiricalMean', { circuit: tourCircuit, trials: newBudget, seed: 77 })
+        .then(({ estimates }) => {
+          setTourSampling(estimates);
+        });
     },
-    [tourCircuit]
+    [tourCircuit, worker]
   );
 
   // Step 5: auto-run mean propagation
   useEffect(() => {
     if (step >= 5 && !autoRunDone.current.meanprop) {
       autoRunDone.current.meanprop = true;
-      const means = meanPropagation(tourCircuit);
-      setTourMeanProp(means);
+      worker.run('meanPropagation', { circuit: tourCircuit })
+        .then(({ estimates }) => {
+          setTourMeanProp(estimates);
+        });
     }
-  }, [step, tourCircuit]);
+  }, [step, tourCircuit, worker]);
 
   // ── Step navigation ──
   const nextStep = useCallback(() => {
@@ -224,6 +242,7 @@ export default function App() {
             <EstimatorRunner
               circuit={circuit}
               onResult={handleEstimatorResult}
+              worker={worker}
             />
           </div>
         </aside>
@@ -268,7 +287,12 @@ export default function App() {
               activeLayer={activeLayer}
             />
           ) : (
-            <CircuitHeatmap circuit={circuit} means={exploreDisplayMeans} />
+            <CircuitHeatmap
+              circuit={circuit}
+              means={exploreDisplayMeans}
+              activeLayer={activeLayer}
+              onLayerClick={setActiveLayer}
+            />
           )}
 
           {/* ── Tour: MSE Comparison (steps 4-5) ── */}
@@ -286,20 +310,23 @@ export default function App() {
           {/* ── Explore mode: all panels ── */}
           {!isTour && (
             <>
-              <GateStats circuit={circuit} />
+              <GateStats circuit={circuit} activeLayer={activeLayer} />
 
               {hasAnyExploreEstimate && (
                 <>
                   <div className="panels-row panel-reveal">
-                    <SignalHeatmap
-                      means={exploreDisplayMeans}
-                      width={params.width}
-                      depth={params.depth}
-                    />
+                    {useGraphMode && (
+                      <SignalHeatmap
+                        means={exploreDisplayMeans}
+                        width={params.width}
+                        depth={params.depth}
+                      />
+                    )}
                     <WireStats
                       means={exploreDisplayMeans}
                       width={params.width}
                       depth={params.depth}
+                      activeLayer={activeLayer}
                     />
                   </div>
 
@@ -310,6 +337,7 @@ export default function App() {
                         samplingEstimates={samplingEst}
                         meanPropEstimates={meanPropEst}
                         depth={params.depth}
+                        activeLayer={activeLayer}
                       />
                     </div>
                   )}
