@@ -63,6 +63,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Emit per-call profiling diagnostics (wall, cpu, rss, peak_rss).",
     )
+    parser.add_argument(
+        "--show-diagnostic-plots",
+        action="store_true",
+        help="Include plot panes for budget/layer/profile diagnostics in human mode.",
+    )
     args = parser.parse_args(argv)
 
     report = run_default_report(profile=args.profile, detail=args.detail)
@@ -71,6 +76,6 @@ def main(argv: list[str] | None = None) -> int:
     if mode == "agent":
         output = render_agent_report(report)
     else:
-        output = render_human_report(report)
+        output = render_human_report(report, show_diagnostic_plots=args.show_diagnostic_plots)
     print(output, end="" if output.endswith("\n") else "\n")
     return 0

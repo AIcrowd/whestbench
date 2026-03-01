@@ -26,7 +26,7 @@ It is intended to remain self-sufficient even if `CHALLENGE-CONTEXT.md` is delet
 
 - `docs/context/*.md` (this folder; primary context for future work)
 - `README.md` (current toy contest mechanics)
-- `circuit.py`, `estimators.py`, `evaluate.py`, `main.py` (current implementation)
+- `src/circuit_estimation/*.py`, `main.py` (current implementation)
 
 ## Legacy Source Status
 

@@ -15,7 +15,7 @@ import {
     YAxis,
 } from "recharts";
 
-export default function WireStats({ means, width: n, depth: d }) {
+export default function WireStats({ means, width: n, depth: d, source }) {
   if (!means || means.length === 0) return null;
 
   // Compute per-layer stats
@@ -55,7 +55,10 @@ export default function WireStats({ means, width: n, depth: d }) {
 
   return (
     <div className="panel">
-      <h2>Wire Mean Distribution</h2>
+      <h2>
+        Wire Mean Distribution
+        {source && <span className="source-badge">{source}</span>}
+      </h2>
 
       {/* Mean ± σ band chart */}
       <ResponsiveContainer width="100%" height={220}>

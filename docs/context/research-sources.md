@@ -6,9 +6,7 @@ Last updated: 2026-03-01
 
 - `docs/context/*.md` (primary durable context)
 - `README.md`
-- `circuit.py`
-- `estimators.py`
-- `evaluate.py`
+- `src/circuit_estimation/*.py`
 - `main.py`
 
 ## Legacy Migration Source (Optional)

@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-import estimators
-from estimators import (
+import circuit_estimation.estimators as estimators
+from circuit_estimation.estimators import (
     clip,
     combined_estimator,
     covariance_propagation,
@@ -10,6 +10,7 @@ from estimators import (
     one_v_two_covariance,
     two_v_two_covariance,
 )
+from circuit_estimation.generation import random_circuit
 from tests.helpers import exhaustive_means, make_circuit, make_layer
 
 
@@ -121,8 +122,6 @@ def test_clip_limits_mean_and_covariance() -> None:
 
 def test_covariance_propagation_depth_one_matches_exhaustive_mean() -> None:
     rng = np.random.default_rng(11)
-    from circuit import random_circuit
-
     circuit = random_circuit(n=4, d=1, rng=rng)
 
     predicted = covariance_propagation(circuit)

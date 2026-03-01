@@ -11,7 +11,6 @@ Last updated: 2026-03-01
 - `src/circuit_estimation/scoring.py`: contest params, baseline timing, scoring loop, optional profiler hook.
 - `src/circuit_estimation/protocol.py`: serializable request/response DTOs for future RPC integration.
 - `src/circuit_estimation/cli.py`: local run entrypoint used by `main.py`.
-- `circuit.py`, `estimators.py`, `evaluate.py`: compatibility wrappers that preserve legacy imports.
 - `main.py`: local smoke run with default human dashboard output, `--agent-mode` JSON mode, `--detail raw|full`, and optional `--profile`.
 
 ## Current Mathematical Representation
@@ -34,7 +33,7 @@ From `generation.py` + `simulation.py`:
 
 ## Estimators in Repo
 
-From `estimators.py`:
+From `src/circuit_estimation/estimators.py`:
 
 - `mean_propagation(circuit)`: tracks only means, ignores higher-order dependencies.
 - `covariance_propagation(circuit)`: tracks means + full covariance matrix per layer.

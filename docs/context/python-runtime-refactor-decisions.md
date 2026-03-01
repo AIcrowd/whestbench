@@ -7,11 +7,19 @@ Decision owner: Starter-kit maintainers
 
 ### 2026-03-01 - Package-style runtime restructure
 
-- **Decision:** Move runtime logic into `src/circuit_estimation/*` modules and keep root files as compatibility wrappers.
+- **Decision:** Move runtime logic into `src/circuit_estimation/*` modules.
 - **Why:** Clearer extension points, better agent/human discoverability, and future RPC portability.
 - **Implementation impact:**
   - Added `domain`, `generation`, `simulation`, `estimators`, `scoring`, `protocol`, `cli` modules.
-  - Kept `circuit.py`, `estimators.py`, and `evaluate.py` import surfaces stable.
+
+### 2026-03-01 - Remove legacy root module wrappers
+
+- **Decision:** Delete `circuit.py`, `estimators.py`, and `evaluate.py`.
+- **Why:** Ensure only the package implementation is authoritative and avoid dual import paths.
+- **Implementation impact:**
+  - Migrated tests to `circuit_estimation.*` imports.
+  - Updated static analysis includes to remove deleted modules.
+  - Added regression test to ensure legacy root modules are not reintroduced.
 
 ### 2026-03-01 - Strict local quality gates
 

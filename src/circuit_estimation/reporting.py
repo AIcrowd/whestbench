@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import shutil
 from collections.abc import Sequence
 from datetime import datetime, timezone
@@ -12,6 +13,7 @@ from statistics import fmean
 from typing import Any
 
 from rich import box
+from rich.align import Align
 from rich.columns import Columns
 from rich.console import Console, Group
 from rich.panel import Panel
@@ -29,7 +31,9 @@ def render_agent_report(report: dict[str, Any]) -> str:
     return f"{json.dumps(report, indent=2)}\n"
 
 
-def render_human_report(report: dict[str, Any]) -> str:
+def render_human_report(
+    report: dict[str, Any], *, show_diagnostic_plots: bool = False
+) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
     buffer = io.StringIO()
     width = _dashboard_width()
@@ -53,10 +57,11 @@ def render_human_report(report: dict[str, Any]) -> str:
     console.print(
         "[dim]Use --agent-mode for JSON output when calling from automated agents or UIs.[/dim]"
     )
+    console.print("[dim]Use --show-diagnostic-plots to include diagnostic plot panes.[/dim]")
     _render_top_row(console, report)
-    _render_budget_section(console, report)
-    _render_layer_section(console, report)
-    _render_profile_section(console, report)
+    _render_budget_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
 
 
@@ -66,6 +71,14 @@ def _render_top_row(console: Console, report: dict[str, Any]) -> None:
     readiness = _score_summary_panel(report)
     hardware = _hardware_runtime_panel(report)
 
+    if mode == "three_col":
+        grid = Table.grid(expand=True)
+        grid.add_column(ratio=1)
+        grid.add_column(ratio=1)
+        grid.add_column(ratio=1)
+        grid.add_row(run_context, readiness, hardware)
+        console.print(grid)
+        return
     if mode == "two_col":
         grid = Table.grid(expand=True)
         grid.add_column(ratio=1)
@@ -92,6 +105,8 @@ def _rich_console_environ(width: int) -> dict[str, str]:
 
 
 def _layout_mode(console_width: int) -> str:
+    if console_width >= 180:
+        return "three_col"
     if console_width >= 110:
         return "two_col"
     return "narrow"
@@ -126,7 +141,7 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
     for key, value in rows:
         table.add_row(_render_context_label(key), value)
 
-    return Panel(table, title="Run Context", border_style="bright_cyan")
+    return Panel(Align.center(table), title="Run Context", border_style="bright_cyan")
 
 
 def _hardware_runtime_panel(report: dict[str, Any]) -> Panel:
@@ -146,7 +161,7 @@ def _hardware_runtime_panel(report: dict[str, Any]) -> Panel:
     ]
     for label, value in rows:
         table.add_row(_render_context_label(label), value)
-    return Panel(table, title="Hardware & Runtime", border_style="bright_blue")
+    return Panel(Align.center(table), title="Hardware & Runtime", border_style="bright_blue")
 
 
 def _score_summary_panel(report: dict[str, Any]) -> Panel:
@@ -181,16 +196,26 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
             f"[yellow]{_fmt_float(max(budget_scores), 8)}[/]",
         )
 
-    footnote = Text("Footnote: lower score is better; final score is adjusted MSE mean.", style="white")
-    return Panel(Group(summary, footnote), title="Readiness Scorecard", border_style="bright_cyan")
+    # Keep top-row panes visually balanced with the 10-row Run Context panel.
+    # Scorecard has a header + separator, so fewer data rows are needed to align heights.
+    while len(summary.rows) < 8:
+        summary.add_row("", "")
+    return Panel(
+        Align.center(summary),
+        title="Readiness Scorecard",
+        subtitle="lower score is better; final score is adjusted MSE mean",
+        subtitle_align="left",
+        border_style="bright_cyan",
+    )
 
 
-def _render_budget_section(console: Console, report: dict[str, Any]) -> None:
-    console.print(Rule("Budget Breakdown", style="bright_cyan"))
-    console.print(_budget_lane_panel(report))
+def _render_budget_section(
+    console: Console, report: dict[str, Any], *, show_diagnostic_plots: bool
+) -> None:
+    console.print(_budget_lane_panel(report, show_diagnostic_plots=show_diagnostic_plots))
 
 
-def _budget_lane_panel(report: dict[str, Any]) -> Panel:
+def _budget_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> Panel:
     by_budget = _budget_rows(report)
     best_score = min((_as_float(entry.get("score", 0.0)) for entry in by_budget), default=0.0)
 
@@ -214,25 +239,21 @@ def _budget_lane_panel(report: dict[str, Any]) -> Panel:
             style=row_style,
         )
 
-    accuracy_plot = _budget_frontier_plot_panel(by_budget)
-    runtime_plot = _budget_runtime_plot_panel(by_budget)
-    return Panel(
-        Columns(
-            [Panel(table, title="Budget Table", border_style="cyan"), Group(accuracy_plot, runtime_plot)],
-            equal=False,
-            expand=True,
-        ),
-        title="Budget Intelligence",
-        border_style="bright_cyan",
-    )
+    body: list[Any] = [Align.center(table)]
+    if show_diagnostic_plots:
+        accuracy_plot = _budget_frontier_plot_panel(by_budget)
+        runtime_plot = _budget_runtime_plot_panel(by_budget)
+        body.append(Columns([accuracy_plot, runtime_plot], equal=True, expand=True))
+    return Panel(Group(*body), title="Budget", border_style="bright_cyan")
 
 
-def _render_layer_section(console: Console, report: dict[str, Any]) -> None:
-    console.print(Rule("Layer Diagnostics", style="bright_cyan"))
-    console.print(_layer_lane_panel(report))
+def _render_layer_section(
+    console: Console, report: dict[str, Any], *, show_diagnostic_plots: bool
+) -> None:
+    console.print(_layer_lane_panel(report, show_diagnostic_plots=show_diagnostic_plots))
 
 
-def _layer_lane_panel(report: dict[str, Any]) -> Panel:
+def _layer_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> Panel:
     by_budget = _budget_rows(report)
     mse_series = [_to_float_list(entry.get("mse_by_layer", [])) for entry in by_budget]
     ratio_series = [_to_float_list(entry.get("time_ratio_by_layer", [])) for entry in by_budget]
@@ -264,20 +285,17 @@ def _layer_lane_panel(report: dict[str, Any]) -> Panel:
             _fmt_float(fmean(values) if values else 0.0, 6),
         )
 
-    accuracy_plot = _layer_trend_plot_panel(avg_mse, avg_adj)
-    runtime_plot = _layer_runtime_plot_panel(avg_ratio)
-    return Panel(
-        Columns(
-            [Panel(table, title="Layer Metric Table", border_style="magenta"), Group(accuracy_plot, runtime_plot)],
-            equal=False,
-            expand=True,
-        ),
-        title="Layer Intelligence",
-        border_style="bright_magenta",
-    )
+    body: list[Any] = [Align.center(table)]
+    if show_diagnostic_plots:
+        accuracy_plot = _layer_trend_plot_panel(avg_mse, avg_adj)
+        runtime_plot = _layer_runtime_plot_panel(avg_ratio)
+        body.append(Columns([accuracy_plot, runtime_plot], equal=True, expand=True))
+    return Panel(Group(*body), title="Layer Diagnostics", border_style="bright_magenta")
 
 
-def _render_profile_section(console: Console, report: dict[str, Any]) -> None:
+def _render_profile_section(
+    console: Console, report: dict[str, Any], *, show_diagnostic_plots: bool
+) -> None:
     profile_calls = report.get("profile_calls")
     if not isinstance(profile_calls, list) or not profile_calls:
         return
@@ -305,22 +323,25 @@ def _render_profile_section(console: Console, report: dict[str, Any]) -> None:
     summary = Table(box=box.SIMPLE_HEAVY, show_header=False)
     summary.add_column("field", style="bold bright_white")
     summary.add_column("value")
-    summary.add_row(_label_with_code("Estimator Calls", "calls", "bold bright_white"), str(len(profile_calls)))
     summary.add_row(
-        _label_with_code("Mean Wall Time (s)", "wall_time_s", "bold bright_white"),
-        _fmt_float(fmean(wall) if wall else 0.0, 6),
+        _label_with_code("Estimator Calls", "calls", "bold bright_magenta"),
+        f"[bright_magenta]{len(profile_calls)}[/]",
     )
     summary.add_row(
-        _label_with_code("Mean CPU Time (s)", "cpu_time_s", "bold bright_white"),
-        _fmt_float(fmean(cpu) if cpu else 0.0, 6),
+        _label_with_code("Mean Wall Time (s)", "wall_time_s", "bold bright_cyan"),
+        f"[bright_cyan]{_fmt_float(fmean(wall) if wall else 0.0, 6)}[/]",
     )
     summary.add_row(
-        _label_with_code("Mean RSS (bytes)", "rss_bytes", "bold bright_white"),
-        _fmt_float(fmean(rss) if rss else 0.0, 2),
+        _label_with_code("Mean CPU Time (s)", "cpu_time_s", "bold bright_green"),
+        f"[bright_green]{_fmt_float(fmean(cpu) if cpu else 0.0, 6)}[/]",
     )
     summary.add_row(
-        _label_with_code("Peak RSS (bytes)", "peak_rss_bytes", "bold bright_white"),
-        _fmt_float(max(peak) if peak else 0.0, 2),
+        _label_with_code("Mean RSS (bytes)", "rss_bytes", "bold bright_blue"),
+        f"[bright_blue]{_fmt_float(fmean(rss) if rss else 0.0, 2)}[/]",
+    )
+    summary.add_row(
+        _label_with_code("Peak RSS (bytes)", "peak_rss_bytes", "bold bright_magenta"),
+        f"[bright_magenta]{_fmt_float(max(peak) if peak else 0.0, 2)}[/]",
     )
 
     dist = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
@@ -330,46 +351,47 @@ def _render_profile_section(console: Console, report: dict[str, Any]) -> None:
     dist.add_column("min", justify="right")
     dist.add_column("max", justify="right")
     dist.add_row(
-        _label_with_code("Wall Time (s)", "wall_time_s", "bold white"),
+        _label_with_code("Wall Time (s)", "wall_time_s", "bold bright_cyan"),
         _fmt_float(_percentile(wall, 0.05) if wall else 0.0, 6),
         _fmt_float(_percentile(wall, 0.95) if wall else 0.0, 6),
         _fmt_float(min(wall) if wall else 0.0, 6),
         _fmt_float(max(wall) if wall else 0.0, 6),
     )
     dist.add_row(
-        _label_with_code("CPU Time (s)", "cpu_time_s", "bold white"),
+        _label_with_code("CPU Time (s)", "cpu_time_s", "bold bright_green"),
         _fmt_float(_percentile(cpu, 0.05) if cpu else 0.0, 6),
         _fmt_float(_percentile(cpu, 0.95) if cpu else 0.0, 6),
         _fmt_float(min(cpu) if cpu else 0.0, 6),
         _fmt_float(max(cpu) if cpu else 0.0, 6),
     )
     dist.add_row(
-        _label_with_code("RSS (bytes)", "rss_bytes", "bold white"),
+        _label_with_code("RSS (bytes)", "rss_bytes", "bold bright_blue"),
         _fmt_float(_percentile(rss, 0.05) if rss else 0.0, 2),
         _fmt_float(_percentile(rss, 0.95) if rss else 0.0, 2),
         _fmt_float(min(rss) if rss else 0.0, 2),
         _fmt_float(max(rss) if rss else 0.0, 2),
     )
     dist.add_row(
-        _label_with_code("Peak RSS (bytes)", "peak_rss_bytes", "bold white"),
+        _label_with_code("Peak RSS (bytes)", "peak_rss_bytes", "bold bright_magenta"),
         _fmt_float(_percentile(peak, 0.05) if peak else 0.0, 2),
         _fmt_float(_percentile(peak, 0.95) if peak else 0.0, 2),
         _fmt_float(min(peak) if peak else 0.0, 2),
         _fmt_float(max(peak) if peak else 0.0, 2),
     )
 
-    runtime_plot = _profile_runtime_plot_panel(wall, cpu)
-    memory_plot = _profile_memory_plot_panel(rss, peak)
-    console.print(
-        Columns(
-            [
-                Panel(Group(summary, dist), title="Profile Summary", border_style="bright_blue"),
-                Group(runtime_plot, memory_plot),
-            ],
-            equal=False,
-            expand=True,
-        )
+    profile_tables = Columns(
+        [
+            Panel(Align.center(summary), title="Aggregate Metrics", border_style="bright_blue"),
+            Panel(Align.center(dist), title="Distribution Snapshot", border_style="bright_blue"),
+        ],
+        equal=True,
+        expand=True,
     )
+    console.print(Panel(profile_tables, title="Profile Summary", border_style="bright_blue"))
+    if show_diagnostic_plots:
+        runtime_plot = _profile_runtime_plot_panel(wall, cpu)
+        memory_plot = _profile_memory_plot_panel(rss, peak)
+        console.print(Columns([runtime_plot, memory_plot], equal=True, expand=True))
 
 
 def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
@@ -391,6 +413,7 @@ def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
         x_label="budget",
         y_label="accuracy metrics",
         x_scale="log",
+        sparse_style="line",
     )
 
 
@@ -419,6 +442,7 @@ def _budget_runtime_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
         x_label="budget",
         y_label="normalized runtime [0,1]",
         x_scale="log",
+        sparse_style="line",
     )
 
 
@@ -441,7 +465,7 @@ def _layer_runtime_plot_panel(avg_ratio: Sequence[float]) -> Panel:
     return _make_plot_panel(
         title="Layer Runtime Plot",
         x=x,
-        series=[("time_ratio", avg_ratio, "yellow+")],
+        series=[("time_ratio", avg_ratio, "blue+")],
         x_label="layer",
         y_label="time ratio",
     )
@@ -463,17 +487,19 @@ def _profile_runtime_plot_panel(wall: Sequence[float], cpu: Sequence[float]) -> 
 
 def _profile_memory_plot_panel(rss: Sequence[float], peak: Sequence[float]) -> Panel:
     x = list(range(len(rss)))
-    series: list[tuple[str, Sequence[float], str]] = [("rss_bytes", rss, "yellow+")]
+    rss_mb = [value / (1024.0 * 1024.0) for value in rss]
+    peak_mb = [value / (1024.0 * 1024.0) for value in peak]
+    series: list[tuple[str, Sequence[float], str]] = [("rss_mb", rss_mb, "cyan+")]
     if not _series_nearly_equal(rss, peak):
-        series.append(("peak_rss_bytes", peak, "red+"))
+        series.append(("peak_rss_mb", peak_mb, "magenta+"))
     else:
-        series[0] = ("rss_bytes (same as peak_rss_bytes)", rss, "yellow+")
+        series[0] = ("rss_mb (same as peak_rss_mb)", rss_mb, "cyan+")
     return _make_plot_panel(
         title="Profile Memory Plot",
         x=x,
         series=series,
         x_label="call_index",
-        y_label="bytes",
+        y_label="Memory Usage (MB)",
     )
 
 
@@ -486,6 +512,7 @@ def _make_plot_panel(
     y_label: str,
     x_scale: str | None = None,
     y_scale: str | None = None,
+    sparse_style: str = "scatter",
 ) -> Panel:
     chart = _build_plotext_line_chart(
         x=x,
@@ -494,8 +521,9 @@ def _make_plot_panel(
         y_label=y_label,
         x_scale=x_scale,
         y_scale=y_scale,
+        sparse_style=sparse_style,
     )
-    legend = _legend_table(series)
+    legend = Align.center(_legend_table(series))
 
     if chart is None:
         fallback = Table(box=box.SIMPLE, show_header=True, header_style="bold white")
@@ -514,7 +542,7 @@ def _make_plot_panel(
                 _fmt_float(max(values) if values else 0.0, 6),
                 _fmt_float(_percentile(values, 0.95) if values else 0.0, 6),
             )
-        body: Table | Text | Group = Group(fallback, legend)
+        body: Table | Text | Group = Group(Align.center(fallback), legend)
     else:
         body = Group(Text.from_ansi(chart), legend)
 
@@ -536,6 +564,7 @@ def _build_plotext_line_chart(
     y_label: str,
     x_scale: str | None = None,
     y_scale: str | None = None,
+    sparse_style: str = "scatter",
 ) -> str | None:
     if _plotext is None or not x:
         return None
@@ -578,7 +607,12 @@ def _build_plotext_line_chart(
         for _label, values, color in valid_series:
             # Keep legend external (Rich table), so we avoid in-plot overlap.
             if len(x) <= 12:
-                if callable(scatter_fn):
+                if sparse_style == "line":
+                    # Thin connected line plus explicit points for sparse series.
+                    _plotext.plot(x, values, color=color, marker="hd")
+                    if callable(scatter_fn):
+                        scatter_fn(x, values, color=color, marker="●")
+                elif callable(scatter_fn):
                     scatter_fn(x, values, color=color, marker="●")
                 else:
                     _plotext.plot(x, values, color=color, marker="●")
@@ -597,7 +631,7 @@ def _build_plotext_line_chart(
             if ticks[-1] != x[-1]:
                 ticks.append(x[-1])
         _plotext.xticks(ticks)
-        return str(_plotext.build())
+        return _sanitize_plotext_ansi(str(_plotext.build()))
     except Exception:  # pragma: no cover - terminal backends vary by environment
         return None
     finally:
@@ -606,6 +640,13 @@ def _build_plotext_line_chart(
             _plotext.clear_figure()
         except Exception:  # pragma: no cover - best-effort cleanup
             pass
+
+
+def _sanitize_plotext_ansi(chart: str) -> str:
+    """Remove plotext background ANSI escapes to prevent light chart panels."""
+    # Remove background color and reset-background escapes while preserving foreground styles.
+    without_bg = re.sub(r"\x1b\[48;[0-9;]*m", "", chart)
+    return re.sub(r"\x1b\[49m", "", without_bg)
 
 
 def _legend_table(series: Sequence[tuple[str, Sequence[float], str]]) -> Table:
@@ -677,6 +718,7 @@ def _rich_style_for_plot_color(color: str) -> str:
         "yellow+": "bright_yellow",
         "magenta+": "bright_magenta",
         "red+": "bright_red",
+        "blue+": "bright_blue",
     }
     return mapping.get(color, "bright_white")
 

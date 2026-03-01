@@ -6,7 +6,9 @@ import re
 from typing import Any, cast
 
 import pytest
-from rich.console import Console
+from rich.align import Align
+from rich.console import Console, Group
+from rich.table import Table
 
 import circuit_estimation.reporting as reporting
 from circuit_estimation.reporting import render_agent_report, render_human_report
@@ -101,17 +103,23 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     assert "Use --agent-mode for JSON output" in rendered
     assert "Run Context" in rendered
     assert "Readiness Scorecard" in rendered
-    assert "Budget Breakdown" in rendered
+    assert "Budget" in rendered
     assert "Layer Diagnostics" in rendered
-    assert "Budget Frontier Plot" in rendered
-    assert "Layer Trend Plot" in rendered
+    assert "Budget Breakdown" not in rendered
+    assert "Budget Intelligence" not in rendered
+    assert "Budget Table" not in rendered
+    assert "Layer Intelligence" not in rendered
+    assert "Budget Frontier Plot" not in rendered
+    assert "Budget Runtime Plot" not in rendered
+    assert "Layer Trend Plot" not in rendered
+    assert "Layer Runtime Plot" not in rendered
     assert "Profile Summary" not in rendered
     assert "Profile Runtime Plot" not in rendered
     assert "Profile Memory Plot" not in rendered
     assert "Profiling" not in rendered
 
 
-def test_human_report_uses_two_column_top_row_on_wide_layout(
+def test_human_report_uses_three_column_top_row_on_wide_layout(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("COLUMNS", "220")
@@ -127,11 +135,11 @@ def test_human_report_uses_two_column_top_row_on_wide_layout(
     assert "Readiness Scorecard" in rendered
     assert "Hardware & Runtime" in rendered
     assert any(
-        "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" not in line
+        "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" in line
         for line in title_lines
     )
     assert not any(
-        "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" in line
+        "Hardware & Runtime" in line and "Run Context" not in line and "Readiness Scorecard" not in line
         for line in title_lines
     )
 
@@ -188,22 +196,78 @@ def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:
     assert "[host.python_version]" in hardware
 
 
-def test_budget_lane_contains_table_and_two_plots() -> None:
-    rendered = render_human_report(_sample_report(include_profile=False))
+def test_primary_tables_are_centered() -> None:
+    report = _sample_report(include_profile=False)
 
-    assert "Budget Intelligence" in rendered
-    assert "Budget Table" in rendered
+    run_context = reporting._run_context_panel(report)
+    hardware = reporting._hardware_runtime_panel(report)
+    score = reporting._score_summary_panel(report)
+
+    assert isinstance(run_context.renderable, Align)
+    assert isinstance(run_context.renderable.renderable, Table)
+    assert isinstance(hardware.renderable, Align)
+    assert isinstance(hardware.renderable.renderable, Table)
+    assert isinstance(score.renderable, Align)
+    assert isinstance(score.renderable.renderable, Table)
+
+
+def test_budget_and_layer_tables_are_centered() -> None:
+    report = _sample_report(include_profile=False)
+
+    budget = reporting._budget_lane_panel(report)
+    budget_body = cast(Group, budget.renderable)
+    budget_table = budget_body.renderables[0]
+    assert isinstance(budget_table, Align)
+    assert isinstance(budget_table.renderable, Table)
+
+    layer = reporting._layer_lane_panel(report)
+    layer_body = cast(Group, layer.renderable)
+    layer_table = layer_body.renderables[0]
+    assert isinstance(layer_table, Align)
+    assert isinstance(layer_table.renderable, Table)
+
+
+def test_budget_lane_contains_table_and_two_plots() -> None:
+    rendered = render_human_report(_sample_report(include_profile=False), show_diagnostic_plots=True)
+
+    assert "Budget" in rendered
     assert "Budget Frontier Plot" in rendered
     assert "Budget Runtime Plot" in rendered
 
 
 def test_layer_lane_contains_stats_and_trend_plots() -> None:
-    rendered = render_human_report(_sample_report(include_profile=False))
+    rendered = render_human_report(_sample_report(include_profile=False), show_diagnostic_plots=True)
 
-    assert "Layer Intelligence" in rendered
-    assert "Layer Metric Table" in rendered
+    assert "Layer Diagnostics" in rendered
     assert "Layer Trend Plot" in rendered
     assert "Layer Runtime Plot" in rendered
+
+
+def test_budget_plots_render_side_by_side_below_full_width_table(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("COLUMNS", "220")
+    rendered = render_human_report(_sample_report(include_profile=False), show_diagnostic_plots=True)
+    plain = _strip_ansi(rendered)
+    lines = plain.splitlines()
+
+    table_line = next(i for i, line in enumerate(lines) if "Budget" in line)
+    plot_line = next(
+        i for i, line in enumerate(lines) if "Budget Frontier Plot" in line and "Budget Runtime Plot" in line
+    )
+    assert table_line < plot_line
+
+
+def test_layer_plots_render_side_by_side(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("COLUMNS", "220")
+    rendered = render_human_report(_sample_report(include_profile=False), show_diagnostic_plots=True)
+    plain = _strip_ansi(rendered)
+    assert any(
+        "Layer Trend Plot" in line and "Layer Runtime Plot" in line
+        for line in plain.splitlines()
+    )
 
 
 def test_render_human_mode_includes_profile_section_when_available() -> None:
@@ -211,12 +275,49 @@ def test_render_human_mode_includes_profile_section_when_available() -> None:
 
     assert "Profiling" in rendered
     assert "Profile Summary" in rendered
-    assert "Profile Runtime Plot" in rendered
-    assert "Profile Memory Plot" in rendered
+    assert "Profile Runtime Plot" not in rendered
+    assert "Profile Memory Plot" not in rendered
     assert "wall_time_s" in rendered
     assert "cpu_time_s" in rendered
     assert "rss_bytes" in rendered
     assert "peak_rss_bytes" in rendered
+
+
+def test_profile_plots_render_side_by_side_and_memory_axis_is_mb(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("COLUMNS", "220")
+    rendered = render_human_report(_sample_report(include_profile=True), show_diagnostic_plots=True)
+    plain = _strip_ansi(rendered)
+
+    assert any(
+        "Profile Runtime Plot" in line and "Profile Memory Plot" in line
+        for line in plain.splitlines()
+    )
+    assert "Memory Usage (MB)" in plain
+    assert "rss_mb" in plain
+
+
+def test_profile_summary_contains_two_structured_side_by_side_tables(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("COLUMNS", "220")
+    rendered = render_human_report(_sample_report(include_profile=True))
+    plain = _strip_ansi(rendered)
+
+    assert "Aggregate Metrics" in plain
+    assert "Distribution Snapshot" in plain
+    assert any(
+        "Aggregate Metrics" in line and "Distribution Snapshot" in line
+        for line in plain.splitlines()
+    )
+
+
+def test_profile_summary_prints_without_plots_by_default() -> None:
+    rendered = render_human_report(_sample_report(include_profile=True))
+    assert "Profile Summary" in rendered
+    assert "Profile Runtime Plot" not in rendered
+    assert "Profile Memory Plot" not in rendered
 
 
 def test_plotext_chart_uses_high_contrast_sparse_scatter_style(
@@ -377,12 +478,169 @@ def test_plotext_chart_uses_hd_line_style_for_dense_series(monkeypatch: pytest.M
     assert spy.plot_calls[-1][3] == "hd"
 
 
+def test_plotext_chart_uses_line_marker_for_sparse_series_when_requested(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class PlotextSpy:
+        def __init__(self) -> None:
+            self.plot_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
+            self.scatter_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
+
+        def clear_data(self) -> None:
+            return None
+
+        def clear_figure(self) -> None:
+            return None
+
+        def theme(self, _name: str) -> None:
+            return None
+
+        def plotsize(self, _w: int, _h: int) -> None:
+            return None
+
+        def canvas_color(self, _name: str) -> None:
+            return None
+
+        def axes_color(self, _name: str) -> None:
+            return None
+
+        def ticks_color(self, _name: str) -> None:
+            return None
+
+        def xscale(self, _name: str) -> None:
+            return None
+
+        def yscale(self, _name: str) -> None:
+            return None
+
+        def ylim(self, _low: float, _high: float) -> None:
+            return None
+
+        def plot(
+            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+        ) -> None:
+            self.plot_calls.append((x, y, color, marker))
+
+        def scatter(
+            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+        ) -> None:
+            self.scatter_calls.append((x, y, color, marker))
+
+        def xlabel(self, _label: str) -> None:
+            return None
+
+        def ylabel(self, _label: str) -> None:
+            return None
+
+        def grid(self, _enabled: bool, _vertical: bool) -> None:
+            return None
+
+        def xticks(self, _ticks: list[float]) -> None:
+            return None
+
+        def build(self) -> str:
+            return "chart"
+
+    spy = PlotextSpy()
+    monkeypatch.setattr(reporting, "_plotext", spy)
+
+    output = reporting._build_plotext_line_chart(
+        x=[10.0, 100.0, 1000.0, 10000.0],
+        series=[("score", [0.1, 0.2, 0.3, 0.4], "cyan+")],
+        x_label="budget",
+        y_label="metric",
+        sparse_style="line",
+    )
+
+    assert output == "chart"
+    assert spy.plot_calls[-1][3] == "hd"
+    assert spy.scatter_calls[-1][3] == "●"
+
+
+def test_plotext_chart_sanitizes_background_ansi_codes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class PlotextSpy:
+        def clear_data(self) -> None:
+            return None
+
+        def clear_figure(self) -> None:
+            return None
+
+        def theme(self, _name: str) -> None:
+            return None
+
+        def plotsize(self, _w: int, _h: int) -> None:
+            return None
+
+        def canvas_color(self, _name: str) -> None:
+            return None
+
+        def axes_color(self, _name: str) -> None:
+            return None
+
+        def ticks_color(self, _name: str) -> None:
+            return None
+
+        def xscale(self, _name: str) -> None:
+            return None
+
+        def yscale(self, _name: str) -> None:
+            return None
+
+        def ylim(self, _low: float, _high: float) -> None:
+            return None
+
+        def plot(
+            self, _x: list[float], _y: list[float], *, color: str | None = None, marker: str | None = None
+        ) -> None:
+            return None
+
+        def scatter(
+            self, _x: list[float], _y: list[float], *, color: str | None = None, marker: str | None = None
+        ) -> None:
+            return None
+
+        def xlabel(self, _label: str) -> None:
+            return None
+
+        def ylabel(self, _label: str) -> None:
+            return None
+
+        def grid(self, _enabled: bool, _vertical: bool) -> None:
+            return None
+
+        def xticks(self, _ticks: list[float]) -> None:
+            return None
+
+        def build(self) -> str:
+            return "\x1b[48;5;15mA\x1b[49mB\x1b[38;5;10mC\x1b[0m"
+
+    monkeypatch.setattr(reporting, "_plotext", PlotextSpy())
+
+    output = reporting._build_plotext_line_chart(
+        x=[0.0, 1.0, 2.0],
+        series=[("wall_time_s", [0.2, 0.4, 0.6], "cyan+")],
+        x_label="call_index",
+        y_label="seconds",
+    )
+
+    assert output is not None
+    assert "\x1b[48;" not in output
+    assert "\x1b[49m" not in output
+    assert "\x1b[38;5;10m" in output
+
+
 def test_dashboard_width_uses_terminal_columns(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("COLUMNS", "96")
     assert reporting._dashboard_width() == 96
 
     monkeypatch.setenv("COLUMNS", "40")
     assert reporting._dashboard_width() == 80
+
+
+def test_layer_runtime_plot_legend_style_matches_line_color() -> None:
+    assert reporting._rich_style_for_plot_color("blue+") == "bright_blue"
 
 
 def _render_panel(panel: object) -> str:
