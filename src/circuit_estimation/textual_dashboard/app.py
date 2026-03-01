@@ -9,6 +9,11 @@ from textual.binding import Binding
 from textual.widgets import Footer, Header, Static
 
 from .state import DashboardState, build_dashboard_state
+from .views.budgets import render_budgets_view
+from .views.data import render_data_view
+from .views.layers import render_layers_view
+from .views.performance import render_performance_view
+from .views.summary import render_summary_view
 
 
 class DashboardApp(App[None]):
@@ -93,11 +98,11 @@ class DashboardApp(App[None]):
         if self.show_help_overlay:
             return "Keyboard: 1-5 switch tabs, r reload, q quit, ? help"
         mapping = {
-            "summary": "Summary",
-            "budgets": "Budget Analysis",
-            "layers": "Layer Analysis",
-            "performance": "Performance",
-            "data": "Raw Data",
+            "summary": render_summary_view,
+            "budgets": render_budgets_view,
+            "layers": render_layers_view,
+            "performance": render_performance_view,
+            "data": render_data_view,
         }
-        heading = mapping.get(self.active_tab, "Summary")
-        return f"{heading}\n\nContent will be populated by dedicated view modules."
+        renderer = mapping.get(self.active_tab, render_summary_view)
+        return renderer(self.state)
