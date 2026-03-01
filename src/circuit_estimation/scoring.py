@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Sequence
-from dataclasses import dataclass
 import sys
 import time
+from collections.abc import Callable, Iterator, Sequence
+from dataclasses import dataclass
+from typing import TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -20,12 +21,13 @@ except ImportError:  # pragma: no cover - non-POSIX environments
     resource = None
 
 try:
-    import psutil
+    import psutil  # pyright: ignore[reportMissingModuleSource]
 except ImportError:  # pragma: no cover - optional dependency
     psutil = None
 
 EstimatorFn = Callable[[Circuit, int], Iterator[NDArray[np.float32]]]
 ProfilerFn = Callable[[dict[str, float | int]], None]
+T = TypeVar("T")
 
 
 @dataclass(slots=True)
@@ -54,7 +56,9 @@ default_contest_params = ContestParams(
 )
 
 
-def profile_fn(fn: Callable[[], Iterator[NDArray[np.float32]]]) -> Iterator[tuple[float, NDArray[np.float32]]]:
+def profile_fn(
+    fn: Callable[[], Iterator[T]],
+) -> Iterator[tuple[float, T]]:
     """Yield cumulative wall time and each iterator output from ``fn``."""
     start_time = time.time()
     for output in fn():
@@ -133,7 +137,11 @@ def score_estimator(
     depth = contest_params.max_depth
     tolerance = contest_params.time_tolerance
 
-    circuits_to_score = list(circuits) if circuits is not None else [random_circuit(width, depth) for _ in range(n_circuits)]
+    circuits_to_score = (
+        list(circuits)
+        if circuits is not None
+        else [random_circuit(width, depth) for _ in range(n_circuits)]
+    )
     if not circuits_to_score:
         raise ValueError("At least one circuit is required for scoring.")
     if any(c.n != width for c in circuits_to_score):
@@ -143,7 +151,8 @@ def score_estimator(
 
     n_circuits_effective = len(circuits_to_score)
     means: NDArray[np.float32] = np.array(
-        [list(empirical_mean(circuit, n_samples)) for circuit in circuits_to_score], dtype=np.float32
+        [list(empirical_mean(circuit, n_samples)) for circuit in circuits_to_score],
+        dtype=np.float32,
     )
     variances = (1.0 - means * means).mean(axis=(0, 2))
 

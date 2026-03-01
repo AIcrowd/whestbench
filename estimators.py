@@ -23,6 +23,7 @@ def combined_estimator(circuit: Circuit, budget: int) -> Iterator[NDArray]:
     else:
         yield from mean_propagation(circuit)
 
+
 __all__ = [
     "clip",
     "combined_estimator",
