@@ -87,10 +87,9 @@ class CovariancePropagationEstimator(BaseEstimator):
     per-wire means, it tracks covariance between wires, which captures whether
     two wires tend to move together or in opposite directions.
 
-    Why this helps: product gates depend on ``x_f * x_s``. If ``x_f`` and
-    ``x_s`` are often aligned, the product tends positive; if anti-aligned,
-    negative. Mean-only propagation cannot represent that effect, but covariance
-    can.
+    Intuition: product gates depend on ``x_f * x_s``. If ``x_f`` and ``x_s``
+    are often aligned, the product tends positive; if anti-aligned, negative.
+    Mean-only propagation cannot represent that effect, but covariance can.
 
     State per depth:
 
