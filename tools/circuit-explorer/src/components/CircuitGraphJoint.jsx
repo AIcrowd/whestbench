@@ -217,7 +217,43 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
     paperRef.current = paper;
     el.appendChild(paper.el);
 
-    // --- Create gate elements (uniform rectangles, no type colors) ---
+    // --- Create input wire nodes (column before layer 0) ---
+    const inputNodes = [];
+    const INPUT_W = 24;
+    const INPUT_H = 24;
+    for (let w = 0; w < circuit.n; w++) {
+      const x = PAD_X;
+      const y = PAD_Y + w * (GATE_H + ROW_GAP) + (GATE_H - INPUT_H) / 2;
+
+      const node = new shapes.standard.Circle({
+        position: { x, y },
+        size: { width: INPUT_W, height: INPUT_H },
+        attrs: {
+          body: {
+            fill: "#F3F4F6",
+            stroke: GATE_STROKE,
+            strokeWidth: 1,
+          },
+          label: {
+            text: `x${w}`,
+            fontSize: 7,
+            fontFamily: "'IBM Plex Mono', monospace",
+            fill: "#64748B",
+          },
+        },
+        ports: {
+          groups: PORT_GROUPS,
+          items: [{ id: "out", group: "out" }],
+        },
+      });
+      node.set("isInput", true);
+      node.set("wireIndex", w);
+      inputNodes.push(node);
+      graph.addCell(node);
+    }
+
+    // --- Create gate elements (uniform rectangles) ---
+    const GATE_X_OFFSET = INPUT_W + COL_GAP; // shift gates right to make room for inputs
     const nodes = [];
     for (let l = 0; l < circuit.d; l++) {
       nodes[l] = [];
@@ -225,7 +261,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
         const mean = means?.[l]?.[w] ?? null;
         const fill = meanToColor(mean) || GATE_FILL_DEFAULT;
 
-        const x = PAD_X + l * (GATE_W + COL_GAP);
+        const x = PAD_X + GATE_X_OFFSET + l * (GATE_W + COL_GAP);
         const y = PAD_Y + w * (GATE_H + ROW_GAP);
 
         const node = new shapes.standard.Rectangle({
@@ -270,7 +306,48 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
       }
     }
 
-    // --- Create links with smooth bezier connectors ---
+    // --- Create links from input wires to layer 0 ---
+    for (let w = 0; w < circuit.n; w++) {
+      const g = circuit.gates[0];
+      const fw = g.first[w];
+      const sw = g.second[w];
+
+      if (inputNodes[fw] && nodes[0]?.[w]) {
+        graph.addCell(
+          new shapes.standard.Link({
+            source: { id: inputNodes[fw].id, port: "out" },
+            target: { id: nodes[0][w].id, port: "in1" },
+            attrs: {
+              line: {
+                stroke: WIRE_COLOR,
+                strokeWidth: 0.8,
+                targetMarker: { d: "" },
+              },
+            },
+            connector: { name: "smooth" },
+          })
+        );
+      }
+
+      if (inputNodes[sw] && nodes[0]?.[w]) {
+        graph.addCell(
+          new shapes.standard.Link({
+            source: { id: inputNodes[sw].id, port: "out" },
+            target: { id: nodes[0][w].id, port: "in2" },
+            attrs: {
+              line: {
+                stroke: WIRE_COLOR,
+                strokeWidth: 0.8,
+                targetMarker: { d: "" },
+              },
+            },
+            connector: { name: "smooth" },
+          })
+        );
+      }
+    }
+
+    // --- Create links between layers ---
     for (let l = 1; l < circuit.d; l++) {
       for (let w = 0; w < circuit.n; w++) {
         const g = circuit.gates[l];
@@ -316,15 +393,16 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
     // Unfreeze
     paper.unfreeze();
 
-    // Fit content
+    // Fit content centered
     requestAnimationFrame(() => {
       if (!paperRef.current || !canvasRef.current) return;
-      const bbox = graph.getBBox();
-      if (!bbox) return;
       const containerW = canvasRef.current.clientWidth;
-      const contentH = bbox.y + bbox.height + 40;
-      paper.setDimensions(containerW, contentH);
-      paper.transformToFitContent({ padding: 20 });
+      const containerH = canvasRef.current.clientHeight || 500;
+      paper.setDimensions(containerW, containerH);
+      paper.scaleContentToFit({
+        padding: 30,
+        maxScale: 1,
+      });
       setZoomPct(Math.round(paper.scale().sx * 100));
     });
 
