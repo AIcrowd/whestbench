@@ -4,11 +4,13 @@ from circuit_estimation.generation import random_circuit, random_gates
 
 
 def test_random_gates_disallow_duplicate_inputs() -> None:
+    # The generator contract forbids same-wire fan-in for a single gate.
     layer = random_gates(64, np.random.default_rng(123))
     assert np.all(layer.first != layer.second)
 
 
 def test_random_circuit_is_reproducible_with_seeded_rng() -> None:
+    # Seeded RNG must reproduce full layer structure for debugging and leaderboard replay.
     circuit_a = random_circuit(8, 3, np.random.default_rng(7))
     circuit_b = random_circuit(8, 3, np.random.default_rng(7))
 
@@ -22,6 +24,7 @@ def test_random_circuit_is_reproducible_with_seeded_rng() -> None:
 
 
 def test_random_gate_polynomials_map_binary_inputs_to_binary_outputs() -> None:
+    # Every sampled gate should map {-1,+1}^2 back into {-1,+1}.
     layer = random_gates(128, np.random.default_rng(7))
     for x in (-1.0, 1.0):
         for y in (-1.0, 1.0):

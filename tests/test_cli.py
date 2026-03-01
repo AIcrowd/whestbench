@@ -6,6 +6,7 @@ import circuit_estimation.cli as cli
 
 
 def test_run_default_score_returns_float(monkeypatch) -> None:
+    # Default path should remain a simple numeric score for starter-kit users.
     def fake_score_estimator(*_args: Any, **_kwargs: Any) -> float:
         return 0.5
 
@@ -15,6 +16,7 @@ def test_run_default_score_returns_float(monkeypatch) -> None:
 
 
 def test_run_default_score_with_profile_returns_diagnostics(monkeypatch) -> None:
+    # Profile mode should surface structured diagnostics for future perf tooling.
     def fake_score_estimator(*_args: Any, **kwargs: Any) -> float:
         profiler = kwargs.get("profiler")
         if profiler is not None:

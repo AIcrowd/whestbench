@@ -12,6 +12,7 @@ from circuit_estimation.estimators import (
 
 
 def test_clip_enforces_correlation_bounds() -> None:
+    # Clipping prevents impossible covariance states that break downstream math.
     mean = np.array([2.0, -2.0, 0.5], dtype=np.float32)
     cov = np.array(
         [
@@ -28,6 +29,7 @@ def test_clip_enforces_correlation_bounds() -> None:
 
 
 def test_mean_propagation_exact_for_linear_layer() -> None:
+    # For linear layers, mean propagation should be exact.
     layer = Layer(
         first=np.array([0, 1], dtype=np.int32),
         second=np.array([1, 0], dtype=np.int32),
@@ -42,6 +44,7 @@ def test_mean_propagation_exact_for_linear_layer() -> None:
 
 
 def test_covariance_propagation_depth_one_matches_linear_mean_case() -> None:
+    # Covariance propagation should reduce to the same mean in linear-only circuits.
     layer = Layer(
         first=np.array([0, 1], dtype=np.int32),
         second=np.array([1, 0], dtype=np.int32),
@@ -56,6 +59,7 @@ def test_covariance_propagation_depth_one_matches_linear_mean_case() -> None:
 
 
 def test_combined_estimator_switches_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Budget gate must route to mean or covariance path deterministically.
     calls: list[str] = []
 
     def fake_mean(_circuit: Circuit):

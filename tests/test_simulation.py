@@ -5,6 +5,7 @@ from circuit_estimation.simulation import empirical_mean, run_batched, run_on_ra
 
 
 def test_run_batched_matches_manual_layer_equation() -> None:
+    # Numerical kernel should match explicit polynomial evaluation exactly.
     layer = Layer(
         first=np.array([0, 1], dtype=np.int32),
         second=np.array([1, 0], dtype=np.int32),
@@ -27,6 +28,7 @@ def test_run_batched_matches_manual_layer_equation() -> None:
 
 
 def test_run_on_random_yields_depth_entries() -> None:
+    # Runtime interface contract: one output tensor per circuit depth.
     layer = Layer.identity(n=4)
     circuit = Circuit(n=4, d=2, gates=[layer, layer])
     outputs = list(run_on_random(circuit, trials=8))
@@ -35,6 +37,7 @@ def test_run_on_random_yields_depth_entries() -> None:
 
 
 def test_empirical_mean_exact_for_constant_circuit() -> None:
+    # Monte-Carlo averaging should be exact when circuit output is deterministic.
     layer = Layer(
         first=np.array([0, 0, 0], dtype=np.int32),
         second=np.array([1, 1, 1], dtype=np.int32),

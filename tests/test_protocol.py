@@ -2,11 +2,13 @@ from circuit_estimation.protocol import ScoreRequest, ScoreResponse
 
 
 def test_score_request_has_versioned_schema() -> None:
+    # Schema version enables forward-compatible RPC evolution.
     req = ScoreRequest(schema_version="1.0", n_circuits=2, n_samples=16, budget=100)
     assert req.schema_version == "1.0"
 
 
 def test_score_response_round_trip_dict() -> None:
+    # Serialization round-trip should preserve payload exactly.
     response = ScoreResponse(
         schema_version="1.0",
         score=0.123,
