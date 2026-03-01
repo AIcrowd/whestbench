@@ -17,7 +17,9 @@ def render_performance_view(state: DashboardState) -> str:
     wall = [_as_float(entry.get("wall_time_s", 0.0)) for entry in calls if isinstance(entry, dict)]
     cpu = [_as_float(entry.get("cpu_time_s", 0.0)) for entry in calls if isinstance(entry, dict)]
     rss = [_as_float(entry.get("rss_bytes", 0.0)) for entry in calls if isinstance(entry, dict)]
-    peak = [_as_float(entry.get("peak_rss_bytes", 0.0)) for entry in calls if isinstance(entry, dict)]
+    peak = [
+        _as_float(entry.get("peak_rss_bytes", 0.0)) for entry in calls if isinstance(entry, dict)
+    ]
     return (
         "Performance\n\n"
         "Profile\n"
@@ -34,7 +36,11 @@ def render_performance_view(state: DashboardState) -> str:
 
 
 def _as_float(value: object) -> float:
-    try:
+    if isinstance(value, (int, float)):
         return float(value)
-    except (TypeError, ValueError):
-        return 0.0
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return 0.0
+    return 0.0

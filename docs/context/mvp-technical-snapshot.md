@@ -53,12 +53,15 @@ From `scoring.py` / `README.md`:
   - `budgets`
   - `time_tolerance`
 - For each budget:
-  - baseline total runtime is measured by batched sampling (`sampling_baseline_time`).
-  - estimator is run once per `(circuit, budget)` and must return one tensor for all layers.
-  - if estimator runtime exceeds `(1 + tolerance) * baseline_total_time`, output is zeroed for the full tensor.
-  - if estimator runtime is below `(1 - tolerance) * baseline_total_time`, runtime is floored at that bound.
+  - baseline runtime is measured by depth (`time_budget_by_depth_s`) using batched sampling.
+  - estimator is run once per `(circuit, budget)` and must stream exactly one `(width,)` row per depth.
+  - runtime policy is enforced at each streamed depth row:
+    - if cumulative runtime exceeds `(1 + tolerance) * time_budget_by_depth_s[i]`, that row is zeroed.
+    - if cumulative runtime is below `(1 - tolerance) * time_budget_by_depth_s[i]`, effective runtime is floored.
   - MSE is computed vs empirical means (`mse_by_layer` + `mse_mean`).
-  - Runtime adjustment is call-level scalar only:
+  - Runtime adjustment includes both depth vectors and budget-level scalars:
+    - `time_ratio_by_depth_mean`
+    - `effective_time_s_by_depth_mean`
     - `call_time_ratio_mean`
     - `call_effective_time_s_mean`
     - `adjusted_mse = mse_mean * call_time_ratio_mean`
@@ -67,7 +70,7 @@ Final score = average budget-level `adjusted_mse` across budgets.
 
 Additional scorer behavior:
 
-- malformed estimator outputs (wrong width, wrong depth, or non-ndarray) raise explicit errors,
+- malformed estimator outputs (wrong width, wrong depth row count, non-finite values, or non-iterable output) raise explicit errors,
 - optional profiler callback can emit call-level diagnostics:
   - `wall_time_s`,
   - `cpu_time_s`,
@@ -90,7 +93,7 @@ Observed output format:
 
 - default emits a Rich multi-section terminal report.
 - `--agent-mode` emits pretty JSON with `results.final_score` and raw per-budget/per-layer metrics.
-  - `by_budget_raw` includes `mse_by_layer` plus call-level scalar runtime metrics (no synthetic per-layer runtime attribution).
+  - `by_budget_raw` includes `mse_by_layer` plus depth runtime vectors (`time_budget_by_depth_s`, `time_ratio_by_depth_mean`, `effective_time_s_by_depth_mean`) and budget-level scalar runtime metrics.
 
 This is a local sanity surface, not a stable benchmark number.
 
@@ -100,7 +103,7 @@ This is a local sanity surface, not a stable benchmark number.
 2. No production containerized/sandboxed execution path in this repo yet.
 3. Deterministic seeded evaluation flow exists locally but final public seed policy is not frozen.
 4. Profiling metrics are local-process diagnostics, not yet equivalent to hosted infra accounting.
-5. Participant output contract is clearer locally (strict ndarray + full-depth single-call return) but still needs final public challenge-spec freeze.
+5. Participant output contract is clearer locally (streamed depth rows from `predict(circuit, budget)`) but still needs final public challenge-spec freeze.
 
 ## Implication for Future Agents
 

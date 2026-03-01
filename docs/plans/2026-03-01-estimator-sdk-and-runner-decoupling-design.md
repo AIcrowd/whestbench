@@ -72,9 +72,7 @@ Participant estimator class contract:
 
 - must subclass `BaseEstimator`
 - required method: `predict(circuit, budget)`
-- optional methods: `setup(context)`, `predict_batch(circuits, budget)`, `teardown()`
-
-`predict_batch` default behavior: sequentially call `.predict(...)` and stack outputs.
+- optional methods: `setup(context)`, `teardown()`
 
 Setup policy:
 
@@ -83,13 +81,9 @@ Setup policy:
 
 Prediction contract:
 
-- `predict` returns `np.ndarray` shape `(circuit.d, circuit.n)`
-- float32-compatible numeric values
-- finite values only
-
-Batch contract:
-
-- `predict_batch` returns `np.ndarray` shape `(batch, depth, width)`
+- `predict` returns an iterator yielding exactly `circuit.d` rows
+- each yielded row is `np.ndarray` shape `(circuit.n,)`
+- row values are float32-compatible and finite
 
 ## 6. Class Discovery and Entrypoint Resolution
 
@@ -131,7 +125,7 @@ Runner implementations:
 Runner lifecycle:
 
 1. `start(entrypoint, context, limits)`
-2. `predict(...)` and optional `predict_batch(...)`
+2. `predict(...)` (streamed depth-row results)
 3. `close()`
 
 Per-call outcome should include predictions, timings, memory metrics, and status code.
@@ -171,4 +165,3 @@ Refactor sequence:
 Still to finalize in follow-up planning:
 
 - whether cloud submissions may install arbitrary custom dependencies from `requirements.txt` or must use a preapproved allowlist/base image only.
-

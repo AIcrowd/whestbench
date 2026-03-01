@@ -33,7 +33,7 @@ def test_mean_propagation_exact_for_linear_circuit() -> None:
     )
     circuit = make_circuit(3, [layer1, layer2])
 
-    predicted = mean_propagation(circuit)
+    predicted = np.array(list(mean_propagation(circuit)), dtype=np.float32)
     expected = exhaustive_means(circuit)
 
     assert predicted.shape == (len(expected), circuit.n)
@@ -124,7 +124,7 @@ def test_covariance_propagation_depth_one_matches_exhaustive_mean() -> None:
     rng = np.random.default_rng(11)
     circuit = random_circuit(n=4, d=1, rng=rng)
 
-    predicted = covariance_propagation(circuit)
+    predicted = np.array(list(covariance_propagation(circuit)), dtype=np.float32)
     expected = exhaustive_means(circuit)
 
     assert predicted.shape == (1, circuit.n)
@@ -136,11 +136,11 @@ def test_combined_estimator_switches_mode(monkeypatch: pytest.MonkeyPatch) -> No
 
     def fake_mean(_circuit):
         calls.append("mean")
-        return np.array([[0.0]], dtype=np.float32)
+        yield np.array([0.0], dtype=np.float32)
 
     def fake_cov(_circuit):
         calls.append("cov")
-        return np.array([[1.0]], dtype=np.float32)
+        yield np.array([1.0], dtype=np.float32)
 
     monkeypatch.setattr(estimators, "mean_propagation", fake_mean)
     monkeypatch.setattr(estimators, "covariance_propagation", fake_cov)
@@ -159,8 +159,8 @@ def test_combined_estimator_switches_mode(monkeypatch: pytest.MonkeyPatch) -> No
         ],
     )
 
-    low_budget = combined_estimator(circuit, budget=10)
-    high_budget = combined_estimator(circuit, budget=1000)
+    low_budget = np.array(list(combined_estimator(circuit, budget=10)), dtype=np.float32)
+    high_budget = np.array(list(combined_estimator(circuit, budget=1000)), dtype=np.float32)
 
     np.testing.assert_allclose(low_budget, np.array([[0.0]], dtype=np.float32))
     np.testing.assert_allclose(high_budget, np.array([[1.0]], dtype=np.float32))

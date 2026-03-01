@@ -45,8 +45,13 @@ def _sample_report(*, include_profile: bool = False) -> dict[str, object]:
                 {
                     "budget": 10,
                     "mse_by_layer": [0.1, 0.2, 0.3],
+                    "time_budget_by_depth_s": [0.01, 0.02, 0.03],
                     "mse_mean": 0.2,
                     "adjusted_mse": 0.22,
+                    "time_ratio_by_depth_mean": [1.1, 1.0, 0.95],
+                    "effective_time_s_by_depth_mean": [0.011, 0.020, 0.0285],
+                    "timeout_rate_by_depth": [0.0, 0.0, 0.0],
+                    "time_floor_rate_by_depth": [0.0, 0.0, 0.0],
                     "call_time_ratio_mean": 1.1,
                     "call_effective_time_s_mean": 0.011,
                     "timeout_rate": 0.0,
@@ -55,8 +60,13 @@ def _sample_report(*, include_profile: bool = False) -> dict[str, object]:
                 {
                     "budget": 100,
                     "mse_by_layer": [0.05, 0.04, 0.03],
+                    "time_budget_by_depth_s": [0.02, 0.03, 0.04],
                     "mse_mean": 0.04,
                     "adjusted_mse": 0.036,
+                    "time_ratio_by_depth_mean": [0.9, 0.9, 0.9],
+                    "effective_time_s_by_depth_mean": [0.018, 0.027, 0.036],
+                    "timeout_rate_by_depth": [0.0, 0.0, 0.0],
+                    "time_floor_rate_by_depth": [0.0, 0.0, 0.0],
                     "call_time_ratio_mean": 0.9,
                     "call_effective_time_s_mean": 0.018,
                     "timeout_rate": 0.0,
@@ -99,6 +109,7 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     # Human mode contract: high-level run summary plus budget and layer diagnostics.
     assert "Circuit Estimation Report" in rendered
     assert "Use --agent-mode for JSON output" in rendered
+    assert "budget-by-depth" in rendered.lower()
     assert "Run Context" in rendered
     assert "Readiness Scorecard" in rendered
     assert "Budget" in rendered
@@ -301,6 +312,14 @@ def test_render_human_mode_includes_profile_section_when_available() -> None:
     assert "peak_rss_bytes" in rendered
 
 
+def test_agent_mode_schema_keeps_stream_runtime_fields() -> None:
+    payload = json.loads(render_agent_report(_sample_report(include_profile=False)))
+    row = payload["results"]["by_budget_raw"][0]
+    assert "time_budget_by_depth_s" in row
+    assert "time_ratio_by_depth_mean" in row
+    assert "effective_time_s_by_depth_mean" in row
+
+
 def test_profile_plots_render_side_by_side_and_memory_axis_is_mb(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -325,9 +344,7 @@ def test_profile_summary_contains_two_structured_side_by_side_tables(
 
     assert "Summary" in plain
     assert "Distribution" in plain
-    assert any(
-        "Summary" in line and "Distribution" in line for line in plain.splitlines()
-    )
+    assert any("Summary" in line and "Distribution" in line for line in plain.splitlines())
 
 
 def test_profile_summary_prints_without_plots_by_default() -> None:

@@ -88,3 +88,22 @@ def test_estimators_module_has_tutorial_walkthrough_markers() -> None:
     lowered = text.lower()
     for phrase in required_phrases:
         assert phrase in lowered
+
+
+def test_docs_do_not_reference_predict_batch_contract() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    paths = [
+        repo_root / "README.md",
+        repo_root / "docs/context/mvp-technical-snapshot.md",
+        repo_root / "docs/context/python-runtime-refactor-decisions.md",
+        repo_root / "docs/plans/2026-03-01-estimator-sdk-and-runner-decoupling-design.md",
+    ]
+    for path in paths:
+        text = path.read_text(encoding="utf-8").lower()
+        assert "predict_batch" not in text, str(path)
+
+
+def test_readme_links_streaming_participant_guide() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
+    assert "participant-streaming-estimator-guide.md" in text

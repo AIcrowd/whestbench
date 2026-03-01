@@ -3,7 +3,7 @@ This repository is a starter-kit style implementation of the circuit-estimation 
 ## What This Repository Teaches
 
 - How randomly generated boolean circuits are represented and simulated.
-- How estimators predict wire-mean trajectories across all layers in one call.
+- How estimators stream wire-mean trajectories one depth row at a time.
 - How scoring combines prediction quality and runtime constraints into a single objective.
 - How to inspect outcomes in either a human dashboard (default) or machine JSON (`--agent-mode`).
 
@@ -15,7 +15,7 @@ Participants provide an estimator that receives:
 - one `Circuit`
 - one `budget`
 
-and must return one `np.ndarray` with shape `(max_depth, width)` containing predictions for all layers in a single pass.
+and must stream exactly `max_depth` vectors via `yield`, where each emitted vector has shape `(width,)`.
 
 Important security/architecture note: in-repo estimator implementations are examples only. Hosted evaluation should assume participant estimators may be adversarial/malicious and must be treated as black boxes.
 
@@ -26,12 +26,12 @@ Given `n_circuits`, `n_samples`, and contest params (`width`, `max_depth`, `budg
 1. Sample or accept circuits.
 2. Compute empirical layer-wise target means for each circuit via batched simulation.
 3. For each budget:
-   - Measure baseline total runtime for sampling (`baseline_total_time`).
-   - Call estimator once per circuit (`estimator(circuit, budget)`), expecting full-depth predictions.
-   - Apply runtime enforcement at call level:
-     - if call wall time > `(1 + time_tolerance) * baseline_total_time`, zero the full returned tensor;
-     - if call wall time < `(1 - time_tolerance) * baseline_total_time`, floor effective time to that lower bound.
-   - Compute per-layer MSE and aggregate:
+   - Measure baseline runtime by depth (`time_budget_by_depth_s`) using sampling.
+   - Call estimator once per circuit (`estimator(circuit, budget)`) and consume streamed depth rows.
+   - At each emitted depth row `i`:
+     - if cumulative wall time > `(1 + time_tolerance) * time_budget_by_depth_s[i]`, zero that row;
+     - if cumulative wall time < `(1 - time_tolerance) * time_budget_by_depth_s[i]`, floor effective time to that lower bound.
+   - Compute per-depth MSE and aggregate:
      - `mse_mean`
      - `call_time_ratio_mean`
      - `call_effective_time_s_mean`
@@ -40,7 +40,7 @@ Given `n_circuits`, `n_samples`, and contest params (`width`, `max_depth`, `budg
 
 Report payload:
 
-- `results.by_budget_raw` contains raw per-budget metrics (including `mse_by_layer` and scalar call-level runtime metrics).
+- `results.by_budget_raw` contains raw per-budget metrics (including `mse_by_layer` and depth runtime vectors such as `time_budget_by_depth_s`).
 - `detail=full` adds derived tables/matrices (`by_budget_summary`, `by_layer_overall`, `by_budget_layer_matrix`).
 - `--profile` adds call-level profiling events (`wall_time_s`, `cpu_time_s`, `rss_bytes`, `peak_rss_bytes`).
 
@@ -94,13 +94,18 @@ uv run main.py --show-diagnostic-plots
 
 Implement a callable with signature:
 
-- `Callable[[Circuit, int], NDArray[np.float32]]`
+- `Callable[[Circuit, int], Iterator[NDArray[np.float32]]]`
 
 Contract:
 
 - input: one circuit + one budget
-- output: rank-2 ndarray of shape `(max_depth, width)`
-- each row: predicted wire means for one layer depth
+- output: streamed depth rows via `yield`
+- each emitted row: `np.ndarray` with shape `(width,)`
+- required row count: exactly `max_depth` yields
+
+See the starter tutorial guide:
+
+- `docs/context/participant-streaming-estimator-guide.md`
 
 Recommended extension path:
 
