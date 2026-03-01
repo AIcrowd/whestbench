@@ -25,7 +25,7 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     psutil = None
 
-EstimatorFn = Callable[[Circuit, int], Iterator[NDArray[np.float32]]]
+EstimatorFn = Callable[[Circuit, int], NDArray[np.float32]]
 ProfilerFn = Callable[[dict[str, float | int]], None]
 T = TypeVar("T")
 
@@ -80,36 +80,6 @@ def _rss_bytes() -> int:
     return _peak_rss_bytes()
 
 
-def _run_estimator_with_profile(
-    estimator: EstimatorFn,
-    circuit: Circuit,
-    budget: int,
-    circuit_index: int,
-    profiler: ProfilerFn | None,
-) -> Iterator[tuple[float, NDArray[np.float32]]]:
-    start_wall = time.time()
-    start_cpu = time.process_time()
-
-    for depth_index, output in enumerate(estimator(circuit, budget)):
-        wall_elapsed = time.time() - start_wall
-        cpu_elapsed = time.process_time() - start_cpu
-        rss_bytes = _rss_bytes()
-        peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-        if profiler is not None:
-            profiler(
-                {
-                    "budget": int(budget),
-                    "circuit_index": int(circuit_index),
-                    "depth_index": int(depth_index),
-                    "wall_time_s": float(wall_elapsed),
-                    "cpu_time_s": float(cpu_elapsed),
-                    "rss_bytes": int(rss_bytes),
-                    "peak_rss_bytes": int(peak_rss_bytes),
-                }
-            )
-        yield wall_elapsed, output
-
-
 def sampling_baseline_time(n_samples: int, width: int, depth: int) -> list[float]:
     """Measure per-depth baseline runtime for plain sampling forward passes."""
     circuit = random_circuit(width, depth)
@@ -162,39 +132,57 @@ def score_estimator(
         baseline_times = np.maximum(baseline_times, np.float32(1e-9))
         runtimes = np.zeros(depth, dtype=np.float32)
         all_outputs: list[list[NDArray[np.float32]]] = []
+        baseline_total_time = float(np.sum(baseline_times))
 
         for circuit_index, circuit in enumerate(circuits_to_score):
-            outputs: list[NDArray[np.float32]] = []
-            for i, (elapsed, output) in enumerate(
-                _run_estimator_with_profile(estimator, circuit, budget, circuit_index, profiler)
-            ):
-                if i >= depth:
-                    raise ValueError(
-                        f"Estimator yielded more than max_depth={depth} outputs for circuit index {circuit_index}."
-                    )
+            start_wall = time.time()
+            start_cpu = time.process_time()
+            raw_outputs = estimator(circuit, budget)
+            elapsed = time.time() - start_wall
+            cpu_elapsed = time.process_time() - start_cpu
+            rss_bytes = _rss_bytes()
+            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
 
-                output_array = np.asarray(output, dtype=np.float32)
-                if output_array.shape != (width,):
-                    raise ValueError(
-                        f"Estimator output width mismatch at depth {i}: expected output width {width}, got {output_array.shape}."
-                    )
-
-                baseline_time = float(baseline_times[i])
-                effective_time = max(float(elapsed), (1.0 - tolerance) * baseline_time)
-                effective_output = (
-                    output_array
-                    if elapsed <= baseline_time * (1.0 + tolerance)
-                    else np.zeros_like(output_array)
+            if profiler is not None:
+                profiler(
+                    {
+                        "budget": int(budget),
+                        "circuit_index": int(circuit_index),
+                        "wall_time_s": float(elapsed),
+                        "cpu_time_s": float(cpu_elapsed),
+                        "rss_bytes": int(rss_bytes),
+                        "peak_rss_bytes": int(peak_rss_bytes),
+                    }
                 )
 
-                runtimes[i] += np.float32(effective_time)
-                outputs.append(effective_output)
-
-            if len(outputs) != depth:
+            if not isinstance(raw_outputs, np.ndarray):
                 raise ValueError(
-                    f"Estimator yielded {len(outputs)} outputs but expected {depth} (max_depth)."
+                    "Estimator must return a numpy.ndarray of shape (max_depth, width)."
                 )
-            all_outputs.append(outputs)
+
+            output_tensor = np.asarray(raw_outputs, dtype=np.float32)
+            if output_tensor.ndim != 2:
+                raise ValueError(
+                    f"Estimator output must be rank-2 with shape ({depth}, {width}), got {output_tensor.shape}."
+                )
+            if output_tensor.shape[0] != depth:
+                raise ValueError(
+                    f"Estimator yielded {output_tensor.shape[0]} outputs but expected {depth} (max_depth)."
+                )
+            if output_tensor.shape[1] != width:
+                raise ValueError(
+                    f"Estimator output width mismatch: expected output width {width}, got {output_tensor.shape}."
+                )
+
+            timed_out = elapsed > baseline_total_time * (1.0 + tolerance)
+            effective_total_time = max(elapsed, (1.0 - tolerance) * baseline_total_time)
+            effective_time_per_depth = np.float32(effective_total_time / depth)
+
+            if timed_out:
+                output_tensor = np.zeros_like(output_tensor)
+
+            runtimes += effective_time_per_depth
+            all_outputs.append([output_tensor[i] for i in range(depth)])
 
         estimates = np.array(all_outputs, dtype=np.float32)
         average_times = runtimes / np.float32(n_circuits_effective)

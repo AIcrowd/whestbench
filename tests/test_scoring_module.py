@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import numpy as np
 import pytest
 
@@ -24,16 +26,33 @@ def _constant_circuit(n: int, d: int, value: float = 1.0) -> Circuit:
 
 
 def test_score_estimator_rejects_wrong_output_width() -> None:
-    # Contract check: participant estimators must emit one value per wire.
+    # Contract check: participant estimators must emit an ndarray of shape (depth, width).
     params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
     circuit = _constant_circuit(n=2, d=1, value=1.0)
 
     def bad_estimator(_circuit: Circuit, _budget: int):
-        yield np.array([0.0], dtype=np.float32)
+        return np.zeros((1, 1), dtype=np.float32)
 
     with pytest.raises(ValueError, match="output width"):
         score_estimator(
             bad_estimator,
+            n_circuits=1,
+            n_samples=4,
+            contest_params=params,
+            circuits=[circuit],
+        )
+
+
+def test_score_estimator_rejects_non_ndarray_output() -> None:
+    params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
+    circuit = _constant_circuit(n=2, d=1, value=1.0)
+
+    def bad_estimator(_circuit: Circuit, _budget: int):
+        return [np.array([1.0, 1.0], dtype=np.float32)]
+
+    with pytest.raises(ValueError, match="numpy.ndarray"):
+        score_estimator(
+            cast(Any, bad_estimator),
             n_circuits=1,
             n_samples=4,
             contest_params=params,
@@ -51,7 +70,7 @@ def test_score_estimator_profile_hook_collects_runtime_cpu_and_memory() -> None:
         collected.append(event)
 
     def estimator(_circuit: Circuit, _budget: int):
-        yield np.array([1.0, 1.0], dtype=np.float32)
+        return np.array([[1.0, 1.0]], dtype=np.float32)
 
     score_estimator(
         estimator,
@@ -73,7 +92,7 @@ def test_score_estimator_raises_when_estimator_stops_early() -> None:
     circuit = _constant_circuit(n=2, d=2, value=1.0)
 
     def short_estimator(_circuit: Circuit, _budget: int):
-        yield np.array([1.0, 1.0], dtype=np.float32)
+        return np.array([[1.0, 1.0]], dtype=np.float32)
 
     with pytest.raises(ValueError, match="expected 2"):
         score_estimator(
