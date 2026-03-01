@@ -218,3 +218,5 @@ __marimo__/
 # Node (tools/circuit-explorer)
 node_modules/
 
+# Local git worktrees
+.worktrees/
