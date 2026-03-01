@@ -97,14 +97,21 @@ const STEP_CONTENT = {
       <>
         <MathTerm
           tip={
-            <>
-              For each gate <code>out = c + a·x + b·y + p·x·y</code>, mean
-              propagation computes <strong>E[out] = c + a·E[x] + b·E[y] +
-              p·E[x]·E[y]</strong>. It assumes inputs are{" "}
-              <em>independent</em> (E[x·y] = E[x]·E[y]) and propagates layer
-              by layer. This is exact when wires are truly independent, but
-              shared upstream gates create correlations that this method ignores.
-            </>
+            <span className="math-term-tip-body">
+              <span className="math-term-tip-row">
+                Each gate computes:<br />
+                <code>out = c + a·x + b·y + p·x·y</code>
+              </span>
+              <span className="math-term-tip-row">
+                Mean Propagation replaces each value with its expected value:<br />
+                <strong>E[out] = c + a·E[x] + b·E[y] + p·E[x]·E[y]</strong>
+              </span>
+              <span className="math-term-tip-row">
+                ⚠️ The <em>key assumption</em>: wires are independent, so{" "}
+                E[x·y] = E[x]·E[y]. This breaks when wires share upstream
+                gates — which happens more as depth increases.
+              </span>
+            </span>
           }
         >
           Mean Propagation
