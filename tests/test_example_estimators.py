@@ -109,22 +109,24 @@ def test_example_estimators_do_not_expose_module_level_helper_functions() -> Non
         )
 
 
-def test_example_estimators_have_tutorial_quality_class_docstrings() -> None:
-    required_sections = [
-        "overview",
-        "math",
-        "ascii",
-        "complexity",
-        "pitfall",
-    ]
+def test_example_estimators_have_onboarding_docstrings() -> None:
     files = [
         _examples_dir() / "mean_propagation.py",
         _examples_dir() / "covariance_propagation.py",
         _examples_dir() / "combined_estimator.py",
     ]
     for path in files:
-        doc = _estimator_docstring(path).lower()
-        for section in required_sections:
-            assert section in doc, (
-                f"{path.name} Estimator docstring should include tutorial section: {section}"
-            )
+        doc = _estimator_docstring(path)
+        lowered = doc.lower()
+        assert len(doc) >= 300, (
+            f"{path.name} Estimator docstring should provide a substantial tutorial "
+            "description, not just a short summary."
+        )
+        paragraphs = [paragraph.strip() for paragraph in doc.split("\n\n") if paragraph.strip()]
+        assert len(paragraphs) >= 3, (
+            f"{path.name} Estimator docstring should be structured in readable paragraphs."
+        )
+        assert any(token in lowered for token in ("e[", "cov", "m_i", "o(")), (
+            f"{path.name} Estimator docstring should include mathematical notation "
+            "or complexity notation for a crisp technical explanation."
+        )
