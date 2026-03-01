@@ -36,7 +36,7 @@ Decision owner: Starter-kit maintainers
 - **Implementation impact:**
   - Profiling is collected at estimator call boundaries (one `(circuit, budget)` invocation), not per-depth internals.
   - `score_estimator_report(..., profile=True)` includes `profile_calls`, and `detail full` includes `profile_summary`.
-  - `main.py --profile` surfaces structured diagnostics in both agent and human reporting modes.
+  - `cestim --profile` surfaces structured diagnostics in both agent and human reporting modes.
   - Profiling remains opt-in to avoid affecting default baseline behavior.
 
 ### 2026-03-01 - Streaming estimator output contract
