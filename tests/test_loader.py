@@ -1,3 +1,4 @@
+import pickle
 import sys
 from pathlib import Path
 from textwrap import dedent
@@ -120,3 +121,7 @@ def test_loader_registers_module_in_sys_modules(tmp_path: Path) -> None:
 
     assert metadata.module_name in sys.modules
     assert estimator.__class__.__module__ == metadata.module_name
+    # Module registration should support pickling estimator instances.
+    payload = pickle.dumps(estimator)
+    restored = pickle.loads(payload)
+    assert restored.__class__.__name__ == estimator.__class__.__name__
