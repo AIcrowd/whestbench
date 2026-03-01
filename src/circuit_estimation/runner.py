@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import sys
 import time
+import json
+import os
+import selectors
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -136,6 +140,22 @@ def _rss_bytes() -> int:
     return _peak_rss_bytes()
 
 
+def _circuit_to_payload(circuit: Circuit) -> dict[str, Any]:
+    gates: list[dict[str, list[float] | list[int]]] = []
+    for layer in circuit.gates:
+        gates.append(
+            {
+                "first": layer.first.astype(np.int32).tolist(),
+                "second": layer.second.astype(np.int32).tolist(),
+                "first_coeff": layer.first_coeff.astype(np.float32).tolist(),
+                "second_coeff": layer.second_coeff.astype(np.float32).tolist(),
+                "const": layer.const.astype(np.float32).tolist(),
+                "product_coeff": layer.product_coeff.astype(np.float32).tolist(),
+            }
+        )
+    return {"n": int(circuit.n), "d": int(circuit.d), "gates": gates}
+
+
 class InProcessRunner:
     """Local runner that executes estimator methods in this Python process."""
 
@@ -253,3 +273,295 @@ class InProcessRunner:
         self._estimator = None
         self._limits = None
         self._started = False
+
+
+class SubprocessRunner:
+    """Runner that executes estimators in a dedicated subprocess worker."""
+
+    def __init__(
+        self,
+        *,
+        worker_command: list[str] | None = None,
+    ) -> None:
+        self._worker_command = (
+            worker_command
+            if worker_command is not None
+            else [sys.executable, "-m", "circuit_estimation.subprocess_worker"]
+        )
+        self._process: subprocess.Popen[str] | None = None
+        self._limits: ResourceLimits | None = None
+        self._started = False
+
+    def start(
+        self,
+        entrypoint: EstimatorEntrypoint,
+        context: SetupContext,
+        limits: ResourceLimits,
+    ) -> None:
+        self.close()
+        self._limits = limits
+        self._process = subprocess.Popen(
+            self._worker_command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            env=self._worker_env(),
+        )
+        self._send_request(
+            {
+                "command": "start",
+                "entrypoint": {
+                    "file_path": str(entrypoint.file_path),
+                    "class_name": entrypoint.class_name,
+                },
+                "context": {
+                    "width": context.width,
+                    "max_depth": context.max_depth,
+                    "budgets": list(context.budgets),
+                    "time_tolerance": context.time_tolerance,
+                    "api_version": context.api_version,
+                    "scratch_dir": context.scratch_dir,
+                },
+            }
+        )
+        try:
+            response = self._read_response(timeout_s=limits.setup_timeout_s)
+        except TimeoutError as exc:
+            self._terminate_process()
+            raise RunnerError(
+                "setup",
+                RunnerErrorDetail(
+                    code="SETUP_TIMEOUT",
+                    message="worker setup timed out waiting for startup response.",
+                ),
+            ) from exc
+        except RunnerError as exc:
+            stderr_tail = self._read_stderr_tail()
+            detail_message = exc.detail.message
+            if stderr_tail:
+                detail_message = f"{detail_message} stderr: {stderr_tail}"
+            self._terminate_process()
+            raise RunnerError(
+                "setup",
+                RunnerErrorDetail(
+                    code="SETUP_PROTOCOL_ERROR",
+                    message=detail_message,
+                ),
+            ) from exc
+        if response.get("status") != "ok":
+            raise RunnerError(
+                "setup",
+                RunnerErrorDetail(
+                    code="SETUP_ERROR",
+                    message=str(response.get("error_message", "worker setup failed")),
+                ),
+            )
+        self._started = True
+
+    def predict(self, circuit: Circuit, budget: int) -> PredictOutcome:
+        if not self._started or self._process is None or self._limits is None:
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(
+                    code="RUNNER_NOT_STARTED",
+                    message="Runner must be started before calling predict.",
+                ),
+            )
+
+        start_wall = time.time()
+        start_cpu = time.process_time()
+        try:
+            self._send_request(
+                {
+                    "command": "predict",
+                    "budget": int(budget),
+                    "circuit": _circuit_to_payload(circuit),
+                }
+            )
+            response = self._read_response(timeout_s=self._limits.predict_timeout_s)
+        except TimeoutError:
+            self._terminate_process()
+            elapsed = time.time() - start_wall
+            cpu_elapsed = time.process_time() - start_cpu
+            rss_bytes = _rss_bytes()
+            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
+            self._started = False
+            return PredictOutcome(
+                predictions=None,
+                wall_time_s=float(elapsed),
+                cpu_time_s=float(cpu_elapsed),
+                rss_bytes=int(rss_bytes),
+                peak_rss_bytes=int(peak_rss_bytes),
+                status="timeout",
+                error_message="predict timed out waiting for worker response.",
+            )
+        except RunnerError as exc:
+            elapsed = time.time() - start_wall
+            cpu_elapsed = time.process_time() - start_cpu
+            rss_bytes = _rss_bytes()
+            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
+            return PredictOutcome(
+                predictions=None,
+                wall_time_s=float(elapsed),
+                cpu_time_s=float(cpu_elapsed),
+                rss_bytes=int(rss_bytes),
+                peak_rss_bytes=int(peak_rss_bytes),
+                status="protocol_error",
+                error_message=exc.detail.message,
+            )
+
+        elapsed = time.time() - start_wall
+        cpu_elapsed = time.process_time() - start_cpu
+        rss_bytes = _rss_bytes()
+        peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
+        status = str(response.get("status", "protocol_error"))
+        if status == "ok":
+            raw_predictions = response.get("predictions")
+            if not isinstance(raw_predictions, list):
+                return PredictOutcome(
+                    predictions=None,
+                    wall_time_s=float(elapsed),
+                    cpu_time_s=float(cpu_elapsed),
+                    rss_bytes=int(rss_bytes),
+                    peak_rss_bytes=int(peak_rss_bytes),
+                    status="protocol_error",
+                    error_message="Worker response missing predictions list.",
+                )
+            predictions = np.asarray(raw_predictions, dtype=np.float32)
+            return PredictOutcome(
+                predictions=predictions,
+                wall_time_s=float(elapsed),
+                cpu_time_s=float(cpu_elapsed),
+                rss_bytes=int(rss_bytes),
+                peak_rss_bytes=int(peak_rss_bytes),
+                status="ok",
+                error_message=None,
+            )
+
+        mapped_status: PredictStatus = (
+            cast(PredictStatus, status)
+            if status in {"timeout", "oom", "runtime_error", "protocol_error"}
+            else "protocol_error"
+        )
+        return PredictOutcome(
+            predictions=None,
+            wall_time_s=float(elapsed),
+            cpu_time_s=float(cpu_elapsed),
+            rss_bytes=int(rss_bytes),
+            peak_rss_bytes=int(peak_rss_bytes),
+            status=mapped_status,
+            error_message=str(response.get("error_message", "worker predict failed")),
+        )
+
+    def predict_batch(self, circuits: list[Circuit], budget: int) -> list[PredictOutcome]:
+        return [self.predict(circuit, budget) for circuit in circuits]
+
+    def close(self) -> None:
+        if self._process is None:
+            self._started = False
+            return
+        if self._process.poll() is None:
+            try:
+                self._send_request({"command": "close"})
+                self._read_response(timeout_s=0.5)
+            except Exception:
+                pass
+            self._terminate_process()
+        self._process = None
+        self._limits = None
+        self._started = False
+
+    def _send_request(self, payload: dict[str, Any]) -> None:
+        if self._process is None or self._process.stdin is None:
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(
+                    code="WORKER_IO_ERROR",
+                    message="Worker stdin is unavailable.",
+                ),
+            )
+        try:
+            self._process.stdin.write(json.dumps(payload) + "\n")
+            self._process.stdin.flush()
+        except BrokenPipeError as exc:
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(
+                    code="WORKER_BROKEN_PIPE",
+                    message="Worker process closed stdin unexpectedly.",
+                ),
+            ) from exc
+
+    def _read_response(self, timeout_s: float) -> dict[str, Any]:
+        if self._process is None or self._process.stdout is None:
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(
+                    code="WORKER_IO_ERROR",
+                    message="Worker stdout is unavailable.",
+                ),
+            )
+        selector = selectors.DefaultSelector()
+        selector.register(self._process.stdout, selectors.EVENT_READ)
+        try:
+            events = selector.select(timeout=timeout_s)
+            if not events:
+                raise TimeoutError("worker response timed out")
+            line = self._process.stdout.readline()
+        finally:
+            selector.close()
+        if line == "":
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(
+                    code="WORKER_EOF",
+                    message="Worker closed stdout unexpectedly.",
+                ),
+            )
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(
+                    code="WORKER_PROTOCOL_ERROR",
+                    message="Worker returned invalid JSON response.",
+                    details={"raw": line.strip()},
+                ),
+            ) from exc
+        if not isinstance(payload, dict):
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(
+                    code="WORKER_PROTOCOL_ERROR",
+                    message="Worker response must be a JSON object.",
+                ),
+            )
+        return payload
+
+    def _terminate_process(self) -> None:
+        if self._process is None:
+            return
+        if self._process.poll() is None:
+            self._process.kill()
+            self._process.wait(timeout=1.0)
+
+    def _read_stderr_tail(self) -> str:
+        if self._process is None or self._process.stderr is None:
+            return ""
+        if self._process.poll() is None:
+            return ""
+        stderr = self._process.stderr.read().strip()
+        if not stderr:
+            return ""
+        lines = stderr.splitlines()
+        return lines[-1]
+
+    def _worker_env(self) -> dict[str, str]:
+        env = dict(os.environ)
+        src_root = str(Path(__file__).resolve().parents[1])
+        current = env.get("PYTHONPATH")
+        env["PYTHONPATH"] = src_root if not current else f"{src_root}{os.pathsep}{current}"
+        return env
