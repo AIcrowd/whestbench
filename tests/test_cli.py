@@ -52,7 +52,9 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict[str, Any]:
     return report
 
 
-def test_agent_mode_stdout_is_json_only(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_agent_mode_stdout_is_json_only(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     observed: dict[str, Any] = {}
 
     def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -61,7 +63,11 @@ def test_agent_mode_stdout_is_json_only(monkeypatch: pytest.MonkeyPatch, capsys:
         return _sample_report(profile_enabled=False, detail=str(kwargs.get("detail", "raw")))
 
     monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
-    monkeypatch.setattr(cli, "render_human_report", lambda _report: pytest.fail("human renderer should not be called"))
+    monkeypatch.setattr(
+        cli,
+        "render_human_report",
+        lambda _report: pytest.fail("human renderer should not be called"),
+    )
     monkeypatch.setattr(cli, "render_agent_report", lambda _report: '{\n  "mode": "agent"\n}\n')
 
     exit_code = cli.main([])
@@ -74,16 +80,24 @@ def test_agent_mode_stdout_is_json_only(monkeypatch: pytest.MonkeyPatch, capsys:
     assert observed == {"profile": False, "detail": "raw"}
 
 
-def test_human_mode_outputs_rich_sections(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_human_mode_outputs_rich_sections(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     observed: dict[str, Any] = {}
 
     def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
         observed["profile"] = kwargs.get("profile")
         observed["detail"] = kwargs.get("detail")
-        return _sample_report(profile_enabled=bool(kwargs.get("profile")), detail=str(kwargs.get("detail", "raw")))
+        return _sample_report(
+            profile_enabled=bool(kwargs.get("profile")), detail=str(kwargs.get("detail", "raw"))
+        )
 
     monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
-    monkeypatch.setattr(cli, "render_agent_report", lambda _report: pytest.fail("agent renderer should not be called"))
+    monkeypatch.setattr(
+        cli,
+        "render_agent_report",
+        lambda _report: pytest.fail("agent renderer should not be called"),
+    )
     monkeypatch.setattr(
         cli,
         "render_human_report",
