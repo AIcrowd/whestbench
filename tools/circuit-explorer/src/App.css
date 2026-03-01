@@ -1235,6 +1235,35 @@ body {
   animation: narrative-enter 0.15s ease-out;
 }
 
+.math-term-tip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.math-term-tip-row {
+  display: block;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.math-term-tip-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.math-term-tip-row:first-child {
+  padding-top: 0;
+}
+
+.math-term-tip code {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #FCD34D;
+}
+
 .narrative-nav {
   display: flex;
   justify-content: flex-end;
