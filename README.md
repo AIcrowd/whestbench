@@ -26,7 +26,32 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv run main.py
 ```
 
-That's it. `uv` reads `pyproject.toml`, auto-creates a venv, installs dependencies, and runs the script — no manual setup needed.
+That's it. `uv` reads `pyproject.toml`, auto-creates a venv, installs dependencies, and runs the script with **agent mode** output by default.
+
+### CLI Output Modes
+
+- `mode agent` (default): pretty JSON only, machine-parseable.
+- `mode human`: Rich terminal report with multi-section summaries and terminal trend plots.
+- `detail raw` (default): raw per-budget/per-layer data only.
+- `detail full`: includes derived aggregates (`by_budget_summary`, `by_layer_overall`, `by_budget_layer_matrix`) and `profile_summary` when profiling is enabled.
+
+Examples:
+
+```bash
+# default: mode agent + detail raw
+uv run main.py
+
+# rich human-readable report
+uv run main.py --mode human
+
+# include call-level profiling metrics
+uv run main.py --profile
+
+# rich report + full computed aggregates + profiling
+uv run main.py --mode human --detail full --profile
+```
+
+Profiling is call-level (per estimator invocation on one `(circuit, budget)` pair) and records `wall_time_s`, `cpu_time_s`, `rss_bytes`, and `peak_rss_bytes`.
 
 ## Test Harness
 
@@ -48,6 +73,18 @@ This repository now includes a `pytest`-based test harness with:
 ```
 
 The script uses `uv run --group dev pytest ...` and installs `pytest` from the `dev` dependency group automatically when needed.
+
+## Release Quality Gates
+
+Run all checks before release:
+
+```bash
+uv run --group dev ruff check .
+uv run --group dev ruff format --check .
+uv run --group dev pyright
+uv run --group dev pytest -m "not exhaustive"
+uv run --group dev pytest -m exhaustive
+```
 
 ---
 
@@ -95,16 +132,55 @@ Scoring procedure:
 
 - We draw n_circuits circuits at random. For each we draw n_samples inputs and take the average.
 - We then compute the target means for each wire in each circuit.
-- We also compute the average variance of a random wire in a random circuit at depth d for each d up to max_depth.
 - For each budget in budgets:
-  - We compute the time required to run a forward pass with budget samples (for each layer), which becoms the time_budget.
-  - We run your algorithm on each circuit.
-  - The algorithm outputs predictions for each layer one at a time, and we record how long it took to get to each layer.
-  - If your program goes over (1 + time_tolerance) * time_budget for a given layer, we zero out its predictions on that layer.
-  - If your program goes under (1 - time_tolerance) * time_budget, we set it's time to (1 - time_tolerance) * time_budget.
-- Your loss at a given depth and budget is defined as:
-  - Base loss = (Your mean squared error) / (sampling mean squared error)
-  - Final loss = (base loss) * (your average time) / (sampling average time).
-Your total loss is the average loss over all depths and time limits.
+  - We compute baseline sampling runtime per layer from a batched forward pass.
+  - We run your estimator once per circuit (single call) and expect predictions for all layers at once.
+  - Runtime enforcement is at call level:
+    - if call wall time is above `(1 + time_tolerance) * baseline_total_time`, the whole output tensor is zeroed.
+    - if call wall time is below `(1 - time_tolerance) * baseline_total_time`, effective runtime is floored to that lower bound.
+- For each budget and depth:
+  - MSE is computed against empirical means.
+  - Adjusted MSE = `MSE * (effective_time / baseline_time)`.
+- Final score is the mean adjusted MSE across budgets and layers.
 
 (This is implemented in score_estimator)
+
+## Participant Contract (Current Local API)
+
+- Estimator signature:
+  - `Callable[[Circuit, int], NDArray[np.float32]]`
+- Input:
+  - a generated `Circuit`,
+  - one `budget` value from evaluator configuration.
+- Required output:
+  - one rank-2 `np.ndarray` with shape `(max_depth, width)`,
+  - each row is the predicted wire means for one layer depth.
+
+Violating output shape/depth requirements raises explicit errors in scoring.
+
+Important: in-repo estimators are reference examples only. Future hosted evaluation should assume participant-submitted estimators may be adversarial or malicious and must be treated as black box implementations.
+
+## Extension Points
+
+- Implement custom estimators in `src/circuit_estimation/estimators.py` or a new module with the same callable signature.
+- Evaluate locally via:
+  - `score_estimator(...)` in `src/circuit_estimation/scoring.py`,
+  - `score_estimator_report(...)` in `src/circuit_estimation/scoring.py` for structured raw/full report payloads,
+  - `uv run main.py` for default baseline run.
+- Optional diagnostics:
+  - use `uv run main.py --profile` to emit call-level runtime/resource events.
+
+## Failure Semantics
+
+Scoring applies the following runtime rules per estimator call (single circuit + single budget):
+
+- If elapsed time exceeds `(1 + time_tolerance) * baseline_total_time`, estimator output tensor is zeroed.
+- If elapsed time is below `(1 - time_tolerance) * baseline_total_time`, effective runtime is floored to `(1 - time_tolerance) * baseline_total_time`.
+- If estimator output width mismatches `width`, scoring raises `ValueError`.
+- If estimator output depth mismatches `max_depth`, scoring raises `ValueError`.
+
+## Deterministic Seed Policy
+
+- Circuit generation supports explicit seeded RNG objects (`np.random.default_rng(seed)`).
+- For reproducible local experiments, pass seeded RNGs when constructing circuits.
+- Default CLI flow remains stochastic unless a seeded circuit workflow is explicitly used.
