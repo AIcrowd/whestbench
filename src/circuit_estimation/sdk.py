@@ -4,11 +4,28 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
+from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
 
 from .domain import Circuit
+
+
+@dataclass(frozen=True, slots=True)
+class SetupContext:
+    """Runtime context passed to ``BaseEstimator.setup``.
+
+    This keeps participant setup hooks self-contained and future-proof without
+    requiring direct imports from scoring internals.
+    """
+
+    width: int
+    max_depth: int
+    budgets: tuple[int, ...]
+    time_tolerance: float
+    api_version: str
+    scratch_dir: str | None = None
 
 
 class BaseEstimator(ABC):
@@ -19,7 +36,7 @@ class BaseEstimator(ABC):
         """Yield one prediction vector per depth for ``circuit``."""
         raise NotImplementedError
 
-    def setup(self, context: object) -> None:
+    def setup(self, context: SetupContext) -> None:
         """Optional one-time setup hook before prediction calls."""
         return None
 

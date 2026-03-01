@@ -6,7 +6,7 @@ import platform
 import socket
 import sys
 import time
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, TypeVar
@@ -16,6 +16,8 @@ from numpy.typing import NDArray
 
 from .domain import Circuit
 from .generation import random_circuit
+from .runner import EstimatorEntrypoint, EstimatorRunner, ResourceLimits, RunnerError
+from .sdk import SetupContext
 from .simulation import empirical_mean, run_batched
 from .streaming import validate_depth_row
 
@@ -69,6 +71,13 @@ default_contest_params = ContestParams(
     time_tolerance=0.1,
 )
 
+default_resource_limits = ResourceLimits(
+    setup_timeout_s=30.0,
+    predict_timeout_s=30.0,
+    memory_limit_mb=4096,
+    cpu_time_limit_s=None,
+)
+
 
 def profile_fn(
     fn: Callable[[], Iterator[T]],
@@ -101,6 +110,220 @@ def sampling_baseline_time(n_samples: int, width: int, depth: int) -> list[float
     circuit = random_circuit(width, depth)
     inputs = np.random.choice([-1.0, 1.0], size=(n_samples, width)).astype(np.float16)
     return [elapsed for elapsed, _ in profile_fn(lambda: run_batched(circuit, inputs))]
+
+
+def score_submission_report(
+    runner: EstimatorRunner,
+    entrypoint: EstimatorEntrypoint,
+    n_circuits: int,
+    n_samples: int,
+    contest_params: ContestParams = default_contest_params,
+    *,
+    limits: ResourceLimits = default_resource_limits,
+    circuits: Sequence[Circuit] | None = None,
+    profile: bool = False,
+    detail: str = "raw",
+    profiler: ProfilerFn | None = None,
+) -> dict[str, Any]:
+    """Compute score report for an estimator accessed through a runner boundary."""
+    contest_params.validate()
+    if n_circuits <= 0:
+        raise ValueError("n_circuits must be positive.")
+    if n_samples <= 0:
+        raise ValueError("n_samples must be positive.")
+    if detail not in {"raw", "full"}:
+        raise ValueError("detail must be one of: raw, full.")
+
+    width = contest_params.width
+    depth = contest_params.max_depth
+    tolerance = contest_params.time_tolerance
+    run_start = datetime.now(timezone.utc)
+    run_start_wall = time.time()
+    collect_profile = profile or profiler is not None
+
+    circuits_to_score = (
+        list(circuits)
+        if circuits is not None
+        else [random_circuit(width, depth) for _ in range(n_circuits)]
+    )
+    if not circuits_to_score:
+        raise ValueError("At least one circuit is required for scoring.")
+    if any(c.n != width for c in circuits_to_score):
+        raise ValueError("All circuits must have width equal to contest_params.width.")
+    if any(c.d != depth for c in circuits_to_score):
+        raise ValueError("All circuits must have depth equal to contest_params.max_depth.")
+
+    setup_context = SetupContext(
+        width=width,
+        max_depth=depth,
+        budgets=tuple(int(b) for b in contest_params.budgets),
+        time_tolerance=tolerance,
+        api_version="1.0",
+    )
+    try:
+        runner.start(entrypoint, setup_context, limits)
+    except RunnerError:
+        runner.close()
+        raise
+
+    n_circuits_effective = len(circuits_to_score)
+    circuits_meta: list[dict[str, int]] = [
+        {
+            "circuit_index": idx,
+            "wire_count": c.n,
+            "layer_count": c.d,
+        }
+        for idx, c in enumerate(circuits_to_score)
+    ]
+    means: NDArray[np.float32] = np.array(
+        [list(empirical_mean(circuit, n_samples)) for circuit in circuits_to_score],
+        dtype=np.float32,
+    )
+    by_budget_raw: list[dict[str, Any]] = []
+    profile_calls: list[dict[str, float | int | str]] = []
+    try:
+        for budget in contest_params.budgets:
+            baseline_times = np.array(
+                sampling_baseline_time(budget, width, depth), dtype=np.float32
+            )
+            baseline_times = np.maximum(baseline_times, np.float32(1e-9))
+            baseline_total_time = float(np.sum(baseline_times))
+            all_outputs: list[list[NDArray[np.float32]]] = []
+            call_effective_times: list[float] = []
+
+            timeout_count = 0
+            floor_count = 0
+            runtime_error_count = 0
+            protocol_error_count = 0
+            oom_count = 0
+
+            for circuit_index, circuit in enumerate(circuits_to_score):
+                outcome = runner.predict(circuit, budget)
+
+                event = {
+                    "budget": int(budget),
+                    "circuit_index": int(circuit_index),
+                    "wire_count": int(width),
+                    "layer_count": int(depth),
+                    "wall_time_s": float(outcome.wall_time_s),
+                    "cpu_time_s": float(outcome.cpu_time_s),
+                    "rss_bytes": int(outcome.rss_bytes),
+                    "peak_rss_bytes": int(outcome.peak_rss_bytes),
+                    "status": str(outcome.status),
+                }
+                if collect_profile:
+                    profile_calls.append(event)
+                if profiler is not None:
+                    profiler(event)
+
+                elapsed = float(outcome.wall_time_s)
+                if outcome.status == "ok":
+                    raw_outputs = outcome.predictions
+                else:
+                    raw_outputs = None
+                    if outcome.status == "runtime_error":
+                        runtime_error_count += 1
+                    elif outcome.status == "protocol_error":
+                        protocol_error_count += 1
+                    elif outcome.status == "oom":
+                        oom_count += 1
+
+                if isinstance(raw_outputs, np.ndarray):
+                    output_tensor = np.asarray(raw_outputs, dtype=np.float32)
+                    if (
+                        output_tensor.ndim != 2
+                        or output_tensor.shape[0] != depth
+                        or output_tensor.shape[1] != width
+                    ):
+                        output_tensor = np.zeros((depth, width), dtype=np.float32)
+                        protocol_error_count += 1
+                else:
+                    output_tensor = np.zeros((depth, width), dtype=np.float32)
+
+                timed_out = (outcome.status == "timeout") or (
+                    elapsed > baseline_total_time * (1.0 + tolerance)
+                )
+                floored = elapsed < (1.0 - tolerance) * baseline_total_time
+                if timed_out:
+                    timeout_count += 1
+                if floored:
+                    floor_count += 1
+                effective_total_time = max(elapsed, (1.0 - tolerance) * baseline_total_time)
+                call_effective_times.append(float(effective_total_time))
+                all_outputs.append([output_tensor[i] for i in range(depth)])
+
+            estimates = np.array(all_outputs, dtype=np.float32)
+            mse = ((estimates - means) ** 2).mean(axis=(0, 2))
+            mse_mean = float(np.mean(mse))
+            call_effective_time_s_mean = float(np.mean(call_effective_times))
+            call_time_ratio_mean = float(
+                call_effective_time_s_mean / max(baseline_total_time, 1e-9)
+            )
+            adjusted_mse = float(mse_mean * call_time_ratio_mean)
+
+            by_budget_raw.append(
+                {
+                    "budget": int(budget),
+                    "mse_by_layer": mse.astype(np.float64).tolist(),
+                    "mse_mean": mse_mean,
+                    "adjusted_mse": adjusted_mse,
+                    "call_time_ratio_mean": call_time_ratio_mean,
+                    "call_effective_time_s_mean": call_effective_time_s_mean,
+                    "timeout_rate": float(timeout_count / n_circuits_effective),
+                    "time_floor_rate": float(floor_count / n_circuits_effective),
+                    "runtime_error_rate": float(runtime_error_count / n_circuits_effective),
+                    "protocol_error_rate": float(protocol_error_count / n_circuits_effective),
+                    "oom_rate": float(oom_count / n_circuits_effective),
+                }
+            )
+    finally:
+        runner.close()
+
+    final_score = float(np.mean([entry["adjusted_mse"] for entry in by_budget_raw]))
+    run_end = datetime.now(timezone.utc)
+    host_meta = {
+        "hostname": socket.gethostname(),
+        "os": platform.system(),
+        "os_release": platform.release(),
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "python_version": platform.python_version(),
+    }
+    report: dict[str, Any] = {
+        "schema_version": "1.0",
+        "mode": "agent",
+        "detail": detail,
+        "run_meta": {
+            "run_started_at_utc": run_start.isoformat(),
+            "run_finished_at_utc": run_end.isoformat(),
+            "run_duration_s": float(time.time() - run_start_wall),
+            "host": host_meta,
+        },
+        "run_config": {
+            "n_circuits": int(n_circuits_effective),
+            "n_samples": int(n_samples),
+            "width": int(width),
+            "max_depth": int(depth),
+            "layer_count": int(depth),
+            "budgets": [int(b) for b in contest_params.budgets],
+            "time_tolerance": float(tolerance),
+            "profile_enabled": bool(collect_profile),
+        },
+        "circuits": circuits_meta,
+        "results": {
+            "final_score": final_score,
+            "score_direction": "lower_is_better",
+            "by_budget_raw": by_budget_raw,
+        },
+        "notes": [],
+    }
+    if collect_profile:
+        report["profile_calls"] = profile_calls
+        if detail == "full":
+            report["profile_summary"] = _profile_summary(profile_calls)
+    if detail == "full":
+        report["results"].update(_compute_full_detail(by_budget_raw, depth))
+    return report
 
 
 def score_estimator_report(
@@ -381,6 +604,9 @@ def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dic
     ]
     timeout_rate = [float(entry["timeout_rate"]) for entry in by_budget_raw]
     time_floor_rate = [float(entry["time_floor_rate"]) for entry in by_budget_raw]
+    runtime_error_rate = [float(entry.get("runtime_error_rate", 0.0)) for entry in by_budget_raw]
+    protocol_error_rate = [float(entry.get("protocol_error_rate", 0.0)) for entry in by_budget_raw]
+    oom_rate = [float(entry.get("oom_rate", 0.0)) for entry in by_budget_raw]
 
     by_budget_summary = [
         {
@@ -391,8 +617,11 @@ def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dic
             "call_effective_time_s_mean": effective,
             "timeout_rate": timeout,
             "time_floor_rate": floor,
+            "runtime_error_rate": runtime_error,
+            "protocol_error_rate": protocol_error,
+            "oom_rate": oom,
         }
-        for budget, mse_mean, adjusted, ratio, effective, timeout, floor in zip(
+        for budget, mse_mean, adjusted, ratio, effective, timeout, floor, runtime_error, protocol_error, oom in zip(
             budgets,
             mse_means,
             adjusted_mse,
@@ -400,6 +629,9 @@ def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dic
             call_effective_time_s_mean,
             timeout_rate,
             time_floor_rate,
+            runtime_error_rate,
+            protocol_error_rate,
+            oom_rate,
             strict=True,
         )
     ]
@@ -421,7 +653,7 @@ def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dic
     }
 
 
-def _profile_summary(profile_calls: list[dict[str, float | int]]) -> dict[str, Any]:
+def _profile_summary(profile_calls: Sequence[Mapping[str, float | int | str]]) -> dict[str, Any]:
     """Summarize profiling events with basic distribution statistics."""
     if not profile_calls:
         return {"call_count": 0}
