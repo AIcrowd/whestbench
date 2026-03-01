@@ -1,16 +1,17 @@
 /**
  * CircuitGraphJoint — JointJS circuit graph with uniform gates,
- * smooth bezier wiring, and interactive wire highlighting.
+ * smooth bezier wiring, and interactive flow highlighting.
  *
  * Each gate computes: output = c + a·x + b·y + p·x·y
- * where x and y are the two input wires from the previous layer.
  *
- * JointJS ports:
- *   - Group 'in':  2 ports on LEFT  (in1, in2)
- *   - Group 'out': 1 port on RIGHT  (out)
+ * Highlighting: on click, non-connected elements are dimmed.
+ * Connected wires get thicker with arrow markers showing data flow.
+ * No gate border color changes — avoids conflict with mean fill colors.
+ *
+ * Tooltip is draggable.
  */
 import { dia, shapes } from "@joint/core";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { GATE_H, GATE_W, meanToColor } from "./gateShapes";
 
 /* ------------------------------------------------------------------ */
@@ -23,10 +24,16 @@ const PAD_Y = 30;
 
 /* Default wire colors */
 const WIRE_COLOR = "#CBD5E1";
-const WIRE_HIGHLIGHT = "#3B82F6";
+const WIRE_FLOW = "#475569";       // single muted color for highlighted wires
 const GATE_STROKE = "#94A3B8";
-const GATE_STROKE_HIGHLIGHT = "#3B82F6";
 const GATE_FILL_DEFAULT = "#FFFFFF";
+
+/* Small arrow marker for flow direction */
+const FLOW_MARKER = {
+  type: "path",
+  d: "M 0 -3 L 6 0 L 0 3 z",
+  fill: WIRE_FLOW,
+};
 
 /* JointJS port group definitions */
 const PORT_GROUPS = {
@@ -58,84 +65,104 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
   const [zoomPct, setZoomPct] = useState(100);
   const hasMeans = means && means.some((row) => row && row.some((v) => v !== null && v !== undefined));
 
+  /* Dragging state for tooltip */
+  const dragRef = useRef({ dragging: false, startX: 0, startY: 0, origX: 0, origY: 0 });
+
+  const onDragStart = useCallback((e) => {
+    // Only drag from header area
+    if (!e.target.closest(".tooltip-pro-header")) return;
+    e.preventDefault();
+    dragRef.current = {
+      dragging: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: tooltipPos.x,
+      origY: tooltipPos.y,
+    };
+    const onMove = (me) => {
+      if (!dragRef.current.dragging) return;
+      const dx = me.clientX - dragRef.current.startX;
+      const dy = me.clientY - dragRef.current.startY;
+      setTooltipPos({
+        x: dragRef.current.origX + dx,
+        y: dragRef.current.origY + dy,
+      });
+    };
+    const onUp = () => {
+      dragRef.current.dragging = false;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [tooltipPos]);
+
   /* Helper: reset all highlights */
   function resetHighlights(graph) {
     graph.getElements().forEach((el) => {
       const d = el.get("gateData");
       if (!d) return;
-      const fill = meanToColor(d.mean) || GATE_FILL_DEFAULT;
+      el.attr("body/opacity", 1);
       el.attr("body/stroke", GATE_STROKE);
       el.attr("body/strokeWidth", 1.5);
-      el.attr("body/fill", fill);
+      el.attr("label/opacity", 1);
     });
     graph.getLinks().forEach((lk) => {
       lk.attr("line/stroke", WIRE_COLOR);
       lk.attr("line/strokeWidth", 0.8);
       lk.attr("line/opacity", 1);
+      lk.attr("line/targetMarker", { d: "" });
     });
   }
 
-  /* Helper: highlight a gate and its connections */
+  /* Helper: highlight flow — no border changes, just opacity + wire arrows */
   function highlightGate(graph, gateData) {
-    const { layerIndex: l, wireIndex: w, first, second } = gateData;
+    const { layerIndex: l, wireIndex: w } = gateData;
 
-    // Dim everything first
+    // Dim everything
     graph.getElements().forEach((el) => {
-      el.attr("body/opacity", 0.25);
-      el.attr("label/opacity", 0.25);
+      el.attr("body/opacity", 0.2);
+      el.attr("label/opacity", 0.15);
     });
     graph.getLinks().forEach((lk) => {
-      lk.attr("line/opacity", 0.06);
+      lk.attr("line/opacity", 0.05);
     });
 
-    // Highlight the clicked gate
+    // Restore opacity for the clicked gate (no border change)
     const thisGate = graph.getElements().find((el) => {
       const d = el.get("gateData");
       return d && d.layerIndex === l && d.wireIndex === w;
     });
     if (thisGate) {
       thisGate.attr("body/opacity", 1);
-      thisGate.attr("body/stroke", GATE_STROKE_HIGHLIGHT);
-      thisGate.attr("body/strokeWidth", 2.5);
       thisGate.attr("label/opacity", 1);
     }
 
-    // Highlight input gates (previous layer)
+    // Restore opacity for connected gates (no border change)
+    const connectedGates = new Set();
     if (l > 0) {
-      [first, second].forEach((inputWire) => {
-        const inputGate = graph.getElements().find((el) => {
-          const d = el.get("gateData");
-          return d && d.layerIndex === l - 1 && d.wireIndex === inputWire;
-        });
-        if (inputGate) {
-          inputGate.attr("body/opacity", 1);
-          inputGate.attr("body/stroke", "#10B981");
-          inputGate.attr("body/strokeWidth", 2);
-          inputGate.attr("label/opacity", 1);
-        }
-      });
+      connectedGates.add(`${l - 1}-${gateData.first}`);
+      connectedGates.add(`${l - 1}-${gateData.second}`);
     }
-
-    // Highlight output gates (next layer that read from this wire)
     if (l < circuit.d - 1) {
       const nextLayer = circuit.gates[l + 1];
       for (let nw = 0; nw < circuit.n; nw++) {
         if (nextLayer.first[nw] === w || nextLayer.second[nw] === w) {
-          const outGate = graph.getElements().find((el) => {
-            const d = el.get("gateData");
-            return d && d.layerIndex === l + 1 && d.wireIndex === nw;
-          });
-          if (outGate) {
-            outGate.attr("body/opacity", 1);
-            outGate.attr("body/stroke", "#F59E0B");
-            outGate.attr("body/strokeWidth", 2);
-            outGate.attr("label/opacity", 1);
-          }
+          connectedGates.add(`${l + 1}-${nw}`);
         }
       }
     }
 
-    // Highlight connected links
+    graph.getElements().forEach((el) => {
+      const d = el.get("gateData");
+      if (!d) return;
+      if (connectedGates.has(`${d.layerIndex}-${d.wireIndex}`)) {
+        el.attr("body/opacity", 1);
+        el.attr("label/opacity", 1);
+      }
+    });
+
+    // Highlight connected wires with flow arrows
     graph.getLinks().forEach((lk) => {
       const src = lk.source();
       const tgt = lk.target();
@@ -149,28 +176,21 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
       const tgtD = tgtEl.get("gateData");
       if (!srcD || !tgtD) return;
 
-      // Input wires: previous layer → this gate
       const isInput =
         tgtD.layerIndex === l &&
         tgtD.wireIndex === w &&
         srcD.layerIndex === l - 1;
 
-      // Output wires: this gate → next layer
       const isOutput =
         srcD.layerIndex === l &&
         srcD.wireIndex === w &&
         tgtD.layerIndex === l + 1;
 
-      if (isInput) {
-        lk.attr("line/stroke", "#10B981");
-        lk.attr("line/strokeWidth", 2);
+      if (isInput || isOutput) {
+        lk.attr("line/stroke", WIRE_FLOW);
+        lk.attr("line/strokeWidth", 1.8);
         lk.attr("line/opacity", 1);
-        lk.attr("line/strokeDasharray", "");
-      } else if (isOutput) {
-        lk.attr("line/stroke", "#F59E0B");
-        lk.attr("line/strokeWidth", 1.5);
-        lk.attr("line/opacity", 1);
-        lk.attr("line/strokeDasharray", "");
+        lk.attr("line/targetMarker", FLOW_MARKER);
       }
     });
   }
@@ -311,11 +331,10 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
       setZoomPct(Math.round(paper.scale().sx * 100));
     });
 
-    // Click handler — highlight connections + show tooltip near gate
+    // Click handler — highlight flow + show draggable tooltip
     paper.on("element:pointerclick", (view, evt) => {
       const d = view.model.get("gateData");
       if (d) {
-        // Position tooltip near the clicked gate
         const rect = el.getBoundingClientRect();
         const clientX = evt.clientX || evt.originalEvent?.clientX || 0;
         const clientY = evt.clientY || evt.originalEvent?.clientY || 0;
@@ -358,10 +377,54 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
+  /* ---- pan (drag to pan) ---- */
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    let panning = false;
+    let startX = 0, startY = 0, origTx = 0, origTy = 0;
+
+    const onDown = (e) => {
+      // Only pan on blank area (not on gates/links)
+      // Check if target is the SVG background or paper element
+      if (e.target.closest(".joint-element") || e.target.closest(".joint-link")) return;
+      panning = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const paper = paperRef.current;
+      if (paper) {
+        const t = paper.translate();
+        origTx = t.tx;
+        origTy = t.ty;
+      }
+      el.style.cursor = "grabbing";
+    };
+    const onMove = (e) => {
+      if (!panning) return;
+      const paper = paperRef.current;
+      if (!paper) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      paper.translate(origTx + dx, origTy + dy);
+    };
+    const onUp = () => {
+      panning = false;
+      el.style.cursor = "";
+    };
+    el.addEventListener("mousedown", onDown);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      el.removeEventListener("mousedown", onDown);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
   /* ---- layer dimming (external control) ---- */
   useEffect(() => {
     const g = graphRef.current;
-    if (!g || tooltip) return; // don't override click-highlight
+    if (!g || tooltip) return;
     g.getElements().forEach((el) => {
       const d = el.get("gateData");
       if (!d) return;
@@ -400,12 +463,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
             <span style={{ fontSize: 9, color: "#94A3B8" }}>E[wire]</span>
           </span>
         )}
-        <span style={{ marginLeft: "auto", fontSize: 10 }}>
-          Click gate to inspect · Scroll to zoom
-        </span>
       </div>
-
-      {/* JointJS canvas */}
       <div
         ref={canvasRef}
         className="joint-container"
@@ -419,13 +477,17 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
         }}
       />
 
-      {/* Professional tooltip */}
+      {/* Draggable tooltip */}
       {tooltip && (
-        <div className="gate-tooltip-pro" style={{
-          left: Math.min(tooltipPos.x, (canvasRef.current?.clientWidth || 600) - 300),
-          top: Math.max(0, tooltipPos.y),
-        }}>
-          <div className="tooltip-pro-header">
+        <div
+          className="gate-tooltip-pro"
+          style={{
+            left: tooltipPos.x,
+            top: tooltipPos.y,
+          }}
+          onMouseDown={onDragStart}
+        >
+          <div className="tooltip-pro-header" style={{ cursor: "grab" }}>
             <span className="tooltip-pro-title">
               Gate [{tooltip.layerIndex}, {tooltip.wireIndex}]
             </span>
@@ -499,7 +561,13 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
         </div>
       )}
 
-      <div className="zoom-indicator">Zoom: {zoomPct}%</div>
+      <div className="zoom-indicator">
+        {zoomPct}%
+        <span style={{ margin: "0 6px", opacity: 0.3 }}>·</span>
+        <span style={{ fontSize: 9, color: "#94A3B8" }}>
+          Scroll = zoom · Drag = pan · Click gate = inspect
+        </span>
+      </div>
     </div>
   );
 }
