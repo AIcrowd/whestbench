@@ -1,57 +1,82 @@
 /**
- * WireStats — per-layer wire mean distribution with μ ± σ band chart.
+ * WireStats — per-layer wire mean distribution using TF.js Vis.
+ * Line chart for μ ± σ band, scatter for individual wire means.
  */
-import {
-    Area,
-    CartesianGrid,
-    ComposedChart,
-    Line,
-    ReferenceLine,
-    ResponsiveContainer,
-    Scatter,
-    ScatterChart,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from "recharts";
+import * as tfvis from "@tensorflow/tfjs-vis";
+import { useEffect, useRef } from "react";
 
 export default function WireStats({ means, width: n, depth: d, source, activeLayer }) {
-  if (!means || means.length === 0) return null;
+  const lineRef = useRef(null);
+  const scatterRef = useRef(null);
 
-  // Compute per-layer stats
-  const layerStats = [];
-  for (let l = 0; l < d && l < means.length; l++) {
-    let sum = 0, sumSq = 0;
-    let min = Infinity, max = -Infinity;
-    for (let w = 0; w < n; w++) {
-      const val = means[l][w] || 0;
-      sum += val;
-      sumSq += val * val;
-      if (val < min) min = val;
-      if (val > max) max = val;
+  useEffect(() => {
+    if (!means || means.length === 0) return;
+    if (!lineRef.current || !scatterRef.current) return;
+
+    // Compute per-layer stats
+    const meanSeries = [];
+    const upperSeries = [];
+    const lowerSeries = [];
+    const minSeries = [];
+    const maxSeries = [];
+
+    for (let l = 0; l < d && l < means.length; l++) {
+      let sum = 0, sumSq = 0;
+      let mn = Infinity, mx = -Infinity;
+      for (let w = 0; w < n; w++) {
+        const val = means[l][w] || 0;
+        sum += val;
+        sumSq += val * val;
+        if (val < mn) mn = val;
+        if (val > mx) mx = val;
+      }
+      const avg = sum / n;
+      const variance = sumSq / n - avg * avg;
+      const std = Math.sqrt(Math.max(0, variance));
+      meanSeries.push({ x: l, y: avg });
+      upperSeries.push({ x: l, y: Math.min(1, avg + std) });
+      lowerSeries.push({ x: l, y: Math.max(-1, avg - std) });
+      minSeries.push({ x: l, y: mn });
+      maxSeries.push({ x: l, y: mx });
     }
-    const avg = sum / n;
-    const variance = sumSq / n - avg * avg;
-    const std = Math.sqrt(Math.max(0, variance));
-    layerStats.push({
-      layer: l,
-      mean: avg,
-      std,
-      upper: Math.min(1, avg + std),
-      lower: Math.max(-1, avg - std),
-      band: [Math.max(-1, avg - std), Math.min(1, avg + std)],
-      min,
-      max,
+
+    // Line chart: mean, upper, lower, min, max
+    lineRef.current.innerHTML = '';
+    tfvis.render.linechart(lineRef.current, {
+      values: [meanSeries, upperSeries, lowerSeries, minSeries, maxSeries],
+      series: ['μ (mean)', 'μ + σ', 'μ − σ', 'min', 'max'],
+    }, {
+      width: lineRef.current.offsetWidth || 500,
+      height: 220,
+      xLabel: 'Layer',
+      yLabel: 'E[wire]',
+      yAxisDomain: [-1, 1],
+      seriesColors: ['#F0524D', '#F7A09D', '#F7A09D', '#94A3B8', '#334155'],
     });
-  }
 
-  // Scatter data: every wire mean as a point
-  const scatterData = [];
-  for (let l = 0; l < d && l < means.length; l++) {
-    for (let w = 0; w < n; w++) {
-      scatterData.push({ layer: l, mean: means[l][w] || 0 });
+    // Scatter plot: individual wire means
+    const scatterData = [];
+    for (let l = 0; l < d && l < means.length; l++) {
+      for (let w = 0; w < n; w++) {
+        scatterData.push({ x: l, y: means[l][w] || 0 });
+      }
     }
-  }
+
+    scatterRef.current.innerHTML = '';
+    tfvis.render.scatterplot(scatterRef.current, {
+      values: [scatterData],
+      series: ['Wire Means'],
+    }, {
+      width: scatterRef.current.offsetWidth || 500,
+      height: 140,
+      xLabel: 'Layer',
+      yLabel: 'E[wire]',
+      yAxisDomain: [-1, 1],
+      seriesColors: ['#F0524D'],
+    });
+  }, [means, n, d, activeLayer]);
+
+  if (!means || means.length === 0) return null;
 
   return (
     <div className="panel">
@@ -59,135 +84,10 @@ export default function WireStats({ means, width: n, depth: d, source, activeLay
         Wire Mean Distribution
         {source && <span className="source-badge">{source}</span>}
       </h2>
+      <div ref={lineRef} style={{ width: '100%', minHeight: 220 }} />
 
-      {/* Mean ± σ band chart */}
-      <ResponsiveContainer width="100%" height={220}>
-        <ComposedChart data={layerStats} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
-          <XAxis
-            dataKey="layer"
-            tick={{ fontSize: 10, fill: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace" }}
-            axisLine={{ stroke: "#E0E0E0" }}
-            tickLine={false}
-            label={{ value: "Layer", position: "insideBottom", offset: -2, style: { fontSize: 10, fill: "#9CA3AF" } }}
-          />
-          <YAxis
-            domain={[-1, 1]}
-            tick={{ fontSize: 10, fill: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace" }}
-            axisLine={{ stroke: "#E0E0E0" }}
-            tickLine={false}
-            label={{ value: "E[wire]", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: "#9CA3AF" } }}
-          />
-          <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="4 4" />
-          {activeLayer !== undefined && activeLayer !== null && (
-            <ReferenceLine
-              x={activeLayer}
-              stroke="#F0524D"
-              strokeWidth={2}
-              strokeDasharray="4 4"
-              label={{ value: `L${activeLayer}`, position: "top", fill: "#F0524D", fontSize: 10 }}
-            />
-          )}
-          <Tooltip
-            contentStyle={{
-              background: "#fff",
-              border: "1px solid #E0E0E0",
-              borderRadius: 8,
-              fontSize: 11,
-              fontFamily: "'IBM Plex Mono', monospace",
-            }}
-            formatter={(value, name) => {
-              if (name === "band") return null;
-              if (Array.isArray(value)) return [`[${value[0].toFixed(3)}, ${value[1].toFixed(3)}]`, "μ ± σ"];
-              return [typeof value === "number" ? value.toFixed(4) : value, name];
-            }}
-          />
-
-          {/* σ band */}
-          <Area
-            type="monotone"
-            dataKey="band"
-            fill="#F0524D"
-            fillOpacity={0.12}
-            stroke="none"
-            name="± σ"
-          />
-
-          {/* Mean line */}
-          <Line
-            type="monotone"
-            dataKey="mean"
-            stroke="#F0524D"
-            strokeWidth={2}
-            dot={{ r: 4, fill: "#F0524D", stroke: "#fff", strokeWidth: 2 }}
-            name="μ (mean)"
-          />
-
-          {/* Min/Max as thin dashed lines */}
-          <Line
-            type="monotone"
-            dataKey="max"
-            stroke="#F0524D"
-            strokeWidth={1}
-            strokeDasharray="3 3"
-            dot={false}
-            name="max"
-          />
-          <Line
-            type="monotone"
-            dataKey="min"
-            stroke="#334155"
-            strokeWidth={1}
-            strokeDasharray="3 3"
-            dot={false}
-            name="min"
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-
-      {/* Individual wire scatter overlay */}
       <h3 className="subheading" style={{ marginTop: 12 }}>Individual Wire Means</h3>
-      <ResponsiveContainer width="100%" height={140}>
-        <ScatterChart margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
-          <XAxis
-            type="number"
-            dataKey="layer"
-            domain={[0, d - 1]}
-            tick={{ fontSize: 10, fill: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace" }}
-            axisLine={{ stroke: "#E0E0E0" }}
-            tickLine={false}
-          />
-          <YAxis
-            type="number"
-            dataKey="mean"
-            domain={[-1, 1]}
-            tick={{ fontSize: 10, fill: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace" }}
-            axisLine={{ stroke: "#E0E0E0" }}
-            tickLine={false}
-          />
-          <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="4 4" />
-          {activeLayer !== undefined && activeLayer !== null && (
-            <ReferenceLine
-              x={activeLayer}
-              stroke="#F0524D"
-              strokeWidth={2}
-              strokeDasharray="4 4"
-            />
-          )}
-          <Tooltip
-            contentStyle={{
-              background: "#fff",
-              border: "1px solid #E0E0E0",
-              borderRadius: 8,
-              fontSize: 11,
-              fontFamily: "'IBM Plex Mono', monospace",
-            }}
-            formatter={(value) => [value.toFixed(4), undefined]}
-          />
-          <Scatter data={scatterData} fill="#F0524D" fillOpacity={0.4} r={2.5} />
-        </ScatterChart>
-      </ResponsiveContainer>
+      <div ref={scatterRef} style={{ width: '100%', minHeight: 140 }} />
     </div>
   );
 }

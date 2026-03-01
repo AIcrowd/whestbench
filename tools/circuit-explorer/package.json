@@ -11,9 +11,10 @@
   },
   "dependencies": {
     "@joint/core": "^4.2.4",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-vis": "^1.5.1",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "recharts": "^3.7.0"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

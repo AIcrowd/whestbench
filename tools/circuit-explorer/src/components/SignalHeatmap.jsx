@@ -1,96 +1,85 @@
 /**
- * SignalHeatmap — SVG heatmap of wire means across layers.
- * Uses container-measured width to fill the panel while keeping text readable.
+ * SignalHeatmap — Wire means heatmap using canvas rendering.
+ * Uses meanToColor for exact palette matching (dark slate → white → coral).
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { meanToColor } from "./gateShapes";
+
 export default function SignalHeatmap({ means, width: n, depth: d, source }) {
-  const containerRef = useRef(null);
-  const [containerW, setContainerW] = useState(0);
+  const canvasRef = useRef(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerW(entry.contentRect.width);
+    if (!means || means.length === 0 || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const container = canvas.parentElement;
+    const containerW = container.offsetWidth || 500;
+
+    // Cell sizing — fit to container
+    const LABEL_PAD_Y = 28; // space for wire labels (x-axis)
+    const LABEL_PAD_X = 36; // space for layer labels (y-axis)
+    const cellW = Math.max(4, Math.floor((containerW - LABEL_PAD_X - 20) / n));
+    const cellH = Math.max(4, Math.min(20, Math.floor(280 / d)));
+    const chartW = cellW * n;
+    const chartH = cellH * d;
+
+    const totalW = chartW + LABEL_PAD_X + 10;
+    const totalH = chartH + LABEL_PAD_Y + 10;
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = totalW * dpr;
+    canvas.height = totalH * dpr;
+    canvas.style.width = `${totalW}px`;
+    canvas.style.height = `${totalH}px`;
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, totalW, totalH);
+
+    // Draw heatmap cells
+    for (let l = 0; l < d && l < means.length; l++) {
+      for (let w = 0; w < n; w++) {
+        const v = means[l]?.[w] ?? 0;
+        ctx.fillStyle = meanToColor(v) || "#FFFFFF";
+        ctx.fillRect(LABEL_PAD_X + w * cellW, l * cellH, cellW - 1, cellH - 1);
       }
-    });
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  }, []);
+    }
+
+    // Draw axis labels
+    ctx.fillStyle = "#64748B";
+    ctx.font = "9px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "center";
+
+    // X-axis: wire indices
+    const wireLabelStep = n > 16 ? Math.ceil(n / 8) : 1;
+    for (let w = 0; w < n; w++) {
+      if (w % wireLabelStep === 0) {
+        ctx.fillText(`${w}`, LABEL_PAD_X + w * cellW + cellW / 2, chartH + 14);
+      }
+    }
+
+    // Y-axis: layer indices
+    const layerLabelStep = d > 16 ? Math.ceil(d / 8) : 1;
+    ctx.textAlign = "right";
+    for (let l = 0; l < d; l++) {
+      if (l % layerLabelStep === 0) {
+        ctx.fillText(`${l}`, LABEL_PAD_X - 4, l * cellH + cellH / 2 + 3);
+      }
+    }
+
+    // Axis titles
+    ctx.fillStyle = "#94A3B8";
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "center";
+    ctx.fillText("Wire", LABEL_PAD_X + chartW / 2, chartH + 26);
+    ctx.save();
+    ctx.translate(10, chartH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Layer", 0, 0);
+    ctx.restore();
+  }, [means, n, d]);
 
   if (!means || means.length === 0) return null;
-
-  const padL = 32;
-  const padT = 8;
-  const padB = 18;
-  const padR = 4;
-
-  // Compute cell sizes from available width
-  const availableW = Math.max(100, containerW - padL - padR);
-  const cellW = Math.max(8, Math.floor(availableW / n));
-  const cellH = Math.max(8, Math.min(28, Math.floor(280 / d)));
-
-  const svgW = padL + n * cellW + padR;
-  const svgH = padT + d * cellH + padB;
-
-  const cells = [];
-  for (let layer = 0; layer < d && layer < means.length; layer++) {
-    for (let wire = 0; wire < n; wire++) {
-      const val = means[layer][wire] || 0;
-      cells.push(
-        <rect
-          key={`${layer}-${wire}`}
-          x={padL + wire * cellW}
-          y={padT + layer * cellH}
-          width={cellW - 1}
-          height={cellH - 1}
-          rx={2}
-          fill={meanToColor(val)}
-        >
-          <title>L{layer} w{wire}: {val.toFixed(4)}</title>
-        </rect>
-      );
-    }
-  }
-
-  // Layer labels (Y axis)
-  const layerLabels = [];
-  const labelStep = d > 16 ? Math.ceil(d / 8) : 1;
-  for (let l = 0; l < d; l += labelStep) {
-    layerLabels.push(
-      <text
-        key={`yl-${l}`}
-        x={padL - 4}
-        y={padT + l * cellH + cellH / 2 + 3}
-        fontSize={9}
-        fill="#9CA3AF"
-        textAnchor="end"
-        fontFamily="'IBM Plex Mono', monospace"
-      >
-        {l}
-      </text>
-    );
-  }
-
-  // Wire labels (X axis)
-  const wireLabels = [];
-  const wireLabelStep = n > 16 ? Math.ceil(n / 8) : 1;
-  for (let w = 0; w < n; w += wireLabelStep) {
-    wireLabels.push(
-      <text
-        key={`xl-${w}`}
-        x={padL + w * cellW + cellW / 2}
-        y={padT + d * cellH + 13}
-        fontSize={9}
-        fill="#9CA3AF"
-        textAnchor="middle"
-        fontFamily="'IBM Plex Mono', monospace"
-      >
-        {w}
-      </text>
-    );
-  }
 
   return (
     <div className="panel">
@@ -98,16 +87,8 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
         Wire Means Heatmap
         {source && <span className="source-badge">{source}</span>}
       </h2>
-      <div ref={containerRef} style={{ width: "100%", overflowX: "auto" }}>
-        {containerW > 0 && (
-          <svg width={svgW} height={svgH} style={{ display: "block" }}>
-            {cells}
-            {layerLabels}
-            {wireLabels}
-            <text x={padL - 4} y={padT - 1} fontSize={9} fill="#9CA3AF" textAnchor="end">Layer</text>
-            <text x={padL + n * cellW} y={padT + d * cellH + 13} fontSize={9} fill="#9CA3AF" textAnchor="end">Wire</text>
-          </svg>
-        )}
+      <div style={{ width: '100%', overflowX: 'auto' }}>
+        <canvas ref={canvasRef} />
       </div>
       <div className="heatmap-legend">
         <span className="legend-item" style={{ color: "#334155" }}>◆ −1</span>
