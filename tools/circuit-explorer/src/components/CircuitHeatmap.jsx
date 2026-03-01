@@ -13,7 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import GateDetailOverlay from "./GateDetailOverlay";
 import { meanToColor } from "./gateShapes";
 
-export default function CircuitHeatmap({ circuit, means }) {
+export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerClick }) {
   const canvasRef = useRef(null);
   const overlayCanvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -109,7 +109,7 @@ export default function CircuitHeatmap({ circuit, means }) {
     }
   }, [circuit, means, n, d]);
 
-  // Draw crosshair on overlay canvas
+  // Draw crosshair + activeLayer column on overlay canvas
   const drawCrosshair = useCallback((layer, wire) => {
     const overlay = overlayCanvasRef.current;
     if (!overlay || !dims.cellW) return;
@@ -117,6 +117,15 @@ export default function CircuitHeatmap({ circuit, means }) {
     const ctx = overlay.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, dims.width, dims.height);
+
+    // Active layer column highlight
+    if (activeLayer !== undefined && activeLayer !== null) {
+      ctx.fillStyle = "rgba(240, 82, 77, 0.12)";
+      ctx.fillRect(activeLayer * dims.cellW, 0, dims.cellW, dims.height);
+      ctx.strokeStyle = "rgba(240, 82, 77, 0.5)";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(activeLayer * dims.cellW, 0, dims.cellW, dims.height);
+    }
 
     if (layer === null || wire === null) return;
 
@@ -146,7 +155,25 @@ export default function CircuitHeatmap({ circuit, means }) {
       dims.cellW,
       dims.cellH
     );
-  }, [dims]);
+  }, [dims, activeLayer]);
+
+  // Redraw overlay when activeLayer changes
+  useEffect(() => {
+    drawCrosshair(null, null);
+  }, [activeLayer, drawCrosshair]);
+
+  // Click handler — toggle activeLayer
+  const handleClick = useCallback(
+    (e) => {
+      if (!dims.cellW) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const layer = Math.floor((e.clientX - rect.left) / dims.cellW);
+      if (layer >= 0 && layer < d) {
+        onLayerClick?.(layer === activeLayer ? undefined : layer);
+      }
+    },
+    [dims, d, activeLayer, onLayerClick]
+  );
 
   // Debounced mouse move — RAF-gated, only updates when cell changes
   const handleMouseMove = useCallback(
@@ -207,6 +234,7 @@ export default function CircuitHeatmap({ circuit, means }) {
           className="heatmap-overlay-canvas"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
+          onClick={handleClick}
         />
         <div className="heatmap-axes">
           <span className="axis-label-x">Layer →</span>
