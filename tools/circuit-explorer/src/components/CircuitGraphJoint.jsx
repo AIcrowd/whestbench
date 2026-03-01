@@ -1,10 +1,9 @@
 /**
- * CircuitGraphJoint — JointJS circuit graph with uniform gates and
- * orthogonal (circuit-style) wire routing.
+ * CircuitGraphJoint — JointJS circuit graph with uniform gates,
+ * smooth bezier wiring, and interactive wire highlighting.
  *
- * Each gate has exactly 2 inputs (first, second) from the previous layer.
- * All gates are identical rectangles; type shown by border color.
- * Wires use JointJS manhattan router for right-angle circuit-style routing.
+ * Each gate computes: output = c + a·x + b·y + p·x·y
+ * where x and y are the two input wires from the previous layer.
  *
  * JointJS ports:
  *   - Group 'in':  2 ports on LEFT  (in1, in2)
@@ -12,45 +11,36 @@
  */
 import { dia, shapes } from "@joint/core";
 import { useEffect, useRef, useState } from "react";
-import {
-    classifyGate,
-    GATE_H,
-    GATE_W,
-    gateColor,
-    meanToColor,
-} from "./gateShapes";
+import { GATE_H, GATE_W, meanToColor } from "./gateShapes";
 
 /* ------------------------------------------------------------------ */
 /*  Layout                                                             */
 /* ------------------------------------------------------------------ */
-const COL_GAP = 80;  // space between layers (for wire routing)
-const ROW_GAP = 10;  // space between wires
+const COL_GAP = 80;
+const ROW_GAP = 10;
 const PAD_X = 30;
 const PAD_Y = 30;
+
+/* Default wire colors */
+const WIRE_COLOR = "#CBD5E1";
+const WIRE_HIGHLIGHT = "#3B82F6";
+const GATE_STROKE = "#94A3B8";
+const GATE_STROKE_HIGHLIGHT = "#3B82F6";
+const GATE_FILL_DEFAULT = "#FFFFFF";
 
 /* JointJS port group definitions */
 const PORT_GROUPS = {
   in: {
     position: { name: "left" },
     attrs: {
-      portBody: {
-        r: 2.5,
-        fill: "#94A3B8",
-        stroke: "none",
-        magnet: false,
-      },
+      portBody: { r: 2.5, fill: "#94A3B8", stroke: "none", magnet: false },
     },
     markup: [{ tagName: "circle", selector: "portBody" }],
   },
   out: {
     position: { name: "right" },
     attrs: {
-      portBody: {
-        r: 2.5,
-        fill: "#94A3B8",
-        stroke: "none",
-        magnet: false,
-      },
+      portBody: { r: 2.5, fill: "#94A3B8", stroke: "none", magnet: false },
     },
     markup: [{ tagName: "circle", selector: "portBody" }],
   },
@@ -65,6 +55,123 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
   const graphRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
   const [zoomPct, setZoomPct] = useState(100);
+
+  /* Helper: reset all highlights */
+  function resetHighlights(graph) {
+    graph.getElements().forEach((el) => {
+      const d = el.get("gateData");
+      if (!d) return;
+      const fill = meanToColor(d.mean) || GATE_FILL_DEFAULT;
+      el.attr("body/stroke", GATE_STROKE);
+      el.attr("body/strokeWidth", 1.5);
+      el.attr("body/fill", fill);
+    });
+    graph.getLinks().forEach((lk) => {
+      lk.attr("line/stroke", WIRE_COLOR);
+      lk.attr("line/strokeWidth", 0.8);
+      lk.attr("line/opacity", 1);
+    });
+  }
+
+  /* Helper: highlight a gate and its connections */
+  function highlightGate(graph, gateData) {
+    const { layerIndex: l, wireIndex: w, first, second } = gateData;
+
+    // Dim everything first
+    graph.getElements().forEach((el) => {
+      el.attr("body/opacity", 0.25);
+      el.attr("label/opacity", 0.25);
+    });
+    graph.getLinks().forEach((lk) => {
+      lk.attr("line/opacity", 0.06);
+    });
+
+    // Highlight the clicked gate
+    const thisGate = graph.getElements().find((el) => {
+      const d = el.get("gateData");
+      return d && d.layerIndex === l && d.wireIndex === w;
+    });
+    if (thisGate) {
+      thisGate.attr("body/opacity", 1);
+      thisGate.attr("body/stroke", GATE_STROKE_HIGHLIGHT);
+      thisGate.attr("body/strokeWidth", 2.5);
+      thisGate.attr("label/opacity", 1);
+    }
+
+    // Highlight input gates (previous layer)
+    if (l > 0) {
+      [first, second].forEach((inputWire) => {
+        const inputGate = graph.getElements().find((el) => {
+          const d = el.get("gateData");
+          return d && d.layerIndex === l - 1 && d.wireIndex === inputWire;
+        });
+        if (inputGate) {
+          inputGate.attr("body/opacity", 1);
+          inputGate.attr("body/stroke", "#10B981");
+          inputGate.attr("body/strokeWidth", 2);
+          inputGate.attr("label/opacity", 1);
+        }
+      });
+    }
+
+    // Highlight output gates (next layer that read from this wire)
+    if (l < circuit.d - 1) {
+      const nextLayer = circuit.gates[l + 1];
+      for (let nw = 0; nw < circuit.n; nw++) {
+        if (nextLayer.first[nw] === w || nextLayer.second[nw] === w) {
+          const outGate = graph.getElements().find((el) => {
+            const d = el.get("gateData");
+            return d && d.layerIndex === l + 1 && d.wireIndex === nw;
+          });
+          if (outGate) {
+            outGate.attr("body/opacity", 1);
+            outGate.attr("body/stroke", "#F59E0B");
+            outGate.attr("body/strokeWidth", 2);
+            outGate.attr("label/opacity", 1);
+          }
+        }
+      }
+    }
+
+    // Highlight connected links
+    graph.getLinks().forEach((lk) => {
+      const src = lk.source();
+      const tgt = lk.target();
+      if (!src?.id || !tgt?.id) return;
+
+      const srcEl = graph.getCell(src.id);
+      const tgtEl = graph.getCell(tgt.id);
+      if (!srcEl || !tgtEl) return;
+
+      const srcD = srcEl.get("gateData");
+      const tgtD = tgtEl.get("gateData");
+      if (!srcD || !tgtD) return;
+
+      // Input wires: previous layer → this gate
+      const isInput =
+        tgtD.layerIndex === l &&
+        tgtD.wireIndex === w &&
+        srcD.layerIndex === l - 1;
+
+      // Output wires: this gate → next layer
+      const isOutput =
+        srcD.layerIndex === l &&
+        srcD.wireIndex === w &&
+        tgtD.layerIndex === l + 1;
+
+      if (isInput) {
+        lk.attr("line/stroke", "#10B981");
+        lk.attr("line/strokeWidth", 2);
+        lk.attr("line/opacity", 1);
+        lk.attr("line/strokeDasharray", "");
+      } else if (isOutput) {
+        lk.attr("line/stroke", "#F59E0B");
+        lk.attr("line/strokeWidth", 1.5);
+        lk.attr("line/opacity", 1);
+        lk.attr("line/strokeDasharray", "");
+      }
+    });
+  }
 
   useEffect(() => {
     const el = canvasRef.current;
@@ -88,15 +195,13 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
     paperRef.current = paper;
     el.appendChild(paper.el);
 
-    // --- Create gate elements (uniform rectangles) ---
+    // --- Create gate elements (uniform rectangles, no type colors) ---
     const nodes = [];
     for (let l = 0; l < circuit.d; l++) {
       nodes[l] = [];
       for (let w = 0; w < circuit.n; w++) {
-        const info = classifyGate(circuit.gates[l], w);
-        const colors = gateColor(info.type);
         const mean = means?.[l]?.[w] ?? null;
-        const fill = meanToColor(mean) || "#FFFFFF";
+        const fill = meanToColor(mean) || GATE_FILL_DEFAULT;
 
         const x = PAD_X + l * (GATE_W + COL_GAP);
         const y = PAD_Y + w * (GATE_H + ROW_GAP);
@@ -107,7 +212,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
           attrs: {
             body: {
               fill,
-              stroke: colors.stroke,
+              stroke: GATE_STROKE,
               strokeWidth: 1.5,
               rx: 3,
               ry: 3,
@@ -116,7 +221,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
               text: String(w),
               fontSize: 10,
               fontFamily: "'IBM Plex Mono', monospace",
-              fill: colors.text,
+              fill: "#475569",
             },
           },
           ports: {
@@ -132,7 +237,6 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
         node.set("gateData", {
           layerIndex: l,
           wireIndex: w,
-          type: info.type,
           first: circuit.gates[l].first[w],
           second: circuit.gates[l].second[w],
           const: circuit.gates[l].const[w],
@@ -147,7 +251,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
       }
     }
 
-    // --- Create links with manhattan routing ---
+    // --- Create links with smooth bezier connectors ---
     for (let l = 1; l < circuit.d; l++) {
       for (let w = 0; w < circuit.n; w++) {
         const g = circuit.gates[l];
@@ -163,8 +267,8 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
             target: { id: nodes[l][w].id, port: "in1" },
             attrs: {
               line: {
-                stroke: "#94A3B8",
-                strokeWidth: 1,
+                stroke: WIRE_COLOR,
+                strokeWidth: 0.8,
                 targetMarker: { d: "" },
               },
             },
@@ -179,9 +283,8 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
             target: { id: nodes[l][w].id, port: "in2" },
             attrs: {
               line: {
-                stroke: fw === sw ? "#94A3B8" : "#CBD5E1",
-                strokeWidth: fw === sw ? 1 : 0.8,
-                strokeDasharray: fw === sw ? "" : "4,3",
+                stroke: WIRE_COLOR,
+                strokeWidth: 0.8,
                 targetMarker: { d: "" },
               },
             },
@@ -194,7 +297,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
     // Unfreeze
     paper.unfreeze();
 
-    // Fit content to fill available container width
+    // Fit content
     requestAnimationFrame(() => {
       if (!paperRef.current || !canvasRef.current) return;
       const bbox = graph.getBBox();
@@ -206,11 +309,18 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
       setZoomPct(Math.round(paper.scale().sx * 100));
     });
 
+    // Click handler — highlight connections + show tooltip
     paper.on("element:pointerclick", (view) => {
       const d = view.model.get("gateData");
-      if (d) setTooltip(d);
+      if (d) {
+        setTooltip(d);
+        highlightGate(graph, d);
+      }
     });
-    paper.on("blank:pointerclick", () => setTooltip(null));
+    paper.on("blank:pointerclick", () => {
+      setTooltip(null);
+      resetHighlights(graph);
+    });
 
     return () => {
       paper.remove();
@@ -238,10 +348,10 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  /* ---- layer dimming ---- */
+  /* ---- layer dimming (external control) ---- */
   useEffect(() => {
     const g = graphRef.current;
-    if (!g) return;
+    if (!g || tooltip) return; // don't override click-highlight
     g.getElements().forEach((el) => {
       const d = el.get("gateData");
       if (!d) return;
@@ -252,33 +362,28 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
     g.getLinks().forEach((lk) => {
       lk.attr("line/opacity", activeLayer !== undefined ? 0.06 : 1);
     });
-  }, [activeLayer]);
+  }, [activeLayer, tooltip]);
 
   return (
     <div className="panel circuit-graph-joint" style={{ position: "relative" }}>
       <h2>
         Circuit Structure
         <span className="mode-badge">
-          Graph Mode · {circuit.n}×{circuit.d} = {circuit.n * circuit.d} gates
+          {circuit.n} wires × {circuit.d} layers = {circuit.n * circuit.d} gates
         </span>
       </h2>
 
-      {/* Legend — minimal: just wire types + color meaning */}
-      <div className="gate-legend">
-        <span className="legend-item" style={{ color: "#EF4444" }}>■ AND</span>
-        <span className="legend-item" style={{ color: "#3B82F6" }}>■ Linear</span>
-        <span className="legend-item" style={{ color: "#F59E0B" }}>■ Product</span>
-        <span className="legend-item" style={{ color: "#9CA3AF" }}>■ Constant</span>
-        <span className="legend-wire">
-          <svg width="24" height="6" viewBox="0 0 24 6"><line x1="0" y1="3" x2="24" y2="3" stroke="#94A3B8" strokeWidth="1.5"/></svg>
-          1st
+      {/* Compact formula reminder */}
+      <div className="gate-legend" style={{ fontSize: 11, color: "#64748B" }}>
+        <span>
+          Each gate computes: <strong>out = c + a·x + b·y + p·x·y</strong>
         </span>
-        <span className="legend-wire">
-          <svg width="24" height="6" viewBox="0 0 24 6"><line x1="0" y1="3" x2="24" y2="3" stroke="#CBD5E1" strokeWidth="1" strokeDasharray="4,3"/></svg>
-          2nd
+        <span style={{ marginLeft: "auto", fontSize: 10 }}>
+          Click gate to inspect · Scroll to zoom
         </span>
       </div>
 
+      {/* JointJS canvas */}
       <div
         ref={canvasRef}
         className="joint-container"
@@ -292,38 +397,84 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
         }}
       />
 
+      {/* Professional tooltip */}
       {tooltip && (
-        <div
-          className="gate-tooltip"
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: 90,
-            transform: "translateX(-50%)",
-            zIndex: 200,
-          }}
-        >
-          <div className="tooltip-header">
-            Layer {tooltip.layerIndex}, Wire {tooltip.wireIndex} ({tooltip.type})
+        <div className="gate-tooltip-pro">
+          <div className="tooltip-pro-header">
+            <span className="tooltip-pro-title">
+              Gate [{tooltip.layerIndex}, {tooltip.wireIndex}]
+            </span>
+            <button
+              className="tooltip-pro-close"
+              onClick={() => {
+                setTooltip(null);
+                if (graphRef.current) resetHighlights(graphRef.current);
+              }}
+            >
+              ×
+            </button>
           </div>
-          <div className="tooltip-body">
-            <div className="tooltip-coeffs">
-              c={tooltip.const.toFixed(3)}, a={tooltip.firstCoeff.toFixed(3)},
-              b={tooltip.secondCoeff.toFixed(3)}, p={tooltip.productCoeff.toFixed(3)}
-            </div>
-            <div className="tooltip-inputs">
-              inputs: wire[{tooltip.first}], wire[{tooltip.second}]
-            </div>
-            {tooltip.mean !== null && (
-              <div className="tooltip-mean">E[wire] = {tooltip.mean.toFixed(4)}</div>
-            )}
+
+          <div className="tooltip-pro-formula">
+            out = c + a·x + b·y + p·x·y
           </div>
+
+          <table className="tooltip-pro-table">
+            <thead>
+              <tr>
+                <th>Coeff</th>
+                <th>Value</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="coeff-name">c</td>
+                <td className="coeff-val">{tooltip.const.toFixed(4)}</td>
+                <td className="coeff-desc">constant bias</td>
+              </tr>
+              <tr>
+                <td className="coeff-name">a</td>
+                <td className="coeff-val">{tooltip.firstCoeff.toFixed(4)}</td>
+                <td className="coeff-desc">
+                  weight on <strong>x</strong> (wire {tooltip.first})
+                </td>
+              </tr>
+              <tr>
+                <td className="coeff-name">b</td>
+                <td className="coeff-val">{tooltip.secondCoeff.toFixed(4)}</td>
+                <td className="coeff-desc">
+                  weight on <strong>y</strong> (wire {tooltip.second})
+                </td>
+              </tr>
+              <tr>
+                <td className="coeff-name">p</td>
+                <td className="coeff-val">{tooltip.productCoeff.toFixed(4)}</td>
+                <td className="coeff-desc">
+                  weight on <strong>x·y</strong> (interaction)
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="tooltip-pro-wires">
+            <span className="wire-badge input-wire">
+              ← x = layer {tooltip.layerIndex - 1}, wire {tooltip.first}
+            </span>
+            <span className="wire-badge input-wire">
+              ← y = layer {tooltip.layerIndex - 1}, wire {tooltip.second}
+            </span>
+          </div>
+
+          {tooltip.mean !== null && (
+            <div className="tooltip-pro-mean">
+              E[output] = <strong>{tooltip.mean.toFixed(4)}</strong>
+            </div>
+          )}
         </div>
       )}
 
-      <div className="zoom-indicator">
-        Zoom: {zoomPct}% · Scroll to zoom · Click gates to inspect
-      </div>
+      <div className="zoom-indicator">Zoom: {zoomPct}%</div>
     </div>
   );
 }
