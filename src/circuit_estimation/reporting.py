@@ -173,6 +173,10 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
 
 def _render_budget_section(console: Console, report: dict[str, Any]) -> None:
     console.print(Rule("Budget Breakdown", style="bright_cyan"))
+    console.print(_budget_lane_panel(report))
+
+
+def _budget_lane_panel(report: dict[str, Any]) -> Panel:
     by_budget = _budget_rows(report)
     best_score = min((_as_float(entry.get("score", 0.0)) for entry in by_budget), default=0.0)
 
@@ -200,15 +204,14 @@ def _render_budget_section(console: Console, report: dict[str, Any]) -> None:
 
     accuracy_plot = _budget_frontier_plot_panel(by_budget)
     runtime_plot = _budget_runtime_plot_panel(by_budget)
-    console.print(
+    return Panel(
         Columns(
-            [
-                Panel(table, title="Budget Table", border_style="bright_black"),
-                Group(accuracy_plot, runtime_plot),
-            ],
+            [Panel(table, title="Budget Table", border_style="bright_black"), Group(accuracy_plot, runtime_plot)],
             equal=False,
             expand=True,
-        )
+        ),
+        title="Budget Intelligence",
+        border_style="bright_black",
     )
 
 
