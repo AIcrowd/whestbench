@@ -143,3 +143,48 @@ def test_score_estimator_report_collects_one_profile_call_per_circuit_budget() -
         "rss_bytes",
         "peak_rss_bytes",
     } <= set(sample.keys())
+
+
+def test_detail_full_includes_budget_and_layer_aggregates() -> None:
+    params = ContestParams(width=2, max_depth=2, budgets=[10, 100], time_tolerance=0.1)
+    circuits = [_constant_circuit(n=2, d=2, value=1.0) for _ in range(2)]
+
+    def estimator(_circuit: Circuit, _budget: int) -> np.ndarray:
+        return np.ones((2, 2), dtype=np.float32)
+
+    report = score_estimator_report(
+        estimator,
+        n_circuits=2,
+        n_samples=4,
+        contest_params=params,
+        circuits=circuits,
+        profile=True,
+        detail="full",
+    )
+
+    results = report["results"]
+    assert "by_budget_summary" in results
+    assert "by_layer_overall" in results
+    assert "by_budget_layer_matrix" in results
+
+    by_budget_summary = results["by_budget_summary"]
+    assert len(by_budget_summary) == len(params.budgets)
+    assert {"budget", "score", "mse_mean", "adjusted_mse_mean", "time_ratio_mean"} <= set(
+        by_budget_summary[0].keys()
+    )
+
+    by_layer_overall = results["by_layer_overall"]
+    assert by_layer_overall["layer_index"] == [0, 1]
+    assert len(by_layer_overall["mse_mean_by_layer"]) == params.max_depth
+    assert len(by_layer_overall["adjusted_mse_mean_by_layer"]) == params.max_depth
+    assert len(by_layer_overall["time_ratio_mean_by_layer"]) == params.max_depth
+
+    by_budget_layer_matrix = results["by_budget_layer_matrix"]
+    assert by_budget_layer_matrix["budgets"] == params.budgets
+    assert len(by_budget_layer_matrix["mse_by_budget_layer"]) == len(params.budgets)
+    assert all(
+        len(row) == params.max_depth for row in by_budget_layer_matrix["mse_by_budget_layer"]
+    )
+
+    assert "profile_summary" in report
+    assert report["profile_summary"]["call_count"] == len(circuits) * len(params.budgets)
