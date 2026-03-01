@@ -498,8 +498,8 @@ def _build_plotext_line_chart(
         width = max(66, min(92, 26 + len(x)))
         _plotext.plotsize(width, 11)
         _plotext.canvas_color("default")
-        _plotext.axes_color("default")
-        _plotext.ticks_color("white")
+        _plotext.axes_color("gray+")
+        _plotext.ticks_color("gray+")
 
         if x_scale is not None:
             _plotext.xscale(x_scale)
@@ -519,7 +519,7 @@ def _build_plotext_line_chart(
 
         for _label, values, color in valid_series:
             # Keep legend external (Rich table), so we avoid in-plot overlap.
-            _plotext.plot(x, values, color=color, marker="braille")
+            _plotext.plot(x, values, color=color, marker="hd")
 
         _plotext.xlabel(x_label)
         _plotext.ylabel(y_label)
