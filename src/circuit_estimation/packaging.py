@@ -55,7 +55,9 @@ def build_manifest(
         "schema_version": "1.0",
         "api_version": "1.0",
         "entrypoint": {"module": "estimator", "class": class_name},
-        "python": {"min_version": f"{platform.python_version_tuple()[0]}.{platform.python_version_tuple()[1]}"},
+        "python": {
+            "min_version": f"{platform.python_version_tuple()[0]}.{platform.python_version_tuple()[1]}"
+        },
         "files": manifest_files,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "packager_version": packager_version,
@@ -91,9 +93,12 @@ def package_submission(
     manifest = build_manifest(class_name=metadata.class_name, files=files)
     manifest_blob = json.dumps(manifest, indent=2).encode("utf-8")
 
-    target = Path(output_path).resolve() if output_path is not None else (
-        Path.cwd()
-        / f"submission-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.tar.gz"
+    target = (
+        Path(output_path).resolve()
+        if output_path is not None
+        else (
+            Path.cwd() / f"submission-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.tar.gz"
+        )
     )
     with tarfile.open(target, mode="w:gz") as archive:
         archive.add(estimator, arcname="estimator.py")

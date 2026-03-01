@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import sys
-import time
 import json
 import os
 import selectors
 import subprocess
+import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, Protocol, cast
@@ -173,7 +173,9 @@ class InProcessRunner:
         self.close()
         self._limits = limits
         start_wall = time.time()
-        estimator, _ = load_estimator_from_path(entrypoint.file_path, class_name=entrypoint.class_name)
+        estimator, _ = load_estimator_from_path(
+            entrypoint.file_path, class_name=entrypoint.class_name
+        )
         self._estimator = estimator
         try:
             estimator.setup(context)
