@@ -6,6 +6,7 @@ import {
     Bar,
     BarChart,
     CartesianGrid,
+    Cell,
     Legend,
     ResponsiveContainer,
     Tooltip,
@@ -18,6 +19,7 @@ export default function EstimatorComparison({
   samplingEstimates,
   meanPropEstimates,
   depth,
+  activeLayer,
 }) {
   if (!groundTruth) return null;
 
@@ -93,10 +95,20 @@ export default function EstimatorComparison({
             wrapperStyle={{ fontSize: 11, fontFamily: "'DM Sans', sans-serif" }}
           />
           {hasSampling && (
-            <Bar dataKey="sampling" name="Sampling" fill="#F0524D" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="sampling" name="Sampling" fill="#F0524D" radius={[3, 3, 0, 0]}>
+              {activeLayer !== undefined && activeLayer !== null &&
+                data.map((_, idx) => (
+                  <Cell key={idx} fillOpacity={idx === activeLayer ? 1 : 0.3} />
+                ))}
+            </Bar>
           )}
           {hasMeanProp && (
-            <Bar dataKey="meanProp" name="Mean Prop" fill="#94A3B8" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="meanProp" name="Mean Prop" fill="#94A3B8" radius={[3, 3, 0, 0]}>
+              {activeLayer !== undefined && activeLayer !== null &&
+                data.map((_, idx) => (
+                  <Cell key={idx} fillOpacity={idx === activeLayer ? 1 : 0.3} />
+                ))}
+            </Bar>
           )}
         </BarChart>
       </ResponsiveContainer>

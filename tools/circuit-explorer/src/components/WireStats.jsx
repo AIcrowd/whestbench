@@ -15,7 +15,7 @@ import {
     YAxis,
 } from "recharts";
 
-export default function WireStats({ means, width: n, depth: d, source }) {
+export default function WireStats({ means, width: n, depth: d, source, activeLayer }) {
   if (!means || means.length === 0) return null;
 
   // Compute per-layer stats
@@ -79,6 +79,15 @@ export default function WireStats({ means, width: n, depth: d, source }) {
             label={{ value: "E[wire]", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: "#9CA3AF" } }}
           />
           <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="4 4" />
+          {activeLayer !== undefined && activeLayer !== null && (
+            <ReferenceLine
+              x={activeLayer}
+              stroke="#F0524D"
+              strokeWidth={2}
+              strokeDasharray="4 4"
+              label={{ value: `L${activeLayer}`, position: "top", fill: "#F0524D", fontSize: 10 }}
+            />
+          )}
           <Tooltip
             contentStyle={{
               background: "#fff",
@@ -158,6 +167,14 @@ export default function WireStats({ means, width: n, depth: d, source }) {
             tickLine={false}
           />
           <ReferenceLine y={0} stroke="#E0E0E0" strokeDasharray="4 4" />
+          {activeLayer !== undefined && activeLayer !== null && (
+            <ReferenceLine
+              x={activeLayer}
+              stroke="#F0524D"
+              strokeWidth={2}
+              strokeDasharray="4 4"
+            />
+          )}
           <Tooltip
             contentStyle={{
               background: "#fff",

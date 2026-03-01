@@ -77,6 +77,15 @@ export default function App() {
     }
   }, [circuit, isTour]);
 
+  // Escape key clears activeLayer
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') setActiveLayer(undefined);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   // ── Tour auto-run effects (via worker) ──
   // Step 3: auto-run ground truth
   useEffect(() => {
@@ -278,7 +287,12 @@ export default function App() {
               activeLayer={activeLayer}
             />
           ) : (
-            <CircuitHeatmap circuit={circuit} means={exploreDisplayMeans} />
+            <CircuitHeatmap
+              circuit={circuit}
+              means={exploreDisplayMeans}
+              activeLayer={activeLayer}
+              onLayerClick={setActiveLayer}
+            />
           )}
 
           {/* ── Tour: MSE Comparison (steps 4-5) ── */}
@@ -296,7 +310,7 @@ export default function App() {
           {/* ── Explore mode: all panels ── */}
           {!isTour && (
             <>
-              <GateStats circuit={circuit} />
+              <GateStats circuit={circuit} activeLayer={activeLayer} />
 
               {hasAnyExploreEstimate && (
                 <>
@@ -312,6 +326,7 @@ export default function App() {
                       means={exploreDisplayMeans}
                       width={params.width}
                       depth={params.depth}
+                      activeLayer={activeLayer}
                     />
                   </div>
 
@@ -322,6 +337,7 @@ export default function App() {
                         samplingEstimates={samplingEst}
                         meanPropEstimates={meanPropEst}
                         depth={params.depth}
+                        activeLayer={activeLayer}
                       />
                     </div>
                   )}

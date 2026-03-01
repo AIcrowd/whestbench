@@ -54,7 +54,7 @@ function ColoredTick({ x, y, payload }) {
   );
 }
 
-export default function GateStats({ circuit }) {
+export default function GateStats({ circuit, activeLayer }) {
   if (!circuit) return null;
   const { n, d, gates } = circuit;
 
@@ -150,10 +150,17 @@ export default function GateStats({ circuit }) {
                   fontSize: 11,
                 }}
               />
-              <Bar dataKey="c — bias" fill={COLORS.const} stackId="a" />
-              <Bar dataKey="a — first" fill={COLORS.first} stackId="a" />
-              <Bar dataKey="b — second" fill={COLORS.second} stackId="a" />
-              <Bar dataKey="p — interaction" fill={COLORS.product} stackId="a" />
+              {["c — bias", "a — first", "b — second", "p — interaction"].map((key, ki) => {
+                const fills = [COLORS.const, COLORS.first, COLORS.second, COLORS.product];
+                return (
+                  <Bar key={ki} dataKey={key} fill={fills[ki]} stackId="a">
+                    {activeLayer !== undefined && activeLayer !== null &&
+                      layerData.map((_, idx) => (
+                        <Cell key={idx} fillOpacity={idx === activeLayer ? 1 : 0.3} />
+                      ))}
+                  </Bar>
+                );
+              })}
             </BarChart>
           </ResponsiveContainer>
         </div>
