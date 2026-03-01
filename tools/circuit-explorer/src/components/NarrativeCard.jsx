@@ -76,10 +76,25 @@ const STEP_CONTENT = {
     border: "var(--coral)",
     text: (
       <>
-        <strong>Mean Propagation</strong> doesn&apos;t sample at all. It computes{" "}
-        <Ewire /> analytically, propagating expected values through each
-        gate&apos;s algebra. <strong>Instant</strong> · No sampling noise · But
-        is it always accurate? This is the starting point.{" "}
+        <MathTerm
+          tip={
+            <>
+              For each gate <code>out = c + a·x + b·y + p·x·y</code>, mean
+              propagation computes <strong>E[out] = c + a·E[x] + b·E[y] +
+              p·E[x]·E[y]</strong>. It assumes inputs are{" "}
+              <em>independent</em> (E[x·y] = E[x]·E[y]) and propagates layer
+              by layer. This is exact when wires are truly independent, but
+              shared upstream gates create correlations that this method ignores.
+            </>
+          }
+        >
+          Mean Propagation
+        </MathTerm>{" "}
+        doesn&apos;t sample at all. For each gate, it plugs{" "}
+        <Ewire /> of the two inputs into the gate formula to get{" "}
+        <Ewire /> of the output — layer by layer, front to back.{" "}
+        <strong>Instant</strong> · No sampling noise · But it assumes wire
+        values are independent, which isn&apos;t always true.{" "}
         <strong>Can you do better?</strong>
       </>
     ),
