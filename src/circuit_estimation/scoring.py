@@ -35,12 +35,22 @@ T = TypeVar("T")
 
 @dataclass(slots=True)
 class ContestParams:
+    """Evaluator configuration shared across one scoring run.
+
+    Attributes:
+        width: Wire count for generated/scored circuits.
+        max_depth: Number of layers each estimator call must predict.
+        budgets: Runtime budget points used for score aggregation.
+        time_tolerance: Relative slack for timeout/floor runtime semantics.
+    """
+
     width: int
     max_depth: int
     budgets: list[int]
     time_tolerance: float
 
     def validate(self) -> None:
+        """Validate evaluator configuration bounds and required fields."""
         if self.width <= 0:
             raise ValueError("width must be positive.")
         if self.max_depth <= 0:
@@ -69,6 +79,7 @@ def profile_fn(
 
 
 def _peak_rss_bytes() -> int:
+    """Return best-effort process peak RSS in bytes."""
     if resource is None:
         return 0
     usage = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
@@ -78,6 +89,7 @@ def _peak_rss_bytes() -> int:
 
 
 def _rss_bytes() -> int:
+    """Return current process RSS in bytes (or fallback estimate)."""
     if psutil is not None:
         return int(psutil.Process().memory_info().rss)
     return _peak_rss_bytes()
@@ -101,7 +113,18 @@ def score_estimator_report(
     detail: str = "raw",
     profiler: ProfilerFn | None = None,
 ) -> dict[str, Any]:
-    """Compute a structured evaluator report for one scoring run."""
+    """Compute a structured scoring report for one estimator.
+
+    The report includes:
+    - run metadata and configuration,
+    - per-budget per-layer accuracy/runtime series,
+    - optional call-level profiling events,
+    - optional derived aggregates (``detail='full'``).
+
+    Runtime handling per estimator call:
+    - timeout above upper tolerance -> output tensor zeroed,
+    - runtime below lower tolerance -> effective runtime floored.
+    """
     contest_params.validate()
     if n_circuits <= 0:
         raise ValueError("n_circuits must be positive.")
@@ -291,7 +314,7 @@ def score_estimator(
     circuits: Sequence[Circuit] | None = None,
     profiler: ProfilerFn | None = None,
 ) -> float:
-    """Compatibility wrapper returning only final score."""
+    """Return only final score for callers that do not need full report payload."""
     report = score_estimator_report(
         estimator,
         n_circuits=n_circuits,
@@ -306,6 +329,7 @@ def score_estimator(
 
 
 def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dict[str, Any]:
+    """Derive aggregate tables/matrices from raw per-budget layer series."""
     budgets = [int(entry["budget"]) for entry in by_budget_raw]
     scores = [float(entry["score"]) for entry in by_budget_raw]
     mse_matrix = np.array([entry["mse_by_layer"] for entry in by_budget_raw], dtype=np.float64)
@@ -396,6 +420,7 @@ def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dic
 
 
 def _profile_summary(profile_calls: list[dict[str, float | int]]) -> dict[str, Any]:
+    """Summarize profiling events with basic distribution statistics."""
     if not profile_calls:
         return {"call_count": 0}
     wall = np.array([float(event["wall_time_s"]) for event in profile_calls], dtype=np.float64)

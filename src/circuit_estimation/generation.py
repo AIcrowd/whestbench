@@ -1,4 +1,10 @@
-"""Circuit and gate sampling utilities."""
+"""Random circuit/gate sampling utilities used by the evaluator.
+
+This module produces synthetic layered circuits where each output wire reads
+two distinct input wires and applies an affine-bilinear gate rule. The same
+sampling path is used by baseline timing and score evaluation when explicit
+circuits are not supplied by the caller.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +15,21 @@ from .domain import Circuit, Layer
 
 
 def random_gates(n: int, rng: np.random.Generator | None = None) -> Layer:
-    """Generate one random layer of coefficients and input index pairings."""
+    """Sample one random layer of gate wiring and coefficients.
+
+    The sampler mixes two gate families:
+
+    - ``simple`` gates: one dominant term (constant, first wire, second wire,
+      or product) with random sign.
+    - ``complex`` gates: an affine-bilinear template with coupled random signs.
+
+    Args:
+        n: Circuit width / wire count for this layer.
+        rng: Optional NumPy generator for reproducible sampling.
+
+    Returns:
+        A validated ``Layer`` with vectorized wiring/coefficients.
+    """
     if n <= 1:
         raise ValueError("n must be greater than 1 to sample distinct gate inputs.")
     rng = rng or np.random.default_rng()
@@ -44,6 +64,8 @@ def random_gates(n: int, rng: np.random.Generator | None = None) -> Layer:
 
     first: NDArray[np.int32] = rng.integers(0, n, size=n, dtype=np.int32)
     second_raw: NDArray[np.int32] = rng.integers(0, n - 1, size=n, dtype=np.int32)
+    # Map values from [0, n-2] into [0, n-1] while skipping first[i].
+    # This keeps first/second distinct without per-element rejection loops.
     second: NDArray[np.int32] = (second_raw + (second_raw >= first).astype(np.int32)).astype(
         np.int32
     )
@@ -61,7 +83,17 @@ def random_gates(n: int, rng: np.random.Generator | None = None) -> Layer:
 
 
 def random_circuit(n: int, d: int, rng: np.random.Generator | None = None) -> Circuit:
-    """Generate a random circuit with width ``n`` and depth ``d``."""
+    """Sample and validate a random circuit of width ``n`` and depth ``d``.
+
+    Args:
+        n: Number of wires per layer.
+        d: Number of transition layers.
+        rng: Optional generator to make circuit sampling reproducible.
+
+    Returns:
+        A ``Circuit`` whose ``gates`` length matches ``d`` and whose layers
+        satisfy index/shape invariants.
+    """
     if d < 0:
         raise ValueError("d must be non-negative.")
     rng = rng or np.random.default_rng()
