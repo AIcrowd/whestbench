@@ -1032,3 +1032,242 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* ============================================
+   Progressive Reveal — Step Indicator
+   ============================================ */
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.step-track {
+  display: flex;
+  align-items: center;
+}
+
+.step-item-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.step-connector {
+  width: 40px;
+  height: 2px;
+  background: var(--gray-200);
+  margin: 0 4px;
+  transition: background 0.3s;
+}
+
+.step-connector--done {
+  background: var(--coral);
+}
+
+.step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  border: 2px solid var(--gray-200);
+  color: var(--gray-400);
+  background: var(--white);
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+
+.step-circle--active {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--white);
+  box-shadow: 0 0 0 4px var(--coral-light);
+}
+
+.step-circle--done {
+  background: var(--white);
+  border-color: var(--coral);
+  color: var(--coral);
+}
+
+.step-label {
+  font-size: 10px;
+  color: var(--gray-400);
+  margin-left: 6px;
+  margin-right: 8px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.step-label--active {
+  color: var(--coral);
+  font-weight: 600;
+}
+
+.skip-tour-btn {
+  background: none;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-pill);
+  padding: 5px 14px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray-400);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.skip-tour-btn:hover {
+  border-color: var(--coral);
+  color: var(--coral);
+}
+
+/* ============================================
+   Progressive Reveal — Narrative Card
+   ============================================ */
+
+.narrative-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-left: 4px solid var(--gray-400);
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  max-width: 720px;
+  animation: narrative-enter 0.25s ease-out;
+}
+
+@keyframes narrative-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.narrative-text {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--gray-900);
+}
+
+.narrative-text strong {
+  font-weight: 600;
+}
+
+.narrative-text code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-100);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--gray-600);
+}
+
+.narrative-nav {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.narrative-btn {
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.narrative-btn--back {
+  background: transparent;
+  border: 1px solid var(--gray-200);
+  color: var(--gray-600);
+}
+
+.narrative-btn--back:hover {
+  border-color: var(--gray-400);
+  color: var(--gray-900);
+}
+
+.narrative-btn--next {
+  background: var(--coral);
+  color: var(--white);
+}
+
+.narrative-btn--next:hover {
+  background: var(--coral-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 82, 77, 0.25);
+}
+
+/* ============================================
+   Progressive Reveal — Locked Controls
+   ============================================ */
+
+.controls-panel--locked {
+  opacity: 0.4;
+  pointer-events: none;
+  position: relative;
+}
+
+.locked-hint {
+  font-size: 10px;
+  color: var(--gray-400);
+  text-align: center;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+.estimator-runner--locked {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ============================================
+   Progressive Reveal — Panel Transitions
+   ============================================ */
+
+.panel-reveal {
+  animation: panel-enter 0.25s ease-out;
+}
+
+@keyframes panel-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   Progressive Reveal — Output Pulse (Step 2)
+   ============================================ */
+
+@keyframes output-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+.output-node-pulse rect {
+  animation: output-pulse 2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* ============================================
+   Visual Refinements
+   ============================================ */
+
+.panel--highlight h2 {
+  background: var(--coral-light);
+  margin: -16px -20px 16px;
+  padding: 12px 20px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
