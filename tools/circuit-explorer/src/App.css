@@ -758,6 +758,13 @@ body {
   flex-shrink: 0;
 }
 
+.legend-wire {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 4px;
+}
+
 /* Gate tooltip (click-to-inspect) */
 .gate-tooltip {
   background: white;

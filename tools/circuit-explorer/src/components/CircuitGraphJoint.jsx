@@ -1,36 +1,62 @@
 /**
- * CircuitGraphJoint — JointJS circuit graph with custom gate shapes.
+ * CircuitGraphJoint — JointJS circuit graph with proper port-based wiring.
  *
- * Uses custom shapes defined in gateShapes.js:
- *   AND:      D-shape (IEEE AND gate notation)
- *   Linear:   Triangle (buffer/amplifier)
- *   Product:  Circle with × cross (multiplier)
- *   Constant: Square with DC line (source)
+ * Each gate has exactly 2 inputs (first, second) from the previous layer.
+ * Gate output feeds into the next layer.
  *
- * Official React integration: https://docs.jointjs.com/learn/integration/react/
+ * JointJS ports:
+ *   - Group 'in':  2 ports on the LEFT  (in1, in2) — the two input wires
+ *   - Group 'out': 1 port on the RIGHT  (out)      — the output wire
+ *
+ * Links connect: source.port='out' → target.port='in1' or 'in2'
+ *
+ * Layout: strict grid — d columns × n rows, uniform gate size.
  */
 import { dia, shapes } from "@joint/core";
 import { useEffect, useRef, useState } from "react";
-import { classifyGate, GATE_CONSTRUCTORS, meanToColor } from "./gateShapes";
+import {
+    classifyGate,
+    GATE_H,
+    GATE_TYPES,
+    GATE_W,
+    meanToColor,
+} from "./gateShapes";
 
 /* ------------------------------------------------------------------ */
 /*  Layout constants                                                   */
 /* ------------------------------------------------------------------ */
-const H_GAP = 110; // horizontal spacing between layers
-const V_GAP = 14;  // vertical spacing between wires
-const PAD_X = 60;
-const PAD_Y = 50;
+const COL_GAP = 100; // horizontal gap between layer columns
+const ROW_GAP = 12;  // vertical gap between wire rows
+const PAD_X = 40;
+const PAD_Y = 40;
 
-/* ------------------------------------------------------------------ */
-/*  Build custom cellNamespace merging standard + circuit shapes       */
-/* ------------------------------------------------------------------ */
-const cellNamespace = {
-  ...shapes,
-  circuit: {
-    GateAND: GATE_CONSTRUCTORS.dshape,
-    GateLinear: GATE_CONSTRUCTORS.triangle,
-    GateProduct: GATE_CONSTRUCTORS.circle,
-    GateConstant: GATE_CONSTRUCTORS.square,
+/* Port group definitions for JointJS */
+const PORT_GROUPS = {
+  in: {
+    position: { name: "left" },
+    attrs: {
+      portBody: {
+        r: 3,
+        fill: "#94A3B8",
+        stroke: "#64748B",
+        strokeWidth: 1,
+        magnet: false,
+      },
+    },
+    markup: [{ tagName: "circle", selector: "portBody" }],
+  },
+  out: {
+    position: { name: "right" },
+    attrs: {
+      portBody: {
+        r: 3,
+        fill: "#94A3B8",
+        stroke: "#64748B",
+        strokeWidth: 1,
+        magnet: false,
+      },
+    },
+    markup: [{ tagName: "circle", selector: "portBody" }],
   },
 };
 
@@ -48,62 +74,71 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
   useEffect(() => {
     const el = canvasRef.current;
     if (!el || !circuit) return;
-
-    // Tear down previous
     el.innerHTML = "";
 
-    // 1. Graph with merged namespace
-    const graph = new dia.Graph({}, { cellNamespace });
+    // 1. Graph
+    const graph = new dia.Graph({}, { cellNamespace: shapes });
     graphRef.current = graph;
 
-    // 2. Paper — frozen + async per docs
+    // 2. Paper — frozen + async per official React docs
     const paper = new dia.Paper({
       model: graph,
       background: { color: "#FCFCFC" },
       frozen: true,
       async: true,
-      cellViewNamespace: cellNamespace,
+      cellViewNamespace: shapes,
       width: 1,
       height: 1,
       gridSize: 1,
       interactive: false,
     });
     paperRef.current = paper;
-
-    // 3. Append paper element into our container
     el.appendChild(paper.el);
 
-    // 4. Create gate elements using custom shapes
-    const nodes = [];
+    // 3. Create gate elements in strict grid
+    const nodes = []; // nodes[layer][wire]
     for (let l = 0; l < circuit.d; l++) {
       nodes[l] = [];
       for (let w = 0; w < circuit.n; w++) {
         const info = classifyGate(circuit.gates[l], w);
-        const Constructor = GATE_CONSTRUCTORS[info.shape];
-        if (!Constructor) continue;
-
-        const defaultSize = Constructor.prototype.defaults.size || { width: 64, height: 38 };
-        const gateW = defaultSize.width;
-        const gateH = defaultSize.height;
-
-        const x = PAD_X + l * (gateW + H_GAP);
-        const y = PAD_Y + w * (gateH + V_GAP);
+        const style = GATE_TYPES[info.type];
         const mean = means?.[l]?.[w] ?? null;
-        const fill = mean !== null ? meanToColor(mean) : undefined; // only override if we have data
+        const fill = meanToColor(mean) || style.fill;
 
-        const node = new Constructor({
+        const x = PAD_X + l * (GATE_W + COL_GAP);
+        const y = PAD_Y + w * (GATE_H + ROW_GAP);
+
+        // Use standard.Path for the custom SVG shape
+        const node = new shapes.standard.Path({
           position: { x, y },
+          size: { width: GATE_W, height: GATE_H },
+          attrs: {
+            body: {
+              d: style.path,
+              fill: fill,
+              stroke: style.stroke,
+              strokeWidth: 1.5,
+            },
+            label: {
+              text: String(w),
+              fontSize: 10,
+              fontFamily: "'IBM Plex Mono', monospace",
+              fill: style.textColor,
+              textAnchor: "middle",
+              textVerticalAnchor: "middle",
+            },
+          },
+          ports: {
+            groups: PORT_GROUPS,
+            items: [
+              { id: "in1", group: "in" },
+              { id: "in2", group: "in" },
+              { id: "out", group: "out" },
+            ],
+          },
         });
 
-        // Set label — just wire index; shape conveys type, details on click
-        node.attr("label/text", String(w));
-
-        // Override body fill if we have mean data
-        if (fill) {
-          node.attr("body/fill", fill);
-        }
-
-        // Store metadata for inspection
+        // Store metadata for click-to-inspect
         node.set("gateData", {
           layerIndex: l,
           wireIndex: w,
@@ -123,37 +158,37 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
       }
     }
 
-    // 5. Links — smooth connectors
+    // 4. Links — connect output port → input ports
     for (let l = 1; l < circuit.d; l++) {
       for (let w = 0; w < circuit.n; w++) {
         const g = circuit.gates[l];
-        const fw = g.first[w];
-        const sw = g.second[w];
+        const fw = g.first[w];  // first input wire index
+        const sw = g.second[w]; // second input wire index
 
-        // First input connection (solid)
-        if (nodes[l - 1]?.[fw] && nodes[l]?.[w]) {
-          graph.addCell(
-            new shapes.standard.Link({
-              source: { id: nodes[l - 1][fw].id },
-              target: { id: nodes[l][w].id },
-              attrs: {
-                line: {
-                  stroke: "#94A3B8",
-                  strokeWidth: 1.2,
-                  targetMarker: { d: "" },
-                },
+        if (!nodes[l - 1]?.[fw] || !nodes[l]?.[w]) continue;
+
+        // First input: previous layer wire fw → this gate in1
+        graph.addCell(
+          new shapes.standard.Link({
+            source: { id: nodes[l - 1][fw].id, port: "out" },
+            target: { id: nodes[l][w].id, port: "in1" },
+            attrs: {
+              line: {
+                stroke: "#94A3B8",
+                strokeWidth: 1,
+                targetMarker: { d: "" }, // no arrowhead
               },
-              connector: { name: "smooth" },
-            })
-          );
-        }
+            },
+            connector: { name: "smooth" },
+          })
+        );
 
-        // Second input (dashed) — skip identical
-        if (sw !== fw && nodes[l - 1]?.[sw] && nodes[l]?.[w]) {
+        // Second input: previous layer wire sw → this gate in2
+        if (sw !== fw) {
           graph.addCell(
             new shapes.standard.Link({
-              source: { id: nodes[l - 1][sw].id },
-              target: { id: nodes[l][w].id },
+              source: { id: nodes[l - 1][sw].id, port: "out" },
+              target: { id: nodes[l][w].id, port: "in2" },
               attrs: {
                 line: {
                   stroke: "#CBD5E1",
@@ -165,24 +200,40 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
               connector: { name: "smooth" },
             })
           );
+        } else {
+          // Both inputs from same wire — connect to in2 as well (solid)
+          graph.addCell(
+            new shapes.standard.Link({
+              source: { id: nodes[l - 1][fw].id, port: "out" },
+              target: { id: nodes[l][w].id, port: "in2" },
+              attrs: {
+                line: {
+                  stroke: "#94A3B8",
+                  strokeWidth: 1,
+                  targetMarker: { d: "" },
+                },
+              },
+              connector: { name: "smooth" },
+            })
+          );
         }
       }
     }
 
-    // 6. CRITICAL: Unfreeze to render
+    // 5. CRITICAL: Unfreeze to trigger rendering
     paper.unfreeze();
 
-    // 7. Fit content after async render
+    // 6. Fit content after async render
     requestAnimationFrame(() => {
       if (!paperRef.current) return;
       const bbox = graph.getBBox();
       if (!bbox) return;
-      paper.setDimensions(bbox.x + bbox.width + 80, bbox.y + bbox.height + 50);
-      paper.transformToFitContent({ padding: 30, maxScale: 1.5 });
+      paper.setDimensions(bbox.x + bbox.width + 60, bbox.y + bbox.height + 50);
+      paper.transformToFitContent({ padding: 20, maxScale: 1.5 });
       setZoomPct(Math.round(paper.scale().sx * 100));
     });
 
-    // 8. Click to inspect gate
+    // 7. Click to inspect gate
     paper.on("element:pointerclick", (view) => {
       const d = view.model.get("gateData");
       if (d) setTooltip(d);
@@ -245,7 +296,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
       <div className="gate-legend">
         <span className="legend-item">
           <svg width="18" height="14" viewBox="0 0 18 14">
-            <path d="M0 0L9 0C18 0 18 14 9 14L0 14Z" fill="#FEE2E2" stroke="#F0524D" strokeWidth="1.5"/>
+            <path d="M0 0L9 0C18 0 18 14 9 14L0 14Z" fill="#FEE2E2" stroke="#EF4444" strokeWidth="1.5"/>
           </svg>
           AND
         </span>
@@ -267,9 +318,17 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
           </svg>
           Constant
         </span>
+        <span className="legend-wire">
+          <svg width="24" height="6" viewBox="0 0 24 6"><line x1="0" y1="3" x2="24" y2="3" stroke="#94A3B8" strokeWidth="1.5"/></svg>
+          1st input
+        </span>
+        <span className="legend-wire">
+          <svg width="24" height="6" viewBox="0 0 24 6"><line x1="0" y1="3" x2="24" y2="3" stroke="#CBD5E1" strokeWidth="1" strokeDasharray="4,3"/></svg>
+          2nd input
+        </span>
       </div>
 
-      {/* JointJS canvas — overflow hidden captures wheel for zoom */}
+      {/* JointJS canvas */}
       <div
         ref={canvasRef}
         className="joint-container"
@@ -305,7 +364,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
               b={tooltip.secondCoeff.toFixed(3)}, p={tooltip.productCoeff.toFixed(3)}
             </div>
             <div className="tooltip-inputs">
-              inputs: x[{tooltip.first}], y[{tooltip.second}]
+              inputs: wire[{tooltip.first}], wire[{tooltip.second}]
             </div>
             {tooltip.mean !== null && (
               <div className="tooltip-mean">E[wire] = {tooltip.mean.toFixed(4)}</div>
