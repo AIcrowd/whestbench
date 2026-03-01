@@ -51,58 +51,60 @@ export default function App() {
   const autoRunDone = useRef({ gt: false, sampling: false, meanprop: false });
 
   // ── Circuit ──
-  // Tour circuit is tiny (8×6=48 gates) — keep synchronous
+  // Tour circuit is tiny (8×6=48 gates) — always synchronous
   const tourCircuit = useMemo(
     () => randomCircuit(TOUR_PARAMS.width, TOUR_PARAMS.depth, TOUR_PARAMS.seed),
     []
   );
 
-  // Explore circuit: async via worker for large sizes, sync for small
-  const [circuit, setCircuit] = useState(null);
-  const [circuitLoading, setCircuitLoading] = useState(false);
-  const circuitGenIdRef = useRef(0);
-
-  useEffect(() => {
-    if (isTour) return;
-    const { width, depth, seed } = effectiveParams;
-    const size = width * depth;
-
-    if (size <= GRAPH_MODE_THRESHOLD) {
-      // Small circuit — generate synchronously (instant)
-      setCircuit(randomCircuit(width, depth, seed));
-      setCircuitLoading(false);
-      setEstimatorResults({});
-      setActiveLayer(undefined);
-    } else {
-      // Large circuit — generate in worker
-      const genId = ++circuitGenIdRef.current;
-      setCircuitLoading(true);
-      setEstimatorResults({});
-      setActiveLayer(undefined);
-      worker.run('randomCircuit', { width, depth, seed })
-        .then(({ circuit: c }) => {
-          // Only apply if this is still the latest request
-          if (genId === circuitGenIdRef.current) {
-            setCircuit(c);
-            setCircuitLoading(false);
-          }
-        });
-    }
-  }, [effectiveParams.width, effectiveParams.depth, effectiveParams.seed, isTour, worker]);
-
-  // When entering tour mode, clear explore circuit
-  useEffect(() => {
-    if (isTour) {
-      setCircuit(null);
-      setCircuitLoading(false);
-    }
-  }, [isTour]);
-
   const totalGates = effectiveParams.width * effectiveParams.depth;
   const useGraphMode = totalGates <= GRAPH_MODE_THRESHOLD;
 
-  // Effective circuit for display
-  const displayCircuit = isTour ? tourCircuit : circuit;
+  // Small circuits: synchronous via useMemo (instant, no useEffect needed)
+  // Large circuits: null initially, filled async from worker
+  const syncCircuit = useMemo(() => {
+    if (isTour) return null; // tour uses tourCircuit
+    if (totalGates > GRAPH_MODE_THRESHOLD) return null; // large → worker path
+    return randomCircuit(effectiveParams.width, effectiveParams.depth, effectiveParams.seed);
+  }, [effectiveParams.width, effectiveParams.depth, effectiveParams.seed, isTour, totalGates]);
+
+  // Async worker circuit for large sizes only
+  const [workerCircuit, setWorkerCircuit] = useState(null);
+  const [circuitLoading, setCircuitLoading] = useState(false);
+  const circuitGenIdRef = useRef(0);
+  const { run: workerRun } = worker;
+
+  useEffect(() => {
+    if (isTour || totalGates <= GRAPH_MODE_THRESHOLD) {
+      setWorkerCircuit(null);
+      setCircuitLoading(false);
+      return;
+    }
+    const { width, depth, seed } = effectiveParams;
+    const genId = ++circuitGenIdRef.current;
+    setCircuitLoading(true);
+    workerRun('randomCircuit', { width, depth, seed })
+      .then(({ circuit: c }) => {
+        if (genId === circuitGenIdRef.current) {
+          setWorkerCircuit(c);
+          setCircuitLoading(false);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveParams.width, effectiveParams.depth, effectiveParams.seed, isTour, workerRun]);
+
+  // Effective circuit: tour → tourCircuit, small explore → syncCircuit, large → workerCircuit
+  const displayCircuit = isTour ? tourCircuit : (syncCircuit || workerCircuit);
+
+  // Clear estimator results when circuit changes
+  const prevCircuitRef = useRef(displayCircuit);
+  useEffect(() => {
+    if (prevCircuitRef.current !== displayCircuit && !isTour) {
+      setEstimatorResults({});
+      setActiveLayer(undefined);
+    }
+    prevCircuitRef.current = displayCircuit;
+  }, [displayCircuit, isTour]);
 
   // Escape key clears activeLayer
   useEffect(() => {
