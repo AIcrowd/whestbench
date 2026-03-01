@@ -6,14 +6,14 @@ from typing import Any
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.widgets import Footer, Header, Static
+from textual.widgets import Footer, Header, TabbedContent, TabPane
 
 from .state import DashboardState, build_dashboard_state
-from .views.budgets import render_budgets_view
-from .views.data import render_data_view
-from .views.layers import render_layers_view
-from .views.performance import render_performance_view
-from .views.summary import render_summary_view
+from .views.budgets import build_budgets_pane, render_budgets_view
+from .views.data import build_data_pane, render_data_view
+from .views.layers import build_layers_pane, render_layers_view
+from .views.performance import build_performance_pane, render_performance_view
+from .views.summary import build_summary_pane, render_summary_view
 
 
 class DashboardApp(App[None]):
@@ -43,48 +43,50 @@ class DashboardApp(App[None]):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
-        yield Static("", id="dashboard-tabs")
-        yield Static("", id="dashboard-content")
+        with TabbedContent(initial="summary", id="dashboard-tabs-content"):
+            with TabPane("Summary", id="summary"):
+                yield build_summary_pane(self.state)
+            with TabPane("Budgets", id="budgets"):
+                yield build_budgets_pane(self.state)
+            with TabPane("Layers", id="layers"):
+                yield build_layers_pane(self.state)
+            with TabPane("Performance", id="performance"):
+                yield build_performance_pane(self.state)
+            with TabPane("Data", id="data"):
+                yield build_data_pane(self.state)
         yield Footer()
 
     def on_mount(self) -> None:
-        self._refresh_screen()
+        self._sync_tabs()
 
     def action_tab_summary(self) -> None:
         self.active_tab = "summary"
-        self._refresh_screen()
+        self._sync_tabs()
 
     def action_tab_budgets(self) -> None:
         self.active_tab = "budgets"
-        self._refresh_screen()
+        self._sync_tabs()
 
     def action_tab_layers(self) -> None:
         self.active_tab = "layers"
-        self._refresh_screen()
+        self._sync_tabs()
 
     def action_tab_performance(self) -> None:
         self.active_tab = "performance"
-        self._refresh_screen()
+        self._sync_tabs()
 
     def action_tab_data(self) -> None:
         self.active_tab = "data"
-        self._refresh_screen()
+        self._sync_tabs()
 
     def action_reload_report(self) -> None:
         self.state = build_dashboard_state(self.report)
-        self._refresh_screen()
+        self.refresh(recompose=True)
 
     def action_toggle_help(self) -> None:
         self.show_help_overlay = not self.show_help_overlay
-        self._refresh_screen()
-
-    def _refresh_screen(self) -> None:
-        if not self.is_mounted or not self._screen_stack:
-            return
-        tabs = self.query_one("#dashboard-tabs", Static)
-        tabs.update(self._tab_strip())
-        content = self.query_one("#dashboard-content", Static)
-        content.update(self._tab_content())
+        if self.show_help_overlay:
+            self.notify("Keys: 1-5 tabs | r reload | q/esc/Ctrl+C quit | ? help")
 
     def _tab_strip(self) -> str:
         order = ("summary", "budgets", "layers", "performance", "data")
@@ -110,6 +112,12 @@ class DashboardApp(App[None]):
         }
         renderer = mapping.get(self.active_tab, render_summary_view)
         return renderer(self.state)
+
+    def _sync_tabs(self) -> None:
+        if not self.is_mounted or not self._screen_stack:
+            return
+        tabs = self.query_one("#dashboard-tabs-content", TabbedContent)
+        tabs.active = self.active_tab
 
 
 def layout_mode_for_width(width: int) -> str:

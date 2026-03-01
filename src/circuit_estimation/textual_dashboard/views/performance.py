@@ -5,7 +5,13 @@ from __future__ import annotations
 from statistics import fmean
 from typing import Any
 
+from rich.table import Table
+from textual.containers import Horizontal, VerticalScroll
+from textual.widget import Widget
+from textual.widgets import Static
+
 from ..state import DashboardState
+from ..widgets import panel, sparkline_block
 
 
 def render_performance_view(state: DashboardState) -> str:
@@ -34,6 +40,86 @@ def render_performance_view(state: DashboardState) -> str:
         "Profile Memory Plot\n"
         "- rss_bytes and peak_rss_bytes by call index\n"
     )
+
+
+def build_performance_pane(state: DashboardState) -> Widget:
+    """Build the Performance tab with runtime and memory plots."""
+
+    if not state.derived.has_profile:
+        return VerticalScroll(
+            panel(
+                "Performance",
+                Static("No profiling calls available for this run.", classes="insight-text"),
+                id="performance-empty",
+            ),
+            classes="tab-scroll",
+            id="performance-pane",
+        )
+
+    summary = panel(
+        "Profile Summary",
+        Static(_profile_table(state), classes="table-static"),
+        id="performance-summary",
+    )
+    plots = Horizontal(
+        sparkline_block(
+            "Wall Time (s)",
+            state.derived.profile_wall_s,
+            note=_range_note(state.derived.profile_wall_s, "wall"),
+            id="performance-plot-wall",
+            min_color="#67e8f9",
+            max_color="#38bdf8",
+        ),
+        sparkline_block(
+            "CPU Time (s)",
+            state.derived.profile_cpu_s,
+            note=_range_note(state.derived.profile_cpu_s, "cpu"),
+            id="performance-plot-cpu",
+            min_color="#a7f3d0",
+            max_color="#34d399",
+        ),
+        sparkline_block(
+            "Memory (MB)",
+            state.derived.profile_peak_rss_mb,
+            note=_range_note(state.derived.profile_peak_rss_mb, "peak rss"),
+            id="performance-plot-memory",
+            min_color="#fcd34d",
+            max_color="#fb923c",
+        ),
+        classes="pane-row",
+        id="performance-plot-row",
+    )
+    return VerticalScroll(summary, plots, classes="tab-scroll", id="performance-pane")
+
+
+def _profile_table(state: DashboardState) -> Table:
+    table = Table(box=None, expand=True, pad_edge=False, header_style="bold #9ca3af")
+    table.add_column("metric")
+    table.add_column("value", justify="right")
+    table.add_row("calls", str(len(state.derived.profile_wall_s)))
+    table.add_row(
+        "mean wall(s)",
+        f"{sum(state.derived.profile_wall_s) / len(state.derived.profile_wall_s) if state.derived.profile_wall_s else 0.0:.6f}",
+    )
+    table.add_row(
+        "mean cpu(s)",
+        f"{sum(state.derived.profile_cpu_s) / len(state.derived.profile_cpu_s) if state.derived.profile_cpu_s else 0.0:.6f}",
+    )
+    table.add_row(
+        "mean rss(MB)",
+        f"{sum(state.derived.profile_rss_mb) / len(state.derived.profile_rss_mb) if state.derived.profile_rss_mb else 0.0:.2f}",
+    )
+    table.add_row(
+        "mean peak(MB)",
+        f"{sum(state.derived.profile_peak_rss_mb) / len(state.derived.profile_peak_rss_mb) if state.derived.profile_peak_rss_mb else 0.0:.2f}",
+    )
+    return table
+
+
+def _range_note(values: list[float], label: str) -> str:
+    if not values:
+        return f"{label}: n/a"
+    return f"{label}: {min(values):.6f} -> {max(values):.6f}"
 
 
 def _as_float(value: Any) -> float:
