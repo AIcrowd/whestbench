@@ -8,9 +8,11 @@ import EstimatorComparison from "./components/EstimatorComparison";
 import EstimatorRunner from "./components/EstimatorRunner";
 import GateStats from "./components/GateStats";
 import NarrativeCard, { Ewire } from "./components/NarrativeCard";
+import PerfOverlay from "./components/PerfOverlay";
 import SignalHeatmap from "./components/SignalHeatmap";
 import StepIndicator from "./components/StepIndicator";
 import WireStats from "./components/WireStats";
+import { perfEnd, perfStart } from "./perf";
 import { useCircuitWorker } from "./useWorker";
 
 const DEFAULT_PARAMS = { width: 8, depth: 6, seed: 42 };
@@ -63,9 +65,12 @@ export default function App() {
   // Small circuits: synchronous via useMemo (instant, no useEffect needed)
   // Large circuits: null initially, filled async from worker
   const syncCircuit = useMemo(() => {
-    if (isTour) return null; // tour uses tourCircuit
-    if (totalGates > GRAPH_MODE_THRESHOLD) return null; // large → worker path
-    return randomCircuit(effectiveParams.width, effectiveParams.depth, effectiveParams.seed);
+    if (isTour) return null;
+    if (totalGates > GRAPH_MODE_THRESHOLD) return null;
+    perfStart('circuit-gen');
+    const c = randomCircuit(effectiveParams.width, effectiveParams.depth, effectiveParams.seed);
+    perfEnd('circuit-gen');
+    return c;
   }, [effectiveParams.width, effectiveParams.depth, effectiveParams.seed, isTour, totalGates]);
 
   // Async worker circuit for large sizes only
@@ -430,6 +435,8 @@ export default function App() {
           <code>tools/circuit-explorer</code>
         </p>
       </footer>
+
+      <PerfOverlay />
     </div>
   );
 }
