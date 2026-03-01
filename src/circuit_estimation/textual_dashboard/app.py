@@ -20,6 +20,7 @@ class DashboardApp(App[None]):
     """Dashboard shell with tab routing and global key bindings."""
 
     TITLE = "Circuit Estimation Dashboard"
+    CSS_PATH = "dashboard.tcss"
     BINDINGS = [
         Binding("1", "tab_summary", "Summary", show=True),
         Binding("2", "tab_budgets", "Budgets", show=True),
@@ -85,6 +86,7 @@ class DashboardApp(App[None]):
 
     def _tab_strip(self) -> str:
         order = ("summary", "budgets", "layers", "performance", "data")
+        layout_mode = layout_mode_for_width(max(80, self.size.width))
         labels = []
         for name in order:
             label = name.capitalize()
@@ -92,7 +94,7 @@ class DashboardApp(App[None]):
                 labels.append(f"[ {label} ]")
             else:
                 labels.append(label)
-        return "  |  ".join(labels)
+        return f"{'  |  '.join(labels)}\nLayout: {layout_mode}"
 
     def _tab_content(self) -> str:
         if self.show_help_overlay:
@@ -106,3 +108,13 @@ class DashboardApp(App[None]):
         }
         renderer = mapping.get(self.active_tab, render_summary_view)
         return renderer(self.state)
+
+
+def layout_mode_for_width(width: int) -> str:
+    """Classify dashboard layout for responsive rendering."""
+
+    if width >= 150:
+        return "wide"
+    if width >= 100:
+        return "medium"
+    return "narrow"
