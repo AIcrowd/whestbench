@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 import numpy as np
@@ -10,6 +11,14 @@ from tests.helpers import make_circuit, make_layer
 
 def _examples_dir() -> Path:
     return Path(__file__).resolve().parents[1] / "examples" / "estimators"
+
+
+def _estimator_docstring(path: Path) -> str:
+    module = ast.parse(path.read_text(encoding="utf-8"))
+    for node in module.body:
+        if isinstance(node, ast.ClassDef) and node.name == "Estimator":
+            return ast.get_docstring(node) or ""
+    raise AssertionError(f"Estimator class not found in {path}")
 
 
 def test_mean_example_estimator_returns_depth_width_tensor() -> None:
@@ -81,3 +90,41 @@ def test_combined_example_switches_mode_by_budget() -> None:
     high_budget = estimator.predict(circuit, budget=1000)
     np.testing.assert_allclose(low_budget, np.array([[0.0]], dtype=np.float32), atol=1e-6)
     np.testing.assert_allclose(high_budget, np.array([[1.0]], dtype=np.float32), atol=1e-5)
+
+
+def test_example_estimators_do_not_expose_module_level_helper_functions() -> None:
+    files = [
+        _examples_dir() / "mean_propagation.py",
+        _examples_dir() / "covariance_propagation.py",
+        _examples_dir() / "combined_estimator.py",
+    ]
+    for path in files:
+        module = ast.parse(path.read_text(encoding="utf-8"))
+        top_level_functions = [
+            node.name for node in module.body if isinstance(node, ast.FunctionDef)
+        ]
+        assert top_level_functions == [], (
+            f"{path.name} should keep helper logic inside Estimator class methods, "
+            f"found top-level functions: {top_level_functions}"
+        )
+
+
+def test_example_estimators_have_tutorial_quality_class_docstrings() -> None:
+    required_sections = [
+        "overview",
+        "math",
+        "ascii",
+        "complexity",
+        "pitfall",
+    ]
+    files = [
+        _examples_dir() / "mean_propagation.py",
+        _examples_dir() / "covariance_propagation.py",
+        _examples_dir() / "combined_estimator.py",
+    ]
+    for path in files:
+        doc = _estimator_docstring(path).lower()
+        for section in required_sections:
+            assert section in doc, (
+                f"{path.name} Estimator docstring should include tutorial section: {section}"
+            )
