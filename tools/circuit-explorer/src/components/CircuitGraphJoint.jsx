@@ -168,8 +168,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
                 targetMarker: { d: "" },
               },
             },
-            router: { name: "manhattan", args: { step: 10, padding: 8 } },
-            connector: { name: "rounded", args: { radius: 4 } },
+            connector: { name: "smooth" },
           })
         );
 
@@ -186,8 +185,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
                 targetMarker: { d: "" },
               },
             },
-            router: { name: "manhattan", args: { step: 10, padding: 8 } },
-            connector: { name: "rounded", args: { radius: 4 } },
+            connector: { name: "smooth" },
           })
         );
       }
