@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import io
 import json
+from typing import Any, cast
 
 import pytest
+from rich.console import Console
 
 import circuit_estimation.reporting as reporting
 from circuit_estimation.reporting import render_agent_report, render_human_report
@@ -96,7 +99,7 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     assert "Circuit Estimation Report" in rendered
     assert "Use --agent-mode for JSON output" in rendered
     assert "Run Context" in rendered
-    assert "Score Summary" in rendered
+    assert "Readiness Scorecard" in rendered
     assert "Budget Breakdown" in rendered
     assert "Layer Diagnostics" in rendered
     assert "Budget Frontier Plot" in rendered
@@ -110,6 +113,36 @@ def test_human_report_uses_three_column_top_row_on_wide_layout() -> None:
     assert "Run Context" in rendered
     assert "Readiness" in rendered
     assert "Hardware & Runtime" in rendered
+
+
+def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:
+    report = _sample_report(include_profile=False)
+    run_meta = cast(dict[str, Any], report["run_meta"])
+    run_meta["host"] = {
+        "hostname": "example-host",
+        "os": "Darwin",
+        "os_release": "25.3.0",
+        "platform": "macOS-15-arm64",
+        "machine": "arm64",
+        "python_version": "3.13.7",
+    }
+
+    run_context = _render_panel(reporting._run_context_panel(report))
+    hardware = _render_panel(reporting._hardware_runtime_panel(report))
+
+    assert "[host.hostname]" not in run_context
+    assert "[host.os]" not in run_context
+    assert "[host.os_release]" not in run_context
+    assert "[host.platform]" not in run_context
+    assert "[host.machine]" not in run_context
+    assert "[host.python_version]" not in run_context
+
+    assert "[host.hostname]" in hardware
+    assert "[host.os]" in hardware
+    assert "[host.os_release]" in hardware
+    assert "[host.platform]" in hardware
+    assert "[host.machine]" in hardware
+    assert "[host.python_version]" in hardware
 
 
 def test_render_human_mode_includes_profile_section_when_available() -> None:
@@ -203,3 +236,10 @@ def test_plotext_chart_uses_high_contrast_sparse_scatter_style(
     assert spy.ticks_color_calls[-1] == "white"
     assert spy.plot_calls == []
     assert spy.scatter_calls[-1][3] == "●"
+
+
+def _render_panel(panel: object) -> str:
+    buffer = io.StringIO()
+    console = Console(record=True, file=buffer, force_terminal=True, color_system="truecolor", width=120)
+    console.print(panel)
+    return buffer.getvalue()
