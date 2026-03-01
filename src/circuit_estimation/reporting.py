@@ -17,7 +17,6 @@ from rich.align import Align
 from rich.columns import Columns
 from rich.console import Console, Group
 from rich.panel import Panel
-from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 
@@ -26,14 +25,13 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     _plotext = None
 
+
 def render_agent_report(report: dict[str, Any]) -> str:
     """Return stable pretty JSON for machine parsing."""
     return f"{json.dumps(report, indent=2)}\n"
 
 
-def render_human_report(
-    report: dict[str, Any], *, show_diagnostic_plots: bool = False
-) -> str:
+def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
     buffer = io.StringIO()
     width = _dashboard_width()
@@ -168,12 +166,8 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
     results = report.get("results", {})
     final_score = _as_float(results.get("final_score", 0.0))
     by_budget = _budget_rows(report)
-    budget_scores = [_as_float(entry.get("score", 0.0)) for entry in by_budget]
-    mse_means = [
-        fmean(_to_float_list(entry.get("mse_by_layer", [])))
-        for entry in by_budget
-        if _to_float_list(entry.get("mse_by_layer", []))
-    ]
+    budget_scores = [_as_float(entry.get("adjusted_mse", 0.0)) for entry in by_budget]
+    mse_means = [_as_float(entry.get("mse_mean", 0.0)) for entry in by_budget]
     summary = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
     summary.add_column("metric")
     summary.add_column("value", justify="right")
@@ -217,25 +211,25 @@ def _render_budget_section(
 
 def _budget_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> Panel:
     by_budget = _budget_rows(report)
-    best_score = min((_as_float(entry.get("score", 0.0)) for entry in by_budget), default=0.0)
+    best_score = min(
+        (_as_float(entry.get("adjusted_mse", 0.0)) for entry in by_budget), default=0.0
+    )
 
     table = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
     table.add_column("Budget [budget]", justify="right")
-    table.add_column("Score [score]", justify="right")
-    table.add_column("MSE Mean [avg_mse]", justify="right")
-    table.add_column("Time Ratio Mean [avg_time_ratio]", justify="right")
-    table.add_column("Effective Time Mean (s) [avg_effective_time_s]", justify="right")
+    table.add_column("Score [adjusted_mse]", justify="right")
+    table.add_column("MSE Mean [mse_mean]", justify="right")
+    table.add_column("Call Time Ratio Mean [call_time_ratio_mean]", justify="right")
+    table.add_column("Effective Call Time Mean (s) [call_effective_time_s_mean]", justify="right")
     for entry in by_budget:
-        mse = _to_float_list(entry.get("mse_by_layer", []))
-        time_ratio = _to_float_list(entry.get("time_ratio_by_layer", []))
-        effective = _to_float_list(entry.get("effective_time_s_by_layer", []))
-        row_style = "bold bright_green" if _as_float(entry.get("score", 0.0)) == best_score else ""
+        score = _as_float(entry.get("adjusted_mse", 0.0))
+        row_style = "bold bright_green" if score == best_score else ""
         table.add_row(
             str(entry.get("budget", "n/a")),
-            _fmt_float(entry.get("score", 0.0), 8),
-            _fmt_float(fmean(mse) if mse else 0.0, 8),
-            _fmt_float(fmean(time_ratio) if time_ratio else 0.0, 4),
-            _fmt_float(fmean(effective) if effective else 0.0, 6),
+            _fmt_float(score, 8),
+            _fmt_float(entry.get("mse_mean", 0.0), 8),
+            _fmt_float(entry.get("call_time_ratio_mean", 0.0), 4),
+            _fmt_float(entry.get("call_effective_time_s_mean", 0.0), 6),
             style=row_style,
         )
 
@@ -256,12 +250,7 @@ def _render_layer_section(
 def _layer_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> Panel:
     by_budget = _budget_rows(report)
     mse_series = [_to_float_list(entry.get("mse_by_layer", [])) for entry in by_budget]
-    ratio_series = [_to_float_list(entry.get("time_ratio_by_layer", [])) for entry in by_budget]
-    adj_series = [_to_float_list(entry.get("adjusted_mse_by_layer", [])) for entry in by_budget]
-
     avg_mse = _mean_series(mse_series)
-    avg_ratio = _mean_series(ratio_series)
-    avg_adj = _mean_series(adj_series)
 
     table = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
     table.add_column("metric", style="bold white")
@@ -271,25 +260,18 @@ def _layer_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = F
     table.add_column("max", justify="right")
     table.add_column("mean", justify="right")
 
-    for human_name, code_name, values in (
-        ("MSE by Layer", "mse_by_layer", avg_mse),
-        ("Time Ratio by Layer", "time_ratio_by_layer", avg_ratio),
-        ("Adjusted MSE by Layer", "adjusted_mse_by_layer", avg_adj),
-    ):
-        table.add_row(
-            _label_with_code(human_name, code_name, "bold white"),
-            _fmt_float(_percentile(values, 0.05) if values else 0.0, 6),
-            _fmt_float(min(values) if values else 0.0, 6),
-            _fmt_float(_percentile(values, 0.95) if values else 0.0, 6),
-            _fmt_float(max(values) if values else 0.0, 6),
-            _fmt_float(fmean(values) if values else 0.0, 6),
-        )
+    table.add_row(
+        _label_with_code("MSE by Layer", "mse_by_layer", "bold white"),
+        _fmt_float(_percentile(avg_mse, 0.05) if avg_mse else 0.0, 6),
+        _fmt_float(min(avg_mse) if avg_mse else 0.0, 6),
+        _fmt_float(_percentile(avg_mse, 0.95) if avg_mse else 0.0, 6),
+        _fmt_float(max(avg_mse) if avg_mse else 0.0, 6),
+        _fmt_float(fmean(avg_mse) if avg_mse else 0.0, 6),
+    )
 
     body: list[Any] = [Align.center(table)]
     if show_diagnostic_plots:
-        accuracy_plot = _layer_trend_plot_panel(avg_mse, avg_adj)
-        runtime_plot = _layer_runtime_plot_panel(avg_ratio)
-        body.append(Columns([accuracy_plot, runtime_plot], equal=True, expand=True))
+        body.append(_layer_trend_plot_panel(avg_mse))
     return Panel(Group(*body), title="Layer Diagnostics", border_style="bright_magenta")
 
 
@@ -300,7 +282,6 @@ def _render_profile_section(
     if not isinstance(profile_calls, list) or not profile_calls:
         return
 
-    console.print(Rule("Profiling", style="bright_cyan"))
     wall = [
         _as_float(entry.get("wall_time_s", 0.0))
         for entry in profile_calls
@@ -381,13 +362,16 @@ def _render_profile_section(
 
     profile_tables = Columns(
         [
-            Panel(Align.center(summary), title="Aggregate Metrics", border_style="bright_blue"),
-            Panel(Align.center(dist), title="Distribution Snapshot", border_style="bright_blue"),
+            Panel(Align.center(summary), title="Summary", border_style="bright_blue"),
+            Panel(Align.center(dist), title="Distribution", border_style="bright_blue"),
         ],
+        align="center",
         equal=True,
-        expand=True,
+        expand=False,
     )
-    console.print(Panel(profile_tables, title="Profile Summary", border_style="bright_blue"))
+    console.print(
+        Panel(Align.center(profile_tables), title="Profile", border_style="bright_blue")
+    )
     if show_diagnostic_plots:
         runtime_plot = _profile_runtime_plot_panel(wall, cpu)
         memory_plot = _profile_memory_plot_panel(rss, peak)
@@ -396,19 +380,14 @@ def _render_profile_section(
 
 def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
     budgets = [_as_float(entry.get("budget", 0.0)) for entry in by_budget]
-    scores = [_as_float(entry.get("score", 0.0)) for entry in by_budget]
-    mean_mse = [
-        fmean(_to_float_list(entry.get("mse_by_layer", [])))
-        if _to_float_list(entry.get("mse_by_layer", []))
-        else 0.0
-        for entry in by_budget
-    ]
+    scores = [_as_float(entry.get("adjusted_mse", 0.0)) for entry in by_budget]
+    mean_mse = [_as_float(entry.get("mse_mean", 0.0)) for entry in by_budget]
     return _make_plot_panel(
         title="Budget Frontier Plot",
         x=budgets,
         series=[
-            ("score", scores, "green+"),
-            ("avg_mse", mean_mse, "cyan+"),
+            ("adjusted_mse", scores, "green+"),
+            ("mse_mean", mean_mse, "cyan+"),
         ],
         x_label="budget",
         y_label="accuracy metrics",
@@ -419,25 +398,17 @@ def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
 
 def _budget_runtime_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
     budgets = [_as_float(entry.get("budget", 0.0)) for entry in by_budget]
-    mean_ratio = [
-        fmean(_to_float_list(entry.get("time_ratio_by_layer", [])))
-        if _to_float_list(entry.get("time_ratio_by_layer", []))
-        else 0.0
-        for entry in by_budget
-    ]
+    mean_ratio = [_as_float(entry.get("call_time_ratio_mean", 0.0)) for entry in by_budget]
     mean_effective = [
-        fmean(_to_float_list(entry.get("effective_time_s_by_layer", [])))
-        if _to_float_list(entry.get("effective_time_s_by_layer", []))
-        else 0.0
-        for entry in by_budget
+        _as_float(entry.get("call_effective_time_s_mean", 0.0)) for entry in by_budget
     ]
 
     return _make_plot_panel(
         title="Budget Runtime Plot",
         x=budgets,
         series=[
-            ("avg_time_ratio_norm", _normalize(mean_ratio), "yellow+"),
-            ("avg_effective_time_norm", _normalize(mean_effective), "magenta+"),
+            ("call_time_ratio_mean_norm", _normalize(mean_ratio), "yellow+"),
+            ("call_effective_time_s_mean_norm", _normalize(mean_effective), "magenta+"),
         ],
         x_label="budget",
         y_label="normalized runtime [0,1]",
@@ -446,28 +417,14 @@ def _budget_runtime_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
     )
 
 
-def _layer_trend_plot_panel(avg_mse: Sequence[float], avg_adj: Sequence[float]) -> Panel:
+def _layer_trend_plot_panel(avg_mse: Sequence[float]) -> Panel:
     x = list(range(len(avg_mse)))
     return _make_plot_panel(
         title="Layer Trend Plot",
         x=x,
-        series=[
-            ("mse", avg_mse, "cyan+"),
-            ("adjusted_mse", avg_adj, "green+"),
-        ],
+        series=[("mse_by_layer", avg_mse, "cyan+")],
         x_label="layer",
-        y_label="accuracy metrics",
-    )
-
-
-def _layer_runtime_plot_panel(avg_ratio: Sequence[float]) -> Panel:
-    x = list(range(len(avg_ratio)))
-    return _make_plot_panel(
-        title="Layer Runtime Plot",
-        x=x,
-        series=[("time_ratio", avg_ratio, "blue+")],
-        x_label="layer",
-        y_label="time ratio",
+        y_label="mse",
     )
 
 

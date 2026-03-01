@@ -54,8 +54,12 @@ def test_sampling_baseline_time_returns_depth_entries() -> None:
 
 
 def test_score_estimator_applies_timeout_zeroing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(scoring, "random_circuit", lambda n, d: _constant_circuit(n=n, d=d, value=1.0))
-    monkeypatch.setattr(scoring, "sampling_baseline_time", lambda n_samples, width, depth: [1.0] * depth)
+    monkeypatch.setattr(
+        scoring, "random_circuit", lambda n, d: _constant_circuit(n=n, d=d, value=1.0)
+    )
+    monkeypatch.setattr(
+        scoring, "sampling_baseline_time", lambda n_samples, width, depth: [1.0] * depth
+    )
     monkeypatch.setattr(scoring, "_rss_bytes", lambda: 0)
     monkeypatch.setattr(scoring, "_peak_rss_bytes", lambda: 0)
 
@@ -75,8 +79,12 @@ def test_score_estimator_applies_timeout_zeroing(monkeypatch: pytest.MonkeyPatch
 
 
 def test_score_estimator_applies_minimum_time_floor(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(scoring, "random_circuit", lambda n, d: _constant_circuit(n=n, d=d, value=1.0))
-    monkeypatch.setattr(scoring, "sampling_baseline_time", lambda n_samples, width, depth: [1.0] * depth)
+    monkeypatch.setattr(
+        scoring, "random_circuit", lambda n, d: _constant_circuit(n=n, d=d, value=1.0)
+    )
+    monkeypatch.setattr(
+        scoring, "sampling_baseline_time", lambda n_samples, width, depth: [1.0] * depth
+    )
     monkeypatch.setattr(scoring, "_rss_bytes", lambda: 0)
     monkeypatch.setattr(scoring, "_peak_rss_bytes", lambda: 0)
 

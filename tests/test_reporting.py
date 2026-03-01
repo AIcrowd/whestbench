@@ -44,25 +44,23 @@ def _sample_report(*, include_profile: bool = False) -> dict[str, object]:
             "by_budget_raw": [
                 {
                     "budget": 10,
-                    "score": 0.2,
                     "mse_by_layer": [0.1, 0.2, 0.3],
-                    "time_ratio_by_layer": [1.0, 1.1, 1.2],
-                    "adjusted_mse_by_layer": [0.1, 0.22, 0.36],
-                    "timeout_flag_by_layer": [0.0, 0.0, 0.0],
-                    "time_floor_flag_by_layer": [0.0, 0.0, 0.0],
-                    "baseline_time_s_by_layer": [0.01, 0.01, 0.01],
-                    "effective_time_s_by_layer": [0.01, 0.011, 0.012],
+                    "mse_mean": 0.2,
+                    "adjusted_mse": 0.22,
+                    "call_time_ratio_mean": 1.1,
+                    "call_effective_time_s_mean": 0.011,
+                    "timeout_rate": 0.0,
+                    "time_floor_rate": 0.0,
                 },
                 {
                     "budget": 100,
-                    "score": 0.046,
                     "mse_by_layer": [0.05, 0.04, 0.03],
-                    "time_ratio_by_layer": [1.0, 0.9, 0.8],
-                    "adjusted_mse_by_layer": [0.05, 0.036, 0.024],
-                    "timeout_flag_by_layer": [0.0, 0.0, 0.0],
-                    "time_floor_flag_by_layer": [0.0, 0.0, 0.0],
-                    "baseline_time_s_by_layer": [0.02, 0.02, 0.02],
-                    "effective_time_s_by_layer": [0.02, 0.018, 0.016],
+                    "mse_mean": 0.04,
+                    "adjusted_mse": 0.036,
+                    "call_time_ratio_mean": 0.9,
+                    "call_effective_time_s_mean": 0.018,
+                    "timeout_rate": 0.0,
+                    "time_floor_rate": 0.0,
                 },
             ],
         },
@@ -139,7 +137,9 @@ def test_human_report_uses_three_column_top_row_on_wide_layout(
         for line in title_lines
     )
     assert not any(
-        "Hardware & Runtime" in line and "Run Context" not in line and "Readiness Scorecard" not in line
+        "Hardware & Runtime" in line
+        and "Run Context" not in line
+        and "Readiness Scorecard" not in line
         for line in title_lines
     )
 
@@ -161,7 +161,9 @@ def test_human_report_uses_two_column_plus_stack_layout_on_medium_width(
         for line in title_lines
     )
     assert any(
-        "Hardware & Runtime" in line and "Run Context" not in line and "Readiness Scorecard" not in line
+        "Hardware & Runtime" in line
+        and "Run Context" not in line
+        and "Readiness Scorecard" not in line
         for line in title_lines
     )
 
@@ -228,7 +230,9 @@ def test_budget_and_layer_tables_are_centered() -> None:
 
 
 def test_budget_lane_contains_table_and_two_plots() -> None:
-    rendered = render_human_report(_sample_report(include_profile=False), show_diagnostic_plots=True)
+    rendered = render_human_report(
+        _sample_report(include_profile=False), show_diagnostic_plots=True
+    )
 
     assert "Budget" in rendered
     assert "Budget Frontier Plot" in rendered
@@ -236,45 +240,59 @@ def test_budget_lane_contains_table_and_two_plots() -> None:
 
 
 def test_layer_lane_contains_stats_and_trend_plots() -> None:
-    rendered = render_human_report(_sample_report(include_profile=False), show_diagnostic_plots=True)
+    rendered = render_human_report(
+        _sample_report(include_profile=False), show_diagnostic_plots=True
+    )
 
     assert "Layer Diagnostics" in rendered
     assert "Layer Trend Plot" in rendered
-    assert "Layer Runtime Plot" in rendered
+    assert "Layer Runtime Plot" not in rendered
 
 
 def test_budget_plots_render_side_by_side_below_full_width_table(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("COLUMNS", "220")
-    rendered = render_human_report(_sample_report(include_profile=False), show_diagnostic_plots=True)
+    rendered = render_human_report(
+        _sample_report(include_profile=False), show_diagnostic_plots=True
+    )
     plain = _strip_ansi(rendered)
     lines = plain.splitlines()
 
     table_line = next(i for i, line in enumerate(lines) if "Budget" in line)
     plot_line = next(
-        i for i, line in enumerate(lines) if "Budget Frontier Plot" in line and "Budget Runtime Plot" in line
+        i
+        for i, line in enumerate(lines)
+        if "Budget Frontier Plot" in line and "Budget Runtime Plot" in line
     )
     assert table_line < plot_line
 
 
-def test_layer_plots_render_side_by_side(
+def test_layer_plot_renders_when_enabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("COLUMNS", "220")
-    rendered = render_human_report(_sample_report(include_profile=False), show_diagnostic_plots=True)
-    plain = _strip_ansi(rendered)
-    assert any(
-        "Layer Trend Plot" in line and "Layer Runtime Plot" in line
-        for line in plain.splitlines()
+    rendered = render_human_report(
+        _sample_report(include_profile=False), show_diagnostic_plots=True
     )
+    plain = _strip_ansi(rendered)
+    assert "Layer Trend Plot" in plain
+    assert "Layer Runtime Plot" not in plain
+
+
+def test_layer_diagnostics_are_mse_only() -> None:
+    rendered = _strip_ansi(render_human_report(_sample_report(include_profile=False)))
+    assert "MSE by Layer [mse_by_layer]" in rendered
+    assert "Time Ratio by Layer [time_ratio_by_layer]" not in rendered
+    assert "Adjusted MSE by Layer [adjusted_mse_by_layer]" not in rendered
 
 
 def test_render_human_mode_includes_profile_section_when_available() -> None:
     rendered = render_human_report(_sample_report(include_profile=True))
 
-    assert "Profiling" in rendered
-    assert "Profile Summary" in rendered
+    assert "Profile" in rendered
+    assert "Profiling" not in rendered
+    assert "Profile Summary" not in rendered
     assert "Profile Runtime Plot" not in rendered
     assert "Profile Memory Plot" not in rendered
     assert "wall_time_s" in rendered
@@ -305,17 +323,17 @@ def test_profile_summary_contains_two_structured_side_by_side_tables(
     rendered = render_human_report(_sample_report(include_profile=True))
     plain = _strip_ansi(rendered)
 
-    assert "Aggregate Metrics" in plain
-    assert "Distribution Snapshot" in plain
+    assert "Summary" in plain
+    assert "Distribution" in plain
     assert any(
-        "Aggregate Metrics" in line and "Distribution Snapshot" in line
-        for line in plain.splitlines()
+        "Summary" in line and "Distribution" in line for line in plain.splitlines()
     )
 
 
 def test_profile_summary_prints_without_plots_by_default() -> None:
     rendered = render_human_report(_sample_report(include_profile=True))
-    assert "Profile Summary" in rendered
+    assert "Profile" in rendered
+    assert "Profile Summary" not in rendered
     assert "Profile Runtime Plot" not in rendered
     assert "Profile Memory Plot" not in rendered
 
@@ -449,12 +467,22 @@ def test_plotext_chart_uses_hd_line_style_for_dense_series(monkeypatch: pytest.M
             return None
 
         def plot(
-            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+            self,
+            x: list[float],
+            y: list[float],
+            *,
+            color: str | None = None,
+            marker: str | None = None,
         ) -> None:
             self.plot_calls.append((x, y, color, marker))
 
         def scatter(
-            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+            self,
+            x: list[float],
+            y: list[float],
+            *,
+            color: str | None = None,
+            marker: str | None = None,
         ) -> None:
             self.scatter_calls.append((x, y, color, marker))
 
@@ -527,12 +555,22 @@ def test_plotext_chart_uses_line_marker_for_sparse_series_when_requested(
             return None
 
         def plot(
-            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+            self,
+            x: list[float],
+            y: list[float],
+            *,
+            color: str | None = None,
+            marker: str | None = None,
         ) -> None:
             self.plot_calls.append((x, y, color, marker))
 
         def scatter(
-            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+            self,
+            x: list[float],
+            y: list[float],
+            *,
+            color: str | None = None,
+            marker: str | None = None,
         ) -> None:
             self.scatter_calls.append((x, y, color, marker))
 
@@ -602,12 +640,22 @@ def test_plotext_chart_sanitizes_background_ansi_codes(
             return None
 
         def plot(
-            self, _x: list[float], _y: list[float], *, color: str | None = None, marker: str | None = None
+            self,
+            _x: list[float],
+            _y: list[float],
+            *,
+            color: str | None = None,
+            marker: str | None = None,
         ) -> None:
             return None
 
         def scatter(
-            self, _x: list[float], _y: list[float], *, color: str | None = None, marker: str | None = None
+            self,
+            _x: list[float],
+            _y: list[float],
+            *,
+            color: str | None = None,
+            marker: str | None = None,
         ) -> None:
             return None
 
@@ -649,13 +697,16 @@ def test_dashboard_width_uses_terminal_columns(monkeypatch: pytest.MonkeyPatch) 
     assert reporting._dashboard_width() == 80
 
 
-def test_layer_runtime_plot_legend_style_matches_line_color() -> None:
+def test_plot_legend_styles_map_to_rich_colors() -> None:
     assert reporting._rich_style_for_plot_color("blue+") == "bright_blue"
+    assert reporting._rich_style_for_plot_color("yellow+") == "bright_yellow"
 
 
 def _render_panel(panel: object) -> str:
     buffer = io.StringIO()
-    console = Console(record=True, file=buffer, force_terminal=True, color_system="truecolor", width=120)
+    console = Console(
+        record=True, file=buffer, force_terminal=True, color_system="truecolor", width=120
+    )
     console.print(panel)
     return buffer.getvalue()
 
