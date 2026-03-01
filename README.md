@@ -1,5 +1,13 @@
 This repository is intended to illustrate the basic mechanics of the competition.
 
+## Planning Context for Future Agents
+
+If you are iterating on starter-kit/evaluator design, begin with:
+
+- `docs/context/README.md`
+
+This folder contains distilled challenge context, MVP technical notes, infrastructure research, and open questions.
+
 ## Getting Started
 
 ### Prerequisites
