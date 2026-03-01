@@ -69,7 +69,7 @@ function makeRng(seed = 42) {
  * Returns: Float32Array[] — one per layer, each of length n.
  * Compatible with the CPU empiricalMean function's return type.
  */
-export async function empiricalMeanTF(circuit, trials, seed = 99) {
+export async function empiricalMeanTF(circuit, trials, seed = 99, onProgress = null) {
   await initTF();
 
   // Generate random ±1 inputs on CPU with seedable RNG, then transfer to GPU
@@ -81,8 +81,9 @@ export async function empiricalMeanTF(circuit, trials, seed = 99) {
 
   let x = tf.tensor2d(inputData, [trials, circuit.n]);
   const means = [];
+  const totalLayers = circuit.gates.length;
 
-  for (let li = 0; li < circuit.gates.length; li++) {
+  for (let li = 0; li < totalLayers; li++) {
     const layer = circuit.gates[li];
 
     // Extract layer data into plain JS arrays to avoid typed array issues
@@ -132,6 +133,11 @@ export async function empiricalMeanTF(circuit, trials, seed = 99) {
     // Dispose old x (but tidy should have cleaned intermediates)
     x.dispose();
     x = newX;
+
+    // Report progress (negligible cost — one function call per layer)
+    if (onProgress) {
+      onProgress((li + 1) / totalLayers);
+    }
   }
 
   // Dispose final layer output
