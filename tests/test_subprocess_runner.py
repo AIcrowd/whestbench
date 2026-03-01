@@ -53,10 +53,10 @@ def test_subprocess_runner_times_out_predict_calls_and_returns_timeout_status(
         """
         import time
         import numpy as np
-        from circuit_estimation import BaseEstimator
+        from circuit_estimation import BaseEstimator, Circuit
 
         class Estimator(BaseEstimator):
-            def predict(self, circuit, budget: int):
+            def predict(self, circuit: Circuit, budget: int):
                 time.sleep(0.2)
                 return np.zeros((circuit.d, circuit.n), dtype=np.float32)
         """,
@@ -85,10 +85,10 @@ def test_subprocess_runner_reports_protocol_errors_cleanly(tmp_path: Path) -> No
     module_path = _write_estimator_module(
         tmp_path,
         """
-        from circuit_estimation import BaseEstimator
+        from circuit_estimation import BaseEstimator, Circuit
 
         class Estimator(BaseEstimator):
-            def predict(self, circuit, budget: int):
+            def predict(self, circuit: Circuit, budget: int):
                 return [[1.0 for _ in range(circuit.n)] for _ in range(circuit.d)]
         """,
     )

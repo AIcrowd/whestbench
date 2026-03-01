@@ -94,10 +94,10 @@ def test_package_command_writes_manifest_with_entrypoint_and_hashes(
         dedent(
             """
             import numpy as np
-            from circuit_estimation import BaseEstimator
+            from circuit_estimation import BaseEstimator, Circuit
 
             class Estimator(BaseEstimator):
-                def predict(self, circuit, budget: int):
+                def predict(self, circuit: Circuit, budget: int):
                     return np.zeros((circuit.d, circuit.n), dtype=np.float32)
             """
         ).strip()

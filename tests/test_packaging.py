@@ -15,10 +15,10 @@ def _write_estimator_module(tmp_path: Path, class_name: str = "Estimator") -> Pa
         dedent(
             f"""
             import numpy as np
-            from circuit_estimation import BaseEstimator
+            from circuit_estimation import BaseEstimator, Circuit
 
             class {class_name}(BaseEstimator):
-                def predict(self, circuit, budget: int):
+                def predict(self, circuit: Circuit, budget: int):
                     return np.zeros((circuit.d, circuit.n), dtype=np.float32)
             """
         ).strip()

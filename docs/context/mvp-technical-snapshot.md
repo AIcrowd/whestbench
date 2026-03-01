@@ -54,8 +54,8 @@ The in-repo estimator implementations are examples for local development only. F
 - primary participant file: `estimator.py`
 - optional participant files: `requirements.txt`, `submission.yaml`, `APPROACH.md`
 - required class: `Estimator(BaseEstimator)` (or explicit class override)
-- required method: `predict(circuit, budget)` returning `(depth, width)` ndarray
-- optional methods: `setup(context)`, `predict_batch(circuits, budget)`, `teardown()`
+- required method: `predict(circuit: Circuit, budget: int)` returning `(depth, width)` ndarray
+- optional methods: `setup(context)`, `predict_batch(circuits: Iterable[Circuit], budget: int)`, `teardown()`
 
 Installable CLI contract:
 
