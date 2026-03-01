@@ -88,3 +88,19 @@ def test_estimators_module_has_tutorial_walkthrough_markers() -> None:
     lowered = text.lower()
     for phrase in required_phrases:
         assert phrase in lowered
+
+
+def test_readme_documents_participant_cli_and_submission_contract() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    text = (repo_root / "README.md").read_text(encoding="utf-8")
+    required = [
+        "cestim init",
+        "cestim validate",
+        "cestim run",
+        "cestim package",
+        "manifest.json",
+        "BaseEstimator",
+        "--agent-mode",
+    ]
+    for phrase in required:
+        assert phrase in text
