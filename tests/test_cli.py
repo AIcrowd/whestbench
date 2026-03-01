@@ -52,7 +52,7 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict[str, Any]:
     return report
 
 
-def test_agent_mode_stdout_is_json_only(
+def test_default_mode_outputs_human_report(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict[str, Any] = {}
@@ -65,22 +65,26 @@ def test_agent_mode_stdout_is_json_only(
     monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
     monkeypatch.setattr(
         cli,
-        "render_human_report",
-        lambda _report: pytest.fail("human renderer should not be called"),
+        "render_agent_report",
+        lambda _report: pytest.fail("agent renderer should not be called"),
     )
-    monkeypatch.setattr(cli, "render_agent_report", lambda _report: '{\n  "mode": "agent"\n}\n')
+    monkeypatch.setattr(
+        cli,
+        "render_human_report",
+        lambda _report: "Circuit Estimation Report\nTip: Use --agent-mode\n",
+    )
 
     exit_code = cli.main([])
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert captured.err == ""
-    assert captured.out == '{\n  "mode": "agent"\n}\n'
-    assert json.loads(captured.out) == {"mode": "agent"}
+    assert "Circuit Estimation Report" in captured.out
+    assert "Use --agent-mode" in captured.out
     assert observed == {"profile": False, "detail": "raw"}
 
 
-def test_human_mode_outputs_rich_sections(
+def test_agent_mode_stdout_is_json_only(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict[str, Any] = {}
@@ -95,31 +99,20 @@ def test_human_mode_outputs_rich_sections(
     monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
     monkeypatch.setattr(
         cli,
-        "render_agent_report",
-        lambda _report: pytest.fail("agent renderer should not be called"),
+        "render_human_report",
+        lambda _report: pytest.fail("human renderer should not be called"),
     )
     monkeypatch.setattr(
         cli,
-        "render_human_report",
-        lambda _report: (
-            "Circuit Estimation Report\n"
-            "Run Context\n"
-            "Score Summary\n"
-            "Budget Breakdown\n"
-            "Layer Diagnostics\n"
-            "Profiling\n"
-        ),
+        "render_agent_report",
+        lambda _report: '{\n  "mode": "agent"\n}\n',
     )
 
-    exit_code = cli.main(["--mode", "human", "--profile", "--detail", "full"])
+    exit_code = cli.main(["--agent-mode", "--profile", "--detail", "full"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert captured.err == ""
-    assert "Circuit Estimation Report" in captured.out
-    assert "Run Context" in captured.out
-    assert "Score Summary" in captured.out
-    assert "Budget Breakdown" in captured.out
-    assert "Layer Diagnostics" in captured.out
-    assert "Profiling" in captured.out
+    assert captured.out == '{\n  "mode": "agent"\n}\n'
+    assert json.loads(captured.out) == {"mode": "agent"}
     assert observed == {"profile": True, "detail": "full"}

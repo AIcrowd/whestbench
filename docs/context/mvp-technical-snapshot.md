@@ -12,7 +12,7 @@ Last updated: 2026-03-01
 - `src/circuit_estimation/protocol.py`: serializable request/response DTOs for future RPC integration.
 - `src/circuit_estimation/cli.py`: local run entrypoint used by `main.py`.
 - `circuit.py`, `estimators.py`, `evaluate.py`: compatibility wrappers that preserve legacy imports.
-- `main.py`: local smoke run with `--mode agent|human`, `--detail raw|full`, and optional `--profile`.
+- `main.py`: local smoke run with default human dashboard output, `--agent-mode` JSON mode, `--detail raw|full`, and optional `--profile`.
 
 ## Current Mathematical Representation
 
@@ -71,7 +71,7 @@ Additional scorer behavior:
   - `rss_bytes`,
   - `peak_rss_bytes`.
 - report path (`score_estimator_report`) can return:
-  - raw mode payloads for machine use (`mode agent`),
+  - raw mode payloads for machine use (`--agent-mode`),
   - full mode payloads with computed aggregates (`detail full`),
   - run metadata including host/machine/os details.
 
@@ -85,8 +85,8 @@ UV_CACHE_DIR=/tmp/uv-cache uv run main.py
 
 Observed output format:
 
-- default (`mode agent`) emits pretty JSON with `results.final_score` and raw per-budget/per-layer metrics.
-- human mode (`--mode human`) emits a Rich multi-section terminal report.
+- default emits a Rich multi-section terminal report.
+- `--agent-mode` emits pretty JSON with `results.final_score` and raw per-budget/per-layer metrics.
 
 This is a local sanity surface, not a stable benchmark number.
 

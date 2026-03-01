@@ -48,10 +48,9 @@ def main(argv: list[str] | None = None) -> int:
     """CLI entrypoint used by ``main.py``."""
     parser = argparse.ArgumentParser(description="Run local circuit-estimator scoring.")
     parser.add_argument(
-        "--mode",
-        choices=("agent", "human"),
-        default="agent",
-        help="Output mode: machine-parseable JSON (agent) or rich human report (human).",
+        "--agent-mode",
+        action="store_true",
+        help="Emit pretty JSON only for machine consumers. Default output is the human dashboard.",
     )
     parser.add_argument(
         "--detail",
@@ -67,10 +66,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     report = run_default_report(profile=args.profile, detail=args.detail)
-    report["mode"] = args.mode
-    if args.mode == "human":
-        output = render_human_report(report)
-    else:
+    mode = "agent" if args.agent_mode else "human"
+    report["mode"] = mode
+    if mode == "agent":
         output = render_agent_report(report)
+    else:
+        output = render_human_report(report)
     print(output, end="" if output.endswith("\n") else "\n")
     return 0

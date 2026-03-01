@@ -43,12 +43,12 @@ Decision owner: Starter-kit maintainers
 ### 2026-03-01 - Dual-mode report rendering contract
 
 - **Decision:** Standardize CLI/report output into:
-  - `mode agent` (default): pretty JSON only.
-  - `mode human`: Rich multi-section terminal report with trend plots.
+  - default human dashboard: Rich multi-section terminal report with trend plots.
+  - `--agent-mode`: pretty JSON only for machine consumers.
 - **Why:** Support both machine consumers (future UI/agents) and local human debugging without changing scorer internals.
 - **Implementation impact:**
   - Added `src/circuit_estimation/reporting.py` renderers.
-  - Added CLI flags: `--mode`, `--detail`, `--profile`.
+  - Added CLI flags: `--agent-mode`, `--detail`, `--profile`.
   - Added `detail full` aggregate sections for downstream consumers.
 
 ### 2026-03-01 - Future-agent black-box policy note

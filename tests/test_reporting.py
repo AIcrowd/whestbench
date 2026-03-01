@@ -91,10 +91,13 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
 
     # Human mode contract: high-level run summary plus budget and layer diagnostics.
     assert "Circuit Estimation Report" in rendered
+    assert "Use --agent-mode for JSON output" in rendered
     assert "Run Context" in rendered
     assert "Score Summary" in rendered
     assert "Budget Breakdown" in rendered
     assert "Layer Diagnostics" in rendered
+    assert "Budget Frontier Plot" in rendered
+    assert "Layer Trend Plot" in rendered
     assert "Profiling" not in rendered
 
 
@@ -102,6 +105,7 @@ def test_render_human_mode_includes_profile_section_when_available() -> None:
     rendered = render_human_report(_sample_report(include_profile=True))
 
     assert "Profiling" in rendered
+    assert "Profile Runtime Plot" in rendered
     assert "wall_time_s" in rendered
     assert "cpu_time_s" in rendered
     assert "rss_bytes" in rendered
