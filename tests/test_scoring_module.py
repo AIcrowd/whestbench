@@ -1,12 +1,19 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, cast
 
 import numpy as np
 import pytest
 
 from circuit_estimation.domain import Circuit, Layer
-from circuit_estimation.scoring import ContestParams, score_estimator, score_estimator_report
+from circuit_estimation.runner import EstimatorEntrypoint, PredictOutcome, ResourceLimits
+from circuit_estimation.scoring import (
+    ContestParams,
+    score_estimator,
+    score_estimator_report,
+    score_submission_report,
+)
 
 
 def _constant_circuit(n: int, d: int, value: float = 1.0) -> Circuit:
@@ -345,3 +352,118 @@ def test_detail_full_includes_budget_and_layer_aggregates() -> None:
 
     assert "profile_summary" in report
     assert report["profile_summary"]["call_count"] == len(circuits) * len(params.budgets)
+
+
+class _FakeRunner:
+    def __init__(self, outcomes_by_budget: dict[int, list[PredictOutcome]]) -> None:
+        self._outcomes_by_budget = outcomes_by_budget
+        self._budget_indices = {budget: 0 for budget in outcomes_by_budget}
+        self.started = False
+
+    def start(self, entrypoint, context, limits) -> None:
+        self.started = True
+
+    def predict(self, circuit: Circuit, budget: int) -> PredictOutcome:
+        idx = self._budget_indices[budget]
+        self._budget_indices[budget] = idx + 1
+        return self._outcomes_by_budget[budget][idx]
+
+    def predict_batch(self, circuits: list[Circuit], budget: int) -> list[PredictOutcome]:
+        return [self.predict(circuit, budget) for circuit in circuits]
+
+    def close(self) -> None:
+        self.started = False
+
+
+def test_score_submission_report_uses_runner_predict_outcomes_for_metrics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "circuit_estimation.scoring.sampling_baseline_time",
+        lambda n_samples, width, depth: [1.0] * depth,
+    )
+    params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
+    circuits = [_constant_circuit(n=2, d=1, value=1.0) for _ in range(2)]
+    outcomes = [
+        PredictOutcome(
+            predictions=np.array([[1.0, 1.0]], dtype=np.float32),
+            wall_time_s=1.0,
+            cpu_time_s=0.1,
+            rss_bytes=1024,
+            peak_rss_bytes=1024,
+            status="ok",
+        ),
+        PredictOutcome(
+            predictions=np.array([[1.0, 1.0]], dtype=np.float32),
+            wall_time_s=1.0,
+            cpu_time_s=0.1,
+            rss_bytes=1024,
+            peak_rss_bytes=1024,
+            status="ok",
+        ),
+    ]
+    runner = _FakeRunner({10: outcomes})
+    report = score_submission_report(
+        runner,
+        EstimatorEntrypoint(file_path=Path("estimator.py")),
+        n_circuits=2,
+        n_samples=4,
+        contest_params=params,
+        limits=ResourceLimits(setup_timeout_s=1.0, predict_timeout_s=1.0, memory_limit_mb=256),
+        circuits=circuits,
+        detail="raw",
+    )
+
+    row = report["results"]["by_budget_raw"][0]
+    assert row["mse_mean"] == pytest.approx(0.0)
+    assert row["call_time_ratio_mean"] == pytest.approx(1.0)
+    assert report["results"]["final_score"] == pytest.approx(0.0)
+    assert runner.started is False
+
+
+def test_predict_failure_statuses_are_reflected_in_budget_failure_counts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "circuit_estimation.scoring.sampling_baseline_time",
+        lambda n_samples, width, depth: [1.0] * depth,
+    )
+    params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
+    circuits = [_constant_circuit(n=2, d=1, value=1.0) for _ in range(2)]
+    outcomes = [
+        PredictOutcome(
+            predictions=None,
+            wall_time_s=1.0,
+            cpu_time_s=0.1,
+            rss_bytes=1024,
+            peak_rss_bytes=1024,
+            status="runtime_error",
+            error_message="boom",
+        ),
+        PredictOutcome(
+            predictions=None,
+            wall_time_s=1.0,
+            cpu_time_s=0.1,
+            rss_bytes=1024,
+            peak_rss_bytes=1024,
+            status="protocol_error",
+            error_message="bad output",
+        ),
+    ]
+    runner = _FakeRunner({10: outcomes})
+    report = score_submission_report(
+        runner,
+        EstimatorEntrypoint(file_path=Path("estimator.py")),
+        n_circuits=2,
+        n_samples=4,
+        contest_params=params,
+        limits=ResourceLimits(setup_timeout_s=1.0, predict_timeout_s=1.0, memory_limit_mb=256),
+        circuits=circuits,
+        detail="raw",
+    )
+
+    row = report["results"]["by_budget_raw"][0]
+    assert row["runtime_error_rate"] == pytest.approx(0.5)
+    assert row["protocol_error_rate"] == pytest.approx(0.5)
+    assert row["oom_rate"] == pytest.approx(0.0)
+    assert row["adjusted_mse"] > 0.0
