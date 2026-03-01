@@ -6,6 +6,7 @@ dependencies = [
     "numpy",
     "plotext",
     "rich",
+    "textual",
     "tqdm",
 ]
 
