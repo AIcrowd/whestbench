@@ -3,7 +3,7 @@ This repository is a starter-kit style implementation of the circuit-estimation 
 ## What This Repository Teaches
 
 - How randomly generated boolean circuits are represented and simulated.
-- How estimators predict wire-mean trajectories across all layers in one call.
+- How estimators stream wire-mean trajectories one depth row at a time.
 - How scoring combines prediction quality and runtime constraints into a single objective.
 - How to inspect outcomes in either a Textual human dashboard (default) or machine JSON (`--agent-mode`).
 
@@ -15,7 +15,7 @@ Participants provide an estimator that receives:
 - one `Circuit`
 - one `budget`
 
-and must return one `np.ndarray` with shape `(max_depth, width)` containing predictions for all layers in a single pass.
+and must stream exactly `max_depth` vectors via `yield`, where each emitted vector has shape `(width,)`.
 
 Important security/architecture note: in-repo estimator implementations are examples only. Hosted evaluation should assume participant estimators may be adversarial/malicious and must be treated as black boxes.
 
@@ -26,14 +26,11 @@ Given `n_circuits`, `n_samples`, and contest params (`width`, `max_depth`, `budg
 1. Sample or accept circuits.
 2. Compute empirical layer-wise target means for each circuit via batched simulation.
 3. For each budget:
-   - Treat `budget` as a sampling trial count.
-   - Measure the sampling runtime curve by depth:
-     - `time_budget_by_depth_s[i] = cumulative wall time to reach depth i with budget samples`.
-   - Call estimator once per circuit (`estimator(circuit, budget)`), expecting full-depth predictions.
-   - Apply runtime enforcement against the budget-by-depth curve:
-     - for each depth `i`, if call wall time > `(1 + time_tolerance) * time_budget_by_depth_s[i]`, zero depth `i`;
-     - for each depth `i`, if call wall time < `(1 - time_tolerance) * time_budget_by_depth_s[i]`, floor depth runtime to that lower bound.
-     - estimator API is single-call tensor output, so this comparison uses the observed call wall time at every depth index.
+   - Measure baseline runtime by depth (`time_budget_by_depth_s`) using sampling.
+   - Call estimator once per `(circuit, budget)` invocation and consume streamed depth rows.
+   - At each emitted depth row `i`:
+     - if cumulative wall time > `(1 + time_tolerance) * time_budget_by_depth_s[i]`, zero that row;
+     - if cumulative wall time < `(1 - time_tolerance) * time_budget_by_depth_s[i]`, floor effective time to that lower bound.
    - Compute per-depth MSE and aggregate:
      - `mse_mean`
      - `call_time_ratio_mean`
@@ -43,7 +40,7 @@ Given `n_circuits`, `n_samples`, and contest params (`width`, `max_depth`, `budg
 
 Report payload:
 
-- `results.by_budget_raw` contains raw per-budget metrics (including `mse_by_layer`, `time_budget_by_depth_s`, and scalar call-level runtime summaries).
+- `results.by_budget_raw` contains raw per-budget metrics (including `mse_by_layer` and depth runtime vectors such as `time_budget_by_depth_s`).
 - Human mode computes the richer payload used by dashboard tabs (summary, budgets, layers, performance, data).
 - `score_estimator_report(..., profile=True, detail="full")` remains available as a programmatic API for advanced callers.
 
@@ -68,16 +65,31 @@ Install [uv](https://docs.astral.sh/uv/):
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
+### Install CLI (recommended)
+
+From repository root:
+
+```bash
+uv tool install -e .
+```
+
+This installs the `cestim` command globally from your local checkout.
+
 ### Run default local report
 
 ```bash
-uv run main.py
+cestim
 ```
 
 Default output is the full-screen Textual human dashboard (with automatic static fallback when unsupported). For machine consumers:
 
 ```bash
-uv run main.py --agent-mode
+cestim --agent-mode
+```
+
+Default `uv run main.py` behavior:
+```bash
+uv run --with-editable . cestim --agent-mode
 ```
 
 Default `uv run main.py` behavior:
@@ -87,15 +99,28 @@ Default `uv run main.py` behavior:
 
 ## Extending the Estimator
 
-Implement a callable with signature:
+Canonical participant interface:
 
-- `Callable[[Circuit, int], NDArray[np.float32]]`
+- subclass `BaseEstimator`
+- implement `predict(self, circuit: Circuit, budget: int) -> Iterator[NDArray[np.float32]]`
 
 Contract:
 
 - input: one circuit + one budget
-- output: rank-2 ndarray of shape `(max_depth, width)`
-- each row: predicted wire means for one layer depth
+- output: streamed depth rows via `yield`
+- each emitted row: `np.ndarray` with shape `(width,)`
+- required row count: exactly `max_depth` yields
+
+Scoring API compatibility:
+
+- `score_estimator(...)` accepts a callable with signature:
+  - `Callable[[Circuit, int], Iterator[NDArray[np.float32]]]`
+- for class-based estimators, pass `Estimator().predict`.
+
+See the starter tutorial guide:
+
+- `docs/context/participant-streaming-estimator-guide.md`
+- `examples/estimators/` for full class-based starter implementations
 
 Budget tuning intuition:
 
@@ -105,9 +130,10 @@ Budget tuning intuition:
 
 Recommended extension path:
 
-- add new estimators under `src/circuit_estimation/estimators.py` (or new module),
+- copy a starter from `examples/estimators/` into your own `estimator.py`,
+- keep estimator-specific helper methods inside your estimator class,
 - evaluate locally with `score_estimator(...)` or `score_estimator_report(...)`,
-- compare via `uv run main.py`.
+- compare via `cestim` (or `uv run main.py`).
 
 ## Verification Commands
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from statistics import fmean
-from typing import Any
 
 from rich.table import Table
 from textual.containers import Horizontal, VerticalScroll
@@ -122,8 +121,12 @@ def _range_note(values: list[float], label: str) -> str:
     return f"{label}: {min(values):.6f} -> {max(values):.6f}"
 
 
-def _as_float(value: Any) -> float:
-    try:
+def _as_float(value: object) -> float:
+    if isinstance(value, (int, float)):
         return float(value)
-    except (TypeError, ValueError):
-        return 0.0
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return 0.0
+    return 0.0

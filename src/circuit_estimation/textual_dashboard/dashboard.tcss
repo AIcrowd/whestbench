@@ -4,14 +4,16 @@ Screen {
 }
 
 Header {
-    background: #0b1326;
-    color: #93c5fd;
+    background: #040814;
+    color: #60a5fa;
     text-style: bold;
+    border-bottom: tall #15253f;
 }
 
 Footer {
-    background: #0b1326;
+    background: #040814;
     color: #fbbf24;
+    border-top: tall #15253f;
 }
 
 #dashboard-tabs-content {
@@ -20,25 +22,26 @@ Footer {
 }
 
 Tabs {
-    background: #0b1326;
+    background: #040814;
     color: #9ca3af;
-    border: round #1f2a44;
-    margin: 1 1 0 1;
+    border: round #1a2f52;
+    margin: 1 1 1 1;
 }
 
 Tab {
-    background: #0f172a;
+    background: #080f1f;
     color: #9ca3af;
     text-style: bold;
 }
 
 Tab.-active {
-    background: #111b31;
-    color: #f8fafc;
+    background: #101d35;
+    color: #f1f5f9;
+    border: tall #38bdf8;
 }
 
 TabPane {
-    padding: 1;
+    padding: 0;
 }
 
 .tab-scroll {
@@ -51,8 +54,8 @@ TabPane {
 
 .panel {
     width: 1fr;
-    min-width: 34;
-    border: round #26334f;
+    min-width: 32;
+    border: round #1a2f52;
     background: #0f172a;
     color: #e2e8f0;
     padding: 0 1 1 1;
@@ -60,7 +63,7 @@ TabPane {
 }
 
 .panel-title {
-    color: #67e8f9;
+    color: #38bdf8;
     text-style: bold;
     padding: 0 0 1 0;
 }
@@ -70,13 +73,14 @@ TabPane {
 }
 
 .metric-row {
-    height: auto;
+    height: 5;
 }
 
 .metric-card {
     width: 1fr;
     min-width: 18;
-    border: round #26334f;
+    height: 100%;
+    border: round #1a2f52;
     background: #0f172a;
     margin: 1 1 0 1;
     padding: 0 1;
@@ -84,7 +88,7 @@ TabPane {
 
 .metric-card-primary {
     border: heavy #38bdf8;
-    background: #0b1730;
+    background: #0d1730;
 }
 
 .metric-label {
@@ -93,7 +97,7 @@ TabPane {
 }
 
 .metric-value {
-    color: #f8fafc;
+    color: #ffffff;
     text-style: bold;
 }
 
@@ -101,12 +105,13 @@ TabPane {
     color: #e5e7eb;
 }
 
-.sparkline {
+.plot-body {
+    color: #dbeafe;
     margin: 0 0 1 0;
 }
 
-.sparkline-note {
-    color: #a1a1aa;
+.plot-legend {
+    color: #94a3b8;
 }
 
 .insight-text {
@@ -115,4 +120,8 @@ TabPane {
 
 .next-actions {
     color: #f8fafc;
+}
+
+.data-raw-body {
+    height: auto;
 }

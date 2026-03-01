@@ -7,13 +7,13 @@ This file lists unresolved decisions that block a production starter-kit + evalu
 ## Resolved Decisions
 
 - 2026-03-01: Final starter kit must be explicitly compatible with agent-led exploration workflows (including Claude/Codex/Antigravity-style usage). See `agent-first-starter-kit-requirements.md` for implementation checklist.
+- 2026-03-01: Current local participant estimator contract is `predict(circuit, budget)` streaming exactly one `(width,)` row per depth. Remaining question is public hosted contract freeze and any optional extra outputs.
 
 ## A. Benchmark and Scoring Spec
 
-1. What is the final participant output contract?
-   - Per-depth vector estimates?
-   - Final-layer only?
-   - Additional uncertainty outputs?
+1. What is the final public hosted participant output contract freeze?
+   - Local repo currently uses per-depth streamed vector estimates.
+   - Need explicit decision on whether any optional extra outputs are allowed in hosted evaluation.
 
 2. What is the final score formula?
    - Current toy code applies an adjusted MSE with runtime factor.

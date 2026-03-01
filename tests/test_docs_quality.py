@@ -59,9 +59,9 @@ def test_critical_public_apis_have_docstrings() -> None:
         simulation.run_batched,
         simulation.run_on_random,
         simulation.empirical_mean,
-        estimators.mean_propagation,
-        estimators.covariance_propagation,
-        estimators.combined_estimator,
+        estimators.MeanPropagationEstimator.predict,
+        estimators.CovariancePropagationEstimator.predict,
+        estimators.CombinedEstimator.predict,
         scoring.ContestParams.validate,
         scoring.score_estimator_report,
         scoring.score_estimator,
@@ -88,3 +88,38 @@ def test_estimators_module_has_tutorial_walkthrough_markers() -> None:
     lowered = text.lower()
     for phrase in required_phrases:
         assert phrase in lowered
+
+
+def test_docs_do_not_reference_predict_batch_contract() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    paths = [
+        repo_root / "README.md",
+        repo_root / "docs/context/mvp-technical-snapshot.md",
+        repo_root / "docs/context/python-runtime-refactor-decisions.md",
+    ]
+    for path in paths:
+        text = path.read_text(encoding="utf-8").lower()
+        assert "predict_batch" not in text, str(path)
+
+
+def test_readme_links_streaming_participant_guide() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
+    assert "participant-streaming-estimator-guide.md" in text
+
+
+def test_readme_documents_cestim_install_and_usage() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
+    assert "uv tool install -e ." in text
+    assert "cestim --agent-mode" in text
+    assert "uv run --with-editable . cestim" in text
+    assert "uv run cestim --" not in text
+
+
+def test_examples_estimators_folder_contains_starter_classes() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    examples_dir = repo_root / "examples/estimators"
+    assert (examples_dir / "mean_propagation.py").exists()
+    assert (examples_dir / "covariance_propagation.py").exists()
+    assert (examples_dir / "combined_estimator.py").exists()

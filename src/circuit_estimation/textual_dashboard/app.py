@@ -123,8 +123,8 @@ class DashboardApp(App[None]):
 def layout_mode_for_width(width: int) -> str:
     """Classify dashboard layout for responsive rendering."""
 
-    if width >= 150:
+    if width >= 160:
         return "wide"
-    if width >= 100:
+    if width >= 110:
         return "medium"
     return "narrow"

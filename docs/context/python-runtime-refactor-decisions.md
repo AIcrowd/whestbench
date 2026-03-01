@@ -36,17 +36,17 @@ Decision owner: Starter-kit maintainers
 - **Implementation impact:**
   - Profiling is collected at estimator call boundaries (one `(circuit, budget)` invocation), not per-depth internals.
   - `score_estimator_report(..., profile=True)` includes `profile_calls`, and `detail full` includes `profile_summary`.
-  - Default human CLI mode now enables profiling to populate the Textual `Performance` tab.
+  - Default human CLI mode enables profiling to populate the Textual `Performance` tab.
   - Programmatic callers can still choose opt-in profiling via scorer API parameters.
 
-### 2026-03-01 - Strict estimator output tensor contract
+### 2026-03-01 - Streaming estimator output contract
 
-- **Decision:** Require estimator output to be a single-pass `ndarray` of shape `(max_depth, width)`.
-- **Why:** Better RPC compatibility, simpler evaluator contracts, and explicit black-box boundaries for untrusted submissions.
+- **Decision:** Require estimator output to be a streamed iterator of depth rows from `predict(circuit, budget)`.
+- **Why:** Matches reference runtime semantics, supports depth-wise runtime enforcement, and keeps participant API minimal.
 - **Implementation impact:**
-  - Added scoring validation for `ndarray` type, rank, width, and depth.
-  - Updated in-repo reference estimators to return full-depth tensors in one call.
-  - Added regression tests for non-ndarray and wrong-shape failures.
+  - Added scoring validation for iterable output, row shape `(width,)`, finite values, and exact depth row count.
+  - Updated in-repo reference estimators to `yield` one row per depth.
+  - Added regression tests for non-iterable output, wrong row counts, and wrong row shape.
 
 ### 2026-03-01 - Dual-mode report rendering contract
 
@@ -64,29 +64,28 @@ Decision owner: Starter-kit maintainers
 - **Decision:** Treat participant estimator implementations as potentially adversarial/malicious black boxes.
 - **Why:** Hosted evaluation cannot rely on in-estimator instrumentation or cooperative internal event emission.
 - **Implementation impact:**
-  - Evaluator diagnostics are external only (call-level timing/resource observations).
-  - No assumed per-layer internal event API for participant estimators.
+  - Evaluator diagnostics are external only (depth-yield timing boundaries + call-level resource observations).
+  - No assumed estimator-internal instrumentation API for participant code.
   - In-repo estimators documented as examples, not trusted integration contracts.
 
-### 2026-03-01 - Remove synthetic per-layer runtime diagnostics from report schema
+### 2026-03-01 - Budget-by-depth runtime report semantics
 
-- **Decision:** Drop per-layer runtime-derived report fields (`time_ratio_by_layer`, `effective_time_s_by_layer`, `adjusted_mse_by_layer`, and related aggregates).
-- **Why:** Estimator implementations are black boxes with call-level timing only; runtime fields tied to internal layer instrumentation are not observable or trustworthy for adversarial submissions.
+- **Decision:** Keep runtime metrics as observable depth-boundary and budget-level values only.
+- **Why:** Participant estimators are black boxes, but streamed `yield` boundaries allow trustworthy depth timing without introspecting estimator internals.
 - **Implementation impact:**
-  - `results.by_budget_raw` carries depth-indexed runtime metrics derived from external timing against the baseline budget-by-depth envelope (not internal instrumentation), plus call-level scalar summaries:
+  - `results.by_budget_raw` includes depth vectors:
     - `time_budget_by_depth_s`
     - `time_ratio_by_depth_mean`
     - `effective_time_s_by_depth_mean`
     - `timeout_rate_by_depth`
     - `time_floor_rate_by_depth`
-  - `results.by_budget_raw` also carries scalar runtime summaries:
+  - `results.by_budget_raw` also keeps budget-level scalar runtime metrics:
     - `call_time_ratio_mean`
     - `call_effective_time_s_mean`
     - `timeout_rate`
     - `time_floor_rate`
-  - `adjusted_mse` remains budget-level scalar (no `adjusted_mse_by_layer` field).
-  - `results.by_layer_overall` / `results.by_budget_layer_matrix` now include only MSE-derived layer aggregates.
-  - Human reporting layer diagnostics are MSE-only; runtime visuals are budget-level and profile-call-level only.
+  - `adjusted_mse` remains budget-level scalar.
+  - `results.by_layer_overall` / `results.by_budget_layer_matrix` remain MSE-only aggregates.
 
 ### 2026-03-01 - Restore original budget semantics as budget-by-depth envelopes
 

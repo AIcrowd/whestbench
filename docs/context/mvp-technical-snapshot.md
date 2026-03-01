@@ -10,7 +10,8 @@ Last updated: 2026-03-01
 - `src/circuit_estimation/estimators.py`: mean/covariance propagation + combined estimator.
 - `src/circuit_estimation/scoring.py`: contest params, baseline timing, scoring loop, optional profiler hook.
 - `src/circuit_estimation/protocol.py`: serializable request/response DTOs for future RPC integration.
-- `src/circuit_estimation/cli.py`: local run entrypoint used by `main.py`.
+- `src/circuit_estimation/cli.py`: local CLI entrypoint implementation exposed as `cestim`.
+- `examples/estimators/*.py`: class-based starter estimators participants can copy into submissions.
 - `main.py`: local smoke run with default Textual human dashboard output and `--agent-mode` JSON mode.
 
 ## Current Mathematical Representation
@@ -35,9 +36,9 @@ From `generation.py` + `simulation.py`:
 
 From `src/circuit_estimation/estimators.py`:
 
-- `mean_propagation(circuit)`: tracks only means, ignores higher-order dependencies.
-- `covariance_propagation(circuit)`: tracks means + full covariance matrix per layer.
-- `combined_estimator(circuit, budget)`:
+- `MeanPropagationEstimator.predict(circuit, budget)`: tracks only means, ignores higher-order dependencies.
+- `CovariancePropagationEstimator.predict(circuit, budget)`: tracks means + full covariance matrix per layer.
+- `CombinedEstimator.predict(circuit, budget)`:
   - uses covariance propagation when `budget >= 30 * circuit.n`;
   - otherwise uses mean propagation.
 
@@ -53,17 +54,13 @@ From `scoring.py` / `README.md`:
   - `budgets`
   - `time_tolerance`
 - For each budget:
-  - `budget` is interpreted as sampling trial count.
-  - sampling baseline defines a budget-by-depth runtime envelope:
-    - `time_budget_by_depth_s[i]`: cumulative sampling runtime to depth `i`.
-  - estimator is run once per `(circuit, budget)` and must return one tensor for all layers.
-  - runtime enforcement is applied depth-wise against the envelope:
-    - depth `i` is zeroed when wall time exceeds `(1 + tolerance) * time_budget_by_depth_s[i]`.
-    - depth `i` runtime is floored to `(1 - tolerance) * time_budget_by_depth_s[i]` when faster than that bound.
-    - because estimator API returns one tensor per call, the same observed call wall time is compared at each depth index.
+  - baseline runtime is measured by depth (`time_budget_by_depth_s`) using batched sampling.
+  - estimator is run once per `(circuit, budget)` and must stream exactly one `(width,)` row per depth.
+  - runtime policy is enforced at each streamed depth row:
+    - if cumulative runtime exceeds `(1 + tolerance) * time_budget_by_depth_s[i]`, that row is zeroed.
+    - if cumulative runtime is below `(1 - tolerance) * time_budget_by_depth_s[i]`, effective runtime is floored.
   - MSE is computed vs empirical means (`mse_by_layer` + `mse_mean`).
-  - Runtime-adjusted score uses depth-wise runtime ratios, with call-level scalar summaries exposed:
-    - `time_budget_by_depth_s`
+  - Runtime adjustment includes both depth vectors and budget-level scalars:
     - `time_ratio_by_depth_mean`
     - `effective_time_s_by_depth_mean`
     - `call_time_ratio_mean`
@@ -74,7 +71,7 @@ Final score = average budget-level `adjusted_mse` across budgets.
 
 Additional scorer behavior:
 
-- malformed estimator outputs (wrong width, wrong depth, or non-ndarray) raise explicit errors,
+- malformed estimator outputs (wrong width, wrong depth row count, non-finite values, or non-iterable output) raise explicit errors,
 - optional profiler callback can emit call-level diagnostics:
   - `wall_time_s`,
   - `cpu_time_s`,
@@ -90,14 +87,14 @@ Additional scorer behavior:
 Command run:
 
 ```bash
-UV_CACHE_DIR=/tmp/uv-cache uv run main.py
+UV_CACHE_DIR=/tmp/uv-cache uv run --with-editable . cestim
 ```
 
 Observed output format:
 
 - default emits a Textual multi-tab terminal dashboard (or static fallback when Textual is unavailable).
 - `--agent-mode` emits pretty JSON with `results.final_score` and raw per-budget/per-layer metrics.
-  - `by_budget_raw` includes `mse_by_layer`, budget-by-depth runtime arrays, and call-level scalar runtime summaries.
+  - `by_budget_raw` includes `mse_by_layer` plus depth runtime vectors (`time_budget_by_depth_s`, `time_ratio_by_depth_mean`, `effective_time_s_by_depth_mean`) and budget-level scalar runtime metrics.
 
 This is a local sanity surface, not a stable benchmark number.
 
@@ -107,7 +104,7 @@ This is a local sanity surface, not a stable benchmark number.
 2. No production containerized/sandboxed execution path in this repo yet.
 3. Deterministic seeded evaluation flow exists locally but final public seed policy is not frozen.
 4. Profiling metrics are local-process diagnostics, not yet equivalent to hosted infra accounting.
-5. Participant output contract is clearer locally (strict ndarray + full-depth single-call return) but still needs final public challenge-spec freeze.
+5. Participant output contract is clearer locally (streamed depth rows from `predict(circuit, budget)`) but still needs final public challenge-spec freeze.
 
 ## Implication for Future Agents
 
