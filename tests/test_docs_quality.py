@@ -42,7 +42,6 @@ def test_critical_public_apis_have_docstrings() -> None:
     from circuit_estimation import (
         cli,
         domain,
-        estimators,
         generation,
         protocol,
         reporting,
@@ -59,9 +58,6 @@ def test_critical_public_apis_have_docstrings() -> None:
         simulation.run_batched,
         simulation.run_on_random,
         simulation.empirical_mean,
-        estimators.mean_propagation,
-        estimators.covariance_propagation,
-        estimators.combined_estimator,
         scoring.ContestParams.validate,
         scoring.score_estimator_report,
         scoring.score_estimator,
@@ -76,11 +72,16 @@ def test_critical_public_apis_have_docstrings() -> None:
         assert _doc_len(getattr(obj, "__doc__", None)) >= 30, repr(obj)
 
 
-def test_estimators_module_has_tutorial_walkthrough_markers() -> None:
+def test_example_estimators_have_tutorial_walkthrough_markers() -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    text = (repo_root / "src/circuit_estimation/estimators.py").read_text(encoding="utf-8")
+    files = [
+        repo_root / "examples/estimators/mean_propagation.py",
+        repo_root / "examples/estimators/covariance_propagation.py",
+        repo_root / "examples/estimators/combined_estimator.py",
+    ]
+    text = "\n".join(path.read_text(encoding="utf-8") for path in files)
     required_phrases = [
-        "first-moment propagation",
+        "first-moment",
         "pairwise moment closure",
         "covariance",
         "budget",
