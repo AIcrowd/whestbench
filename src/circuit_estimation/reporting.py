@@ -56,6 +56,9 @@ def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool =
         "[dim]Use --agent-mode for JSON output when calling from automated agents or UIs.[/dim]"
     )
     console.print("[dim]This static report is used as fallback when Textual UI is unavailable.[/dim]")
+    console.print(
+        "[dim]Runtime scoring uses budget-by-depth checks at each streamed predict() row.[/dim]"
+    )
     _render_top_row(console, report)
     _render_budget_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
@@ -369,9 +372,7 @@ def _render_profile_section(
         equal=True,
         expand=False,
     )
-    console.print(
-        Panel(Align.center(profile_tables), title="Profile", border_style="bright_blue")
-    )
+    console.print(Panel(Align.center(profile_tables), title="Profile", border_style="bright_blue"))
     if show_diagnostic_plots:
         runtime_plot = _profile_runtime_plot_panel(wall, cpu)
         memory_plot = _profile_memory_plot_panel(rss, peak)

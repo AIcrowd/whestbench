@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from textual.binding import Binding
 
@@ -39,8 +39,13 @@ def test_tab_actions_switch_active_tab() -> None:
 
 
 def test_bindings_include_numeric_tab_shortcuts() -> None:
-    bindings = [binding for binding in DashboardApp.BINDINGS if isinstance(binding, Binding)]
-    keys = {binding.key: binding.action for binding in bindings}
+    keys: dict[str, str] = {}
+    for binding in DashboardApp.BINDINGS:
+        if isinstance(binding, tuple) and len(binding) >= 2:
+            keys[str(binding[0])] = str(binding[1])
+            continue
+        normalized = cast(Binding, binding)
+        keys[str(normalized.key)] = str(normalized.action)
 
     assert keys["1"] == "tab_summary"
     assert keys["2"] == "tab_budgets"

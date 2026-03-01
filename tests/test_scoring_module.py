@@ -26,14 +26,13 @@ def _constant_circuit(n: int, d: int, value: float = 1.0) -> Circuit:
 
 
 def test_score_estimator_rejects_wrong_output_width() -> None:
-    # Contract check: participant estimators must emit an ndarray of shape (depth, width).
     params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
     circuit = _constant_circuit(n=2, d=1, value=1.0)
 
     def bad_estimator(_circuit: Circuit, _budget: int):
-        return np.zeros((1, 1), dtype=np.float32)
+        yield np.array([0.0], dtype=np.float32)
 
-    with pytest.raises(ValueError, match="output width"):
+    with pytest.raises(ValueError, match="shape"):
         score_estimator(
             bad_estimator,
             n_circuits=1,
@@ -43,14 +42,14 @@ def test_score_estimator_rejects_wrong_output_width() -> None:
         )
 
 
-def test_score_estimator_rejects_non_ndarray_output() -> None:
+def test_score_estimator_rejects_non_iterable_output() -> None:
     params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
     circuit = _constant_circuit(n=2, d=1, value=1.0)
 
     def bad_estimator(_circuit: Circuit, _budget: int):
-        return [np.array([1.0, 1.0], dtype=np.float32)]
+        return 123.0
 
-    with pytest.raises(ValueError, match="numpy.ndarray"):
+    with pytest.raises(ValueError, match="iterator"):
         score_estimator(
             cast(Any, bad_estimator),
             n_circuits=1,
@@ -61,7 +60,6 @@ def test_score_estimator_rejects_non_ndarray_output() -> None:
 
 
 def test_score_estimator_profile_hook_collects_runtime_cpu_and_memory() -> None:
-    # Observability check: profiler payload includes core runtime/resource diagnostics.
     params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
     circuit = _constant_circuit(n=2, d=1, value=1.0)
     collected: list[dict[str, float | int]] = []
@@ -70,7 +68,7 @@ def test_score_estimator_profile_hook_collects_runtime_cpu_and_memory() -> None:
         collected.append(event)
 
     def estimator(_circuit: Circuit, _budget: int):
-        return np.array([[1.0, 1.0]], dtype=np.float32)
+        yield np.array([1.0, 1.0], dtype=np.float32)
 
     score_estimator(
         estimator,
@@ -97,16 +95,98 @@ def test_score_estimator_profile_hook_collects_runtime_cpu_and_memory() -> None:
 
 
 def test_score_estimator_raises_when_estimator_stops_early() -> None:
-    # Regression check: yielding fewer layers than max_depth should fail loudly.
     params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
     circuit = _constant_circuit(n=2, d=2, value=1.0)
 
     def short_estimator(_circuit: Circuit, _budget: int):
-        return np.array([[1.0, 1.0]], dtype=np.float32)
+        yield np.array([1.0, 1.0], dtype=np.float32)
 
-    with pytest.raises(ValueError, match="expected 2"):
+    with pytest.raises(ValueError, match="exactly max_depth rows"):
         score_estimator(
             short_estimator,
+            n_circuits=1,
+            n_samples=4,
+            contest_params=params,
+            circuits=[circuit],
+        )
+
+
+def test_score_estimator_raises_when_estimator_yields_too_many_rows() -> None:
+    params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
+    circuit = _constant_circuit(n=2, d=2, value=1.0)
+
+    def long_estimator(_circuit: Circuit, _budget: int):
+        yield np.array([1.0, 1.0], dtype=np.float32)
+        yield np.array([1.0, 1.0], dtype=np.float32)
+        yield np.array([1.0, 1.0], dtype=np.float32)
+
+    with pytest.raises(ValueError, match="more than max_depth"):
+        score_estimator(
+            long_estimator,
+            n_circuits=1,
+            n_samples=4,
+            contest_params=params,
+            circuits=[circuit],
+        )
+
+
+def test_generator_exception_after_partial_rows_is_structured_error() -> None:
+    params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
+    circuit = _constant_circuit(n=2, d=2, value=1.0)
+
+    def unstable_estimator(_circuit: Circuit, _budget: int):
+        yield np.array([1.0, 1.0], dtype=np.float32)
+        raise RuntimeError("boom")
+
+    with pytest.raises(ValueError, match="depth row 1.*boom"):
+        score_estimator(
+            unstable_estimator,
+            n_circuits=1,
+            n_samples=4,
+            contest_params=params,
+            circuits=[circuit],
+        )
+
+
+def test_non_iterable_predict_output_raises_clear_error_with_context() -> None:
+    params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
+    circuit = _constant_circuit(n=2, d=1, value=1.0)
+
+    def bad_estimator(_circuit: Circuit, _budget: int):
+        return 123.0
+
+    with pytest.raises(ValueError, match="budget 10, circuit 0"):
+        score_estimator(
+            cast(Any, bad_estimator),
+            n_circuits=1,
+            n_samples=4,
+            contest_params=params,
+            circuits=[circuit],
+        )
+
+
+def test_row_dtype_cast_and_finite_validation_are_enforced() -> None:
+    params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
+    circuit = _constant_circuit(n=2, d=1, value=1.0)
+
+    def int_row_estimator(_circuit: Circuit, _budget: int):
+        yield np.array([1, 1], dtype=np.int32)
+
+    score = score_estimator(
+        cast(Any, int_row_estimator),
+        n_circuits=1,
+        n_samples=4,
+        contest_params=params,
+        circuits=[circuit],
+    )
+    assert np.isfinite(score)
+
+    def non_finite_estimator(_circuit: Circuit, _budget: int):
+        yield np.array([np.nan, 1.0], dtype=np.float32)
+
+    with pytest.raises(ValueError, match="finite"):
+        score_estimator(
+            non_finite_estimator,
             n_circuits=1,
             n_samples=4,
             contest_params=params,
@@ -118,8 +198,9 @@ def test_score_estimator_report_collects_one_profile_call_per_circuit_budget() -
     params = ContestParams(width=2, max_depth=2, budgets=[10, 100], time_tolerance=0.1)
     circuits = [_constant_circuit(n=2, d=2, value=1.0) for _ in range(3)]
 
-    def estimator(_circuit: Circuit, _budget: int) -> np.ndarray:
-        return np.ones((2, 2), dtype=np.float32)
+    def estimator(_circuit: Circuit, _budget: int):
+        for _ in range(2):
+            yield np.ones((2,), dtype=np.float32)
 
     report = score_estimator_report(
         estimator,
@@ -149,8 +230,9 @@ def test_by_budget_raw_forbids_layer_runtime_fields() -> None:
     params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
     circuits = [_constant_circuit(n=2, d=2, value=1.0)]
 
-    def estimator(_circuit: Circuit, _budget: int) -> np.ndarray:
-        return np.ones((2, 2), dtype=np.float32)
+    def estimator(_circuit: Circuit, _budget: int):
+        for _ in range(2):
+            yield np.ones((2,), dtype=np.float32)
 
     report = score_estimator_report(
         estimator,
@@ -170,12 +252,13 @@ def test_by_budget_raw_forbids_layer_runtime_fields() -> None:
     assert "time_floor_flag_by_layer" not in row
 
 
-def test_by_budget_raw_contains_scalar_runtime_fields() -> None:
+def test_by_budget_raw_contains_scalar_and_depth_runtime_fields() -> None:
     params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
     circuits = [_constant_circuit(n=2, d=2, value=1.0)]
 
-    def estimator(_circuit: Circuit, _budget: int) -> np.ndarray:
-        return np.ones((2, 2), dtype=np.float32)
+    def estimator(_circuit: Circuit, _budget: int):
+        for _ in range(2):
+            yield np.ones((2,), dtype=np.float32)
 
     report = score_estimator_report(
         estimator,
@@ -190,18 +273,29 @@ def test_by_budget_raw_contains_scalar_runtime_fields() -> None:
     assert "mse_by_layer" in row
     assert "mse_mean" in row
     assert "adjusted_mse" in row
+    assert "time_budget_by_depth_s" in row
+    assert "time_ratio_by_depth_mean" in row
+    assert "effective_time_s_by_depth_mean" in row
+    assert "timeout_rate_by_depth" in row
+    assert "time_floor_rate_by_depth" in row
     assert "call_time_ratio_mean" in row
     assert "call_effective_time_s_mean" in row
     assert "timeout_rate" in row
     assert "time_floor_rate" in row
+    assert len(row["time_budget_by_depth_s"]) == params.max_depth
+    assert len(row["time_ratio_by_depth_mean"]) == params.max_depth
+    assert len(row["effective_time_s_by_depth_mean"]) == params.max_depth
+    assert len(row["timeout_rate_by_depth"]) == params.max_depth
+    assert len(row["time_floor_rate_by_depth"]) == params.max_depth
 
 
 def test_detail_full_includes_budget_and_layer_aggregates() -> None:
     params = ContestParams(width=2, max_depth=2, budgets=[10, 100], time_tolerance=0.1)
     circuits = [_constant_circuit(n=2, d=2, value=1.0) for _ in range(2)]
 
-    def estimator(_circuit: Circuit, _budget: int) -> np.ndarray:
-        return np.ones((2, 2), dtype=np.float32)
+    def estimator(_circuit: Circuit, _budget: int):
+        for _ in range(2):
+            yield np.ones((2,), dtype=np.float32)
 
     report = score_estimator_report(
         estimator,

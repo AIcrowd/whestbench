@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
+import traceback
 from typing import Any, Literal, overload
 
-from .estimators import combined_estimator
+from .estimators import CombinedEstimator
 from .reporting import render_agent_report, render_human_report
 from .scoring import ContestParams, score_estimator_report
+
+_DEFAULT_ESTIMATOR = CombinedEstimator()
 
 
 @overload
@@ -36,7 +40,7 @@ def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[s
 def run_default_report(*, profile: bool = False, detail: str = "raw") -> dict[str, Any]:
     """Run the default local evaluator scenario and return report payload."""
     return score_estimator_report(
-        combined_estimator,
+        _DEFAULT_ESTIMATOR.predict,
         n_circuits=10,
         n_samples=10000,
         contest_params=ContestParams(
@@ -58,33 +62,52 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Emit pretty JSON only for machine consumers.",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show traceback details on failures.",
+    )
     args = parser.parse_args(argv)
 
     mode = "agent" if argsinternal agent config_mode else "human"
     detail = "raw" if mode == "agent" else "full"
     profile = mode == "human"
-    report = run_default_report(profile=profile, detail=detail)
-    report["mode"] = mode
-    if mode == "agent":
-        output = render_agent_report(report)
+
+    try:
+        report = run_default_report(profile=profile, detail=detail)
+        report["mode"] = mode
+        if mode == "agent":
+            output = render_agent_report(report)
+            print(output, end="" if output.endswith("\n") else "\n")
+            return 0
+
+        if _supports_textual_dashboard():
+            try:
+                _launch_textual_dashboard(report)
+                return 0
+            except Exception as exc:
+                print(
+                    f"Textual UI unavailable, using static dashboard fallback: {exc}",
+                    file=sys.stderr,
+                )
+        else:
+            print("Textual UI unavailable, using static dashboard fallback.", file=sys.stderr)
+
+        output = render_human_report(report, show_diagnostic_plots=True)
         print(output, end="" if output.endswith("\n") else "\n")
         return 0
-
-    if _supports_textual_dashboard():
-        try:
-            _launch_textual_dashboard(report)
-            return 0
-        except Exception as exc:
-            print(
-                f"Textual UI unavailable, using static dashboard fallback: {exc}",
-                file=sys.stderr,
-            )
-    else:
-        print("Textual UI unavailable, using static dashboard fallback.", file=sys.stderr)
-
-    output = render_human_report(report, show_diagnostic_plots=True)
-    print(output, end="" if output.endswith("\n") else "\n")
-    return 0
+    except Exception as exc:  # pragma: no cover - covered via CLI tests
+        payload = _error_payload(exc, include_traceback=args.debug)
+        if mode == "agent":
+            print(json.dumps(payload, indent=2))
+        else:
+            error = payload["error"]
+            print(f"Error [{error['stage']}:{error['code']}]: {error['message']}")
+            if args.debug:
+                traceback.print_exc()
+            else:
+                print("Use --debug to include a traceback.")
+        return 1
 
 
 def _supports_textual_dashboard() -> bool:
@@ -105,3 +128,34 @@ def _launch_textual_dashboard(report: dict[str, Any]) -> None:
 
     app = DashboardApp(report=report)
     app.run()
+
+
+def _error_payload(exc: Exception, *, include_traceback: bool) -> dict[str, Any]:
+    """Build stable error payload shape for human/agent mode outputs."""
+    message = str(exc) or exc.__class__.__name__
+    error: dict[str, Any] = {
+        "stage": "scoring",
+        "code": _error_code(exc, message),
+        "message": message,
+    }
+    if include_traceback:
+        error["traceback"] = traceback.format_exc()
+    return {"ok": False, "error": error}
+
+
+def _error_code(exc: Exception, message: str) -> str:
+    """Map common scoring/stream-contract failures to stable error codes."""
+    lowered = message.lower()
+    if isinstance(exc, ValueError):
+        if "iterator" in lowered:
+            return "ESTIMATOR_STREAM_NOT_ITERABLE"
+        if "more than max_depth rows" in lowered:
+            return "ESTIMATOR_STREAM_TOO_MANY_ROWS"
+        if "exactly max_depth rows" in lowered:
+            return "ESTIMATOR_STREAM_TOO_FEW_ROWS"
+        if "must have shape" in lowered:
+            return "ESTIMATOR_STREAM_BAD_ROW_SHAPE"
+        if "finite" in lowered:
+            return "ESTIMATOR_STREAM_NON_FINITE_ROW"
+        return "SCORING_VALIDATION_ERROR"
+    return "SCORING_RUNTIME_ERROR"
