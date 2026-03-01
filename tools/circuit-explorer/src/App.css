@@ -693,3 +693,230 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================
+   JointJS Circuit Graph
+   ============================================ */
+
+.circuit-graph-joint {
+  position: relative;
+}
+
+.joint-container {
+  min-height: 400px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
+.mode-badge {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--gray-400);
+  background: var(--gray-100);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  margin-left: 10px;
+  font-family: var(--font-mono);
+}
+
+.zoom-indicator {
+  text-align: center;
+  font-size: 10px;
+  color: var(--gray-400);
+  padding: 6px 0 0;
+  font-family: var(--font-mono);
+}
+
+/* Gate tooltip (click-to-inspect) */
+.gate-tooltip {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 10px 14px;
+  z-index: 200;
+  min-width: 200px;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.tooltip-header {
+  font-weight: 600;
+  color: var(--gray-600);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.tooltip-op {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--coral);
+  margin-bottom: 4px;
+}
+
+.tooltip-coeffs,
+.tooltip-inputs,
+.tooltip-mean {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+.tooltip-mean {
+  margin-top: 4px;
+  color: var(--data-blue);
+  font-weight: 600;
+}
+
+/* ============================================
+   Circuit Heatmap
+   ============================================ */
+
+.circuit-heatmap {
+  position: relative;
+}
+
+.heatmap-axes {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 4px 0;
+}
+
+.axis-label-x,
+.axis-label-y {
+  font-size: 10px;
+  color: var(--gray-400);
+  font-family: var(--font-mono);
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0 0;
+}
+
+.legend-label {
+  font-size: 10px;
+  color: var(--gray-400);
+  font-family: var(--font-mono);
+}
+
+.legend-gradient {
+  width: 120px;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(to right, #3B82F6, #ffffff, #F0524D);
+  border: 1px solid var(--gray-200);
+}
+
+/* ============================================
+   Gate Detail Overlay
+   ============================================ */
+
+.gate-detail-overlay {
+  pointer-events: none;
+  z-index: 100;
+}
+
+.detail-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+}
+
+.detail-band {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.band-label {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--gray-400);
+  font-weight: 600;
+}
+
+.detail-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 120px;
+}
+
+.gate-header {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gate-symbol {
+  border: 2px solid var(--coral);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  background: var(--gray-50);
+}
+
+.gate-op {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-900);
+  text-align: center;
+}
+
+.gate-coefficients {
+  width: 100%;
+}
+
+.coeff-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--gray-600);
+  line-height: 1.8;
+}
+
+.coeff-label {
+  color: var(--gray-400);
+}
+
+.coeff-val {
+  font-weight: 600;
+}
+
+.gate-mean {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--data-blue);
+  font-weight: 600;
+  padding: 4px 8px;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: var(--radius-pill);
+}
+
+/* Subheading for nested sections */
+.subheading {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

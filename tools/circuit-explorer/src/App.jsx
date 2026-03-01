@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { randomCircuit } from "./circuit";
-import CircuitGraph from "./components/CircuitGraph";
+import CircuitGraphJoint from "./components/CircuitGraphJoint";
+import CircuitHeatmap from "./components/CircuitHeatmap";
 import Controls from "./components/Controls";
 import EstimatorComparison from "./components/EstimatorComparison";
 import EstimatorRunner from "./components/EstimatorRunner";
@@ -10,6 +11,7 @@ import SignalHeatmap from "./components/SignalHeatmap";
 import WireStats from "./components/WireStats";
 
 const DEFAULT_PARAMS = { width: 8, depth: 6, seed: 42 };
+const GRAPH_MODE_THRESHOLD = 4096; // n×d threshold for JointJS vs heatmap
 
 export default function App() {
   const [params, setParams] = useState(DEFAULT_PARAMS);
@@ -21,6 +23,10 @@ export default function App() {
     () => randomCircuit(params.width, params.depth, params.seed),
     [params.width, params.depth, params.seed]
   );
+
+  // Determine rendering mode
+  const totalGates = params.width * params.depth;
+  const useGraphMode = totalGates <= GRAPH_MODE_THRESHOLD;
 
   // Clear estimator results when circuit changes
   useEffect(() => {
@@ -60,53 +66,63 @@ export default function App() {
             onResult={handleEstimatorResult}
           />
 
-          <div className="layer-stepper">
-            <h3>Step Through</h3>
-            <div className="stepper-buttons">
+          {/* Layer stepper — only useful in graph mode */}
+          {useGraphMode && (
+            <div className="layer-stepper">
+              <h3>Step Through</h3>
+              <div className="stepper-buttons">
+                <button
+                  onClick={() =>
+                    setActiveLayer((l) =>
+                      l === undefined ? 0 : Math.max(0, l - 1)
+                    )
+                  }
+                >
+                  ◀ Prev
+                </button>
+                <span className="layer-indicator">
+                  {activeLayer === undefined
+                    ? "All layers"
+                    : `Layer ${activeLayer}`}
+                </span>
+                <button
+                  onClick={() =>
+                    setActiveLayer((l) =>
+                      l === undefined
+                        ? 0
+                        : Math.min(circuit.d - 1, l + 1)
+                    )
+                  }
+                >
+                  Next ▶
+                </button>
+              </div>
               <button
-                onClick={() =>
-                  setActiveLayer((l) =>
-                    l === undefined ? 0 : Math.max(0, l - 1)
-                  )
-                }
+                className="reset-btn"
+                onClick={() => setActiveLayer(undefined)}
               >
-                ◀ Prev
-              </button>
-              <span className="layer-indicator">
-                {activeLayer === undefined
-                  ? "All layers"
-                  : `Layer ${activeLayer}`}
-              </span>
-              <button
-                onClick={() =>
-                  setActiveLayer((l) =>
-                    l === undefined
-                      ? 0
-                      : Math.min(circuit.d - 1, l + 1)
-                  )
-                }
-              >
-                Next ▶
+                Show All
               </button>
             </div>
-            <button
-              className="reset-btn"
-              onClick={() => setActiveLayer(undefined)}
-            >
-              Show All
-            </button>
-          </div>
+          )}
         </aside>
 
         <main className="main-content">
-          {/* Circuit structure — always visible */}
-          <CircuitGraph
-            circuit={circuit}
-            means={displayMeans}
-            activeLayer={activeLayer}
-          />
+          {/* Circuit visualization — adaptive mode */}
+          {useGraphMode ? (
+            <CircuitGraphJoint
+              circuit={circuit}
+              means={displayMeans}
+              activeLayer={activeLayer}
+            />
+          ) : (
+            <CircuitHeatmap
+              circuit={circuit}
+              means={displayMeans}
+            />
+          )}
 
-          {/* Gate structure analysis — always visible (structural info) */}
+          {/* Gate structure analysis — always visible */}
           <GateStats circuit={circuit} />
 
           {/* After estimates are available */}
@@ -140,10 +156,20 @@ export default function App() {
             <div className="empty-state">
               <div className="empty-state-inner">
                 <span className="empty-icon">📊</span>
-                <p>Run an estimator from the sidebar to see signal analysis.</p>
+                <h3>Ready to Explore</h3>
+                <p>
+                  This circuit has <strong>{params.width}</strong> wires and{" "}
+                  <strong>{params.depth}</strong> layers of random gates.
+                </p>
                 <p className="empty-hint">
-                  Start with <strong>Ground Truth</strong> to establish a baseline,
-                  then compare <strong>Sampling</strong> and <strong>Mean Propagation</strong>.
+                  Your goal: estimate the mean output E[wire] of each wire
+                  over uniform ±1 inputs.
+                </p>
+                <p className="empty-hint">
+                  Start with <strong>Ground Truth</strong> (10k samples) to
+                  see exact means, then compare{" "}
+                  <strong>Sampling</strong> and{" "}
+                  <strong>Mean Propagation</strong>.
                 </p>
               </div>
             </div>

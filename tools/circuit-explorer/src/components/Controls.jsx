@@ -25,8 +25,8 @@ export default function Controls({ params, onParamsChange }) {
   return (
     <div className="controls-panel">
       <h2>Circuit</h2>
-      {slider("Width (n)", "width", 2, 64)}
-      {slider("Depth (d)", "depth", 1, 32)}
+      {slider("Width (n)", "width", 2, 1024)}
+      {slider("Depth (d)", "depth", 1, 256)}
 
       <div className="control-row">
         <label>
