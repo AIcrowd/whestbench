@@ -70,7 +70,7 @@ Profiling is call-level (per estimator invocation on one `(circuit, budget)` pai
 ## Test Harness
 
 This repository now includes a `pytest`-based test harness with:
-- Core unit/integration checks for `circuit.py`, `estimators.py`, and `evaluate.py`
+- Core unit/integration checks for `src/circuit_estimation/domain.py`, `generation.py`, `simulation.py`, `estimators.py`, and `scoring.py`
 - Exhaustive validation checks that compare estimator behavior against exact enumeration on small circuits
 
 ### Run the harness

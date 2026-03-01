@@ -34,7 +34,4 @@ include = [
     "src",
     "tests",
     "main.py",
-    "circuit.py",
-    "estimators.py",
-    "evaluate.py",
 ]

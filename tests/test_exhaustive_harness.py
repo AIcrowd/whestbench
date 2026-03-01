@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from circuit import random_circuit
-from estimators import covariance_propagation, mean_propagation
+from circuit_estimation.estimators import covariance_propagation, mean_propagation
+from circuit_estimation.generation import random_circuit
 from tests.helpers import exhaustive_means
 
 pytestmark = pytest.mark.exhaustive

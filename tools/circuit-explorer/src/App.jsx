@@ -14,7 +14,7 @@ import WireStats from "./components/WireStats";
 import { meanPropagation } from "./estimators";
 
 const DEFAULT_PARAMS = { width: 8, depth: 6, seed: 42 };
-const TOUR_PARAMS = { width: 4, depth: 3, seed: 42 };
+const TOUR_PARAMS = { width: 8, depth: 6, seed: 42 };
 const GRAPH_MODE_THRESHOLD = 4096;
 
 function formatTime(ms) {

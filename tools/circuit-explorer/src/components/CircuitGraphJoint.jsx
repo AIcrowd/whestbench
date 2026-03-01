@@ -153,10 +153,23 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
       }
     }
 
+    // Restore connected input nodes (x0, x1, ...) when gate is in layer 0
+    const connectedInputs = new Set();
+    if (l === 0) {
+      connectedInputs.add(gateData.first);
+      connectedInputs.add(gateData.second);
+    }
+
     graph.getElements().forEach((el) => {
       const d = el.get("gateData");
-      if (!d) return;
-      if (connectedGates.has(`${d.layerIndex}-${d.wireIndex}`)) {
+      if (d) {
+        if (connectedGates.has(`${d.layerIndex}-${d.wireIndex}`)) {
+          el.attr("body/opacity", 1);
+          el.attr("label/opacity", 1);
+        }
+      }
+      // Restore input nodes feeding the clicked gate
+      if (el.get("isInput") && connectedInputs.has(el.get("wireIndex"))) {
         el.attr("body/opacity", 1);
         el.attr("label/opacity", 1);
       }
@@ -174,6 +187,20 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
 
       const srcD = srcEl.get("gateData");
       const tgtD = tgtEl.get("gateData");
+
+      // Handle input node → layer 0 wires
+      if (!srcD && srcEl.get("isInput") && tgtD) {
+        const srcWire = srcEl.get("wireIndex");
+        if (tgtD.layerIndex === l && tgtD.wireIndex === w && l === 0 &&
+            (srcWire === gateData.first || srcWire === gateData.second)) {
+          lk.attr("line/stroke", WIRE_FLOW);
+          lk.attr("line/strokeWidth", 1.8);
+          lk.attr("line/opacity", 1);
+          lk.attr("line/targetMarker", FLOW_MARKER);
+        }
+        return;
+      }
+
       if (!srcD || !tgtD) return;
 
       const isInput =

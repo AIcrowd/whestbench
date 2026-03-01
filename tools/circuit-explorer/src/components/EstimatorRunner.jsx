@@ -65,24 +65,16 @@ export default function EstimatorRunner({ circuit, onResult }) {
     <div className="estimator-runner">
       <h2>Run Estimators</h2>
 
-      {/* Budget slider for sampling */}
-      <div className="control-row">
-        <label>
-          <span className="control-label">Sampling budget</span>
-          <span className="control-value">{budget.toLocaleString()}</span>
-        </label>
-        <input
-          type="range"
-          min={100}
-          max={50000}
-          step={100}
-          value={budget}
-          onChange={(e) => setBudget(Number(e.target.value))}
-        />
-      </div>
-
-      {/* Estimator buttons */}
-      <div className="estimator-buttons">
+      {/* ① Ground Truth */}
+      <div className="estimator-card estimator-card--gt">
+        <div className="estimator-card-header">
+          <span className="estimator-badge estimator-badge--gt">1</span>
+          <span className="estimator-card-title">Ground Truth</span>
+        </div>
+        <p className="estimator-card-desc">
+          Brute-force: samples <strong>10,000</strong> random inputs and averages
+          each wire. Slow but accurate.
+        </p>
         <button
           className="run-btn run-btn-gt"
           onClick={runGroundTruth}
@@ -90,7 +82,40 @@ export default function EstimatorRunner({ circuit, onResult }) {
         >
           {running === "groundTruth" ? "Running…" : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Ground Truth (10k)</>}
         </button>
+        {running === "groundTruth" && (
+          <div className="estimator-progress"><div className="estimator-progress-bar" /></div>
+        )}
+        {results.groundTruth && !running && (
+          <div className="estimator-card-result">
+            <span className="result-stat">{formatTime(results.groundTruth.time)}</span>
+            <span className="result-detail">{results.groundTruth.budget.toLocaleString()} samples</span>
+          </div>
+        )}
+      </div>
 
+      {/* ② Sampling */}
+      <div className="estimator-card estimator-card--sampling">
+        <div className="estimator-card-header">
+          <span className="estimator-badge estimator-badge--sampling">2</span>
+          <span className="estimator-card-title">Sampling</span>
+        </div>
+        <p className="estimator-card-desc">
+          Same idea, fewer samples. Faster but noisier — tune the budget below.
+        </p>
+        <div className="control-row">
+          <label>
+            <span className="control-label">Budget</span>
+            <span className="control-value">{budget.toLocaleString()}</span>
+          </label>
+          <input
+            type="range"
+            min={100}
+            max={50000}
+            step={100}
+            value={budget}
+            onChange={(e) => setBudget(Number(e.target.value))}
+          />
+        </div>
         <button
           className="run-btn run-btn-sampling"
           onClick={runSampling}
@@ -98,7 +123,26 @@ export default function EstimatorRunner({ circuit, onResult }) {
         >
           {running === "sampling" ? "Running…" : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Sampling ({budget.toLocaleString()})</>}
         </button>
+        {running === "sampling" && (
+          <div className="estimator-progress"><div className="estimator-progress-bar" /></div>
+        )}
+        {results.sampling && !running && (
+          <div className="estimator-card-result">
+            <span className="result-stat">{formatTime(results.sampling.time)}</span>
+            <span className="result-detail">{results.sampling.budget.toLocaleString()} samples</span>
+          </div>
+        )}
+      </div>
 
+      {/* ③ Mean Propagation */}
+      <div className="estimator-card estimator-card--meanprop">
+        <div className="estimator-card-header">
+          <span className="estimator-badge estimator-badge--meanprop">3</span>
+          <span className="estimator-card-title">Mean Propagation</span>
+        </div>
+        <p className="estimator-card-desc">
+          Analytic: propagates E[x] through each layer. Instant, no sampling needed.
+        </p>
         <button
           className="run-btn run-btn-meanprop"
           onClick={runMeanProp}
@@ -106,35 +150,17 @@ export default function EstimatorRunner({ circuit, onResult }) {
         >
           {running === "meanprop" ? "Running…" : <><svg className="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3" /></svg> Mean Propagation</>}
         </button>
+        {running === "meanprop" && (
+          <div className="estimator-progress"><div className="estimator-progress-bar" /></div>
+        )}
+        {results.meanprop && !running && (
+          <div className="estimator-card-result">
+            <span className="result-stat">{formatTime(results.meanprop.time)}</span>
+            <span className="result-detail">analytic</span>
+          </div>
+        )}
       </div>
-
-      {/* Results */}
-      {Object.keys(results).length > 0 && (
-        <div className="estimator-results">
-          <h3>Results</h3>
-          {results.groundTruth && (
-            <div className="result-row result-gt">
-              <span className="result-name">Ground Truth</span>
-              <span className="result-stat">{formatTime(results.groundTruth.time)}</span>
-              <span className="result-detail">{results.groundTruth.budget.toLocaleString()} samples</span>
-            </div>
-          )}
-          {results.sampling && (
-            <div className="result-row result-sampling">
-              <span className="result-name">Sampling</span>
-              <span className="result-stat">{formatTime(results.sampling.time)}</span>
-              <span className="result-detail">{results.sampling.budget.toLocaleString()} samples</span>
-            </div>
-          )}
-          {results.meanprop && (
-            <div className="result-row result-meanprop">
-              <span className="result-name">Mean Prop</span>
-              <span className="result-stat">{formatTime(results.meanprop.time)}</span>
-              <span className="result-detail">analytic</span>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
+

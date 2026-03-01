@@ -56,6 +56,7 @@ def test_default_mode_outputs_human_report(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict[str, Any] = {}
+    render_observed: dict[str, Any] = {}
 
     def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
         observed["profile"] = kwargs.get("profile")
@@ -71,7 +72,10 @@ def test_default_mode_outputs_human_report(
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report: (
+        lambda _report, *, show_diagnostic_plots=False: (
+            render_observed.update({"show_diagnostic_plots": show_diagnostic_plots}) or ""
+        )
+        + (
             "Circuit Estimation Report\n"
             "Readiness Scorecard\n"
             "Run Context\n"
@@ -91,6 +95,7 @@ def test_default_mode_outputs_human_report(
     assert "Hardware & Runtime" in captured.out
     assert "Use --agent-mode" in captured.out
     assert observed == {"profile": False, "detail": "raw"}
+    assert render_observed == {"show_diagnostic_plots": False}
 
 
 def test_agent_mode_stdout_is_json_only(
@@ -109,7 +114,7 @@ def test_agent_mode_stdout_is_json_only(
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report: pytest.fail("human renderer should not be called"),
+        lambda _report, *, show_diagnostic_plots=False: pytest.fail("human renderer should not be called"),
     )
     monkeypatch.setattr(
         cli,
@@ -125,3 +130,32 @@ def test_agent_mode_stdout_is_json_only(
     assert captured.out == '{\n  "mode": "agent"\n}\n'
     assert json.loads(captured.out) == {"mode": "agent"}
     assert observed == {"profile": True, "detail": "full"}
+
+
+def test_show_diagnostic_plots_flag_enables_human_plots(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    observed: dict[str, Any] = {}
+
+    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        return _sample_report(profile_enabled=bool(kwargs.get("profile")), detail=str(kwargs.get("detail", "raw")))
+
+    def fake_render_human_report(_report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> str:
+        observed["show_diagnostic_plots"] = show_diagnostic_plots
+        return "human\n"
+
+    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "render_human_report", fake_render_human_report)
+    monkeypatch.setattr(
+        cli,
+        "render_agent_report",
+        lambda _report: pytest.fail("agent renderer should not be called"),
+    )
+
+    exit_code = cli.main(["--show-diagnostic-plots"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert captured.out == "human\n"
+    assert observed == {"show_diagnostic_plots": True}

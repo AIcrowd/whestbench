@@ -6,7 +6,8 @@ from typing import Iterable, List
 import numpy as np
 from numpy.typing import NDArray
 
-from circuit import Circuit, Layer, run_batched
+from circuit_estimation.domain import Circuit, Layer
+from circuit_estimation.simulation import run_batched
 
 
 def make_layer(

@@ -1,39 +1,38 @@
 /**
- * SignalHeatmap — SVG heatmap of wire means across layers, using Recharts-style responsive container.
- * Each cell is an SVG rect — never pixelated.
+ * SignalHeatmap — SVG heatmap of wire means across layers.
+ * Uses container-measured width to fill the panel while keeping text readable.
  */
+import { useEffect, useRef, useState } from "react";
+import { meanToColor } from "./gateShapes";
+export default function SignalHeatmap({ means, width: n, depth: d, source }) {
+  const containerRef = useRef(null);
+  const [containerW, setContainerW] = useState(0);
 
-export default function SignalHeatmap({ means, width: n, depth: d }) {
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerW(entry.contentRect.width);
+      }
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   if (!means || means.length === 0) return null;
 
-  const maxCellW = 32;
-  const maxCellH = 24;
-  const cellW = Math.max(8, Math.min(maxCellW, Math.floor(500 / n)));
-  const cellH = Math.max(8, Math.min(maxCellH, Math.floor(320 / d)));
-  const padL = 28;
-  const padT = 16;
-  const padB = 20;
-  const padR = 8;
+  const padL = 32;
+  const padT = 8;
+  const padB = 18;
+  const padR = 4;
+
+  // Compute cell sizes from available width
+  const availableW = Math.max(100, containerW - padL - padR);
+  const cellW = Math.max(8, Math.floor(availableW / n));
+  const cellH = Math.max(8, Math.min(28, Math.floor(280 / d)));
 
   const svgW = padL + n * cellW + padR;
   const svgH = padT + d * cellH + padB;
-
-  const meanColor = (val) => {
-    const t = (val + 1) / 2;
-    if (t < 0.5) {
-      const p = t * 2;
-      const r = Math.round(59 + p * (156 - 59));
-      const g = Math.round(130 + p * (163 - 130));
-      const b = Math.round(246 + p * (175 - 246));
-      return `rgb(${r},${g},${b})`;
-    } else {
-      const p = (t - 0.5) * 2;
-      const r = Math.round(156 + p * (240 - 156));
-      const g = Math.round(163 + p * (82 - 163));
-      const b = Math.round(175 + p * (77 - 175));
-      return `rgb(${r},${g},${b})`;
-    }
-  };
 
   const cells = [];
   for (let layer = 0; layer < d && layer < means.length; layer++) {
@@ -47,7 +46,7 @@ export default function SignalHeatmap({ means, width: n, depth: d }) {
           width={cellW - 1}
           height={cellH - 1}
           rx={2}
-          fill={meanColor(val)}
+          fill={meanToColor(val)}
         >
           <title>L{layer} w{wire}: {val.toFixed(4)}</title>
         </rect>
@@ -63,7 +62,7 @@ export default function SignalHeatmap({ means, width: n, depth: d }) {
       <text
         key={`yl-${l}`}
         x={padL - 4}
-        y={padT + l * cellH + cellH / 2 + 4}
+        y={padT + l * cellH + cellH / 2 + 3}
         fontSize={9}
         fill="#9CA3AF"
         textAnchor="end"
@@ -82,7 +81,7 @@ export default function SignalHeatmap({ means, width: n, depth: d }) {
       <text
         key={`xl-${w}`}
         x={padL + w * cellW + cellW / 2}
-        y={padT + d * cellH + 14}
+        y={padT + d * cellH + 13}
         fontSize={9}
         fill="#9CA3AF"
         textAnchor="middle"
@@ -95,15 +94,20 @@ export default function SignalHeatmap({ means, width: n, depth: d }) {
 
   return (
     <div className="panel">
-      <h2>Wire Means Heatmap</h2>
-      <div style={{ overflowX: "auto" }}>
-        <svg width={svgW} height={svgH} style={{ display: "block" }}>
-          {cells}
-          {layerLabels}
-          {wireLabels}
-          <text x={padL - 4} y={padT - 4} fontSize={9} fill="#9CA3AF" textAnchor="end">Layer</text>
-          <text x={padL + n * cellW} y={padT + d * cellH + 14} fontSize={9} fill="#9CA3AF" textAnchor="end">Wire</text>
-        </svg>
+      <h2>
+        Wire Means Heatmap
+        {source && <span className="source-badge">{source}</span>}
+      </h2>
+      <div ref={containerRef} style={{ width: "100%", overflowX: "auto" }}>
+        {containerW > 0 && (
+          <svg width={svgW} height={svgH} style={{ display: "block" }}>
+            {cells}
+            {layerLabels}
+            {wireLabels}
+            <text x={padL - 4} y={padT - 1} fontSize={9} fill="#9CA3AF" textAnchor="end">Layer</text>
+            <text x={padL + n * cellW} y={padT + d * cellH + 13} fontSize={9} fill="#9CA3AF" textAnchor="end">Wire</text>
+          </svg>
+        )}
       </div>
       <div className="heatmap-legend">
         <span className="legend-item" style={{ color: "#334155" }}>◆ −1</span>

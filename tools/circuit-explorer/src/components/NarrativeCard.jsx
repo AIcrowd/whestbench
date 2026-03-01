@@ -57,8 +57,8 @@ const STEP_CONTENT = {
     border: "var(--gray-400)",
     text: (
       <>
-        This is a random Boolean circuit with <strong>4 wires</strong> and{" "}
-        <strong>3 layers</strong> of gates. Each gate takes two inputs (±1) and
+        This is a random Boolean circuit with <strong>8 wires</strong> and{" "}
+        <strong>6 layers</strong> of gates. Each gate takes two inputs (±1) and
         computes: <code>out = c + a·x + b·y + p·x·y</code>.{" "}
         <strong>Click any gate</strong> to see its coefficients.
       </>

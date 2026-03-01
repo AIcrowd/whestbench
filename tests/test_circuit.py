@@ -1,6 +1,7 @@
 import numpy as np
 
-from circuit import empirical_mean, random_gates, run_batched
+from circuit_estimation.generation import random_gates
+from circuit_estimation.simulation import empirical_mean, run_batched
 from tests.helpers import make_circuit, make_layer
 
 

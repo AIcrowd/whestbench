@@ -20,10 +20,12 @@
   --gray-600: #5D5F60;
   --gray-900: #1F1F1F;
 
-  /* Data */
-  --data-blue:    #3B82F6;
-  --data-amber:   #F59E0B;
-  --data-emerald: #10B981;
+  /* Chart palette (from circuit gate colors) */
+  --chart-1:  #D1D5DB;  /* constant — light gray */
+  --chart-2:  #94A3B8;  /* linear — slate */
+  --chart-3:  #334155;  /* dark slate (mean = -1) */
+  --chart-4:  #F0524D;  /* product — coral */
+  --chart-5:  #F7A09D;  /* mixed — coral tint */
 
   /* Typography */
   --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -139,6 +141,22 @@ body {
   color: var(--gray-400);
   margin-bottom: 14px;
 }
+
+/* Data source badge for panels */
+.source-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--coral);
+  background: var(--coral-light);
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
 
 /* Sub-headings inside panels */
 .subheading {
@@ -279,12 +297,69 @@ body {
   padding-top: 16px;
 }
 
+/* Estimator cards */
+.estimator-card {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.estimator-card-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
+}
+
+.estimator-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--white);
+  flex-shrink: 0;
+}
+
+.estimator-badge--gt       { background: var(--coral); }
+.estimator-badge--sampling { background: var(--gray-900); }
+.estimator-badge--meanprop { background: var(--gray-600); }
+
+.estimator-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.estimator-card-desc {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--gray-400);
+  margin-bottom: 8px;
+}
+
+.estimator-card-desc strong {
+  color: var(--gray-600);
+  font-weight: 500;
+}
+
+.estimator-card .control-row {
+  margin-bottom: 8px;
+}
+
 .estimator-buttons {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-top: 4px;
 }
+
 
 .run-btn {
   width: 100%;
@@ -339,30 +414,40 @@ body {
   box-shadow: 0 4px 12px rgba(93, 95, 96, 0.3);
 }
 
-/* Progress bar */
-.progress-container {
-  margin-top: 10px;
+/* Inline results inside estimator cards */
+.estimator-card-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 4px 8px;
+  background: var(--white);
+  border-radius: 6px;
+  border: 1px solid var(--gray-100);
 }
 
-.progress-label {
-  font-size: 11px;
-  color: var(--gray-600);
-  margin-bottom: 4px;
-}
-
-.progress-track {
-  height: 4px;
+/* Indeterminate progress pulse */
+.estimator-progress {
+  height: 3px;
   background: var(--gray-100);
   border-radius: 2px;
   overflow: hidden;
+  margin-top: 6px;
 }
 
-.progress-fill {
+.estimator-progress-bar {
   height: 100%;
+  width: 40%;
   background: var(--coral);
   border-radius: 2px;
-  transition: width 0.1s ease-out;
+  animation: estimator-pulse 1s ease-in-out infinite;
 }
+
+@keyframes estimator-pulse {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
 
 /* Results */
 .estimator-results {
@@ -607,11 +692,43 @@ body {
 
 /* ──── Gate Stats ──── */
 
+.gate-formula-explain {
+  margin-bottom: 14px;
+}
+
+.formula-box {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-100);
+  padding: 4px 10px;
+  border-radius: 4px;
+  color: var(--gray-800);
+  font-family: var(--font-mono);
+  margin-bottom: 6px;
+}
+
+.formula-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 10px;
+  margin-top: 6px;
+}
+
+.formula-legend span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
 .gate-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
+
 
 /* ──── Wire Stats ──── */
 
