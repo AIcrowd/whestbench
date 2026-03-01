@@ -2,6 +2,12 @@
  * CircuitHeatmap — Canvas-rendered wires × layers heatmap
  * for large circuits (n×d > 4096).
  * Shows wire means as a color grid, with hover triggering a detail overlay.
+ *
+ * Performance notes:
+ * - Uses a main canvas for the heatmap grid (redrawn only when data changes)
+ * - Uses a separate overlay canvas for crosshair (redrawn on mousemove — cheap)
+ * - Debounces hover: RAF-gated, only updates when the hovered cell changes
+ * - Resolution cap: sub-pixel cells are rendered at reduced resolution
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import GateDetailOverlay from "./GateDetailOverlay";
@@ -9,31 +15,54 @@ import { meanToColor } from "./gateShapes";
 
 export default function CircuitHeatmap({ circuit, means }) {
   const canvasRef = useRef(null);
+  const overlayCanvasRef = useRef(null);
   const containerRef = useRef(null);
   const [hovered, setHovered] = useState(null); // { wire, layer, x, y }
   const [dims, setDims] = useState({ cellW: 0, cellH: 0 });
+  const lastCellRef = useRef(null);
+  const rafRef = useRef(null);
 
   const n = circuit.n;
   const d = circuit.d;
 
+  // Max height for the heatmap — fits nicely in the viewport
+  const MAX_HEIGHT = 500;
+
   // Render heatmap to canvas
   useEffect(() => {
     const canvas = canvasRef.current;
+    const overlay = overlayCanvasRef.current;
     const container = containerRef.current;
-    if (!canvas || !container) return;
+    if (!canvas || !overlay || !container) return;
 
     const rect = container.getBoundingClientRect();
-    const width = rect.width;
-    const height = Math.max(300, Math.min(600, n * 3)); // adaptive height
+    // Constrain width to container (accounting for padding)
+    const width = Math.floor(rect.width);
+    const height = Math.min(MAX_HEIGHT, Math.max(200, Math.floor(n * 2)));
 
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+
+    // Resolution cap: if cells would be sub-pixel, render at lower resolution
+    // and let the browser scale the canvas
+    const rawCellW = width / d;
+    const rawCellH = height / n;
+    const renderScale = (rawCellW < 1 || rawCellH < 1)
+      ? Math.max(1, Math.min(dpr, 2))
+      : dpr;
+
+    canvas.width = width * renderScale;
+    canvas.height = height * renderScale;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
 
+    // Match overlay canvas dimensions
+    overlay.width = width * dpr;
+    overlay.height = height * dpr;
+    overlay.style.width = `${width}px`;
+    overlay.style.height = `${height}px`;
+
     const ctx = canvas.getContext("2d");
-    ctx.scale(dpr, dpr);
+    ctx.scale(renderScale, renderScale);
 
     const cellW = width / d;
     const cellH = height / n;
@@ -74,37 +103,91 @@ export default function CircuitHeatmap({ circuit, means }) {
     ctx.fillStyle = "#9CA3AF";
     ctx.font = "10px 'IBM Plex Mono', monospace";
     ctx.textAlign = "center";
-    // Layer labels at bottom
     const labelStep = Math.max(1, Math.floor(d / 10));
     for (let l = 0; l < d; l += labelStep) {
       ctx.fillText(`${l}`, l * cellW + cellW / 2, height - 2);
     }
   }, [circuit, means, n, d]);
 
-  // Handle mouse move to detect hovered cell
+  // Draw crosshair on overlay canvas
+  const drawCrosshair = useCallback((layer, wire) => {
+    const overlay = overlayCanvasRef.current;
+    if (!overlay || !dims.cellW) return;
+    const dpr = window.devicePixelRatio || 1;
+    const ctx = overlay.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, dims.width, dims.height);
+
+    if (layer === null || wire === null) return;
+
+    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+    ctx.lineWidth = 1;
+
+    // Vertical line (layer column)
+    const lx = layer * dims.cellW + dims.cellW / 2;
+    ctx.beginPath();
+    ctx.moveTo(lx, 0);
+    ctx.lineTo(lx, dims.height);
+    ctx.stroke();
+
+    // Horizontal line (wire row)
+    const wy = wire * dims.cellH + dims.cellH / 2;
+    ctx.beginPath();
+    ctx.moveTo(0, wy);
+    ctx.lineTo(dims.width, wy);
+    ctx.stroke();
+
+    // Cell highlight border
+    ctx.strokeStyle = "rgba(255,255,255,0.9)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(
+      layer * dims.cellW,
+      wire * dims.cellH,
+      dims.cellW,
+      dims.cellH
+    );
+  }, [dims]);
+
+  // Debounced mouse move — RAF-gated, only updates when cell changes
   const handleMouseMove = useCallback(
     (e) => {
-      if (!dims.cellW) return;
-      const rect = canvasRef.current.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
+      if (rafRef.current) return; // already scheduled
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        if (!dims.cellW) return;
+        const rect = canvasRef.current.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
 
-      const layer = Math.floor(mx / dims.cellW);
-      const wire = Math.floor(my / dims.cellH);
+        const layer = Math.floor(mx / dims.cellW);
+        const wire = Math.floor(my / dims.cellH);
+        const cellKey = `${layer},${wire}`;
 
-      if (layer >= 0 && layer < d && wire >= 0 && wire < n) {
-        setHovered({
-          wire,
-          layer,
-          x: e.clientX - containerRef.current.getBoundingClientRect().left,
-          y: e.clientY - containerRef.current.getBoundingClientRect().top,
-        });
-      } else {
-        setHovered(null);
-      }
+        if (cellKey === lastCellRef.current) return; // same cell, skip
+        lastCellRef.current = cellKey;
+
+        if (layer >= 0 && layer < d && wire >= 0 && wire < n) {
+          drawCrosshair(layer, wire);
+          setHovered({
+            wire,
+            layer,
+            x: e.clientX - containerRef.current.getBoundingClientRect().left,
+            y: e.clientY - containerRef.current.getBoundingClientRect().top,
+          });
+        } else {
+          drawCrosshair(null, null);
+          setHovered(null);
+        }
+      });
     },
-    [dims, n, d]
+    [dims, n, d, drawCrosshair]
   );
+
+  const handleMouseLeave = useCallback(() => {
+    lastCellRef.current = null;
+    drawCrosshair(null, null);
+    setHovered(null);
+  }, [drawCrosshair]);
 
   return (
     <div className="panel circuit-heatmap" ref={containerRef}>
@@ -114,12 +197,16 @@ export default function CircuitHeatmap({ circuit, means }) {
           Heatmap Mode · {n}×{d} = {(n * d).toLocaleString()} gates
         </span>
       </h2>
-      <div style={{ position: "relative" }}>
+      <div className="heatmap-canvas-container">
         <canvas
           ref={canvasRef}
+          style={{ display: "block" }}
+        />
+        <canvas
+          ref={overlayCanvasRef}
+          className="heatmap-overlay-canvas"
           onMouseMove={handleMouseMove}
-          onMouseLeave={() => setHovered(null)}
-          style={{ cursor: "crosshair", display: "block", width: "100%" }}
+          onMouseLeave={handleMouseLeave}
         />
         <div className="heatmap-axes">
           <span className="axis-label-x">Layer →</span>
