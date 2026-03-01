@@ -2,16 +2,35 @@
  * NarrativeCard — Contextual card for each walkthrough step.
  * Shows step-specific text with a colored left border and Back/Next nav.
  */
+import { useCallback, useRef, useState } from "react";
 
 /**
  * MathTerm — inline highlighted term with a hover tooltip.
- * Used for jargon like E[wire] to give users an intuitive explanation.
+ * Uses position: fixed so the tooltip always appears above all elements.
  */
 function MathTerm({ children, tip }) {
+  const ref = useRef(null);
+  const [pos, setPos] = useState(null);
+
+  const onEnter = useCallback(() => {
+    if (!ref.current) return;
+    const r = ref.current.getBoundingClientRect();
+    setPos({ left: r.left + r.width / 2, top: r.bottom + 8 });
+  }, []);
+
+  const onLeave = useCallback(() => setPos(null), []);
+
   return (
-    <span className="math-term">
+    <span className="math-term" ref={ref} onMouseEnter={onEnter} onMouseLeave={onLeave}>
       {children}
-      <span className="math-term-tip">{tip}</span>
+      {pos && (
+        <span
+          className="math-term-tip math-term-tip--visible"
+          style={{ left: pos.left, top: pos.top }}
+        >
+          {tip}
+        </span>
+      )}
     </span>
   );
 }
