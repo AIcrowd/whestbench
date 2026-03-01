@@ -3,9 +3,9 @@ import { useState } from "react";
 export default function Controls({ params, onParamsChange }) {
   const [localSeed, setLocalSeed] = useState(String(params.seed));
 
-  const slider = (label, key, min, max, step = 1) => (
+  const slider = (label, key, min, max, step = 1, tooltip = "") => (
     <div className="control-row">
-      <label>
+      <label title={tooltip}>
         <span className="control-label">{label}</span>
         <span className="control-value">{params[key]}</span>
       </label>
@@ -25,8 +25,8 @@ export default function Controls({ params, onParamsChange }) {
   return (
     <div className="controls-panel">
       <h2>Circuit</h2>
-      {slider("Width (n)", "width", 2, 1024)}
-      {slider("Depth (d)", "depth", 1, 256)}
+      {slider("Width (n)", "width", 2, 1024, 1, "Number of wires (parallel values) per layer")}
+      {slider("Depth (d)", "depth", 1, 256, 1, "Number of gate layers in the circuit")}
 
       <div className="control-row">
         <label>

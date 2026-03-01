@@ -247,11 +247,11 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
     // --- Create input wire markers (column before layer 0) ---
     // Standard circuit notation: prominent labeled markers on the left
     const inputNodes = [];
-    const INPUT_W = 40;
-    const INPUT_H = GATE_H;
+    const INPUT_W = 56;
+    const INPUT_H = GATE_H + 4;
     for (let w = 0; w < circuit.n; w++) {
       const x = PAD_X;
-      const y = PAD_Y + w * (GATE_H + ROW_GAP);
+      const y = PAD_Y + w * (GATE_H + ROW_GAP) - 2;
 
       const node = new shapes.standard.Rectangle({
         position: { x, y },
@@ -260,13 +260,13 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
           body: {
             fill: "#FEF2F2",
             stroke: "#F0524D",
-            strokeWidth: 2,
-            rx: 3,
-            ry: 3,
+            strokeWidth: 2.5,
+            rx: 4,
+            ry: 4,
           },
           label: {
             text: `x${w}`,
-            fontSize: 9,
+            fontSize: 12,
             fontWeight: "bold",
             fontFamily: "'IBM Plex Mono', monospace",
             fill: "#991B1B",
@@ -422,27 +422,27 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
     }
 
     // --- Create output wire markers (column after last layer) ---
-    const OUTPUT_W = 40;
+    const OUTPUT_W = 56;
     const lastLayer = circuit.d - 1;
     const outputX = PAD_X + GATE_X_OFFSET + (circuit.d) * (GATE_W + COL_GAP);
     for (let w = 0; w < circuit.n; w++) {
-      const y = PAD_Y + w * (GATE_H + ROW_GAP);
+      const y = PAD_Y + w * (GATE_H + ROW_GAP) - 2;
 
       const outNode = new shapes.standard.Rectangle({
         position: { x: outputX, y },
-        size: { width: OUTPUT_W, height: GATE_H },
+        size: { width: OUTPUT_W, height: GATE_H + 4 },
         attrs: {
           body: {
             fill: "#F8FAFC",
             stroke: "#334155",
-            strokeWidth: 2,
-            rx: 3,
-            ry: 3,
+            strokeWidth: 2.5,
+            rx: 4,
+            ry: 4,
             class: pulseOutputs ? "output-node-pulse" : "",
           },
           label: {
             text: `y${w}`,
-            fontSize: 9,
+            fontSize: 12,
             fontWeight: "bold",
             fontFamily: "'IBM Plex Mono', monospace",
             fill: "#334155",
