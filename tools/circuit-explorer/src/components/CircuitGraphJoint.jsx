@@ -25,13 +25,13 @@ const PAD_Y = 30;
 /* Default wire colors */
 const WIRE_COLOR = "#CBD5E1";
 const WIRE_FLOW = "#475569";       // single muted color for highlighted wires
-const GATE_STROKE = "#94A3B8";
+const GATE_STROKE = "#1E293B";
 const GATE_FILL_DEFAULT = "#FFFFFF";
 
 /* Small arrow marker for flow direction */
 const FLOW_MARKER = {
   type: "path",
-  d: "M 0 -3 L 6 0 L 0 3 z",
+  d: "M 6 -3 L 0 0 L 6 3 z",
   fill: WIRE_FLOW,
 };
 
@@ -240,10 +240,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
               ry: 3,
             },
             label: {
-              text: String(w),
-              fontSize: 8,
-              fontFamily: "'IBM Plex Mono', monospace",
-              fill: "#94A3B8",
+              text: "",
             },
           },
           ports: {
