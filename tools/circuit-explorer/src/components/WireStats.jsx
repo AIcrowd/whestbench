@@ -95,7 +95,7 @@ export default function WireStats({ means, width: n, depth: d }) {
           <Area
             type="monotone"
             dataKey="band"
-            fill="#3B82F6"
+            fill="#F0524D"
             fillOpacity={0.12}
             stroke="none"
             name="± σ"
@@ -105,9 +105,9 @@ export default function WireStats({ means, width: n, depth: d }) {
           <Line
             type="monotone"
             dataKey="mean"
-            stroke="#3B82F6"
+            stroke="#F0524D"
             strokeWidth={2}
-            dot={{ r: 4, fill: "#3B82F6", stroke: "#fff", strokeWidth: 2 }}
+            dot={{ r: 4, fill: "#F0524D", stroke: "#fff", strokeWidth: 2 }}
             name="μ (mean)"
           />
 
@@ -124,7 +124,7 @@ export default function WireStats({ means, width: n, depth: d }) {
           <Line
             type="monotone"
             dataKey="min"
-            stroke="#3B82F6"
+            stroke="#334155"
             strokeWidth={1}
             strokeDasharray="3 3"
             dot={false}
@@ -165,7 +165,7 @@ export default function WireStats({ means, width: n, depth: d }) {
             }}
             formatter={(value) => [value.toFixed(4), undefined]}
           />
-          <Scatter data={scatterData} fill="#3B82F6" fillOpacity={0.4} r={2.5} />
+          <Scatter data={scatterData} fill="#F0524D" fillOpacity={0.4} r={2.5} />
         </ScatterChart>
       </ResponsiveContainer>
     </div>

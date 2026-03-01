@@ -3,7 +3,8 @@
  *
  * Every gate computes: output = c + a·x + b·y + p·x·y
  * All gates use the SAME visual shape (rectangle).
- * Gate type is indicated by a subtle color tint on the border.
+ *
+ * Unified color palette anchored on AIcrowd coral #F0524D.
  */
 
 /* Uniform gate dimensions */
@@ -12,10 +13,10 @@ export const GATE_H = 32;
 
 /* Gate type → border color (all use same rectangle shape) */
 const TYPE_COLORS = {
-  and:      { stroke: "#EF4444", text: "#991B1B" },
-  linear:   { stroke: "#3B82F6", text: "#1E40AF" },
-  product:  { stroke: "#F59E0B", text: "#92400E" },
-  constant: { stroke: "#9CA3AF", text: "#6B7280" },
+  and:      { stroke: "#F0524D", text: "#991B1B" },
+  linear:   { stroke: "#94A3B8", text: "#475569" },
+  product:  { stroke: "#F0524D", text: "#991B1B" },
+  constant: { stroke: "#D1D5DB", text: "#6B7280" },
 };
 
 /**
@@ -47,19 +48,25 @@ export function gateColor(type) {
 
 /**
  * Map a mean value in [-1,1] to a fill color.
- * Blue (-1) → White (0) → Red (+1)
+ * Dark slate (-1) → White (0) → Coral (+1)
+ *
+ * Unified: uses AIcrowd coral #F0524D for positive,
+ * and dark slate #334155 for negative.
+ * No blue — avoids conflict with categorical/chart colors.
  */
 export function meanToColor(mean) {
   if (mean === null || mean === undefined) return null;
   const t = Math.max(-1, Math.min(1, mean));
   if (t < 0) {
-    const s = 1 + t;
-    const r = Math.round(59 + (255 - 59) * s);
-    const g = Math.round(130 + (255 - 130) * s);
-    const b = Math.round(246 + (255 - 246) * s);
+    // Dark slate (#334155) → White (#FFFFFF)
+    const s = 1 + t; // 0 at -1, 1 at 0
+    const r = Math.round(51 + (255 - 51) * s);
+    const g = Math.round(65 + (255 - 65) * s);
+    const b = Math.round(85 + (255 - 85) * s);
     return `rgb(${r},${g},${b})`;
   } else {
-    const r = 255;
+    // White (#FFFFFF) → Coral (#F0524D)
+    const r = Math.round(255 - (255 - 240) * t);
     const g = Math.round(255 - (255 - 82) * t);
     const b = Math.round(255 - (255 - 77) * t);
     return `rgb(${r},${g},${b})`;
