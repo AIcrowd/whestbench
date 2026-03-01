@@ -182,7 +182,9 @@ def score_submission_report(
     profile_calls: list[dict[str, float | int | str]] = []
     try:
         for budget in contest_params.budgets:
-            baseline_times = np.array(sampling_baseline_time(budget, width, depth), dtype=np.float32)
+            baseline_times = np.array(
+                sampling_baseline_time(budget, width, depth), dtype=np.float32
+            )
             baseline_times = np.maximum(baseline_times, np.float32(1e-9))
             baseline_total_time = float(np.sum(baseline_times))
             all_outputs: list[list[NDArray[np.float32]]] = []
@@ -253,7 +255,9 @@ def score_submission_report(
             mse = ((estimates - means) ** 2).mean(axis=(0, 2))
             mse_mean = float(np.mean(mse))
             call_effective_time_s_mean = float(np.mean(call_effective_times))
-            call_time_ratio_mean = float(call_effective_time_s_mean / max(baseline_total_time, 1e-9))
+            call_time_ratio_mean = float(
+                call_effective_time_s_mean / max(baseline_total_time, 1e-9)
+            )
             adjusted_mse = float(mse_mean * call_time_ratio_mean)
 
             by_budget_raw.append(
