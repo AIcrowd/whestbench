@@ -6,6 +6,7 @@ import hashlib
 import importlib.abc
 import importlib.util
 import inspect
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -44,7 +45,16 @@ def _import_module_from_path(module_path: Path) -> ModuleType:
 
     module = importlib.util.module_from_spec(spec)
     loader = cast(importlib.abc.Loader, spec.loader)
-    loader.exec_module(module)
+    previous_module = sys.modules.get(module_name)
+    sys.modules[module_name] = module
+    try:
+        loader.exec_module(module)
+    except Exception:
+        if previous_module is None:
+            sys.modules.pop(module_name, None)
+        else:
+            sys.modules[module_name] = previous_module
+        raise
     return module
 
 
@@ -84,6 +94,7 @@ def _resolve_estimator_class(
 
 def _discover_estimator_classes(module: ModuleType) -> list[type[BaseEstimator]]:
     estimator_classes: list[type[BaseEstimator]] = []
+    seen_class_ids: set[int] = set()
     for value in vars(module).values():
         if (
             inspect.isclass(value)
@@ -91,5 +102,9 @@ def _discover_estimator_classes(module: ModuleType) -> list[type[BaseEstimator]]
             and value is not BaseEstimator
             and value.__module__ == module.__name__
         ):
+            class_id = id(value)
+            if class_id in seen_class_ids:
+                continue
+            seen_class_ids.add(class_id)
             estimator_classes.append(cast(type[BaseEstimator], value))
     return estimator_classes

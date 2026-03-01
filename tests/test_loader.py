@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from textwrap import dedent
 
@@ -77,3 +78,45 @@ def test_loader_errors_on_ambiguous_multiple_classes(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="Ambiguous estimator classes"):
         load_estimator_from_path(module_path)
+
+
+def test_loader_deduplicates_alias_bindings_for_single_estimator_class(
+    tmp_path: Path,
+) -> None:
+    module_path = _write_estimator_module(
+        tmp_path,
+        """
+        import numpy as np
+        from circuit_estimation import BaseEstimator
+
+        class CustomEstimator(BaseEstimator):
+            def predict(self, circuit: object, budget: int) -> np.ndarray:
+                return np.ones((1, 1), dtype=np.float32)
+
+        AliasEstimator = CustomEstimator
+        """,
+    )
+
+    estimator, metadata = load_estimator_from_path(module_path)
+
+    assert estimator.__class__.__name__ == "CustomEstimator"
+    assert metadata.class_name == "CustomEstimator"
+
+
+def test_loader_registers_module_in_sys_modules(tmp_path: Path) -> None:
+    module_path = _write_estimator_module(
+        tmp_path,
+        """
+        import numpy as np
+        from circuit_estimation import BaseEstimator
+
+        class Estimator(BaseEstimator):
+            def predict(self, circuit: object, budget: int) -> np.ndarray:
+                return np.zeros((1, 1), dtype=np.float32)
+        """,
+    )
+
+    estimator, metadata = load_estimator_from_path(module_path)
+
+    assert metadata.module_name in sys.modules
+    assert estimator.__class__.__module__ == metadata.module_name
