@@ -1,271 +1,73 @@
 /**
- * gateShapes.js — Custom JointJS shape definitions for circuit gates.
+ * gateShapes.js — Gate classification + visual properties for JointJS circuit.
  *
  * Every gate computes: output = c + a·x + b·y + p·x·y
  * Visual shape depends on which coefficients are nonzero.
  *
- * Gate types:
- *   AND  →  D-shape (flat left wall, curved right — IEEE AND notation)
- *   Linear  →  Triangle pointing right (buffer/amplifier)
- *   Product →  Circle with × cross (multiplier)
- *   Constant →  Square with flat line (fixed source)
+ * All gates use the SAME JointJS size (GATE_W × GATE_H) so columns align.
+ * The SVG path inside varies to convey gate type.
+ * Ports are added at the graph-component level (not in shape definition)
+ * so we can use JointJS port groups ('in' on left, 'out' on right).
  */
-import { dia } from "@joint/core";
 
 /* ============================================================ */
-/*  1. Custom JointJS shape definitions                          */
+/*  Uniform gate dimensions                                      */
+/* ============================================================ */
+export const GATE_W = 52;
+export const GATE_H = 36;
+
+/* ============================================================ */
+/*  Gate type info                                                */
 /* ============================================================ */
 
 /**
- * AND gate — D-shape (IEEE Std 91-1984).
- * Flat left wall with a curved right side.
+ * Gate type visual config: SVG path (inside GATE_W × GATE_H box),
+ * fill color, stroke color.
  */
-const GateAND = dia.Element.define(
-  "circuit.GateAND",
-  {
-    size: { width: 64, height: 38 },
-    attrs: {
-      body: {
-        d: "M 0 0 L 32 0 C 64 0 64 38 32 38 L 0 38 Z",
-        fill: "#FEE2E2",
-        stroke: "#F0524D",
-        strokeWidth: 2,
-      },
-      label: {
-        text: "AND",
-        x: 28,
-        y: 19,
-        textAnchor: "middle",
-        textVerticalAnchor: "middle",
-        fontSize: 9,
-        fontFamily: "'IBM Plex Mono', monospace",
-        fill: "#991B1B",
-      },
-      // Input ports (decorative)
-      portIn1: {
-        d: "M -6 12 L 0 12",
-        stroke: "#F0524D",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-      portIn2: {
-        d: "M -6 26 L 0 26",
-        stroke: "#F0524D",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-      // Output port
-      portOut: {
-        d: "M 56 19 L 64 19",
-        stroke: "#F0524D",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-    },
+export const GATE_TYPES = {
+  and: {
+    // D-shape: flat left, curved right (IEEE AND)
+    path: `M 0 0 L ${GATE_W * 0.5} 0 Q ${GATE_W} 0 ${GATE_W} ${GATE_H / 2} Q ${GATE_W} ${GATE_H} ${GATE_W * 0.5} ${GATE_H} L 0 ${GATE_H} Z`,
+    fill: "#FEE2E2",
+    stroke: "#EF4444",
+    textColor: "#991B1B",
   },
-  {
-    markup: [
-      { tagName: "path", selector: "body" },
-      { tagName: "path", selector: "portIn1" },
-      { tagName: "path", selector: "portIn2" },
-      { tagName: "path", selector: "portOut" },
-      { tagName: "text", selector: "label" },
-    ],
-  }
-);
-
-/**
- * Linear gate — Triangle pointing right (buffer/amplifier).
- */
-const GateLinear = dia.Element.define(
-  "circuit.GateLinear",
-  {
-    size: { width: 64, height: 38 },
-    attrs: {
-      body: {
-        d: "M 0 0 L 56 19 L 0 38 Z",
-        fill: "#DBEAFE",
-        stroke: "#3B82F6",
-        strokeWidth: 2,
-        strokeLinejoin: "round",
-      },
-      label: {
-        text: "x",
-        x: 20,
-        y: 19,
-        textAnchor: "middle",
-        textVerticalAnchor: "middle",
-        fontSize: 9,
-        fontFamily: "'IBM Plex Mono', monospace",
-        fill: "#1E40AF",
-      },
-      portIn: {
-        d: "M -6 19 L 0 19",
-        stroke: "#3B82F6",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-      portOut: {
-        d: "M 56 19 L 64 19",
-        stroke: "#3B82F6",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-    },
+  linear: {
+    // Triangle pointing right (buffer)
+    path: `M 0 0 L ${GATE_W} ${GATE_H / 2} L 0 ${GATE_H} Z`,
+    fill: "#DBEAFE",
+    stroke: "#3B82F6",
+    textColor: "#1E40AF",
   },
-  {
-    markup: [
-      { tagName: "path", selector: "body" },
-      { tagName: "path", selector: "portIn" },
-      { tagName: "path", selector: "portOut" },
-      { tagName: "text", selector: "label" },
-    ],
-  }
-);
-
-/**
- * Product gate — Circle with cross marks (×  multiplier).
- */
-const GateProduct = dia.Element.define(
-  "circuit.GateProduct",
-  {
-    size: { width: 38, height: 38 },
-    attrs: {
-      body: {
-        d: "M 19 0 A 19 19 0 1 1 19 38 A 19 19 0 1 1 19 0 Z",
-        fill: "#FEF3C7",
-        stroke: "#F59E0B",
-        strokeWidth: 2,
-      },
-      cross1: {
-        d: "M 12 12 L 26 26",
-        stroke: "#B45309",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-      cross2: {
-        d: "M 26 12 L 12 26",
-        stroke: "#B45309",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-      label: {
-        text: "×",
-        x: 19,
-        y: 19,
-        textAnchor: "middle",
-        textVerticalAnchor: "middle",
-        fontSize: 9,
-        fontFamily: "'IBM Plex Mono', monospace",
-        fill: "#92400E",
-      },
-      portIn1: {
-        d: "M -6 12 L 3 12",
-        stroke: "#F59E0B",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-      portIn2: {
-        d: "M -6 26 L 3 26",
-        stroke: "#F59E0B",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-      portOut: {
-        d: "M 35 19 L 44 19",
-        stroke: "#F59E0B",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-    },
+  product: {
+    // Circle centered in the box
+    path: `M ${GATE_W / 2} 0 A ${Math.min(GATE_W, GATE_H) / 2} ${Math.min(GATE_W, GATE_H) / 2} 0 1 1 ${GATE_W / 2} ${GATE_H} A ${Math.min(GATE_W, GATE_H) / 2} ${Math.min(GATE_W, GATE_H) / 2} 0 1 1 ${GATE_W / 2} 0 Z`,
+    fill: "#FEF3C7",
+    stroke: "#F59E0B",
+    textColor: "#92400E",
   },
-  {
-    markup: [
-      { tagName: "path", selector: "body" },
-      { tagName: "path", selector: "cross1" },
-      { tagName: "path", selector: "cross2" },
-      { tagName: "path", selector: "portIn1" },
-      { tagName: "path", selector: "portIn2" },
-      { tagName: "path", selector: "portOut" },
-      { tagName: "text", selector: "label" },
-    ],
-  }
-);
-
-/**
- * Constant gate — Square with a horizontal line (DC source).
- */
-const GateConstant = dia.Element.define(
-  "circuit.GateConstant",
-  {
-    size: { width: 42, height: 38 },
-    attrs: {
-      body: {
-        d: "M 0 0 L 42 0 L 42 38 L 0 38 Z",
-        fill: "#F3F4F6",
-        stroke: "#9CA3AF",
-        strokeWidth: 2,
-      },
-      // Flat line symbol (DC)
-      dcLine: {
-        d: "M 12 19 L 30 19",
-        stroke: "#6B7280",
-        strokeWidth: 2,
-        fill: "none",
-      },
-      label: {
-        text: "+1",
-        x: 21,
-        y: 30,
-        textAnchor: "middle",
-        textVerticalAnchor: "middle",
-        fontSize: 8,
-        fontFamily: "'IBM Plex Mono', monospace",
-        fill: "#6B7280",
-      },
-      portOut: {
-        d: "M 42 19 L 50 19",
-        stroke: "#9CA3AF",
-        strokeWidth: 1.5,
-        fill: "none",
-      },
-    },
+  constant: {
+    // Square
+    path: `M 0 0 L ${GATE_W} 0 L ${GATE_W} ${GATE_H} L 0 ${GATE_H} Z`,
+    fill: "#F3F4F6",
+    stroke: "#9CA3AF",
+    textColor: "#6B7280",
   },
-  {
-    markup: [
-      { tagName: "path", selector: "body" },
-      { tagName: "path", selector: "dcLine" },
-      { tagName: "path", selector: "portOut" },
-      { tagName: "text", selector: "label" },
-    ],
-  }
-);
-
-/* ============================================================ */
-/*  2. Shape registry — map shape name to constructor            */
-/* ============================================================ */
-export const GATE_CONSTRUCTORS = {
-  dshape: GateAND,
-  triangle: GateLinear,
-  circle: GateProduct,
-  square: GateConstant,
 };
 
 /* ============================================================ */
-/*  3. Gate classifier                                           */
+/*  Gate classifier                                              */
 /* ============================================================ */
 
 /**
  * Classify a gate by its coefficient pattern.
- * Returns { type, label, shape, color } for rendering.
+ * Returns { type, label } for rendering.
  */
 export function classifyGate(layer, wireIndex) {
   const c = layer.const[wireIndex];
   const a = layer.firstCoeff[wireIndex];
   const b = layer.secondCoeff[wireIndex];
   const p = layer.productCoeff[wireIndex];
-  const xi = layer.first[wireIndex];
-  const yi = layer.second[wireIndex];
 
   const hasC = Math.abs(c) > 1e-6;
   const hasA = Math.abs(a) > 1e-6;
@@ -274,63 +76,26 @@ export function classifyGate(layer, wireIndex) {
 
   const nonzero = [hasC, hasA, hasB, hasP].filter(Boolean).length;
 
-  // Simple gate: exactly one nonzero coefficient
   if (nonzero === 1) {
-    if (hasA) {
-      return {
-        type: "linear",
-        label: `${a > 0 ? "" : "−"}x${xi}`,
-        shape: "triangle",
-        color: "#3B82F6", // blue
-      };
-    }
-    if (hasB) {
-      return {
-        type: "linear",
-        label: `${b > 0 ? "" : "−"}y${yi}`,
-        shape: "triangle",
-        color: "#3B82F6",
-      };
-    }
-    if (hasC) {
-      return {
-        type: "constant",
-        label: c > 0 ? "+1" : "−1",
-        shape: "square",
-        color: "#9CA3AF", // gray
-      };
-    }
-    if (hasP) {
-      return {
-        type: "product",
-        label: `${p > 0 ? "" : "−"}x${xi}·y${yi}`,
-        shape: "circle",
-        color: "#F59E0B", // amber
-      };
-    }
+    if (hasA) return { type: "linear", label: `${a > 0 ? "" : "−"}x` };
+    if (hasB) return { type: "linear", label: `${b > 0 ? "" : "−"}y` };
+    if (hasC) return { type: "constant", label: c > 0 ? "+1" : "−1" };
+    if (hasP) return { type: "product", label: "×" };
   }
 
-  // Complex gate: AND-like (all 4 coefficients)
-  const signX = a > 0 ? "+" : "−";
-  const signY = b > 0 ? "+" : "−";
-  return {
-    type: "and",
-    label: `AND(${signX}x${xi},${signY}y${yi})`,
-    shape: "dshape",
-    color: "#F0524D", // coral (AND gates)
-  };
+  return { type: "and", label: "∧" };
 }
 
 /* ============================================================ */
-/*  4. Color scale                                               */
+/*  Color scale                                                  */
 /* ============================================================ */
 
 /**
- * Color scale: map a mean value in [-1, 1] to a fill color.
+ * Map a mean value in [-1,1] to a fill color.
  * Blue (-1) → White (0) → Red (+1)
  */
 export function meanToColor(mean) {
-  if (mean === null || mean === undefined) return "#E5E7EB";
+  if (mean === null || mean === undefined) return null;
   const t = Math.max(-1, Math.min(1, mean));
   if (t < 0) {
     const s = 1 + t;
