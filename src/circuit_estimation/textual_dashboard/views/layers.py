@@ -13,5 +13,7 @@ def render_layers_view(state: DashboardState) -> str:
         "Layer Analysis\n\n"
         "Layer Diagnostics\n"
         "- mse_mean_by_layer trend\n"
+        "Layer Trend Plot\n"
+        "- mse_mean trajectory over layer index\n"
         f"- layer means: [{points}]\n"
     )
