@@ -1,18 +1,9 @@
 /**
- * EstimatorComparison — per-layer MSE comparison using Recharts SVG.
+ * EstimatorComparison — per-layer MSE comparison using TF.js Vis.
  * Shows bar chart of estimation error per layer for each estimator.
  */
-import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    Legend,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from "recharts";
+import * as tfvis from "@tensorflow/tfjs-vis";
+import { useEffect, useRef } from "react";
 
 export default function EstimatorComparison({
   groundTruth,
@@ -21,97 +12,79 @@ export default function EstimatorComparison({
   depth,
   activeLayer,
 }) {
-  if (!groundTruth) return null;
+  const chartRef = useRef(null);
 
-  const hasSampling = !!samplingEstimates;
-  const hasMeanProp = !!meanPropEstimates;
+  useEffect(() => {
+    if (!groundTruth || !chartRef.current) return;
+    chartRef.current.innerHTML = '';
 
-  const layers = Math.min(
-    depth,
-    groundTruth.length,
-    hasSampling ? samplingEstimates.length : Infinity,
-    hasMeanProp ? meanPropEstimates.length : Infinity
-  );
+    const hasSampling = !!samplingEstimates;
+    const hasMeanProp = !!meanPropEstimates;
 
-  const data = [];
-  for (let l = 0; l < layers; l++) {
-    const n = groundTruth[l].length;
-    const row = { layer: `L${l}` };
+    const layers = Math.min(
+      depth,
+      groundTruth.length,
+      hasSampling ? samplingEstimates.length : Infinity,
+      hasMeanProp ? meanPropEstimates.length : Infinity
+    );
+
+    // Build data for each estimator as separate series
+    const series = [];
+    const seriesNames = [];
+    const colors = [];
 
     if (hasSampling) {
-      let mse = 0;
-      for (let i = 0; i < n; i++) {
-        mse += (samplingEstimates[l][i] - groundTruth[l][i]) ** 2;
+      const samplingData = [];
+      for (let l = 0; l < layers; l++) {
+        const n = groundTruth[l].length;
+        let mse = 0;
+        for (let i = 0; i < n; i++) {
+          mse += (samplingEstimates[l][i] - groundTruth[l][i]) ** 2;
+        }
+        samplingData.push({ x: l, y: mse / n });
       }
-      row.sampling = mse / n;
+      series.push(samplingData);
+      seriesNames.push('Sampling');
+      colors.push('#F0524D');
     }
 
     if (hasMeanProp) {
-      let mse = 0;
-      for (let i = 0; i < n; i++) {
-        mse += (meanPropEstimates[l][i] - groundTruth[l][i]) ** 2;
+      const meanPropData = [];
+      for (let l = 0; l < layers; l++) {
+        const n = groundTruth[l].length;
+        let mse = 0;
+        for (let i = 0; i < n; i++) {
+          mse += (meanPropEstimates[l][i] - groundTruth[l][i]) ** 2;
+        }
+        meanPropData.push({ x: l, y: mse / n });
       }
-      row.meanProp = mse / n;
+      series.push(meanPropData);
+      seriesNames.push('Mean Prop');
+      colors.push('#94A3B8');
     }
 
-    data.push(row);
-  }
+    if (series.length === 0) return;
+
+    // Use linechart with markers to show MSE per layer
+    tfvis.render.linechart(chartRef.current, {
+      values: series,
+      series: seriesNames,
+    }, {
+      width: chartRef.current.offsetWidth || 600,
+      height: 240,
+      xLabel: 'Layer',
+      yLabel: 'MSE',
+      seriesColors: colors,
+      zoomToFit: true,
+    });
+  }, [groundTruth, samplingEstimates, meanPropEstimates, depth, activeLayer]);
+
+  if (!groundTruth) return null;
 
   return (
     <div className="panel">
       <h2>Estimation Error (MSE per Layer)</h2>
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#F1F3F5" />
-          <XAxis
-            dataKey="layer"
-            tick={{ fontSize: 11, fill: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace" }}
-            axisLine={{ stroke: "#E0E0E0" }}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fontSize: 10, fill: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace" }}
-            axisLine={{ stroke: "#E0E0E0" }}
-            tickLine={false}
-            tickFormatter={(v) => v.toFixed(3)}
-            label={{
-              value: "MSE",
-              angle: -90,
-              position: "insideLeft",
-              style: { fontSize: 11, fill: "#9CA3AF" },
-            }}
-          />
-          <Tooltip
-            contentStyle={{
-              background: "#fff",
-              border: "1px solid #E0E0E0",
-              borderRadius: 8,
-              fontSize: 12,
-              fontFamily: "'IBM Plex Mono', monospace",
-            }}
-            formatter={(value) => [value.toFixed(5), undefined]}
-          />
-          <Legend
-            wrapperStyle={{ fontSize: 11, fontFamily: "'DM Sans', sans-serif" }}
-          />
-          {hasSampling && (
-            <Bar dataKey="sampling" name="Sampling" fill="#F0524D" radius={[3, 3, 0, 0]}>
-              {activeLayer !== undefined && activeLayer !== null &&
-                data.map((_, idx) => (
-                  <Cell key={idx} fillOpacity={idx === activeLayer ? 1 : 0.3} />
-                ))}
-            </Bar>
-          )}
-          {hasMeanProp && (
-            <Bar dataKey="meanProp" name="Mean Prop" fill="#94A3B8" radius={[3, 3, 0, 0]}>
-              {activeLayer !== undefined && activeLayer !== null &&
-                data.map((_, idx) => (
-                  <Cell key={idx} fillOpacity={idx === activeLayer ? 1 : 0.3} />
-                ))}
-            </Bar>
-          )}
-        </BarChart>
-      </ResponsiveContainer>
+      <div ref={chartRef} style={{ width: '100%', minHeight: 240 }} />
     </div>
   );
 }
