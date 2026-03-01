@@ -12,7 +12,7 @@ Last updated: 2026-03-01
 - `src/circuit_estimation/protocol.py`: serializable request/response DTOs for future RPC integration.
 - `src/circuit_estimation/cli.py`: local run entrypoint used by `main.py`.
 - `circuit.py`, `estimators.py`, `evaluate.py`: compatibility wrappers that preserve legacy imports.
-- `main.py`: small local smoke run and `--profile` diagnostics mode.
+- `main.py`: local smoke run with `--mode agent|human`, `--detail raw|full`, and optional `--profile`.
 
 ## Current Mathematical Representation
 
@@ -42,6 +42,8 @@ From `estimators.py`:
   - uses covariance propagation when `budget >= 30 * circuit.n`;
   - otherwise uses mean propagation.
 
+The in-repo estimator implementations are examples for local development only. Future hosted evaluation must treat participant estimators as black box, potentially adversarial/malicious implementations.
+
 ## Current Scoring Logic
 
 From `scoring.py` / `README.md`:
@@ -53,21 +55,25 @@ From `scoring.py` / `README.md`:
   - `time_tolerance`
 - For each budget:
   - baseline per-depth runtime is measured by batched sampling (`sampling_baseline_time`).
-  - estimator is run on each held-out circuit.
-  - if estimator runtime at a depth exceeds `(1 + tolerance) * baseline_time`, output is zeroed for that depth.
-  - if estimator runtime is below `(1 - tolerance) * baseline_time`, runtime is floored to `(1 - tolerance) * baseline_time`.
+  - estimator is run once per `(circuit, budget)` and must return one tensor for all layers.
+  - if estimator runtime exceeds `(1 + tolerance) * baseline_total_time`, output is zeroed for the full tensor.
+  - if estimator runtime is below `(1 - tolerance) * baseline_total_time`, runtime is floored at that bound.
   - MSE is computed vs empirical means; then multiplied by time ratio.
 
 Final score = average adjusted MSE across depths and budgets.
 
 Additional scorer behavior:
 
-- malformed estimator outputs (wrong width or wrong number of layers) now raise explicit errors,
-- optional profiler callback can emit per-layer diagnostics:
+- malformed estimator outputs (wrong width, wrong depth, or non-ndarray) raise explicit errors,
+- optional profiler callback can emit call-level diagnostics:
   - `wall_time_s`,
   - `cpu_time_s`,
   - `rss_bytes`,
   - `peak_rss_bytes`.
+- report path (`score_estimator_report`) can return:
+  - raw mode payloads for machine use (`mode agent`),
+  - full mode payloads with computed aggregates (`detail full`),
+  - run metadata including host/machine/os details.
 
 ## Local Smoke Result (Observed)
 
@@ -77,11 +83,12 @@ Command run:
 UV_CACHE_DIR=/tmp/uv-cache uv run main.py
 ```
 
-Observed output score:
+Observed output format:
 
-- `0.0071351177599899744`
+- default (`mode agent`) emits pretty JSON with `results.final_score` and raw per-budget/per-layer metrics.
+- human mode (`--mode human`) emits a Rich multi-section terminal report.
 
-This is just a toy sanity run, not a stable benchmark number.
+This is a local sanity surface, not a stable benchmark number.
 
 ## Important Gaps for Next Iterations
 
@@ -89,7 +96,7 @@ This is just a toy sanity run, not a stable benchmark number.
 2. No production containerized/sandboxed execution path in this repo yet.
 3. Deterministic seeded evaluation flow exists locally but final public seed policy is not frozen.
 4. Profiling metrics are local-process diagnostics, not yet equivalent to hosted infra accounting.
-5. Participant output contract is clearer locally but still needs final public challenge-spec freeze.
+5. Participant output contract is clearer locally (strict ndarray + full-depth single-call return) but still needs final public challenge-spec freeze.
 
 ## Implication for Future Agents
 
