@@ -115,12 +115,15 @@ def test_render_human_mode_includes_profile_section_when_available() -> None:
     assert "peak_rss_bytes" in rendered
 
 
-def test_plotext_chart_uses_high_contrast_hd_style(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_plotext_chart_uses_high_contrast_sparse_scatter_style(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class PlotextSpy:
         def __init__(self) -> None:
             self.axes_color_calls: list[str] = []
             self.ticks_color_calls: list[str] = []
             self.plot_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
+            self.scatter_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
 
         def clear_data(self) -> None:
             return None
@@ -157,6 +160,11 @@ def test_plotext_chart_uses_high_contrast_hd_style(monkeypatch: pytest.MonkeyPat
         ) -> None:
             self.plot_calls.append((x, y, color, marker))
 
+        def scatter(
+            self, x: list[float], y: list[float], *, color: str | None = None, marker: str | None = None
+        ) -> None:
+            self.scatter_calls.append((x, y, color, marker))
+
         def xlabel(self, _label: str) -> None:
             return None
 
@@ -183,6 +191,7 @@ def test_plotext_chart_uses_high_contrast_hd_style(monkeypatch: pytest.MonkeyPat
     )
 
     assert output == "chart"
-    assert spy.axes_color_calls[-1] == "gray+"
-    assert spy.ticks_color_calls[-1] == "gray+"
-    assert spy.plot_calls[-1][3] == "hd"
+    assert spy.axes_color_calls[-1] == "white"
+    assert spy.ticks_color_calls[-1] == "white"
+    assert spy.plot_calls == []
+    assert spy.scatter_calls[-1][3] == "●"

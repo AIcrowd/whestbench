@@ -494,12 +494,12 @@ def _build_plotext_line_chart(
     try:
         _plotext.clear_data()
         _plotext.clear_figure()
-        _plotext.theme("pro")
+        _plotext.theme("clear")
         width = max(66, min(92, 26 + len(x)))
         _plotext.plotsize(width, 11)
-        _plotext.canvas_color("default")
-        _plotext.axes_color("gray+")
-        _plotext.ticks_color("gray+")
+        _plotext.canvas_color("black")
+        _plotext.axes_color("white")
+        _plotext.ticks_color("white")
 
         if x_scale is not None:
             _plotext.xscale(x_scale)
@@ -517,9 +517,16 @@ def _build_plotext_line_chart(
                 pad = (high - low) * 0.08
                 _plotext.ylim(low - pad, high + pad)
 
+        scatter_fn = getattr(_plotext, "scatter", None)
         for _label, values, color in valid_series:
             # Keep legend external (Rich table), so we avoid in-plot overlap.
-            _plotext.plot(x, values, color=color, marker="hd")
+            if len(x) <= 12:
+                if callable(scatter_fn):
+                    scatter_fn(x, values, color=color, marker="●")
+                else:
+                    _plotext.plot(x, values, color=color, marker="●")
+            else:
+                _plotext.plot(x, values, color=color, marker="hd")
 
         _plotext.xlabel(x_label)
         _plotext.ylabel(y_label)
