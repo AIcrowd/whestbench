@@ -86,7 +86,6 @@ def _layout_mode(console_width: int) -> str:
 def _run_context_panel(report: dict[str, Any]) -> Panel:
     run_meta = report.get("run_meta", {})
     run_config = report.get("run_config", {})
-    host_meta = run_meta.get("host", {}) if isinstance(run_meta.get("host"), dict) else {}
 
     table = Table(box=box.SIMPLE_HEAVY, show_header=False)
     table.add_column("field")
@@ -109,11 +108,6 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
         ("Layer Count [layer_count]", str(run_config.get("layer_count", "n/a"))),
         ("Budgets [budgets]", str(run_config.get("budgets", []))),
         ("Time Tolerance [time_tolerance]", str(run_config.get("time_tolerance", "n/a"))),
-        ("Host Name [host.hostname]", str(host_meta.get("hostname", "n/a"))),
-        ("Operating System [host.os]", str(host_meta.get("os", "n/a"))),
-        ("OS Release [host.os_release]", str(host_meta.get("os_release", "n/a"))),
-        ("Machine Architecture [host.machine]", str(host_meta.get("machine", "n/a"))),
-        ("Python Runtime [host.python_version]", str(host_meta.get("python_version", "n/a"))),
     ]
     for key, value in rows:
         table.add_row(_render_context_label(key), value)
@@ -174,7 +168,7 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
         )
 
     footnote = Text("Footnote: lower score is better.", style="dim")
-    return Panel(Group(summary, footnote), title="Readiness (Score Summary)", border_style="bright_cyan")
+    return Panel(Group(summary, footnote), title="Readiness Scorecard", border_style="bright_cyan")
 
 
 def _render_budget_section(console: Console, report: dict[str, Any]) -> None:
