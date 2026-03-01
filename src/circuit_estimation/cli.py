@@ -246,7 +246,12 @@ def validate_submission_entrypoint(
 
 
 def _build_participant_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Participant-first circuit-estimation CLI.")
+    parser = argparse.ArgumentParser(
+        description=(
+            "Participant-first circuit-estimation CLI. Starter examples live in "
+            "examples/estimators/."
+        )
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     init_parser = subparsers.add_parser("init", help="Create starter estimator files.")
@@ -255,13 +260,21 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     init_parser.add_argument("--debug", action="store_true")
 
     validate_parser = subparsers.add_parser("validate", help="Validate estimator contract.")
-    validate_parser.add_argument("--estimator", required=True)
+    validate_parser.add_argument(
+        "--estimator",
+        required=True,
+        help="Path to estimator.py (see examples/estimators/ for starter files).",
+    )
     validate_parser.add_argument("--class", dest="class_name")
     validate_parser.add_argument("--agent-mode", action="store_true")
     validate_parser.add_argument("--debug", action="store_true")
 
     run_parser = subparsers.add_parser("run", help="Run local evaluation for an estimator.")
-    run_parser.add_argument("--estimator", required=True)
+    run_parser.add_argument(
+        "--estimator",
+        required=True,
+        help="Path to estimator.py (see examples/estimators/ for starter files).",
+    )
     run_parser.add_argument("--class", dest="class_name")
     run_parser.add_argument("--runner", choices=("inprocess", "subprocess"), default="subprocess")
     run_parser.add_argument("--n-circuits", type=int, default=10)

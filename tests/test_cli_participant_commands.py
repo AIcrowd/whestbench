@@ -133,3 +133,9 @@ def test_package_command_writes_manifest_with_entrypoint_and_hashes(
     assert "estimator.py" in names
     assert "manifest.json" in names
     assert manifest["entrypoint"]["class"] == "Estimator"
+
+
+def test_init_and_run_help_text_reference_examples_estimators_path() -> None:
+    parser = cli._build_participant_parser()
+    help_text = parser.format_help()
+    assert "examples/estimators" in help_text
