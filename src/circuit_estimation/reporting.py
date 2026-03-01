@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import io
 import json
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
+from datetime import datetime, timezone
 from statistics import fmean
 from typing import Any
 
@@ -20,9 +21,6 @@ try:
     import plotext as _plotext  # pyright: ignore[reportMissingModuleSource]
 except ImportError:  # pragma: no cover - optional dependency
     _plotext = None
-
-_SPARK_CHARS = "▁▂▃▄▅▆▇█"
-
 
 def render_agent_report(report: dict[str, Any]) -> str:
     """Return stable pretty JSON for machine parsing."""
@@ -63,21 +61,34 @@ def render_human_report(report: dict[str, Any]) -> str:
 def _run_context_panel(report: dict[str, Any]) -> Panel:
     run_meta = report.get("run_meta", {})
     run_config = report.get("run_config", {})
+    host_meta = run_meta.get("host", {}) if isinstance(run_meta.get("host"), dict) else {}
 
     table = Table(box=box.SIMPLE_HEAVY, show_header=False)
     table.add_column("field")
     table.add_column("value")
 
     rows = [
-        ("Run Started [run_started_at_utc]", str(run_meta.get("run_started_at_utc", "n/a"))),
-        ("Run Finished [run_finished_at_utc]", str(run_meta.get("run_finished_at_utc", "n/a"))),
-        ("Run Duration, s [run_duration_s]", _fmt_float(run_meta.get("run_duration_s", 0.0), 6)),
-        ("Circuits [n_circuits]", str(run_config.get("n_circuits", "n/a"))),
-        ("Samples/Circuit [n_samples]", str(run_config.get("n_samples", "n/a"))),
-        ("Wire Count [width]", str(run_config.get("width", "n/a"))),
+        (
+            "Run Started (UTC) [run_started_at_utc]",
+            _human_utc(str(run_meta.get("run_started_at_utc", "n/a"))),
+        ),
+        (
+            "Run Finished (UTC) [run_finished_at_utc]",
+            _human_utc(str(run_meta.get("run_finished_at_utc", "n/a"))),
+        ),
+        ("Run Duration(s) [run_duration_s]", _fmt_float(run_meta.get("run_duration_s", 0.0), 6)),
+        ("Number of Circuits [n_circuits]", str(run_config.get("n_circuits", "n/a"))),
+        ("Samples per Circuit [n_samples]", str(run_config.get("n_samples", "n/a"))),
+        ("Circuit Width / Wire Count [width]", str(run_config.get("width", "n/a"))),
+        ("Maximum Depth [max_depth]", str(run_config.get("max_depth", "n/a"))),
         ("Layer Count [layer_count]", str(run_config.get("layer_count", "n/a"))),
         ("Budgets [budgets]", str(run_config.get("budgets", []))),
         ("Time Tolerance [time_tolerance]", str(run_config.get("time_tolerance", "n/a"))),
+        ("Host Name [host.hostname]", str(host_meta.get("hostname", "n/a"))),
+        ("Operating System [host.os]", str(host_meta.get("os", "n/a"))),
+        ("OS Release [host.os_release]", str(host_meta.get("os_release", "n/a"))),
+        ("Machine Architecture [host.machine]", str(host_meta.get("machine", "n/a"))),
+        ("Python Runtime [host.python_version]", str(host_meta.get("python_version", "n/a"))),
     ]
     for key, value in rows:
         table.add_row(_render_context_label(key), value)
@@ -95,43 +106,26 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
         for entry in by_budget
         if _to_float_list(entry.get("mse_by_layer", []))
     ]
-    adjusted_means = [
-        fmean(_to_float_list(entry.get("adjusted_mse_by_layer", [])))
-        for entry in by_budget
-        if _to_float_list(entry.get("adjusted_mse_by_layer", []))
-    ]
-
     summary = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
     summary.add_column("metric")
     summary.add_column("value", justify="right")
-    summary.add_column("status", justify="center")
     summary.add_row(
-        _label_with_code("Final Score", "final_score", "bold bright_green"),
-        f"[bold bright_green]{_fmt_float(final_score, 8)}[/]",
-        "[green]✓[/]",
+        _label_with_code("Final Score (Adjusted MSE Mean)", "final_score", "bold bright_green"),
+        f"[bold bright_green]✓ {_fmt_float(final_score, 8)}[/]",
     )
     if mse_means:
         summary.add_row(
             _label_with_code("MSE Mean", "mse_mean", "bold bright_cyan"),
             f"[cyan]{_fmt_float(fmean(mse_means), 8)}[/]",
-            "[green]good[/]",
-        )
-    if adjusted_means:
-        summary.add_row(
-            _label_with_code("Adjusted MSE Mean", "adjusted_mse_mean", "bold bright_cyan"),
-            f"[bright_cyan]{_fmt_float(fmean(adjusted_means), 8)}[/]",
-            "[green]good[/]",
         )
     if budget_scores:
         summary.add_row(
             _label_with_code("Best Budget Score", "best_budget_score", "bold green"),
             f"[green]{_fmt_float(min(budget_scores), 8)}[/]",
-            "[green]✓[/]",
         )
         summary.add_row(
             _label_with_code("Worst Budget Score", "worst_budget_score", "bold yellow"),
             f"[yellow]{_fmt_float(max(budget_scores), 8)}[/]",
-            "[yellow]![/]",
         )
 
     footnote = Text("Footnote: lower score is better.", style="dim")
@@ -144,11 +138,11 @@ def _render_budget_section(console: Console, report: dict[str, Any]) -> None:
     best_score = min((_as_float(entry.get("score", 0.0)) for entry in by_budget), default=0.0)
 
     table = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
-    table.add_column("budget", justify="right")
-    table.add_column("score", justify="right")
-    table.add_column("avg_mse", justify="right")
-    table.add_column("avg_time_ratio", justify="right")
-    table.add_column("avg_effective_time_s", justify="right")
+    table.add_column("Budget [budget]", justify="right")
+    table.add_column("Score [score]", justify="right")
+    table.add_column("MSE Mean [avg_mse]", justify="right")
+    table.add_column("Time Ratio Mean [avg_time_ratio]", justify="right")
+    table.add_column("Effective Time Mean (s) [avg_effective_time_s]", justify="right")
     table.row_styles = ["none", "dim"]
 
     for entry in by_budget:
@@ -192,20 +186,22 @@ def _render_layer_section(console: Console, report: dict[str, Any]) -> None:
 
     table = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
     table.add_column("metric", style="bold white")
-    table.add_column("sparkline")
+    table.add_column("p05", justify="right")
     table.add_column("min", justify="right")
+    table.add_column("p95", justify="right")
     table.add_column("max", justify="right")
     table.add_column("mean", justify="right")
 
-    for name, values in (
-        ("mse_by_layer", avg_mse),
-        ("time_ratio_by_layer", avg_ratio),
-        ("adjusted_mse_by_layer", avg_adj),
+    for human_name, code_name, values in (
+        ("MSE by Layer", "mse_by_layer", avg_mse),
+        ("Time Ratio by Layer", "time_ratio_by_layer", avg_ratio),
+        ("Adjusted MSE by Layer", "adjusted_mse_by_layer", avg_adj),
     ):
         table.add_row(
-            name,
-            _sparkline(values, width=38),
+            _label_with_code(human_name, code_name, "bold white"),
+            _fmt_float(_percentile(values, 0.05) if values else 0.0, 6),
             _fmt_float(min(values) if values else 0.0, 6),
+            _fmt_float(_percentile(values, 0.95) if values else 0.0, 6),
             _fmt_float(max(values) if values else 0.0, 6),
             _fmt_float(fmean(values) if values else 0.0, 6),
         )
@@ -252,26 +248,65 @@ def _render_profile_section(console: Console, report: dict[str, Any]) -> None:
     summary = Table(box=box.SIMPLE_HEAVY, show_header=False)
     summary.add_column("field", style="bold bright_white")
     summary.add_column("value")
-    summary.add_row("calls", str(len(profile_calls)))
-    summary.add_row("wall_time_s", _fmt_float(fmean(wall) if wall else 0.0, 6))
-    summary.add_row("cpu_time_s", _fmt_float(fmean(cpu) if cpu else 0.0, 6))
-    summary.add_row("rss_bytes", _fmt_float(fmean(rss) if rss else 0.0, 2))
-    summary.add_row("peak_rss_bytes", _fmt_float(max(peak) if peak else 0.0, 2))
+    summary.add_row(_label_with_code("Estimator Calls", "calls", "bold bright_white"), str(len(profile_calls)))
+    summary.add_row(
+        _label_with_code("Mean Wall Time (s)", "wall_time_s", "bold bright_white"),
+        _fmt_float(fmean(wall) if wall else 0.0, 6),
+    )
+    summary.add_row(
+        _label_with_code("Mean CPU Time (s)", "cpu_time_s", "bold bright_white"),
+        _fmt_float(fmean(cpu) if cpu else 0.0, 6),
+    )
+    summary.add_row(
+        _label_with_code("Mean RSS (bytes)", "rss_bytes", "bold bright_white"),
+        _fmt_float(fmean(rss) if rss else 0.0, 2),
+    )
+    summary.add_row(
+        _label_with_code("Peak RSS (bytes)", "peak_rss_bytes", "bold bright_white"),
+        _fmt_float(max(peak) if peak else 0.0, 2),
+    )
 
-    trend = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
-    trend.add_column("metric", style="bold white")
-    trend.add_column("per_call_trend")
-    trend.add_row("wall_time_s", _sparkline(wall, width=42))
-    trend.add_row("cpu_time_s", _sparkline(cpu, width=42))
-    trend.add_row("rss_bytes", _sparkline(rss, width=42))
-    trend.add_row("peak_rss_bytes", _sparkline(peak, width=42))
+    dist = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
+    dist.add_column("metric", style="bold white")
+    dist.add_column("p05", justify="right")
+    dist.add_column("p95", justify="right")
+    dist.add_column("min", justify="right")
+    dist.add_column("max", justify="right")
+    dist.add_row(
+        _label_with_code("Wall Time (s)", "wall_time_s", "bold white"),
+        _fmt_float(_percentile(wall, 0.05) if wall else 0.0, 6),
+        _fmt_float(_percentile(wall, 0.95) if wall else 0.0, 6),
+        _fmt_float(min(wall) if wall else 0.0, 6),
+        _fmt_float(max(wall) if wall else 0.0, 6),
+    )
+    dist.add_row(
+        _label_with_code("CPU Time (s)", "cpu_time_s", "bold white"),
+        _fmt_float(_percentile(cpu, 0.05) if cpu else 0.0, 6),
+        _fmt_float(_percentile(cpu, 0.95) if cpu else 0.0, 6),
+        _fmt_float(min(cpu) if cpu else 0.0, 6),
+        _fmt_float(max(cpu) if cpu else 0.0, 6),
+    )
+    dist.add_row(
+        _label_with_code("RSS (bytes)", "rss_bytes", "bold white"),
+        _fmt_float(_percentile(rss, 0.05) if rss else 0.0, 2),
+        _fmt_float(_percentile(rss, 0.95) if rss else 0.0, 2),
+        _fmt_float(min(rss) if rss else 0.0, 2),
+        _fmt_float(max(rss) if rss else 0.0, 2),
+    )
+    dist.add_row(
+        _label_with_code("Peak RSS (bytes)", "peak_rss_bytes", "bold white"),
+        _fmt_float(_percentile(peak, 0.05) if peak else 0.0, 2),
+        _fmt_float(_percentile(peak, 0.95) if peak else 0.0, 2),
+        _fmt_float(min(peak) if peak else 0.0, 2),
+        _fmt_float(max(peak) if peak else 0.0, 2),
+    )
 
     runtime_plot = _profile_runtime_plot_panel(wall, cpu)
     memory_plot = _profile_memory_plot_panel(rss, peak)
     console.print(
         Columns(
             [
-                Panel(Group(summary, trend), title="Profile Summary", border_style="bright_black"),
+                Panel(Group(summary, dist), title="Profile Summary", border_style="bright_black"),
                 Group(runtime_plot, memory_plot),
             ],
             equal=False,
@@ -289,20 +324,12 @@ def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
         else 0.0
         for entry in by_budget
     ]
-    mean_adjusted = [
-        fmean(_to_float_list(entry.get("adjusted_mse_by_layer", [])))
-        if _to_float_list(entry.get("adjusted_mse_by_layer", []))
-        else 0.0
-        for entry in by_budget
-    ]
-
     return _make_plot_panel(
         title="Budget Frontier Plot",
         x=budgets,
         series=[
             ("score", scores, "green+"),
             ("avg_mse", mean_mse, "cyan+"),
-            ("avg_adjusted_mse", mean_adjusted, "magenta+"),
         ],
         x_label="budget",
         y_label="accuracy metrics",
@@ -379,13 +406,15 @@ def _profile_runtime_plot_panel(wall: Sequence[float], cpu: Sequence[float]) -> 
 
 def _profile_memory_plot_panel(rss: Sequence[float], peak: Sequence[float]) -> Panel:
     x = list(range(len(rss)))
+    series: list[tuple[str, Sequence[float], str]] = [("rss_bytes", rss, "yellow+")]
+    if not _series_nearly_equal(rss, peak):
+        series.append(("peak_rss_bytes", peak, "red+"))
+    else:
+        series[0] = ("rss_bytes (same as peak_rss_bytes)", rss, "yellow+")
     return _make_plot_panel(
         title="Profile Memory Plot",
         x=x,
-        series=[
-            ("rss_bytes", rss, "yellow+"),
-            ("peak_rss_bytes", peak, "red+"),
-        ],
+        series=series,
         x_label="call_index",
         y_label="bytes",
     )
@@ -414,15 +443,19 @@ def _make_plot_panel(
     if chart is None:
         fallback = Table(box=box.SIMPLE, show_header=True, header_style="bold white")
         fallback.add_column("series")
-        fallback.add_column("trend")
+        fallback.add_column("p05", justify="right")
         fallback.add_column("min", justify="right")
+        fallback.add_column("mean", justify="right")
         fallback.add_column("max", justify="right")
+        fallback.add_column("p95", justify="right")
         for label, values, _color in series:
             fallback.add_row(
                 label,
-                _sparkline(values, width=32),
+                _fmt_float(_percentile(values, 0.05) if values else 0.0, 6),
                 _fmt_float(min(values) if values else 0.0, 6),
+                _fmt_float(fmean(values) if values else 0.0, 6),
                 _fmt_float(max(values) if values else 0.0, 6),
+                _fmt_float(_percentile(values, 0.95) if values else 0.0, 6),
             )
         body: Table | Text | Group = Group(fallback, legend)
     else:
@@ -462,8 +495,8 @@ def _build_plotext_line_chart(
         _plotext.clear_data()
         _plotext.clear_figure()
         _plotext.theme("pro")
-        width = max(66, min(96, 24 + len(x) * 2))
-        _plotext.plotsize(width, 13)
+        width = max(66, min(92, 26 + len(x)))
+        _plotext.plotsize(width, 11)
         _plotext.canvas_color("default")
         _plotext.axes_color("default")
         _plotext.ticks_color("white")
@@ -473,17 +506,24 @@ def _build_plotext_line_chart(
         if y_scale is not None:
             _plotext.yscale(y_scale)
 
-        scatter_fn = getattr(_plotext, "scatter", None)
+        all_values = [value for _label, values, _color in valid_series for value in values]
+        if all_values:
+            low = min(all_values)
+            high = max(all_values)
+            if high <= low:
+                pad = max(1e-9, abs(low) * 0.05 + 1e-9)
+                _plotext.ylim(low - pad, high + pad)
+            else:
+                pad = (high - low) * 0.08
+                _plotext.ylim(low - pad, high + pad)
+
         for _label, values, color in valid_series:
             # Keep legend external (Rich table), so we avoid in-plot overlap.
-            if callable(scatter_fn):
-                scatter_fn(x, values, color=color, marker="dot")
-            else:
-                _plotext.plot(x, values, color=color, marker="dot")
+            _plotext.plot(x, values, color=color, marker="braille")
 
         _plotext.xlabel(x_label)
         _plotext.ylabel(y_label)
-        _plotext.grid(True, True)
+        _plotext.grid(True, False)
 
         if len(x) <= 8:
             ticks = list(x)
@@ -518,11 +558,24 @@ def _legend_table(series: Sequence[tuple[str, Sequence[float], str]]) -> Table:
     return legend
 
 
+def _human_utc(value: str) -> str:
+    try:
+        dt = datetime.fromisoformat(value)
+    except ValueError:
+        return value
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    dt_utc = dt.astimezone(timezone.utc)
+    return dt_utc.strftime("%b %d, %Y %H:%M:%S UTC")
+
+
 def _context_key_style(key: str) -> str:
     if "[" in key and "]" in key:
         key = key[key.find("[") + 1 : key.rfind("]")]
     if key.startswith("run_"):
         return "bold bright_cyan"
+    if key.startswith("host."):
+        return "bold bright_blue"
     if key in {"n_circuits", "n_samples", "width", "layer_count"}:
         return "bold bright_magenta"
     if key == "budgets":
@@ -593,30 +646,12 @@ def _normalize(values: Sequence[float]) -> list[float]:
     return [(value - low) / (high - low) for value in values]
 
 
-def _sparkline(values: Iterable[float], width: int = 48) -> str:
-    vals = list(values)
-    if not vals:
-        return "(no data)"
-
-    if len(vals) > width:
-        step = len(vals) / width
-        vals = [vals[int(i * step)] for i in range(width)]
-
-    lower = _percentile(vals, 0.05)
-    upper = _percentile(vals, 0.95)
-    if upper <= lower:
-        lower = min(vals)
-        upper = max(vals)
-    if upper <= lower:
-        return "▅" * len(vals)
-
-    scaled = []
-    for value in vals:
-        clamped = max(lower, min(upper, value))
-        pos = (clamped - lower) / (upper - lower)
-        idx = int(round(pos * (len(_SPARK_CHARS) - 1)))
-        scaled.append(_SPARK_CHARS[idx])
-    return "".join(scaled)
+def _series_nearly_equal(
+    lhs: Sequence[float], rhs: Sequence[float], *, tolerance: float = 1e-12
+) -> bool:
+    if len(lhs) != len(rhs):
+        return False
+    return all(abs(left - right) <= tolerance for left, right in zip(lhs, rhs, strict=True))
 
 
 def _percentile(values: Sequence[float], q: float) -> float:
