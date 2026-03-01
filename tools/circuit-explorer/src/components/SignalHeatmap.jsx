@@ -106,7 +106,7 @@ export default function SignalHeatmap({ means, width: n, depth: d }) {
         </svg>
       </div>
       <div className="heatmap-legend">
-        <span className="legend-item" style={{ color: "#3B82F6" }}>◆ −1</span>
+        <span className="legend-item" style={{ color: "#334155" }}>◆ −1</span>
         <span className="legend-item" style={{ color: "#9CA3AF" }}>◆ 0</span>
         <span className="legend-item" style={{ color: "#F0524D" }}>◆ +1</span>
       </div>

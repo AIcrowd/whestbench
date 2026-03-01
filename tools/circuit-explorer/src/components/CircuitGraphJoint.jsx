@@ -421,6 +421,19 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
     };
   }, []);
 
+  /* ---- Escape key to dismiss tooltip ---- */
+  useEffect(() => {
+    if (!tooltip) return;
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setTooltip(null);
+        if (graphRef.current) resetHighlights(graphRef.current);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [tooltip]);
+
   /* ---- layer dimming (external control) ---- */
   useEffect(() => {
     const g = graphRef.current;
@@ -456,7 +469,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer }) {
             <span style={{ fontSize: 9 }}>−1</span>
             <span style={{
               width: 60, height: 10, borderRadius: 3,
-              background: "linear-gradient(to right, #3B82F6, #FFFFFF, #FF524D)",
+              background: "linear-gradient(to right, #334155, #FFFFFF, #F0524D)",
               border: "1px solid #E5E7EB",
             }} />
             <span style={{ fontSize: 9 }}>+1</span>

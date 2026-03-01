@@ -152,7 +152,7 @@ export default function GateDetailOverlay({
                       width={isConsumer ? BAND_WIDTH : BAND_WIDTH - 8}
                       height={wireH}
                       fill={meanToColor(mean)}
-                      stroke={isConsumer ? "#3B82F6" : "none"}
+                      stroke={isConsumer ? "#94A3B8" : "none"}
                       strokeWidth={isConsumer ? 1.5 : 0}
                       rx={isConsumer ? 2 : 0}
                     />
@@ -161,7 +161,7 @@ export default function GateDetailOverlay({
                         x={-6}
                         y={wi * wireH + wireH / 2 + 3}
                         fontSize={7}
-                        fill="#3B82F6"
+                        fill="#94A3B8"
                         fontWeight="bold"
                       >
                         ◀

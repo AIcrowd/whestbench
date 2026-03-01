@@ -98,10 +98,10 @@ export default function GateStats({ circuit }) {
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 10 }} />
-              <Bar dataKey="constant" name="Constant" fill="#9CA3AF" stackId="a" />
-              <Bar dataKey="linear" name="Linear" fill="#3B82F6" stackId="a" />
+              <Bar dataKey="constant" name="Constant" fill="#D1D5DB" stackId="a" />
+              <Bar dataKey="linear" name="Linear" fill="#94A3B8" stackId="a" />
               <Bar dataKey="product" name="Product" fill="#F0524D" stackId="a" />
-              <Bar dataKey="mixed" name="Mixed" fill="#F59E0B" stackId="a" />
+              <Bar dataKey="mixed" name="Mixed" fill="#F7A09D" stackId="a" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -132,7 +132,7 @@ export default function GateStats({ circuit }) {
                 }}
                 formatter={(value) => [value.toFixed(4), "Avg |coeff|"]}
               />
-              <Bar dataKey="avg" name="Avg |coeff|" fill="#10B981" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="avg" name="Avg |coeff|" fill="#F0524D" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

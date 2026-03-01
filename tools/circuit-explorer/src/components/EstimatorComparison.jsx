@@ -93,10 +93,10 @@ export default function EstimatorComparison({
             wrapperStyle={{ fontSize: 11, fontFamily: "'DM Sans', sans-serif" }}
           />
           {hasSampling && (
-            <Bar dataKey="sampling" name="Sampling" fill="#3B82F6" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="sampling" name="Sampling" fill="#F0524D" radius={[3, 3, 0, 0]} />
           )}
           {hasMeanProp && (
-            <Bar dataKey="meanProp" name="Mean Prop" fill="#F59E0B" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="meanProp" name="Mean Prop" fill="#94A3B8" radius={[3, 3, 0, 0]} />
           )}
         </BarChart>
       </ResponsiveContainer>
