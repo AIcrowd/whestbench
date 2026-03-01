@@ -145,6 +145,15 @@ def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:
     assert "[host.python_version]" in hardware
 
 
+def test_budget_lane_contains_table_and_two_plots() -> None:
+    rendered = render_human_report(_sample_report(include_profile=False))
+
+    assert "Budget Intelligence" in rendered
+    assert "Budget Table" in rendered
+    assert "Budget Frontier Plot" in rendered
+    assert "Budget Runtime Plot" in rendered
+
+
 def test_render_human_mode_includes_profile_section_when_available() -> None:
     rendered = render_human_report(_sample_report(include_profile=True))
 
