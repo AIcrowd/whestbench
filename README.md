@@ -35,6 +35,20 @@ That's it. `uv` reads `pyproject.toml`, auto-creates a venv, installs dependenci
 - `detail raw` (default): raw per-budget/per-layer data only.
 - `detail full`: includes derived aggregates (`by_budget_summary`, `by_layer_overall`, `by_budget_layer_matrix`) and `profile_summary` when profiling is enabled.
 
+### Human dashboard structure
+
+The default human report is a tri-objective dashboard with:
+
+- top row: `Run Context`, `Readiness Scorecard`, `Hardware & Runtime`,
+- core lanes: `Budget Intelligence` and `Layer Intelligence`,
+- profile lane (only with `--profile`): `Profile Summary`, runtime plot, memory plot.
+
+Layout is adaptive:
+
+- wide terminals (`>=120` columns): multi-column pane layout,
+- medium terminals (`90-119`): compressed multi-row layout,
+- narrow terminals (`<90`): stacked pane layout in the same narrative order.
+
 Examples:
 
 ```bash
