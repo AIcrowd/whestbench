@@ -1,154 +1,241 @@
 <img src="assets/logo/logo.png" alt="logo" style="height: 150px;">
 
-# ARC - Circuit Estimation Challenge
+# Circuit Estimation Challenge Starter Kit
 
-This repository is a starter-kit style implementation of the circuit-estimation problem used for local development and evaluator design iteration.
+Build, test, and iterate estimators for the Circuit Estimation Challenge with a local evaluator, participant-first CLI, and an interactive Circuit Explorer.
 
-## What This Repository Teaches
+## What Is The Problem?
 
-- How to implement a participant estimator with the streaming `BaseEstimator` contract.
-- How evaluation computes accuracy/runtime-adjusted score across budgets.
-- How to use local tooling (`cestim`) to validate, run, and package submissions.
-- How to iterate from simple baseline estimators to stronger budget-aware approaches.
+At a high level, you are given a random layered circuit and a compute budget.
+Your estimator must predict the expected value of every wire after every layer.
 
-## Conceptual Problem Overview
+- Input to your estimator: one `Circuit`, one integer `budget`
+- Output from your estimator: a stream of exactly `max_depth` vectors
+- Shape per emitted vector: `(width,)`
 
-We generate random circuits made of layered gates. For each circuit, the evaluator estimates per-layer wire means via Monte Carlo simulation (ground truth).
-Participants provide an estimator that receives:
+The evaluator compares your streamed predictions against Monte Carlo ground truth and measures both quality and time behavior.
 
-- one `Circuit`
-- one `budget`
+```mermaid
+flowchart LR
+    A[Random Circuit] --> B[Monte Carlo Ground Truth]
+    A --> C[Your Estimator]
+    C --> D[Streamed per-layer predictions]
+    B --> E[Per-layer error]
+    D --> E
+    E --> F[Runtime-aware adjusted score]
+```
 
-and must stream exactly `max_depth` vectors via `yield`, where each emitted vector has shape `(width,)`.
+For a deeper explanation (intuitive + formal), see [What Is The Problem And How Is It Scored?](docs/guides/what-is-the-problem-and-how-is-it-scored.md).
 
-Important security/architecture note: in-repo estimator implementations are examples only. Hosted evaluation should assume participant estimators may be adversarial/malicious and must be treated as black boxes.
+## How Scoring Works
 
-## How Evaluation Works (End-to-End)
+For each budget in `budgets`:
 
-Given `n_circuits`, `n_samples`, and contest params (`width`, `max_depth`, `budgets`, `time_tolerance`):
+1. The evaluator measures a sampling baseline time by depth: `time_budget_by_depth_s`.
+2. Your estimator streams one row per depth.
+3. At each depth, runtime is checked against tolerance bounds.
+   - Too slow: that depth row is zeroed.
+   - Too fast: effective runtime is floored to the lower tolerance bound.
+4. Per-budget adjusted error is aggregated across depths.
 
-1. Sample or accept circuits.
-2. Compute empirical layer-wise target means for each circuit via batched simulation.
-3. For each budget:
-   - Measure baseline runtime by depth (`time_budget_by_depth_s`) using sampling.
-   - Call estimator once per `(circuit, budget)` invocation and consume streamed depth rows.
-   - At each emitted depth row `i`:
-     - if cumulative wall time > `(1 + time_tolerance) * time_budget_by_depth_s[i]`, zero that row;
-     - if cumulative wall time < `(1 - time_tolerance) * time_budget_by_depth_s[i]`, floor effective time to that lower bound.
-   - Compute per-depth MSE and aggregate:
-     - `mse_mean`
-     - `call_time_ratio_mean`
-     - `call_effective_time_s_mean`
-     - `adjusted_mse = mean(mse_by_depth * time_ratio_by_depth_mean)`
-4. Final score = mean `adjusted_mse` across budgets (lower is better).
+Final score is the mean adjusted error across budgets.
+Lower is better.
 
-Report payload:
+```mermaid
+flowchart TD
+    A[Budget b] --> B[Measure baseline time by depth]
+    B --> C[Run estimator and stream depth rows]
+    C --> D{Depth i runtime within tolerance?}
+    D -->|No, too slow| E[Zero row i]
+    D -->|No, too fast| F[Floor effective time i]
+    D -->|Yes| G[Keep row i]
+    E --> H[Compute adjusted per-depth error]
+    F --> H
+    G --> H
+    H --> I[Aggregate per-budget adjusted MSE]
+    I --> J[Average across budgets]
+```
 
-- `results.by_budget_raw` contains raw per-budget metrics (including `mse_by_layer` and depth runtime vectors such as `time_budget_by_depth_s`).
-- Human mode computes the richer payload used by dashboard tabs (summary, budgets, layers, performance, data).
-- `score_estimator_report(..., profile=True, detail="full")` remains available as a programmatic API for advanced callers.
+## Install And Get The CLI Working (Short Version)
 
-## Codebase Map (Suggested Reading Order)
-
-1. `src/circuit_estimation/domain.py`: core `Layer` and `Circuit` entities + validation.
-2. `src/circuit_estimation/generation.py`: random gate/circuit sampling.
-3. `src/circuit_estimation/simulation.py`: batched execution and empirical means.
-4. `src/circuit_estimation/estimators.py`: reference estimators and budget switch logic.
-5. `src/circuit_estimation/scoring.py`: scoring loop, runtime enforcement, profiling hook.
-6. `src/circuit_estimation/reporting.py`: static fallback rendering and agent JSON output.
-7. `src/circuit_estimation/cli.py` and `main.py`: local CLI entrypoints.
-8. `src/circuit_estimation/protocol.py`: DTOs for future RPC-style integration.
-
-## Quickstart
-
-### Prerequisite
-
-Install [uv](https://docs.astral.sh/uv/):
+Install [`uv`](https://docs.astral.sh/uv/):
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### Install CLI (recommended)
-
-From repository root:
+From repo root, install CLI:
 
 ```bash
 uv tool install -e .
 ```
 
-This installs the `cestim` command globally from your local checkout.
-If you work with multiple worktrees, read [Worktrees and CLI](docs/development/worktrees-and-cli.md).
-
-### Run default local report
-
-```bash
-cestim
-```
-
-Default output is the Rich human dashboard. For machine consumers:
+Sanity check:
 
 ```bash
 cestim --agent-mode
 ```
 
-To run from the current checkout without relying on global `cestim`:
-
-```bash
-uv run main.py
-```
-
-To run `cestim` from the current checkout explicitly:
+If you use multiple worktrees, run from the current checkout explicitly:
 
 ```bash
 uv run --with-editable . cestim --agent-mode
 ```
 
-## Extending the Estimator
+See [Install And CLI Quickstart](docs/guides/install-and-cli-quickstart.md) for a compact command cookbook.
 
-Canonical participant interface:
+## Participant Workflow
 
-- subclass `BaseEstimator`
-- implement `predict(self, circuit: Circuit, budget: int) -> Iterator[NDArray[np.float32]]`
+Use participant subcommands as the primary flow:
 
-Contract:
+```mermaid
+flowchart LR
+    A[cestim init] --> B[Implement Estimator]
+    B --> C[cestim validate]
+    C --> D[cestim run]
+    D --> E[cestim package]
+    E --> F[TODO hosted submission upload]
+```
 
-- input: one circuit + one budget
-- output: streamed depth rows via `yield`
-- each emitted row: `np.ndarray` with shape `(width,)`
-- required row count: exactly `max_depth` yields
+Quick commands:
 
-Scoring API compatibility:
+```bash
+# 1) Scaffold starter files in your working directory
+cestim init ./my-estimator
 
-- `score_estimator(...)` accepts a callable with signature:
-  - `Callable[[Circuit, int], Iterator[NDArray[np.float32]]]`
-- for class-based estimators, pass `Estimator().predict`.
+# 2) Validate contract correctness
+cestim validate --estimator ./my-estimator/estimator.py
 
-See the starter tutorial guide:
+# 3) Run local evaluation
+cestim run --estimator ./my-estimator/estimator.py --runner subprocess --detail full --profile
 
-- `docs/guides/participant-streaming-estimator-guide.md`
-- `examples/estimators/random_estimator.py` (start here: full interface walkthrough)
-- `examples/estimators/mean_propagation.py` (first real baseline)
-- `examples/estimators/covariance_propagation.py` (second-order moments)
-- `examples/estimators/combined_estimator.py` (budget-aware routing)
+# 4) Package an artifact
+cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz
+```
 
-Budget tuning intuition:
+Hosted submission/upload flow is not wired yet.
 
-- `budget` is not seconds; it is the sampling trial count used to derive a reference time envelope by depth.
-- Higher budgets increase the `time_budget_by_depth_s` envelope, which allows more estimator compute before depth outputs are zeroed.
-- Runtime below the lower tolerance bound is floored, so use that slack to improve accuracy while staying safely under timeout.
+`TODO: add official AIcrowd submission upload command and endpoint instructions.`
 
-Recommended extension path:
+## Circuit Explorer: Build Intuition Fast
 
-- start from `examples/estimators/random_estimator.py` to learn the interface,
-- then copy one of the stronger starters from `examples/estimators/` into your own `estimator.py`,
-- keep estimator-specific helper methods inside your estimator class,
-- evaluate locally with `score_estimator(...)` or `score_estimator_report(...)`,
-- compare via `cestim` (or `uv run main.py`).
+The interactive explorer helps you visually understand circuit dynamics and estimator behavior.
+
+```bash
+cd tools/circuit-explorer
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`.
+
+Start guide: [How To Use Circuit Explorer](docs/guides/how-to-use-circuit-explorer.md)
+
+## How To Write Your Own Estimator
+
+Your estimator class should subclass `BaseEstimator` and implement:
+
+- `setup(context)` (optional)
+- `predict(circuit, budget)` (required, streaming)
+- `teardown()` (optional)
+
+Contract requirements:
+
+- Emit exactly `circuit.d` rows
+- Each row must have shape `(circuit.n,)`
+- Values must be finite
+- `yield` rows; do not return one final `(depth, width)` tensor
+
+Start here:
+
+- [How To Write Your Own Estimator](docs/guides/how-to-write-your-own-estimator.md)
+
+## Validate, Run, Package, And Local Modes
+
+- Validate entrypoint and stream contract:
+
+```bash
+cestim validate --estimator examples/estimators/random_estimator.py
+```
+
+- Local run (participant workflow):
+
+```bash
+cestim run --estimator examples/estimators/random_estimator.py --runner subprocess
+```
+
+- Debug mode (tracebacks + rich metrics):
+
+```bash
+cestim run \
+  --estimator examples/estimators/random_estimator.py \
+  --runner inprocess \
+  --detail full \
+  --profile \
+  --debug \
+  --agent-mode
+```
+
+- Test harness modes:
+
+```bash
+./scripts/run-test-harness.sh quick
+./scripts/run-test-harness.sh full
+./scripts/run-test-harness.sh exhaustive
+```
+
+Detailed run/validate/package guide: [How To Validate Run And Package](docs/guides/how-to-validate-run-and-package.md)
+
+## What The Scores Mean
+
+The report includes key metrics:
+
+- `final_score`: leaderboard metric (lower is better)
+- `adjusted_mse` per budget: quality with runtime adjustment
+- `mse_mean`: raw prediction quality before runtime weighting
+- `call_time_ratio_mean`: relative time vs baseline envelope
+- `time_budget_by_depth_s`: per-depth runtime reference curve
+
+Interpretation:
+
+- Better estimators reduce error without violating per-depth time budgets.
+- Better budget-aware estimators spend compute where score impact is highest.
+
+Deep dive: [What Is The Problem And How Is It Scored?](docs/guides/what-is-the-problem-and-how-is-it-scored.md)
+
+## Included Example Estimators
+
+Use these as stepping stones:
+
+- `examples/estimators/random_estimator.py`: interface walkthrough, intentionally low accuracy
+- `examples/estimators/mean_propagation.py`: first-order moment baseline
+- `examples/estimators/covariance_propagation.py`: second-order approximation baseline
+- `examples/estimators/combined_estimator.py`: budget-aware switching baseline
+
+Quick run examples:
+
+```bash
+cestim run --estimator examples/estimators/random_estimator.py --runner subprocess
+cestim run --estimator examples/estimators/mean_propagation.py --runner subprocess
+cestim run --estimator examples/estimators/covariance_propagation.py --runner subprocess
+cestim run --estimator examples/estimators/combined_estimator.py --runner subprocess
+```
+
+More detail: [Example Estimators And How To Run Them](docs/guides/example-estimators-and-how-to-run-them.md)
+
+## Documentation Map
+
+- [Install And CLI Quickstart](docs/guides/install-and-cli-quickstart.md)
+- [What Is The Problem And How Is It Scored?](docs/guides/what-is-the-problem-and-how-is-it-scored.md)
+- [How To Use Circuit Explorer](docs/guides/how-to-use-circuit-explorer.md)
+- [How To Write Your Own Estimator](docs/guides/how-to-write-your-own-estimator.md)
+- [How To Validate Run And Package](docs/guides/how-to-validate-run-and-package.md)
+- [Example Estimators And How To Run Them](docs/guides/example-estimators-and-how-to-run-them.md)
+- [Worktrees and CLI](docs/development/worktrees-and-cli.md)
 
 ## Verification Commands
 
-Run before claiming release-ready status:
+Run before finalizing changes:
 
 ```bash
 uv run --group dev ruff check .
@@ -158,18 +245,8 @@ uv run --group dev pytest -m "not exhaustive"
 uv run --group dev pytest -m exhaustive
 ```
 
-## Tools
+## Authors
 
-### Circuit Explorer (Interactive UI)
-
-```bash
-cd tools/circuit-explorer && npm install && npm run dev
-```
-
-See `tools/circuit-explorer/README.md` for details.
-
-
-# Authors
 - Paul Christiano
 - Jacob Hilton
-- Sharada Mohanty 
+- Sharada Mohanty
