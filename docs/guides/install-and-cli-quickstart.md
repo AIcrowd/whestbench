@@ -41,12 +41,12 @@ cestim run --estimator ./my-estimator/estimator.py --runner subprocess
 cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz
 ```
 
-## Worktrees Note
+## Editable Invocation (Optional)
 
-If you switch worktrees often, run from current checkout explicitly:
+Run directly from the current checkout without relying on a global CLI install:
 
 ```bash
 uv run --with-editable . cestim --agent-mode
 ```
 
-See [Worktrees and CLI](../development/worktrees-and-cli.md) for details.
+This is useful when iterating on local code and CLI behavior together.

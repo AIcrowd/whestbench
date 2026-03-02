@@ -2,7 +2,7 @@
 
 Last updated: 2026-03-01
 
-Goal: ensure critical context is available in `docs/context/` even if `CHALLENGE-CONTEXT.md` is removed.
+Goal: ensure critical context is available in `.aicrowd/docs/context/` even if `.aicrowd/CHALLENGE-CONTEXT.md` is removed.
 
 ## Coverage Table
 
@@ -40,15 +40,15 @@ The following were intentionally not copied as durable product context:
 - personal availability notes,
 - duplicated prose where equivalent structured guidance now exists.
 
-## Deletion Readiness Checklist for `CHALLENGE-CONTEXT.md`
+## Deletion Readiness Checklist for `.aicrowd/CHALLENGE-CONTEXT.md`
 
 Before deleting the legacy file, verify:
 
-1. Future-agent onboarding references `docs/context/README.md` first.
-2. No critical docs still state `CHALLENGE-CONTEXT.md` as required source-of-truth.
+1. Future-agent onboarding references `.aicrowd/docs/context/README.md` first.
+2. No critical docs still state `.aicrowd/CHALLENGE-CONTEXT.md` as required source-of-truth.
 3. Any unresolved decisions from legacy context are represented in `open-questions.md`.
 4. A maintainer has reviewed this mapping and confirmed no missing high-impact context.
 
 ## Maintenance Rule
 
-If new legacy notes are added elsewhere, update this map and link each important topic to a durable doc destination inside `docs/context/`.
+If new legacy notes are added elsewhere, update this map and link each important topic to a durable doc destination inside `.aicrowd/docs/context/`.

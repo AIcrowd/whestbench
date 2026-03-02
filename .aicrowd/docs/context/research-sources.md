@@ -4,14 +4,14 @@ Last updated: 2026-03-01
 
 ## Local Repository Sources
 
-- `docs/context/*.md` (primary durable context)
+- `.aicrowd/docs/context/*.md` (primary durable context)
 - `README.md`
 - `src/circuit_estimation/*.py`
 - `main.py`
 
 ## Legacy Migration Source (Optional)
 
-- `CHALLENGE-CONTEXT.md` was used as a migration input.
+- `.aicrowd/CHALLENGE-CONTEXT.md` was used as a migration input.
 - Future agents should not assume it exists.
 
 ## External Primary Sources

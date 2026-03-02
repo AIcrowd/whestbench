@@ -1,4 +1,4 @@
-# Circuit Explorer — Style Guide
+# Circuit Explorer Style Guide
 
 > **For future agents working on this dashboard.**
 > This document is the single source of truth for all visual design decisions.

@@ -3,7 +3,7 @@
 Last updated: 2026-03-01
 
 This folder is a high-signal handoff for future agents working on this repository.
-It is intended to remain self-sufficient even if `CHALLENGE-CONTEXT.md` is deleted.
+It is intended to remain self-sufficient even if `.aicrowd/CHALLENGE-CONTEXT.md` is deleted.
 
 ## Start Here
 
@@ -24,13 +24,13 @@ It is intended to remain self-sufficient even if `CHALLENGE-CONTEXT.md` is delet
 
 ## Canonical Local Sources
 
-- `docs/context/*.md` (this folder; primary context for future work)
+- `.aicrowd/docs/context/*.md` (this folder; primary context for future work)
 - `README.md` (current toy contest mechanics)
 - `src/circuit_estimation/*.py`, `main.py` (current implementation)
 
 ## Legacy Source Status
 
-- `CHALLENGE-CONTEXT.md` is treated as a migration source, not a required dependency.
+- `.aicrowd/CHALLENGE-CONTEXT.md` is treated as a migration source, not a required dependency.
 - Future agents should not rely on it being present.
 
 ## Update Protocol

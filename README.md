@@ -102,7 +102,7 @@ Sanity check:
 cestim --agent-mode
 ```
 
-If you use multiple worktrees, run from the current checkout explicitly:
+Alternative local invocation (without global CLI install):
 
 ```bash
 uv run --with-editable . cestim --agent-mode
@@ -270,7 +270,6 @@ More detail: [Example Estimators And How To Run Them](docs/guides/example-estima
 - [How To Write Your Own Estimator](docs/guides/how-to-write-your-own-estimator.md)
 - [How To Validate Run And Package](docs/guides/how-to-validate-run-and-package.md)
 - [Example Estimators And How To Run Them](docs/guides/example-estimators-and-how-to-run-them.md)
-- [Worktrees and CLI](docs/development/worktrees-and-cli.md)
 
 ## Verification Commands
 
