@@ -220,7 +220,6 @@ node_modules/
 
 # Local git worktrees
 .worktrees/
-internal task tracker
 
 internal agent config/
 internal docs/
