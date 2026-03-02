@@ -1,17 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { randomCircuit } from "./circuit";
+import ActivationRibbon from "./components/ActivationRibbon";
 import CircuitGraphJoint from "./components/CircuitGraphJoint";
 import CircuitHeatmap from "./components/CircuitHeatmap";
+import CoeffHistograms from "./components/CoeffHistograms";
 import Controls from "./components/Controls";
+import ErrorHeatmap from "./components/ErrorHeatmap";
 import EstimatorComparison from "./components/EstimatorComparison";
 import EstimatorRunner from "./components/EstimatorRunner";
 import GateStats from "./components/GateStats";
 import NarrativeCard, { Ewire } from "./components/NarrativeCard";
 import PerfOverlay from "./components/PerfOverlay";
+import SignalAnimationButton from "./components/SignalAnimation";
 import SignalHeatmap from "./components/SignalHeatmap";
+import StdHeatmap from "./components/StdHeatmap";
 import StepIndicator from "./components/StepIndicator";
 import WireStats from "./components/WireStats";
+import { useSignalAnimation } from "./hooks/useSignalAnimation";
 import { perfEnd, perfStart } from "./perf";
 import { useCircuitWorker } from "./useWorker";
 
@@ -206,6 +212,7 @@ export default function App() {
 
   // ── Derived data ──
   const groundTruth = estimatorResults.groundTruth?.estimates || null;
+  const groundTruthStats = estimatorResults.groundTruth || null;
   const samplingEst = estimatorResults.sampling?.estimates || null;
   const meanPropEst = estimatorResults.meanprop?.estimates || null;
 
@@ -216,6 +223,12 @@ export default function App() {
   // Explore mode display data
   const exploreDisplayMeans = groundTruth || samplingEst || meanPropEst;
   const hasAnyExploreEstimate = !!(groundTruth || samplingEst || meanPropEst);
+
+  // ── Signal animation ──
+  const { isAnimating, animLayer, startAnimation } = useSignalAnimation(
+    isTour ? null : displayCircuit,
+    effectiveParams.depth
+  );
 
   return (
     <div className="app">
@@ -334,6 +347,7 @@ export default function App() {
               means={exploreDisplayMeans}
               activeLayer={activeLayer}
               onLayerClick={setActiveLayer}
+              animLayer={animLayer}
             />
           ) : null}
 
@@ -352,26 +366,39 @@ export default function App() {
           {/* ── Explore mode: all panels ── */}
           {!isTour && (
             <>
+              {/* Circuit animation button */}
+              {displayCircuit && !circuitLoading && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+                  <SignalAnimationButton onAnimate={startAnimation} isAnimating={isAnimating} />
+                </div>
+              )}
+
               {displayCircuit && <GateStats circuit={displayCircuit} activeLayer={activeLayer} />}
+
 
               {hasAnyExploreEstimate && (
                 <>
-                  <div className="panels-row panel-reveal">
-                    {useGraphMode && (
-                      <SignalHeatmap
+                  {/* Row 1: Activation Distribution | Wire Mean Distribution */}
+                  {groundTruthStats?.stds && (
+                    <div className="panels-row panel-reveal">
+                      <ActivationRibbon
+                        means={groundTruth}
+                        stds={groundTruthStats.stds}
+                        mins={groundTruthStats.mins}
+                        maxs={groundTruthStats.maxs}
+                        depth={params.depth}
+                        width={params.width}
+                      />
+                      <WireStats
                         means={exploreDisplayMeans}
                         width={params.width}
                         depth={params.depth}
+                        activeLayer={activeLayer}
                       />
-                    )}
-                    <WireStats
-                      means={exploreDisplayMeans}
-                      width={params.width}
-                      depth={params.depth}
-                      activeLayer={activeLayer}
-                    />
-                  </div>
+                    </div>
+                  )}
 
+                  {/* Row 2: Estimation Error (full width) */}
                   {groundTruth && (samplingEst || meanPropEst) && (
                     <div className="panel-reveal">
                       <EstimatorComparison
@@ -383,6 +410,37 @@ export default function App() {
                       />
                     </div>
                   )}
+
+                  {/* Row 3: Signal Variability (σ) | Mean Propagation Error */}
+                  <div className="panels-row panel-reveal">
+                    {groundTruthStats?.stds && (
+                      <StdHeatmap
+                        stds={groundTruthStats.stds}
+                        width={params.width}
+                        depth={params.depth}
+                      />
+                    )}
+                    {groundTruth && meanPropEst && (
+                      <ErrorHeatmap
+                        groundTruth={groundTruth}
+                        meanPropEstimates={meanPropEst}
+                        width={params.width}
+                        depth={params.depth}
+                      />
+                    )}
+                  </div>
+
+                  {/* Row 4: Wire Means Heatmap | Coefficient Distributions */}
+                  <div className="panels-row panel-reveal">
+                    {useGraphMode && (
+                      <SignalHeatmap
+                        means={exploreDisplayMeans}
+                        width={params.width}
+                        depth={params.depth}
+                      />
+                    )}
+                    {displayCircuit && <CoeffHistograms circuit={displayCircuit} />}
+                  </div>
                 </>
               )}
 

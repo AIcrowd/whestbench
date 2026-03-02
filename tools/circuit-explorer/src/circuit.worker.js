@@ -4,7 +4,7 @@
  * Receives messages with { id, type, params } and posts back { id, result }.
  * Typed arrays (Float32Array, Int32Array) survive structured clone via postMessage.
  */
-import { empiricalMean, randomCircuit } from './circuit';
+import { empiricalMean, empiricalStats, randomCircuit, runSingleTrial } from './circuit';
 import { meanPropagation } from './estimators';
 
 self.onmessage = function (e) {
@@ -23,6 +23,17 @@ self.onmessage = function (e) {
       result = { estimates: empiricalMean(circuit, params.trials, params.seed) };
       break;
     }
+    case 'empiricalStats': {
+      const circuit = params.circuit;
+      const stats = empiricalStats(circuit, params.trials, params.seed);
+      result = { estimates: stats.means, stds: stats.stds, mins: stats.mins, maxs: stats.maxs };
+      break;
+    }
+    case 'runSingleTrial': {
+      const circuit = params.circuit;
+      result = { layerValues: runSingleTrial(circuit, params.seed) };
+      break;
+    }
     case 'meanPropagation': {
       const circuit = params.circuit;
       result = { estimates: meanPropagation(circuit) };
@@ -36,3 +47,4 @@ self.onmessage = function (e) {
   result.time = performance.now() - t0;
   self.postMessage({ id, result });
 };
+

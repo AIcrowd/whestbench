@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Circuit Explorer — Performance Benchmark</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'IBM Plex Mono', 'Menlo', monospace;
+    background: #0F172A; color: #E2E8F0;
+    padding: 32px; max-width: 1000px; margin: 0 auto;
+  }
+  h1 { font-size: 18px; margin-bottom: 4px; color: #F0524D; }
+  .subtitle { font-size: 12px; color: #64748B; margin-bottom: 24px; }
+  .controls { display: flex; gap: 12px; margin-bottom: 24px; align-items: center; }
+  button {
+    background: #F0524D; color: white; border: none; padding: 8px 16px;
+    border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px;
+    font-weight: 600;
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button:hover:not(:disabled) { background: #E04440; }
+  .status { font-size: 12px; color: #94A3B8; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    margin-bottom: 24px;
+  }
+  th, td {
+    text-align: right; padding: 6px 10px;
+    border-bottom: 1px solid #1E293B;
+  }
+  th { color: #94A3B8; font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+  td:first-child, th:first-child { text-align: left; }
+  tr:hover td { background: #1E293B; }
+  .fast { color: #4ADE80; }
+  .medium { color: #FBBF24; }
+  .slow { color: #F87171; }
+  .section { margin-top: 24px; }
+  .section h2 { font-size: 14px; color: #CBD5E1; margin-bottom: 12px; border-bottom: 1px solid #1E293B; padding-bottom: 6px; }
+  canvas { display: none; }
+  #log { font-size: 11px; color: #64748B; max-height: 200px; overflow-y: auto; margin-top: 16px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>⚡ Circuit Explorer — Performance Benchmark</h1>
+<p class="subtitle">Measures real timings for all hot paths across circuit sizes. Run in Chrome DevTools for accurate results.</p>
+
+<div class="controls">
+  <button id="runBtn" onclick="runBenchmark()">▶ Run Benchmark</button>
+  <span id="statusText" class="status">Ready</span>
+</div>
+
+<div class="section">
+  <h2>Circuit Generation (main thread)</h2>
+  <table id="genTable">
+    <thead><tr>
+      <th>Size (n × d)</th><th>Gates</th><th>Time</th><th>Throughput</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Heatmap Render (putImageData)</h2>
+  <table id="heatmapTable">
+    <thead><tr>
+      <th>Size (n × d)</th><th>Pixels</th><th>Time</th><th>MPixels/s</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>GateStats Computation (useMemo equivalent)</h2>
+  <table id="gateStatsTable">
+    <thead><tr>
+      <th>Size (n × d)</th><th>Gates</th><th>Time</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>Estimator Computation (Web Worker)</h2>
+  <table id="estimatorTable">
+    <thead><tr>
+      <th>Size (n × d)</th><th>Operation</th><th>Time</th><th>Notes</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="section">
+  <h2>End-to-End: Slider Change → Render Complete</h2>
+  <table id="e2eTable">
+    <thead><tr>
+      <th>Size (n × d)</th><th>Circuit Gen</th><th>Heatmap</th><th>GateStats</th><th>Total</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<canvas id="benchCanvas" width="800" height="500"></canvas>
+<div id="log"></div>
+
+<script type="module">
+// Import the actual circuit modules
+import { randomCircuit, empiricalMean } from './src/circuit.js';
+import { meanPropagation } from './src/estimators.js';
+
+const SIZES = [
+  { n: 8, d: 6 },       // tiny (tour)
+  { n: 16, d: 16 },     // small
+  { n: 32, d: 32 },     // medium
+  { n: 64, d: 64 },     // large graph mode boundary
+  { n: 128, d: 128 },   // heatmap mode
+  { n: 256, d: 128 },   // wide
+  { n: 512, d: 256 },   // very large
+  { n: 1024, d: 256 },  // max typical
+];
+
+function log(msg) {
+  const el = document.getElementById('log');
+  el.textContent += msg + '\n';
+  el.scrollTop = el.scrollHeight;
+}
+
+function fmt(ms) {
+  if (ms < 0.01) return '<0.01ms';
+  if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
+  if (ms < 1000) return `${ms.toFixed(1)}ms`;
+  return `${(ms / 1000).toFixed(2)}s`;
+}
+
+function colorClass(ms) {
+  if (ms < 10) return 'fast';
+  if (ms < 100) return 'medium';
+  return 'slow';
+}
+
+function addRow(tableId, cells) {
+  const tbody = document.querySelector(`#${tableId} tbody`);
+  const tr = document.createElement('tr');
+  cells.forEach(([text, cls]) => {
+    const td = document.createElement('td');
+    td.textContent = text;
+    if (cls) td.className = cls;
+    tr.appendChild(td);
+  });
+  tbody.appendChild(tr);
+}
+
+function bench(fn, warmup = 1) {
+  // Warmup
+  for (let i = 0; i < warmup; i++) fn();
+  // Measure
+  const t0 = performance.now();
+  const result = fn();
+  const t1 = performance.now();
+  return { time: t1 - t0, result };
+}
+
+// GateStats computation (extracted from GateStats.jsx)
+function computeGateStats(circuit) {
+  const { n, d, gates } = circuit;
+  let totalC = 0, totalA = 0, totalB = 0, totalP = 0;
+  const totals = { const: 0, first: 0, second: 0, product: 0 };
+  let count = 0;
+
+  for (let l = 0; l < d; l++) {
+    const layer = gates[l];
+    for (let i = 0; i < n; i++) {
+      const cv = Math.abs(layer.const[i]);
+      const av = Math.abs(layer.firstCoeff[i]);
+      const bv = Math.abs(layer.secondCoeff[i]);
+      const pv = Math.abs(layer.productCoeff[i]);
+
+      const max = Math.max(cv, av, bv, pv);
+      if (max === pv) totalP++;
+      else if (max === cv) totalC++;
+      else if (max === av) totalA++;
+      else totalB++;
+
+      totals.const += cv;
+      totals.first += av;
+      totals.second += bv;
+      totals.product += pv;
+      count++;
+    }
+  }
+  return { totalC, totalA, totalB, totalP, totals, count };
+}
+
+// Heatmap render simulation
+function renderHeatmap(circuit, means) {
+  const canvas = document.getElementById('benchCanvas');
+  const width = 800;
+  const height = Math.min(500, Math.max(200, circuit.n * 2));
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.createImageData(width, height);
+  const pixels = imgData.data;
+
+  for (let py = 0; py < height; py++) {
+    const wire = Math.floor((py / height) * circuit.n);
+    for (let px = 0; px < width; px++) {
+      const layer = Math.floor((px / width) * circuit.d);
+      const idx = (py * width + px) * 4;
+      const mean = means && means[layer] ? means[layer][wire] : 0;
+      const t = Math.max(-1, Math.min(1, mean));
+      if (t < 0) {
+        const s = 1 + t;
+        pixels[idx]     = 51 + (204 * s) | 0;
+        pixels[idx + 1] = 65 + (190 * s) | 0;
+        pixels[idx + 2] = 85 + (170 * s) | 0;
+      } else {
+        pixels[idx]     = 255 - (15 * t) | 0;
+        pixels[idx + 1] = 255 - (173 * t) | 0;
+        pixels[idx + 2] = 255 - (178 * t) | 0;
+      }
+      pixels[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+
+async function runBenchmark() {
+  const btn = document.getElementById('runBtn');
+  const status = document.getElementById('statusText');
+  btn.disabled = true;
+
+  // Clear tables
+  document.querySelectorAll('tbody').forEach(tb => tb.innerHTML = '');
+  document.getElementById('log').textContent = '';
+  
+  // Create worker
+  const worker = new Worker(
+    new URL('./src/circuit.worker.js', import.meta.url),
+    { type: 'module' }
+  );
+  
+  let workerId = 0;
+  function workerRun(type, params) {
+    return new Promise((resolve, reject) => {
+      const id = ++workerId;
+      worker.onmessage = (e) => {
+        if (e.data.id === id) {
+          if (e.data.error) reject(new Error(e.data.error));
+          else resolve(e.data.result);
+        }
+      };
+      worker.postMessage({ id, type, params });
+    });
+  }
+
+  for (const { n, d } of SIZES) {
+    const label = `${n}×${d}`;
+    const gates = n * d;
+    status.textContent = `Benchmarking ${label} (${gates.toLocaleString()} gates)…`;
+    log(`\n── ${label} (${gates.toLocaleString()} gates) ──`);
+
+    // 1. Circuit generation (main thread)
+    const gen = bench(() => randomCircuit(n, d, 42));
+    const circuit = gen.result;
+    log(`  randomCircuit: ${fmt(gen.time)}`);
+    addRow('genTable', [
+      [label], [gates.toLocaleString()],
+      [fmt(gen.time), colorClass(gen.time)],
+      [`${(gates / gen.time * 1000).toFixed(0)} gates/s`]
+    ]);
+
+    // 2. Heatmap render
+    // First generate means for rendering
+    const meanPropResult = meanPropagation(circuit);
+    const hm = bench(() => renderHeatmap(circuit, meanPropResult));
+    const pixels = 800 * Math.min(500, Math.max(200, n * 2));
+    log(`  heatmap putImageData: ${fmt(hm.time)} (${(pixels/1e6).toFixed(2)}M pixels)`);
+    addRow('heatmapTable', [
+      [label], [`${(pixels/1e6).toFixed(2)}M`],
+      [fmt(hm.time), colorClass(hm.time)],
+      [`${(pixels / hm.time / 1000).toFixed(1)}`]
+    ]);
+
+    // 3. GateStats computation
+    const gs = bench(() => computeGateStats(circuit));
+    log(`  gateStats compute: ${fmt(gs.time)}`);
+    addRow('gateStatsTable', [
+      [label], [gates.toLocaleString()],
+      [fmt(gs.time), colorClass(gs.time)]
+    ]);
+
+    // 4. Estimator: worker circuit gen
+    const workerGen = await workerRun('randomCircuit', { width: n, depth: d, seed: 42 });
+    log(`  worker randomCircuit: ${fmt(workerGen.time)}`);
+
+    // 5. Estimator: empiricalMean 10k (worker)
+    const em10k = await workerRun('empiricalMean', { circuit, trials: 10000, seed: 99 });
+    log(`  worker empiricalMean(10k): ${fmt(em10k.time)}`);
+    addRow('estimatorTable', [
+      [label], ['empiricalMean (10k)'],
+      [fmt(em10k.time), colorClass(em10k.time)],
+      ['10,000 trials']
+    ]);
+
+    // 6. Estimator: empiricalMean 1k (worker)
+    const em1k = await workerRun('empiricalMean', { circuit, trials: 1000, seed: 77 });
+    log(`  worker empiricalMean(1k): ${fmt(em1k.time)}`);
+    addRow('estimatorTable', [
+      [label], ['empiricalMean (1k)'],
+      [fmt(em1k.time), colorClass(em1k.time)],
+      ['1,000 trials']
+    ]);
+
+    // 7. Estimator: meanPropagation (worker)
+    const mp = await workerRun('meanPropagation', { circuit });
+    log(`  worker meanPropagation: ${fmt(mp.time)}`);
+    addRow('estimatorTable', [
+      [label], ['meanPropagation'],
+      [fmt(mp.time), colorClass(mp.time)],
+      ['analytic']
+    ]);
+
+    // 8. End-to-end
+    const totalE2E = gen.time + hm.time + gs.time;
+    addRow('e2eTable', [
+      [label],
+      [fmt(gen.time), colorClass(gen.time)],
+      [fmt(hm.time), colorClass(hm.time)],
+      [fmt(gs.time), colorClass(gs.time)],
+      [fmt(totalE2E), colorClass(totalE2E)]
+    ]);
+
+    // Yield to let UI update
+    await new Promise(r => setTimeout(r, 50));
+  }
+
+  worker.terminate();
+  status.textContent = 'Done! ✓';
+  btn.disabled = false;
+  log('\n✓ Benchmark complete.');
+}
+
+window.runBenchmark = runBenchmark;
+</script>
+</body>
+</html>

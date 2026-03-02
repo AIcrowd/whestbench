@@ -54,7 +54,7 @@ function computeFocusWindow(n, inputFirst, inputSecond) {
  * @param {object} params
  */
 function drawBand(canvas, {
-  n, means, layerIdx, highlightWires, highlightColor, focusWindow
+  n, means, layerIdx, highlightWires, focusWindow
 }) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -111,14 +111,25 @@ function drawBand(canvas, {
       ctx.fillRect(x, y, w, wireH);
 
       if (isHighlight) {
-        ctx.strokeStyle = highlightColor;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(x + 0.75, y + 0.75, w - 1.5, wireH - 1.5);
-        // Wire label
-        ctx.fillStyle = highlightColor;
+        // Black border for contrast against colored cells
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 1, y + 1, w - 2, wireH - 2);
+
+        // Black triangular arrow pointer (pointing right into the band)
+        ctx.fillStyle = "#000000";
+        ctx.beginPath();
+        ctx.moveTo(-1, y + wireH / 2 - 4);
+        ctx.lineTo(5, y + wireH / 2);
+        ctx.lineTo(-1, y + wireH / 2 + 4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Wire label in black, offset further outside
+        ctx.fillStyle = "#000000";
         ctx.font = "bold 7px 'IBM Plex Mono', monospace";
         ctx.textAlign = "left";
-        ctx.fillText(`w${wi}`, BAND_WIDTH + 2, y + wireH / 2 + 3);
+        ctx.fillText(`w${wi}`, BAND_WIDTH + 4, y + wireH / 2 + 3);
       }
       y += wireH;
     }

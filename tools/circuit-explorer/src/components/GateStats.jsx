@@ -1,176 +1,138 @@
-import * as tfvis from "@tensorflow/tfjs-vis";
+/**
+ * GateStats — Canvas-rendered stacked bar chart.
+ * Shows per-layer dominant coefficient composition as a stacked bar.
+ * One bar per layer, each segment colored by coefficient type.
+ */
 import { useEffect, useMemo, useRef } from "react";
-import { perfEnd, perfStart } from "../perf";
 
-/* ── Strict palette from circuit gate colors (gateShapes.js) ── */
+/* ── Strict palette from circuit gate colors ── */
 const COLORS = {
-  const:   "#D1D5DB",
-  first:   "#94A3B8",
-  second:  "#334155",
-  product: "#F0524D",
+  c: "#8B95A2",   // bias — medium gray
+  a: "#5B7BA8",   // first input — steel blue
+  b: "#1E293B",   // second input — near-black slate
+  p: "#F0524D",   // product — coral
 };
 
-/* Unified coefficient labels */
 const COEFF_META = {
-  c: { label: "constant bias",    fill: COLORS.const },
-  a: { label: "first input (x)",  fill: COLORS.first },
-  b: { label: "second input (y)", fill: COLORS.second },
-  p: { label: "interaction (x·y)", fill: COLORS.product },
+  c: { label: "constant bias",     fill: COLORS.c },
+  a: { label: "first input (x)",   fill: COLORS.a },
+  b: { label: "second input (y)",  fill: COLORS.b },
+  p: { label: "interaction (x·y)", fill: COLORS.p },
 };
-
-const MAX_LAYER_BARS = 64;
+const KEYS = ["c", "a", "b", "p"];
 
 export default function GateStats({ circuit, activeLayer }) {
-  const dominantRef = useRef(null);
-  const magnitudeRef = useRef(null);
+  const canvasRef = useRef(null);
 
-  const { layerData, coeffData, summaryData, showPerLayerChart } = useMemo(() => {
-    if (!circuit) return { layerData: [], coeffData: [], summaryData: [], showPerLayerChart: true };
-    perfStart('gatestats-compute');
+  const layerData = useMemo(() => {
+    if (!circuit) return [];
     const { n, d, gates } = circuit;
-
-    const _layerData = [];
-    let totalC = 0, totalA = 0, totalB = 0, totalP = 0;
-
+    const result = [];
     for (let l = 0; l < d; l++) {
       const layer = gates[l];
       let cCount = 0, aCount = 0, bCount = 0, pCount = 0;
-
       for (let i = 0; i < n; i++) {
         const cv = Math.abs(layer.const[i]);
         const av = Math.abs(layer.firstCoeff[i]);
         const bv = Math.abs(layer.secondCoeff[i]);
         const pv = Math.abs(layer.productCoeff[i]);
-
         const max = Math.max(cv, av, bv, pv);
         if (max === pv) pCount++;
         else if (max === cv) cCount++;
         else if (max === av) aCount++;
         else bCount++;
       }
-
-      totalC += cCount; totalA += aCount; totalB += bCount; totalP += pCount;
-      _layerData.push({
-        layer: `L${l}`,
-        c: cCount, a: aCount, b: bCount, p: pCount,
-      });
+      result.push({ c: cCount, a: aCount, b: bCount, p: pCount, total: n });
     }
-
-    // Overall coefficient magnitude stats
-    const totals = { const: 0, first: 0, second: 0, product: 0 };
-    let count = 0;
-    for (let l = 0; l < d; l++) {
-      const layer = gates[l];
-      for (let i = 0; i < n; i++) {
-        totals.const += Math.abs(layer.const[i]);
-        totals.first += Math.abs(layer.firstCoeff[i]);
-        totals.second += Math.abs(layer.secondCoeff[i]);
-        totals.product += Math.abs(layer.productCoeff[i]);
-        count++;
-      }
-    }
-
-    const _coeffData = [
-      { index: "c — bias",        value: totals.const / count },
-      { index: "a — first (x)",   value: totals.first / count },
-      { index: "b — second (y)",  value: totals.second / count },
-      { index: "p — product (xy)", value: totals.product / count },
-    ];
-
-    const totalGates = totalC + totalA + totalB + totalP;
-    const _summaryData = [
-      { index: "c — bias",        value: (totalC / totalGates * 100) },
-      { index: "a — first (x)",   value: (totalA / totalGates * 100) },
-      { index: "b — second (y)",  value: (totalB / totalGates * 100) },
-      { index: "p — product (xy)", value: (totalP / totalGates * 100) },
-    ];
-
-    perfEnd('gatestats-compute');
-    return {
-      layerData: _layerData,
-      coeffData: _coeffData,
-      summaryData: _summaryData,
-      showPerLayerChart: d <= MAX_LAYER_BARS,
-    };
+    return result;
   }, [circuit]);
 
-  // Render dominant coefficient chart
   useEffect(() => {
-    if (!dominantRef.current || !circuit) return;
-    dominantRef.current.innerHTML = '';
+    if (!canvasRef.current || layerData.length === 0) return;
+    const canvas = canvasRef.current;
+    const container = canvas.parentElement;
+    const W = container.offsetWidth || 600;
+    const H = 200;
+    const PAD = { top: 10, bottom: 28, left: 44, right: 10 };
+    const plotW = W - PAD.left - PAD.right;
+    const plotH = H - PAD.top - PAD.bottom;
 
-    if (showPerLayerChart) {
-      // For small circuits — per-layer stacked data as separate series
-      // tfvis barchart only does single series, so we use a grouped approach
-      // rendering one bar chart per coefficient type
-      const data = layerData.map(d => ({
-        index: d.layer,
-        value: d.c + d.a + d.b + d.p,
-      }));
-      tfvis.render.barchart(dominantRef.current, data, {
-        width: dominantRef.current.offsetWidth || 400,
-        height: 180,
-        xLabel: 'Layer',
-        yLabel: 'Gates',
-        color: COLORS.product,
-      });
-    } else {
-      // For large circuits — summary distribution
-      tfvis.render.barchart(dominantRef.current, summaryData, {
-        width: dominantRef.current.offsetWidth || 400,
-        height: 180,
-        xLabel: 'Coefficient',
-        yLabel: '% of gates',
-        color: [COLORS.const, COLORS.first, COLORS.second, COLORS.product],
-      });
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = `${W}px`;
+    canvas.style.height = `${H}px`;
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, W, H);
+
+    const d = layerData.length;
+    const barGap = d > 50 ? 0 : 1;
+    const barW = Math.max(1, (plotW - (d - 1) * barGap) / d);
+    const maxVal = layerData[0].total; // all layers have n gates
+
+    for (let l = 0; l < d; l++) {
+      const x = PAD.left + l * (barW + barGap);
+      let yStack = PAD.top + plotH;
+      const data = layerData[l];
+      const isActive = l === activeLayer;
+
+      for (const key of KEYS) {
+        const count = data[key];
+        const segH = (count / maxVal) * plotH;
+        yStack -= segH;
+        ctx.fillStyle = COLORS[key];
+        ctx.globalAlpha = isActive ? 1.0 : 0.85;
+        ctx.fillRect(x, yStack, barW, segH);
+      }
+
+      // Active layer highlight
+      if (isActive) {
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = "#F0524D";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x - 0.5, PAD.top, barW + 1, plotH);
+      }
+      ctx.globalAlpha = 1;
     }
-  }, [circuit, layerData, summaryData, showPerLayerChart]);
 
-  // Render coefficient magnitude chart
-  useEffect(() => {
-    if (!magnitudeRef.current || !circuit) return;
-    magnitudeRef.current.innerHTML = '';
+    // X-axis labels
+    ctx.fillStyle = "#9CA3AF";
+    ctx.font = "9px 'IBM Plex Mono', monospace";
+    ctx.textAlign = "center";
+    const labelStep = Math.max(1, Math.floor(d / 10));
+    for (let l = 0; l < d; l += labelStep) {
+      const x = PAD.left + l * (barW + barGap) + barW / 2;
+      ctx.fillText(`${l}`, x, H - 4);
+    }
+    ctx.fillText("Layer", PAD.left + plotW / 2, H - 14);
 
-    tfvis.render.barchart(magnitudeRef.current, coeffData, {
-      width: magnitudeRef.current.offsetWidth || 400,
-      height: 210,
-      xLabel: 'Coefficient',
-      yLabel: 'Avg |value|',
-      color: [COLORS.const, COLORS.first, COLORS.second, COLORS.product],
-    });
-  }, [circuit, coeffData]);
+    // Y-axis labels (percentage)
+    ctx.textAlign = "right";
+    ctx.fillText("100%", PAD.left - 4, PAD.top + 4);
+    ctx.fillText("50%", PAD.left - 4, PAD.top + plotH / 2 + 3);
+    ctx.fillText("0%", PAD.left - 4, PAD.top + plotH + 3);
+  }, [layerData, activeLayer]);
 
   if (!circuit) return null;
 
   return (
     <div className="panel">
       <h2>Gate Structure Analysis</h2>
-
-      {/* Explanation of the gate formula */}
       <div className="gate-formula-explain">
         <code className="formula-box">out = c + a·x + b·y + p·x·y</code>
-        <div className="formula-legend">
-          <span style={{ color: COLORS.const }}>● <strong>c</strong> constant bias</span>
-          <span style={{ color: COLORS.first }}>● <strong>a</strong> first input (x)</span>
-          <span style={{ color: COLORS.second }}>● <strong>b</strong> second input (y)</span>
-          <span style={{ color: COLORS.product }}>● <strong>p</strong> interaction (x·y)</span>
-        </div>
       </div>
-
-      <div className="gate-stats-grid">
-        <div>
-          <h3 className="subheading">
-            {showPerLayerChart ? "Dominant Coefficient per Layer" : "Dominant Coefficient Distribution"}
-          </h3>
-          <div ref={dominantRef} style={{ width: '100%', minHeight: 180 }} />
-        </div>
-
-        <div>
-          <h3 className="subheading">Avg |Coefficient| Magnitude</h3>
-          <div ref={magnitudeRef} style={{ width: '100%', minHeight: 210 }} />
-        </div>
+      <div style={{ width: "100%", overflowX: "auto" }}>
+        <canvas ref={canvasRef} />
       </div>
-
+      <div className="formula-legend" style={{ marginTop: 4 }}>
+        {KEYS.map(k => (
+          <span key={k} style={{ color: COEFF_META[k].fill }}>
+            ■ <strong>{k}</strong> {COEFF_META[k].label}
+          </span>
+        ))}
+      </div>
       <p className="panel-desc">
         Each gate's output depends on inputs <em>x</em>, <em>y</em> ∈ {"{"}−1, +1{"}"}.
         <strong> Product-heavy</strong> circuits are harder to estimate because

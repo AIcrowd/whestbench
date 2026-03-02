@@ -35,6 +35,9 @@ const FLOW_MARKER = {
   fill: WIRE_FLOW,
 };
 
+/* Output port size — prominent colored circle for E[wire] */
+const WIRE_PORT_R = 7;
+
 /* JointJS port group definitions */
 const PORT_GROUPS = {
   in: {
@@ -47,7 +50,13 @@ const PORT_GROUPS = {
   out: {
     position: { name: "right" },
     attrs: {
-      portBody: { r: 2.5, fill: "#94A3B8", stroke: "none", magnet: false },
+      portBody: {
+        r: WIRE_PORT_R,
+        fill: GATE_FILL_DEFAULT,
+        stroke: GATE_STROKE,
+        strokeWidth: 1.5,
+        magnet: false,
+      },
     },
     markup: [{ tagName: "circle", selector: "portBody" }],
   },
@@ -290,7 +299,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
       nodes[l] = [];
       for (let w = 0; w < circuit.n; w++) {
         const mean = means?.[l]?.[w] ?? null;
-        const fill = meanToColor(mean) || GATE_FILL_DEFAULT;
+        const wireFill = meanToColor(mean) || GATE_FILL_DEFAULT;
 
         const x = PAD_X + GATE_X_OFFSET + l * (GATE_W + COL_GAP);
         const y = PAD_Y + w * (GATE_H + ROW_GAP);
@@ -300,7 +309,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
           size: { width: GATE_W, height: GATE_H },
           attrs: {
             body: {
-              fill,
+              fill: GATE_FILL_DEFAULT,
               stroke: GATE_STROKE,
               strokeWidth: 1.5,
               rx: 3,
@@ -315,7 +324,11 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
             items: [
               { id: "in1", group: "in" },
               { id: "in2", group: "in" },
-              { id: "out", group: "out" },
+              { id: "out", group: "out", attrs: {
+                portBody: {
+                  fill: wireFill,
+                },
+              }},
             ],
           },
         });
@@ -663,7 +676,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
         >
           <div className="tooltip-pro-header" style={{ cursor: "grab" }}>
             <span className="tooltip-pro-title">
-              Gate [{tooltip.layerIndex}, {tooltip.wireIndex}]
+              Wire [{tooltip.layerIndex}, {tooltip.wireIndex}]
             </span>
             <button
               className="tooltip-pro-close"
@@ -729,7 +742,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
 
           {tooltip.mean !== null && (
             <div className="tooltip-pro-mean">
-              E[output] = <strong>{tooltip.mean.toFixed(4)}</strong>
+              E[wire] = <strong>{tooltip.mean.toFixed(4)}</strong>
             </div>
           )}
         </div>
