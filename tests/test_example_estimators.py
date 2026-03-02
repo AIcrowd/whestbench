@@ -90,8 +90,46 @@ def test_combined_example_switches_mode_by_budget() -> None:
     np.testing.assert_allclose(high_budget, np.array([[1.0]], dtype=np.float32), atol=1e-5)
 
 
+def test_random_example_estimator_streams_finite_depth_rows() -> None:
+    estimator, _ = load_estimator_from_path(_examples_dir() / "random_estimator.py")
+    circuit = make_circuit(
+        4,
+        [
+            make_layer(
+                first=[0, 1, 2, 3],
+                second=[1, 2, 3, 0],
+                first_coeff=[1.0, 0.0, 0.0, 0.0],
+                second_coeff=[0.0, 1.0, 0.0, 0.0],
+                const=[0.0, 0.0, 0.0, 0.0],
+                product_coeff=[0.0, 0.0, 0.0, 0.0],
+            ),
+            make_layer(
+                first=[0, 1, 2, 3],
+                second=[1, 2, 3, 0],
+                first_coeff=[0.0, 0.0, 1.0, 0.0],
+                second_coeff=[0.0, 0.0, 0.0, 1.0],
+                const=[0.0, 0.0, 0.0, 0.0],
+                product_coeff=[0.0, 0.0, 0.0, 0.0],
+            ),
+            make_layer(
+                first=[0, 1, 2, 3],
+                second=[1, 2, 3, 0],
+                first_coeff=[1.0, 0.0, 0.0, 0.0],
+                second_coeff=[0.0, 0.0, 1.0, 0.0],
+                const=[0.0, 0.0, 0.0, 0.0],
+                product_coeff=[0.0, 0.0, 0.0, 0.0],
+            ),
+        ],
+    )
+    predictions = np.array(list(estimator.predict(circuit, budget=17)), dtype=np.float32)
+    assert predictions.shape == (3, 4)
+    assert np.isfinite(predictions).all()
+    assert np.all(np.abs(predictions) <= 1.0)
+
+
 def test_example_estimators_do_not_expose_module_level_helper_functions() -> None:
     files = [
+        _examples_dir() / "random_estimator.py",
         _examples_dir() / "mean_propagation.py",
         _examples_dir() / "covariance_propagation.py",
         _examples_dir() / "combined_estimator.py",
@@ -109,6 +147,7 @@ def test_example_estimators_do_not_expose_module_level_helper_functions() -> Non
 
 def test_example_estimators_have_onboarding_docstrings() -> None:
     files = [
+        _examples_dir() / "random_estimator.py",
         _examples_dir() / "mean_propagation.py",
         _examples_dir() / "covariance_propagation.py",
         _examples_dir() / "combined_estimator.py",
@@ -128,3 +167,19 @@ def test_example_estimators_have_onboarding_docstrings() -> None:
             f"{path.name} Estimator docstring should include mathematical notation "
             "or complexity notation for a crisp technical explanation."
         )
+
+
+def test_random_example_walks_through_full_interface() -> None:
+    path = _examples_dir() / "random_estimator.py"
+    text = path.read_text(encoding="utf-8").lower()
+    required_tokens = [
+        "def setup",
+        "def predict",
+        "def teardown",
+        "setupcontext",
+        "budget",
+        "yield",
+        "dtype=np.float32",
+    ]
+    for token in required_tokens:
+        assert token in text, f"random_estimator.py should mention/use '{token}'"

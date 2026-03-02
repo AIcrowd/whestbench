@@ -20,7 +20,7 @@ export const GATE_TYPE_FONT = "'Bradley Hand', Caveat, cursive"; // gate type la
  * Each type gets a unicode symbol and a display color.
  */
 export const GATE_TYPES = {
-  CONST: { symbol: "■",  color: "#D9DCDC" },  // Subtle Gray/White
+  CONST: { symbol: "■",  color: "#94A3B8" },  // Darker Slate Gray (was #D9DCDC)
   BUF:   { symbol: "▷",  color: "#AAACAD" },  // Mid-Gray
   NOT:   { symbol: "▷○", color: "#77797A" },  // Darker Gray
   AND:   { symbol: "∧",  color: "#677587" },  // Blue-Slate (muted)

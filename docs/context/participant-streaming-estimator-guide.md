@@ -9,6 +9,23 @@ This guide explains the only contract you need to implement:
 You do not need to edit scorer internals or runner logic.
 You can start from the class-based templates in `examples/estimators/`.
 
+## First File To Read
+
+Start with `examples/estimators/random_estimator.py`.
+
+That example is intentionally silly (it predicts random values), but it is the
+best onboarding file because it walks through the *entire* estimator lifecycle:
+
+- `setup(context)` for one-time initialization,
+- `predict(circuit, budget)` for streamed depth-row outputs,
+- `teardown()` for cleanup.
+
+After that, move to:
+
+1. `examples/estimators/mean_propagation.py`
+2. `examples/estimators/covariance_propagation.py`
+3. `examples/estimators/combined_estimator.py`
+
 ## Minimal Skeleton
 
 ```python

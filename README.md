@@ -4,6 +4,13 @@
 
 This repository is a starter-kit style implementation of the circuit-estimation problem used for local development and evaluator design iteration.
 
+## What This Repository Teaches
+
+- How to implement a participant estimator with the streaming `BaseEstimator` contract.
+- How evaluation computes accuracy/runtime-adjusted score across budgets.
+- How to use local tooling (`cestim`) to validate, run, and package submissions.
+- How to iterate from simple baseline estimators to stronger budget-aware approaches.
+
 ## Conceptual Problem Overview
 
 We generate random circuits made of layered gates. For each circuit, the evaluator estimates per-layer wire means via Monte Carlo simulation (ground truth).
@@ -120,7 +127,10 @@ Scoring API compatibility:
 See the starter tutorial guide:
 
 - `docs/context/participant-streaming-estimator-guide.md`
-- `examples/estimators/` for full class-based starter implementations
+- `examples/estimators/random_estimator.py` (start here: full interface walkthrough)
+- `examples/estimators/mean_propagation.py` (first real baseline)
+- `examples/estimators/covariance_propagation.py` (second-order moments)
+- `examples/estimators/combined_estimator.py` (budget-aware routing)
 
 Budget tuning intuition:
 
@@ -130,7 +140,8 @@ Budget tuning intuition:
 
 Recommended extension path:
 
-- copy a starter from `examples/estimators/` into your own `estimator.py`,
+- start from `examples/estimators/random_estimator.py` to learn the interface,
+- then copy one of the stronger starters from `examples/estimators/` into your own `estimator.py`,
 - keep estimator-specific helper methods inside your estimator class,
 - evaluate locally with `score_estimator(...)` or `score_estimator_report(...)`,
 - compare via `cestim` (or `uv run main.py`).

@@ -332,10 +332,12 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
             },
             gateSymbol: {
               text: gateInfo.label,
-              fontSize: 3,
+              fontSize: 4,
               fontFamily: GATE_TYPE_FONT,
               fill: gateInfo.color || "#475569",
-              fontWeight: 700,
+              fontWeight: 900,
+              stroke: gateInfo.color || "#475569",
+              strokeWidth: 0.3, // Small stroke to simulate boldness
               textAnchor: "middle",
               refX: "50%",
               refY: -2,
