@@ -7,7 +7,7 @@
  * with bold coral triangles pointing inward.
  */
 import { useEffect, useMemo, useRef } from "react";
-import { classifyGate, meanToColor } from "./gateShapes";
+import { classifyGate, GATE_TYPE_FONT, meanToColor } from "./gateShapes";
 
 const BAND_WIDTH = 28;
 const BAND_HEIGHT = 280;
@@ -175,7 +175,7 @@ export default function GateDetailOverlay({
               background: currentMean !== null ? meanToColor(currentMean) + '18' : undefined,
             }}
           >
-            <div className="gate-op">{gateInfo.label}</div>
+            <div className="gate-op" style={{ fontFamily: GATE_TYPE_FONT, color: gateInfo.color }}>{gateInfo.symbol} {gateInfo.label}</div>
           </div>
           <div className="gate-coefficients">
             <div className="coeff-row">

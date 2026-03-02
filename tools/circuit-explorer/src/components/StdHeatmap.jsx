@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import HeatmapTooltip from "./HeatmapTooltip";
 import InfoTip from "./InfoTip";
+import { classifyGate } from "./gateShapes";
 
 function stdToRGB(std, maxStd) {
   const t = Math.min(1, std / Math.max(0.01, maxStd));
@@ -20,7 +21,7 @@ function stdToRGB(std, maxStd) {
   }
 }
 
-export default function StdHeatmap({ stds, width: n, depth: d }) {
+export default function StdHeatmap({ stds, width: n, depth: d, gates }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const [dims, setDims] = useState({ width: 0, height: 0 });
@@ -126,6 +127,7 @@ export default function StdHeatmap({ stds, width: n, depth: d }) {
             getColor={getColor}
             valueLabel="σ"
             showZoom={n * d > 4096}
+            getGateInfo={gates ? (layer, wire) => classifyGate(gates[layer], wire) : null}
           />
         )}
       </div>

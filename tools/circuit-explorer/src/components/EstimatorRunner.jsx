@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { empiricalMeanTF, empiricalStatsTF, initTF } from "../circuit-tf";
 import { perfEnd, perfStart } from "../perf";
+import InfoTip from "./InfoTip";
 
 /**
  * EstimatorRunner — lets users run estimators one at a time,
@@ -171,6 +172,20 @@ export default function EstimatorRunner({ circuit, onResult, worker }) {
         <div className="estimator-card-header">
           <span className="estimator-badge estimator-badge--gt">1</span>
           <span className="estimator-card-title">Ground Truth</span>
+          <InfoTip>
+            <span className="tip-title">Ground Truth</span>
+            <p className="tip-desc">
+              High-fidelity reference: draws <span className="tip-mono">10,000</span> random ±1 input vectors and averages each wire's output.
+            </p>
+            <div className="tip-sep" />
+            <div className="tip-kv"><span className="tip-kv-key">Method</span><span className="tip-kv-val">Monte Carlo sampling (brute-force)</span></div>
+            <div className="tip-kv"><span className="tip-kv-key">Samples</span><span className="tip-kv-val">10,000 random ±1 inputs</span></div>
+            <div className="tip-kv"><span className="tip-kv-key">Output</span><span className="tip-kv-val">E[wire] per wire per layer</span></div>
+            <div className="tip-sep" />
+            <p className="tip-desc">
+              Treated as the <span className="tip-highlight">gold standard</span> — other estimators are scored against this. Also produces σ, min, and max stats used by variance and error plots.
+            </p>
+          </InfoTip>
         </div>
         <p className="estimator-card-desc">
           Brute-force: samples <strong>10,000</strong> random inputs and averages
@@ -197,6 +212,20 @@ export default function EstimatorRunner({ circuit, onResult, worker }) {
         <div className="estimator-card-header">
           <span className="estimator-badge estimator-badge--sampling">2</span>
           <span className="estimator-card-title">Sampling</span>
+          <InfoTip>
+            <span className="tip-title">Sampling Estimator</span>
+            <p className="tip-desc">
+              Same Monte Carlo approach as Ground Truth, but with a <span className="tip-highlight">user-controlled budget</span> — fewer samples means faster but noisier estimates.
+            </p>
+            <div className="tip-sep" />
+            <div className="tip-kv"><span className="tip-kv-key">Method</span><span className="tip-kv-val">Monte Carlo sampling</span></div>
+            <div className="tip-kv"><span className="tip-kv-key">Budget</span><span className="tip-kv-val">100 – 50,000 samples (adjustable)</span></div>
+            <div className="tip-kv"><span className="tip-kv-key">Tradeoff</span><span className="tip-kv-val">More samples → less noise, more time</span></div>
+            <div className="tip-sep" />
+            <p className="tip-desc">
+              Estimation error scales as <span className="tip-mono">O(1/√budget)</span>. Useful for comparing the cost of brute-force sampling against analytic estimators.
+            </p>
+          </InfoTip>
         </div>
         <p className="estimator-card-desc">
           Same idea, fewer samples. Faster but noisier — tune the budget below.
@@ -236,6 +265,23 @@ export default function EstimatorRunner({ circuit, onResult, worker }) {
         <div className="estimator-card-header">
           <span className="estimator-badge estimator-badge--meanprop">3</span>
           <span className="estimator-card-title">Mean Propagation</span>
+          <InfoTip>
+            <span className="tip-title">Mean Propagation</span>
+            <p className="tip-desc">
+              Propagates <span className="tip-mono">E[wire]</span> through each layer analytically — no sampling required.
+            </p>
+            <div className="tip-sep" />
+            <div className="tip-kv"><span className="tip-kv-key">Gate equation</span><span className="tip-kv-val">y = a·x + b·y + c + p·x·y</span></div>
+            <div className="tip-kv"><span className="tip-kv-key">Mean update</span><span className="tip-kv-val">E[y] = a·E[x] + b·E[y] + c + p·E[x]·E[y]</span></div>
+            <div className="tip-kv"><span className="tip-kv-key">Key approx.</span><span className="tip-kv-val">E[x·y] ≈ E[x] · E[y]</span></div>
+            <div className="tip-sep" />
+            <div className="tip-kv"><span className="tip-kv-key">Runtime</span><span className="tip-kv-val">O(depth × width) — instant</span></div>
+            <div className="tip-kv"><span className="tip-kv-key">State</span><span className="tip-kv-val">O(width) — one mean per wire</span></div>
+            <div className="tip-sep" />
+            <p className="tip-desc">
+              <span className="tip-highlight">Limitation</span>: ignores covariance between wires. If dependencies grow strong (e.g. product-heavy circuits), the approximation <span className="tip-highlight">drifts across layers</span>.
+            </p>
+          </InfoTip>
         </div>
         <p className="estimator-card-desc">
           Analytic: propagates E[x] through each layer. Instant, no sampling needed.
