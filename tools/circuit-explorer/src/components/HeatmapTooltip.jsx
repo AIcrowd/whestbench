@@ -19,6 +19,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { GATE_TYPE_FONT } from "./gateShapes";
 
 const ZOOM_RADIUS = 5;        // cells around cursor to show
 const ZOOM_CELL_PX = 14;     // base px per cell in magnifier
@@ -29,6 +30,7 @@ export default function HeatmapTooltip({
   getData, getColor, valueLabel = "value",
   formatValue = (v) => v.toFixed(4),
   showZoom = true,
+  getGateInfo = null,
 }) {
   const overlayRef = useRef(null);
   const zoomCanvasRef = useRef(null);
@@ -225,6 +227,15 @@ export default function HeatmapTooltip({
               <span className="canvas-tip-label">{valueLabel}</span>
               <span className="canvas-tip-value">{formatValue(hovered.val)}</span>
             </div>
+            {getGateInfo && (() => {
+              const gi = getGateInfo(hovered.layer, hovered.wire);
+              return gi ? (
+                <div className="canvas-tip-row">
+                  <span className="canvas-tip-label">Gate</span>
+                  <span className="canvas-tip-value" style={{ color: gi.color, fontFamily: GATE_TYPE_FONT }}>{gi.symbol} {gi.label}</span>
+                </div>
+              ) : null;
+            })()}
           </div>
           {showZoom && <canvas ref={zoomCanvasRef} className="heatmap-zoom-canvas" style={{ margin: "0 8px 8px" }} />}
         </div>,

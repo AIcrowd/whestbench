@@ -1718,9 +1718,9 @@ body {
 
 .info-tip-popup {
   position: absolute;
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  left: calc(100% + 10px);
+  transform: translateY(-50%);
   width: 320px;
   padding: 0;
   background: var(--white);
@@ -1734,7 +1734,7 @@ body {
   border: 1px solid var(--gray-200);
   border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  z-index: 500;
+  z-index: 10000;
   white-space: normal;
   animation: narrative-enter 0.15s ease-out;
   overflow: hidden;
@@ -1742,11 +1742,11 @@ body {
 
 .info-tip-arrow {
   position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 50%;
+  right: 100%;
+  transform: translateY(-50%);
   border: 6px solid transparent;
-  border-bottom-color: var(--white);
+  border-right-color: var(--white);
 }
 
 .info-tip-body {

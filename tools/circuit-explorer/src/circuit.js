@@ -76,7 +76,7 @@ function randomGates(n, rng) {
       } else if (opType === 2) {
         constArr[i] = sign;
         gateType[i] = "CONST";
-        gateLabel[i] = sign > 0 ? "+1" : "−1";
+        gateLabel[i] = sign > 0 ? "CONST(+1)" : "CONST(−1)";
       } else {
         productCoeff[i] = sign;
         gateType[i] = sign > 0 ? "XNOR" : "XOR";

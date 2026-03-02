@@ -5,18 +5,27 @@
  * rich formatted content.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export default function InfoTip({ text, children }) {
   const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState(null);
   const tipRef = useRef(null);
   const btnRef = useRef(null);
 
   const toggle = useCallback((e) => {
     e.stopPropagation();
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.top + rect.height / 2,
+        left: rect.right + 10,
+      });
+    }
     setOpen((o) => !o);
-  }, []);
+  }, [open]);
 
-  /* close on outside click or Escape */
+  /* close on outside click, Escape, or scroll */
   useEffect(() => {
     if (!open) return;
     const close = (e) => {
@@ -32,11 +41,16 @@ export default function InfoTip({ text, children }) {
     const esc = (e) => {
       if (e.key === "Escape") setOpen(false);
     };
+    const onScroll = () => setOpen(false);
+
     document.addEventListener("mousedown", close);
     document.addEventListener("keydown", esc);
+    window.addEventListener("scroll", onScroll, true); // capture phase handles div scrolls
+    
     return () => {
       document.removeEventListener("mousedown", close);
       document.removeEventListener("keydown", esc);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, [open]);
 
@@ -65,11 +79,22 @@ export default function InfoTip({ text, children }) {
           </text>
         </svg>
       </button>
-      {open && (
-        <div ref={tipRef} className="info-tip-popup">
+      {open && coords && createPortal(
+        <div 
+          ref={tipRef} 
+          className="info-tip-popup"
+          style={{
+            position: "fixed",
+            top: coords.top,
+            left: coords.left,
+            transform: "translateY(-50%)",
+            margin: 0
+          }}
+        >
           <div className="info-tip-arrow" />
           <div className="info-tip-body">{content}</div>
-        </div>
+        </div>,
+        document.body
       )}
     </span>
   );

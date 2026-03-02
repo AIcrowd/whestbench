@@ -424,6 +424,7 @@ export default function App() {
                         stds={groundTruthStats.stds}
                         width={params.width}
                         depth={params.depth}
+                        gates={displayCircuit?.gates}
                       />
                     )}
                     <ErrorHeatmap
@@ -433,6 +434,7 @@ export default function App() {
                       samplingEstimates={samplingEst}
                       width={params.width}
                       depth={params.depth}
+                      gates={displayCircuit?.gates}
                     />
                   </div>
 

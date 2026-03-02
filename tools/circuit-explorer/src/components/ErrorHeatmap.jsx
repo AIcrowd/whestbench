@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import HeatmapTooltip from "./HeatmapTooltip";
 import InfoTip from "./InfoTip";
+import { classifyGate } from "./gateShapes";
 
 function errorToRGB(err, maxErr) {
   const t = Math.min(1, err / Math.max(0.001, maxErr));
@@ -31,6 +32,7 @@ export default function ErrorHeatmap({
   samplingEstimates,
   width: n,
   depth: d,
+  gates,
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -208,6 +210,7 @@ export default function ErrorHeatmap({
                 getColor={getColor}
                 valueLabel="Abs. Error"
                 showZoom={n * d > 4096}
+                getGateInfo={gates ? (layer, wire) => classifyGate(gates[layer], wire) : null}
               />
             )}
           </div>

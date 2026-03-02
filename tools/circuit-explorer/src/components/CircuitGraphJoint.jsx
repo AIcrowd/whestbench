@@ -12,7 +12,7 @@
  */
 import { dia, shapes } from "@joint/core";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { classifyGate, GATE_H, GATE_OPACITY, GATE_TYPES, GATE_W, INPUT_DOT_R, meanToColor, WIRE_PORT_R } from "./gateShapes";
+import { classifyGate, GATE_H, GATE_OPACITY, GATE_TYPE_FONT, GATE_TYPES, GATE_W, INPUT_DOT_R, meanToColor, WIRE_PORT_R } from "./gateShapes";
 
 /* ------------------------------------------------------------------ */
 /*  Layout                                                             */
@@ -290,6 +290,11 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
         const node = new shapes.standard.Rectangle({
           position: { x, y },
           size: { width: GATE_W, height: GATE_H },
+          markup: [
+            { tagName: "rect", selector: "body" },
+            { tagName: "text", selector: "label" },
+            { tagName: "text", selector: "gateSymbol" },
+          ],
           attrs: {
             body: {
               fill: GATE_FILL_DEFAULT,
@@ -300,14 +305,18 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
               opacity: GATE_OPACITY,
             },
             label: {
-              text: gateInfo.symbol,
-              fontSize: 10,
-              fontFamily: "system-ui, sans-serif",
+              text: "",
+            },
+            gateSymbol: {
+              text: gateInfo.label,
+              fontSize: 3,
+              fontFamily: GATE_TYPE_FONT,
               fill: gateInfo.color || "#475569",
               fontWeight: 700,
               textAnchor: "middle",
-              textVerticalAnchor: "middle",
-              refY: "25%",
+              refX: "50%",
+              refY: -2,
+              yAlignment: "bottom",
             },
           },
           ports: {
@@ -647,11 +656,11 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
         )}
       </div>
       {/* Gate type legend */}
-      <div className="gate-legend" style={{ fontSize: 10, color: "#64748B", flexWrap: "wrap", gap: "3px 10px", paddingTop: 0 }}>
+      <div className="gate-legend" style={{ fontSize: 10, color: "#64748B", flexWrap: "wrap", gap: "3px 10px", paddingTop: 0, fontFamily: GATE_TYPE_FONT }}>
         {Object.entries(GATE_TYPES).map(([key, { symbol, color }]) => (
           <span key={key} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
             <span style={{ color, fontWeight: 700, fontSize: 11 }}>{symbol}</span>
-            <span>{key}</span>
+            <span style={{ color }}>{key}</span>
           </span>
         ))}
       </div>
@@ -699,8 +708,8 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
             <div className="canvas-tip-rows" style={{ paddingBottom: 2 }}>
               <div className="canvas-tip-row">
                 <span className="canvas-tip-label">Gate type</span>
-                <span className="canvas-tip-value" style={{ fontWeight: 600, color: GATE_TYPES[tooltip.gateType]?.color || "#475569" }}>
-                  {tooltip.gateLabel}
+                <span className="canvas-tip-value" style={{ fontFamily: GATE_TYPE_FONT, fontWeight: 600, color: GATE_TYPES[tooltip.gateType]?.color || "#475569" }}>
+                  {GATE_TYPES[tooltip.gateType]?.symbol} {tooltip.gateLabel}
                 </span>
               </div>
             </div>

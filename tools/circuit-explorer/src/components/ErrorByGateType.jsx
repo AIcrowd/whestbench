@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CanvasTooltip from "./CanvasTooltip";
 import InfoTip from "./InfoTip";
-import { classifyGate, GATE_TYPES } from "./gateShapes";
+import { classifyGate, GATE_TYPE_FONT, GATE_TYPES } from "./gateShapes";
 
 const SERIES = [
   { key: "sampling", label: "Sampling", color: "#F0524D" },
@@ -181,7 +181,7 @@ export default function ErrorByGateType({
 
     // X-axis labels (gate type symbol + name)
     ctx.fillStyle = "#64748B";
-    ctx.font = "bold 12px system-ui, sans-serif";
+    ctx.font = `bold 12px ${GATE_TYPE_FONT}`;
     ctx.textAlign = "center";
     for (let g = 0; g < nGroups; g++) {
       const cx = PAD.left + g * groupW + groupW / 2;
@@ -190,10 +190,10 @@ export default function ErrorByGateType({
       ctx.fillStyle = entry.color;
       ctx.fillText(entry.symbol, cx, H - 20);
       // Type name
-      ctx.fillStyle = "#9CA3AF";
-      ctx.font = "9px 'IBM Plex Mono', monospace";
+      ctx.fillStyle = entry.color;
+      ctx.font = `9px ${GATE_TYPE_FONT}`;
       ctx.fillText(entry.type, cx, H - 6);
-      ctx.font = "bold 12px system-ui, sans-serif";
+      ctx.font = `bold 12px ${GATE_TYPE_FONT}`;
     }
 
     // Y-axis labels
@@ -264,10 +264,10 @@ export default function ErrorByGateType({
         {hover?.entry && (
           <>
             <div className="canvas-tip-header">
-              <span style={{ color: hover.entry.color, fontWeight: 700, marginRight: 4 }}>
+              <span style={{ color: hover.entry.color, fontWeight: 700, marginRight: 4, fontFamily: GATE_TYPE_FONT }}>
                 {hover.entry.symbol}
               </span>
-              {hover.entry.type}
+              <span style={{ fontFamily: GATE_TYPE_FONT, color: hover.entry.color }}>{hover.entry.type}</span>
               <span style={{ fontWeight: 400, color: "#9CA3AF", marginLeft: 6, fontSize: 10 }}>
                 ({hover.entry.gateCount} gates)
               </span>
