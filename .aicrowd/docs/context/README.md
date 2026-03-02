@@ -15,6 +15,7 @@ It is intended to remain self-sufficient even if `.aicrowd/CHALLENGE-CONTEXT.md`
 6. Read [`sagemaker-evaluator-sandbox-notes.md`](./sagemaker-evaluator-sandbox-notes.md) before making infrastructure decisions.
 7. Check [`open-questions.md`](./open-questions.md) before implementing new behavior.
 8. Use [`context-migration-map.md`](./context-migration-map.md) to verify legacy-context coverage.
+9. For internal/public repo release workflow, read [`../development/sanitization-and-public-sync-playbook.md`](../development/sanitization-and-public-sync-playbook.md).
 
 ## Scope of This Pack
 

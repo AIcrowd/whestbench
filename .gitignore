@@ -227,3 +227,4 @@ node_modules/
 .cursor/
 .roo/
 .windsurf/
+.aicrowd/sanitization/public-sync-state.local.env
