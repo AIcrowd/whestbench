@@ -55,7 +55,7 @@ def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool =
     console.print(
         "[dim]Use --agent-mode for JSON output when calling from automated agents or UIs.[/dim]"
     )
-    console.print("[dim]This static report is used as fallback when Textual UI is unavailable.[/dim]")
+    console.print("[dim]Use --show-diagnostic-plots to include diagnostic plot panes.[/dim]")
     console.print(
         "[dim]Runtime scoring uses budget-by-depth checks at each streamed predict() row.[/dim]"
     )
