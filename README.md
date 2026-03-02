@@ -16,6 +16,19 @@ Your estimator must predict the expected value of every wire after every layer.
 The evaluator compares your streamed predictions against Monte Carlo ground truth and measures both quality and time behavior.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {
+"primaryColor": "#FEF2F1",
+"primaryTextColor": "#292C2D",
+"primaryBorderColor": "#F0524D",
+"secondaryColor": "#F1F3F5",
+"tertiaryColor": "#FFFFFF",
+"lineColor": "#5D5F60",
+"edgeLabelBackground": "#FFFFFF",
+"clusterBkg": "#FFFFFF",
+"clusterBorder": "#D9DCDC",
+"mainBkg": "#F8F9F9",
+"fontFamily": "Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+}}}%%
 flowchart LR
     A[Random Circuit] --> B[Monte Carlo Ground Truth]
     A --> C[Your Estimator]
@@ -42,6 +55,19 @@ Final score is the mean adjusted error across budgets.
 Lower is better.
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {
+"primaryColor": "#FEF2F1",
+"primaryTextColor": "#292C2D",
+"primaryBorderColor": "#F0524D",
+"secondaryColor": "#F1F3F5",
+"tertiaryColor": "#FFFFFF",
+"lineColor": "#5D5F60",
+"edgeLabelBackground": "#FFFFFF",
+"clusterBkg": "#FFFFFF",
+"clusterBorder": "#D9DCDC",
+"mainBkg": "#F8F9F9",
+"fontFamily": "Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+}}}%%
 flowchart TD
     A[Budget b] --> B[Measure baseline time by depth]
     B --> C[Run estimator and stream depth rows]
@@ -89,6 +115,19 @@ See [Install And CLI Quickstart](docs/guides/install-and-cli-quickstart.md) for 
 Use participant subcommands as the primary flow:
 
 ```mermaid
+%%{init: {"theme": "base", "themeVariables": {
+"primaryColor": "#FEF2F1",
+"primaryTextColor": "#292C2D",
+"primaryBorderColor": "#F0524D",
+"secondaryColor": "#F1F3F5",
+"tertiaryColor": "#FFFFFF",
+"lineColor": "#5D5F60",
+"edgeLabelBackground": "#FFFFFF",
+"clusterBkg": "#FFFFFF",
+"clusterBorder": "#D9DCDC",
+"mainBkg": "#F8F9F9",
+"fontFamily": "Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+}}}%%
 flowchart LR
     A[cestim init] --> B[Implement Estimator]
     B --> C[cestim validate]
