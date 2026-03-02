@@ -92,11 +92,11 @@ def _sample_report(*, include_profile: bool = False) -> dict[str, object]:
     return report
 
 
-def test_render_agent_mode_returns_pretty_json_only() -> None:
+def test_render_json_mode_returns_pretty_json_only() -> None:
     report = _sample_report()
     rendered = render_agent_report(report)
 
-    # Agent mode contract: machine-parseable, pretty JSON, no narrative framing.
+    # JSON mode contract: machine-parseable, pretty JSON, no narrative framing.
     loaded = json.loads(rendered)
     assert loaded == report
     assert rendered.startswith("{\n")
@@ -108,7 +108,7 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
 
     # Human mode contract: high-level run summary plus budget and layer diagnostics.
     assert "Circuit Estimation Report" in rendered
-    assert "Use --agent-mode for JSON output" in rendered
+    assert "Use --json for JSON output" in rendered
     assert "budget-by-depth" in rendered.lower()
     assert "Run Context" in rendered
     assert "Readiness Scorecard" in rendered
@@ -312,7 +312,7 @@ def test_render_human_mode_includes_profile_section_when_available() -> None:
     assert "peak_rss_bytes" in rendered
 
 
-def test_agent_mode_schema_keeps_stream_runtime_fields() -> None:
+def test_json_mode_schema_keeps_stream_runtime_fields() -> None:
     payload = json.loads(render_agent_report(_sample_report(include_profile=False)))
     row = payload["results"]["by_budget_raw"][0]
     assert "time_budget_by_depth_s" in row

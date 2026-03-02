@@ -72,10 +72,9 @@ def test_default_mode_renders_human_report_by_default(
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: render_observed.setdefault(
-            "show_diagnostic_plots", show_diagnostic_plots
-        )
-        or "human\n",
+        lambda _report, *, show_diagnostic_plots=False: (
+            render_observed.setdefault("show_diagnostic_plots", show_diagnostic_plots) or "human\n"
+        ),
     )
 
     exit_code = cli.main([])
@@ -100,6 +99,7 @@ def test_show_diagnostic_plots_flag_is_forwarded_to_human_renderer(
         return _sample_report(profile_enabled=False, detail=str(kwargs.get("detail", "raw")))
 
     monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+
     def fake_render_human_report(
         _report: dict[str, Any], *, show_diagnostic_plots: bool = False
     ) -> str:
@@ -130,10 +130,10 @@ def test_profile_and_detail_flags_are_forwarded(
     monkeypatch.setattr(
         cli,
         "score_estimator_report",
-        lambda *_args, **kwargs: observed.update(
-            {"profile": kwargs.get("profile"), "detail": kwargs.get("detail")}
-        )
-        or _sample_report(profile_enabled=True, detail=str(kwargs.get("detail", "raw"))),
+        lambda *_args, **kwargs: (
+            observed.update({"profile": kwargs.get("profile"), "detail": kwargs.get("detail")})
+            or _sample_report(profile_enabled=True, detail=str(kwargs.get("detail", "raw")))
+        ),
     )
     monkeypatch.setattr(
         cli,
@@ -150,7 +150,7 @@ def test_profile_and_detail_flags_are_forwarded(
     assert observed == {"profile": True, "detail": "full"}
 
 
-def test_agent_mode_stdout_is_json_only(
+def test_json_flag_stdout_is_json_only(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict[str, Any] = {}
@@ -167,7 +167,7 @@ def test_agent_mode_stdout_is_json_only(
         lambda _report: '{\n  "mode": "agent"\n}\n',
     )
 
-    exit_code = cli.main(["--agent-mode"])
+    exit_code = cli.main(["--json"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
@@ -184,10 +184,10 @@ def test_legacy_human_flags_are_supported(
     monkeypatch.setattr(
         cli,
         "score_estimator_report",
-        lambda *_args, **kwargs: observed.update(
-            {"profile": kwargs.get("profile"), "detail": kwargs.get("detail")}
-        )
-        or _sample_report(profile_enabled=True, detail=str(kwargs.get("detail", "raw"))),
+        lambda *_args, **kwargs: (
+            observed.update({"profile": kwargs.get("profile"), "detail": kwargs.get("detail")})
+            or _sample_report(profile_enabled=True, detail=str(kwargs.get("detail", "raw")))
+        ),
     )
     monkeypatch.setattr(
         cli,
@@ -235,7 +235,7 @@ def test_human_mode_surfaces_stream_contract_errors_readably(
     assert captured.err == ""
 
 
-def test_agent_mode_surfaces_stream_contract_errors_as_json(
+def test_json_flag_surfaces_stream_contract_errors_as_json(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     def fake_score_estimator_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
@@ -253,7 +253,7 @@ def test_agent_mode_surfaces_stream_contract_errors_as_json(
         lambda *_args, **_kwargs: pytest.fail("agent renderer should not be called on failure"),
     )
 
-    exit_code = cli.main(["--agent-mode"])
+    exit_code = cli.main(["--json"])
     captured = capsys.readouterr()
 
     assert exit_code == 1
@@ -265,7 +265,7 @@ def test_agent_mode_surfaces_stream_contract_errors_as_json(
     assert "shape (4,)" in payload["error"]["message"]
 
 
-def test_agent_mode_debug_includes_traceback_field(
+def test_json_flag_debug_includes_traceback_field(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     def fake_score_estimator_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
@@ -273,7 +273,7 @@ def test_agent_mode_debug_includes_traceback_field(
 
     monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
 
-    exit_code = cli.main(["--agent-mode", "--debug"])
+    exit_code = cli.main(["--json", "--debug"])
     captured = capsys.readouterr()
 
     assert exit_code == 1
@@ -281,3 +281,9 @@ def test_agent_mode_debug_includes_traceback_field(
     payload = json.loads(captured.out)
     assert payload["error"]["code"] == "SCORING_RUNTIME_ERROR"
     assert "RuntimeError: boom" in payload["error"]["traceback"]
+
+
+def test_agent_mode_flag_is_rejected() -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["--agent-mode"])
+    assert int(exc_info.value.code) == 2

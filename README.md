@@ -99,13 +99,13 @@ uv tool install -e .
 Sanity check:
 
 ```bash
-cestim --agent-mode
+cestim --json
 ```
 
 Alternative local invocation (without global CLI install):
 
 ```bash
-uv run --with-editable . cestim --agent-mode
+uv run --with-editable . cestim --json
 ```
 
 See [Install And CLI Quickstart](docs/guides/install-and-cli-quickstart.md) for a compact command cookbook.
@@ -212,7 +212,7 @@ cestim run \
   --detail full \
   --profile \
   --debug \
-  --agent-mode
+  --json
 ```
 
 - Test harness modes:

@@ -22,7 +22,7 @@ This installs:
 ## 3) Verify CLI works
 
 ```bash
-cestim --agent-mode
+cestim --json
 ```
 
 ## 4) Participant workflow commands
@@ -46,7 +46,7 @@ cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar
 Run directly from the current checkout without relying on a global CLI install:
 
 ```bash
-uv run --with-editable . cestim --agent-mode
+uv run --with-editable . cestim --json
 ```
 
 This is useful when iterating on local code and CLI behavior together.

@@ -86,9 +86,10 @@ def run_default_report(*, profile: bool = False, detail: str = "raw") -> dict[st
 def _build_legacy_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run local circuit-estimator scoring.")
     parser.add_argument(
-        "--agent-mode",
+        "--json",
+        dest="json_output",
         action="store_true",
-        help="Emit pretty JSON only for machine consumers. Default output is the human dashboard.",
+        help="Return results as a JSON string.",
     )
     parser.add_argument(
         "--detail",
@@ -116,7 +117,8 @@ def _build_legacy_parser() -> argparse.ArgumentParser:
 
 def _main_legacy(argv: list[str]) -> int:
     args = _build_legacy_parser().parse_args(argv)
-    mode = "agent" if args.agent_mode else "human"
+    json_output = bool(args.json_output)
+    mode = "agent" if json_output else "human"
     try:
         report = run_default_report(profile=args.profile, detail=args.detail)
         report["mode"] = mode
@@ -136,7 +138,7 @@ def _main_legacy(argv: list[str]) -> int:
         return 0
     except Exception as exc:  # pragma: no cover - exercised via CLI tests
         payload = _error_payload(exc, include_traceback=args.debug, stage="scoring")
-        _print_error(payload, agent_mode=bool(args.agent_mode), debug=bool(args.debug))
+        _print_error(payload, json_output=json_output, debug=bool(args.debug))
         return 1
 
 
@@ -263,7 +265,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     init_parser = subparsers.add_parser("init", help="Create starter estimator files.")
     init_parser.add_argument("path", nargs="?", default=".")
-    init_parser.add_argument("--agent-mode", action="store_true")
+    init_parser.add_argument(
+        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
+    )
     init_parser.add_argument("--debug", action="store_true")
 
     validate_parser = subparsers.add_parser("validate", help="Validate estimator contract.")
@@ -273,7 +277,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Path to estimator.py (see examples/estimators/ for starter files).",
     )
     validate_parser.add_argument("--class", dest="class_name")
-    validate_parser.add_argument("--agent-mode", action="store_true")
+    validate_parser.add_argument(
+        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
+    )
     validate_parser.add_argument("--debug", action="store_true")
 
     run_parser = subparsers.add_parser("run", help="Run local evaluation for an estimator.")
@@ -289,7 +295,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
     run_parser.add_argument("--profile", action="store_true")
     run_parser.add_argument("--show-diagnostic-plots", action="store_true")
-    run_parser.add_argument("--agent-mode", action="store_true")
+    run_parser.add_argument(
+        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
+    )
     run_parser.add_argument("--debug", action="store_true")
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
@@ -299,7 +307,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     package_parser.add_argument("--submission-metadata")
     package_parser.add_argument("--approach")
     package_parser.add_argument("--output")
-    package_parser.add_argument("--agent-mode", action="store_true")
+    package_parser.add_argument(
+        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
+    )
     package_parser.add_argument("--debug", action="store_true")
 
     return parser
@@ -308,14 +318,14 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 def _main_participant(argv: list[str]) -> int:
     args = _build_participant_parser().parse_args(argv)
     command = str(args.command)
-    agent_mode = bool(getattr(args, "agent_mode", False))
+    json_output = bool(getattr(args, "json_output", False))
     debug = bool(getattr(args, "debug", False))
 
     try:
         if command == "init":
             created = _write_init_template(Path(args.path).resolve())
             payload = {"ok": True, "created": created}
-            if agent_mode:
+            if json_output:
                 print(json.dumps(payload, indent=2))
             elif created:
                 print("Initialized starter files:")
@@ -327,7 +337,7 @@ def _main_participant(argv: list[str]) -> int:
 
         if command == "validate":
             payload = validate_submission_entrypoint(args.estimator, class_name=args.class_name)
-            if agent_mode:
+            if json_output:
                 print(json.dumps(payload, indent=2))
             else:
                 print(
@@ -351,8 +361,8 @@ def _main_participant(argv: list[str]) -> int:
                 profile=bool(args.profile),
                 detail=str(args.detail),
             )
-            report["mode"] = "agent" if agent_mode else "human"
-            if agent_mode:
+            report["mode"] = "agent" if json_output else "human"
+            if json_output:
                 output = render_agent_report(report)
             else:
                 try:
@@ -378,7 +388,7 @@ def _main_participant(argv: list[str]) -> int:
                 output_path=args.output,
             )
             payload = {"ok": True, "artifact_path": str(artifact_path)}
-            if agent_mode:
+            if json_output:
                 print(json.dumps(payload, indent=2))
             else:
                 print(f"Packaged submission: {artifact_path}")
@@ -388,7 +398,7 @@ def _main_participant(argv: list[str]) -> int:
     except Exception as exc:  # pragma: no cover - exercised by CLI tests
         stage = exc.stage if isinstance(exc, RunnerError) else command
         payload = _error_payload(exc, include_traceback=debug, stage=stage)
-        _print_error(payload, agent_mode=agent_mode, debug=debug)
+        _print_error(payload, json_output=json_output, debug=debug)
         return 1
 
 
@@ -408,8 +418,8 @@ def main(argv: list[str] | None = None) -> int:
     return _main_participant(args_list)
 
 
-def _print_error(payload: dict[str, Any], *, agent_mode: bool, debug: bool) -> None:
-    if agent_mode:
+def _print_error(payload: dict[str, Any], *, json_output: bool, debug: bool) -> None:
+    if json_output:
         print(json.dumps(payload, indent=2))
         return
     error = payload["error"]
@@ -426,7 +436,7 @@ def _error_payload(
     include_traceback: bool,
     stage: str = "scoring",
 ) -> dict[str, Any]:
-    """Build stable error payload shape for human/agent mode outputs."""
+    """Build stable error payload shape for human/JSON mode outputs."""
     message = str(exc) or exc.__class__.__name__
     error: dict[str, Any] = {
         "stage": stage,

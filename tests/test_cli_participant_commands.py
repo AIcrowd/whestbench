@@ -42,7 +42,7 @@ def _sample_report() -> dict[str, Any]:
     }
 
 
-def test_validate_command_returns_json_only_in_agent_mode(
+def test_validate_command_returns_json_only_with_json_flag(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.setattr(
@@ -51,7 +51,7 @@ def test_validate_command_returns_json_only_in_agent_mode(
         lambda *_args, **_kwargs: {"ok": True, "class_name": "Estimator", "output_shape": [1, 4]},
     )
 
-    exit_code = cli.main(["validate", "--estimator", "estimator.py", "--agent-mode"])
+    exit_code = cli.main(["validate", "--estimator", "estimator.py", "--json"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
@@ -114,7 +114,7 @@ def test_package_command_writes_manifest_with_entrypoint_and_hashes(
             str(estimator),
             "--output",
             str(artifact),
-            "--agent-mode",
+            "--json",
         ]
     )
     captured = capsys.readouterr()

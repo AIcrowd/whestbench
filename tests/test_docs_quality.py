@@ -125,7 +125,7 @@ def test_readme_documents_cestim_install_and_usage() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
     assert "uv tool install -e ." in text
-    assert "cestim --agent-mode" in text
+    assert "cestim --json" in text
     assert "uv run --with-editable . cestim" in text
     assert "uv run cestim --" not in text
 
