@@ -282,6 +282,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
       for (let w = 0; w < circuit.n; w++) {
         const mean = means?.[l]?.[w] ?? null;
         const wireFill = meanToColor(mean) || GATE_FILL_DEFAULT;
+        const gateInfo = classifyGate(circuit.gates[l], w);
 
         const x = PAD_X + GATE_X_OFFSET + l * (GATE_W + COL_GAP);
         const y = PAD_Y + w * (GATE_H + ROW_GAP);
@@ -299,7 +300,13 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
               opacity: GATE_OPACITY,
             },
             label: {
-              text: "",
+              text: gateInfo.symbol,
+              fontSize: 9,
+              fontFamily: "system-ui, sans-serif",
+              fill: gateInfo.color || "#475569",
+              fontWeight: 700,
+              textAnchor: "middle",
+              textVerticalAnchor: "middle",
             },
           },
           ports: {
@@ -326,6 +333,9 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
           secondCoeff: circuit.gates[l].secondCoeff[w],
           productCoeff: circuit.gates[l].productCoeff[w],
           mean,
+          gateType: gateInfo.type,
+          gateLabel: gateInfo.label,
+          gateSymbol: gateInfo.symbol,
         });
 
         nodes[l][w] = node;
@@ -635,6 +645,15 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
           </span>
         )}
       </div>
+      {/* Gate type legend */}
+      <div className="gate-legend" style={{ fontSize: 10, color: "#64748B", flexWrap: "wrap", gap: "3px 10px", paddingTop: 0 }}>
+        {Object.entries(GATE_TYPES).map(([key, { symbol, color }]) => (
+          <span key={key} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+            <span style={{ color, fontWeight: 700, fontSize: 11 }}>{symbol}</span>
+            <span>{key}</span>
+          </span>
+        ))}
+      </div>
       <div
         ref={canvasRef}
         className="joint-container"
@@ -674,6 +693,17 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
               ×
             </button>
           </div>
+
+          {tooltip.gateLabel && (
+            <div className="canvas-tip-rows" style={{ paddingBottom: 2 }}>
+              <div className="canvas-tip-row">
+                <span className="canvas-tip-label">Gate type</span>
+                <span className="canvas-tip-value" style={{ fontWeight: 600, color: GATE_TYPES[tooltip.gateType]?.color || "#475569" }}>
+                  {tooltip.gateLabel}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="tooltip-pro-formula">
             out = c + a·x + b·y + p·x·y
