@@ -222,7 +222,6 @@ node_modules/
 .worktrees/
 
 .agent/
-.aicrowd/
 .codex/
 .claude/
 .cursor/
