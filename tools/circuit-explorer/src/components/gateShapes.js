@@ -9,7 +9,7 @@
 
 /* === Tunable visualization params (single source of truth) === */
 export const GATE_W         = 20;   // gate body width
-export const GATE_H         = 32;   // gate body height
+export const GATE_H         = 44;   // gate body height (extra headspace for symbol)
 export const GATE_OPACITY   = 0.3;  // gate body fill opacity — ghosted
 export const WIRE_PORT_R    = 11;   // output port circle radius
 export const INPUT_DOT_R    = 5;    // input/output wire endpoint dot radius
