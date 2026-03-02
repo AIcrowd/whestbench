@@ -223,3 +223,9 @@ node_modules/
 internal task tracker
 
 internal agent config/
+internal docs/
+internal codex config/
+.claude/
+.cursor/
+.roo/
+.windsurf/
