@@ -12,7 +12,7 @@
  */
 import { dia, shapes } from "@joint/core";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GATE_H, GATE_W, meanToColor } from "./gateShapes";
+import { GATE_H, GATE_OPACITY, GATE_W, INPUT_DOT_R, meanToColor, WIRE_PORT_R } from "./gateShapes";
 
 /* ------------------------------------------------------------------ */
 /*  Layout                                                             */
@@ -35,8 +35,6 @@ const FLOW_MARKER = {
   fill: WIRE_FLOW,
 };
 
-/* Output port size — prominent colored circle for E[wire] */
-const WIRE_PORT_R = 7;
 
 /* JointJS port group definitions */
 const PORT_GROUPS = {
@@ -253,32 +251,28 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
     paperRef.current = paper;
     el.appendChild(paper.el);
 
-    // --- Create input wire markers (column before layer 0) ---
-    // Standard circuit notation: prominent labeled markers on the left
+    // --- Create input wire endpoint dots (column before layer 0) ---
     const inputNodes = [];
-    const INPUT_W = 56;
-    const INPUT_H = GATE_H + 4;
     for (let w = 0; w < circuit.n; w++) {
-      const x = PAD_X;
-      const y = PAD_Y + w * (GATE_H + ROW_GAP) - 2;
+      const x = PAD_X + INPUT_DOT_R;
+      const y = PAD_Y + w * (GATE_H + ROW_GAP) + GATE_H / 2;
 
-      const node = new shapes.standard.Rectangle({
-        position: { x, y },
-        size: { width: INPUT_W, height: INPUT_H },
+      const node = new shapes.standard.Circle({
+        position: { x: x - INPUT_DOT_R, y: y - INPUT_DOT_R },
+        size: { width: INPUT_DOT_R * 2, height: INPUT_DOT_R * 2 },
         attrs: {
           body: {
-            fill: "#FEF2F2",
-            stroke: "#F0524D",
-            strokeWidth: 2.5,
-            rx: 4,
-            ry: 4,
+            fill: "#94A3B8",
+            stroke: "none",
           },
           label: {
             text: `x${w}`,
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: "bold",
             fontFamily: "'IBM Plex Mono', monospace",
-            fill: "#991B1B",
+            fill: "#64748B",
+            refX: -8,
+            textAnchor: "end",
           },
         },
         ports: {
@@ -293,7 +287,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
     }
 
     // --- Create gate elements (uniform rectangles) ---
-    const GATE_X_OFFSET = INPUT_W + COL_GAP; // shift gates right to make room for inputs
+    const GATE_X_OFFSET = INPUT_DOT_R * 2 + COL_GAP; // shift gates right to make room for input dots
     const nodes = [];
     for (let l = 0; l < circuit.d; l++) {
       nodes[l] = [];
@@ -314,6 +308,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
               strokeWidth: 1.5,
               rx: 3,
               ry: 3,
+              opacity: GATE_OPACITY,
             },
             label: {
               text: "",
@@ -391,7 +386,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
       }
     }
 
-    // --- Create links between layers ---
+    // --- Create links between layers (color-coded by source E[wire]) ---
     for (let l = 1; l < circuit.d; l++) {
       for (let w = 0; w < circuit.n; w++) {
         const g = circuit.gates[l];
@@ -400,6 +395,9 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
 
         if (!nodes[l - 1]?.[fw] || !nodes[l]?.[w]) continue;
 
+        const fwColor = meanToColor(means?.[l - 1]?.[fw] ?? null) || WIRE_COLOR;
+        const swColor = meanToColor(means?.[l - 1]?.[sw] ?? null) || WIRE_COLOR;
+
         // First input
         graph.addCell(
           new shapes.standard.Link({
@@ -407,7 +405,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
             target: { id: nodes[l][w].id, port: "in1" },
             attrs: {
               line: {
-                stroke: WIRE_COLOR,
+                stroke: fwColor,
                 strokeWidth: 0.8,
                 targetMarker: { d: "" },
               },
@@ -423,7 +421,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
             target: { id: nodes[l][w].id, port: "in2" },
             attrs: {
               line: {
-                stroke: WIRE_COLOR,
+                stroke: swColor,
                 strokeWidth: 0.8,
                 targetMarker: { d: "" },
               },
@@ -434,31 +432,29 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
       }
     }
 
-    // --- Create output wire markers (column after last layer) ---
-    const OUTPUT_W = 56;
+    // --- Create output wire endpoint dots (column after last layer) ---
     const lastLayer = circuit.d - 1;
-    const outputX = PAD_X + GATE_X_OFFSET + (circuit.d) * (GATE_W + COL_GAP);
+    const outputX = PAD_X + GATE_X_OFFSET + (circuit.d) * (GATE_W + COL_GAP) + INPUT_DOT_R;
     for (let w = 0; w < circuit.n; w++) {
-      const y = PAD_Y + w * (GATE_H + ROW_GAP) - 2;
+      const y = PAD_Y + w * (GATE_H + ROW_GAP) + GATE_H / 2;
 
-      const outNode = new shapes.standard.Rectangle({
-        position: { x: outputX, y },
-        size: { width: OUTPUT_W, height: GATE_H + 4 },
+      const outNode = new shapes.standard.Circle({
+        position: { x: outputX - INPUT_DOT_R, y: y - INPUT_DOT_R },
+        size: { width: INPUT_DOT_R * 2, height: INPUT_DOT_R * 2 },
         attrs: {
           body: {
-            fill: "#F8FAFC",
-            stroke: "#334155",
-            strokeWidth: 2.5,
-            rx: 4,
-            ry: 4,
+            fill: "#94A3B8",
+            stroke: "none",
             class: pulseOutputs ? "output-node-pulse" : "",
           },
           label: {
             text: `y${w}`,
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: "bold",
             fontFamily: "'IBM Plex Mono', monospace",
-            fill: "#334155",
+            fill: "#64748B",
+            refX: "calc(w+8)",
+            textAnchor: "start",
           },
         },
         ports: {
@@ -470,15 +466,16 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
       outNode.set("wireIndex", w);
       graph.addCell(outNode);
 
-      // Link from last layer gate to output node
+      // Link from last layer gate to output dot (color-coded)
       if (nodes[lastLayer]?.[w]) {
+        const outWireColor = meanToColor(means?.[lastLayer]?.[w] ?? null) || WIRE_COLOR;
         graph.addCell(
           new shapes.standard.Link({
             source: { id: nodes[lastLayer][w].id, port: "out" },
             target: { id: outNode.id, port: "in1" },
             attrs: {
               line: {
-                stroke: WIRE_COLOR,
+                stroke: outWireColor,
                 strokeWidth: 0.8,
                 targetMarker: { d: "" },
               },
