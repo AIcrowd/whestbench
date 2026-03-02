@@ -229,34 +229,4 @@ export function runSingleTrial(circuit, seed = 42) {
   return results.map(batch => batch[0]);
 }
 
-/**
- * Describe the gate operation for display purposes.
- * Returns a human-readable string like "AND(x, y)", "x", "-y", etc.
- */
-export function describeGate(layer, i) {
-  const c = layer.const[i];
-  const fc = layer.firstCoeff[i];
-  const sc = layer.secondCoeff[i];
-  const pc = layer.productCoeff[i];
 
-  // Simple gates: only one nonzero coeff
-  if (fc !== 0 && sc === 0 && c === 0 && pc === 0)
-    return fc > 0 ? "x" : "-x";
-  if (sc !== 0 && fc === 0 && c === 0 && pc === 0)
-    return sc > 0 ? "y" : "-y";
-  if (c !== 0 && fc === 0 && sc === 0 && pc === 0)
-    return c > 0 ? "+1" : "-1";
-  if (pc !== 0 && fc === 0 && sc === 0 && c === 0)
-    return pc > 0 ? "xy" : "-xy";
-
-  // Complex gates: AND variants
-  // coeff*(−1 + xc*x + yc*y + xc*yc*xy) = coeff * AND(xc*x, yc*y) roughly
-  if (pc !== 0) {
-    const xSign = fc / pc > 0 ? "" : "-";
-    const ySign = sc > 0 === pc > 0 ? "" : "-";
-    const gateSign = c < 0 === pc > 0 ? "" : "-";
-    return `${gateSign}AND(${xSign}x,${ySign}y)`;
-  }
-
-  return "?";
-}
