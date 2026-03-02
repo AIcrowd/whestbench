@@ -4,8 +4,7 @@
  * Every gate computes: output = c + a·x + b·y + p·x·y
  * All gates use the SAME visual shape (rectangle).
  *
- * The classifier maps coefficient patterns to one of 9 named boolean
- * function families, each with a unicode symbol and display color.
+ * Gate types are stored at creation time in circuit.js, not inferred.
  */
 
 /* === Tunable visualization params (single source of truth) === */
@@ -32,73 +31,18 @@ export const GATE_TYPES = {
 };
 
 /**
- * Classify a gate by its coefficient pattern into one of the boolean
- * function families.
+ * Look up the gate type info for a gate.
+ * Gate types are stored at creation time in circuit.js (layer.gateType[i]).
  *
- * @param {object} layer  — layer object with typed arrays
+ * @param {object} layer  — layer object from circuit.gates[]
  * @param {number} wireIndex — wire index within the layer
  * @returns {{ type: string, label: string, symbol: string, color: string }}
  */
 export function classifyGate(layer, wireIndex) {
-  const c = layer.const[wireIndex];
-  const a = layer.firstCoeff[wireIndex];
-  const b = layer.secondCoeff[wireIndex];
-  const p = layer.productCoeff[wireIndex];
-
-  const hasC = Math.abs(c) > 1e-6;
-  const hasA = Math.abs(a) > 1e-6;
-  const hasB = Math.abs(b) > 1e-6;
-  const hasP = Math.abs(p) > 1e-6;
-
-  // --- Simple gates: exactly one nonzero coefficient ---
-  if (!hasP && !hasC && (hasA !== hasB)) {
-    // Single linear term: buffer or NOT
-    if (hasA) {
-      const t = a > 0 ? "BUF" : "NOT";
-      return { type: t, label: a > 0 ? "x" : "−x", ...GATE_TYPES[t] };
-    }
-    const t = b > 0 ? "BUF" : "NOT";
-    return { type: t, label: b > 0 ? "y" : "−y", ...GATE_TYPES[t] };
-  }
-
-  if (hasC && !hasA && !hasB && !hasP) {
-    return { type: "CONST", label: c > 0 ? "+1" : "−1", ...GATE_TYPES.CONST };
-  }
-
-  if (!hasC && !hasA && !hasB && hasP) {
-    const t = p > 0 ? "XNOR" : "XOR";
-    return { type: t, label: t === "XNOR" ? "XNOR(x, y)" : "XOR(x, y)", ...GATE_TYPES[t] };
-  }
-
-  // --- Complex gates: AND family (affine-bilinear) ---
-  // Gate computes: coeff * (−1 + xc·x + yc·y + xc·yc·xy) = ±AND(±x, ±y)
-  const xSign = (a / p) > 0 ? "" : "−";
-  const ySign = (b > 0) === (p > 0) ? "" : "−";
-  const outerPositive = (c < 0) === (p > 0);
-
-  const xNeg = xSign === "−";
-  const yNeg = ySign === "−";
-
-  let type, label;
-  if (outerPositive) {
-    if (!xNeg && !yNeg) {
-      type = "AND";  label = "AND(x, y)";
-    } else if (xNeg && yNeg) {
-      type = "NOR";  label = "NOR(x, y)";
-    } else {
-      type = "AND";  label = `AND(${xSign}x, ${ySign}y)`;
-    }
-  } else {
-    if (!xNeg && !yNeg) {
-      type = "NAND"; label = "NAND(x, y)";
-    } else if (xNeg && yNeg) {
-      type = "OR";   label = "OR(x, y)";
-    } else {
-      type = "NAND"; label = `NAND(${xSign}x, ${ySign}y)`;
-    }
-  }
-
-  return { type, label, ...GATE_TYPES[type] };
+  const type = layer.gateType?.[wireIndex] || "AND";
+  const label = layer.gateLabel?.[wireIndex] || "?";
+  const info = GATE_TYPES[type] || GATE_TYPES.AND;
+  return { type, label, ...info };
 }
 
 /**

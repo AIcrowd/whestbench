@@ -50,6 +50,8 @@ function randomGates(n, rng) {
   const firstCoeff = new Float32Array(n);
   const secondCoeff = new Float32Array(n);
   const productCoeff = new Float32Array(n);
+  const gateType = new Array(n);   // e.g. "AND", "XOR", "BUF"
+  const gateLabel = new Array(n);  // e.g. "AND(-x, y)", "XOR(x, y)", "x"
 
   for (let i = 0; i < n; i++) {
     // Pick two distinct random inputs
@@ -63,12 +65,25 @@ function randomGates(n, rng) {
       // Simple: ±{x, y, 1, xy}
       const sign = rng.randSign();
       const opType = rng.randInt(4);
-      if (opType === 0) firstCoeff[i] = sign;
-      else if (opType === 1) secondCoeff[i] = sign;
-      else if (opType === 2) constArr[i] = sign;
-      else productCoeff[i] = sign;
+      if (opType === 0) {
+        firstCoeff[i] = sign;
+        gateType[i] = sign > 0 ? "BUF" : "NOT";
+        gateLabel[i] = sign > 0 ? "x" : "−x";
+      } else if (opType === 1) {
+        secondCoeff[i] = sign;
+        gateType[i] = sign > 0 ? "BUF" : "NOT";
+        gateLabel[i] = sign > 0 ? "y" : "−y";
+      } else if (opType === 2) {
+        constArr[i] = sign;
+        gateType[i] = "CONST";
+        gateLabel[i] = sign > 0 ? "+1" : "−1";
+      } else {
+        productCoeff[i] = sign;
+        gateType[i] = sign > 0 ? "XNOR" : "XOR";
+        gateLabel[i] = sign > 0 ? "XNOR(x, y)" : "XOR(x, y)";
+      }
     } else {
-      // Complex: ± AND(±x, ±y) = coeff*(1 + xc*x + yc*y + xc*yc*xy)
+      // Complex: ± AND(±x, ±y) = coeff*(−1 + xc*x + yc*y + xc*yc*xy)
       const xc = rng.randSign();
       const yc = rng.randSign();
       const coeff = rng.randSign() * 0.5;
@@ -76,10 +91,27 @@ function randomGates(n, rng) {
       firstCoeff[i] = xc * coeff;
       secondCoeff[i] = yc * coeff;
       productCoeff[i] = xc * yc * coeff;
+
+      // Determine gate type from signs
+      const outerPositive = coeff < 0;  // -coeff > 0 means outer is positive
+      const xNeg = xc < 0;
+      const yNeg = yc < 0;
+      const xStr = xNeg ? "−x" : "x";
+      const yStr = yNeg ? "−y" : "y";
+
+      if (outerPositive) {
+        if (!xNeg && !yNeg) { gateType[i] = "AND";  gateLabel[i] = "AND(x, y)"; }
+        else if (xNeg && yNeg) { gateType[i] = "NOR";  gateLabel[i] = "NOR(x, y)"; }
+        else { gateType[i] = "AND"; gateLabel[i] = `AND(${xStr}, ${yStr})`; }
+      } else {
+        if (!xNeg && !yNeg) { gateType[i] = "NAND"; gateLabel[i] = "NAND(x, y)"; }
+        else if (xNeg && yNeg) { gateType[i] = "OR";   gateLabel[i] = "OR(x, y)"; }
+        else { gateType[i] = "NAND"; gateLabel[i] = `NAND(${xStr}, ${yStr})`; }
+      }
     }
   }
 
-  return { first, second, const: constArr, firstCoeff, secondCoeff, productCoeff };
+  return { first, second, const: constArr, firstCoeff, secondCoeff, productCoeff, gateType, gateLabel };
 }
 
 /**
