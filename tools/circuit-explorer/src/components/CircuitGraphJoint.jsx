@@ -12,7 +12,7 @@
  */
 import { dia, shapes } from "@joint/core";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GATE_H, GATE_OPACITY, GATE_W, INPUT_DOT_R, meanToColor, WIRE_PORT_R } from "./gateShapes";
+import { classifyGate, GATE_H, GATE_OPACITY, GATE_TYPES, GATE_W, INPUT_DOT_R, meanToColor, WIRE_PORT_R } from "./gateShapes";
 
 /* ------------------------------------------------------------------ */
 /*  Layout                                                             */
