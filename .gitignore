@@ -220,3 +220,4 @@ node_modules/
 
 # Local git worktrees
 .worktrees/
+docs/plans/task.md
