@@ -7,9 +7,12 @@
  * Unified color palette anchored on AIcrowd coral #F0524D.
  */
 
-/* Uniform gate dimensions */
-export const GATE_W = 48;
-export const GATE_H = 32;
+/* === Tunable visualization params (single source of truth) === */
+export const GATE_W         = 20;   // gate body width (narrowed from 48)
+export const GATE_H         = 32;   // gate body height
+export const GATE_OPACITY   = 0.3;  // gate body fill opacity — ghosted
+export const WIRE_PORT_R    = 11;   // output port circle radius (was 7)
+export const INPUT_DOT_R    = 5;    // input/output wire endpoint dot radius
 
 /* Gate type → border color (all use same rectangle shape) */
 const TYPE_COLORS = {
