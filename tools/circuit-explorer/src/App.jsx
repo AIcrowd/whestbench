@@ -6,6 +6,7 @@ import CircuitGraphJoint from "./components/CircuitGraphJoint";
 import CircuitHeatmap from "./components/CircuitHeatmap";
 import CoeffHistograms from "./components/CoeffHistograms";
 import Controls from "./components/Controls";
+import ErrorByGateType from "./components/ErrorByGateType";
 import ErrorHeatmap from "./components/ErrorHeatmap";
 import EstimatorComparison from "./components/EstimatorComparison";
 import EstimatorRunner from "./components/EstimatorRunner";
@@ -214,14 +215,15 @@ export default function App() {
   const groundTruthStats = estimatorResults.groundTruth || null;
   const samplingEst = estimatorResults.sampling?.estimates || null;
   const meanPropEst = estimatorResults.meanprop?.estimates || null;
+  const covPropEst = estimatorResults.covprop?.estimates || null;
 
   // Tour display data
   const tourDisplayMeans =
     step >= 3 ? tourGroundTruth || tourSampling || tourMeanProp : null;
 
   // Explore mode display data
-  const exploreDisplayMeans = groundTruth || samplingEst || meanPropEst;
-  const hasAnyExploreEstimate = !!(groundTruth || samplingEst || meanPropEst);
+  const exploreDisplayMeans = groundTruth || samplingEst || meanPropEst || covPropEst;
+  const hasAnyExploreEstimate = !!(groundTruth || samplingEst || meanPropEst || covPropEst);
 
 
 
@@ -394,7 +396,22 @@ export default function App() {
                         groundTruth={groundTruth}
                         samplingEstimates={samplingEst}
                         meanPropEstimates={meanPropEst}
+                        covPropEstimates={covPropEst}
                         depth={params.depth}
+                        activeLayer={activeLayer}
+                      />
+                    </div>
+                  )}
+
+                  {/* Row 2b: Error by Gate Type */}
+                  {groundTruth && (samplingEst || meanPropEst) && displayCircuit && (
+                    <div className="panel-reveal">
+                      <ErrorByGateType
+                        circuit={displayCircuit}
+                        groundTruth={groundTruth}
+                        samplingEstimates={samplingEst}
+                        meanPropEstimates={meanPropEst}
+                        covPropEstimates={covPropEst}
                         activeLayer={activeLayer}
                       />
                     </div>
@@ -412,6 +429,7 @@ export default function App() {
                     <ErrorHeatmap
                       groundTruth={groundTruth}
                       meanPropEstimates={meanPropEst}
+                      covPropEstimates={covPropEst}
                       samplingEstimates={samplingEst}
                       width={params.width}
                       depth={params.depth}
