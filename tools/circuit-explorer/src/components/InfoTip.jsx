@@ -4,10 +4,10 @@
  * Accepts either a plain `text` string or JSX `children` for
  * rich formatted content.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-export default function InfoTip({ text, children }) {
+export default function InfoTip({ text, children, trigger }) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState(null);
   const tipRef = useRef(null);
@@ -56,29 +56,39 @@ export default function InfoTip({ text, children }) {
 
   const content = children || text;
 
+  const defaultTrigger = (
+    <button
+      className="info-tip-btn"
+      aria-label="Show explanation"
+      title="What does this mean?"
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+        <text
+          x="8"
+          y="12"
+          textAnchor="middle"
+          fontSize="10"
+          fontWeight="700"
+          fill="currentColor"
+        >
+          i
+        </text>
+      </svg>
+    </button>
+  );
+
+  const actualTrigger = trigger || defaultTrigger;
+
   return (
     <span className="info-tip-wrapper">
-      <button
-        ref={btnRef}
-        className="info-tip-btn"
-        onClick={toggle}
-        aria-label="Show explanation"
-        title="What does this mean?"
-      >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-          <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
-          <text
-            x="8"
-            y="12"
-            textAnchor="middle"
-            fontSize="10"
-            fontWeight="700"
-            fill="currentColor"
-          >
-            i
-          </text>
-        </svg>
-      </button>
+      {React.cloneElement(actualTrigger, {
+        onClick: (e) => {
+          if (actualTrigger.props.onClick) actualTrigger.props.onClick(e);
+          toggle(e);
+        },
+        ref: btnRef
+      })}
       {open && coords && createPortal(
         <div 
           ref={tipRef} 

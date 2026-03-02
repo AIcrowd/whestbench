@@ -20,15 +20,15 @@ export const GATE_TYPE_FONT = "'Bradley Hand', Caveat, cursive"; // gate type la
  * Each type gets a unicode symbol and a display color.
  */
 export const GATE_TYPES = {
-  BUF:   { symbol: "▷",  color: "#6366F1" },  // indigo
-  NOT:   { symbol: "▷○", color: "#8B5CF6" },  // violet
-  CONST: { symbol: "■",  color: "#9CA3AF" },  // gray
-  XOR:   { symbol: "⊕",  color: "#F59E0B" },  // amber
-  XNOR:  { symbol: "⊙",  color: "#D97706" },  // dark amber
-  AND:   { symbol: "∧",  color: "#10B981" },  // emerald
-  NAND:  { symbol: "∧̄",  color: "#059669" },  // dark emerald
-  OR:    { symbol: "∨",  color: "#3B82F6" },  // blue
-  NOR:   { symbol: "∨̄",  color: "#2563EB" },  // dark blue
+  CONST: { symbol: "■",  color: "#D9DCDC" },  // Subtle Gray/White
+  BUF:   { symbol: "▷",  color: "#AAACAD" },  // Mid-Gray
+  NOT:   { symbol: "▷○", color: "#77797A" },  // Darker Gray
+  AND:   { symbol: "∧",  color: "#677587" },  // Blue-Slate (muted)
+  NAND:  { symbol: "∧̄",  color: "#46556B" },  // Darker Blue-Slate 
+  OR:    { symbol: "∨",  color: "#334155" },  // Dark Slate
+  NOR:   { symbol: "∨̄",  color: "#1E293B" },  // Ink Slate
+  XOR:   { symbol: "⊕",  color: "#E2908D" },  // Muted Coral
+  XNOR:  { symbol: "⊙",  color: "#F0524D" },  // Primary Coral
 };
 
 /**

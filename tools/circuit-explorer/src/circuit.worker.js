@@ -5,7 +5,7 @@
  * Typed arrays (Float32Array, Int32Array) survive structured clone via postMessage.
  */
 import { empiricalMean, empiricalStats, randomCircuit, runSingleTrial } from './circuit';
-import { meanPropagation } from './estimators';
+import { covariancePropagation, meanPropagation } from './estimators';
 
 self.onmessage = function (e) {
   const { id, type, params } = e.data;
@@ -37,6 +37,11 @@ self.onmessage = function (e) {
     case 'meanPropagation': {
       const circuit = params.circuit;
       result = { estimates: meanPropagation(circuit) };
+      break;
+    }
+    case 'covPropagation': {
+      const circuit = params.circuit;
+      result = { estimates: covariancePropagation(circuit) };
       break;
     }
     default:

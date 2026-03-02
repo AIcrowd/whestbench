@@ -11,9 +11,9 @@ import InfoTip from "./InfoTip";
 import { classifyGate, GATE_TYPE_FONT, GATE_TYPES } from "./gateShapes";
 
 const SERIES = [
-  { key: "sampling", label: "Sampling", color: "#F0524D" },
-  { key: "meanProp", label: "Mean Prop", color: "#94A3B8" },
-  { key: "covProp",  label: "Cov Prop",  color: "#2DD4BF" },
+  { key: "sampling", label: "Sampling", color: "#F0524D" }, // Coral (+1)
+  { key: "covProp",  label: "Cov Prop",  color: "#B29F9E" }, // Blended midpoint/neutral
+  { key: "meanProp", label: "Mean Prop", color: "#334155" }, // Dark Slate (-1)
 ];
 
 export default function ErrorByGateType({
@@ -223,7 +223,41 @@ export default function ErrorByGateType({
 
   const handleMouseLeave = useCallback(() => setHover(null), []);
 
-  if (!chartData || chartData.data.length === 0) return null;
+  if (!chartData || chartData.data.length === 0) {
+    return (
+      <div className="panel" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <h2>
+          Error by Gate Type
+          {activeLayer != null && (
+            <span className="mode-badge">Layer {activeLayer}</span>
+          )}
+          <InfoTip>
+            <span className="tip-title">Error by Gate Type</span>
+            <p className="tip-desc">
+              Mean <span className="tip-mono">|error|</span> grouped by boolean gate type{activeLayer != null ? ` at layer ${activeLayer}` : " across all layers"}.
+            </p>
+            <div className="tip-sep" />
+            <div className="tip-kv"><span className="tip-kv-key">Insight</span><span className="tip-kv-val">Shows which gate types are harder for each estimator</span></div>
+            <div className="tip-kv"><span className="tip-kv-key">Interact</span><span className="tip-kv-val">Click a layer in the MSE chart to filter</span></div>
+          </InfoTip>
+        </h2>
+        <div className="error-heatmap-empty" style={{ flex: 1 }}>
+          <div className="error-heatmap-empty-grid">
+            {Array.from({ length: 6 }).map((_, r) => (
+              <div key={r} className="error-heatmap-empty-row">
+                {Array.from({ length: 10 }).map((_, c) => (
+                  <div key={c} className="error-heatmap-empty-cell" />
+                ))}
+              </div>
+            ))}
+          </div>
+          <p className="error-heatmap-empty-msg">
+            Run Ground Truth sampling and an estimator to populate this plot
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const fmtErr = (v) => v < 0.0001 && v !== 0 ? v.toExponential(4) : v.toFixed(4);
 
