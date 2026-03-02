@@ -476,9 +476,7 @@ export default function App() {
                       <strong>{params.depth}</strong> layers of random gates.
                     </p>
                     <p className="empty-hint">
-                      Run <strong>Ground Truth</strong> to see means, then
-                      compare <strong>Sampling</strong> and{" "}
-                      <strong>Mean Propagation</strong>.
+                      Use the <strong>Run Estimators</strong> panel on the left. Start with <strong>Ground Truth</strong> to establish a baseline, then try the other estimators to compare accuracy and speed.
                     </p>
                   </div>
                 </div>

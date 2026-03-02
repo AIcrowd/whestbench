@@ -120,6 +120,23 @@ def test_readme_documents_cestim_install_and_usage() -> None:
 def test_examples_estimators_folder_contains_starter_classes() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     examples_dir = repo_root / "examples/estimators"
+    assert (examples_dir / "random_estimator.py").exists()
     assert (examples_dir / "mean_propagation.py").exists()
     assert (examples_dir / "covariance_propagation.py").exists()
     assert (examples_dir / "combined_estimator.py").exists()
+
+
+def test_onboarding_docs_recommend_random_estimator_first() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    readme = (repo_root / "README.md").read_text(encoding="utf-8")
+    guide = (repo_root / "internal context docs/participant-streaming-estimator-guide.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "random_estimator.py" in readme
+    assert "random_estimator.py" in guide
+
+    if "mean_propagation.py" in readme:
+        assert readme.index("random_estimator.py") < readme.index("mean_propagation.py")
+    if "mean_propagation.py" in guide:
+        assert guide.index("random_estimator.py") < guide.index("mean_propagation.py")
