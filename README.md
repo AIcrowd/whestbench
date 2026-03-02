@@ -126,7 +126,7 @@ Scoring API compatibility:
 
 See the starter tutorial guide:
 
-- `docs/context/participant-streaming-estimator-guide.md`
+- `docs/guides/participant-streaming-estimator-guide.md`
 - `examples/estimators/random_estimator.py` (start here: full interface walkthrough)
 - `examples/estimators/mean_propagation.py` (first real baseline)
 - `examples/estimators/covariance_propagation.py` (second-order moments)
@@ -157,14 +157,6 @@ uv run --group dev pyright
 uv run --group dev pytest -m "not exhaustive"
 uv run --group dev pytest -m exhaustive
 ```
-
-## Planning Context for Future Agents
-
-If you are iterating on starter-kit/evaluator design, start from:
-
-- `docs/context/README.md`
-
-That folder contains durable challenge context, design decisions, and open questions. It is the primary source of truth for future changes.
 
 ## Tools
 

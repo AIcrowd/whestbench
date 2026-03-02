@@ -94,8 +94,7 @@ def test_docs_do_not_reference_predict_batch_contract() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     paths = [
         repo_root / "README.md",
-        repo_root / "docs/context/mvp-technical-snapshot.md",
-        repo_root / "docs/context/python-runtime-refactor-decisions.md",
+        repo_root / "docs/guides/participant-streaming-estimator-guide.md",
     ]
     for path in paths:
         text = path.read_text(encoding="utf-8").lower()
@@ -105,7 +104,7 @@ def test_docs_do_not_reference_predict_batch_contract() -> None:
 def test_readme_links_streaming_participant_guide() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
-    assert "participant-streaming-estimator-guide.md" in text
+    assert "docs/guides/participant-streaming-estimator-guide.md" in text
 
 
 def test_readme_documents_cestim_install_and_usage() -> None:
@@ -129,7 +128,7 @@ def test_examples_estimators_folder_contains_starter_classes() -> None:
 def test_onboarding_docs_recommend_random_estimator_first() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
-    guide = (repo_root / "docs/context/participant-streaming-estimator-guide.md").read_text(
+    guide = (repo_root / "docs/guides/participant-streaming-estimator-guide.md").read_text(
         encoding="utf-8"
     )
 

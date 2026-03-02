@@ -223,3 +223,9 @@ node_modules/
 docs/plans/task.md
 
 .agent/
+.aicrowd/
+.codex/
+.claude/
+.cursor/
+.roo/
+.windsurf/
