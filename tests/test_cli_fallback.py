@@ -8,51 +8,66 @@ import circuit_estimation.cli as cli
 def _sample_report() -> dict[str, Any]:
     return {
         "mode": "human",
+        "run_meta": {
+            "run_duration_s": 1.25,
+        },
+        "run_config": {
+            "n_circuits": 2,
+            "n_samples": 50,
+            "width": 4,
+            "max_depth": 3,
+            "budgets": [10, 100],
+        },
         "results": {
             "final_score": 0.42,
-            "by_budget_raw": [],
+            "by_budget_raw": [
+                {"budget": 10, "score": 0.6},
+                {"budget": 100, "score": 0.3},
+            ],
         },
     }
 
 
-def test_human_mode_falls_back_to_static_when_textual_unsupported(monkeypatch, capsys) -> None:
+def test_human_mode_falls_back_to_plain_text_when_rich_render_fails(monkeypatch, capsys) -> None:
     monkeypatch.setattr(cli, "score_estimator_report", lambda *_a, **_k: _sample_report())
-    monkeypatch.setattr(cli, "_supports_textual_dashboard", lambda: False)
+
+    def fail_render(*_args, **_kwargs):
+        raise RuntimeError("rich boom")
+
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: "Circuit Estimation Report\n",
+        fail_render,
     )
 
     exit_code = cli.main([])
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert "Textual UI unavailable" in captured.err
-    assert "Circuit Estimation Report" in captured.out
+    assert "Rich dashboard unavailable (rich boom)" in captured.err
+    assert "Circuit Estimation Report (Plain Text)" in captured.out
+    assert "Final Score: 0.42" in captured.out
+    assert "Best Budget Score: 0.3" in captured.out
 
 
-def test_human_mode_falls_back_to_static_when_textual_launch_fails(monkeypatch, capsys) -> None:
-    monkeypatch.setattr(cli, "score_estimator_report", lambda *_a, **_k: _sample_report())
-    monkeypatch.setattr(cli, "_supports_textual_dashboard", lambda: True)
+def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(cli, "score_submission_report", lambda *_a, **_k: _sample_report())
 
-    def fail_launch(_report: dict[str, Any]) -> None:
-        raise RuntimeError("launch failed")
+    def fail_render(*_args, **_kwargs):
+        raise RuntimeError("render failed")
 
-    monkeypatch.setattr(cli, "_launch_textual_dashboard", fail_launch)
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: "Circuit Estimation Report\n",
+        fail_render,
     )
 
-    exit_code = cli.main([])
+    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert "Textual UI unavailable" in captured.err
-    assert "launch failed" in captured.err
-    assert "Circuit Estimation Report" in captured.out
+    assert "Rich dashboard unavailable (render failed)" in captured.err
+    assert "Circuit Estimation Report (Plain Text)" in captured.out
 
 
 def test_error_code_mapping_for_stream_contract_messages() -> None:

@@ -124,17 +124,14 @@ def _main_legacy(argv: list[str]) -> int:
             output = render_agent_report(report)
             print(output, end="" if output.endswith("\n") else "\n")
             return 0
-
-        if _supports_textual_dashboard():
-            try:
-                if _launch_textual_dashboard(report):
-                    return 0
-            except Exception as exc:
-                print(f"Textual UI unavailable ({exc}); falling back to static report.", file=sys.stderr)
-        else:
-            print("Textual UI unavailable; falling back to static report.", file=sys.stderr)
-
-        output = render_human_report(report, show_diagnostic_plots=args.show_diagnostic_plots)
+        try:
+            output = render_human_report(report, show_diagnostic_plots=args.show_diagnostic_plots)
+        except Exception as exc:
+            print(
+                f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
+                file=sys.stderr,
+            )
+            output = _render_plain_text_report(report)
         print(output, end="" if output.endswith("\n") else "\n")
         return 0
     except Exception as exc:  # pragma: no cover - exercised via CLI tests
@@ -143,25 +140,39 @@ def _main_legacy(argv: list[str]) -> int:
         return 1
 
 
-def _supports_textual_dashboard() -> bool:
-    """Return true when textual dashboard dependencies are importable."""
-    try:
-        from .textual_dashboard.app import DashboardApp
-    except Exception:
-        return False
-    _ = DashboardApp
-    return True
+def _render_plain_text_report(report: dict[str, Any]) -> str:
+    """Render a minimal plain-text summary when Rich rendering is unavailable."""
+    results = report.get("results", {})
+    run_config = report.get("run_config", {})
+    run_meta = report.get("run_meta", {})
+    best_budget_score, worst_budget_score = _budget_score_bounds(results.get("by_budget_raw"))
+    lines = [
+        "Circuit Estimation Report (Plain Text)",
+        f"Final Score: {results.get('final_score', 'n/a')}",
+        f"Best Budget Score: {best_budget_score}",
+        f"Worst Budget Score: {worst_budget_score}",
+        f"Duration(s): {run_meta.get('run_duration_s', 'n/a')}",
+        f"Circuits: {run_config.get('n_circuits', 'n/a')}",
+        f"Samples/Circuit: {run_config.get('n_samples', 'n/a')}",
+        f"Width: {run_config.get('width', 'n/a')}",
+        f"Max Depth: {run_config.get('max_depth', 'n/a')}",
+        f"Budgets: {run_config.get('budgets', 'n/a')}",
+    ]
+    return "\n".join(lines) + "\n"
 
 
-def _launch_textual_dashboard(report: dict[str, Any]) -> bool:
-    """Launch the interactive textual dashboard when attached to a TTY."""
-    if not (sys.stdin.isatty() and sys.stdout.isatty()):
-        return False
-    from .textual_dashboard.app import DashboardApp
-
-    app = DashboardApp(report=report)
-    app.run()
-    return True
+def _budget_score_bounds(by_budget_raw: object) -> tuple[float | str, float | str]:
+    scores: list[float] = []
+    if isinstance(by_budget_raw, list):
+        for item in by_budget_raw:
+            if not isinstance(item, dict):
+                continue
+            score = item.get("score")
+            if isinstance(score, (int, float)):
+                scores.append(float(score))
+    if not scores:
+        return "n/a", "n/a"
+    return min(scores), max(scores)
 
 
 def _write_init_template(target_dir: Path) -> list[str]:
@@ -341,13 +352,19 @@ def _main_participant(argv: list[str]) -> int:
                 detail=str(args.detail),
             )
             report["mode"] = "agent" if agent_mode else "human"
-            output = (
-                render_agent_report(report)
-                if agent_mode
-                else render_human_report(
-                    report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
-                )
-            )
+            if agent_mode:
+                output = render_agent_report(report)
+            else:
+                try:
+                    output = render_human_report(
+                        report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
+                    )
+                except Exception as exc:
+                    print(
+                        f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
+                        file=sys.stderr,
+                    )
+                    output = _render_plain_text_report(report)
             print(output, end="" if output.endswith("\n") else "\n")
             return 0
 
