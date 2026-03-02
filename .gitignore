@@ -222,7 +222,6 @@ node_modules/
 .worktrees/
 
 internal agent config/
-internal docs/
 internal codex config/
 .claude/
 .cursor/
