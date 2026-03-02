@@ -478,7 +478,15 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
         padding: 30,
         maxScale: 1,
       });
-      setZoomPct(Math.round(paper.scale().sx * 100));
+
+      // Center the content horizontally within the container
+      const scale = paper.scale().sx;
+      const area = paper.getContentArea();
+      const contentW = area.width * scale;
+      const offsetX = (containerW - contentW) / 2 - area.x * scale;
+      paper.translate(offsetX, paper.translate().ty);
+
+      setZoomPct(Math.round(scale * 100));
     });
 
     // Click handler — highlight flow + show draggable tooltip
@@ -650,9 +658,11 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
           }}
           onMouseDown={onDragStart}
         >
-          <div className="tooltip-pro-header" style={{ cursor: "grab" }}>
-            <span className="tooltip-pro-title">
-              Wire [{tooltip.layerIndex}, {tooltip.wireIndex}]
+          <div className="canvas-tip-header" style={{ cursor: "grab", justifyContent: "space-between" }}>
+            <span>
+              Layer <span className="layer-num">{tooltip.layerIndex}</span>
+              {" · "}
+              Wire <span className="layer-num">{tooltip.wireIndex}</span>
             </span>
             <button
               className="tooltip-pro-close"
@@ -669,57 +679,64 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
             out = c + a·x + b·y + p·x·y
           </div>
 
-          <table className="tooltip-pro-table">
-            <thead>
-              <tr>
-                <th>Coeff</th>
-                <th>Value</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="coeff-name">c</td>
-                <td className="coeff-val">{tooltip.const.toFixed(4)}</td>
-                <td className="coeff-desc">constant bias</td>
-              </tr>
-              <tr>
-                <td className="coeff-name">a</td>
-                <td className="coeff-val">{tooltip.firstCoeff.toFixed(4)}</td>
-                <td className="coeff-desc">
-                  weight on <strong>x</strong> (wire {tooltip.first})
-                </td>
-              </tr>
-              <tr>
-                <td className="coeff-name">b</td>
-                <td className="coeff-val">{tooltip.secondCoeff.toFixed(4)}</td>
-                <td className="coeff-desc">
-                  weight on <strong>y</strong> (wire {tooltip.second})
-                </td>
-              </tr>
-              <tr>
-                <td className="coeff-name">p</td>
-                <td className="coeff-val">{tooltip.productCoeff.toFixed(4)}</td>
-                <td className="coeff-desc">
-                  weight on <strong>x·y</strong> (interaction)
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="canvas-tip-rows">
+            <div className="canvas-tip-row">
+              <span className="canvas-tip-label">
+                <span className="canvas-tip-swatch" style={{ background: "#8B95A2" }} />
+                c — constant bias
+              </span>
+              <span className="canvas-tip-value">{tooltip.const.toFixed(4)}</span>
+            </div>
+            <div className="canvas-tip-row">
+              <span className="canvas-tip-label">
+                <span className="canvas-tip-swatch" style={{ background: "#5B7BA8" }} />
+                a — first input (x)
+              </span>
+              <span className="canvas-tip-value">{tooltip.firstCoeff.toFixed(4)}</span>
+            </div>
+            <div className="canvas-tip-row">
+              <span className="canvas-tip-label">
+                <span className="canvas-tip-swatch" style={{ background: "#1E293B" }} />
+                b — second input (y)
+              </span>
+              <span className="canvas-tip-value">{tooltip.secondCoeff.toFixed(4)}</span>
+            </div>
+            <div className="canvas-tip-row">
+              <span className="canvas-tip-label">
+                <span className="canvas-tip-swatch" style={{ background: "#F0524D" }} />
+                p — interaction (x·y)
+              </span>
+              <span className="canvas-tip-value">{tooltip.productCoeff.toFixed(4)}</span>
+            </div>
+          </div>
 
-          <div className="tooltip-pro-wires">
-            <span className="wire-badge input-wire">
-              ← x = layer {tooltip.layerIndex - 1}, wire {tooltip.first}
-            </span>
-            <span className="wire-badge input-wire">
-              ← y = layer {tooltip.layerIndex - 1}, wire {tooltip.second}
-            </span>
+          <div className="canvas-tip-divider" />
+
+          <div className="canvas-tip-rows">
+            <div className="canvas-tip-row">
+              <span className="canvas-tip-label">← x</span>
+              <span className="canvas-tip-value" style={{ fontWeight: 400, fontSize: 10 }}>
+                layer {tooltip.layerIndex > 0 ? tooltip.layerIndex - 1 : 'input'}, wire {tooltip.first}
+              </span>
+            </div>
+            <div className="canvas-tip-row">
+              <span className="canvas-tip-label">← y</span>
+              <span className="canvas-tip-value" style={{ fontWeight: 400, fontSize: 10 }}>
+                layer {tooltip.layerIndex > 0 ? tooltip.layerIndex - 1 : 'input'}, wire {tooltip.second}
+              </span>
+            </div>
           </div>
 
           {tooltip.mean !== null && (
-            <div className="tooltip-pro-mean">
-              E[wire] = <strong>{tooltip.mean.toFixed(4)}</strong>
-            </div>
+            <>
+              <div className="canvas-tip-divider" />
+              <div className="canvas-tip-rows">
+                <div className="canvas-tip-row">
+                  <span className="canvas-tip-label">E[wire]</span>
+                  <span className="canvas-tip-value" style={{ color: "#F0524D" }}>{tooltip.mean.toFixed(4)}</span>
+                </div>
+              </div>
+            </>
           )}
         </div>
       )}

@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef } from "react";
 import { meanToColor } from "./gateShapes";
+import InfoTip from "./InfoTip";
 
 export default function SignalHeatmap({ means, width: n, depth: d, source }) {
   const canvasRef = useRef(null);
@@ -94,6 +95,20 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
     <div className="panel">
       <h2>
         Wire Means Heatmap
+        <InfoTip>
+          <span className="tip-title">Wire Means Heatmap</span>
+          <p className="tip-desc">
+            Color-coded grid of <span className="tip-mono">E[wire]</span> values for every wire at every layer.
+          </p>
+          <div className="tip-sep" />
+          <div className="tip-kv"><span className="tip-kv-key">Dark slate</span><span className="tip-kv-val">E[wire] near −1</span></div>
+          <div className="tip-kv"><span className="tip-kv-key">White</span><span className="tip-kv-val">E[wire] near 0</span></div>
+          <div className="tip-kv"><span className="tip-kv-key">Coral</span><span className="tip-kv-val">E[wire] near +1</span></div>
+          <div className="tip-sep" />
+          <p className="tip-desc">
+            Patterns here reveal structural biases in the gate coefficients.
+          </p>
+        </InfoTip>
         {source && <span className="source-badge">{source}</span>}
       </h2>
       <div style={{ width: '100%', overflowX: 'hidden' }}>

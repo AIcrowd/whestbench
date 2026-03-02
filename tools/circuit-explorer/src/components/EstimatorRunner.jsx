@@ -150,13 +150,6 @@ export default function EstimatorRunner({ circuit, onResult, worker }) {
             transition: 'width 0.15s ease-out',
           }}
         />
-        <span className="estimator-progress-label" style={{
-          position: 'absolute', right: 4, top: 0, fontSize: 9,
-          color: '#9CA3AF', fontFamily: "'IBM Plex Mono', monospace",
-          lineHeight: '6px',
-        }}>
-          {progressPct > 0 ? `${progressPct}%` : '…'}
-        </span>
       </div>
     );
   };

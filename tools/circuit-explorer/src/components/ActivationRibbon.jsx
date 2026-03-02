@@ -1,12 +1,17 @@
 /**
- * ActivationRibbon — Per-layer activation distribution bands.
+ * ActivationRibbon — Per-layer output variance bands.
  * Shows mean ±σ, ±2σ, and min/max as nested colored bands.
  * Canvas-rendered for performance.
  */
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import CanvasTooltip from "./CanvasTooltip";
+import InfoTip from "./InfoTip";
 
 export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, width: n }) {
   const canvasRef = useRef(null);
+  const layoutRef = useRef(null);
+  const aggRef = useRef([]);
+  const [hover, setHover] = useState(null);
 
   useEffect(() => {
     if (!means || !stds || !canvasRef.current) return;
@@ -32,6 +37,9 @@ export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, wi
     const xScale = (l) => PAD.left + (l / Math.max(1, layers - 1)) * plotW;
     const yScale = (v) => PAD.top + (1 - (v + 1) / 2) * plotH; // [-1,1] → [plotH, 0]
 
+    // Store layout for hover
+    layoutRef.current = { PAD, plotW, layers };
+
     // Compute per-layer aggregate stats
     const agg = [];
     for (let l = 0; l < layers; l++) {
@@ -48,6 +56,7 @@ export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, wi
       const avgStd = sumStd / n;
       agg.push({ mean: avgMean, std: avgStd, min: mn, max: mx });
     }
+    aggRef.current = agg;
 
     // Draw bands: min/max → ±2σ → ±σ → mean line
     const bands = [
@@ -109,13 +118,52 @@ export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, wi
     ctx.fillText("−1", PAD.left - 4, yScale(-1) + 3);
   }, [means, stds, mins, maxs, d, n]);
 
+  const handleMouseMove = useCallback((e) => {
+    if (!layoutRef.current || aggRef.current.length === 0) return;
+    const { PAD, plotW, layers } = layoutRef.current;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const frac = (mx - PAD.left) / plotW;
+    const layer = Math.round(frac * (layers - 1));
+    if (layer >= 0 && layer < layers) {
+      setHover({ layer, pageX: e.pageX, pageY: e.pageY });
+    } else {
+      setHover(null);
+    }
+  }, []);
+
+  const handleMouseLeave = useCallback(() => setHover(null), []);
+
   if (!means || !stds) return null;
+
+  const hAgg = hover ? aggRef.current[hover.layer] : null;
 
   return (
     <div className="panel">
-      <h2>Activation Distribution</h2>
+      <h2>
+        Output Variance <small>(per wire)</small>
+        <InfoTip>
+          <span className="tip-title">Output Variance</span>
+          <p className="tip-desc">
+            Each wire's <span className="tip-highlight">σ</span> measures how much its output varies across 10,000 random ±1 inputs.
+          </p>
+          <div className="tip-sep" />
+          <div className="tip-kv"><span className="tip-kv-key">Solid line</span><span className="tip-kv-val">Average σ across all wires per layer</span></div>
+          <div className="tip-kv"><span className="tip-kv-key">Bands</span><span className="tip-kv-val">±1σ, ±2σ, and min–max spread</span></div>
+          <div className="tip-sep" />
+          <p className="tip-desc">
+            <span className="tip-highlight">Wide bands</span> → some wires are highly input-dependent while others are nearly constant.{" "}
+            <span className="tip-highlight">Narrow bands</span> → all wires respond similarly to inputs.
+          </p>
+        </InfoTip>
+      </h2>
       <div style={{ width: "100%", overflowX: "auto" }}>
-        <canvas ref={canvasRef} />
+        <canvas
+          ref={canvasRef}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          style={{ cursor: "crosshair" }}
+        />
       </div>
       <div className="formula-legend" style={{ marginTop: 4 }}>
         <span style={{ color: "#F0524D" }}>━ mean</span>
@@ -123,6 +171,50 @@ export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, wi
         <span style={{ color: "rgba(240,82,77,0.3)" }}>░ ±2σ</span>
         <span style={{ color: "rgba(240,82,77,0.15)" }}>░ min–max</span>
       </div>
+      <CanvasTooltip visible={!!hover} pageX={hover?.pageX} pageY={hover?.pageY}>
+        {hAgg && (
+          <>
+            <div className="canvas-tip-header">
+              Layer <span className="layer-num">{hover.layer}</span>
+            </div>
+            <div className="canvas-tip-rows">
+              <div className="canvas-tip-row">
+                <span className="canvas-tip-label">
+                  <span className="canvas-tip-swatch" style={{ background: "#F0524D" }} />
+                  Mean σ
+                </span>
+                <span className="canvas-tip-value">{hAgg.mean.toFixed(4)}</span>
+              </div>
+              <div className="canvas-tip-row">
+                <span className="canvas-tip-label">
+                  <span className="canvas-tip-swatch" style={{ background: "rgba(240,82,77,0.5)" }} />
+                  Std dev
+                </span>
+                <span className="canvas-tip-value">±{hAgg.std.toFixed(4)}</span>
+              </div>
+              <div className="canvas-tip-divider" />
+              <div className="canvas-tip-row">
+                <span className="canvas-tip-label">
+                  <span className="canvas-tip-swatch" style={{ background: "rgba(240,82,77,0.22)" }} />
+                  ±1σ range
+                </span>
+                <span className="canvas-tip-value">
+                  [{(hAgg.mean - hAgg.std).toFixed(4)}, {(hAgg.mean + hAgg.std).toFixed(4)}]
+                </span>
+              </div>
+              <div className="canvas-tip-row">
+                <span className="canvas-tip-label">
+                  <span className="canvas-tip-swatch" style={{ background: "rgba(240,82,77,0.08)" }} />
+                  Min / Max
+                </span>
+                <span className="canvas-tip-value">
+                  [{hAgg.min.toFixed(4)}, {hAgg.max.toFixed(4)}]
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+      </CanvasTooltip>
     </div>
   );
 }
