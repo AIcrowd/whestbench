@@ -12,12 +12,11 @@ import EstimatorRunner from "./components/EstimatorRunner";
 import GateStats from "./components/GateStats";
 import NarrativeCard, { Ewire } from "./components/NarrativeCard";
 import PerfOverlay from "./components/PerfOverlay";
-import SignalAnimationButton from "./components/SignalAnimation";
-import SignalHeatmap from "./components/SignalHeatmap";
+
 import StdHeatmap from "./components/StdHeatmap";
 import StepIndicator from "./components/StepIndicator";
 import WireStats from "./components/WireStats";
-import { useSignalAnimation } from "./hooks/useSignalAnimation";
+
 import { perfEnd, perfStart } from "./perf";
 import { useCircuitWorker } from "./useWorker";
 
@@ -224,17 +223,13 @@ export default function App() {
   const exploreDisplayMeans = groundTruth || samplingEst || meanPropEst;
   const hasAnyExploreEstimate = !!(groundTruth || samplingEst || meanPropEst);
 
-  // ── Signal animation ──
-  const { isAnimating, animLayer, startAnimation } = useSignalAnimation(
-    isTour ? null : displayCircuit,
-    effectiveParams.depth
-  );
+
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>
-          <span className="header-icon">⚡</span> Circuit Explorer
+          <img src="/logo.png" alt="Circuit Explorer" className="header-logo" /> Circuit Explorer
         </h1>
         <p className="subtitle">
           Interactive visualization of Boolean circuits for the{" "}
@@ -347,7 +342,6 @@ export default function App() {
               means={exploreDisplayMeans}
               activeLayer={activeLayer}
               onLayerClick={setActiveLayer}
-              animLayer={animLayer}
             />
           ) : null}
 
@@ -366,19 +360,14 @@ export default function App() {
           {/* ── Explore mode: all panels ── */}
           {!isTour && (
             <>
-              {/* Circuit animation button */}
-              {displayCircuit && !circuitLoading && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
-                  <SignalAnimationButton onAnimate={startAnimation} isAnimating={isAnimating} />
-                </div>
-              )}
+
 
               {displayCircuit && <GateStats circuit={displayCircuit} activeLayer={activeLayer} />}
 
 
               {hasAnyExploreEstimate && (
                 <>
-                  {/* Row 1: Activation Distribution | Wire Mean Distribution */}
+                  {/* Row 1: Output Variance (per wire) | E[wire] Distribution (across wires) */}
                   {groundTruthStats?.stds && (
                     <div className="panels-row panel-reveal">
                       <ActivationRibbon
@@ -411,7 +400,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Row 3: Signal Variability (σ) | Mean Propagation Error */}
+                  {/* Row 3: Signal Variability (σ) | Estimation Error */}
                   <div className="panels-row panel-reveal">
                     {groundTruthStats?.stds && (
                       <StdHeatmap
@@ -420,27 +409,22 @@ export default function App() {
                         depth={params.depth}
                       />
                     )}
-                    {groundTruth && meanPropEst && (
-                      <ErrorHeatmap
-                        groundTruth={groundTruth}
-                        meanPropEstimates={meanPropEst}
-                        width={params.width}
-                        depth={params.depth}
-                      />
-                    )}
+                    <ErrorHeatmap
+                      groundTruth={groundTruth}
+                      meanPropEstimates={meanPropEst}
+                      samplingEstimates={samplingEst}
+                      width={params.width}
+                      depth={params.depth}
+                    />
                   </div>
 
-                  {/* Row 4: Wire Means Heatmap | Coefficient Distributions */}
-                  <div className="panels-row panel-reveal">
-                    {useGraphMode && (
-                      <SignalHeatmap
-                        means={exploreDisplayMeans}
-                        width={params.width}
-                        depth={params.depth}
-                      />
-                    )}
-                    {displayCircuit && <CoeffHistograms circuit={displayCircuit} />}
-                  </div>
+
+                  {/* Row 4: Coefficient Distributions (full width) */}
+                  {displayCircuit && (
+                    <div className="panel-reveal">
+                      <CoeffHistograms circuit={displayCircuit} columns={2} />
+                    </div>
+                  )}
                 </>
               )}
 

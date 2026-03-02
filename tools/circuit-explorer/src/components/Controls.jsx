@@ -45,8 +45,8 @@ export default function Controls({ params, onParamsChange }) {
   return (
     <div className="controls-panel">
       <h2>Circuit</h2>
-      {slider("Width (n)", "width", 2, 1024, 1, "Number of wires (parallel values) per layer")}
-      {slider("Depth (d)", "depth", 1, 256, 1, "Number of gate layers in the circuit")}
+      {slider(<>Depth <code>d</code> (Layers)</>, "depth", 1, 256, 1, "Number of gate layers in the circuit")}
+      {slider(<>Width <code>n</code> (Wires)</>, "width", 2, 1024, 1, "Number of wires (parallel values) per layer")}
 
       <div className="control-row">
         <label>
@@ -81,12 +81,6 @@ export default function Controls({ params, onParamsChange }) {
       </button>
 
       <div className="controls-help">
-        <p>
-          <strong>Width</strong> — wires per layer
-        </p>
-        <p>
-          <strong>Depth</strong> — gate layers
-        </p>
         <p className="controls-hint">
           Circuit regenerates automatically when you change parameters.
         </p>

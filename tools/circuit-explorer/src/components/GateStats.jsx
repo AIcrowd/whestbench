@@ -3,7 +3,9 @@
  * Shows per-layer dominant coefficient composition as a stacked bar.
  * One bar per layer, each segment colored by coefficient type.
  */
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import CanvasTooltip from "./CanvasTooltip";
+import InfoTip from "./InfoTip";
 
 /* ── Strict palette from circuit gate colors ── */
 const COLORS = {
@@ -23,6 +25,8 @@ const KEYS = ["c", "a", "b", "p"];
 
 export default function GateStats({ circuit, activeLayer }) {
   const canvasRef = useRef(null);
+  const layoutRef = useRef(null);
+  const [hover, setHover] = useState(null);
 
   const layerData = useMemo(() => {
     if (!circuit) return [];
@@ -72,6 +76,9 @@ export default function GateStats({ circuit, activeLayer }) {
     const barW = Math.max(1, (plotW - (d - 1) * barGap) / d);
     const maxVal = layerData[0].total; // all layers have n gates
 
+    // Store layout for hover detection
+    layoutRef.current = { PAD, barW, barGap, d, plotW };
+
     for (let l = 0; l < d; l++) {
       const x = PAD.left + l * (barW + barGap);
       let yStack = PAD.top + plotH;
@@ -115,16 +122,55 @@ export default function GateStats({ circuit, activeLayer }) {
     ctx.fillText("0%", PAD.left - 4, PAD.top + plotH + 3);
   }, [layerData, activeLayer]);
 
+  const handleMouseMove = useCallback((e) => {
+    if (!layoutRef.current || layerData.length === 0) return;
+    const { PAD, barW, barGap, d } = layoutRef.current;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const layer = Math.floor((mx - PAD.left) / (barW + barGap));
+    if (layer >= 0 && layer < d) {
+      setHover({ layer, pageX: e.pageX, pageY: e.pageY });
+    } else {
+      setHover(null);
+    }
+  }, [layerData]);
+
+  const handleMouseLeave = useCallback(() => setHover(null), []);
+
   if (!circuit) return null;
+
+  const hData = hover ? layerData[hover.layer] : null;
 
   return (
     <div className="panel">
-      <h2>Gate Structure Analysis</h2>
+      <h2>
+        Gate Structure Analysis
+        <InfoTip>
+          <span className="tip-title">Gate Structure</span>
+          <p className="tip-desc">
+            Stacked bar chart showing which coefficient type dominates each gate per layer.
+          </p>
+          <div className="tip-sep" />
+          <div className="tip-kv"><span className="tip-kv-key">Each bar</span><span className="tip-kv-val">Segments gates by largest absolute coefficient</span></div>
+          <div className="tip-kv"><span className="tip-kv-key"><span className="tip-mono">c</span></span><span className="tip-kv-val">Constant bias</span></div>
+          <div className="tip-kv"><span className="tip-kv-key"><span className="tip-mono">a</span>, <span className="tip-mono">b</span></span><span className="tip-kv-val">First / second input weights</span></div>
+          <div className="tip-kv"><span className="tip-kv-key"><span className="tip-mono">p</span></span><span className="tip-kv-val">Product interaction (x·y)</span></div>
+          <div className="tip-sep" />
+          <p className="tip-desc">
+            <span className="tip-highlight">Product-heavy</span> layers are harder to estimate — x·y creates non-linear wire dependencies.
+          </p>
+        </InfoTip>
+      </h2>
       <div className="gate-formula-explain">
         <code className="formula-box">out = c + a·x + b·y + p·x·y</code>
       </div>
       <div style={{ width: "100%", overflowX: "auto" }}>
-        <canvas ref={canvasRef} />
+        <canvas
+          ref={canvasRef}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          style={{ cursor: "crosshair" }}
+        />
       </div>
       <div className="formula-legend" style={{ marginTop: 4 }}>
         {KEYS.map(k => (
@@ -138,6 +184,31 @@ export default function GateStats({ circuit, activeLayer }) {
         <strong> Product-heavy</strong> circuits are harder to estimate because
         the x·y interaction creates non-linear dependencies between wires.
       </p>
+      <CanvasTooltip visible={!!hover} pageX={hover?.pageX} pageY={hover?.pageY}>
+        {hData && (
+          <>
+            <div className="canvas-tip-header">
+              Layer <span className="layer-num">{hover.layer}</span>
+            </div>
+            <div className="canvas-tip-rows">
+              {KEYS.map(k => (
+                <div className="canvas-tip-row" key={k}>
+                  <span className="canvas-tip-label">
+                    <span className="canvas-tip-swatch" style={{ background: COLORS[k] }} />
+                    {k} — {COEFF_META[k].label}
+                  </span>
+                  <span className="canvas-tip-value">
+                    {hData[k]} gates
+                    <span className="canvas-tip-sub">
+                      ({(hData[k] / hData.total * 100).toFixed(1)}%)
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </CanvasTooltip>
     </div>
   );
 }

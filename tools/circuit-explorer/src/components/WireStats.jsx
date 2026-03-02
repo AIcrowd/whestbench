@@ -1,12 +1,17 @@
 /**
- * WireStats — Per-layer wire mean distribution as a band chart.
+ * WireStats — Per-layer E[wire] distribution as a band chart.
  * Shows mean ±σ, ±2σ as nested colored bands (same style as ActivationRibbon).
  * Canvas-rendered for performance.
  */
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import CanvasTooltip from "./CanvasTooltip";
+import InfoTip from "./InfoTip";
 
 export default function WireStats({ means, width: n, depth: d, source, activeLayer }) {
   const canvasRef = useRef(null);
+  const layoutRef = useRef(null);
+  const aggRef = useRef([]);
+  const [hover, setHover] = useState(null);
 
   useEffect(() => {
     if (!means || means.length === 0 || !canvasRef.current) return;
@@ -32,6 +37,9 @@ export default function WireStats({ means, width: n, depth: d, source, activeLay
     const xScale = (l) => PAD.left + (l / Math.max(1, layers - 1)) * plotW;
     const yScale = (v) => PAD.top + (1 - (v + 1) / 2) * plotH; // [-1,1] → [plotH, 0]
 
+    // Store layout for hover
+    layoutRef.current = { PAD, plotW, layers };
+
     // Compute per-layer aggregate stats from wire means
     const agg = [];
     for (let l = 0; l < layers; l++) {
@@ -48,6 +56,7 @@ export default function WireStats({ means, width: n, depth: d, source, activeLay
       const std = Math.sqrt(Math.max(0, variance));
       agg.push({ mean: avg, std, min: mn, max: mx });
     }
+    aggRef.current = agg;
 
     // Draw bands: min/max → ±2σ → ±σ → mean line
     const bands = [
@@ -122,16 +131,53 @@ export default function WireStats({ means, width: n, depth: d, source, activeLay
     ctx.fillText("−1", PAD.left - 4, yScale(-1) + 3);
   }, [means, n, d, activeLayer]);
 
+  const handleMouseMove = useCallback((e) => {
+    if (!layoutRef.current || aggRef.current.length === 0) return;
+    const { PAD, plotW, layers } = layoutRef.current;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const frac = (mx - PAD.left) / plotW;
+    const layer = Math.round(frac * (layers - 1));
+    if (layer >= 0 && layer < layers) {
+      setHover({ layer, pageX: e.pageX, pageY: e.pageY });
+    } else {
+      setHover(null);
+    }
+  }, []);
+
+  const handleMouseLeave = useCallback(() => setHover(null), []);
+
   if (!means || means.length === 0) return null;
+
+  const hAgg = hover ? aggRef.current[hover.layer] : null;
 
   return (
     <div className="panel">
       <h2>
-        Wire Mean Distribution
+        E[wire] Distribution <small>(across wires)</small>
+        <InfoTip>
+          <span className="tip-title">E[wire] Distribution</span>
+          <p className="tip-desc">
+            Each wire has an expected output <span className="tip-mono">E[wire]</span> — its average over all possible inputs. This plot shows how those values spread across wires within each layer.
+          </p>
+          <div className="tip-sep" />
+          <div className="tip-kv"><span className="tip-kv-key">Solid line</span><span className="tip-kv-val">Layer-wide average E[wire]</span></div>
+          <div className="tip-kv"><span className="tip-kv-key">Bands</span><span className="tip-kv-val">±1σ, ±2σ, and min–max of wire values</span></div>
+          <div className="tip-sep" />
+          <p className="tip-desc">
+            <span className="tip-highlight">Wide bands</span> → wires have diverse biases.{" "}
+            <span className="tip-highlight">Narrow bands</span> → all wires biased similarly.
+          </p>
+        </InfoTip>
         {source && <span className="source-badge">{source}</span>}
       </h2>
       <div style={{ width: '100%', overflowX: 'auto' }}>
-        <canvas ref={canvasRef} />
+        <canvas
+          ref={canvasRef}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          style={{ cursor: "crosshair" }}
+        />
       </div>
       <div className="formula-legend" style={{ marginTop: 4 }}>
         <span style={{ color: "#F0524D" }}>━ mean</span>
@@ -139,6 +185,50 @@ export default function WireStats({ means, width: n, depth: d, source, activeLay
         <span style={{ color: "rgba(240,82,77,0.3)" }}>░ ±2σ</span>
         <span style={{ color: "rgba(240,82,77,0.15)" }}>░ min–max</span>
       </div>
+      <CanvasTooltip visible={!!hover} pageX={hover?.pageX} pageY={hover?.pageY}>
+        {hAgg && (
+          <>
+            <div className="canvas-tip-header">
+              Layer <span className="layer-num">{hover.layer}</span>
+            </div>
+            <div className="canvas-tip-rows">
+              <div className="canvas-tip-row">
+                <span className="canvas-tip-label">
+                  <span className="canvas-tip-swatch" style={{ background: "#F0524D" }} />
+                  Mean E[wire]
+                </span>
+                <span className="canvas-tip-value">{hAgg.mean.toFixed(4)}</span>
+              </div>
+              <div className="canvas-tip-row">
+                <span className="canvas-tip-label">
+                  <span className="canvas-tip-swatch" style={{ background: "rgba(240,82,77,0.5)" }} />
+                  Std dev (σ)
+                </span>
+                <span className="canvas-tip-value">±{hAgg.std.toFixed(4)}</span>
+              </div>
+              <div className="canvas-tip-divider" />
+              <div className="canvas-tip-row">
+                <span className="canvas-tip-label">
+                  <span className="canvas-tip-swatch" style={{ background: "rgba(240,82,77,0.22)" }} />
+                  ±1σ range
+                </span>
+                <span className="canvas-tip-value">
+                  [{(hAgg.mean - hAgg.std).toFixed(4)}, {(hAgg.mean + hAgg.std).toFixed(4)}]
+                </span>
+              </div>
+              <div className="canvas-tip-row">
+                <span className="canvas-tip-label">
+                  <span className="canvas-tip-swatch" style={{ background: "rgba(240,82,77,0.08)" }} />
+                  Min / Max
+                </span>
+                <span className="canvas-tip-value">
+                  [{hAgg.min.toFixed(4)}, {hAgg.max.toFixed(4)}]
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+      </CanvasTooltip>
     </div>
   );
 }

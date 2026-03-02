@@ -80,11 +80,10 @@ body {
   gap: 6px;
 }
 
-.header-icon {
-  color: var(--coral);
-  font-size: 18px;
-  display: flex;
-  align-items: center;
+.header-logo {
+  height: 24px;
+  width: auto;
+  display: block;
 }
 
 /* Inline SVG icon utility for buttons */
@@ -142,6 +141,12 @@ body {
   margin-bottom: 14px;
 }
 
+.panel h2 small {
+  text-transform: none;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
 /* Data source badge for panels */
 .source-badge {
   display: inline-block;
@@ -183,6 +188,16 @@ body {
 
 .control-label {
   font-weight: 500;
+}
+
+.control-label code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--gray-100);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--gray-600);
+  font-weight: 400;
 }
 
 .control-value {
@@ -798,41 +813,7 @@ body {
   background: var(--gray-50);
 }
 
-/* ──── Signal Animation ──── */
 
-.animate-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  font-size: 11px;
-  font-family: var(--font-mono);
-  color: var(--coral);
-  background: rgba(240, 82, 77, 0.08);
-  border: 1px solid rgba(240, 82, 77, 0.2);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.animate-btn:hover:not(:disabled) {
-  background: rgba(240, 82, 77, 0.15);
-  border-color: rgba(240, 82, 77, 0.4);
-}
-
-.animate-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.animate-btn-pulse {
-  animation: pulse-flow 0.8s ease-in-out infinite alternate;
-}
-
-@keyframes pulse-flow {
-  from { opacity: 0.5; }
-  to { opacity: 1; }
-}
 
 /* ──── Footer ──── */
 
@@ -1137,6 +1118,147 @@ body {
   border: 1px solid var(--gray-200);
 }
 
+/* ──── Estimation Error Heatmap ──── */
+
+.error-heatmap-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.error-heatmap-header h2 {
+  margin-bottom: 0;
+}
+
+.estimator-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 4px 28px 4px 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gray-700);
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.estimator-select:hover {
+  border-color: var(--coral);
+  color: var(--coral);
+}
+
+.estimator-select:focus {
+  outline: none;
+  border-color: var(--coral);
+  box-shadow: 0 0 0 3px var(--coral-light);
+}
+
+.estimator-badge-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--gray-400);
+  background: var(--gray-100);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.error-heatmap-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  border: 1px dashed var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--gray-50);
+  min-height: 140px;
+}
+
+.error-heatmap-empty-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 14px;
+  opacity: 0.35;
+}
+
+.error-heatmap-empty-row {
+  display: flex;
+  gap: 3px;
+}
+
+.error-heatmap-empty-cell {
+  width: 22px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--gray-200);
+}
+
+.error-heatmap-empty-msg {
+  font-size: 12px;
+  color: var(--gray-400);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Heatmap hover tooltip with zoom magnifier */
+.heatmap-hover-tooltip {
+  position: absolute;
+  z-index: 9999;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  animation: narrative-enter 0.1s ease-out;
+}
+
+.heatmap-hover-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gray-500);
+  white-space: nowrap;
+}
+
+.heatmap-hover-coord strong {
+  color: var(--gray-900);
+}
+
+.heatmap-hover-value {
+  color: var(--gray-600);
+}
+
+.heatmap-hover-value strong {
+  color: #F0524D;
+  font-weight: 700;
+}
+
+.heatmap-zoom-canvas {
+  border-radius: 4px;
+  border: 1px solid var(--gray-200);
+}
+
 /* ============================================
    Gate Detail Overlay
    ============================================ */
@@ -1216,7 +1338,8 @@ body {
 }
 
 .coeff-label {
-  color: var(--gray-400);
+  color: var(--gray-700);
+  font-weight: 500;
 }
 
 .coeff-val {
@@ -1564,6 +1687,223 @@ body {
   margin: -16px -20px 16px;
   padding: 12px 20px;
   border-radius: var(--radius) var(--radius) 0 0;
+}
+
+/* ============================================
+   Panel Info Tooltips
+   ============================================ */
+
+.info-tip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.info-tip-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: help;
+  color: var(--gray-400);
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+
+.info-tip-btn:hover {
+  color: var(--coral);
+}
+
+.info-tip-popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  padding: 0;
+  background: var(--white);
+  color: var(--gray-700);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0;
+  text-transform: none;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 500;
+  white-space: normal;
+  animation: narrative-enter 0.15s ease-out;
+  overflow: hidden;
+}
+
+.info-tip-arrow {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-bottom-color: var(--white);
+}
+
+.info-tip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 12px 16px;
+}
+
+/* Tooltip inner elements */
+.tip-title {
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+}
+
+.tip-desc {
+  color: var(--gray-600);
+  font-size: 12px;
+  line-height: 1.65;
+  margin-bottom: 8px;
+}
+
+.tip-desc:last-child {
+  margin-bottom: 0;
+}
+
+.tip-highlight {
+  color: var(--coral);
+  font-weight: 600;
+}
+
+.tip-mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gray-700);
+  background: var(--gray-50);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.tip-sep {
+  height: 1px;
+  background: var(--gray-100);
+  margin: 8px 0;
+}
+
+.tip-kv {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+
+.tip-kv-key {
+  font-weight: 600;
+  color: var(--gray-500);
+  white-space: nowrap;
+  min-width: 72px;
+}
+
+.tip-kv-val {
+  color: var(--gray-700);
+}
+
+/* ============================================
+   Canvas Chart Data Tooltips
+   ============================================ */
+
+.canvas-data-tooltip {
+  position: absolute;
+  z-index: 9999;
+  pointer-events: none;
+  min-width: 200px;
+  max-width: 280px;
+  background: var(--white);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  animation: narrative-enter 0.1s ease-out;
+  overflow: hidden;
+}
+
+.canvas-tip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-100);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.canvas-tip-header .layer-num {
+  color: var(--coral);
+}
+
+.canvas-tip-rows {
+  padding: 6px 0;
+}
+
+.canvas-tip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  gap: 12px;
+}
+
+.canvas-tip-row:hover {
+  background: var(--gray-50);
+}
+
+.canvas-tip-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gray-500);
+  white-space: nowrap;
+}
+
+.canvas-tip-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.canvas-tip-value {
+  font-weight: 600;
+  color: var(--gray-900);
+  text-align: right;
+}
+
+.canvas-tip-sub {
+  font-size: 10px;
+  color: var(--gray-400);
+  margin-left: 4px;
+  font-weight: 400;
+}
+
+.canvas-tip-divider {
+  height: 1px;
+  background: var(--gray-100);
+  margin: 4px 12px;
 }
 
 /* ============================================

@@ -3,58 +3,55 @@
  * Shows where activations are most variable (input-dependent).
  * Low σ = dark (predictable), High σ = bright coral (variable).
  * Orientation: X-axis = Layer, Y-axis = Wire (matches circuit layout).
+ * Uses putImageData for gap-free pixel-perfect rendering.
  */
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import HeatmapTooltip from "./HeatmapTooltip";
+import InfoTip from "./InfoTip";
 
-function stdToColor(std, maxStd) {
+function stdToRGB(std, maxStd) {
   const t = Math.min(1, std / Math.max(0.01, maxStd));
   const mapped = t * 2 - 1;
   if (mapped < 0) {
     const s = 1 + mapped;
-    const r = Math.round(51 + (255 - 51) * s);
-    const g = Math.round(65 + (255 - 65) * s);
-    const b = Math.round(85 + (255 - 85) * s);
-    return `rgb(${r},${g},${b})`;
+    return [51 + (204 * s) | 0, 65 + (190 * s) | 0, 85 + (170 * s) | 0];
   } else {
-    const r = Math.round(255 - (255 - 240) * mapped);
-    const g = Math.round(255 - (255 - 82) * mapped);
-    const b = Math.round(255 - (255 - 77) * mapped);
-    return `rgb(${r},${g},${b})`;
+    return [255 - (15 * mapped) | 0, 255 - (173 * mapped) | 0, 255 - (178 * mapped) | 0];
   }
 }
 
 export default function StdHeatmap({ stds, width: n, depth: d }) {
+  const containerRef = useRef(null);
   const canvasRef = useRef(null);
+  const [dims, setDims] = useState({ width: 0, height: 0 });
+  const maxStdRef = useRef(0);
 
   useEffect(() => {
-    if (!stds || stds.length === 0 || !canvasRef.current) return;
+    if (!stds || stds.length === 0 || !canvasRef.current || !containerRef.current) return;
+
+    const container = containerRef.current;
     const canvas = canvasRef.current;
-    const container = canvas.parentElement;
-    const containerW = container.offsetWidth || 500;
+    const rect = container.getBoundingClientRect();
+    const width = Math.floor(rect.width);
+    const MAX_HEIGHT = 300;
+    const height = Math.min(MAX_HEIGHT, Math.max(100, Math.floor(n * 2)));
 
-    const LABEL_PAD_Y = 28;
-    const LABEL_PAD_X = 36;
-    const availW = containerW - LABEL_PAD_X - 10;
-
-    // Transposed: X = layers (d columns), Y = wires (n rows)
-    const cellW = availW / d;
-    const MAX_CHART_H = 150;
-    const cellH = Math.min(Math.max(1, Math.floor(MAX_CHART_H / n)), 12);
-    const chartW = cellW * d;
-    const chartH = cellH * n;
-
-    const totalW = LABEL_PAD_X + chartW + 10;
-    const totalH = chartH + LABEL_PAD_Y + 10;
     const dpr = window.devicePixelRatio || 1;
+    const rawCellW = width / d;
+    const rawCellH = height / n;
+    const renderScale = (rawCellW < 1 || rawCellH < 1)
+      ? Math.max(1, Math.min(dpr, 2))
+      : dpr;
 
-    canvas.width = totalW * dpr;
-    canvas.height = totalH * dpr;
-    canvas.style.width = `${totalW}px`;
-    canvas.style.height = `${totalH}px`;
+    const canvasW = Math.round(width * renderScale);
+    const canvasH = Math.round(height * renderScale);
+
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
 
     const ctx = canvas.getContext("2d");
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, totalW, totalH);
 
     // Find global max std
     let maxStd = 0;
@@ -63,71 +60,84 @@ export default function StdHeatmap({ stds, width: n, depth: d }) {
         if (stds[l][w] > maxStd) maxStd = stds[l][w];
       }
     }
+    maxStdRef.current = maxStd;
 
-    // Draw cells: X = layer, Y = wire
-    const gapW = cellW > 3 ? 1 : 0;
-    const gapH = cellH > 3 ? 1 : 0;
-    for (let l = 0; l < d && l < stds.length; l++) {
-      for (let w = 0; w < n; w++) {
-        ctx.fillStyle = stdToColor(stds[l][w], maxStd);
-        ctx.fillRect(
-          LABEL_PAD_X + l * cellW,
-          w * cellH,
-          Math.max(1, cellW - gapW),
-          Math.max(1, cellH - gapH)
-        );
+    // putImageData path — pixel-perfect, no gaps
+    const imgData = ctx.createImageData(canvasW, canvasH);
+    const pixels = imgData.data;
+
+    for (let py = 0; py < canvasH; py++) {
+      const wire = Math.floor((py / canvasH) * n);
+      for (let px = 0; px < canvasW; px++) {
+        const layer = Math.floor((px / canvasW) * d);
+        const idx = (py * canvasW + px) * 4;
+        const val = (layer < stds.length) ? (stds[layer][wire] || 0) : 0;
+        const [r, g, b] = stdToRGB(val, maxStd);
+        pixels[idx] = r;
+        pixels[idx + 1] = g;
+        pixels[idx + 2] = b;
+        pixels[idx + 3] = 255;
       }
     }
+    ctx.putImageData(imgData, 0, 0);
 
-    // X-axis labels: Layer
-    ctx.fillStyle = "#9CA3AF";
-    ctx.font = "9px 'IBM Plex Mono', monospace";
-    ctx.textAlign = "center";
-    const layerStep = d > 16 ? Math.ceil(d / 8) : 1;
-    for (let l = 0; l < d; l++) {
-      if (l % layerStep === 0) {
-        ctx.fillText(`${l}`, LABEL_PAD_X + l * cellW + cellW / 2, chartH + 14);
-      }
-    }
-
-    // Y-axis labels: Wire
-    const wireStep = n > 16 ? Math.ceil(n / 8) : 1;
-    ctx.textAlign = "right";
-    for (let w = 0; w < n; w++) {
-      if (w % wireStep === 0) {
-        ctx.fillText(`${w}`, LABEL_PAD_X - 4, w * cellH + cellH / 2 + 3);
-      }
-    }
-
-    // Axis titles
-    ctx.fillStyle = "#94A3B8";
-    ctx.font = "10px 'IBM Plex Mono', monospace";
-    ctx.textAlign = "center";
-    ctx.fillText("Layer", LABEL_PAD_X + chartW / 2, chartH + 26);
-    ctx.save();
-    ctx.translate(10, chartH / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Wire", 0, 0);
-    ctx.restore();
+    setDims({ width, height });
   }, [stds, n, d]);
+
+  const getData = useCallback((layer, wire) => {
+    if (!stds || layer >= stds.length) return 0;
+    return stds[layer][wire] || 0;
+  }, [stds]);
+
+  const getColor = useCallback((layer, wire) => {
+    if (!stds || layer >= stds.length) return [30, 41, 59];
+    return stdToRGB(stds[layer][wire] || 0, maxStdRef.current);
+  }, [stds]);
 
   if (!stds || stds.length === 0) return null;
 
   return (
-    <div className="panel">
-      <h2>Signal Variability (σ)</h2>
-      <div style={{ width: "100%", overflowX: "hidden" }}>
-        <canvas ref={canvasRef} />
+    <div className="panel" ref={containerRef}>
+      <h2>
+        Signal Variability <small>(σ)</small>
+        <InfoTip>
+          <span className="tip-title">Signal Variability</span>
+          <p className="tip-desc">
+            Per-wire standard deviation <span className="tip-highlight">σ</span> across random inputs. Each cell is one wire at one layer.
+          </p>
+          <div className="tip-sep" />
+          <div className="tip-kv"><span className="tip-kv-key">Bright coral</span><span className="tip-kv-val">High σ — output varies a lot with inputs</span></div>
+          <div className="tip-kv"><span className="tip-kv-key">Dark</span><span className="tip-kv-val">Low σ — nearly constant regardless of input</span></div>
+          <div className="tip-sep" />
+          <p className="tip-desc">
+            High-variability wires are harder to estimate from few samples.
+          </p>
+        </InfoTip>
+      </h2>
+      <div className="heatmap-canvas-container">
+        <canvas ref={canvasRef} style={{ display: "block" }} />
+        {dims.width > 0 && (
+          <HeatmapTooltip
+            width={dims.width}
+            height={dims.height}
+            n={n}
+            d={d}
+            getData={getData}
+            getColor={getColor}
+            valueLabel="σ"
+            showZoom={n * d > 4096}
+          />
+        )}
+      </div>
+      <div className="heatmap-axes">
+        <span className="axis-label-x">Layer →</span>
+        <span className="axis-label-y">Wire ↓</span>
       </div>
       <div className="heatmap-legend">
         <span className="legend-label">Low σ</span>
         <div className="legend-gradient" />
         <span className="legend-label">High σ</span>
       </div>
-      <p className="panel-desc">
-        Wires with high σ are strongly input-dependent.
-        Wires with low σ produce nearly constant output regardless of inputs.
-      </p>
     </div>
   );
 }

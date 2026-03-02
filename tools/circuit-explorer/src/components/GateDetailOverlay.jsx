@@ -2,180 +2,77 @@
  * GateDetailOverlay — Shows gate neighborhood on heatmap hover.
  * Left band (layer l-1) → Gate element → Right band (layer l+1)
  *
- * Performance notes:
- * - Bands use canvas instead of SVG (instant draw for 1024+ wires)
- * - Focus window: only shows ~60 wires around inputs for large circuits
- * - Split window: if inputs are far apart, shows two mini-windows with gap indicator
+ * Each band is a continuous vertical strip of ALL wires in the adjacent layer,
+ * color-coded by E[wire]. Highlighted wires (inputs / consumers) are marked
+ * with bold coral triangles pointing inward.
  */
 import { useEffect, useMemo, useRef } from "react";
 import { classifyGate, meanToColor } from "./gateShapes";
 
 const BAND_WIDTH = 28;
 const BAND_HEIGHT = 280;
-const MAX_VISIBLE = 60;
+const ARROW_SIZE = 12;
+const ARROW_PAD = 14;  // left padding for arrow triangles
+const ARROW_COLOR = "#F0524D";
 
 /**
- * Compute which wires to display in the focus window.
+ * Draw a continuous wire band to a canvas element.
+ * All N wires are rendered as a single vertical strip.
+ * @param {'left'|'right'} side — which side the arrows appear on
  */
-function computeFocusWindow(n, inputFirst, inputSecond) {
-  if (n <= MAX_VISIBLE) {
-    return { type: "full", start: 0, end: n };
-  }
-  const lo = Math.min(inputFirst, inputSecond);
-  const hi = Math.max(inputFirst, inputSecond);
-  const gap = hi - lo;
-
-  if (gap <= MAX_VISIBLE - 10) {
-    // Inputs close enough — single window centered on both
-    const center = Math.floor((lo + hi) / 2);
-    const half = Math.floor(MAX_VISIBLE / 2);
-    const start = Math.max(0, Math.min(n - MAX_VISIBLE, center - half));
-    return { type: "single", start, end: Math.min(n, start + MAX_VISIBLE) };
-  } else {
-    // Inputs far apart — two mini-windows
-    const halfWin = Math.floor(MAX_VISIBLE / 2) - 2;
-    return {
-      type: "split",
-      windowA: {
-        start: Math.max(0, lo - Math.floor(halfWin / 2)),
-        end: Math.min(n, lo + Math.ceil(halfWin / 2)),
-      },
-      windowB: {
-        start: Math.max(0, hi - Math.floor(halfWin / 2)),
-        end: Math.min(n, hi + Math.ceil(halfWin / 2)),
-      },
-    };
-  }
-}
-
-/**
- * Draw a wire band to a canvas element.
- * @param {HTMLCanvasElement} canvas
- * @param {object} params
- */
-function drawBand(canvas, {
-  n, means, layerIdx, highlightWires, focusWindow
-}) {
+function drawBand(canvas, { n, means, layerIdx, highlightWires, side = 'left' }) {
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
 
-  // Determine visible wires and layout
-  let wireRanges = [];
-  let totalVisible = 0;
-  const hasContext = focusWindow.type !== "full";
+  const wireH = BAND_HEIGHT / n;
+  const totalW = BAND_WIDTH + ARROW_PAD;
+  const bandX = side === 'left' ? ARROW_PAD : 0;
 
-  if (focusWindow.type === "full") {
-    wireRanges = [{ start: focusWindow.start, end: focusWindow.end }];
-    totalVisible = focusWindow.end - focusWindow.start;
-  } else if (focusWindow.type === "single") {
-    wireRanges = [{ start: focusWindow.start, end: focusWindow.end }];
-    totalVisible = focusWindow.end - focusWindow.start;
-  } else {
-    wireRanges = [focusWindow.windowA, focusWindow.windowB];
-    totalVisible = (focusWindow.windowA.end - focusWindow.windowA.start) +
-                   (focusWindow.windowB.end - focusWindow.windowB.start) + 2; // +2 for gap
-  }
-
-  const wireH = Math.max(1, Math.min(5, BAND_HEIGHT / totalVisible));
-  const bandH = wireH * totalVisible;
-  const contextBarH = hasContext ? 3 : 0;
-  const totalH = bandH + (hasContext ? contextBarH * 2 + 4 : 0);
-
-  canvas.width = BAND_WIDTH * dpr;
-  canvas.height = totalH * dpr;
-  canvas.style.width = `${BAND_WIDTH}px`;
-  canvas.style.height = `${totalH}px`;
+  canvas.width = totalW * dpr;
+  canvas.height = BAND_HEIGHT * dpr;
+  canvas.style.width = `${totalW}px`;
+  canvas.style.height = `${BAND_HEIGHT}px`;
 
   ctx.scale(dpr, dpr);
-  ctx.clearRect(0, 0, BAND_WIDTH, totalH);
+  ctx.clearRect(0, 0, totalW, BAND_HEIGHT);
 
-  let y = 0;
-
-  // Top context bar — compressed gradient of wires above
-  if (hasContext && wireRanges[0].start > 0) {
-    drawContextBar(ctx, means, layerIdx, 0, wireRanges[0].start, BAND_WIDTH, contextBarH, y);
-    y += contextBarH + 2;
-  }
-
-  // Draw wire ranges
-  for (let ri = 0; ri < wireRanges.length; ri++) {
-    const range = wireRanges[ri];
-    for (let wi = range.start; wi < range.end; wi++) {
-      const mean = means && means[layerIdx] ? means[layerIdx][wi] : null;
-      const isHighlight = highlightWires.includes(wi);
-      const x = isHighlight ? 0 : 3;
-      const w = isHighlight ? BAND_WIDTH : BAND_WIDTH - 6;
-
-      ctx.fillStyle = mean !== null ? meanToColor(mean) : "#E5E7EB";
-      ctx.fillRect(x, y, w, wireH);
-
-      if (isHighlight) {
-        // Black border for contrast against colored cells
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x + 1, y + 1, w - 2, wireH - 2);
-
-        // Black triangular arrow pointer (pointing right into the band)
-        ctx.fillStyle = "#000000";
-        ctx.beginPath();
-        ctx.moveTo(-1, y + wireH / 2 - 4);
-        ctx.lineTo(5, y + wireH / 2);
-        ctx.lineTo(-1, y + wireH / 2 + 4);
-        ctx.closePath();
-        ctx.fill();
-
-        // Wire label in black, offset further outside
-        ctx.fillStyle = "#000000";
-        ctx.font = "bold 7px 'IBM Plex Mono', monospace";
-        ctx.textAlign = "left";
-        ctx.fillText(`w${wi}`, BAND_WIDTH + 4, y + wireH / 2 + 3);
-      }
-      y += wireH;
-    }
-
-    // Gap indicator between split windows
-    if (ri < wireRanges.length - 1) {
-      ctx.fillStyle = "#E5E7EB";
-      ctx.fillRect(0, y, BAND_WIDTH, wireH * 0.5);
-      ctx.fillStyle = "#9CA3AF";
-      ctx.font = "7px 'IBM Plex Mono', monospace";
-      ctx.textAlign = "center";
-      ctx.fillText("⋮", BAND_WIDTH / 2, y + wireH * 0.5 - 1);
-      y += wireH;
-      // Second gap row
-      ctx.fillStyle = "#E5E7EB";
-      ctx.fillRect(0, y, BAND_WIDTH, wireH * 0.5);
-      y += wireH;
-    }
-  }
-
-  // Bottom context bar
-  if (hasContext) {
-    const lastRange = wireRanges[wireRanges.length - 1];
-    if (lastRange.end < n) {
-      y += 2;
-      drawContextBar(ctx, means, layerIdx, lastRange.end, n, BAND_WIDTH, contextBarH, y);
-    }
-  }
-}
-
-/**
- * Draw a compressed 3px context bar showing the overall gradient.
- */
-function drawContextBar(ctx, means, layerIdx, startWire, endWire, width, height, y) {
-  const count = endWire - startWire;
-  const step = Math.max(1, Math.floor(count / width));
-  for (let px = 0; px < width; px++) {
-    const wi = startWire + Math.floor(px * count / width);
+  // Draw all wires as a continuous strip
+  for (let wi = 0; wi < n; wi++) {
+    const y = wi * wireH;
     const mean = means && means[layerIdx] ? means[layerIdx][wi] : null;
+
     ctx.fillStyle = mean !== null ? meanToColor(mean) : "#E5E7EB";
-    ctx.fillRect(px, y, 1, height);
+    ctx.fillRect(bandX, y, BAND_WIDTH, Math.max(wireH, 0.5));
   }
-  // Subtle border
-  ctx.strokeStyle = "rgba(0,0,0,0.1)";
-  ctx.lineWidth = 0.5;
-  ctx.strokeRect(0, y, width, height);
+
+  // Draw coral arrow indicators for highlighted wires
+  for (const wi of highlightWires) {
+    const y = wi * wireH;
+    const cy = y + wireH / 2;
+
+    // Highlight stripe with coral border
+    ctx.strokeStyle = ARROW_COLOR;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(bandX + 1, y, BAND_WIDTH - 2, Math.max(wireH, 3));
+
+    // Coral triangle pointing inward
+    ctx.fillStyle = ARROW_COLOR;
+    ctx.beginPath();
+    if (side === 'left') {
+      // Arrow on left, pointing right into the band
+      ctx.moveTo(0, cy - ARROW_SIZE / 2);
+      ctx.lineTo(ARROW_PAD - 2, cy);
+      ctx.lineTo(0, cy + ARROW_SIZE / 2);
+    } else {
+      // Arrow on right, pointing left into the band
+      ctx.moveTo(totalW, cy - ARROW_SIZE / 2);
+      ctx.lineTo(BAND_WIDTH + 2, cy);
+      ctx.lineTo(totalW, cy + ARROW_SIZE / 2);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 export default function GateDetailOverlay({
@@ -217,20 +114,6 @@ export default function GateDetailOverlay({
     return result;
   }, [circuit, l, w, n, d]);
 
-  // Focus windows for left and right bands
-  const leftFocus = useMemo(() =>
-    computeFocusWindow(n, inputFirst, inputSecond),
-    [n, inputFirst, inputSecond]
-  );
-
-  const rightFocus = useMemo(() => {
-    if (consumers.length === 0) return computeFocusWindow(n, w, w);
-    if (consumers.length === 1) return computeFocusWindow(n, w, consumers[0]);
-    // Use first and last consumer for window range
-    const sorted = [...consumers].sort((a, b) => a - b);
-    return computeFocusWindow(n, sorted[0], sorted[sorted.length - 1]);
-  }, [n, w, consumers]);
-
   // Draw left band (layer l-1)
   useEffect(() => {
     if (!leftCanvasRef.current || l <= 0) return;
@@ -239,10 +122,9 @@ export default function GateDetailOverlay({
       means,
       layerIdx: l - 1,
       highlightWires: [inputFirst, inputSecond],
-      highlightColor: "#F0524D",
-      focusWindow: leftFocus,
+      side: 'left',
     });
-  }, [n, means, l, inputFirst, inputSecond, leftFocus]);
+  }, [n, means, l, inputFirst, inputSecond]);
 
   // Draw right band (layer l+1)
   useEffect(() => {
@@ -252,10 +134,9 @@ export default function GateDetailOverlay({
       means,
       layerIdx: l + 1,
       highlightWires: consumers,
-      highlightColor: "#94A3B8",
-      focusWindow: rightFocus,
+      side: 'right',
     });
-  }, [n, means, l, d, consumers, rightFocus]);
+  }, [n, means, l, d, consumers]);
 
   if (!gateInfo) return null;
 
@@ -282,12 +163,17 @@ export default function GateDetailOverlay({
 
         {/* Center — gate element */}
         <div className="detail-gate">
-          <div className="gate-header">
-            Layer {l}, Wire {w}
+          <div className="canvas-tip-header" style={{ border: "none", padding: "6px 0" }}>
+            Layer <span className="layer-num">{l}</span>
+            {" · "}
+            Wire <span className="layer-num">{w}</span>
           </div>
           <div
             className="gate-symbol"
-            style={{ borderColor: gateInfo.color }}
+            style={{
+              borderColor: currentMean !== null ? meanToColor(currentMean) : gateInfo.color,
+              background: currentMean !== null ? meanToColor(currentMean) + '18' : undefined,
+            }}
           >
             <div className="gate-op">{gateInfo.label}</div>
           </div>
