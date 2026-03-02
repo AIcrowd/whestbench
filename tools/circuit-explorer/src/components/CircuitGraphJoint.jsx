@@ -301,12 +301,13 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
             },
             label: {
               text: gateInfo.symbol,
-              fontSize: 9,
+              fontSize: 10,
               fontFamily: "system-ui, sans-serif",
               fill: gateInfo.color || "#475569",
               fontWeight: 700,
               textAnchor: "middle",
               textVerticalAnchor: "middle",
+              refY: "25%",
             },
           },
           ports: {
