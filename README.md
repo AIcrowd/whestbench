@@ -1,11 +1,8 @@
+<img src="assets/logo/logo.png" alt="logo" style="max-height: 300px;">
+
+# ARC - Circuit Estimation Challenge
+
 This repository is a starter-kit style implementation of the circuit-estimation problem used for local development and evaluator design iteration.
-
-## What This Repository Teaches
-
-- How randomly generated boolean circuits are represented and simulated.
-- How estimators stream wire-mean trajectories one depth row at a time.
-- How scoring combines prediction quality and runtime constraints into a single objective.
-- How to inspect outcomes in either a Textual human dashboard (default) or machine JSON (`--agent-mode`).
 
 ## Conceptual Problem Overview
 
@@ -167,3 +164,9 @@ cd tools/circuit-explorer && npm install && npm run dev
 ```
 
 See `tools/circuit-explorer/README.md` for details.
+
+
+# Authors
+- Paul Christiano
+- Jacob Hilton
+- Sharada Mohanty 
