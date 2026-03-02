@@ -162,7 +162,7 @@ Real publish (explicit destination required):
 bash .aicrowd/scripts/public-sync.sh publish \
   --source-branch main \
   --remote-url https://github.com/AIcrowd/circuit-estimation-challenge-internal.git \
-  --message "sync: mirror internal updates"
+  --message "feat: <describe actual visible change>"
 ```
 
 Notes:
@@ -170,6 +170,20 @@ Notes:
 1. `publish` requires explicit `--remote-url` to prevent accidental pushes to the wrong repo.
 2. By default, publish is blocked if marker is stale (public has un-ingested commits).
 3. Publish copies internal tree into a temporary workspace, applies excludes and scrubs, verifies leaks, commits on public history, then pushes.
+
+### 5) Commit message policy for publish commits
+
+Use a descriptive commit message that reflects the actual change in the sanitized public tree for normal product/feature/fix updates.
+
+Examples:
+
+- `feat(cli): rename --agent-mode flag to --json`
+- `docs: update CLI quickstart commands`
+- `fix(scoring): guard depth-row shape validation`
+
+Use a neutral sync/sanitization message only when the publish commit is primarily about sanitization/sync mechanics or could reveal sensitive internal workflow/context details via a descriptive title.
+
+Always avoid sensitive terms/path references in public-facing commit messages (for example: `.aicrowd`, `.agent`, `sanitize`, `filter-repo`, or direct sensitive file paths).
 
 ## Standard Daily Workflow
 
@@ -196,7 +210,7 @@ After internal changes are merged and tested:
 bash .aicrowd/scripts/public-sync.sh publish \
   --source-branch main \
   --remote-url https://github.com/AIcrowd/circuit-estimation-challenge-internal.git \
-  --message "sync: mirror internal updates"
+  --message "feat: <describe actual visible change>"
 ```
 
 ## Emergency Leak Response
@@ -235,7 +249,9 @@ bash .aicrowd/scripts/public-sync.sh mark
 3. Do not push internal branch directly to public remote.
 4. Keep sensitive manifests in sync when adding new internal workflow surfaces.
 5. Run status and leak checks before and after publish.
-6. Use neutral commit messages for sync/sanitization-adjacent commits. Avoid explicit terms like `sanitize`, `filter-repo`, `.aicrowd`, `.agent`, or direct sensitive path names in public-facing history.
+6. Default rule: use descriptive commit messages for normal feature/fix/docs updates published to public.
+7. Exception: use neutral commit messages only for sync/sanitization-adjacent changes that might expose sensitive internal workflow/context details.
+8. In all cases, avoid explicit sensitive terms/path references like `sanitize`, `filter-repo`, `.aicrowd`, `.agent`, or direct sensitive path names in public-facing history.
 
 ## Validation Checklist
 
