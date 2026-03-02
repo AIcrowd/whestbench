@@ -7,14 +7,16 @@ import CanvasTooltip from "./CanvasTooltip";
 import InfoTip from "./InfoTip";
 
 const SERIES_COLORS = {
-  sampling:  "#F0524D",  // coral
-  meanProp:  "#94A3B8",  // slate
+  sampling:  "#F0524D",  // Coral (+1)
+  covProp:   "#B29F9E",  // Blended midpoint/neutral
+  meanProp:  "#334155",  // Dark Slate (-1)
 };
 
 export default function EstimatorComparison({
   groundTruth,
   samplingEstimates,
   meanPropEstimates,
+  covPropEstimates,
   depth,
   activeLayer,
 }) {
@@ -26,11 +28,13 @@ export default function EstimatorComparison({
     if (!groundTruth) return null;
     const hasSampling = !!samplingEstimates;
     const hasMeanProp = !!meanPropEstimates;
+    const hasCovProp = !!covPropEstimates;
     const layers = Math.min(
       depth,
       groundTruth.length,
       hasSampling ? samplingEstimates.length : Infinity,
-      hasMeanProp ? meanPropEstimates.length : Infinity
+      hasMeanProp ? meanPropEstimates.length : Infinity,
+      hasCovProp ? covPropEstimates.length : Infinity
     );
 
     const result = [];
@@ -51,10 +55,17 @@ export default function EstimatorComparison({
         }
         entry.meanProp = mse / n;
       }
+      if (hasCovProp) {
+        let mse = 0;
+        for (let i = 0; i < n; i++) {
+          mse += (covPropEstimates[l][i] - groundTruth[l][i]) ** 2;
+        }
+        entry.covProp = mse / n;
+      }
       result.push(entry);
     }
     return result;
-  }, [groundTruth, samplingEstimates, meanPropEstimates, depth]);
+  }, [groundTruth, samplingEstimates, meanPropEstimates, covPropEstimates, depth]);
 
   useEffect(() => {
     if (!canvasRef.current || !mseData || mseData.length === 0) return;
@@ -79,12 +90,14 @@ export default function EstimatorComparison({
     const d = mseData.length;
     const hasSampling = mseData[0].sampling !== undefined;
     const hasMeanProp = mseData[0].meanProp !== undefined;
+    const hasCovProp = mseData[0].covProp !== undefined;
 
     // Find max MSE for y-axis
     let maxMSE = 0;
     for (const entry of mseData) {
       if (hasSampling && entry.sampling > maxMSE) maxMSE = entry.sampling;
       if (hasMeanProp && entry.meanProp > maxMSE) maxMSE = entry.meanProp;
+      if (hasCovProp && entry.covProp > maxMSE) maxMSE = entry.covProp;
     }
     maxMSE = maxMSE * 1.15 || 0.01; // 15% headroom
 
@@ -92,7 +105,7 @@ export default function EstimatorComparison({
     const yScale = (v) => PAD.top + (1 - v / maxMSE) * plotH;
 
     // Store layout for hover
-    layoutRef.current = { PAD, plotW, d, hasSampling, hasMeanProp };
+    layoutRef.current = { PAD, plotW, d, hasSampling, hasMeanProp, hasCovProp };
 
     // Grid lines
     ctx.strokeStyle = "rgba(156,163,175,0.2)";
@@ -135,6 +148,7 @@ export default function EstimatorComparison({
 
     if (hasSampling) drawSeries("sampling", SERIES_COLORS.sampling);
     if (hasMeanProp) drawSeries("meanProp", SERIES_COLORS.meanProp);
+    if (hasCovProp) drawSeries("covProp", SERIES_COLORS.covProp);
 
     // Active layer highlight
     if (activeLayer != null && activeLayer >= 0 && activeLayer < d) {
@@ -216,11 +230,14 @@ export default function EstimatorComparison({
         />
       </div>
       <div className="formula-legend" style={{ marginTop: 4 }}>
-        {layoutRef.current?.hasSampling && (
+        {!!samplingEstimates && (
           <span style={{ color: SERIES_COLORS.sampling }}>● Sampling Error</span>
         )}
-        {layoutRef.current?.hasMeanProp && (
+        {!!meanPropEstimates && (
           <span style={{ color: SERIES_COLORS.meanProp }}>● Mean Prop Error</span>
+        )}
+        {!!covPropEstimates && (
+          <span style={{ color: SERIES_COLORS.covProp }}>● Cov Prop Error</span>
         )}
       </div>
       <CanvasTooltip visible={!!hover} pageX={hover?.pageX} pageY={hover?.pageY}>
@@ -246,6 +263,15 @@ export default function EstimatorComparison({
                     Mean Prop MSE
                   </span>
                   <span className="canvas-tip-value">{fmtMSE(hData.meanProp)}</span>
+                </div>
+              )}
+              {hData.covProp !== undefined && (
+                <div className="canvas-tip-row">
+                  <span className="canvas-tip-label">
+                    <span className="canvas-tip-swatch" style={{ background: SERIES_COLORS.covProp }} />
+                    Cov Prop MSE
+                  </span>
+                  <span className="canvas-tip-value">{fmtMSE(hData.covProp)}</span>
                 </div>
               )}
             </div>

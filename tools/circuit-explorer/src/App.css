@@ -3,22 +3,28 @@
    See STYLE_GUIDE.md for design decisions.
    ====================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;1,14..32,400&family=Montserrat:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
   /* Core */
   --coral:        #F0524D;
-  --coral-hover:  #E04440;
+  --coral-hover:  #EE403A;
+  --coral-hover:  #D23934;
+  --coral-pressed:#D23934;
   --coral-light:  #FEF2F1;
 
   /* Neutrals */
   --white:    #FFFFFF;
-  --gray-50:  #F8F9FA;
+  --gray-50:  #F8F9F9;
   --gray-100: #F1F3F5;
-  --gray-200: #E0E0E0;
-  --gray-400: #9CA3AF;
+  --gray-200: #D9DCDC;
+  --gray-400: #AAACAD;
   --gray-600: #5D5F60;
-  --gray-900: #1F1F1F;
+  --gray-900: #292C2D;
+
+  /* Semantic */
+  --success:  #23B761;
+  --warning:  #FA9E33;
 
   /* Chart palette (from circuit gate colors) */
   --chart-1:  #D1D5DB;  /* constant — light gray */
@@ -28,11 +34,12 @@
   --chart-5:  #F7A09D;  /* mixed — coral tint */
 
   /* Typography */
-  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-accent: 'Montserrat', sans-serif;
   --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
 
   /* Layout */
-  --radius:    10px;
+  --radius:    8px;
   --radius-sm: 8px;
   --radius-pill: 20px;
   --sidebar-w: 280px;
@@ -71,6 +78,7 @@ body {
 }
 
 .app-header h1 {
+  font-family: var(--font-accent);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -81,7 +89,7 @@ body {
 }
 
 .header-logo {
-  height: 24px;
+  height: 50px;
   width: auto;
   display: block;
 }
@@ -226,6 +234,7 @@ body {
 .control-value-input::-webkit-outer-spin-button,
 .control-value-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
+  appearance: none;
   margin: 0;
 }
 
@@ -294,7 +303,7 @@ body {
   background: var(--coral);
   color: #fff;
   border: none;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius);
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 12px;
@@ -306,10 +315,11 @@ body {
 .regenerate-btn:hover {
   background: var(--coral-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(240, 82, 77, 0.25);
+  box-shadow: 0 4px 12px var(--coral-light);
 }
 
 .regenerate-btn:active {
+  background: var(--coral-pressed);
   transform: translateY(0);
 }
 
@@ -375,9 +385,10 @@ body {
   flex-shrink: 0;
 }
 
-.estimator-badge--gt       { background: var(--coral); }
-.estimator-badge--sampling { background: var(--gray-900); }
-.estimator-badge--meanprop { background: var(--gray-600); }
+.estimator-badge--gt       { background: var(--gray-900); }
+.estimator-badge--sampling { background: var(--coral); }
+.estimator-badge--covprop  { background: #B29F9E; }
+.estimator-badge--meanprop { background: #334155; }
 
 .estimator-card-title {
   font-size: 12px;
@@ -413,7 +424,7 @@ body {
   width: 100%;
   padding: 8px 16px;
   border: none;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius);
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 12px;
@@ -436,30 +447,39 @@ body {
 }
 
 .run-btn-gt {
-  background: var(--coral);
-  box-shadow: 0 2px 6px rgba(240, 82, 77, 0.2);
+  background: var(--gray-900);
+  box-shadow: 0 2px 6px rgba(41, 44, 45, 0.2);
 }
 
 .run-btn-gt:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(240, 82, 77, 0.35);
+  box-shadow: 0 4px 12px rgba(41, 44, 45, 0.35);
 }
 
 .run-btn-sampling {
-  background: var(--gray-900);
-  box-shadow: 0 2px 6px rgba(31, 31, 31, 0.15);
+  background: var(--coral);
+  box-shadow: 0 2px 6px rgba(240, 82, 77, 0.15);
 }
 
 .run-btn-sampling:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(31, 31, 31, 0.3);
+  box-shadow: 0 4px 12px rgba(240, 82, 77, 0.3);
 }
 
 .run-btn-meanprop {
-  background: var(--gray-600);
-  box-shadow: 0 2px 6px rgba(93, 95, 96, 0.15);
+  background: #334155;
+  box-shadow: 0 2px 6px rgba(51, 65, 85, 0.15);
 }
 
 .run-btn-meanprop:hover:not(:disabled) {
-  box-shadow: 0 4px 12px rgba(93, 95, 96, 0.3);
+  box-shadow: 0 4px 12px rgba(51, 65, 85, 0.3);
+}
+
+.run-btn-covprop {
+  background: #B29F9E;
+  box-shadow: 0 2px 6px rgba(178, 159, 158, 0.2);
+}
+
+.run-btn-covprop:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(178, 159, 158, 0.35);
 }
 
 /* Inline results inside estimator cards */
@@ -634,12 +654,45 @@ body {
   text-align: center;
 }
 
-.empty-icon {
-  font-size: 32px;
+.empty-state-motif {
+  margin: 0 auto 16px auto;
   display: block;
-  margin-bottom: 8px;
-  color: var(--gray-400);
+  animation: floatMotif 4s ease-in-out infinite;
 }
+
+@keyframes floatMotif {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+  100% { transform: translateY(0px); }
+}
+
+.motif-bg {
+  fill: var(--white);
+  stroke: var(--gray-200);
+}
+
+.motif-wire-dash {
+  stroke: var(--gray-200);
+  stroke-dasharray: 3 3;
+}
+
+.motif-wire {
+  stroke: var(--gray-100);
+}
+
+.motif-link {
+  stroke: var(--gray-300);
+}
+
+.motif-node {
+  fill: var(--white);
+}
+
+.motif-node-gt { stroke: var(--coral); }
+.motif-node-samp { stroke: var(--gray-900); }
+.motif-node-mean { stroke: var(--gray-600); }
+.motif-node-cov { stroke: #AAACAD; }
+.motif-node-center { fill: var(--coral); }
 
 .empty-state p {
   color: var(--gray-400);

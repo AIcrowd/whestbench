@@ -364,9 +364,6 @@ export default function App() {
             <>
 
 
-              {displayCircuit && <GateStats circuit={displayCircuit} activeLayer={activeLayer} />}
-
-
               {hasAnyExploreEstimate && (
                 <>
                   {/* Row 1: Output Variance (per wire) | E[wire] Distribution (across wires) */}
@@ -403,9 +400,13 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Row 2b: Error by Gate Type */}
-                  {groundTruth && (samplingEst || meanPropEst) && displayCircuit && (
-                    <div className="panel-reveal">
+                  {/* Row 2b: Gate Structure & Error by Gate Type */}
+                  {displayCircuit && (
+                    <div className="panels-row panel-reveal">
+                      <GateStats
+                        circuit={displayCircuit}
+                        activeLayer={activeLayer}
+                      />
                       <ErrorByGateType
                         circuit={displayCircuit}
                         groundTruth={groundTruth}
@@ -451,7 +452,23 @@ export default function App() {
               {!hasAnyExploreEstimate && (
                 <div className="empty-state">
                   <div className="empty-state-inner">
-                    <span className="empty-icon">📊</span>
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="empty-state-motif">
+                      <rect x="8" y="8" width="48" height="48" rx="12" className="motif-bg" strokeWidth="1.5" />
+                      
+                      <path d="M 8 32 h 48 M 32 8 v 48" className="motif-wire-dash" strokeWidth="1.5" />
+                      <path d="M 20 20 v 24 M 44 20 v 24 M 20 20 h 24 M 20 44 h 24" className="motif-wire" strokeWidth="1.5" />
+
+                      <path d="M 20 32 L 32 20 L 44 32 L 32 44 Z" fill="var(--white)" />
+                      <path d="M 20 32 L 32 20 L 44 32 L 32 44 Z" className="motif-link" strokeWidth="1.5" strokeLinejoin="round" />
+                      <path d="M 32 20 L 32 44 M 20 32 L 44 32" className="motif-wire" strokeWidth="1.5" />
+
+                      <circle cx="32" cy="20" r="4.5" className="motif-node motif-node-mean" strokeWidth="2" />
+                      <circle cx="20" cy="32" r="4.5" className="motif-node motif-node-cov" strokeWidth="2" />
+                      <circle cx="44" cy="32" r="4.5" className="motif-node motif-node-samp" strokeWidth="2" />
+                      <circle cx="32" cy="44" r="4.5" className="motif-node motif-node-gt" strokeWidth="2" />
+                      
+                      <circle cx="32" cy="32" r="3" className="motif-node-center" />
+                    </svg>
                     <h3>Ready to Explore</h3>
                     <p>
                       This circuit has{" "}

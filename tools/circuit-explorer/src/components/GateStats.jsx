@@ -1,27 +1,12 @@
 /**
  * GateStats — Canvas-rendered stacked bar chart.
- * Shows per-layer dominant coefficient composition as a stacked bar.
- * One bar per layer, each segment colored by coefficient type.
+ * Shows per-layer gate type distribution as a stacked bar.
+ * One bar per layer, each segment colored by boolean gate type.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CanvasTooltip from "./CanvasTooltip";
 import InfoTip from "./InfoTip";
-
-/* ── Strict palette from circuit gate colors ── */
-const COLORS = {
-  c: "#8B95A2",   // bias — medium gray
-  a: "#5B7BA8",   // first input — steel blue
-  b: "#1E293B",   // second input — near-black slate
-  p: "#F0524D",   // product — coral
-};
-
-const COEFF_META = {
-  c: { label: "constant bias",     fill: COLORS.c },
-  a: { label: "first input (x)",   fill: COLORS.a },
-  b: { label: "second input (y)",  fill: COLORS.b },
-  p: { label: "interaction (x·y)", fill: COLORS.p },
-};
-const KEYS = ["c", "a", "b", "p"];
+import { classifyGate, GATE_TYPE_FONT, GATE_TYPES } from "./gateShapes";
 
 export default function GateStats({ circuit, activeLayer }) {
   const canvasRef = useRef(null);
@@ -34,22 +19,21 @@ export default function GateStats({ circuit, activeLayer }) {
     const result = [];
     for (let l = 0; l < d; l++) {
       const layer = gates[l];
-      let cCount = 0, aCount = 0, bCount = 0, pCount = 0;
-      for (let i = 0; i < n; i++) {
-        const cv = Math.abs(layer.const[i]);
-        const av = Math.abs(layer.firstCoeff[i]);
-        const bv = Math.abs(layer.secondCoeff[i]);
-        const pv = Math.abs(layer.productCoeff[i]);
-        const max = Math.max(cv, av, bv, pv);
-        if (max === pv) pCount++;
-        else if (max === cv) cCount++;
-        else if (max === av) aCount++;
-        else bCount++;
+      const counts = {};
+      Object.keys(GATE_TYPES).forEach(k => counts[k] = 0);
+      for (let w = 0; w < n; w++) {
+        const info = classifyGate(layer, w);
+        counts[info.type] = (counts[info.type] || 0) + 1;
       }
-      result.push({ c: cCount, a: aCount, b: bCount, p: pCount, total: n });
+      result.push({ ...counts, total: n });
     }
     return result;
   }, [circuit]);
+
+  const availableTypes = useMemo(() => {
+    if (!layerData.length) return [];
+    return Object.keys(GATE_TYPES).filter(k => layerData.some(d => d[k] > 0));
+  }, [layerData]);
 
   useEffect(() => {
     if (!canvasRef.current || layerData.length === 0) return;
@@ -85,11 +69,11 @@ export default function GateStats({ circuit, activeLayer }) {
       const data = layerData[l];
       const isActive = l === activeLayer;
 
-      for (const key of KEYS) {
+      for (const key of availableTypes) {
         const count = data[key];
         const segH = (count / maxVal) * plotH;
         yStack -= segH;
-        ctx.fillStyle = COLORS[key];
+        ctx.fillStyle = GATE_TYPES[key].color;
         ctx.globalAlpha = isActive ? 1.0 : 0.85;
         ctx.fillRect(x, yStack, barW, segH);
       }
@@ -120,7 +104,7 @@ export default function GateStats({ circuit, activeLayer }) {
     ctx.fillText("100%", PAD.left - 4, PAD.top + 4);
     ctx.fillText("50%", PAD.left - 4, PAD.top + plotH / 2 + 3);
     ctx.fillText("0%", PAD.left - 4, PAD.top + plotH + 3);
-  }, [layerData, activeLayer]);
+  }, [layerData, activeLayer, availableTypes]);
 
   const handleMouseMove = useCallback((e) => {
     if (!layoutRef.current || layerData.length === 0) return;
@@ -148,22 +132,16 @@ export default function GateStats({ circuit, activeLayer }) {
         <InfoTip>
           <span className="tip-title">Gate Structure</span>
           <p className="tip-desc">
-            Stacked bar chart showing which coefficient type dominates each gate per layer.
+            Stacked bar chart showing the distribution of Boolean gate types per layer.
           </p>
           <div className="tip-sep" />
-          <div className="tip-kv"><span className="tip-kv-key">Each bar</span><span className="tip-kv-val">Segments gates by largest absolute coefficient</span></div>
-          <div className="tip-kv"><span className="tip-kv-key"><span className="tip-mono">c</span></span><span className="tip-kv-val">Constant bias</span></div>
-          <div className="tip-kv"><span className="tip-kv-key"><span className="tip-mono">a</span>, <span className="tip-mono">b</span></span><span className="tip-kv-val">First / second input weights</span></div>
-          <div className="tip-kv"><span className="tip-kv-key"><span className="tip-mono">p</span></span><span className="tip-kv-val">Product interaction (x·y)</span></div>
+          <div className="tip-kv"><span className="tip-kv-key">Each bar</span><span className="tip-kv-val">Shows the proportion of different gate types (e.g., AND, XOR) in that layer</span></div>
           <div className="tip-sep" />
           <p className="tip-desc">
-            <span className="tip-highlight">Product-heavy</span> layers are harder to estimate — x·y creates non-linear wire dependencies.
+            Gate types with non-linear cross-terms like <span className="tip-highlight">AND / OR</span> are harder to estimate than linear gates like <span className="tip-highlight">XOR</span>.
           </p>
         </InfoTip>
       </h2>
-      <div className="gate-formula-explain">
-        <code className="formula-box">out = c + a·x + b·y + p·x·y</code>
-      </div>
       <div style={{ width: "100%", overflowX: "auto" }}>
         <canvas
           ref={canvasRef}
@@ -172,17 +150,16 @@ export default function GateStats({ circuit, activeLayer }) {
           style={{ cursor: "crosshair" }}
         />
       </div>
-      <div className="formula-legend" style={{ marginTop: 4 }}>
-        {KEYS.map(k => (
-          <span key={k} style={{ color: COEFF_META[k].fill }}>
-            ■ <strong>{k}</strong> {COEFF_META[k].label}
+      <div className="formula-legend" style={{ marginTop: 4, display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        {availableTypes.map(k => (
+          <span key={k} style={{ color: GATE_TYPES[k].color }}>
+            ■ <strong style={{ fontFamily: GATE_TYPE_FONT }}>{GATE_TYPES[k].symbol}</strong> {k}
           </span>
         ))}
       </div>
       <p className="panel-desc">
-        Each gate's output depends on inputs <em>x</em>, <em>y</em> ∈ {"{"}−1, +1{"}"}.
-        <strong> Product-heavy</strong> circuits are harder to estimate because
-        the x·y interaction creates non-linear dependencies between wires.
+        Visualizes the composition of boolean gates across the circuit's depth.
+        Different gate types pose distinct challenges for estimators (e.g., non-linear vs. linear gates).
       </p>
       <CanvasTooltip visible={!!hover} pageX={hover?.pageX} pageY={hover?.pageY}>
         {hData && (
@@ -191,20 +168,26 @@ export default function GateStats({ circuit, activeLayer }) {
               Layer <span className="layer-num">{hover.layer}</span>
             </div>
             <div className="canvas-tip-rows">
-              {KEYS.map(k => (
-                <div className="canvas-tip-row" key={k}>
-                  <span className="canvas-tip-label">
-                    <span className="canvas-tip-swatch" style={{ background: COLORS[k] }} />
-                    {k} — {COEFF_META[k].label}
-                  </span>
-                  <span className="canvas-tip-value">
-                    {hData[k]} gates
-                    <span className="canvas-tip-sub">
-                      ({(hData[k] / hData.total * 100).toFixed(1)}%)
+              {availableTypes.slice().sort((a, b) => (hData[b] || 0) - (hData[a] || 0)).map(k => {
+                if (hData[k] === 0) return null;
+                return (
+                  <div className="canvas-tip-row" key={k}>
+                    <span className="canvas-tip-label">
+                      <span className="canvas-tip-swatch" style={{ background: GATE_TYPES[k].color }} />
+                      <span style={{ fontFamily: GATE_TYPE_FONT, marginRight: 4, fontWeight: 'bold', color: GATE_TYPES[k].color }}>
+                        {GATE_TYPES[k].symbol}
+                      </span>
+                      {k}
                     </span>
-                  </span>
-                </div>
-              ))}
+                    <span className="canvas-tip-value">
+                      {hData[k]} gates
+                      <span className="canvas-tip-sub">
+                        ({(hData[k] / hData.total * 100).toFixed(1)}%)
+                      </span>
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </>
         )}

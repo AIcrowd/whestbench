@@ -70,6 +70,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
   const [tooltip, setTooltip] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [zoomPct, setZoomPct] = useState(100);
+  const [panelHeight, setPanelHeight] = useState(350);
   const hasMeans = means && means.some((row) => row && row.some((v) => v !== null && v !== undefined));
 
   /* Dragging state for tooltip */
@@ -103,6 +104,28 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
   }, [tooltipPos]);
+
+  /* Panel resizing */
+  const onPanelDragStart = useCallback((e) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startHeight = panelHeight;
+
+    const onMove = (me) => {
+      const newHeight = Math.max(200, startHeight + (me.clientY - startY));
+      setPanelHeight(newHeight);
+    };
+
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+    };
+
+    document.body.style.cursor = "ns-resize";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [panelHeight]);
 
   /* Helper: reset all highlights */
   function resetHighlights(graph) {
@@ -612,6 +635,35 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [tooltip]);
 
+  /* ---- Resize Observer (dynamic resize) ---- */
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+
+    let rafId = null;
+
+    const observer = new ResizeObserver((entries) => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        for (const entry of entries) {
+          if (entry.target === el) {
+            const paper = paperRef.current;
+            if (paper) {
+              const { width, height } = entry.contentRect;
+              paper.setDimensions(width, height);
+            }
+          }
+        }
+      });
+    });
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   /* ---- layer dimming (external control) ---- */
   useEffect(() => {
     const g = graphRef.current;
@@ -669,13 +721,34 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
         className="joint-container"
         style={{
           overflow: "hidden",
-          minHeight: 350,
+          height: panelHeight,
           border: "1px solid #E5E7EB",
-          borderRadius: 8,
+          borderBottom: "none",
+          borderTopLeftRadius: 8,
+          borderTopRightRadius: 8,
           width: "100%",
           background: "#FCFCFC",
         }}
       />
+      {/* Custom full-width drag handle */}
+      <div
+        className="circuit-graph-resizer"
+        onMouseDown={onPanelDragStart}
+        style={{
+          height: 14,
+          background: "#F8F9FA",
+          border: "1px solid #E5E7EB",
+          borderBottomLeftRadius: 8,
+          borderBottomRightRadius: 8,
+          cursor: "ns-resize",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          userSelect: "none"
+        }}
+      >
+        <div style={{ width: 36, height: 4, background: "#CBD5E1", borderRadius: 2 }} />
+      </div>
 
       {/* Draggable tooltip */}
       {tooltip && (

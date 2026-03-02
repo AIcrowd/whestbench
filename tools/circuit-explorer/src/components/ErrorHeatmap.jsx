@@ -23,12 +23,14 @@ function errorToRGB(err, maxErr) {
 
 const ESTIMATORS = {
   meanprop: { label: "Mean Propagation", key: "meanprop" },
+  covprop:  { label: "Cov Propagation",  key: "covprop" },
   sampling: { label: "Sampling", key: "sampling" },
 };
 
 export default function ErrorHeatmap({
   groundTruth,
   meanPropEstimates,
+  covPropEstimates,
   samplingEstimates,
   width: n,
   depth: d,
@@ -43,9 +45,10 @@ export default function ErrorHeatmap({
   const availableEstimators = useMemo(() => {
     const avail = [];
     if (groundTruth && meanPropEstimates) avail.push("meanprop");
+    if (groundTruth && covPropEstimates) avail.push("covprop");
     if (groundTruth && samplingEstimates) avail.push("sampling");
     return avail;
-  }, [groundTruth, meanPropEstimates, samplingEstimates]);
+  }, [groundTruth, meanPropEstimates, covPropEstimates, samplingEstimates]);
 
   // Auto-select when availability changes
   useEffect(() => {
@@ -60,9 +63,10 @@ export default function ErrorHeatmap({
   // Pick the active estimates based on selection
   const activeEstimates = useMemo(() => {
     if (selectedEstimator === "meanprop") return meanPropEstimates;
+    if (selectedEstimator === "covprop") return covPropEstimates;
     if (selectedEstimator === "sampling") return samplingEstimates;
     return null;
-  }, [selectedEstimator, meanPropEstimates, samplingEstimates]);
+  }, [selectedEstimator, meanPropEstimates, covPropEstimates, samplingEstimates]);
 
   const { errors, maxErr } = useMemo(() => {
     if (!groundTruth || !activeEstimates) return { errors: null, maxErr: 0 };
@@ -143,7 +147,11 @@ export default function ErrorHeatmap({
   const hasData = !!errors;
 
   return (
-    <div className="panel" ref={containerRef}>
+    <div
+      className="panel"
+      ref={containerRef}
+      style={!hasData ? { display: 'flex', flexDirection: 'column', height: '100%' } : {}}
+    >
       <div className="error-heatmap-header">
         <h2>
           Estimation Error
@@ -182,7 +190,7 @@ export default function ErrorHeatmap({
       </div>
 
       {!hasData ? (
-        <div className="error-heatmap-empty">
+        <div className="error-heatmap-empty" style={{ flex: 1 }}>
           <div className="error-heatmap-empty-grid">
             {Array.from({ length: 6 }).map((_, r) => (
               <div key={r} className="error-heatmap-empty-row">
@@ -193,7 +201,7 @@ export default function ErrorHeatmap({
             ))}
           </div>
           <p className="error-heatmap-empty-msg">
-            Run an estimator to populate this plot
+            Run Ground Truth sampling and an estimator to populate this plot
           </p>
         </div>
       ) : (
