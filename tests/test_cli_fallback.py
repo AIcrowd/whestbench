@@ -50,7 +50,9 @@ def test_human_mode_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
     assert "Best Budget Score: 0.3" in captured.out
 
 
-def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(monkeypatch, capsys) -> None:
+def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
+    monkeypatch, capsys
+) -> None:
     monkeypatch.setattr(cli, "score_submission_report", lambda *_a, **_k: _sample_report())
 
     def fail_render(*_args, **_kwargs):

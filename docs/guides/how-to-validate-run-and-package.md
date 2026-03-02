@@ -36,7 +36,7 @@ Repository harness script:
 
 ## Debug Mode
 
-Use `--debug` to surface tracebacks and `--agent-mode` for structured JSON:
+Use `--debug` to surface tracebacks and `--json` for structured JSON:
 
 ```bash
 cestim run \
@@ -45,7 +45,7 @@ cestim run \
   --detail full \
   --profile \
   --debug \
-  --agent-mode
+  --json
 ```
 
 ## Package
