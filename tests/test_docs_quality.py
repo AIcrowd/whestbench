@@ -10,12 +10,16 @@ def test_readme_contains_onboarding_sections() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8")
     required = [
-        "## What This Repository Teaches",
-        "## Conceptual Problem Overview",
-        "## How Evaluation Works (End-to-End)",
-        "## Codebase Map (Suggested Reading Order)",
-        "## Quickstart",
-        "## Extending the Estimator",
+        "## What Is The Problem?",
+        "## How Scoring Works",
+        "## Install And Get The CLI Working (Short Version)",
+        "## Participant Workflow",
+        "## Circuit Explorer: Build Intuition Fast",
+        "## How To Write Your Own Estimator",
+        "## Validate, Run, Package, And Local Modes",
+        "## What The Scores Mean",
+        "## Included Example Estimators",
+        "## Documentation Map",
         "## Verification Commands",
     ]
     for heading in required:
@@ -94,17 +98,27 @@ def test_docs_do_not_reference_predict_batch_contract() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     paths = [
         repo_root / "README.md",
-        repo_root / "docs/guides/participant-streaming-estimator-guide.md",
+        repo_root / "docs/guides/how-to-write-your-own-estimator.md",
+        repo_root / "docs/guides/example-estimators-and-how-to-run-them.md",
     ]
     for path in paths:
         text = path.read_text(encoding="utf-8").lower()
         assert "predict_batch" not in text, str(path)
 
 
-def test_readme_links_streaming_participant_guide() -> None:
+def test_readme_links_primary_guides() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
-    assert "docs/guides/participant-streaming-estimator-guide.md" in text
+    required_links = [
+        "docs/guides/install-and-cli-quickstart.md",
+        "docs/guides/what-is-the-problem-and-how-is-it-scored.md",
+        "docs/guides/how-to-use-circuit-explorer.md",
+        "docs/guides/how-to-write-your-own-estimator.md",
+        "docs/guides/how-to-validate-run-and-package.md",
+        "docs/guides/example-estimators-and-how-to-run-them.md",
+    ]
+    for link in required_links:
+        assert link in text
 
 
 def test_readme_documents_cestim_install_and_usage() -> None:
@@ -128,7 +142,7 @@ def test_examples_estimators_folder_contains_starter_classes() -> None:
 def test_onboarding_docs_recommend_random_estimator_first() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
-    guide = (repo_root / "docs/guides/participant-streaming-estimator-guide.md").read_text(
+    guide = (repo_root / "docs/guides/example-estimators-and-how-to-run-them.md").read_text(
         encoding="utf-8"
     )
 
