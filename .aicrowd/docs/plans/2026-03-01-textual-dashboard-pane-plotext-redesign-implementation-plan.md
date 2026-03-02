@@ -354,8 +354,8 @@ git commit -m "feat: finalize dark pane visual system for textual dashboard"
 **Files:**
 - Modify: `src/circuit_estimation/reporting.py`
 - Modify: `README.md`
-- Modify: `docs/context/mvp-technical-snapshot.md`
-- Modify: `docs/context/python-runtime-refactor-decisions.md`
+- Modify: `.aicrowd/docs/context/mvp-technical-snapshot.md`
+- Modify: `.aicrowd/docs/context/python-runtime-refactor-decisions.md`
 
 **Step 1: Write the failing test**
 
@@ -378,7 +378,7 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git add src/circuit_estimation/reporting.py README.md docs/context/mvp-technical-snapshot.md docs/context/python-runtime-refactor-decisions.md
+git add src/circuit_estimation/reporting.py README.md .aicrowd/docs/context/mvp-technical-snapshot.md .aicrowd/docs/context/python-runtime-refactor-decisions.md
 git commit -m "docs: align dashboard contract and fallback messaging"
 ```
 
@@ -421,7 +421,7 @@ Skip if no files changed.
 
 ---
 
-Plan complete and saved to `docs/plans/2026-03-01-textual-dashboard-pane-plotext-redesign-implementation-plan.md`. Two execution options:
+Plan complete and saved to `.aicrowd/docs/plans/2026-03-01-textual-dashboard-pane-plotext-redesign-implementation-plan.md`. Two execution options:
 
 1. Subagent-Driven (this session) - I dispatch fresh subagent per task, review between tasks, fast iteration
 2. Parallel Session (separate) - Open new session with executing-plans, batch execution with checkpoints

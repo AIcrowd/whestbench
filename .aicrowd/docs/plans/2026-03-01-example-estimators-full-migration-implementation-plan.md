@@ -179,15 +179,15 @@ git commit -m "docs(cli): point participant workflow to examples estimators"
 
 **Files:**
 - Modify: `README.md`
-- Modify: `docs/context/mvp-technical-snapshot.md`
-- Modify: `docs/context/python-runtime-refactor-decisions.md`
+- Modify: `.aicrowd/docs/context/mvp-technical-snapshot.md`
+- Modify: `.aicrowd/docs/context/python-runtime-refactor-decisions.md`
 
 **Step 1: Write the failing docs check**
 
 Run:
 
 ```bash
-rg -n "examples/estimators|BaseEstimator|Estimator\(BaseEstimator\)|function-style|full migration" README.md docs/context/*.md
+rg -n "examples/estimators|BaseEstimator|Estimator\(BaseEstimator\)|function-style|full migration" README.md .aicrowd/docs/context/*.md
 ```
 
 Expected: missing wording before update.
@@ -212,7 +212,7 @@ Run the same `rg` command; expected required phrases present.
 **Step 5: Commit**
 
 ```bash
-git add README.md docs/context/mvp-technical-snapshot.md docs/context/python-runtime-refactor-decisions.md
+git add README.md .aicrowd/docs/context/mvp-technical-snapshot.md .aicrowd/docs/context/python-runtime-refactor-decisions.md
 git commit -m "docs: define full class-based estimator migration"
 ```
 

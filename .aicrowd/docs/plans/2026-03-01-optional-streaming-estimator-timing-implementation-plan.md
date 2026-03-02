@@ -317,9 +317,9 @@ git commit -m "refactor: migrate reference estimators to streaming outputs"
 
 **Files:**
 - Modify: `README.md`
-- Modify: `docs/context/mvp-technical-snapshot.md`
-- Modify: `docs/context/python-runtime-refactor-decisions.md`
-- Modify: `docs/plans/2026-03-01-estimator-sdk-and-runner-decoupling-design.md`
+- Modify: `.aicrowd/docs/context/mvp-technical-snapshot.md`
+- Modify: `.aicrowd/docs/context/python-runtime-refactor-decisions.md`
+- Modify: `.aicrowd/docs/plans/2026-03-01-estimator-sdk-and-runner-decoupling-design.md`
 - Modify: `tests/test_docs_quality.py`
 
 **Step 1: Write failing test**
@@ -349,7 +349,7 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git add README.md docs/context/mvp-technical-snapshot.md docs/context/python-runtime-refactor-decisions.md docs/plans/2026-03-01-estimator-sdk-and-runner-decoupling-design.md tests/test_docs_quality.py
+git add README.md .aicrowd/docs/context/mvp-technical-snapshot.md .aicrowd/docs/context/python-runtime-refactor-decisions.md .aicrowd/docs/plans/2026-03-01-estimator-sdk-and-runner-decoupling-design.md tests/test_docs_quality.py
 git commit -m "docs: remove predict_batch and standardize streaming estimator contract"
 ```
 
@@ -453,7 +453,7 @@ git commit -m "feat: add cli stream-contract validation error surfacing"
 ### Task 6B: Add Participant-Facing Streaming Guide
 
 **Files:**
-- Create: `docs/context/participant-streaming-estimator-guide.md`
+- Create: `.aicrowd/docs/context/participant-streaming-estimator-guide.md`
 - Modify: `README.md`
 - Modify: `tests/test_docs_quality.py`
 
@@ -488,7 +488,7 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git add docs/context/participant-streaming-estimator-guide.md README.md tests/test_docs_quality.py
+git add .aicrowd/docs/context/participant-streaming-estimator-guide.md README.md tests/test_docs_quality.py
 git commit -m "docs: add participant streaming estimator guide"
 ```
 

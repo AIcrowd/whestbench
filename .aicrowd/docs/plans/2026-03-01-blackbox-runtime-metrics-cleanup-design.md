@@ -88,14 +88,14 @@ No internal or per-layer estimator event assumptions are allowed.
 1. Add forbidden-field tests for `raw` and `full` detail payloads.
 2. Add scoring tests for scalar budget runtime fields and scalar adjusted score.
 3. Update reporting tests to remove dependencies on runtime-by-layer fields.
-4. Run repo-wide string audit for removed field names in `src/`, `tests/`, `README.md`, `docs/context/` and update docs accordingly.
+4. Run repo-wide string audit for removed field names in `src/`, `tests/`, `README.md`, `.aicrowd/docs/context/` and update docs accordingly.
 
 ## 9. Documentation Updates
 
 Update:
 
 - `README.md` scoring contract and examples,
-- `docs/context/python-runtime-refactor-decisions.md` decision log,
+- `.aicrowd/docs/context/python-runtime-refactor-decisions.md` decision log,
 
 to explicitly state:
 

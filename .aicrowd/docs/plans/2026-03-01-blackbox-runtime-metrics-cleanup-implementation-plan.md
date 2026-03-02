@@ -210,8 +210,8 @@ git commit -m "test: align CLI contract checks with blackbox metric cleanup"
 
 **Files:**
 - Modify: `README.md`
-- Modify: `docs/context/python-runtime-refactor-decisions.md`
-- Modify: `docs/context/mvp-technical-snapshot.md` (if contract fields listed there)
+- Modify: `.aicrowd/docs/context/python-runtime-refactor-decisions.md`
+- Modify: `.aicrowd/docs/context/mvp-technical-snapshot.md` (if contract fields listed there)
 
 **Step 1: Update README scoring contract section**
 
@@ -227,7 +227,7 @@ git commit -m "test: align CLI contract checks with blackbox metric cleanup"
 Run:
 
 ```bash
-rg -n "time_ratio_by_layer|adjusted_mse_by_layer|baseline_time_s_by_layer|effective_time_s_by_layer" README.md docs/context
+rg -n "time_ratio_by_layer|adjusted_mse_by_layer|baseline_time_s_by_layer|effective_time_s_by_layer" README.md .aicrowd/docs/context
 ```
 
 Expected: no stale contract references (except historical plan docs if intentionally retained).
@@ -235,7 +235,7 @@ Expected: no stale contract references (except historical plan docs if intention
 **Step 4: Commit**
 
 ```bash
-git add README.md docs/context/python-runtime-refactor-decisions.md docs/context/mvp-technical-snapshot.md
+git add README.md .aicrowd/docs/context/python-runtime-refactor-decisions.md .aicrowd/docs/context/mvp-technical-snapshot.md
 git commit -m "docs: enforce blackbox runtime observability contract"
 ```
 
@@ -251,10 +251,10 @@ git commit -m "docs: enforce blackbox runtime observability contract"
 Run:
 
 ```bash
-rg -n "time_ratio_by_layer|adjusted_mse_by_layer|baseline_time_s_by_layer|effective_time_s_by_layer" src tests README.md docs/context
+rg -n "time_ratio_by_layer|adjusted_mse_by_layer|baseline_time_s_by_layer|effective_time_s_by_layer" src tests README.md .aicrowd/docs/context
 ```
 
-Expected: no active contract usage in `src/`, `tests`, `README.md`, `docs/context`.
+Expected: no active contract usage in `src/`, `tests`, `README.md`, `.aicrowd/docs/context`.
 
 **Step 2: Run full quality gate**
 
@@ -271,7 +271,7 @@ Expected: all pass.
 **Step 3: Final commit**
 
 ```bash
-git add src/circuit_estimation/scoring.py src/circuit_estimation/reporting.py src/circuit_estimation/cli.py tests/test_scoring_module.py tests/test_reporting.py tests/test_cli.py README.md docs/context/python-runtime-refactor-decisions.md docs/context/mvp-technical-snapshot.md
+git add src/circuit_estimation/scoring.py src/circuit_estimation/reporting.py src/circuit_estimation/cli.py tests/test_scoring_module.py tests/test_reporting.py tests/test_cli.py README.md .aicrowd/docs/context/python-runtime-refactor-decisions.md .aicrowd/docs/context/mvp-technical-snapshot.md
 git commit -m "refactor: remove invalid layer runtime metrics for blackbox estimator contract"
 ```
 

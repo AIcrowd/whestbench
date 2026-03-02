@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19 + Vite, JointJS (existing), Recharts (existing), vanilla CSS
 
-**Design doc:** [`docs/plans/2026-03-01-circuit-explorer-redesign-design.md`](file:///Users/mohanty/work/AIcrowd/challenges/alignment-research-center/circuit-estimation/circuit-estimation-mvp/docs/plans/2026-03-01-circuit-explorer-redesign-design.md)
+**Design doc:** [`.aicrowd/docs/plans/2026-03-01-circuit-explorer-redesign-design.md`](file:///Users/mohanty/work/AIcrowd/challenges/alignment-research-center/circuit-estimation/circuit-estimation-mvp/.aicrowd/docs/plans/2026-03-01-circuit-explorer-redesign-design.md)
 
 ---
 
