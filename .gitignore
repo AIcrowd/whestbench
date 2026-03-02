@@ -227,3 +227,4 @@ internal codex config/
 .cursor/
 .roo/
 .windsurf/
+internal docs/sanitization/public-sync-state.local.env
