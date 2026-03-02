@@ -1,52 +1,5 @@
-# Install And CLI Quickstart
+# Moved: Install and CLI Quickstart
 
-This is the shortest path from clone to first run.
+This guide moved to:
 
-## 1) Install `uv`
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-## 2) Install the CLI from this repo
-
-```bash
-uv tool install -e .
-```
-
-This installs:
-
-- `cestim`
-- `circuit-estimation`
-
-## 3) Verify CLI works
-
-```bash
-cestim --json
-```
-
-## 4) Participant workflow commands
-
-```bash
-# scaffold starter estimator files
-cestim init ./my-estimator
-
-# validate your estimator contract
-cestim validate --estimator ./my-estimator/estimator.py
-
-# run local scoring
-cestim run --estimator ./my-estimator/estimator.py --runner subprocess
-
-# package submission artifact
-cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz
-```
-
-## Editable Invocation (Optional)
-
-Run directly from the current checkout without relying on a global CLI install:
-
-```bash
-uv run --with-editable . cestim --json
-```
-
-This is useful when iterating on local code and CLI behavior together.
+- [Install and CLI Quickstart](../getting-started/install-and-cli-quickstart.md)

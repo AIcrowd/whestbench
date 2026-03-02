@@ -1,7 +1,6 @@
-# Participant Streaming Estimator Guide (Moved)
+# Moved: Participant Streaming Estimator Guide
 
-This guide has moved to a simpler name:
+This guide moved to:
 
-- [How To Write Your Own Estimator](./how-to-write-your-own-estimator.md)
-
-Please update bookmarks and links.
+- [Write an Estimator](../how-to/write-an-estimator.md)
+- [Estimator Contract](../reference/estimator-contract.md)
