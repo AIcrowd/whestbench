@@ -1,4 +1,4 @@
-<img src="assets/logo/logo.png" alt="logo" style="max-height: 200px;">
+<img src="assets/logo/logo.png" alt="logo" style="max-height: 100px;">
 
 # ARC - Circuit Estimation Challenge
 
