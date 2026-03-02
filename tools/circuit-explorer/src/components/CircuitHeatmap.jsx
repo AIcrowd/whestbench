@@ -13,7 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { perfEnd, perfStart } from "../perf";
 import GateDetailOverlay from "./GateDetailOverlay";
 
-export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerClick }) {
+export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerClick, animLayer }) {
   const canvasRef = useRef(null);
   const overlayCanvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -150,6 +150,18 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
       ctx.strokeRect(activeLayer * dims.cellW, 0, dims.cellW, dims.height);
     }
 
+    // Animation wavefront
+    if (animLayer >= 0 && animLayer < d) {
+      ctx.fillStyle = "rgba(240, 82, 77, 0.10)";
+      ctx.fillRect(0, 0, (animLayer + 1) * dims.cellW, dims.height);
+      ctx.strokeStyle = "rgba(240, 82, 77, 0.8)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo((animLayer + 1) * dims.cellW, 0);
+      ctx.lineTo((animLayer + 1) * dims.cellW, dims.height);
+      ctx.stroke();
+    }
+
     if (layer === null || wire === null) return;
 
     ctx.strokeStyle = "rgba(255,255,255,0.6)";
@@ -178,12 +190,12 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
       dims.cellW,
       dims.cellH
     );
-  }, [dims, activeLayer]);
+  }, [dims, activeLayer, animLayer, d]);
 
-  // Redraw overlay when activeLayer changes
+  // Redraw overlay when activeLayer or animLayer changes
   useEffect(() => {
     drawCrosshair(null, null);
-  }, [activeLayer, drawCrosshair]);
+  }, [activeLayer, animLayer, drawCrosshair]);
 
   // Click handler — toggle activeLayer
   const handleClick = useCallback(

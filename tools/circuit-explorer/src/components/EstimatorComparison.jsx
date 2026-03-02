@@ -44,7 +44,7 @@ export default function EstimatorComparison({
         samplingData.push({ x: l, y: mse / n });
       }
       series.push(samplingData);
-      seriesNames.push('Sampling');
+      seriesNames.push('Sampling Error');
       colors.push('#F0524D');
     }
 
@@ -59,7 +59,7 @@ export default function EstimatorComparison({
         meanPropData.push({ x: l, y: mse / n });
       }
       series.push(meanPropData);
-      seriesNames.push('Mean Prop');
+      seriesNames.push('Mean Prop Error');
       colors.push('#94A3B8');
     }
 

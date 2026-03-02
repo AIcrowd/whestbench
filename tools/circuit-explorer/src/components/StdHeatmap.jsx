@@ -1,17 +1,33 @@
 /**
- * SignalHeatmap — Wire means heatmap using canvas rendering.
- * Uses meanToColor for exact palette matching (dark slate → white → coral).
+ * StdHeatmap — Wire × Layer standard deviation heatmap.
+ * Shows where activations are most variable (input-dependent).
+ * Low σ = dark (predictable), High σ = bright coral (variable).
  * Orientation: X-axis = Layer, Y-axis = Wire (matches circuit layout).
  */
 import { useEffect, useRef } from "react";
-import { meanToColor } from "./gateShapes";
 
-export default function SignalHeatmap({ means, width: n, depth: d, source }) {
+function stdToColor(std, maxStd) {
+  const t = Math.min(1, std / Math.max(0.01, maxStd));
+  const mapped = t * 2 - 1;
+  if (mapped < 0) {
+    const s = 1 + mapped;
+    const r = Math.round(51 + (255 - 51) * s);
+    const g = Math.round(65 + (255 - 65) * s);
+    const b = Math.round(85 + (255 - 85) * s);
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const r = Math.round(255 - (255 - 240) * mapped);
+    const g = Math.round(255 - (255 - 82) * mapped);
+    const b = Math.round(255 - (255 - 77) * mapped);
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+export default function StdHeatmap({ stds, width: n, depth: d }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    if (!means || means.length === 0 || !canvasRef.current) return;
-
+    if (!stds || stds.length === 0 || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const container = canvas.parentElement;
     const containerW = container.offsetWidth || 500;
@@ -40,13 +56,20 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, totalW, totalH);
 
+    // Find global max std
+    let maxStd = 0;
+    for (let l = 0; l < d && l < stds.length; l++) {
+      for (let w = 0; w < n; w++) {
+        if (stds[l][w] > maxStd) maxStd = stds[l][w];
+      }
+    }
+
     // Draw cells: X = layer, Y = wire
     const gapW = cellW > 3 ? 1 : 0;
     const gapH = cellH > 3 ? 1 : 0;
-    for (let l = 0; l < d && l < means.length; l++) {
+    for (let l = 0; l < d && l < stds.length; l++) {
       for (let w = 0; w < n; w++) {
-        const v = means[l]?.[w] ?? 0;
-        ctx.fillStyle = meanToColor(v) || "#FFFFFF";
+        ctx.fillStyle = stdToColor(stds[l][w], maxStd);
         ctx.fillRect(
           LABEL_PAD_X + l * cellW,
           w * cellH,
@@ -86,24 +109,25 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
     ctx.rotate(-Math.PI / 2);
     ctx.fillText("Wire", 0, 0);
     ctx.restore();
-  }, [means, n, d]);
+  }, [stds, n, d]);
 
-  if (!means || means.length === 0) return null;
+  if (!stds || stds.length === 0) return null;
 
   return (
     <div className="panel">
-      <h2>
-        Wire Means Heatmap
-        {source && <span className="source-badge">{source}</span>}
-      </h2>
-      <div style={{ width: '100%', overflowX: 'hidden' }}>
+      <h2>Signal Variability (σ)</h2>
+      <div style={{ width: "100%", overflowX: "hidden" }}>
         <canvas ref={canvasRef} />
       </div>
       <div className="heatmap-legend">
-        <span className="legend-label">−1</span>
+        <span className="legend-label">Low σ</span>
         <div className="legend-gradient" />
-        <span className="legend-label">+1</span>
+        <span className="legend-label">High σ</span>
       </div>
+      <p className="panel-desc">
+        Wires with high σ are strongly input-dependent.
+        Wires with low σ produce nearly constant output regardless of inputs.
+      </p>
     </div>
   );
 }

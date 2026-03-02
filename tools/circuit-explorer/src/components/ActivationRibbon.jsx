@@ -1,15 +1,15 @@
 /**
- * WireStats — Per-layer wire mean distribution as a band chart.
- * Shows mean ±σ, ±2σ as nested colored bands (same style as ActivationRibbon).
+ * ActivationRibbon — Per-layer activation distribution bands.
+ * Shows mean ±σ, ±2σ, and min/max as nested colored bands.
  * Canvas-rendered for performance.
  */
 import { useEffect, useRef } from "react";
 
-export default function WireStats({ means, width: n, depth: d, source, activeLayer }) {
+export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, width: n }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    if (!means || means.length === 0 || !canvasRef.current) return;
+    if (!means || !stds || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const container = canvas.parentElement;
     const W = container.offsetWidth || 600;
@@ -32,21 +32,21 @@ export default function WireStats({ means, width: n, depth: d, source, activeLay
     const xScale = (l) => PAD.left + (l / Math.max(1, layers - 1)) * plotW;
     const yScale = (v) => PAD.top + (1 - (v + 1) / 2) * plotH; // [-1,1] → [plotH, 0]
 
-    // Compute per-layer aggregate stats from wire means
+    // Compute per-layer aggregate stats
     const agg = [];
     for (let l = 0; l < layers; l++) {
-      let sum = 0, sumSq = 0, mn = Infinity, mx = -Infinity;
+      let sumMean = 0, sumStd = 0, mn = Infinity, mx = -Infinity;
       for (let w = 0; w < n && w < means[l].length; w++) {
-        const val = means[l][w] || 0;
-        sum += val;
-        sumSq += val * val;
-        if (val < mn) mn = val;
-        if (val > mx) mx = val;
+        sumMean += means[l][w];
+        sumStd += stds[l][w];
+        const lo = mins ? mins[l][w] : means[l][w] - stds[l][w];
+        const hi = maxs ? maxs[l][w] : means[l][w] + stds[l][w];
+        if (lo < mn) mn = lo;
+        if (hi > mx) mx = hi;
       }
-      const avg = sum / n;
-      const variance = sumSq / n - avg * avg;
-      const std = Math.sqrt(Math.max(0, variance));
-      agg.push({ mean: avg, std, min: mn, max: mx });
+      const avgMean = sumMean / n;
+      const avgStd = sumStd / n;
+      agg.push({ mean: avgMean, std: avgStd, min: mn, max: mx });
     }
 
     // Draw bands: min/max → ±2σ → ±σ → mean line
@@ -83,19 +83,6 @@ export default function WireStats({ means, width: n, depth: d, source, activeLay
     }
     ctx.stroke();
 
-    // Active layer highlight
-    if (activeLayer != null && activeLayer >= 0 && activeLayer < layers) {
-      const x = xScale(activeLayer);
-      ctx.beginPath();
-      ctx.strokeStyle = "rgba(240,82,77,0.5)";
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.moveTo(x, PAD.top);
-      ctx.lineTo(x, H - PAD.bottom);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
     // Zero line
     ctx.beginPath();
     ctx.strokeStyle = "rgba(156,163,175,0.4)";
@@ -120,17 +107,14 @@ export default function WireStats({ means, width: n, depth: d, source, activeLay
     ctx.fillText("+1", PAD.left - 4, yScale(1) + 3);
     ctx.fillText("0", PAD.left - 4, yScale(0) + 3);
     ctx.fillText("−1", PAD.left - 4, yScale(-1) + 3);
-  }, [means, n, d, activeLayer]);
+  }, [means, stds, mins, maxs, d, n]);
 
-  if (!means || means.length === 0) return null;
+  if (!means || !stds) return null;
 
   return (
     <div className="panel">
-      <h2>
-        Wire Mean Distribution
-        {source && <span className="source-badge">{source}</span>}
-      </h2>
-      <div style={{ width: '100%', overflowX: 'auto' }}>
+      <h2>Activation Distribution</h2>
+      <div style={{ width: "100%", overflowX: "auto" }}>
         <canvas ref={canvasRef} />
       </div>
       <div className="formula-legend" style={{ marginTop: 4 }}>

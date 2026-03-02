@@ -1,17 +1,49 @@
 /**
- * SignalHeatmap — Wire means heatmap using canvas rendering.
- * Uses meanToColor for exact palette matching (dark slate → white → coral).
+ * ErrorHeatmap — Mean propagation error per wire per layer.
+ * Shows |groundTruth - meanProp| as a heatmap.
  * Orientation: X-axis = Layer, Y-axis = Wire (matches circuit layout).
  */
-import { useEffect, useRef } from "react";
-import { meanToColor } from "./gateShapes";
+import { useEffect, useMemo, useRef } from "react";
 
-export default function SignalHeatmap({ means, width: n, depth: d, source }) {
+function errorToColor(err, maxErr) {
+  const t = Math.min(1, err / Math.max(0.001, maxErr));
+  const mapped = t * 2 - 1;
+  if (mapped < 0) {
+    const s = 1 + mapped;
+    const r = Math.round(51 + (255 - 51) * s);
+    const g = Math.round(65 + (255 - 65) * s);
+    const b = Math.round(85 + (255 - 85) * s);
+    return `rgb(${r},${g},${b})`;
+  } else {
+    const r = Math.round(255 - (255 - 240) * mapped);
+    const g = Math.round(255 - (255 - 82) * mapped);
+    const b = Math.round(255 - (255 - 77) * mapped);
+    return `rgb(${r},${g},${b})`;
+  }
+}
+
+export default function ErrorHeatmap({ groundTruth, meanPropEstimates, width: n, depth: d }) {
   const canvasRef = useRef(null);
 
-  useEffect(() => {
-    if (!means || means.length === 0 || !canvasRef.current) return;
+  const { errors, maxErr } = useMemo(() => {
+    if (!groundTruth || !meanPropEstimates) return { errors: null, maxErr: 0 };
+    const layers = Math.min(d, groundTruth.length, meanPropEstimates.length);
+    const errs = [];
+    let mx = 0;
+    for (let l = 0; l < layers; l++) {
+      const layerErr = new Float32Array(n);
+      for (let w = 0; w < n; w++) {
+        const e = Math.abs((groundTruth[l][w] || 0) - (meanPropEstimates[l][w] || 0));
+        layerErr[w] = e;
+        if (e > mx) mx = e;
+      }
+      errs.push(layerErr);
+    }
+    return { errors: errs, maxErr: mx };
+  }, [groundTruth, meanPropEstimates, n, d]);
 
+  useEffect(() => {
+    if (!errors || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const container = canvas.parentElement;
     const containerW = container.offsetWidth || 500;
@@ -43,10 +75,9 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
     // Draw cells: X = layer, Y = wire
     const gapW = cellW > 3 ? 1 : 0;
     const gapH = cellH > 3 ? 1 : 0;
-    for (let l = 0; l < d && l < means.length; l++) {
+    for (let l = 0; l < errors.length; l++) {
       for (let w = 0; w < n; w++) {
-        const v = means[l]?.[w] ?? 0;
-        ctx.fillStyle = meanToColor(v) || "#FFFFFF";
+        ctx.fillStyle = errorToColor(errors[l][w], maxErr);
         ctx.fillRect(
           LABEL_PAD_X + l * cellW,
           w * cellH,
@@ -62,18 +93,16 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
     ctx.textAlign = "center";
     const layerStep = d > 16 ? Math.ceil(d / 8) : 1;
     for (let l = 0; l < d; l++) {
-      if (l % layerStep === 0) {
+      if (l % layerStep === 0)
         ctx.fillText(`${l}`, LABEL_PAD_X + l * cellW + cellW / 2, chartH + 14);
-      }
     }
 
     // Y-axis labels: Wire
     const wireStep = n > 16 ? Math.ceil(n / 8) : 1;
     ctx.textAlign = "right";
     for (let w = 0; w < n; w++) {
-      if (w % wireStep === 0) {
+      if (w % wireStep === 0)
         ctx.fillText(`${w}`, LABEL_PAD_X - 4, w * cellH + cellH / 2 + 3);
-      }
     }
 
     // Axis titles
@@ -86,24 +115,25 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
     ctx.rotate(-Math.PI / 2);
     ctx.fillText("Wire", 0, 0);
     ctx.restore();
-  }, [means, n, d]);
+  }, [errors, maxErr, n, d]);
 
-  if (!means || means.length === 0) return null;
+  if (!errors) return null;
 
   return (
     <div className="panel">
-      <h2>
-        Wire Means Heatmap
-        {source && <span className="source-badge">{source}</span>}
-      </h2>
-      <div style={{ width: '100%', overflowX: 'hidden' }}>
+      <h2>Mean Propagation Error</h2>
+      <div style={{ width: "100%", overflowX: "hidden" }}>
         <canvas ref={canvasRef} />
       </div>
       <div className="heatmap-legend">
-        <span className="legend-label">−1</span>
+        <span className="legend-label">0</span>
         <div className="legend-gradient" />
-        <span className="legend-label">+1</span>
+        <span className="legend-label">max = {maxErr.toFixed(4)}</span>
       </div>
+      <p className="panel-desc">
+        Where does mean propagation break? Gates with <strong>product terms</strong> (p·x·y)
+        violate the independence assumption, especially when upstream wires share inputs.
+      </p>
     </div>
   );
 }

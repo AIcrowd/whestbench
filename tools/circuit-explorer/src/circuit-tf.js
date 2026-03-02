@@ -147,6 +147,82 @@ export async function empiricalMeanTF(circuit, trials, seed = 99, onProgress = n
 }
 
 /**
+ * GPU-accelerated empirical stats (mean, std, min, max per wire per layer).
+ * Returns: { means, stds, mins, maxs } — each Float32Array[], one per layer, length n.
+ */
+export async function empiricalStatsTF(circuit, trials, seed = 99, onProgress = null) {
+  await initTF();
+
+  const rng = makeRng(seed);
+  const inputData = new Float32Array(trials * circuit.n);
+  for (let i = 0; i < inputData.length; i++) {
+    inputData[i] = rng.random() < 0.5 ? -1.0 : 1.0;
+  }
+
+  let x = tf.tensor2d(inputData, [trials, circuit.n]);
+  const means = [], stds = [], mins = [], maxs = [];
+  const totalLayers = circuit.gates.length;
+
+  for (let li = 0; li < totalLayers; li++) {
+    const layer = circuit.gates[li];
+    const n = circuit.n;
+    const firstArr = new Array(n), secondArr = new Array(n);
+    const constArr = new Array(n), aArr = new Array(n);
+    const bArr = new Array(n), pArr = new Array(n);
+
+    for (let i = 0; i < n; i++) {
+      firstArr[i] = layer.first[i];
+      secondArr[i] = layer.second[i];
+      constArr[i] = layer['const'][i];
+      aArr[i] = layer.firstCoeff[i];
+      bArr[i] = layer.secondCoeff[i];
+      pArr[i] = layer.productCoeff[i];
+    }
+
+    const newX = tf.tidy(() => {
+      const idx1 = tf.tensor1d(firstArr, 'int32');
+      const idx2 = tf.tensor1d(secondArr, 'int32');
+      const c = tf.tensor1d(constArr);
+      const a = tf.tensor1d(aArr);
+      const b = tf.tensor1d(bArr);
+      const p = tf.tensor1d(pArr);
+      const xf = tf.gather(x, idx1, 1);
+      const xs = tf.gather(x, idx2, 1);
+      const xfxs = tf.mul(xf, xs);
+      return tf.add(
+        tf.add(c, tf.mul(a, xf)),
+        tf.add(tf.mul(b, xs), tf.mul(p, xfxs))
+      );
+    });
+
+    // Compute stats and pull to CPU
+    const { mean: meanT, variance: varianceT } = tf.moments(newX, 0);
+    const minT = tf.min(newX, 0);
+    const maxT = tf.max(newX, 0);
+    const stdT = tf.sqrt(varianceT);
+
+    const [meanData, stdData, minData, maxData] = await Promise.all([
+      meanT.data(), stdT.data(), minT.data(), maxT.data()
+    ]);
+
+    means.push(Float32Array.from(meanData));
+    stds.push(Float32Array.from(stdData));
+    mins.push(Float32Array.from(minData));
+    maxs.push(Float32Array.from(maxData));
+
+    meanT.dispose(); varianceT.dispose(); stdT.dispose();
+    minT.dispose(); maxT.dispose();
+    x.dispose();
+    x = newX;
+
+    if (onProgress) onProgress((li + 1) / totalLayers);
+  }
+
+  x.dispose();
+  return { means, stds, mins, maxs };
+}
+
+/**
  * Check if TF.js is available and initialized.
  */
 export function isTFReady() {
@@ -156,4 +232,3 @@ export function isTFReady() {
 export function getTFBackend() {
   return backendName;
 }
-

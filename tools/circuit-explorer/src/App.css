@@ -192,6 +192,39 @@ body {
   color: var(--coral);
 }
 
+.control-value-input {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--coral);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 1px 4px;
+  width: 60px;
+  text-align: right;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  -moz-appearance: textfield;
+}
+
+.control-value-input::-webkit-outer-spin-button,
+.control-value-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.control-value-input:hover {
+  border-color: var(--gray-200);
+  background: var(--gray-50);
+}
+
+.control-value-input:focus {
+  border-color: var(--coral);
+  background: var(--white);
+  box-shadow: 0 0 0 3px var(--coral-light);
+}
+
 /* Slider */
 .control-row input[type="range"] {
   width: 100%;
@@ -615,6 +648,7 @@ body {
   border: 1px solid var(--gray-200);
   border-radius: var(--radius);
   padding: 16px 20px;
+  overflow: hidden;
 }
 
 .panel-desc {
@@ -762,6 +796,42 @@ body {
 
 .stats-table tr:hover td {
   background: var(--gray-50);
+}
+
+/* ──── Signal Animation ──── */
+
+.animate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--coral);
+  background: rgba(240, 82, 77, 0.08);
+  border: 1px solid rgba(240, 82, 77, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.animate-btn:hover:not(:disabled) {
+  background: rgba(240, 82, 77, 0.15);
+  border-color: rgba(240, 82, 77, 0.4);
+}
+
+.animate-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.animate-btn-pulse {
+  animation: pulse-flow 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-flow {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
 }
 
 /* ──── Footer ──── */
@@ -1063,7 +1133,7 @@ body {
   width: 120px;
   height: 10px;
   border-radius: 5px;
-  background: linear-gradient(to right, #3B82F6, #ffffff, #F0524D);
+  background: linear-gradient(to right, #334155, #ffffff, #F0524D);
   border: 1px solid var(--gray-200);
 }
 

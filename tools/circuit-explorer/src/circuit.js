@@ -161,6 +161,75 @@ export function empiricalMean(circuit, trials, seed = 99) {
 }
 
 /**
+ * Run circuit on random ±1 inputs and return rich stats per wire per layer.
+ * Returns: { means, stds, mins, maxs } — each Float32Array[] (one per layer, length n)
+ */
+export function empiricalStats(circuit, trials, seed = 99) {
+  const rng = makeRng(seed);
+  const inputs = [];
+  for (let t = 0; t < trials; t++) {
+    const row = new Float32Array(circuit.n);
+    for (let i = 0; i < circuit.n; i++) {
+      row[i] = rng.randBool() ? 1.0 : -1.0;
+    }
+    inputs.push(row);
+  }
+
+  const layerOutputs = runBatched(circuit, inputs);
+  const means = [];
+  const stds = [];
+  const mins = [];
+  const maxs = [];
+
+  for (const batch of layerOutputs) {
+    const n = circuit.n;
+    const mean = new Float32Array(n);
+    const sumSq = new Float32Array(n);
+    const min = new Float32Array(n);
+    const max = new Float32Array(n);
+    for (let i = 0; i < n; i++) { min[i] = Infinity; max[i] = -Infinity; }
+
+    for (let b = 0; b < trials; b++) {
+      for (let i = 0; i < n; i++) {
+        const v = batch[b][i];
+        mean[i] += v;
+        sumSq[i] += v * v;
+        if (v < min[i]) min[i] = v;
+        if (v > max[i]) max[i] = v;
+      }
+    }
+
+    const std = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      mean[i] /= trials;
+      const variance = sumSq[i] / trials - mean[i] * mean[i];
+      std[i] = Math.sqrt(Math.max(0, variance));
+    }
+
+    means.push(mean);
+    stds.push(std);
+    mins.push(min);
+    maxs.push(max);
+  }
+
+  return { means, stds, mins, maxs };
+}
+
+/**
+ * Run circuit with a single random ±1 input.
+ * Returns: Float32Array[] — one per layer, each of length n (wire values at that layer).
+ */
+export function runSingleTrial(circuit, seed = 42) {
+  const rng = makeRng(seed);
+  const input = new Float32Array(circuit.n);
+  for (let i = 0; i < circuit.n; i++) {
+    input[i] = rng.randBool() ? 1.0 : -1.0;
+  }
+  const results = runBatched(circuit, [input]);
+  return results.map(batch => batch[0]);
+}
+
+/**
  * Describe the gate operation for display purposes.
  * Returns a human-readable string like "AND(x, y)", "x", "-y", etc.
  */

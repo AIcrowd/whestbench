@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { empiricalMeanTF, initTF } from "../circuit-tf";
+import { empiricalMeanTF, empiricalStatsTF, initTF } from "../circuit-tf";
 import { perfEnd, perfStart } from "../perf";
 
 /**
@@ -25,35 +25,47 @@ export default function EstimatorRunner({ circuit, onResult, worker }) {
       .catch(() => setTfBackend('unavailable'));
   }, []);
 
-  // Run empiricalMean via TF.js (GPU), falling back to worker (CPU)
+  // Run empiricalMean (sampling) or empiricalStats (ground truth) via GPU/worker
   const runEmpirical = useCallback(async (key, trials, seed, displayInfo) => {
     if (!circuit) return;
     setRunning(key);
     setProgress(0);
+    const useStats = key === 'groundTruth'; // Enriched stats only for GT
 
     try {
-      let estimates, time;
+      let estimates, time, extraStats = null;
 
       if (tfBackend && tfBackend !== 'unavailable') {
         // GPU path: TF.js on main thread with progress reporting
         perfStart(`estimator-${key}`);
         const t0 = performance.now();
-        estimates = await empiricalMeanTF(circuit, trials, seed, (p) => {
-          setProgress(p);
-        });
+        if (useStats) {
+          const stats = await empiricalStatsTF(circuit, trials, seed, (p) => setProgress(p));
+          estimates = stats.means;
+          extraStats = { stds: stats.stds, mins: stats.mins, maxs: stats.maxs };
+        } else {
+          estimates = await empiricalMeanTF(circuit, trials, seed, (p) => setProgress(p));
+        }
         time = performance.now() - t0;
         perfEnd(`estimator-${key}`);
       } else {
-        // CPU fallback: worker (progress estimated based on typical timing)
+        // CPU fallback: worker
         perfStart(`estimator-${key}`);
-        const result = await worker.run('empiricalMean', { circuit, trials, seed });
-        estimates = result.estimates;
-        time = result.time;
+        if (useStats) {
+          const result = await worker.run('empiricalStats', { circuit, trials, seed });
+          estimates = result.estimates;
+          extraStats = { stds: result.stds, mins: result.mins, maxs: result.maxs };
+          time = result.time;
+        } else {
+          const result = await worker.run('empiricalMean', { circuit, trials, seed });
+          estimates = result.estimates;
+          time = result.time;
+        }
         perfEnd(`estimator-${key}`);
       }
 
       setProgress(1);
-      const enriched = { ...displayInfo, estimates, time };
+      const enriched = { ...displayInfo, estimates, time, ...(extraStats || {}) };
       setResults((prev) => ({ ...prev, [key]: enriched }));
       onResult(key, enriched);
     } catch (err) {
@@ -62,8 +74,12 @@ export default function EstimatorRunner({ circuit, onResult, worker }) {
       if (tfBackend && tfBackend !== 'unavailable') {
         console.warn(`[EstimatorRunner] TF.js failed, falling back to worker`);
         try {
-          const result = await worker.run('empiricalMean', { circuit, trials, seed });
-          const enriched = { ...displayInfo, estimates: result.estimates, time: result.time };
+          const workerType = useStats ? 'empiricalStats' : 'empiricalMean';
+          const result = await worker.run(workerType, { circuit, trials, seed });
+          const fallbackExtra = useStats
+            ? { stds: result.stds, mins: result.mins, maxs: result.maxs }
+            : {};
+          const enriched = { ...displayInfo, estimates: result.estimates, time: result.time, ...fallbackExtra };
           setResults((prev) => ({ ...prev, [key]: enriched }));
           onResult(key, enriched);
         } catch (err2) {
