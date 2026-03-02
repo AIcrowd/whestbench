@@ -1,5 +1,5 @@
 
-import { describeGate } from "../circuit";
+import { classifyGate } from "./gateShapes";
 
 /**
  * SVG-based circuit graph visualization.
@@ -132,7 +132,7 @@ export default function CircuitGraph({ circuit, means, activeLayer }) {
               strokeWidth={l === activeLayer ? 2 : 1}
             />
             <title>
-              Layer {l}, Wire {i}: {describeGate(layer, i)} → mean ≈{" "}
+              Layer {l}, Wire {i}: {classifyGate(layer, i).label} → mean ≈{" "}
               {wireMean.toFixed(3)}
             </title>
           </g>
