@@ -262,22 +262,10 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
         size: { width: INPUT_DOT_R * 2, height: INPUT_DOT_R * 2 },
         attrs: {
           body: {
-            fill: "#94A3B8",
-            stroke: "none",
+            fill: GATE_FILL_DEFAULT,
+            stroke: GATE_STROKE,
+            strokeWidth: 1,
           },
-          label: {
-            text: `x${w}`,
-            fontSize: 10,
-            fontWeight: "bold",
-            fontFamily: "'IBM Plex Mono', monospace",
-            fill: "#64748B",
-            refX: -8,
-            textAnchor: "end",
-          },
-        },
-        ports: {
-          groups: PORT_GROUPS,
-          items: [{ id: "out", group: "out" }],
         },
       });
       node.set("isInput", true);
@@ -354,7 +342,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
       if (inputNodes[fw] && nodes[0]?.[w]) {
         graph.addCell(
           new shapes.standard.Link({
-            source: { id: inputNodes[fw].id, port: "out" },
+            source: { id: inputNodes[fw].id },
             target: { id: nodes[0][w].id, port: "in1" },
             attrs: {
               line: {
@@ -371,7 +359,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
       if (inputNodes[sw] && nodes[0]?.[w]) {
         graph.addCell(
           new shapes.standard.Link({
-            source: { id: inputNodes[sw].id, port: "out" },
+            source: { id: inputNodes[sw].id },
             target: { id: nodes[0][w].id, port: "in2" },
             attrs: {
               line: {
@@ -438,28 +426,19 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
     for (let w = 0; w < circuit.n; w++) {
       const y = PAD_Y + w * (GATE_H + ROW_GAP) + GATE_H / 2;
 
+      const outMean = means?.[lastLayer]?.[w] ?? null;
+      const outDotFill = meanToColor(outMean) || GATE_FILL_DEFAULT;
+
       const outNode = new shapes.standard.Circle({
         position: { x: outputX - INPUT_DOT_R, y: y - INPUT_DOT_R },
         size: { width: INPUT_DOT_R * 2, height: INPUT_DOT_R * 2 },
         attrs: {
           body: {
-            fill: "#94A3B8",
-            stroke: "none",
+            fill: outDotFill,
+            stroke: GATE_STROKE,
+            strokeWidth: 1,
             class: pulseOutputs ? "output-node-pulse" : "",
           },
-          label: {
-            text: `y${w}`,
-            fontSize: 10,
-            fontWeight: "bold",
-            fontFamily: "'IBM Plex Mono', monospace",
-            fill: "#64748B",
-            refX: "calc(w+8)",
-            textAnchor: "start",
-          },
-        },
-        ports: {
-          groups: PORT_GROUPS,
-          items: [{ id: "in1", group: "in" }],
         },
       });
       outNode.set("isOutput", true);
@@ -472,7 +451,7 @@ export default function CircuitGraphJoint({ circuit, means, activeLayer, pulseOu
         graph.addCell(
           new shapes.standard.Link({
             source: { id: nodes[lastLayer][w].id, port: "out" },
-            target: { id: outNode.id, port: "in1" },
+            target: { id: outNode.id },
             attrs: {
               line: {
                 stroke: outWireColor,
