@@ -491,7 +491,9 @@ cmd_publish() {
     echo "Pushed to $remote_url:$PUBLIC_BRANCH at $pushed_sha"
   )
 
-  if [[ "$dry_run" -ne 1 && -n "$pushed_sha" ]]; then
+  if [[ "$dry_run" -ne 1 ]]; then
+    pushed_sha="$(git ls-remote "$remote_url" "refs/heads/$PUBLIC_BRANCH" | awk '{print $1}')"
+    [[ -n "$pushed_sha" ]] || die "Could not resolve pushed public SHA for $PUBLIC_BRANCH at $remote_url"
     LAST_INGESTED_PUBLIC_SHA="$pushed_sha"
     write_state
     echo "Updated ingestion marker to $LAST_INGESTED_PUBLIC_SHA"
