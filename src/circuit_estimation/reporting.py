@@ -17,7 +17,6 @@ from rich.align import Align
 from rich.columns import Columns
 from rich.console import Console, Group
 from rich.panel import Panel
-from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
 
@@ -79,45 +78,47 @@ def render_smoke_test_next_steps() -> str:
         _environ=_rich_console_environ(width),
     )
 
-    command_block = Syntax(
-        "\n".join(
-            [
-                "# 1) Create starter files",
-                "cestim init ./my-estimator",
-                "",
-                "# 2) Validate stream contract",
-                "cestim validate --estimator ./my-estimator/estimator.py",
-                "",
-                "# 3) Run local scoring",
-                "cestim run --estimator ./my-estimator/estimator.py --runner subprocess",
-                "",
-                "# 4) Build submission artifact",
-                "cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
-            ]
-        ),
-        "bash",
-        line_numbers=False,
-        word_wrap=True,
-    )
+    purpose_lines = _smoke_next_step_lines()
+    commands = _smoke_next_step_commands()
+    body_items: list[Text] = [
+        Text("We are all set! Welcome onboard 🚀", style="bold bright_green"),
+        Text("Run these steps:", style="bold bright_white"),
+        Text(),
+    ]
+    for purpose_line, command in zip(purpose_lines, commands):
+        body_items.append(purpose_line)
+        body_items.append(Text(command, style="white"))
+        body_items.append(Text())
 
-    purposes = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
-    purposes.add_column("#", justify="right", style="bold bright_cyan")
-    purposes.add_column("Purpose", style="bright_white")
-    purposes.add_row("1", "Create starter files you can edit.")
-    purposes.add_row("2", "Check row shape/count/finite contract.")
-    purposes.add_row("3", "Run local scoring with isolation semantics.")
-    purposes.add_row("4", "Build submission artifact for upload workflow.")
-
-    body = Group(
-        Panel(command_block, title="Commands (bash)", border_style="bright_white"),
-        Align.center(purposes),
+    body_items.append(
         Text(
             "Tip: use --json on validate/run/package for machine-readable output.",
             style="dim",
-        ),
+        )
     )
+
+    body = Group(*body_items)
     console.print(Panel(body, title="Next Steps", border_style="bright_cyan"))
     return buffer.getvalue()
+
+
+def _smoke_next_step_commands() -> list[str]:
+    return [
+        "cestim init ./my-estimator",
+        "cestim validate --estimator ./my-estimator/estimator.py",
+        "cestim run --estimator ./my-estimator/estimator.py --runner subprocess",
+        "cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
+    ]
+
+
+def _smoke_next_step_lines() -> list[Text]:
+    purposes = [
+        ("Create starter files you can edit.", "bold bright_cyan"),
+        ("Check row shape/count/finite contract.", "bold bright_green"),
+        ("Run local scoring with isolation semantics.", "bold bright_yellow"),
+        ("Build submission artifact for upload workflow.", "bold bright_magenta"),
+    ]
+    return [Text(f"# {idx}) {purpose}", style=style) for idx, (purpose, style) in enumerate(purposes, start=1)]
 
 
 def _render_top_row(console: Console, report: dict[str, Any]) -> None:
@@ -328,8 +329,57 @@ def _layer_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = F
 
     body: list[Any] = [Align.center(table)]
     if show_diagnostic_plots:
-        body.append(_layer_trend_plot_panel(avg_mse))
+        body.append(
+            Columns(
+                [
+                    _layer_histogram_panel(report),
+                    _layer_trend_plot_panel(avg_mse),
+                ],
+                equal=True,
+                expand=True,
+            )
+        )
     return Panel(Group(*body), title="Layer Diagnostics", border_style="bright_magenta")
+
+
+def _layer_histogram_panel(report: dict[str, Any]) -> Panel:
+    values = _layer_mse_average(report)
+    x, counts = _histogram_series(values, bins=10)
+    p50 = _percentile(values, 0.50) if values else 0.0
+    p95 = _percentile(values, 0.95) if values else 0.0
+    title = f"Layer MSE Histogram (p50={_fmt_float(p50, 6)}, p95={_fmt_float(p95, 6)})"
+    return _make_plot_panel(
+        title=title,
+        x=x,
+        series=[("layers_per_mse_bin", counts, "magenta+")],
+        x_label="mse bins",
+        y_label="layer count",
+        sparse_style="line",
+    )
+
+
+def _layer_mse_average(report: dict[str, Any]) -> list[float]:
+    by_budget = _budget_rows(report)
+    mse_series = [_to_float_list(entry.get("mse_by_layer", [])) for entry in by_budget]
+    return _mean_series(mse_series)
+
+
+def _histogram_series(values: Sequence[float], *, bins: int) -> tuple[list[float], list[float]]:
+    if not values or bins <= 0:
+        return [0.0], [0.0]
+    low = min(values)
+    high = max(values)
+    if high <= low:
+        return [low], [float(len(values))]
+
+    width = (high - low) / bins
+    counts = [0.0 for _ in range(bins)]
+    for value in values:
+        idx = int((value - low) / width)
+        idx = max(0, min(idx, bins - 1))
+        counts[idx] += 1.0
+    centers = [low + width * (i + 0.5) for i in range(bins)]
+    return centers, counts
 
 
 def _render_profile_section(

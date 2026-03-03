@@ -11,7 +11,11 @@ from rich.console import Console, Group
 from rich.table import Table
 
 import circuit_estimation.reporting as reporting
-from circuit_estimation.reporting import render_agent_report, render_human_report
+from circuit_estimation.reporting import (
+    render_agent_report,
+    render_human_report,
+    render_smoke_test_next_steps,
+)
 
 
 def _sample_report(*, include_profile: bool = False) -> dict[str, object]:
@@ -101,6 +105,37 @@ def test_render_json_mode_returns_pretty_json_only() -> None:
     assert loaded == report
     assert rendered.startswith("{\n")
     assert rendered.endswith("\n")
+
+
+def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -> None:
+    rendered = render_smoke_test_next_steps()
+    plain = _strip_ansi(rendered)
+
+    assert "Next Steps" in plain
+    assert "We are all set! Welcome onboard 🚀" in plain
+    assert "Run these steps:" in plain
+    assert "# 1) Create starter files you can edit." in plain
+    assert "# 2) Check row shape/count/finite contract." in plain
+    assert "# 3) Run local scoring with isolation semantics." in plain
+    assert "# 4) Build submission artifact for upload workflow." in plain
+    assert "Commands (bash)" not in plain
+    assert "Command" not in plain
+    assert "Purpose" not in plain
+    assert "cestim init ./my-estimator" in plain
+    assert "cestim validate --estimator ./my-estimator/estimator.py" in plain
+    assert "cestim run --estimator ./my-estimator/estimator.py" in plain
+    assert "--runner" in plain
+    assert "subprocess" in plain
+    assert "cestim package --estimator ./my-estimator/estimator.py" in plain
+    assert "--output" in plain
+    assert "./submission.tar.gz" in plain
+
+
+def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:
+    lines = reporting._smoke_next_step_lines()
+    styles = [str(line.style) for line in lines]
+    assert len(lines) == 4
+    assert styles == ["bold bright_cyan", "bold bright_green", "bold bright_yellow", "bold bright_magenta"]
 
 
 def test_render_human_mode_includes_expected_sections_without_profile() -> None:
@@ -256,8 +291,17 @@ def test_layer_lane_contains_stats_and_trend_plots() -> None:
     )
 
     assert "Layer Diagnostics" in rendered
+    assert "Layer MSE Histogram" in rendered
     assert "Layer Trend Plot" in rendered
     assert "Layer Runtime Plot" not in rendered
+
+
+def test_layer_histogram_title_does_not_use_diagnostics_wording() -> None:
+    report = _sample_report(include_profile=False)
+    panel = reporting._layer_histogram_panel(report)
+    assert isinstance(panel.title, str)
+    assert panel.title.startswith("Layer MSE Histogram")
+    assert "Layer Diagnostics Histogram" not in panel.title
 
 
 def test_budget_plots_render_side_by_side_below_full_width_table(
