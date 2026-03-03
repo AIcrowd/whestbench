@@ -44,3 +44,7 @@ PY
 ```
 
 The printed path should be under the worktree you expect.
+
+## Related References
+
+- [`rich-dashboard-agent-guidelines.md`](./rich-dashboard-agent-guidelines.md): Rich dashboard contracts, layout breakpoints, and future-agent change checklist.

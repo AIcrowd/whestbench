@@ -16,6 +16,7 @@ It is intended to remain self-sufficient even if `.aicrowd/CHALLENGE-CONTEXT.md`
 7. Check [`open-questions.md`](./open-questions.md) before implementing new behavior.
 8. Use [`context-migration-map.md`](./context-migration-map.md) to verify legacy-context coverage.
 9. For internal/public repo release workflow, read [`../development/sanitization-and-public-sync-playbook.md`](../development/sanitization-and-public-sync-playbook.md).
+10. For Rich CLI dashboard architecture, breakpoints, and append-only output invariants, read [`../development/rich-dashboard-agent-guidelines.md`](../development/rich-dashboard-agent-guidelines.md).
 
 ## Scope of This Pack
 
