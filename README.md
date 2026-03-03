@@ -2,7 +2,9 @@
 
 # Circuit Estimation Challenge Starter Kit
 
-Build, test, and iterate budget-aware estimators for random layered circuits.
+Can you predict a circuit's behavior by analyzing its structure, instead of just running it thousands of times?
+
+This challenge asks you to build **mechanistic estimators** — algorithms that exploit the wiring and gate rules of random layered circuits to estimate expected wire values, rather than relying solely on brute-force Monte Carlo sampling. The question is both practical and foundational: when can structure-aware estimation compete with or beat pure sampling under the same compute budget?
 
 ## 60-Second Overview
 
@@ -13,22 +15,20 @@ You are given:
 
 Your estimator must stream exactly one vector per layer, each with shape `(width,)`, estimating expected wire values after that layer.
 
-The evaluator compares your streamed predictions to Monte Carlo ground truth and applies runtime-aware adjustments by depth.
-
-Lower score is better.
+Your score combines prediction accuracy with compute efficiency: can you match sampling's accuracy while using less time? See [Scoring Model](docs/concepts/scoring-model.md) for details. Lower score is better.
 
 ### 🧠 Why this challenge matters
 
-This benchmark targets a core research question: when can we estimate model behavior by using structure, instead of relying only on brute-force sampling?
+The natural way to estimate a circuit's expected output is brute force: sample many random inputs, propagate them, average the results. Sampling is the ground truth — with enough samples it converges to the exact answer. But it's inefficient: the error only shrinks as 1/√k with k samples, and it learns nothing from the circuit's structure.
 
-ARC's recent work frames "matching or beating sampling" as an important and difficult milestone for mechanistic estimation:
+**Mechanistic estimation** asks: can we beat sampling at this task? Instead of brute-force evaluation, analyze the circuit's wiring and gate rules to estimate expected wire values directly. Because sampling scales so poorly, there is room for structure-aware methods to reach the same accuracy in far less compute. ARC's research suggests this is both possible and hard — simple structural methods (like mean propagation) work at shallow depth, but break down as correlations accumulate through layers.
 
 - [Competing with sampling](https://www.alignment.org/blog/competing-with-sampling/)
 - [AlgZoo: uninterpreted models with fewer than 1,500 parameters](https://www.alignment.org/blog/algzoo-uninterpreted-models-with-fewer-than-1-500-parameters/)
 
 This challenge instantiates that question in random Boolean circuits, where evaluation is explicit, reproducible, and compute-aware.
 
-Practical goal for participants: improve error under fixed runtime sampling budgets.
+> **Your practical goal:** beat sampling. Build an estimator that reaches the same accuracy as brute-force sampling but in less compute time. Your score directly measures how efficiently you estimate relative to the sampling baseline.
 
 ## 5-Minute Quickstart
 

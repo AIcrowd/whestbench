@@ -1,6 +1,6 @@
 # Estimator Contract
 
-## 📌 When to use this page
+## When to use this page
 
 Use this page when you need exact estimator I/O requirements.
 

@@ -1,6 +1,6 @@
 # CLI Reference
 
-## 📌 When to use this page
+## When to use this page
 
 Use this page for exact command syntax and key flags.
 

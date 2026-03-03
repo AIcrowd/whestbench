@@ -1,6 +1,6 @@
 # Score Report Fields
 
-## 📌 When to use this page
+## When to use this page
 
 Use this page to interpret `cestim run` output fields.
 

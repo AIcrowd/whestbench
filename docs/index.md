@@ -25,8 +25,8 @@ Pick the path that matches what you need right now.
 
 ## 🧠 I want the research framing
 
-- [Problem Setup](./concepts/problem-setup.md)
-- [Scoring Model](./concepts/scoring-model.md)
+- [Problem Setup](./concepts/problem-setup.md) — what circuits are, the gate equation, why depth makes estimation hard, and what mechanistic estimation means
+- [Scoring Model](./concepts/scoring-model.md) — how your score compares you to sampling, budget-adaptivity, and runtime rules
 
 ## Full Taxonomy
 
