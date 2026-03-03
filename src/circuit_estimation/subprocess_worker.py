@@ -38,33 +38,72 @@ def _write_response(payload: dict[str, Any]) -> None:
     sys.stdout.flush()
 
 
-def _collect_prediction_tensor(
-    predictions: object,
-    *,
-    width: int,
-    depth: int,
-) -> np.ndarray:
+def _handle_predict(estimator: BaseEstimator, request: dict[str, Any]) -> None:
+    """Stream one JSON line per depth row back to the runner."""
     try:
-        output_iter = iter(cast(Any, predictions))
-    except TypeError as exc:
-        raise ValueError("Estimator must return an iterator of depth-row outputs.") from exc
+        circuit = _payload_to_circuit(request["circuit"])
+        budget = int(request["budget"])
+    except Exception as exc:
+        _write_response({"status": "error", "depth_index": 0, "error_message": str(exc)})
+        _write_response({"status": "done"})
+        return
 
-    rows: list[np.ndarray] = []
-    for depth_index in range(depth):
+    try:
+        raw_predictions = estimator.predict(circuit, budget)
+    except Exception as exc:
+        _write_response({"status": "error", "depth_index": 0, "error_message": str(exc)})
+        _write_response({"status": "done"})
+        return
+
+    try:
+        output_iter = iter(cast(Any, raw_predictions))
+    except TypeError:
+        _write_response({
+            "status": "error",
+            "depth_index": 0,
+            "error_message": "Estimator must return an iterator of depth-row outputs.",
+        })
+        _write_response({"status": "done"})
+        return
+
+    for depth_index in range(circuit.d):
         try:
             raw_row = next(output_iter)
-        except StopIteration as exc:
-            raise ValueError("Estimator must emit exactly max_depth rows.") from exc
-        rows.append(validate_depth_row(raw_row, width=width, depth_index=depth_index))
+        except StopIteration:
+            _write_response({
+                "status": "error",
+                "depth_index": depth_index,
+                "error_message": "Estimator must emit exactly max_depth rows.",
+            })
+            _write_response({"status": "done"})
+            return
+        except Exception as exc:
+            _write_response({
+                "status": "error",
+                "depth_index": depth_index,
+                "error_message": f"Estimator stream failed at depth {depth_index}: {exc}",
+            })
+            _write_response({"status": "done"})
+            return
 
-    try:
-        _extra = next(output_iter)
-    except StopIteration:
-        pass
-    else:
-        raise ValueError("Estimator emitted more than max_depth rows.")
+        try:
+            row = validate_depth_row(raw_row, width=circuit.n, depth_index=depth_index)
+        except ValueError as exc:
+            _write_response({
+                "status": "error",
+                "depth_index": depth_index,
+                "error_message": str(exc),
+            })
+            _write_response({"status": "done"})
+            return
 
-    return np.stack(rows, axis=0).astype(np.float32)
+        _write_response({
+            "status": "row",
+            "depth_index": depth_index,
+            "row": row.tolist(),
+        })
+
+    _write_response({"status": "done"})
 
 
 def main() -> int:
@@ -112,23 +151,11 @@ def main() -> int:
         elif command == "predict":
             if estimator is None:
                 _write_response(
-                    {"status": "protocol_error", "error_message": "Estimator is not initialized."}
+                    {"status": "error", "depth_index": 0, "error_message": "Estimator not initialized."}
                 )
+                _write_response({"status": "done"})
                 continue
-            try:
-                circuit = _payload_to_circuit(request["circuit"])
-                budget = int(request["budget"])
-                predictions = estimator.predict(circuit, budget)
-                tensor = _collect_prediction_tensor(
-                    predictions,
-                    width=circuit.n,
-                    depth=circuit.d,
-                )
-                _write_response({"status": "ok", "predictions": tensor.tolist()})
-            except ValueError as exc:
-                _write_response({"status": "protocol_error", "error_message": str(exc)})
-            except Exception as exc:
-                _write_response({"status": "runtime_error", "error_message": str(exc)})
+            _handle_predict(estimator, request)
         elif command == "close":
             if estimator is not None:
                 estimator.teardown()

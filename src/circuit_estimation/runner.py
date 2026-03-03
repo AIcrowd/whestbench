@@ -415,7 +415,7 @@ class SubprocessRunner:
             )
         self._started = True
 
-    def predict(self, circuit: Circuit, budget: int) -> PredictOutcome:
+    def predict(self, circuit: Circuit, budget: int) -> Iterator[DepthRowOutcome]:
         if not self._started or self._process is None or self._limits is None:
             raise RunnerError(
                 "predict",
@@ -426,7 +426,6 @@ class SubprocessRunner:
             )
 
         start_wall = time.time()
-        start_cpu = time.process_time()
         try:
             self._send_request(
                 {
@@ -435,83 +434,68 @@ class SubprocessRunner:
                     "circuit": _circuit_to_payload(circuit),
                 }
             )
-            response = self._read_response(timeout_s=self._limits.predict_timeout_s)
-        except TimeoutError:
-            self._terminate_process()
-            elapsed = time.time() - start_wall
-            cpu_elapsed = time.process_time() - start_cpu
-            rss_bytes = _rss_bytes()
-            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-            self._started = False
-            return PredictOutcome(
-                predictions=None,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="timeout",
-                error_message="predict timed out waiting for worker response.",
-            )
         except RunnerError as exc:
-            elapsed = time.time() - start_wall
-            cpu_elapsed = time.process_time() - start_cpu
-            rss_bytes = _rss_bytes()
-            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-            return PredictOutcome(
-                predictions=None,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="protocol_error",
-                error_message=exc.detail.message,
+            yield DepthRowOutcome(
+                depth_index=0, row=None,
+                wall_time_s=time.time() - start_wall,
+                status="error", error_message=exc.detail.message,
             )
+            return
 
-        elapsed = time.time() - start_wall
-        cpu_elapsed = time.process_time() - start_cpu
-        rss_bytes = _rss_bytes()
-        peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-        status = str(response.get("status", "protocol_error"))
-        if status == "ok":
-            raw_predictions = response.get("predictions")
-            if not isinstance(raw_predictions, list):
-                return PredictOutcome(
-                    predictions=None,
-                    wall_time_s=float(elapsed),
-                    cpu_time_s=float(cpu_elapsed),
-                    rss_bytes=int(rss_bytes),
-                    peak_rss_bytes=int(peak_rss_bytes),
-                    status="protocol_error",
-                    error_message="Worker response missing predictions list.",
+        # Read streaming responses — one JSON line per depth row
+        while True:
+            try:
+                response = self._read_response(timeout_s=self._limits.predict_timeout_s)
+            except TimeoutError:
+                self._terminate_process()
+                self._started = False
+                yield DepthRowOutcome(
+                    depth_index=-1, row=None,
+                    wall_time_s=time.time() - start_wall,
+                    status="error",
+                    error_message="predict timed out waiting for worker response.",
                 )
-            predictions = np.asarray(raw_predictions, dtype=np.float32)
-            return PredictOutcome(
-                predictions=predictions,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="ok",
-                error_message=None,
-            )
+                return
+            except RunnerError as exc:
+                yield DepthRowOutcome(
+                    depth_index=-1, row=None,
+                    wall_time_s=time.time() - start_wall,
+                    status="error",
+                    error_message=exc.detail.message,
+                )
+                return
 
-        mapped_status: PredictStatus = (
-            cast(PredictStatus, status)
-            if status in {"timeout", "oom", "runtime_error", "protocol_error"}
-            else "protocol_error"
-        )
-        return PredictOutcome(
-            predictions=None,
-            wall_time_s=float(elapsed),
-            cpu_time_s=float(cpu_elapsed),
-            rss_bytes=int(rss_bytes),
-            peak_rss_bytes=int(peak_rss_bytes),
-            status=mapped_status,
-            error_message=str(response.get("error_message", "worker predict failed")),
-        )
-
-    def predict_batch(self, circuits: list[Circuit], budget: int) -> list[PredictOutcome]:
-        return [self.predict(circuit, budget) for circuit in circuits]
+            status = response.get("status")
+            if status == "done":
+                return
+            elif status == "row":
+                elapsed = time.time() - start_wall
+                row_data = response.get("row")
+                row = np.asarray(row_data, dtype=np.float32) if row_data is not None else None
+                yield DepthRowOutcome(
+                    depth_index=int(response.get("depth_index", -1)),
+                    row=row,
+                    wall_time_s=elapsed,
+                    status="ok",
+                )
+            elif status == "error":
+                elapsed = time.time() - start_wall
+                yield DepthRowOutcome(
+                    depth_index=int(response.get("depth_index", -1)),
+                    row=None,
+                    wall_time_s=elapsed,
+                    status="error",
+                    error_message=str(response.get("error_message", "unknown worker error")),
+                )
+                # Continue reading until "done"
+            else:
+                yield DepthRowOutcome(
+                    depth_index=-1, row=None,
+                    wall_time_s=time.time() - start_wall,
+                    status="error",
+                    error_message=f"Unknown worker response status: {status}",
+                )
+                return
 
     def close(self) -> None:
         if self._process is None:
@@ -558,15 +542,32 @@ class SubprocessRunner:
                     message="Worker stdout is unavailable.",
                 ),
             )
-        selector = selectors.DefaultSelector()
-        selector.register(self._process.stdout, selectors.EVENT_READ)
-        try:
-            events = selector.select(timeout=timeout_s)
-            if not events:
-                raise TimeoutError("worker response timed out")
-            line = self._process.stdout.readline()
-        finally:
-            selector.close()
+        # Use a thread for readline to implement timeout. This is needed
+        # because selectors can miss data already buffered in Python's
+        # internal text buffer (e.g. when the worker sends multiple JSON
+        # lines in rapid succession).
+        import threading
+
+        result: list[str] = []
+
+        def _read() -> None:
+            assert self._process is not None and self._process.stdout is not None
+            result.append(self._process.stdout.readline())
+
+        reader = threading.Thread(target=_read, daemon=True)
+        reader.start()
+        reader.join(timeout=timeout_s)
+        if reader.is_alive():
+            raise TimeoutError("worker response timed out")
+        if not result:
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(
+                    code="WORKER_EOF",
+                    message="Worker closed stdout unexpectedly.",
+                ),
+            )
+        line = result[0]
         if line == "":
             raise RunnerError(
                 "predict",

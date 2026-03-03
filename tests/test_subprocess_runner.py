@@ -3,8 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from textwrap import dedent
 
+import numpy as np
+
 from circuit_estimation.domain import Circuit
 from circuit_estimation.runner import (
+    DepthRowOutcome,
     EstimatorEntrypoint,
     ResourceLimits,
     SubprocessRunner,
@@ -45,7 +48,36 @@ def _context() -> SetupContext:
     )
 
 
-def test_subprocess_runner_times_out_predict_calls_and_returns_timeout_status(
+def test_subprocess_runner_streams_depth_rows(tmp_path: Path) -> None:
+    module_path = _write_estimator_module(
+        tmp_path,
+        """
+        import numpy as np
+        from circuit_estimation import BaseEstimator, Circuit
+
+        class Estimator(BaseEstimator):
+            def predict(self, circuit: Circuit, budget: int):
+                for i in range(circuit.d):
+                    yield np.full((circuit.n,), float(i), dtype=np.float32)
+        """,
+    )
+    runner = SubprocessRunner()
+    runner.start(
+        EstimatorEntrypoint(file_path=module_path), _context(),
+        ResourceLimits(setup_timeout_s=2.0, predict_timeout_s=5.0, memory_limit_mb=256),
+    )
+    outcomes = list(runner.predict(_sample_circuit(), budget=10))
+    runner.close()
+
+    assert len(outcomes) == 1  # d=1
+    assert outcomes[0].status == "ok"
+    assert outcomes[0].depth_index == 0
+    assert outcomes[0].row is not None
+    np.testing.assert_allclose(outcomes[0].row, [0.0, 0.0])
+    assert outcomes[0].wall_time_s >= 0.0
+
+
+def test_subprocess_runner_times_out_predict_calls_and_returns_error(
     tmp_path: Path,
 ) -> None:
     module_path = _write_estimator_module(
@@ -73,13 +105,14 @@ def test_subprocess_runner_times_out_predict_calls_and_returns_timeout_status(
         ),
     )
 
-    outcome = runner.predict(_sample_circuit(), budget=10)
+    outcomes = list(runner.predict(_sample_circuit(), budget=10))
     runner.close()
 
-    assert outcome.status == "timeout"
-    assert outcome.predictions is None
-    assert outcome.error_message is not None
-    assert "timed out" in outcome.error_message
+    assert len(outcomes) >= 1
+    # At least one outcome should be an error with timeout message
+    error_outcomes = [o for o in outcomes if o.status == "error"]
+    assert len(error_outcomes) >= 1
+    assert any("timed out" in (o.error_message or "") for o in error_outcomes)
 
 
 def test_subprocess_runner_reports_protocol_errors_cleanly(tmp_path: Path) -> None:
@@ -103,10 +136,10 @@ def test_subprocess_runner_reports_protocol_errors_cleanly(tmp_path: Path) -> No
             memory_limit_mb=256,
         ),
     )
-    outcome = runner.predict(_sample_circuit(), budget=10)
+    outcomes = list(runner.predict(_sample_circuit(), budget=10))
     runner.close()
 
-    assert outcome.status == "protocol_error"
-    assert outcome.predictions is None
-    assert outcome.error_message is not None
-    assert "iterator" in outcome.error_message
+    assert len(outcomes) >= 1
+    error_outcomes = [o for o in outcomes if o.status == "error"]
+    assert len(error_outcomes) >= 1
+    assert any("iterator" in (o.error_message or "") for o in error_outcomes)
