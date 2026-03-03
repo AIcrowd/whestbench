@@ -1,7 +1,7 @@
 <div align="center">
   <img src="assets/logo/logo.png" alt="Circuit Estimation Challenge logo" style="height: 120px;">
   <br><br>
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+"></a>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-green?logo=python&logoColor=white" alt="Python 3.10+"></a>
 </div>
 
 # Circuit Estimation Challenge Starter Kit
@@ -10,7 +10,7 @@ Can you predict a circuit's behavior by analyzing its structure, instead of just
 
 This challenge asks you to build **mechanistic estimators** — algorithms that exploit the wiring and gate rules of random layered circuits to estimate expected wire values, rather than relying solely on brute-force Monte Carlo sampling. The question is both practical and foundational: when can structure-aware estimation compete with or beat pure sampling under the same compute budget?
 
-## 60-Second Overview
+## ⚡ 60-Second Overview
 
 You are given:
 
@@ -34,7 +34,7 @@ This challenge instantiates that question in random Boolean circuits, where eval
 
 > **Your practical goal:** beat sampling. Build an estimator that reaches the same accuracy as brute-force sampling but in less compute time. Your score directly measures how efficiently you estimate relative to the sampling baseline.
 
-## 5-Minute Quickstart
+## 🚀 5-Minute Quickstart
 
 Install [`uv`](https://docs.astral.sh/uv/):
 
@@ -79,38 +79,38 @@ For local editable invocation without global install:
 uv run --with-editable . cestim smoke-test
 ```
 
-## Documentation
+## 📚 Documentation
 
 Start at: [Documentation Index](docs/index.md)
 
-### Getting Started
+### 🏁 Getting Started
 
 - [Install and CLI Quickstart](docs/getting-started/install-and-cli-quickstart.md)
 - [First Local Run](docs/getting-started/first-local-run.md)
 
-### Concepts
+### 💡 Concepts
 
 - [Problem Setup](docs/concepts/problem-setup.md)
 - [Scoring Model](docs/concepts/scoring-model.md)
 
-### How-To
+### 🛠 How-To
 
 - [Write an Estimator](docs/how-to/write-an-estimator.md)
 - [Inspect and Traverse Circuit Structure](docs/how-to/inspect-circuit-structure.md)
 - [Validate, Run, and Package](docs/how-to/validate-run-package.md)
 - [Use Circuit Explorer](docs/how-to/use-circuit-explorer.md)
 
-### Reference
+### 📖 Reference
 
 - [Estimator Contract](docs/reference/estimator-contract.md)
 - [CLI Reference](docs/reference/cli-reference.md)
 - [Score Report Fields](docs/reference/score-report-fields.md)
 
-### Troubleshooting
+### 🔧 Troubleshooting
 
 - [Common Participant Errors](docs/troubleshooting/common-participant-errors.md)
 
-## Example Estimators
+## 🧪 Example Estimators
 
 Starter estimators are in `examples/estimators/`:
 
@@ -126,13 +126,13 @@ Recommended reading order:
 3. `covariance_propagation.py`
 4. `combined_estimator.py`
 
-## Current Platform Status
+## 📡 Current Platform Status
 
 This starter kit supports local development, validation, scoring, and packaging.
 
 Hosted submission/upload instructions are not part of this repository yet; until then, use local `cestim package` artifacts for iteration.
 
-## Verification Commands
+## ✅ Verification Commands
 
 ```bash
 uv run --group dev ruff check .
