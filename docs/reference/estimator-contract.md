@@ -50,12 +50,7 @@ Returning one final `(depth, width)` tensor is invalid.
 
 ## Failure semantics
 
-Validation can fail for:
-
-- wrong row shape,
-- too few or too many rows,
-- non-finite values,
-- non-iterable `predict` output.
+When validation fails (wrong row shape, too few rows, non-finite values, non-iterable output), the affected prediction is treated as a **zero-filled row**. The scoring loop continues and produces a valid report — errors are reflected as increased MSE rather than hard failures.
 
 ## ➡️ Next step
 
