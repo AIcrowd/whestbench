@@ -1,4 +1,8 @@
-<img src="assets/logo/logo.png" alt="Circuit Estimation Challenge logo" style="height: 120px;">
+<div align="center">
+  <img src="assets/logo/logo.png" alt="Circuit Estimation Challenge logo" style="height: 120px;">
+  <br><br>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white" alt="Python 3.10+"></a>
+</div>
 
 # Circuit Estimation Challenge Starter Kit
 
