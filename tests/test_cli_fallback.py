@@ -53,7 +53,7 @@ def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
 def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
     monkeypatch, capsys
 ) -> None:
-    monkeypatch.setattr(cli, "score_submission_report", lambda *_a, **_k: _sample_report())
+    monkeypatch.setattr(cli, "score_estimator_report", lambda *_a, **_k: _sample_report())
 
     def fail_render(*_args, **_kwargs):
         raise RuntimeError("render failed")

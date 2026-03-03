@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import selectors
 import subprocess
 import sys
 import time
@@ -31,7 +30,6 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     psutil = None
 
-PredictStatus = Literal["ok", "timeout", "oom", "runtime_error", "protocol_error"]
 RunnerStage = Literal["load", "setup", "predict", "validate", "package", "submit"]
 
 
@@ -61,34 +59,6 @@ class ResourceLimits:
             raise ValueError("memory_limit_mb must be positive.")
         if self.cpu_time_limit_s is not None and self.cpu_time_limit_s <= 0:
             raise ValueError("cpu_time_limit_s must be positive when provided.")
-
-
-@dataclass(slots=True)
-class PredictOutcome:
-    """Per-call prediction outcome returned by estimator runners."""
-
-    predictions: NDArray[np.float32] | None
-    wall_time_s: float
-    cpu_time_s: float
-    rss_bytes: int
-    peak_rss_bytes: int
-    status: PredictStatus
-    error_message: str | None = None
-
-    def __post_init__(self) -> None:
-        valid_status = {"ok", "timeout", "oom", "runtime_error", "protocol_error"}
-        if self.status not in valid_status:
-            raise ValueError(f"Unsupported status: {self.status}")
-        if self.wall_time_s < 0:
-            raise ValueError("wall_time_s must be non-negative.")
-        if self.cpu_time_s < 0:
-            raise ValueError("cpu_time_s must be non-negative.")
-        if self.rss_bytes < 0:
-            raise ValueError("rss_bytes must be non-negative.")
-        if self.peak_rss_bytes < 0:
-            raise ValueError("peak_rss_bytes must be non-negative.")
-        if self.status == "ok" and self.predictions is None:
-            raise ValueError("predictions are required when status is 'ok'.")
 
 
 DepthRowStatus = Literal["ok", "error"]

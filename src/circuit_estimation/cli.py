@@ -16,7 +16,11 @@ from .domain import Circuit, Layer
 from .estimators import CombinedEstimator
 from .loader import load_estimator_from_path
 from .packaging import package_submission
-from .reporting import render_agent_report, render_human_report, render_smoke_test_next_steps
+from .reporting import (
+    render_agent_report,
+    render_human_report,
+    render_smoke_test_next_steps,
+)
 from .runner import (
     EstimatorEntrypoint,
     InProcessRunner,
@@ -24,7 +28,7 @@ from .runner import (
     RunnerError,
     SubprocessRunner,
 )
-from .scoring import ContestParams, score_estimator_report, score_submission_report
+from .scoring import ContestParams, score_estimator_report
 from .sdk import SetupContext
 from .streaming import validate_depth_row
 
@@ -317,15 +321,15 @@ def _main_participant(argv: list[str]) -> int:
 
         if command == "run":
             runner = InProcessRunner() if args.runner == "inprocess" else SubprocessRunner()
-            report = score_submission_report(
+            report = score_estimator_report(
                 runner,
-                EstimatorEntrypoint(
-                    file_path=Path(args.estimator).resolve(),
-                    class_name=args.class_name,
-                ),
                 n_circuits=int(args.n_circuits),
                 n_samples=int(args.n_samples),
                 contest_params=_default_contest_params(),
+                entrypoint=EstimatorEntrypoint(
+                    file_path=Path(args.estimator).resolve(),
+                    class_name=args.class_name,
+                ),
                 limits=_default_resource_limits(),
                 profile=bool(args.profile),
                 detail=str(args.detail),

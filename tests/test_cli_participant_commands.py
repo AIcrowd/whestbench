@@ -66,7 +66,7 @@ def test_validate_command_returns_json_only_with_json_flag(
 def test_run_command_renders_human_report_in_non_agent_mode(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(cli, "score_submission_report", lambda *_args, **_kwargs: _sample_report())
+    monkeypatch.setattr(cli, "score_estimator_report", lambda *_args, **_kwargs: _sample_report())
     monkeypatch.setattr(
         cli,
         "render_human_report",

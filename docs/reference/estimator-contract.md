@@ -13,6 +13,17 @@ Optional lifecycle hooks:
 - `setup(self, context: SetupContext) -> None`
 - `teardown(self) -> None`
 
+### `SetupContext` fields
+
+| Field | Type | Description |
+|---|---|---|
+| `width` | `int` | Wire count for generated circuits |
+| `max_depth` | `int` | Number of layers per circuit |
+| `budgets` | `tuple[int, ...]` | Sampling budgets used during evaluation |
+| `time_tolerance` | `float` | Relative slack for timeout/floor semantics |
+| `api_version` | `str` | Contract version string |
+| `scratch_dir` | `str \| None` | Optional writable directory for caching |
+
 ## Input object quick reference
 
 | Object | Field | Meaning |

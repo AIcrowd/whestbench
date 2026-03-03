@@ -227,7 +227,7 @@ def test_run_subprocess_error_includes_inprocess_debug_hint(
             RunnerErrorDetail(code="SETUP_ERROR", message="runner failed"),
         )
 
-    monkeypatch.setattr(cli, "score_submission_report", fail_report)
+    monkeypatch.setattr(cli, "score_estimator_report", fail_report)
 
     exit_code = cli.main(["run", "--estimator", "estimator.py"])
     captured = capsys.readouterr()
@@ -247,7 +247,7 @@ def test_run_inprocess_error_omits_inprocess_debug_hint(
             RunnerErrorDetail(code="SETUP_ERROR", message="runner failed"),
         )
 
-    monkeypatch.setattr(cli, "score_submission_report", fail_report)
+    monkeypatch.setattr(cli, "score_estimator_report", fail_report)
 
     exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
     captured = capsys.readouterr()
