@@ -6,7 +6,12 @@ from textwrap import dedent
 import numpy as np
 
 from circuit_estimation.domain import Circuit
-from circuit_estimation.runner import EstimatorEntrypoint, InProcessRunner, ResourceLimits
+from circuit_estimation.runner import (
+    DepthRowOutcome,
+    EstimatorEntrypoint,
+    InProcessRunner,
+    ResourceLimits,
+)
 from circuit_estimation.sdk import SetupContext
 from tests.helpers import make_circuit, make_layer
 
@@ -52,6 +57,31 @@ def _limits() -> ResourceLimits:
     )
 
 
+def test_inprocess_runner_streams_depth_rows(tmp_path: Path) -> None:
+    module_path = _write_estimator_module(
+        tmp_path,
+        """
+        import numpy as np
+        from circuit_estimation import BaseEstimator, Circuit
+
+        class Estimator(BaseEstimator):
+            def predict(self, circuit: Circuit, budget: int):
+                for i in range(circuit.d):
+                    yield np.full((circuit.n,), float(i), dtype=np.float32)
+        """,
+    )
+    runner = InProcessRunner()
+    runner.start(EstimatorEntrypoint(file_path=module_path), _setup_context(), _limits())
+    outcomes = list(runner.predict(_sample_circuit(), budget=10))
+
+    assert len(outcomes) == 1  # _sample_circuit has d=1
+    assert outcomes[0].status == "ok"
+    assert outcomes[0].depth_index == 0
+    assert outcomes[0].row is not None
+    np.testing.assert_allclose(outcomes[0].row, [0.0, 0.0])
+    assert outcomes[0].wall_time_s >= 0.0
+
+
 def test_inprocess_runner_calls_setup_once_before_predicts(tmp_path: Path) -> None:
     module_path = _write_estimator_module(
         tmp_path,
@@ -73,44 +103,20 @@ def test_inprocess_runner_calls_setup_once_before_predicts(tmp_path: Path) -> No
 
     runner = InProcessRunner()
     runner.start(EstimatorEntrypoint(file_path=module_path), _setup_context(), _limits())
-    first = runner.predict(_sample_circuit(), budget=10)
-    second = runner.predict(_sample_circuit(), budget=100)
+    first = list(runner.predict(_sample_circuit(), budget=10))
+    second = list(runner.predict(_sample_circuit(), budget=100))
 
-    assert first.status == "ok"
-    assert second.status == "ok"
-    assert first.predictions is not None
-    assert second.predictions is not None
-    np.testing.assert_allclose(first.predictions, np.ones((1, 2), dtype=np.float32))
-    np.testing.assert_allclose(second.predictions, np.ones((1, 2), dtype=np.float32))
-
-
-def test_inprocess_runner_collects_wall_cpu_and_memory_metrics(tmp_path: Path) -> None:
-    module_path = _write_estimator_module(
-        tmp_path,
-        """
-        import numpy as np
-        from circuit_estimation import BaseEstimator, Circuit
-
-        class Estimator(BaseEstimator):
-            def predict(self, circuit: Circuit, budget: int):
-                for _ in range(circuit.d):
-                    yield np.zeros((circuit.n,), dtype=np.float32)
-        """,
-    )
-    runner = InProcessRunner()
-    runner.start(EstimatorEntrypoint(file_path=module_path), _setup_context(), _limits())
-    outcome = runner.predict(_sample_circuit(), budget=10)
-
-    assert outcome.status == "ok"
-    assert outcome.predictions is not None
-    assert outcome.predictions.shape == (1, 2)
-    assert outcome.wall_time_s >= 0.0
-    assert outcome.cpu_time_s >= 0.0
-    assert outcome.rss_bytes >= 0
-    assert outcome.peak_rss_bytes >= 0
+    assert len(first) == 1
+    assert len(second) == 1
+    assert first[0].status == "ok"
+    assert second[0].status == "ok"
+    assert first[0].row is not None
+    assert second[0].row is not None
+    np.testing.assert_allclose(first[0].row, np.ones(2, dtype=np.float32))
+    np.testing.assert_allclose(second[0].row, np.ones(2, dtype=np.float32))
 
 
-def test_inprocess_runner_returns_structured_runtime_error_status(tmp_path: Path) -> None:
+def test_inprocess_runner_streams_error_on_runtime_exception(tmp_path: Path) -> None:
     module_path = _write_estimator_module(
         tmp_path,
         """
@@ -124,9 +130,46 @@ def test_inprocess_runner_returns_structured_runtime_error_status(tmp_path: Path
 
     runner = InProcessRunner()
     runner.start(EstimatorEntrypoint(file_path=module_path), _setup_context(), _limits())
-    outcome = runner.predict(_sample_circuit(), budget=10)
+    outcomes = list(runner.predict(_sample_circuit(), budget=10))
 
-    assert outcome.status == "runtime_error"
-    assert outcome.predictions is None
-    assert outcome.error_message is not None
-    assert "boom" in outcome.error_message
+    assert len(outcomes) == 1
+    assert outcomes[0].status == "error"
+    assert outcomes[0].row is None
+    assert outcomes[0].error_message is not None
+    assert "boom" in outcomes[0].error_message
+
+
+def test_inprocess_runner_streams_cumulative_wall_times(tmp_path: Path) -> None:
+    module_path = _write_estimator_module(
+        tmp_path,
+        """
+        import time
+        import numpy as np
+        from circuit_estimation import BaseEstimator, Circuit
+
+        class Estimator(BaseEstimator):
+            def predict(self, circuit: Circuit, budget: int):
+                for _ in range(circuit.d):
+                    time.sleep(0.01)
+                    yield np.zeros((circuit.n,), dtype=np.float32)
+        """,
+    )
+    ctx = SetupContext(width=2, max_depth=3, budgets=(10,), time_tolerance=0.1, api_version="1.0")
+    circuit = make_circuit(
+        2,
+        [
+            make_layer(
+                first=[0, 1], second=[1, 0],
+                first_coeff=[1.0, 1.0], second_coeff=[0.0, 0.0],
+                const=[0.0, 0.0], product_coeff=[0.0, 0.0],
+            )
+        ] * 3,
+    )
+    runner = InProcessRunner()
+    runner.start(EstimatorEntrypoint(file_path=module_path), ctx, _limits())
+    outcomes = list(runner.predict(circuit, budget=10))
+
+    assert len(outcomes) == 3
+    # wall times should be monotonically increasing (cumulative)
+    for i in range(1, len(outcomes)):
+        assert outcomes[i].wall_time_s >= outcomes[i - 1].wall_time_s

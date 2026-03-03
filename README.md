@@ -1,88 +1,40 @@
-<img src="assets/logo/logo.png" alt="logo" style="height: 150px;">
+<div align="center">
+  <img src="assets/logo/logo.png" alt="Circuit Estimation Challenge logo" style="height: 120px;">
+  <br><br>
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-green?logo=python&logoColor=white" alt="Python 3.10+"></a>
+</div>
 
 # Circuit Estimation Challenge Starter Kit
 
-Build, test, and iterate estimators for the Circuit Estimation Challenge with a local evaluator, participant-first CLI, and an interactive Circuit Explorer.
+Can you predict a circuit's behavior by analyzing its structure, instead of just running it thousands of times?
 
-## What Is The Problem?
+This challenge asks you to build **mechanistic estimators** — algorithms that exploit the wiring and gate rules of random layered circuits to estimate expected wire values, rather than relying solely on brute-force Monte Carlo sampling. The question is both practical and foundational: when can structure-aware estimation compete with or beat pure sampling under the same compute budget?
 
-At a high level, you are given a random layered circuit and a compute budget.
-Your estimator must predict the expected value of every wire after every layer.
+## ⚡ 60-Second Overview
 
-- Input to your estimator: one `Circuit`, one integer `budget`
-- Output from your estimator: a stream of exactly `max_depth` vectors
-- Shape per emitted vector: `(width,)`
+You are given:
 
-The evaluator compares your streamed predictions against Monte Carlo ground truth and measures both quality and time behavior.
+- one random `Circuit`
+- one integer `budget`
 
-```mermaid
-%%{init: {"theme": "base", "themeVariables": {
-"primaryColor": "#FEF2F1",
-"primaryTextColor": "#292C2D",
-"primaryBorderColor": "#F0524D",
-"secondaryColor": "#F1F3F5",
-"tertiaryColor": "#FFFFFF",
-"lineColor": "#5D5F60",
-"edgeLabelBackground": "#FFFFFF",
-"clusterBkg": "#FFFFFF",
-"clusterBorder": "#D9DCDC",
-"mainBkg": "#F8F9F9",
-"fontFamily": "Inter, -apple-system, BlinkMacSystemFont, sans-serif"
-}}}%%
-flowchart LR
-    A[Random Circuit] --> B[Monte Carlo Ground Truth]
-    A --> C[Your Estimator]
-    C --> D[Streamed per-layer predictions]
-    B --> E[Per-layer error]
-    D --> E
-    E --> F[Runtime-aware adjusted score]
-```
+Your estimator must stream exactly one vector per layer, each with shape `(width,)`, estimating expected wire values after that layer.
 
-For a deeper explanation (intuitive + formal), see [What Is The Problem And How Is It Scored?](docs/guides/what-is-the-problem-and-how-is-it-scored.md).
+Your score combines prediction accuracy with compute efficiency: can you match sampling's accuracy while using less time? See [Scoring Model](docs/concepts/scoring-model.md) for details. Lower score is better.
 
-## How Scoring Works
+### 🧠 Why this challenge matters
 
-For each budget in `budgets`:
+The natural way to estimate a circuit's expected output is brute force: sample many random inputs, propagate them, average the results. Sampling is the ground truth — with enough samples it converges to the exact answer. But it's inefficient: the error only shrinks as 1/√k with k samples, and it learns nothing from the circuit's structure.
 
-1. The evaluator measures a sampling baseline time by depth: `time_budget_by_depth_s`.
-2. Your estimator streams one row per depth.
-3. At each depth, runtime is checked against tolerance bounds.
-   - Too slow: that depth row is zeroed.
-   - Too fast: effective runtime is floored to the lower tolerance bound.
-4. Per-budget adjusted error is aggregated across depths.
+**Mechanistic estimation** asks: can we beat sampling at this task? Instead of brute-force evaluation, analyze the circuit's wiring and gate rules to estimate expected wire values directly. Because sampling scales so poorly, there is room for structure-aware methods to reach the same accuracy in far less compute. ARC's research suggests this is both possible and hard — simple structural methods (like mean propagation) work at shallow depth, but break down as correlations accumulate through layers.
 
-Final score is the mean adjusted error across budgets.
-Lower is better.
+- [Competing with sampling](https://www.alignment.org/blog/competing-with-sampling/)
+- [AlgZoo: uninterpreted models with fewer than 1,500 parameters](https://www.alignment.org/blog/algzoo-uninterpreted-models-with-fewer-than-1-500-parameters/)
 
-```mermaid
-%%{init: {"theme": "base", "themeVariables": {
-"primaryColor": "#FEF2F1",
-"primaryTextColor": "#292C2D",
-"primaryBorderColor": "#F0524D",
-"secondaryColor": "#F1F3F5",
-"tertiaryColor": "#FFFFFF",
-"lineColor": "#5D5F60",
-"edgeLabelBackground": "#FFFFFF",
-"clusterBkg": "#FFFFFF",
-"clusterBorder": "#D9DCDC",
-"mainBkg": "#F8F9F9",
-"fontFamily": "Inter, -apple-system, BlinkMacSystemFont, sans-serif"
-}}}%%
-flowchart TD
-    A[Budget b] --> B[Measure baseline time by depth]
-    B --> C[Run estimator and stream depth rows]
-    C --> D{Depth i runtime within tolerance?}
-    D -->|No, too slow| E[Zero row i]
-    D -->|No, too fast| F[Floor effective time i]
-    D -->|Yes| G[Keep row i]
-    E --> H[Compute adjusted per-depth error]
-    F --> H
-    G --> H
-    H --> I[Aggregate per-budget adjusted MSE]
-    I --> J[Average across budgets]
-```
+This challenge instantiates that question in random Boolean circuits, where evaluation is explicit, reproducible, and compute-aware.
 
-## Install And Get The CLI Working (Short Version)
+> **Your practical goal:** beat sampling. Build an estimator that reaches the same accuracy as brute-force sampling but in less compute time. Your score directly measures how efficiently you estimate relative to the sampling baseline.
+
+## 🚀 5-Minute Quickstart
 
 Install [`uv`](https://docs.astral.sh/uv/):
 
@@ -90,190 +42,97 @@ Install [`uv`](https://docs.astral.sh/uv/):
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-From repo root, install CLI:
+Install the CLI from this repository:
 
 ```bash
 uv tool install -e .
 ```
 
-Sanity check:
+Sanity-check CLI wiring:
 
 ```bash
-cestim --json
+cestim smoke-test
 ```
 
-Alternative local invocation (without global CLI install):
+Run your first full loop:
 
 ```bash
-uv run --with-editable . cestim --json
-```
-
-See [Install And CLI Quickstart](docs/guides/install-and-cli-quickstart.md) for a compact command cookbook.
-
-## Participant Workflow
-
-Use participant subcommands as the primary flow:
-
-```mermaid
-%%{init: {"theme": "base", "themeVariables": {
-"primaryColor": "#FEF2F1",
-"primaryTextColor": "#292C2D",
-"primaryBorderColor": "#F0524D",
-"secondaryColor": "#F1F3F5",
-"tertiaryColor": "#FFFFFF",
-"lineColor": "#5D5F60",
-"edgeLabelBackground": "#FFFFFF",
-"clusterBkg": "#FFFFFF",
-"clusterBorder": "#D9DCDC",
-"mainBkg": "#F8F9F9",
-"fontFamily": "Inter, -apple-system, BlinkMacSystemFont, sans-serif"
-}}}%%
-flowchart LR
-    A[cestim init] --> B[Implement Estimator]
-    B --> C[cestim validate]
-    C --> D[cestim run]
-    D --> E[cestim package]
-    E --> F[TODO hosted submission upload]
-```
-
-Quick commands:
-
-```bash
-# 1) Scaffold starter files in your working directory
 cestim init ./my-estimator
-
-# 2) Validate contract correctness
 cestim validate --estimator ./my-estimator/estimator.py
-
-# 3) Run local evaluation
-cestim run --estimator ./my-estimator/estimator.py --runner subprocess --detail full --profile
-
-# 4) Package an artifact
+cestim run --estimator ./my-estimator/estimator.py
 cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz
 ```
 
-Hosted submission/upload flow is not wired yet.
+`cestim run` uses `--runner subprocess` by default.
 
-`TODO: add official AIcrowd submission upload command and endpoint instructions.`
-
-## Circuit Explorer: Build Intuition Fast
-
-The interactive explorer helps you visually understand circuit dynamics and estimator behavior.
+Quick debug sequence when `run` fails:
 
 ```bash
-cd tools/circuit-explorer
-npm install
-npm run dev
+cestim run --estimator ./my-estimator/estimator.py
+cestim run --estimator ./my-estimator/estimator.py --debug
+cestim run --estimator ./my-estimator/estimator.py --runner inprocess --debug
 ```
 
-Open `http://localhost:5173`.
-
-Start guide: [How To Use Circuit Explorer](docs/guides/how-to-use-circuit-explorer.md)
-
-## How To Write Your Own Estimator
-
-Your estimator class should subclass `BaseEstimator` and implement:
-
-- `setup(context)` (optional)
-- `predict(circuit, budget)` (required, streaming)
-- `teardown()` (optional)
-
-Contract requirements:
-
-- Emit exactly `circuit.d` rows
-- Each row must have shape `(circuit.n,)`
-- Values must be finite
-- `yield` rows; do not return one final `(depth, width)` tensor
-
-Start here:
-
-- [How To Write Your Own Estimator](docs/guides/how-to-write-your-own-estimator.md)
-
-## Validate, Run, Package, And Local Modes
-
-- Validate entrypoint and stream contract:
+For local editable invocation without global install:
 
 ```bash
-cestim validate --estimator examples/estimators/random_estimator.py
+uv run --with-editable . cestim smoke-test
 ```
 
-- Local run (participant workflow):
+## 📚 Documentation
 
-```bash
-cestim run --estimator examples/estimators/random_estimator.py --runner subprocess
-```
+Start at: [Documentation Index](docs/index.md)
 
-- Debug mode (tracebacks + rich metrics):
+### 🏁 Getting Started
 
-```bash
-cestim run \
-  --estimator examples/estimators/random_estimator.py \
-  --runner inprocess \
-  --detail full \
-  --profile \
-  --debug \
-  --json
-```
+- [Install and CLI Quickstart](docs/getting-started/install-and-cli-quickstart.md)
+- [First Local Run](docs/getting-started/first-local-run.md)
 
-- Test harness modes:
+### 💡 Concepts
 
-```bash
-./scripts/run-test-harness.sh quick
-./scripts/run-test-harness.sh full
-./scripts/run-test-harness.sh exhaustive
-```
+- [Problem Setup](docs/concepts/problem-setup.md)
+- [Scoring Model](docs/concepts/scoring-model.md)
 
-Detailed run/validate/package guide: [How To Validate Run And Package](docs/guides/how-to-validate-run-and-package.md)
+### 🛠 How-To
 
-## What The Scores Mean
+- [Write an Estimator](docs/how-to/write-an-estimator.md)
+- [Inspect and Traverse Circuit Structure](docs/how-to/inspect-circuit-structure.md)
+- [Validate, Run, and Package](docs/how-to/validate-run-package.md)
+- [Use Circuit Explorer](docs/how-to/use-circuit-explorer.md)
 
-The report includes key metrics:
+### 📖 Reference
 
-- `final_score`: leaderboard metric (lower is better)
-- `adjusted_mse` per budget: quality with runtime adjustment
-- `mse_mean`: raw prediction quality before runtime weighting
-- `call_time_ratio_mean`: relative time vs baseline envelope
-- `time_budget_by_depth_s`: per-depth runtime reference curve
+- [Estimator Contract](docs/reference/estimator-contract.md)
+- [CLI Reference](docs/reference/cli-reference.md)
+- [Score Report Fields](docs/reference/score-report-fields.md)
 
-Interpretation:
+### 🔧 Troubleshooting
 
-- Better estimators reduce error without violating per-depth time budgets.
-- Better budget-aware estimators spend compute where score impact is highest.
+- [Common Participant Errors](docs/troubleshooting/common-participant-errors.md)
 
-Deep dive: [What Is The Problem And How Is It Scored?](docs/guides/what-is-the-problem-and-how-is-it-scored.md)
+## 🧪 Example Estimators
 
-## Included Example Estimators
+Starter estimators are in `examples/estimators/`:
 
-Use these as stepping stones:
+- `random_estimator.py`: interface walkthrough, intentionally low quality
+- `mean_propagation.py`: first-order baseline
+- `covariance_propagation.py`: second-order baseline
+- `combined_estimator.py`: budget-aware baseline
 
-- `examples/estimators/random_estimator.py`: interface walkthrough, intentionally low accuracy
-- `examples/estimators/mean_propagation.py`: first-order moment baseline
-- `examples/estimators/covariance_propagation.py`: second-order approximation baseline
-- `examples/estimators/combined_estimator.py`: budget-aware switching baseline
+Recommended reading order:
 
-Quick run examples:
+1. `random_estimator.py`
+2. `mean_propagation.py`
+3. `covariance_propagation.py`
+4. `combined_estimator.py`
 
-```bash
-cestim run --estimator examples/estimators/random_estimator.py --runner subprocess
-cestim run --estimator examples/estimators/mean_propagation.py --runner subprocess
-cestim run --estimator examples/estimators/covariance_propagation.py --runner subprocess
-cestim run --estimator examples/estimators/combined_estimator.py --runner subprocess
-```
+## 📡 Current Platform Status
 
-More detail: [Example Estimators And How To Run Them](docs/guides/example-estimators-and-how-to-run-them.md)
+This starter kit supports local development, validation, scoring, and packaging.
 
-## Documentation Map
+Hosted submission/upload instructions are not part of this repository yet; until then, use local `cestim package` artifacts for iteration.
 
-- [Install And CLI Quickstart](docs/guides/install-and-cli-quickstart.md)
-- [What Is The Problem And How Is It Scored?](docs/guides/what-is-the-problem-and-how-is-it-scored.md)
-- [How To Use Circuit Explorer](docs/guides/how-to-use-circuit-explorer.md)
-- [How To Write Your Own Estimator](docs/guides/how-to-write-your-own-estimator.md)
-- [How To Validate Run And Package](docs/guides/how-to-validate-run-and-package.md)
-- [Example Estimators And How To Run Them](docs/guides/example-estimators-and-how-to-run-them.md)
-
-## Verification Commands
-
-Run before finalizing changes:
+## ✅ Verification Commands
 
 ```bash
 uv run --group dev ruff check .

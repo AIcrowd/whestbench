@@ -16,7 +16,13 @@ from numpy.typing import NDArray
 
 from .domain import Circuit
 from .generation import random_circuit
-from .runner import EstimatorEntrypoint, EstimatorRunner, ResourceLimits, RunnerError
+from .runner import (
+    DepthRowOutcome,
+    EstimatorEntrypoint,
+    EstimatorRunner,
+    ResourceLimits,
+    RunnerError,
+)
 from .sdk import SetupContext
 from .simulation import empirical_mean, run_batched
 from .streaming import validate_depth_row
@@ -112,232 +118,95 @@ def sampling_baseline_time(n_samples: int, width: int, depth: int) -> list[float
     return [elapsed for elapsed, _ in profile_fn(lambda: run_batched(circuit, inputs))]
 
 
-def score_submission_report(
-    runner: EstimatorRunner,
-    entrypoint: EstimatorEntrypoint,
+def _predict_depth_rows_from_fn(
+    estimator: EstimatorFn, circuit: Circuit, budget: int, *, width: int, depth: int,
+) -> Iterator[DepthRowOutcome]:
+    """Wrap a raw EstimatorFn call into a DepthRowOutcome stream with timing."""
+    start_wall = time.time()
+    try:
+        raw_outputs = estimator(circuit, budget)
+    except Exception as exc:
+        yield DepthRowOutcome(
+            depth_index=0, row=None,
+            wall_time_s=time.time() - start_wall,
+            status="error", error_message=str(exc),
+        )
+        return
+    try:
+        output_iter = iter(raw_outputs)
+    except TypeError:
+        yield DepthRowOutcome(
+            depth_index=0, row=None,
+            wall_time_s=time.time() - start_wall,
+            status="error",
+            error_message="Estimator must return an iterator of depth-row outputs.",
+        )
+        return
+
+    for depth_index in range(depth):
+        try:
+            raw_row = next(output_iter)
+        except StopIteration:
+            yield DepthRowOutcome(
+                depth_index=depth_index, row=None,
+                wall_time_s=time.time() - start_wall,
+                status="error",
+                error_message="Estimator must emit exactly max_depth rows.",
+            )
+            return
+        except Exception as exc:
+            yield DepthRowOutcome(
+                depth_index=depth_index, row=None,
+                wall_time_s=time.time() - start_wall,
+                status="error",
+                error_message=f"Estimator stream failed at depth {depth_index}: {exc}",
+            )
+            return
+
+        elapsed = time.time() - start_wall
+        try:
+            row = validate_depth_row(raw_row, width=width, depth_index=depth_index)
+        except ValueError as exc:
+            yield DepthRowOutcome(
+                depth_index=depth_index, row=None,
+                wall_time_s=elapsed, status="error",
+                error_message=str(exc),
+            )
+            return
+
+        yield DepthRowOutcome(
+            depth_index=depth_index, row=row,
+            wall_time_s=elapsed, status="ok",
+        )
+
+    # Check for extra rows (silently consume)
+    try:
+        _extra = next(output_iter)
+    except StopIteration:
+        pass
+    except Exception:
+        pass
+
+
+def score_estimator_report(
+    estimator: EstimatorFn | EstimatorRunner,
     n_circuits: int,
     n_samples: int,
     contest_params: ContestParams = default_contest_params,
     *,
+    entrypoint: EstimatorEntrypoint | None = None,
     limits: ResourceLimits = default_resource_limits,
     circuits: Sequence[Circuit] | None = None,
     profile: bool = False,
     detail: str = "raw",
     profiler: ProfilerFn | None = None,
 ) -> dict[str, Any]:
-    """Compute score report for an estimator accessed through a runner boundary."""
-    contest_params.validate()
-    if n_circuits <= 0:
-        raise ValueError("n_circuits must be positive.")
-    if n_samples <= 0:
-        raise ValueError("n_samples must be positive.")
-    if detail not in {"raw", "full"}:
-        raise ValueError("detail must be one of: raw, full.")
-
-    width = contest_params.width
-    depth = contest_params.max_depth
-    tolerance = contest_params.time_tolerance
-    run_start = datetime.now(timezone.utc)
-    run_start_wall = time.time()
-    collect_profile = profile or profiler is not None
-
-    circuits_to_score = (
-        list(circuits)
-        if circuits is not None
-        else [random_circuit(width, depth) for _ in range(n_circuits)]
-    )
-    if not circuits_to_score:
-        raise ValueError("At least one circuit is required for scoring.")
-    if any(c.n != width for c in circuits_to_score):
-        raise ValueError("All circuits must have width equal to contest_params.width.")
-    if any(c.d != depth for c in circuits_to_score):
-        raise ValueError("All circuits must have depth equal to contest_params.max_depth.")
-
-    setup_context = SetupContext(
-        width=width,
-        max_depth=depth,
-        budgets=tuple(int(b) for b in contest_params.budgets),
-        time_tolerance=tolerance,
-        api_version="1.0",
-    )
-    try:
-        runner.start(entrypoint, setup_context, limits)
-    except RunnerError:
-        runner.close()
-        raise
-
-    n_circuits_effective = len(circuits_to_score)
-    circuits_meta: list[dict[str, int]] = [
-        {
-            "circuit_index": idx,
-            "wire_count": c.n,
-            "layer_count": c.d,
-        }
-        for idx, c in enumerate(circuits_to_score)
-    ]
-    means: NDArray[np.float32] = np.array(
-        [list(empirical_mean(circuit, n_samples)) for circuit in circuits_to_score],
-        dtype=np.float32,
-    )
-    by_budget_raw: list[dict[str, Any]] = []
-    profile_calls: list[dict[str, float | int | str]] = []
-    try:
-        for budget in contest_params.budgets:
-            baseline_times = np.array(
-                sampling_baseline_time(budget, width, depth), dtype=np.float32
-            )
-            baseline_times = np.maximum(baseline_times, np.float32(1e-9))
-            baseline_total_time = float(np.sum(baseline_times))
-            all_outputs: list[list[NDArray[np.float32]]] = []
-            call_effective_times: list[float] = []
-
-            timeout_count = 0
-            floor_count = 0
-            runtime_error_count = 0
-            protocol_error_count = 0
-            oom_count = 0
-
-            for circuit_index, circuit in enumerate(circuits_to_score):
-                outcome = runner.predict(circuit, budget)
-
-                event = {
-                    "budget": int(budget),
-                    "circuit_index": int(circuit_index),
-                    "wire_count": int(width),
-                    "layer_count": int(depth),
-                    "wall_time_s": float(outcome.wall_time_s),
-                    "cpu_time_s": float(outcome.cpu_time_s),
-                    "rss_bytes": int(outcome.rss_bytes),
-                    "peak_rss_bytes": int(outcome.peak_rss_bytes),
-                    "status": str(outcome.status),
-                }
-                if collect_profile:
-                    profile_calls.append(event)
-                if profiler is not None:
-                    profiler(event)
-
-                elapsed = float(outcome.wall_time_s)
-                if outcome.status == "ok":
-                    raw_outputs = outcome.predictions
-                else:
-                    raw_outputs = None
-                    if outcome.status == "runtime_error":
-                        runtime_error_count += 1
-                    elif outcome.status == "protocol_error":
-                        protocol_error_count += 1
-                    elif outcome.status == "oom":
-                        oom_count += 1
-
-                if isinstance(raw_outputs, np.ndarray):
-                    output_tensor = np.asarray(raw_outputs, dtype=np.float32)
-                    if (
-                        output_tensor.ndim != 2
-                        or output_tensor.shape[0] != depth
-                        or output_tensor.shape[1] != width
-                    ):
-                        output_tensor = np.zeros((depth, width), dtype=np.float32)
-                        protocol_error_count += 1
-                else:
-                    output_tensor = np.zeros((depth, width), dtype=np.float32)
-
-                timed_out = (outcome.status == "timeout") or (
-                    elapsed > baseline_total_time * (1.0 + tolerance)
-                )
-                floored = elapsed < (1.0 - tolerance) * baseline_total_time
-                if timed_out:
-                    timeout_count += 1
-                if floored:
-                    floor_count += 1
-                effective_total_time = max(elapsed, (1.0 - tolerance) * baseline_total_time)
-                call_effective_times.append(float(effective_total_time))
-                all_outputs.append([output_tensor[i] for i in range(depth)])
-
-            estimates = np.array(all_outputs, dtype=np.float32)
-            mse = ((estimates - means) ** 2).mean(axis=(0, 2))
-            mse_mean = float(np.mean(mse))
-            call_effective_time_s_mean = float(np.mean(call_effective_times))
-            call_time_ratio_mean = float(
-                call_effective_time_s_mean / max(baseline_total_time, 1e-9)
-            )
-            adjusted_mse = float(mse_mean * call_time_ratio_mean)
-
-            by_budget_raw.append(
-                {
-                    "budget": int(budget),
-                    "mse_by_layer": mse.astype(np.float64).tolist(),
-                    "mse_mean": mse_mean,
-                    "adjusted_mse": adjusted_mse,
-                    "call_time_ratio_mean": call_time_ratio_mean,
-                    "call_effective_time_s_mean": call_effective_time_s_mean,
-                    "timeout_rate": float(timeout_count / n_circuits_effective),
-                    "time_floor_rate": float(floor_count / n_circuits_effective),
-                    "runtime_error_rate": float(runtime_error_count / n_circuits_effective),
-                    "protocol_error_rate": float(protocol_error_count / n_circuits_effective),
-                    "oom_rate": float(oom_count / n_circuits_effective),
-                }
-            )
-    finally:
-        runner.close()
-
-    final_score = float(np.mean([entry["adjusted_mse"] for entry in by_budget_raw]))
-    run_end = datetime.now(timezone.utc)
-    host_meta = {
-        "hostname": socket.gethostname(),
-        "os": platform.system(),
-        "os_release": platform.release(),
-        "platform": platform.platform(),
-        "machine": platform.machine(),
-        "python_version": platform.python_version(),
-    }
-    report: dict[str, Any] = {
-        "schema_version": "1.0",
-        "mode": "agent",
-        "detail": detail,
-        "run_meta": {
-            "run_started_at_utc": run_start.isoformat(),
-            "run_finished_at_utc": run_end.isoformat(),
-            "run_duration_s": float(time.time() - run_start_wall),
-            "host": host_meta,
-        },
-        "run_config": {
-            "n_circuits": int(n_circuits_effective),
-            "n_samples": int(n_samples),
-            "width": int(width),
-            "max_depth": int(depth),
-            "layer_count": int(depth),
-            "budgets": [int(b) for b in contest_params.budgets],
-            "time_tolerance": float(tolerance),
-            "profile_enabled": bool(collect_profile),
-        },
-        "circuits": circuits_meta,
-        "results": {
-            "final_score": final_score,
-            "score_direction": "lower_is_better",
-            "by_budget_raw": by_budget_raw,
-        },
-        "notes": [],
-    }
-    if collect_profile:
-        report["profile_calls"] = profile_calls
-        if detail == "full":
-            report["profile_summary"] = _profile_summary(profile_calls)
-    if detail == "full":
-        report["results"].update(_compute_full_detail(by_budget_raw, depth))
-    return report
-
-
-def score_estimator_report(
-    estimator: EstimatorFn,
-    n_circuits: int,
-    n_samples: int,
-    contest_params: ContestParams = default_contest_params,
-    *,
-    circuits: Sequence[Circuit] | None = None,
-    profile: bool = False,
-    detail: str = "raw",
-    profiler: ProfilerFn | None = None,
-) -> dict[str, Any]:
     """Compute a structured scoring report for one estimator.
+
+    The estimator may be provided as a raw callable (``EstimatorFn``)
+    or as an ``EstimatorRunner`` instance. When a runner is supplied,
+    the caller must also provide ``entrypoint`` and ``limits`` so the
+    runner can be initialised.
 
     The report includes:
     - run metadata and configuration,
@@ -364,6 +233,17 @@ def score_estimator_report(
     run_start_wall = time.time()
     collect_profile = profile or profiler is not None
 
+    # Detect whether we have a runner or a raw callable
+    is_runner = hasattr(estimator, "start") and hasattr(estimator, "close")
+    runner: EstimatorRunner | None = None
+    estimator_fn: EstimatorFn | None = None
+    if is_runner:
+        runner = estimator  # type: ignore[assignment]
+        if entrypoint is None:
+            raise ValueError("entrypoint is required when using a runner.")
+    else:
+        estimator_fn = estimator  # type: ignore[assignment]
+
     circuits_to_score = (
         list(circuits)
         if circuits is not None
@@ -375,6 +255,22 @@ def score_estimator_report(
         raise ValueError("All circuits must have width equal to contest_params.width.")
     if any(c.d != depth for c in circuits_to_score):
         raise ValueError("All circuits must have depth equal to contest_params.max_depth.")
+
+    # If runner, start it
+    if runner is not None:
+        assert entrypoint is not None
+        setup_context = SetupContext(
+            width=width,
+            max_depth=depth,
+            budgets=tuple(int(b) for b in contest_params.budgets),
+            time_tolerance=tolerance,
+            api_version="1.0",
+        )
+        try:
+            runner.start(entrypoint, setup_context, limits)
+        except RunnerError:
+            runner.close()
+            raise
 
     n_circuits_effective = len(circuits_to_score)
     circuits_meta: list[dict[str, int]] = [
@@ -391,136 +287,113 @@ def score_estimator_report(
     )
     by_budget_raw: list[dict[str, Any]] = []
     profile_calls: list[dict[str, float | int]] = []
-    for budget in contest_params.budgets:
-        baseline_times = np.array(sampling_baseline_time(budget, width, depth), dtype=np.float32)
-        baseline_times = np.maximum(baseline_times, np.float32(1e-9))
-        all_outputs: list[list[NDArray[np.float32]]] = []
-        effective_time_sums_by_depth = np.zeros(depth, dtype=np.float64)
-        timeout_counts_by_depth = np.zeros(depth, dtype=np.float64)
-        floor_counts_by_depth = np.zeros(depth, dtype=np.float64)
+    try:
+        for budget in contest_params.budgets:
+            baseline_times = np.array(sampling_baseline_time(budget, width, depth), dtype=np.float32)
+            baseline_times = np.maximum(baseline_times, np.float32(1e-9))
+            all_outputs: list[list[NDArray[np.float32]]] = []
+            effective_time_sums_by_depth = np.zeros(depth, dtype=np.float64)
+            timeout_counts_by_depth = np.zeros(depth, dtype=np.float64)
+            floor_counts_by_depth = np.zeros(depth, dtype=np.float64)
+            error_count = 0
 
-        for circuit_index, circuit in enumerate(circuits_to_score):
-            start_wall = time.time()
-            start_cpu = time.process_time()
-            try:
-                raw_outputs = estimator(circuit, budget)
-            except Exception as exc:
-                raise ValueError(
-                    "Estimator failed to start stream for "
-                    f"budget {budget}, circuit {circuit_index}: {exc}"
-                ) from exc
-            try:
-                output_iter = iter(raw_outputs)
-            except TypeError as exc:
-                raise ValueError(
-                    "Estimator must return an iterator of depth-row outputs "
-                    f"for budget {budget}, circuit {circuit_index}."
-                ) from exc
+            for circuit_index, circuit in enumerate(circuits_to_score):
+                # Get per-depth outcomes from either runner or raw fn
+                if runner is not None:
+                    depth_outcomes = list(runner.predict(circuit, budget))
+                else:
+                    assert estimator_fn is not None
+                    depth_outcomes = list(
+                        _predict_depth_rows_from_fn(
+                            estimator_fn, circuit, budget,
+                            width=width, depth=depth,
+                        )
+                    )
 
-            rows: list[NDArray[np.float32]] = []
-            elapsed_last = 0.0
-            for depth_index in range(depth):
-                try:
-                    raw_row = next(output_iter)
-                except StopIteration as exc:
-                    raise ValueError(
-                        "Estimator must emit exactly max_depth rows; "
-                        f"stopped at depth {depth_index} for budget {budget}, circuit {circuit_index}."
-                    ) from exc
-                except Exception as exc:
-                    raise ValueError(
-                        "Estimator stream failed while producing "
-                        f"depth row {depth_index} for budget {budget}, circuit {circuit_index}: {exc}"
-                    ) from exc
+                # Process depth outcomes
+                rows: list[NDArray[np.float32]] = []
+                has_error = False
+                last_wall_time = 0.0
+                for outcome in depth_outcomes:
+                    if outcome.status == "error":
+                        has_error = True
+                        error_count += 1
+                        break
+                    assert outcome.row is not None
+                    d_idx = outcome.depth_index
+                    elapsed = outcome.wall_time_s
+                    last_wall_time = elapsed
+                    baseline_time = float(baseline_times[d_idx])
 
-                elapsed = time.time() - start_wall
-                elapsed_last = elapsed
-                baseline_time = float(baseline_times[depth_index])
-                row = validate_depth_row(raw_row, width=width, depth_index=depth_index)
+                    timed_out = elapsed > baseline_time * (1.0 + tolerance)
+                    floored = elapsed < baseline_time * (1.0 - tolerance)
+                    effective_time = max(elapsed, baseline_time * (1.0 - tolerance))
 
-                timed_out = elapsed > baseline_time * (1.0 + tolerance)
-                floored = elapsed < baseline_time * (1.0 - tolerance)
-                effective_time = max(elapsed, baseline_time * (1.0 - tolerance))
+                    row = outcome.row
+                    if timed_out:
+                        row = np.zeros_like(row)
 
-                if timed_out:
-                    row = np.zeros_like(row)
+                    rows.append(row)
+                    effective_time_sums_by_depth[d_idx] += float(effective_time)
+                    timeout_counts_by_depth[d_idx] += float(timed_out)
+                    floor_counts_by_depth[d_idx] += float(floored)
 
-                rows.append(row)
-                effective_time_sums_by_depth[depth_index] += float(effective_time)
-                timeout_counts_by_depth[depth_index] += float(timed_out)
-                floor_counts_by_depth[depth_index] += float(floored)
+                if has_error or len(rows) < depth:
+                    # Fill missing rows with zeros
+                    while len(rows) < depth:
+                        rows.append(np.zeros(width, dtype=np.float32))
 
-            try:
-                _extra_row = next(output_iter)
-            except StopIteration:
-                pass
-            except Exception as exc:
-                raise ValueError(
-                    "Estimator stream failed after emitting max_depth rows "
-                    f"for budget {budget}, circuit {circuit_index}: {exc}"
-                ) from exc
-            else:
-                raise ValueError(
-                    "Estimator emitted more than max_depth rows "
-                    f"for budget {budget}, circuit {circuit_index}."
-                )
+                event = {
+                    "budget": int(budget),
+                    "circuit_index": int(circuit_index),
+                    "wire_count": int(width),
+                    "layer_count": int(depth),
+                    "wall_time_s": float(last_wall_time),
+                }
+                if collect_profile:
+                    profile_calls.append(event)
+                if profiler is not None:
+                    profiler(event)
 
-            elapsed_total = elapsed_last
-            cpu_elapsed = time.process_time() - start_cpu
-            rss_bytes = _rss_bytes()
-            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
+                output_tensor = np.stack(rows, axis=0).astype(np.float32)
+                all_outputs.append([output_tensor[i] for i in range(depth)])
 
-            event = {
-                "budget": int(budget),
-                "circuit_index": int(circuit_index),
-                "wire_count": int(width),
-                "layer_count": int(depth),
-                "wall_time_s": float(elapsed_total),
-                "cpu_time_s": float(cpu_elapsed),
-                "rss_bytes": int(rss_bytes),
-                "peak_rss_bytes": int(peak_rss_bytes),
-            }
-            if collect_profile:
-                profile_calls.append(event)
-            if profiler is not None:
-                profiler(event)
+            estimates = np.array(all_outputs, dtype=np.float32)
+            mse = ((estimates - means) ** 2).mean(axis=(0, 2))
+            average_effective_times_by_depth = effective_time_sums_by_depth / n_circuits_effective
+            time_ratios_by_depth = average_effective_times_by_depth / baseline_times
+            adjusted_mse_by_depth = mse * time_ratios_by_depth
+            timeout_rate_by_depth = timeout_counts_by_depth / n_circuits_effective
+            floor_rate_by_depth = floor_counts_by_depth / n_circuits_effective
 
-            output_tensor = np.stack(rows, axis=0).astype(np.float32)
-            all_outputs.append([output_tensor[i] for i in range(depth)])
-
-        estimates = np.array(all_outputs, dtype=np.float32)
-        mse = ((estimates - means) ** 2).mean(axis=(0, 2))
-        average_effective_times_by_depth = effective_time_sums_by_depth / n_circuits_effective
-        time_ratios_by_depth = average_effective_times_by_depth / baseline_times
-        adjusted_mse_by_depth = mse * time_ratios_by_depth
-        timeout_rate_by_depth = timeout_counts_by_depth / n_circuits_effective
-        floor_rate_by_depth = floor_counts_by_depth / n_circuits_effective
-
-        mse_mean = float(np.mean(mse))
-        call_effective_time_s_mean = float(np.mean(average_effective_times_by_depth))
-        call_time_ratio_mean = float(np.mean(time_ratios_by_depth))
-        adjusted_mse = float(np.mean(adjusted_mse_by_depth))
-        timeout_rate = float(np.mean(timeout_rate_by_depth))
-        time_floor_rate = float(np.mean(floor_rate_by_depth))
-        by_budget_raw.append(
-            {
-                "budget": int(budget),
-                "time_budget_by_depth_s": baseline_times.astype(np.float64).tolist(),
-                "mse_by_layer": mse.astype(np.float64).tolist(),
-                "mse_mean": mse_mean,
-                "adjusted_mse": adjusted_mse,
-                "time_ratio_by_depth_mean": time_ratios_by_depth.astype(np.float64).tolist(),
-                "effective_time_s_by_depth_mean": average_effective_times_by_depth.astype(
-                    np.float64
-                ).tolist(),
-                "timeout_rate_by_depth": timeout_rate_by_depth.astype(np.float64).tolist(),
-                "time_floor_rate_by_depth": floor_rate_by_depth.astype(np.float64).tolist(),
-                "call_time_ratio_mean": call_time_ratio_mean,
-                "call_effective_time_s_mean": call_effective_time_s_mean,
-                "timeout_rate": timeout_rate,
-                "time_floor_rate": time_floor_rate,
-            }
-        )
+            mse_mean = float(np.mean(mse))
+            call_effective_time_s_mean = float(np.mean(average_effective_times_by_depth))
+            call_time_ratio_mean = float(np.mean(time_ratios_by_depth))
+            adjusted_mse = float(np.mean(adjusted_mse_by_depth))
+            timeout_rate = float(np.mean(timeout_rate_by_depth))
+            time_floor_rate = float(np.mean(floor_rate_by_depth))
+            by_budget_raw.append(
+                {
+                    "budget": int(budget),
+                    "time_budget_by_depth_s": baseline_times.astype(np.float64).tolist(),
+                    "mse_by_layer": mse.astype(np.float64).tolist(),
+                    "mse_mean": mse_mean,
+                    "adjusted_mse": adjusted_mse,
+                    "time_ratio_by_depth_mean": time_ratios_by_depth.astype(np.float64).tolist(),
+                    "effective_time_s_by_depth_mean": average_effective_times_by_depth.astype(
+                        np.float64
+                    ).tolist(),
+                    "timeout_rate_by_depth": timeout_rate_by_depth.astype(np.float64).tolist(),
+                    "time_floor_rate_by_depth": floor_rate_by_depth.astype(np.float64).tolist(),
+                    "call_time_ratio_mean": call_time_ratio_mean,
+                    "call_effective_time_s_mean": call_effective_time_s_mean,
+                    "timeout_rate": timeout_rate,
+                    "time_floor_rate": time_floor_rate,
+                }
+            )
+    finally:
+        if runner is not None:
+            runner.close()
 
     final_score = float(np.mean([entry["adjusted_mse"] for entry in by_budget_raw]))
     run_end = datetime.now(timezone.utc)
@@ -658,9 +531,6 @@ def _profile_summary(profile_calls: Sequence[Mapping[str, float | int | str]]) -
     if not profile_calls:
         return {"call_count": 0}
     wall = np.array([float(event["wall_time_s"]) for event in profile_calls], dtype=np.float64)
-    cpu = np.array([float(event["cpu_time_s"]) for event in profile_calls], dtype=np.float64)
-    rss = np.array([float(event["rss_bytes"]) for event in profile_calls], dtype=np.float64)
-    peak = np.array([float(event["peak_rss_bytes"]) for event in profile_calls], dtype=np.float64)
     return {
         "call_count": int(len(profile_calls)),
         "wall_time_s": {
@@ -668,23 +538,5 @@ def _profile_summary(profile_calls: Sequence[Mapping[str, float | int | str]]) -
             "min": float(np.min(wall)),
             "max": float(np.max(wall)),
             "p95": float(np.percentile(wall, 95)),
-        },
-        "cpu_time_s": {
-            "mean": float(np.mean(cpu)),
-            "min": float(np.min(cpu)),
-            "max": float(np.max(cpu)),
-            "p95": float(np.percentile(cpu, 95)),
-        },
-        "rss_bytes": {
-            "mean": float(np.mean(rss)),
-            "min": float(np.min(rss)),
-            "max": float(np.max(rss)),
-            "p95": float(np.percentile(rss, 95)),
-        },
-        "peak_rss_bytes": {
-            "mean": float(np.mean(peak)),
-            "min": float(np.min(peak)),
-            "max": float(np.max(peak)),
-            "p95": float(np.percentile(peak, 95)),
         },
     }

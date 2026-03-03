@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import json
 import os
-import selectors
 import subprocess
 import sys
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, Protocol, cast
@@ -30,7 +30,6 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     psutil = None
 
-PredictStatus = Literal["ok", "timeout", "oom", "runtime_error", "protocol_error"]
 RunnerStage = Literal["load", "setup", "predict", "validate", "package", "submit"]
 
 
@@ -62,32 +61,18 @@ class ResourceLimits:
             raise ValueError("cpu_time_limit_s must be positive when provided.")
 
 
+DepthRowStatus = Literal["ok", "error"]
+
+
 @dataclass(slots=True)
-class PredictOutcome:
-    """Per-call prediction outcome returned by estimator runners."""
+class DepthRowOutcome:
+    """Per-depth-row outcome yielded by streaming runner predict."""
 
-    predictions: NDArray[np.float32] | None
+    depth_index: int
+    row: NDArray[np.float32] | None
     wall_time_s: float
-    cpu_time_s: float
-    rss_bytes: int
-    peak_rss_bytes: int
-    status: PredictStatus
+    status: DepthRowStatus
     error_message: str | None = None
-
-    def __post_init__(self) -> None:
-        valid_status = {"ok", "timeout", "oom", "runtime_error", "protocol_error"}
-        if self.status not in valid_status:
-            raise ValueError(f"Unsupported status: {self.status}")
-        if self.wall_time_s < 0:
-            raise ValueError("wall_time_s must be non-negative.")
-        if self.cpu_time_s < 0:
-            raise ValueError("cpu_time_s must be non-negative.")
-        if self.rss_bytes < 0:
-            raise ValueError("rss_bytes must be non-negative.")
-        if self.peak_rss_bytes < 0:
-            raise ValueError("peak_rss_bytes must be non-negative.")
-        if self.status == "ok" and self.predictions is None:
-            raise ValueError("predictions are required when status is 'ok'.")
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,9 +104,7 @@ class EstimatorRunner(Protocol):
         limits: ResourceLimits,
     ) -> None: ...
 
-    def predict(self, circuit: Circuit, budget: int) -> PredictOutcome: ...
-
-    def predict_batch(self, circuits: list[Circuit], budget: int) -> list[PredictOutcome]: ...
+    def predict(self, circuit: Circuit, budget: int) -> Iterator[DepthRowOutcome]: ...
 
     def close(self) -> None: ...
 
@@ -231,7 +214,7 @@ class InProcessRunner:
             )
         self._started = True
 
-    def predict(self, circuit: Circuit, budget: int) -> PredictOutcome:
+    def predict(self, circuit: Circuit, budget: int) -> Iterator[DepthRowOutcome]:
         if not self._started or self._estimator is None or self._limits is None:
             raise RunnerError(
                 "predict",
@@ -242,74 +225,70 @@ class InProcessRunner:
             )
 
         start_wall = time.time()
-        start_cpu = time.process_time()
         try:
             raw_predictions = self._estimator.predict(circuit, budget)
         except Exception as exc:
-            elapsed = time.time() - start_wall
-            cpu_elapsed = time.process_time() - start_cpu
-            rss_bytes = _rss_bytes()
-            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-            return PredictOutcome(
-                predictions=None,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="runtime_error",
-                error_message=str(exc),
+            yield DepthRowOutcome(
+                depth_index=0, row=None,
+                wall_time_s=time.time() - start_wall,
+                status="error", error_message=str(exc),
             )
+            return
 
         try:
-            predictions = _collect_prediction_tensor(
-                raw_predictions,
-                width=circuit.n,
-                depth=circuit.d,
+            output_iter = iter(cast(Any, raw_predictions))
+        except TypeError:
+            yield DepthRowOutcome(
+                depth_index=0, row=None,
+                wall_time_s=time.time() - start_wall,
+                status="error",
+                error_message="Estimator must return an iterator of depth-row outputs.",
             )
-        except ValueError as exc:
+            return
+
+        for depth_index in range(circuit.d):
+            try:
+                raw_row = next(output_iter)
+            except StopIteration:
+                yield DepthRowOutcome(
+                    depth_index=depth_index, row=None,
+                    wall_time_s=time.time() - start_wall,
+                    status="error",
+                    error_message="Estimator must emit exactly max_depth rows.",
+                )
+                return
+            except Exception as exc:
+                yield DepthRowOutcome(
+                    depth_index=depth_index, row=None,
+                    wall_time_s=time.time() - start_wall,
+                    status="error",
+                    error_message=f"Estimator stream failed at depth {depth_index}: {exc}",
+                )
+                return
+
             elapsed = time.time() - start_wall
-            cpu_elapsed = time.process_time() - start_cpu
-            rss_bytes = _rss_bytes()
-            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-            return PredictOutcome(
-                predictions=None,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="protocol_error",
-                error_message=str(exc),
+            try:
+                row = validate_depth_row(raw_row, width=circuit.n, depth_index=depth_index)
+            except ValueError as exc:
+                yield DepthRowOutcome(
+                    depth_index=depth_index, row=None,
+                    wall_time_s=elapsed, status="error",
+                    error_message=str(exc),
+                )
+                return
+
+            yield DepthRowOutcome(
+                depth_index=depth_index, row=row,
+                wall_time_s=elapsed, status="ok",
             )
 
-        elapsed = time.time() - start_wall
-        cpu_elapsed = time.process_time() - start_cpu
-        rss_bytes = _rss_bytes()
-        peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-        if elapsed > self._limits.predict_timeout_s:
-            return PredictOutcome(
-                predictions=None,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="timeout",
-                error_message=(
-                    f"predict exceeded timeout ({elapsed:.6f}s > "
-                    f"{self._limits.predict_timeout_s:.6f}s)"
-                ),
-            )
-        return PredictOutcome(
-            predictions=predictions,
-            wall_time_s=float(elapsed),
-            cpu_time_s=float(cpu_elapsed),
-            rss_bytes=int(rss_bytes),
-            peak_rss_bytes=int(peak_rss_bytes),
-            status="ok",
-            error_message=None,
-        )
-
-    def predict_batch(self, circuits: list[Circuit], budget: int) -> list[PredictOutcome]:
-        return [self.predict(circuit, budget) for circuit in circuits]
+        # Check for extra rows (silently consume)
+        try:
+            _extra = next(output_iter)
+        except StopIteration:
+            pass
+        except Exception:
+            pass
 
     def close(self) -> None:
         if self._estimator is not None:
@@ -406,7 +385,7 @@ class SubprocessRunner:
             )
         self._started = True
 
-    def predict(self, circuit: Circuit, budget: int) -> PredictOutcome:
+    def predict(self, circuit: Circuit, budget: int) -> Iterator[DepthRowOutcome]:
         if not self._started or self._process is None or self._limits is None:
             raise RunnerError(
                 "predict",
@@ -417,7 +396,6 @@ class SubprocessRunner:
             )
 
         start_wall = time.time()
-        start_cpu = time.process_time()
         try:
             self._send_request(
                 {
@@ -426,83 +404,68 @@ class SubprocessRunner:
                     "circuit": _circuit_to_payload(circuit),
                 }
             )
-            response = self._read_response(timeout_s=self._limits.predict_timeout_s)
-        except TimeoutError:
-            self._terminate_process()
-            elapsed = time.time() - start_wall
-            cpu_elapsed = time.process_time() - start_cpu
-            rss_bytes = _rss_bytes()
-            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-            self._started = False
-            return PredictOutcome(
-                predictions=None,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="timeout",
-                error_message="predict timed out waiting for worker response.",
-            )
         except RunnerError as exc:
-            elapsed = time.time() - start_wall
-            cpu_elapsed = time.process_time() - start_cpu
-            rss_bytes = _rss_bytes()
-            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-            return PredictOutcome(
-                predictions=None,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="protocol_error",
-                error_message=exc.detail.message,
+            yield DepthRowOutcome(
+                depth_index=0, row=None,
+                wall_time_s=time.time() - start_wall,
+                status="error", error_message=exc.detail.message,
             )
+            return
 
-        elapsed = time.time() - start_wall
-        cpu_elapsed = time.process_time() - start_cpu
-        rss_bytes = _rss_bytes()
-        peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-        status = str(response.get("status", "protocol_error"))
-        if status == "ok":
-            raw_predictions = response.get("predictions")
-            if not isinstance(raw_predictions, list):
-                return PredictOutcome(
-                    predictions=None,
-                    wall_time_s=float(elapsed),
-                    cpu_time_s=float(cpu_elapsed),
-                    rss_bytes=int(rss_bytes),
-                    peak_rss_bytes=int(peak_rss_bytes),
-                    status="protocol_error",
-                    error_message="Worker response missing predictions list.",
+        # Read streaming responses — one JSON line per depth row
+        while True:
+            try:
+                response = self._read_response(timeout_s=self._limits.predict_timeout_s)
+            except TimeoutError:
+                self._terminate_process()
+                self._started = False
+                yield DepthRowOutcome(
+                    depth_index=-1, row=None,
+                    wall_time_s=time.time() - start_wall,
+                    status="error",
+                    error_message="predict timed out waiting for worker response.",
                 )
-            predictions = np.asarray(raw_predictions, dtype=np.float32)
-            return PredictOutcome(
-                predictions=predictions,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="ok",
-                error_message=None,
-            )
+                return
+            except RunnerError as exc:
+                yield DepthRowOutcome(
+                    depth_index=-1, row=None,
+                    wall_time_s=time.time() - start_wall,
+                    status="error",
+                    error_message=exc.detail.message,
+                )
+                return
 
-        mapped_status: PredictStatus = (
-            cast(PredictStatus, status)
-            if status in {"timeout", "oom", "runtime_error", "protocol_error"}
-            else "protocol_error"
-        )
-        return PredictOutcome(
-            predictions=None,
-            wall_time_s=float(elapsed),
-            cpu_time_s=float(cpu_elapsed),
-            rss_bytes=int(rss_bytes),
-            peak_rss_bytes=int(peak_rss_bytes),
-            status=mapped_status,
-            error_message=str(response.get("error_message", "worker predict failed")),
-        )
-
-    def predict_batch(self, circuits: list[Circuit], budget: int) -> list[PredictOutcome]:
-        return [self.predict(circuit, budget) for circuit in circuits]
+            status = response.get("status")
+            if status == "done":
+                return
+            elif status == "row":
+                elapsed = time.time() - start_wall
+                row_data = response.get("row")
+                row = np.asarray(row_data, dtype=np.float32) if row_data is not None else None
+                yield DepthRowOutcome(
+                    depth_index=int(response.get("depth_index", -1)),
+                    row=row,
+                    wall_time_s=elapsed,
+                    status="ok",
+                )
+            elif status == "error":
+                elapsed = time.time() - start_wall
+                yield DepthRowOutcome(
+                    depth_index=int(response.get("depth_index", -1)),
+                    row=None,
+                    wall_time_s=elapsed,
+                    status="error",
+                    error_message=str(response.get("error_message", "unknown worker error")),
+                )
+                # Continue reading until "done"
+            else:
+                yield DepthRowOutcome(
+                    depth_index=-1, row=None,
+                    wall_time_s=time.time() - start_wall,
+                    status="error",
+                    error_message=f"Unknown worker response status: {status}",
+                )
+                return
 
     def close(self) -> None:
         if self._process is None:
@@ -549,15 +512,32 @@ class SubprocessRunner:
                     message="Worker stdout is unavailable.",
                 ),
             )
-        selector = selectors.DefaultSelector()
-        selector.register(self._process.stdout, selectors.EVENT_READ)
-        try:
-            events = selector.select(timeout=timeout_s)
-            if not events:
-                raise TimeoutError("worker response timed out")
-            line = self._process.stdout.readline()
-        finally:
-            selector.close()
+        # Use a thread for readline to implement timeout. This is needed
+        # because selectors can miss data already buffered in Python's
+        # internal text buffer (e.g. when the worker sends multiple JSON
+        # lines in rapid succession).
+        import threading
+
+        result: list[str] = []
+
+        def _read() -> None:
+            assert self._process is not None and self._process.stdout is not None
+            result.append(self._process.stdout.readline())
+
+        reader = threading.Thread(target=_read, daemon=True)
+        reader.start()
+        reader.join(timeout=timeout_s)
+        if reader.is_alive():
+            raise TimeoutError("worker response timed out")
+        if not result:
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(
+                    code="WORKER_EOF",
+                    message="Worker closed stdout unexpectedly.",
+                ),
+            )
+        line = result[0]
         if line == "":
             raise RunnerError(
                 "predict",

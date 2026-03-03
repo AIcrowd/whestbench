@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import pytest
 
 import circuit_estimation.cli as cli
+from circuit_estimation.runner import RunnerError, RunnerErrorDetail
 
 
 def _sample_report(*, profile_enabled: bool, detail: str) -> dict[str, Any]:
     report: dict[str, Any] = {
         "schema_version": "1.0",
-        "mode": "agent",
+        "mode": "human",
         "detail": detail,
         "run_meta": {
             "run_started_at_utc": "2026-03-01T00:00:00+00:00",
@@ -52,7 +52,7 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict[str, Any]:
     return report
 
 
-def test_default_mode_renders_human_report_by_default(
+def test_smoke_test_renders_human_report_by_default(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict[str, Any] = {}
@@ -67,7 +67,7 @@ def test_default_mode_renders_human_report_by_default(
     monkeypatch.setattr(
         cli,
         "render_agent_report",
-        lambda _report: pytest.fail("agent renderer should not be used in human mode"),
+        lambda _report: pytest.fail("agent renderer should not be used in smoke-test mode"),
     )
     monkeypatch.setattr(
         cli,
@@ -77,17 +77,17 @@ def test_default_mode_renders_human_report_by_default(
         ),
     )
 
-    exit_code = cli.main([])
+    exit_code = cli.main(["smoke-test"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert captured.out == "human\n"
+    assert "human\n" in captured.out
     assert captured.err == ""
     assert observed == {"profile": False, "detail": "raw"}
     assert render_observed == {"show_diagnostic_plots": False}
 
 
-def test_show_diagnostic_plots_flag_is_forwarded_to_human_renderer(
+def test_smoke_test_show_diagnostic_plots_flag_is_forwarded(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict[str, Any] = {}
@@ -112,17 +112,17 @@ def test_show_diagnostic_plots_flag_is_forwarded_to_human_renderer(
         fake_render_human_report,
     )
 
-    exit_code = cli.main(["--show-diagnostic-plots"])
+    exit_code = cli.main(["smoke-test", "--show-diagnostic-plots"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert captured.err == ""
-    assert captured.out == "human\n"
+    assert "human\n" in captured.out
     assert observed == {"profile": False, "detail": "raw"}
     assert render_observed == {"show_diagnostic_plots": True}
 
 
-def test_profile_and_detail_flags_are_forwarded(
+def test_smoke_test_profile_and_detail_flags_are_forwarded(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict[str, Any] = {}
@@ -141,72 +141,44 @@ def test_profile_and_detail_flags_are_forwarded(
         lambda _report, *, show_diagnostic_plots=False: "human\n",
     )
 
-    exit_code = cli.main(["--profile", "--detail", "full"])
+    exit_code = cli.main(["smoke-test", "--profile", "--detail", "full"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert captured.err == ""
-    assert captured.out == "human\n"
+    assert "human\n" in captured.out
     assert observed == {"profile": True, "detail": "full"}
 
 
-def test_json_flag_stdout_is_json_only(
+def test_smoke_test_prints_next_steps(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    observed: dict[str, Any] = {}
-
-    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
-        observed["profile"] = kwargs.get("profile")
-        observed["detail"] = kwargs.get("detail")
-        return _sample_report(profile_enabled=False, detail=str(kwargs.get("detail", "raw")))
-
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
-    monkeypatch.setattr(
-        cli,
-        "render_agent_report",
-        lambda _report: '{\n  "mode": "agent"\n}\n',
-    )
-
-    exit_code = cli.main(["--json"])
-    captured = capsys.readouterr()
-
-    assert exit_code == 0
-    assert captured.err == ""
-    assert captured.out == '{\n  "mode": "agent"\n}\n'
-    assert json.loads(captured.out) == {"mode": "agent"}
-    assert observed == {"profile": False, "detail": "raw"}
-
-
-def test_legacy_human_flags_are_supported(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    observed: dict[str, Any] = {}
     monkeypatch.setattr(
         cli,
         "score_estimator_report",
-        lambda *_args, **kwargs: (
-            observed.update({"profile": kwargs.get("profile"), "detail": kwargs.get("detail")})
-            or _sample_report(profile_enabled=True, detail=str(kwargs.get("detail", "raw")))
+        lambda *_args, **kwargs: _sample_report(
+            profile_enabled=False, detail=str(kwargs["detail"])
         ),
     )
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: (
-            "plots_on\n" if show_diagnostic_plots else "plots_off\n"
-        ),
+        lambda _report, *, show_diagnostic_plots=False: "human\n",
     )
 
-    exit_code = cli.main(["--profile", "--detail", "full", "--show-diagnostic-plots"])
+    exit_code = cli.main(["smoke-test"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert captured.out == "plots_on\n"
-    assert captured.err == ""
-    assert observed == {"profile": True, "detail": "full"}
+    assert "Next Steps" in captured.out
+    assert "cestim" in captured.out
+    assert "init" in captured.out
+    assert "./my-estimator" in captured.out
+    assert "run" in captured.out
+    assert "--estimator" in captured.out
 
 
-def test_human_mode_surfaces_stream_contract_errors_readably(
+def test_smoke_test_human_mode_surfaces_stream_contract_errors_readably(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     def fake_score_estimator_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
@@ -218,54 +190,19 @@ def test_human_mode_surfaces_stream_contract_errors_readably(
         "render_human_report",
         lambda *_args, **_kwargs: pytest.fail("human renderer should not be called on failure"),
     )
-    monkeypatch.setattr(
-        cli,
-        "render_agent_report",
-        lambda *_args, **_kwargs: pytest.fail("agent renderer should not be called on failure"),
-    )
 
-    exit_code = cli.main([])
+    exit_code = cli.main(["smoke-test"])
     captured = capsys.readouterr()
 
     assert exit_code == 1
-    assert "Error [scoring:ESTIMATOR_STREAM_TOO_MANY_ROWS]" in captured.out
+    assert "Error [smoke-test:ESTIMATOR_STREAM_TOO_MANY_ROWS]" in captured.out
     assert "Estimator emitted more than max_depth rows." in captured.out
     assert "Use --debug to include a traceback." in captured.out
     assert "Traceback" not in captured.out
     assert captured.err == ""
 
 
-def test_json_flag_surfaces_stream_contract_errors_as_json(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    def fake_score_estimator_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
-        raise ValueError("Estimator row at depth 0 must have shape (4,), got (1,).")
-
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
-    monkeypatch.setattr(
-        cli,
-        "render_human_report",
-        lambda *_args, **_kwargs: pytest.fail("human renderer should not be called on failure"),
-    )
-    monkeypatch.setattr(
-        cli,
-        "render_agent_report",
-        lambda *_args, **_kwargs: pytest.fail("agent renderer should not be called on failure"),
-    )
-
-    exit_code = cli.main(["--json"])
-    captured = capsys.readouterr()
-
-    assert exit_code == 1
-    assert captured.err == ""
-    payload = json.loads(captured.out)
-    assert payload["ok"] is False
-    assert payload["error"]["stage"] == "scoring"
-    assert payload["error"]["code"] == "ESTIMATOR_STREAM_BAD_ROW_SHAPE"
-    assert "shape (4,)" in payload["error"]["message"]
-
-
-def test_json_flag_debug_includes_traceback_field(
+def test_smoke_test_debug_includes_traceback_field(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     def fake_score_estimator_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
@@ -273,14 +210,70 @@ def test_json_flag_debug_includes_traceback_field(
 
     monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
 
-    exit_code = cli.main(["--json", "--debug"])
+    exit_code = cli.main(["smoke-test", "--debug"])
     captured = capsys.readouterr()
 
     assert exit_code == 1
-    assert captured.err == ""
-    payload = json.loads(captured.out)
-    assert payload["error"]["code"] == "SCORING_RUNTIME_ERROR"
-    assert "RuntimeError: boom" in payload["error"]["traceback"]
+    assert "Error [smoke-test:SCORING_RUNTIME_ERROR]: boom" in captured.out
+    assert "RuntimeError: boom" in captured.out
+
+
+def test_run_subprocess_error_includes_inprocess_debug_hint(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fail_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise RunnerError(
+            "setup",
+            RunnerErrorDetail(code="SETUP_ERROR", message="runner failed"),
+        )
+
+    monkeypatch.setattr(cli, "score_estimator_report", fail_report)
+
+    exit_code = cli.main(["run", "--estimator", "estimator.py"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Error [setup:SETUP_ERROR]: runner failed" in captured.out
+    assert "Use --debug to include a traceback." in captured.out
+    assert "rerun with --runner inprocess --debug" in captured.out
+
+
+def test_run_inprocess_error_omits_inprocess_debug_hint(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fail_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise RunnerError(
+            "setup",
+            RunnerErrorDetail(code="SETUP_ERROR", message="runner failed"),
+        )
+
+    monkeypatch.setattr(cli, "score_estimator_report", fail_report)
+
+    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Error [setup:SETUP_ERROR]: runner failed" in captured.out
+    assert "Use --debug to include a traceback." in captured.out
+    assert "rerun with --runner inprocess --debug" not in captured.out
+
+
+def test_smoke_test_json_flag_is_rejected() -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["smoke-test", "--json"])
+    assert int(exc_info.value.code) == 2
+
+
+def test_no_subcommand_is_rejected() -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main([])
+    assert int(exc_info.value.code) == 2
+
+
+def test_global_json_without_subcommand_is_rejected() -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["--json"])
+    assert int(exc_info.value.code) == 2
 
 
 def test_agent_mode_flag_is_rejected() -> None:

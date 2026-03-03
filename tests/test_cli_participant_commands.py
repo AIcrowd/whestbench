@@ -66,7 +66,7 @@ def test_validate_command_returns_json_only_with_json_flag(
 def test_run_command_renders_human_report_in_non_agent_mode(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(cli, "score_submission_report", lambda *_args, **_kwargs: _sample_report())
+    monkeypatch.setattr(cli, "score_estimator_report", lambda *_args, **_kwargs: _sample_report())
     monkeypatch.setattr(
         cli,
         "render_human_report",
@@ -140,3 +140,26 @@ def test_init_and_run_help_text_reference_examples_estimators_path() -> None:
     parser = cli._build_participant_parser()
     help_text = parser.format_help()
     assert "examples/estimators" in help_text
+
+
+def test_main_uses_sys_argv_when_argv_is_none(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "score_estimator_report",
+        lambda *_args, **_kwargs: _sample_report(),
+    )
+    monkeypatch.setattr(
+        cli,
+        "render_human_report",
+        lambda _report, *, show_diagnostic_plots=False: "human report\n",
+    )
+    monkeypatch.setattr(cli.sys, "argv", ["cestim", "smoke-test"])
+
+    exit_code = cli.main(None)
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "human report" in captured.out
+    assert "Next Steps" in captured.out

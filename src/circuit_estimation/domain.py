@@ -17,6 +17,42 @@ import numpy as np
 from numpy.typing import NDArray
 
 
+@dataclass(frozen=True, slots=True)
+class VectorizedCircuit:
+    """Depth-major packed circuit tensors for estimator-side vectorized access.
+
+    Attributes:
+        first_idx: Parent-1 wire indices with shape ``(d, n)``.
+        second_idx: Parent-2 wire indices with shape ``(d, n)``.
+        coeff: Gate coefficients with shape ``(d, n, 4)`` where the last
+            dimension is ``[const, first_coeff, second_coeff, product_coeff]``.
+    """
+
+    first_idx: NDArray[np.int32]
+    second_idx: NDArray[np.int32]
+    coeff: NDArray[np.float32]
+
+    @property
+    def const(self) -> NDArray[np.float32]:
+        """Return constant terms with shape ``(d, n)``."""
+        return self.coeff[:, :, 0]
+
+    @property
+    def first_coeff(self) -> NDArray[np.float32]:
+        """Return first-parent linear coefficients with shape ``(d, n)``."""
+        return self.coeff[:, :, 1]
+
+    @property
+    def second_coeff(self) -> NDArray[np.float32]:
+        """Return second-parent linear coefficients with shape ``(d, n)``."""
+        return self.coeff[:, :, 2]
+
+    @property
+    def product_coeff(self) -> NDArray[np.float32]:
+        """Return bilinear coefficients with shape ``(d, n)``."""
+        return self.coeff[:, :, 3]
+
+
 @dataclass(slots=True)
 class Layer:
     """One vectorized layer of affine-bilinear gate updates.
@@ -94,6 +130,34 @@ class Circuit:
     n: int
     d: int
     gates: list[Layer]
+
+    def to_vectorized(self) -> VectorizedCircuit:
+        """Pack layer wiring and coefficients into depth-major tensors.
+
+        Returns:
+            A ``VectorizedCircuit`` with:
+            - ``first_idx`` and ``second_idx`` of shape ``(d, n)``
+            - ``coeff`` of shape ``(d, n, 4)`` where channels correspond to
+              ``[const, first_coeff, second_coeff, product_coeff]``.
+        """
+        if self.d == 0:
+            empty_idx = np.empty((0, self.n), dtype=np.int32)
+            empty_coeff = np.empty((0, self.n, 4), dtype=np.float32)
+            return VectorizedCircuit(first_idx=empty_idx, second_idx=empty_idx, coeff=empty_coeff)
+
+        first_idx = np.stack([layer.first for layer in self.gates], axis=0).astype(np.int32)
+        second_idx = np.stack([layer.second for layer in self.gates], axis=0).astype(np.int32)
+        coeff = np.stack(
+            [
+                np.stack(
+                    [layer.const, layer.first_coeff, layer.second_coeff, layer.product_coeff],
+                    axis=-1,
+                )
+                for layer in self.gates
+            ],
+            axis=0,
+        ).astype(np.float32)
+        return VectorizedCircuit(first_idx=first_idx, second_idx=second_idx, coeff=coeff)
 
     def validate(self) -> None:
         """Validate circuit metadata and all layer invariants.

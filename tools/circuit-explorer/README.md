@@ -1,11 +1,13 @@
+<img src="../../assets/logo/logo.png" alt="Circuit Estimation Challenge logo" style="height: 80px;">
+
 # Circuit Explorer
 
-Interactive React app for visualizing small Boolean circuits — the core problem behind the [Mechanistic Estimation Challenge](https://www.alignment.org/blog/competing-with-sampling/).
+Interactive React app for visualizing small random circuits and estimator behavior.
 
-> **This is a developer/educational tool**, not part of the competition submission interface.
-> Participants working on the core problem can safely ignore this directory.
+> Circuit Explorer is optional.
+> It is an educational and debugging aid, not the submission interface.
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 cd tools/circuit-explorer
@@ -15,21 +17,29 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
-## What It Shows
+## ✅ What you should see
 
 | Panel | Description |
 |---|---|
-| **Circuit Graph** | SVG visualization of wires + gates, color-coded by mean value |
-| **Signal Heatmap** | How wire statistics evolve across layers |
-| **Estimator Comparison** | Per-layer MSE: sampling (brute-force) vs. mean propagation (analytic) |
-| **Controls** | Width, depth, seed, and sampling budget sliders |
+| Circuit Graph | Wire/gate structure with value-oriented coloring |
+| Signal Heatmap | Layer-wise activation behavior |
+| Estimator Comparison | Per-layer error across available estimators |
+| Controls | Width, depth, seed, and budget-like knobs |
 
-## How It Relates to the Python Code
+## 🧪 Suggested use during estimator iteration
 
-`circuit.js` and `estimators.js` are JavaScript ports of `circuit.py` and `estimators.py` (mean propagation only). They implement the same circuit generation and forward pass logic, using the same gate algebra:
+1. Reproduce a pattern on small circuits.
+2. Inspect where errors spike by depth.
+3. Convert that intuition into estimator logic.
+4. Re-test with official local scorer.
 
+Official local score behavior is defined by:
+
+```bash
+cestim run --estimator <path> --runner subprocess
 ```
-output = const + first_coeff * x + second_coeff * y + product_coeff * x * y
-```
 
-This lets you explore the problem visually without running any Python.
+## Participant docs
+
+- [Documentation Index](../../docs/index.md)
+- [Use Circuit Explorer](../../docs/how-to/use-circuit-explorer.md)
