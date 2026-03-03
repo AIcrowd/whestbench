@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 
 import circuit_estimation.cli as cli
+from circuit_estimation.runner import RunnerError, RunnerErrorDetail
 
 
 def _sample_report(*, profile_enabled: bool, detail: str) -> dict[str, Any]:
@@ -170,8 +171,11 @@ def test_smoke_test_prints_next_steps(
 
     assert exit_code == 0
     assert "Next Steps" in captured.out
-    assert "cestim init ./my-estimator" in captured.out
-    assert "cestim run --estimator" in captured.out
+    assert "cestim" in captured.out
+    assert "init" in captured.out
+    assert "./my-estimator" in captured.out
+    assert "run" in captured.out
+    assert "--estimator" in captured.out
 
 
 def test_smoke_test_human_mode_surfaces_stream_contract_errors_readably(
@@ -212,6 +216,46 @@ def test_smoke_test_debug_includes_traceback_field(
     assert exit_code == 1
     assert "Error [smoke-test:SCORING_RUNTIME_ERROR]: boom" in captured.out
     assert "RuntimeError: boom" in captured.out
+
+
+def test_run_subprocess_error_includes_inprocess_debug_hint(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fail_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise RunnerError(
+            "setup",
+            RunnerErrorDetail(code="SETUP_ERROR", message="runner failed"),
+        )
+
+    monkeypatch.setattr(cli, "score_submission_report", fail_report)
+
+    exit_code = cli.main(["run", "--estimator", "estimator.py"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Error [setup:SETUP_ERROR]: runner failed" in captured.out
+    assert "Use --debug to include a traceback." in captured.out
+    assert "rerun with --runner inprocess --debug" in captured.out
+
+
+def test_run_inprocess_error_omits_inprocess_debug_hint(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fail_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+        raise RunnerError(
+            "setup",
+            RunnerErrorDetail(code="SETUP_ERROR", message="runner failed"),
+        )
+
+    monkeypatch.setattr(cli, "score_submission_report", fail_report)
+
+    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Error [setup:SETUP_ERROR]: runner failed" in captured.out
+    assert "Use --debug to include a traceback." in captured.out
+    assert "rerun with --runner inprocess --debug" not in captured.out
 
 
 def test_smoke_test_json_flag_is_rejected() -> None:

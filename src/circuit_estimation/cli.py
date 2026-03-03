@@ -367,7 +367,12 @@ def _main_participant(argv: list[str]) -> int:
     except Exception as exc:  # pragma: no cover - exercised by CLI tests
         stage = exc.stage if isinstance(exc, RunnerError) else command
         payload = _error_payload(exc, include_traceback=debug, stage=stage)
-        _print_error(payload, json_output=json_output, debug=debug)
+        _print_error(
+            payload,
+            json_output=json_output,
+            debug=debug,
+            show_inprocess_hint=(command == "run" and getattr(args, "runner", None) == "subprocess"),
+        )
         return 1
 
 
@@ -377,7 +382,13 @@ def main(argv: list[str] | None = None) -> int:
     return _main_participant(args_list)
 
 
-def _print_error(payload: dict[str, Any], *, json_output: bool, debug: bool) -> None:
+def _print_error(
+    payload: dict[str, Any],
+    *,
+    json_output: bool,
+    debug: bool,
+    show_inprocess_hint: bool = False,
+) -> None:
     if json_output:
         print(json.dumps(payload, indent=2))
         return
@@ -387,6 +398,8 @@ def _print_error(payload: dict[str, Any], *, json_output: bool, debug: bool) -> 
         print(error["traceback"])
     elif not debug:
         print("Use --debug to include a traceback.")
+    if show_inprocess_hint:
+        print("Tip: For estimator-level tracebacks, rerun with --runner inprocess --debug.")
 
 
 def _error_payload(

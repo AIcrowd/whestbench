@@ -28,7 +28,7 @@ ARC's recent work frames "matching or beating sampling" as an important and diff
 
 This challenge instantiates that question in random Boolean circuits, where evaluation is explicit, reproducible, and compute-aware.
 
-Practical goal for participants: improve error under fixed runtime budgets, not only via oversampling with effectively unlimited compute.
+Practical goal for participants: improve error under fixed runtime sampling budgets.
 
 ## 5-Minute Quickstart
 
@@ -55,8 +55,18 @@ Run your first full loop:
 ```bash
 cestim init ./my-estimator
 cestim validate --estimator ./my-estimator/estimator.py
-cestim run --estimator ./my-estimator/estimator.py --runner subprocess
+cestim run --estimator ./my-estimator/estimator.py
 cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz
+```
+
+`cestim run` uses `--runner subprocess` by default.
+
+Quick debug sequence when `run` fails:
+
+```bash
+cestim run --estimator ./my-estimator/estimator.py
+cestim run --estimator ./my-estimator/estimator.py --debug
+cestim run --estimator ./my-estimator/estimator.py --runner inprocess --debug
 ```
 
 For local editable invocation without global install:

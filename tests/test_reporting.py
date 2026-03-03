@@ -115,9 +115,9 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     assert "We are all set! Welcome onboard 🚀" in plain
     assert "Run these steps:" in plain
     assert "# 1) Create starter files you can edit." in plain
-    assert "# 2) Check row shape/count/finite contract." in plain
-    assert "# 3) Run local scoring with isolation semantics." in plain
-    assert "# 4) Build submission artifact for upload workflow." in plain
+    assert "# 2) Validate an Estimator implementation." in plain
+    assert "# 3) Run local evaluation with isolation." in plain
+    assert "# 4) Build submission artifacts for AIcrowd." in plain
     assert "Commands (bash)" not in plain
     assert "Command" not in plain
     assert "Purpose" not in plain
@@ -129,6 +129,23 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     assert "cestim package --estimator ./my-estimator/estimator.py" in plain
     assert "--output" in plain
     assert "./submission.tar.gz" in plain
+    assert "Optional: run bundled example estimators:" in plain
+    assert (
+        "cestim run --estimator ./examples/estimators/combined_estimator.py --runner subprocess"
+        in plain
+    )
+    assert (
+        "cestim run --estimator ./examples/estimators/covariance_propagation.py --runner subprocess"
+        in plain
+    )
+    assert (
+        "cestim run --estimator ./examples/estimators/mean_propagation.py --runner subprocess"
+        in plain
+    )
+    assert (
+        "cestim run --estimator ./examples/estimators/random_estimator.py --runner subprocess"
+        in plain
+    )
 
 
 def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:
@@ -141,14 +158,14 @@ def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:
 def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     rendered = render_human_report(_sample_report(include_profile=False))
 
-    # Human mode contract: high-level run summary plus budget and layer diagnostics.
+    # Human mode contract: high-level run summary without diagnostics panes by default.
     assert "Circuit Estimation Report" in rendered
     assert "Use --json for JSON output" in rendered
     assert "budget-by-depth" in rendered.lower()
     assert "Run Context" in rendered
     assert "Readiness Scorecard" in rendered
     assert "Budget" in rendered
-    assert "Layer Diagnostics" in rendered
+    assert "Layer Diagnostics" not in rendered
     assert "Budget Breakdown" not in rendered
     assert "Budget Intelligence" not in rendered
     assert "Budget Table" not in rendered
@@ -259,7 +276,7 @@ def test_primary_tables_are_centered() -> None:
     assert isinstance(score.renderable.renderable, Table)
 
 
-def test_budget_and_layer_tables_are_centered() -> None:
+def test_budget_table_is_centered() -> None:
     report = _sample_report(include_profile=False)
 
     budget = reporting._budget_lane_panel(report)
@@ -267,12 +284,6 @@ def test_budget_and_layer_tables_are_centered() -> None:
     budget_table = budget_body.renderables[0]
     assert isinstance(budget_table, Align)
     assert isinstance(budget_table.renderable, Table)
-
-    layer = reporting._layer_lane_panel(report)
-    layer_body = cast(Group, layer.renderable)
-    layer_table = layer_body.renderables[0]
-    assert isinstance(layer_table, Align)
-    assert isinstance(layer_table.renderable, Table)
 
 
 def test_budget_lane_contains_table_and_two_plots() -> None:
@@ -335,11 +346,21 @@ def test_layer_plot_renders_when_enabled(
     assert "Layer Runtime Plot" not in plain
 
 
-def test_layer_diagnostics_are_mse_only() -> None:
+def test_layer_section_not_rendered_without_diagnostic_plots() -> None:
     rendered = _strip_ansi(render_human_report(_sample_report(include_profile=False)))
-    assert "MSE by Layer [mse_by_layer]" in rendered
-    assert "Time Ratio by Layer [time_ratio_by_layer]" not in rendered
-    assert "Adjusted MSE by Layer [adjusted_mse_by_layer]" not in rendered
+    assert "Layer Diagnostics" not in rendered
+    assert "Layer MSE Histogram" not in rendered
+    assert "Layer Trend Plot" not in rendered
+
+
+def test_layer_diagnostics_has_plot_panes_without_stats_table() -> None:
+    rendered = _strip_ansi(
+        render_human_report(_sample_report(include_profile=False), show_diagnostic_plots=True)
+    )
+    assert "Layer Diagnostics" in rendered
+    assert "Layer MSE Histogram" in rendered
+    assert "Layer Trend Plot" in rendered
+    assert "MSE by Layer [mse_by_layer]" not in rendered
 
 
 def test_render_human_mode_includes_profile_section_when_available() -> None:

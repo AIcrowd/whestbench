@@ -90,6 +90,11 @@ def render_smoke_test_next_steps() -> str:
         body_items.append(Text(command, style="white"))
         body_items.append(Text())
 
+    body_items.append(Text("Optional: run bundled example estimators:", style="bold bright_cyan"))
+    for command in _smoke_optional_example_commands():
+        body_items.append(Text(command, style="white"))
+    body_items.append(Text())
+
     body_items.append(
         Text(
             "Tip: use --json on validate/run/package for machine-readable output.",
@@ -114,11 +119,20 @@ def _smoke_next_step_commands() -> list[str]:
 def _smoke_next_step_lines() -> list[Text]:
     purposes = [
         ("Create starter files you can edit.", "bold bright_cyan"),
-        ("Check row shape/count/finite contract.", "bold bright_green"),
-        ("Run local scoring with isolation semantics.", "bold bright_yellow"),
-        ("Build submission artifact for upload workflow.", "bold bright_magenta"),
+        ("Validate an Estimator implementation.", "bold bright_green"),
+        ("Run local evaluation with isolation.", "bold bright_yellow"),
+        ("Build submission artifacts for AIcrowd.", "bold bright_magenta"),
     ]
     return [Text(f"# {idx}) {purpose}", style=style) for idx, (purpose, style) in enumerate(purposes, start=1)]
+
+
+def _smoke_optional_example_commands() -> list[str]:
+    return [
+        "cestim run --estimator ./examples/estimators/combined_estimator.py --runner subprocess",
+        "cestim run --estimator ./examples/estimators/covariance_propagation.py --runner subprocess",
+        "cestim run --estimator ./examples/estimators/mean_propagation.py --runner subprocess",
+        "cestim run --estimator ./examples/estimators/random_estimator.py --runner subprocess",
+    ]
 
 
 def _render_top_row(console: Console, report: dict[str, Any]) -> None:
@@ -302,44 +316,29 @@ def _budget_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = 
 def _render_layer_section(
     console: Console, report: dict[str, Any], *, show_diagnostic_plots: bool
 ) -> None:
-    console.print(_layer_lane_panel(report, show_diagnostic_plots=show_diagnostic_plots))
+    panel = _layer_lane_panel(report, show_diagnostic_plots=show_diagnostic_plots)
+    if panel is not None:
+        console.print(panel)
 
 
-def _layer_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> Panel:
+def _layer_lane_panel(
+    report: dict[str, Any], *, show_diagnostic_plots: bool = False
+) -> Panel | None:
+    if not show_diagnostic_plots:
+        return None
+
     by_budget = _budget_rows(report)
     mse_series = [_to_float_list(entry.get("mse_by_layer", [])) for entry in by_budget]
     avg_mse = _mean_series(mse_series)
-
-    table = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
-    table.add_column("metric", style="bold white")
-    table.add_column("p05", justify="right")
-    table.add_column("min", justify="right")
-    table.add_column("p95", justify="right")
-    table.add_column("max", justify="right")
-    table.add_column("mean", justify="right")
-
-    table.add_row(
-        _label_with_code("MSE by Layer", "mse_by_layer", "bold white"),
-        _fmt_float(_percentile(avg_mse, 0.05) if avg_mse else 0.0, 6),
-        _fmt_float(min(avg_mse) if avg_mse else 0.0, 6),
-        _fmt_float(_percentile(avg_mse, 0.95) if avg_mse else 0.0, 6),
-        _fmt_float(max(avg_mse) if avg_mse else 0.0, 6),
-        _fmt_float(fmean(avg_mse) if avg_mse else 0.0, 6),
+    body = Columns(
+        [
+            _layer_histogram_panel(report),
+            _layer_trend_plot_panel(avg_mse),
+        ],
+        equal=True,
+        expand=True,
     )
-
-    body: list[Any] = [Align.center(table)]
-    if show_diagnostic_plots:
-        body.append(
-            Columns(
-                [
-                    _layer_histogram_panel(report),
-                    _layer_trend_plot_panel(avg_mse),
-                ],
-                equal=True,
-                expand=True,
-            )
-        )
-    return Panel(Group(*body), title="Layer Diagnostics", border_style="bright_magenta")
+    return Panel(body, title="Layer Diagnostics", border_style="bright_magenta")
 
 
 def _layer_histogram_panel(report: dict[str, Any]) -> Panel:

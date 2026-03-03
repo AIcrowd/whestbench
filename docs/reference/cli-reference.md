@@ -46,6 +46,8 @@ Run local scoring with participant estimator.
 cestim run --estimator <path> [options]
 ```
 
+Default behavior: `cestim run --estimator <path>` is equivalent to `--runner subprocess`.
+
 Key options:
 
 - `--class <name>`
@@ -57,6 +59,19 @@ Key options:
 - `--show-diagnostic-plots`
 - `--json`
 - `--debug`
+
+Recommended debug sequence:
+
+```bash
+cestim run --estimator ./path/to/estimator.py
+cestim run --estimator ./path/to/estimator.py --debug
+cestim run --estimator ./path/to/estimator.py --runner inprocess --debug
+```
+
+Runner mode tradeoff:
+
+- `subprocess` (default): realistic isolation and safer runtime boundary.
+- `inprocess`: clearer estimator-level tracebacks for local debugging.
 
 ## `cestim package`
 

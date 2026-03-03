@@ -64,8 +64,7 @@ def _resolve_estimator_class(
     if class_name is not None:
         explicit_candidate = getattr(module, class_name, None)
         if (
-            not inspect.isclass(explicit_candidate)
-            or not issubclass(explicit_candidate, BaseEstimator)
+            not _is_estimator_subclass(explicit_candidate)
             or explicit_candidate is BaseEstimator
         ):
             raise ValueError(
@@ -97,8 +96,7 @@ def _discover_estimator_classes(module: ModuleType) -> list[type[BaseEstimator]]
     seen_class_ids: set[int] = set()
     for value in vars(module).values():
         if (
-            inspect.isclass(value)
-            and issubclass(value, BaseEstimator)
+            _is_estimator_subclass(value)
             and value is not BaseEstimator
             and value.__module__ == module.__name__
         ):
@@ -108,3 +106,12 @@ def _discover_estimator_classes(module: ModuleType) -> list[type[BaseEstimator]]
             seen_class_ids.add(class_id)
             estimator_classes.append(cast(type[BaseEstimator], value))
     return estimator_classes
+
+
+def _is_estimator_subclass(candidate: object) -> bool:
+    if not inspect.isclass(candidate) or not isinstance(candidate, type):
+        return False
+    try:
+        return issubclass(candidate, BaseEstimator)
+    except TypeError:
+        return False

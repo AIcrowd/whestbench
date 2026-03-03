@@ -125,3 +125,23 @@ def test_loader_registers_module_in_sys_modules(tmp_path: Path) -> None:
     payload = pickle.dumps(estimator)
     restored = pickle.loads(payload)
     assert restored.__class__.__name__ == estimator.__class__.__name__
+
+
+def test_loader_ignores_numpy_ndarray_generic_alias_in_module_globals(tmp_path: Path) -> None:
+    module_path = _write_estimator_module(
+        tmp_path,
+        """
+        import numpy as np
+        from numpy.typing import NDArray
+        from circuit_estimation import BaseEstimator, Circuit
+
+        class Estimator(BaseEstimator):
+            def predict(self, circuit: Circuit, budget: int) -> NDArray[np.float32]:
+                return np.zeros((1, 1), dtype=np.float32)
+        """,
+    )
+
+    estimator, metadata = load_estimator_from_path(module_path)
+
+    assert estimator.__class__.__name__ == "Estimator"
+    assert metadata.class_name == "Estimator"
