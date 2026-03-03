@@ -8,6 +8,7 @@ import selectors
 import subprocess
 import sys
 import time
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, Protocol, cast
@@ -133,9 +134,7 @@ class EstimatorRunner(Protocol):
         limits: ResourceLimits,
     ) -> None: ...
 
-    def predict(self, circuit: Circuit, budget: int) -> PredictOutcome: ...
-
-    def predict_batch(self, circuits: list[Circuit], budget: int) -> list[PredictOutcome]: ...
+    def predict(self, circuit: Circuit, budget: int) -> Iterator[DepthRowOutcome]: ...
 
     def close(self) -> None: ...
 
@@ -245,7 +244,7 @@ class InProcessRunner:
             )
         self._started = True
 
-    def predict(self, circuit: Circuit, budget: int) -> PredictOutcome:
+    def predict(self, circuit: Circuit, budget: int) -> Iterator[DepthRowOutcome]:
         if not self._started or self._estimator is None or self._limits is None:
             raise RunnerError(
                 "predict",
@@ -256,74 +255,70 @@ class InProcessRunner:
             )
 
         start_wall = time.time()
-        start_cpu = time.process_time()
         try:
             raw_predictions = self._estimator.predict(circuit, budget)
         except Exception as exc:
-            elapsed = time.time() - start_wall
-            cpu_elapsed = time.process_time() - start_cpu
-            rss_bytes = _rss_bytes()
-            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-            return PredictOutcome(
-                predictions=None,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="runtime_error",
-                error_message=str(exc),
+            yield DepthRowOutcome(
+                depth_index=0, row=None,
+                wall_time_s=time.time() - start_wall,
+                status="error", error_message=str(exc),
             )
+            return
 
         try:
-            predictions = _collect_prediction_tensor(
-                raw_predictions,
-                width=circuit.n,
-                depth=circuit.d,
+            output_iter = iter(cast(Any, raw_predictions))
+        except TypeError:
+            yield DepthRowOutcome(
+                depth_index=0, row=None,
+                wall_time_s=time.time() - start_wall,
+                status="error",
+                error_message="Estimator must return an iterator of depth-row outputs.",
             )
-        except ValueError as exc:
+            return
+
+        for depth_index in range(circuit.d):
+            try:
+                raw_row = next(output_iter)
+            except StopIteration:
+                yield DepthRowOutcome(
+                    depth_index=depth_index, row=None,
+                    wall_time_s=time.time() - start_wall,
+                    status="error",
+                    error_message="Estimator must emit exactly max_depth rows.",
+                )
+                return
+            except Exception as exc:
+                yield DepthRowOutcome(
+                    depth_index=depth_index, row=None,
+                    wall_time_s=time.time() - start_wall,
+                    status="error",
+                    error_message=f"Estimator stream failed at depth {depth_index}: {exc}",
+                )
+                return
+
             elapsed = time.time() - start_wall
-            cpu_elapsed = time.process_time() - start_cpu
-            rss_bytes = _rss_bytes()
-            peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-            return PredictOutcome(
-                predictions=None,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="protocol_error",
-                error_message=str(exc),
+            try:
+                row = validate_depth_row(raw_row, width=circuit.n, depth_index=depth_index)
+            except ValueError as exc:
+                yield DepthRowOutcome(
+                    depth_index=depth_index, row=None,
+                    wall_time_s=elapsed, status="error",
+                    error_message=str(exc),
+                )
+                return
+
+            yield DepthRowOutcome(
+                depth_index=depth_index, row=row,
+                wall_time_s=elapsed, status="ok",
             )
 
-        elapsed = time.time() - start_wall
-        cpu_elapsed = time.process_time() - start_cpu
-        rss_bytes = _rss_bytes()
-        peak_rss_bytes = max(_peak_rss_bytes(), rss_bytes)
-        if elapsed > self._limits.predict_timeout_s:
-            return PredictOutcome(
-                predictions=None,
-                wall_time_s=float(elapsed),
-                cpu_time_s=float(cpu_elapsed),
-                rss_bytes=int(rss_bytes),
-                peak_rss_bytes=int(peak_rss_bytes),
-                status="timeout",
-                error_message=(
-                    f"predict exceeded timeout ({elapsed:.6f}s > "
-                    f"{self._limits.predict_timeout_s:.6f}s)"
-                ),
-            )
-        return PredictOutcome(
-            predictions=predictions,
-            wall_time_s=float(elapsed),
-            cpu_time_s=float(cpu_elapsed),
-            rss_bytes=int(rss_bytes),
-            peak_rss_bytes=int(peak_rss_bytes),
-            status="ok",
-            error_message=None,
-        )
-
-    def predict_batch(self, circuits: list[Circuit], budget: int) -> list[PredictOutcome]:
-        return [self.predict(circuit, budget) for circuit in circuits]
+        # Check for extra rows (silently consume)
+        try:
+            _extra = next(output_iter)
+        except StopIteration:
+            pass
+        except Exception:
+            pass
 
     def close(self) -> None:
         if self._estimator is not None:
