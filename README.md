@@ -114,19 +114,19 @@ Start at: [Documentation Index](docs/index.md)
 
 ## 🧪 Example Estimators
 
-Starter estimators are in `examples/estimators/`:
+Starter estimators are in [`examples/estimators/`](examples/estimators/):
 
-- `random_estimator.py`: interface walkthrough, intentionally low quality
-- `mean_propagation.py`: first-order baseline
-- `covariance_propagation.py`: second-order baseline
-- `combined_estimator.py`: budget-aware baseline
+- [`random_estimator.py`](examples/estimators/random_estimator.py): interface walkthrough, intentionally low quality
+- [`mean_propagation.py`](examples/estimators/mean_propagation.py): first-order baseline
+- [`covariance_propagation.py`](examples/estimators/covariance_propagation.py): second-order baseline
+- [`combined_estimator.py`](examples/estimators/combined_estimator.py): budget-aware baseline
 
 Recommended reading order:
 
-1. `random_estimator.py`
-2. `mean_propagation.py`
-3. `covariance_propagation.py`
-4. `combined_estimator.py`
+1. [`random_estimator.py`](examples/estimators/random_estimator.py)
+2. [`mean_propagation.py`](examples/estimators/mean_propagation.py)
+3. [`covariance_propagation.py`](examples/estimators/covariance_propagation.py)
+4. [`combined_estimator.py`](examples/estimators/combined_estimator.py)
 
 ## 📡 Current Platform Status
 
