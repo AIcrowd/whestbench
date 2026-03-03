@@ -16,7 +16,7 @@ from .domain import Circuit, Layer
 from .estimators import CombinedEstimator
 from .loader import load_estimator_from_path
 from .packaging import package_submission
-from .reporting import render_agent_report, render_human_report
+from .reporting import render_agent_report, render_human_report, render_smoke_test_next_steps
 from .runner import (
     EstimatorEntrypoint,
     InProcessRunner,
@@ -29,7 +29,6 @@ from .sdk import SetupContext
 from .streaming import validate_depth_row
 
 _DEFAULT_ESTIMATOR = CombinedEstimator()
-_PARTICIPANT_COMMANDS = frozenset({"init", "validate", "run", "package"})
 
 
 def _default_contest_params() -> ContestParams:
@@ -59,10 +58,9 @@ def run_default_score(profile: Literal[True]) -> tuple[float, list[dict[str, Any
 
 
 def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[str, Any]]]:
-    """Run default scenario and return score-only compatibility output.
+    """Run the built-in smoke-test scenario and return score-only output.
 
-    When ``profile`` is true, this mirrors legacy behavior by returning
-    ``(score, profile_calls)`` instead of just the numeric score.
+    When ``profile`` is true, this returns ``(score, profile_calls)``.
     """
     report = run_default_report(profile=profile, detail="raw")
     score = float(report["results"]["final_score"])
@@ -72,7 +70,7 @@ def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[s
 
 
 def run_default_report(*, profile: bool = False, detail: str = "raw") -> dict[str, Any]:
-    """Run the default local evaluator scenario and return report payload."""
+    """Run the built-in smoke-test scenario and return report payload."""
     return score_estimator_report(
         _DEFAULT_ESTIMATOR.predict,
         n_circuits=10,
@@ -81,65 +79,6 @@ def run_default_report(*, profile: bool = False, detail: str = "raw") -> dict[st
         profile=profile,
         detail=detail,
     )
-
-
-def _build_legacy_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run local circuit-estimator scoring.")
-    parser.add_argument(
-        "--json",
-        dest="json_output",
-        action="store_true",
-        help="Return results as a JSON string.",
-    )
-    parser.add_argument(
-        "--detail",
-        choices=("raw", "full"),
-        default="raw",
-        help="Report detail level. Use `full` for extra derived metrics.",
-    )
-    parser.add_argument(
-        "--profile",
-        action="store_true",
-        help="Emit per-call profiling diagnostics (wall, cpu, rss, peak_rss).",
-    )
-    parser.add_argument(
-        "--show-diagnostic-plots",
-        action="store_true",
-        help="Include plot panes for budget/layer/profile diagnostics in human mode.",
-    )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Show traceback details on failures.",
-    )
-    return parser
-
-
-def _main_legacy(argv: list[str]) -> int:
-    args = _build_legacy_parser().parse_args(argv)
-    json_output = bool(args.json_output)
-    mode = "agent" if json_output else "human"
-    try:
-        report = run_default_report(profile=args.profile, detail=args.detail)
-        report["mode"] = mode
-        if mode == "agent":
-            output = render_agent_report(report)
-            print(output, end="" if output.endswith("\n") else "\n")
-            return 0
-        try:
-            output = render_human_report(report, show_diagnostic_plots=args.show_diagnostic_plots)
-        except Exception as exc:
-            print(
-                f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
-                file=sys.stderr,
-            )
-            output = _render_plain_text_report(report)
-        print(output, end="" if output.endswith("\n") else "\n")
-        return 0
-    except Exception as exc:  # pragma: no cover - exercised via CLI tests
-        payload = _error_payload(exc, include_traceback=args.debug, stage="scoring")
-        _print_error(payload, json_output=json_output, debug=bool(args.debug))
-        return 1
 
 
 def _render_plain_text_report(report: dict[str, Any]) -> str:
@@ -263,6 +202,18 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    smoke_test_parser = subparsers.add_parser(
+        "smoke-test",
+        help=(
+            "Run a built-in CombinedEstimator dashboard check and print next steps "
+            "for participant workflows."
+        ),
+    )
+    smoke_test_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
+    smoke_test_parser.add_argument("--profile", action="store_true")
+    smoke_test_parser.add_argument("--show-diagnostic-plots", action="store_true")
+    smoke_test_parser.add_argument("--debug", action="store_true")
+
     init_parser = subparsers.add_parser("init", help="Create starter estimator files.")
     init_parser.add_argument("path", nargs="?", default=".")
     init_parser.add_argument(
@@ -322,6 +273,24 @@ def _main_participant(argv: list[str]) -> int:
     debug = bool(getattr(args, "debug", False))
 
     try:
+        if command == "smoke-test":
+            report = run_default_report(profile=bool(args.profile), detail=str(args.detail))
+            report["mode"] = "human"
+            try:
+                output = render_human_report(
+                    report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
+                )
+            except Exception as exc:
+                print(
+                    f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
+                    file=sys.stderr,
+                )
+                output = _render_plain_text_report(report)
+            print(output, end="" if output.endswith("\n") else "\n")
+            next_steps = render_smoke_test_next_steps()
+            print(next_steps, end="" if next_steps.endswith("\n") else "\n")
+            return 0
+
         if command == "init":
             created = _write_init_template(Path(args.path).resolve())
             payload = {"ok": True, "created": created}
@@ -402,19 +371,9 @@ def _main_participant(argv: list[str]) -> int:
         return 1
 
 
-def _is_legacy_invocation(argv: list[str]) -> bool:
-    if not argv:
-        return True
-    if argv[0].startswith("-"):
-        return True
-    return argv[0] not in _PARTICIPANT_COMMANDS
-
-
 def main(argv: list[str] | None = None) -> int:
-    """Dispatch legacy dashboard mode or participant subcommands."""
-    args_list = list(argv or [])
-    if _is_legacy_invocation(args_list):
-        return _main_legacy(args_list)
+    """Dispatch participant subcommands."""
+    args_list = list(sys.argv[1:] if argv is None else argv)
     return _main_participant(args_list)
 
 

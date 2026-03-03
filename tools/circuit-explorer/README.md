@@ -1,3 +1,5 @@
+<img src="../../assets/logo/logo.png" alt="Circuit Estimation Challenge logo" style="height: 80px;">
+
 # Circuit Explorer
 
 Interactive React app for visualizing small random circuits and estimator behavior.
@@ -5,7 +7,7 @@ Interactive React app for visualizing small random circuits and estimator behavi
 > Circuit Explorer is optional.
 > It is an educational and debugging aid, not the submission interface.
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 cd tools/circuit-explorer
@@ -15,7 +17,7 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
-## What It Shows
+## ✅ What you should see
 
 | Panel | Description |
 |---|---|
@@ -24,10 +26,12 @@ Open [http://localhost:5173](http://localhost:5173).
 | Estimator Comparison | Per-layer error across available estimators |
 | Controls | Width, depth, seed, and budget-like knobs |
 
-## Relationship to Python Scoring
+## 🧪 Suggested use during estimator iteration
 
-Explorer logic mirrors the same core gate algebra used by the Python package.
-Use it to build intuition and debug ideas.
+1. Reproduce a pattern on small circuits.
+2. Inspect where errors spike by depth.
+3. Convert that intuition into estimator logic.
+4. Re-test with official local scorer.
 
 Official local score behavior is defined by:
 
@@ -35,9 +39,7 @@ Official local score behavior is defined by:
 cestim run --estimator <path> --runner subprocess
 ```
 
-## Participant Docs
-
-For the core participant workflow, start here:
+## Participant docs
 
 - [Documentation Index](../../docs/index.md)
 - [Use Circuit Explorer](../../docs/how-to/use-circuit-explorer.md)

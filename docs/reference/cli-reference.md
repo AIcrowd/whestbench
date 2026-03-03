@@ -1,13 +1,26 @@
 # CLI Reference
 
-## Entry Commands
+## 📌 When to use this page
+
+Use this page for exact command syntax and key flags.
+
+## Entry commands
 
 Participant workflow commands:
 
+- `cestim smoke-test`
 - `cestim init`
 - `cestim validate`
 - `cestim run`
 - `cestim package`
+
+## `cestim smoke-test`
+
+Run a built-in `CombinedEstimator` dashboard check and print next-step participant commands.
+
+```bash
+cestim smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--debug]
+```
 
 ## `cestim init`
 
@@ -63,11 +76,8 @@ Key options:
 - `--json`
 - `--debug`
 
-## Legacy Mode
-
-When called without participant subcommands, `cestim` falls back to a legacy local scoring dashboard mode.
-
-## Next
+## ➡️ Next step
 
 - [Score Report Fields](./score-report-fields.md)
+- [Inspect and Traverse Circuit Structure](../how-to/inspect-circuit-structure.md)
 - [Validate, Run, and Package](../how-to/validate-run-package.md)

@@ -28,7 +28,7 @@ def _sample_report() -> dict[str, Any]:
     }
 
 
-def test_human_mode_falls_back_to_plain_text_when_rich_render_fails(monkeypatch, capsys) -> None:
+def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch, capsys) -> None:
     monkeypatch.setattr(cli, "score_estimator_report", lambda *_a, **_k: _sample_report())
 
     def fail_render(*_args, **_kwargs):
@@ -40,7 +40,7 @@ def test_human_mode_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
         fail_render,
     )
 
-    exit_code = cli.main([])
+    exit_code = cli.main(["smoke-test"])
     captured = capsys.readouterr()
 
     assert exit_code == 0

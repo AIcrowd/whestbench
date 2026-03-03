@@ -17,6 +17,7 @@ from rich.align import Align
 from rich.columns import Columns
 from rich.console import Console, Group
 from rich.panel import Panel
+from rich.syntax import Syntax
 from rich.table import Table
 from rich.text import Text
 
@@ -63,6 +64,59 @@ def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool =
     _render_budget_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    return buffer.getvalue()
+
+
+def render_smoke_test_next_steps() -> str:
+    """Render onboarding next-steps panel for `cestim smoke-test`."""
+    buffer = io.StringIO()
+    width = _dashboard_width()
+    console = Console(
+        record=True,
+        file=buffer,
+        force_terminal=True,
+        color_system="truecolor",
+        _environ=_rich_console_environ(width),
+    )
+
+    command_block = Syntax(
+        "\n".join(
+            [
+                "# 1) Create starter files",
+                "cestim init ./my-estimator",
+                "",
+                "# 2) Validate stream contract",
+                "cestim validate --estimator ./my-estimator/estimator.py",
+                "",
+                "# 3) Run local scoring",
+                "cestim run --estimator ./my-estimator/estimator.py --runner subprocess",
+                "",
+                "# 4) Build submission artifact",
+                "cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
+            ]
+        ),
+        "bash",
+        line_numbers=False,
+        word_wrap=True,
+    )
+
+    purposes = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
+    purposes.add_column("#", justify="right", style="bold bright_cyan")
+    purposes.add_column("Purpose", style="bright_white")
+    purposes.add_row("1", "Create starter files you can edit.")
+    purposes.add_row("2", "Check row shape/count/finite contract.")
+    purposes.add_row("3", "Run local scoring with isolation semantics.")
+    purposes.add_row("4", "Build submission artifact for upload workflow.")
+
+    body = Group(
+        Panel(command_block, title="Commands (bash)", border_style="bright_white"),
+        Align.center(purposes),
+        Text(
+            "Tip: use --json on validate/run/package for machine-readable output.",
+            style="dim",
+        ),
+    )
+    console.print(Panel(body, title="Next Steps", border_style="bright_cyan"))
     return buffer.getvalue()
 
 

@@ -1,6 +1,10 @@
 # Score Report Fields
 
-## Top-Level Fields
+## 📌 When to use this page
+
+Use this page to interpret `cestim run` output fields.
+
+## Top-level fields
 
 Typical report sections include:
 
@@ -11,7 +15,7 @@ Typical report sections include:
 - `run_config`
 - `results`
 
-## Core Result Fields
+## Core result fields
 
 Inside `results`:
 
@@ -31,13 +35,13 @@ Inside each `by_budget_raw` entry:
 - `call_effective_time_s_mean`
 - timeout/floor/runtime error rates
 
-## Interpretation
+## ✅ Interpretation guide
 
 - `mse_mean` reflects prediction quality before runtime adjustment.
 - `adjusted_mse` reflects quality under runtime-aware scoring.
 - `final_score` is the average adjusted error across budgets.
 
-## Next
+## ➡️ Next step
 
 - [Scoring Model](../concepts/scoring-model.md)
 - [CLI Reference](./cli-reference.md)

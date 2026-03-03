@@ -174,7 +174,7 @@ def test_readme_documents_cestim_install_and_usage() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
     assert "uv tool install -e ." in text
-    assert "cestim --json" in text
+    assert "cestim smoke-test" in text
     assert "uv run --with-editable . cestim" in text
     assert "uv run cestim --" not in text
 
@@ -205,12 +205,9 @@ def test_participant_docs_do_not_reference_sanitized_internal_paths() -> None:
             assert token not in text, f"{path}: {token}"
 
 
-def test_legacy_guides_are_redirects_to_new_taxonomy_pages() -> None:
+def test_legacy_guides_directory_is_removed() -> None:
     repo_root = Path(__file__).resolve().parents[1]
-    for path in sorted((repo_root / "docs/guides").glob("*.md")):
-        text = path.read_text(encoding="utf-8")
-        assert "# Moved:" in text, str(path)
-        assert "../" in text, str(path)
+    assert not (repo_root / "docs/guides").exists()
 
 
 def test_examples_estimators_folder_contains_starter_classes() -> None:
