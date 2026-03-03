@@ -215,6 +215,16 @@ body {
   color: var(--coral);
 }
 
+.control-value-editable {
+  cursor: pointer;
+  border-bottom: 1px dashed transparent;
+  transition: border-color 0.2s;
+}
+
+.control-value-editable:hover {
+  border-bottom-color: var(--coral);
+}
+
 .control-value-input {
   font-family: var(--font-mono);
   font-size: 12px;
@@ -1970,6 +1980,11 @@ body {
   z-index: 9999;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: flex-end;
+  flex-direction: row-reverse;
 }
 .perf-toggle {
   background: var(--surface-2, #1E293B);

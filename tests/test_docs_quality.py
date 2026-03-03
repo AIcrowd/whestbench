@@ -6,6 +6,16 @@ def _doc_len(doc: str | None) -> int:
     return len((doc or "").strip())
 
 
+def _normalize_h2_heading(line: str) -> str:
+    if not line.startswith("## "):
+        return line
+    heading = line[3:].strip()
+    first_token, sep, rest = heading.partition(" ")
+    if sep and not first_token.isascii():
+        heading = rest.strip()
+    return f"## {heading}"
+
+
 def _participant_markdown_paths(repo_root: Path) -> list[Path]:
     paths = [repo_root / "README.md", repo_root / "tools/circuit-explorer/README.md"]
     docs_root = repo_root / "docs"
@@ -60,6 +70,9 @@ def test_docs_index_exists_and_links_taxonomy() -> None:
 def test_readme_is_front_door_with_expected_sections() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8")
+    headings = {
+        _normalize_h2_heading(line.strip()) for line in text.splitlines() if line.startswith("## ")
+    }
     required = [
         "## 60-Second Overview",
         "## 5-Minute Quickstart",
@@ -68,7 +81,7 @@ def test_readme_is_front_door_with_expected_sections() -> None:
         "## Current Platform Status",
     ]
     for heading in required:
-        assert heading in text
+        assert heading in headings
 
 
 def test_core_modules_have_descriptive_module_docstrings() -> None:

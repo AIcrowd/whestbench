@@ -25,11 +25,51 @@ export default function Controls({ params, onParamsChange }) {
     }, 300);
   }, [localParams, onParamsChange]);
 
+  // Local text state for editable number inputs (so user can type freely)
+  const [editingField, setEditingField] = useState(null);
+  const [editText, setEditText] = useState("");
+
+  const commitEdit = useCallback((key, min, max) => {
+    const parsed = parseInt(editText, 10);
+    if (!isNaN(parsed)) {
+      const clamped = Math.max(min, Math.min(max, parsed));
+      handleSliderChange(key, clamped);
+    }
+    setEditingField(null);
+  }, [editText, handleSliderChange]);
+
   const slider = (label, key, min, max, step = 1, tooltip = "") => (
     <div className="control-row">
       <label title={tooltip}>
         <span className="control-label">{label}</span>
-        <span className="control-value">{localParams[key]}</span>
+        {editingField === key ? (
+          <input
+            type="number"
+            className="control-value-input"
+            autoFocus
+            min={min}
+            max={max}
+            step={step}
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onBlur={() => commitEdit(key, min, max)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitEdit(key, min, max);
+              if (e.key === "Escape") setEditingField(null);
+            }}
+          />
+        ) : (
+          <span
+            className="control-value control-value-editable"
+            title="Click to edit"
+            onClick={() => {
+              setEditingField(key);
+              setEditText(String(localParams[key]));
+            }}
+          >
+            {localParams[key]}
+          </span>
+        )}
       </label>
       <input
         type="range"
@@ -45,8 +85,8 @@ export default function Controls({ params, onParamsChange }) {
   return (
     <div className="controls-panel">
       <h2>Circuit</h2>
-      {slider(<>Depth <code>d</code> (Layers)</>, "depth", 1, 256, 1, "Number of gate layers in the circuit")}
       {slider(<>Width <code>n</code> (Wires)</>, "width", 2, 1024, 1, "Number of wires (parallel values) per layer")}
+      {slider(<>Depth <code>d</code> (Layers)</>, "depth", 1, 256, 1, "Number of gate layers in the circuit")}
 
       <div className="control-row">
         <label>
