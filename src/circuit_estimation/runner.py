@@ -90,6 +90,20 @@ class PredictOutcome:
             raise ValueError("predictions are required when status is 'ok'.")
 
 
+DepthRowStatus = Literal["ok", "error"]
+
+
+@dataclass(slots=True)
+class DepthRowOutcome:
+    """Per-depth-row outcome yielded by streaming runner predict."""
+
+    depth_index: int
+    row: NDArray[np.float32] | None
+    wall_time_s: float
+    status: DepthRowStatus
+    error_message: str | None = None
+
+
 @dataclass(frozen=True, slots=True)
 class RunnerErrorDetail:
     """Machine-readable error payload surfaced to CLI and report layers."""
