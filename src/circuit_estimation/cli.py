@@ -586,20 +586,80 @@ def _main_participant(argv: list[str]) -> int:
                 if args.budgets
                 else list(contest.budgets)
             )
-            out = _create_dataset(
-                n_circuits=int(args.n_circuits),
-                n_samples=int(args.n_samples),
-                width=ds_width,
-                max_depth=ds_max_depth,
-                budgets=ds_budgets,
-                seed=getattr(args, "seed", None),
-                output_path=Path(args.output),
-            )
-            payload = {"ok": True, "path": str(out)}
-            if json_output:
-                print(json.dumps(payload, indent=2))
-            else:
+            n_circuits_ds = int(args.n_circuits)
+            n_budgets = len(ds_budgets)
+
+            if not json_output:
+                try:
+                    from rich.progress import (
+                        BarColumn,
+                        MofNCompleteColumn,
+                        Progress,
+                        SpinnerColumn,
+                        TextColumn,
+                        TimeElapsedColumn,
+                    )
+
+                    progress_bar = Progress(
+                        SpinnerColumn(),
+                        TextColumn("[progress.description]{task.description}"),
+                        BarColumn(),
+                        MofNCompleteColumn(),
+                        TimeElapsedColumn(),
+                    )
+                    gen_task = progress_bar.add_task(
+                        "Generating circuits", total=n_circuits_ds
+                    )
+                    sample_task = progress_bar.add_task(
+                        "Sampling ground truth", total=n_circuits_ds
+                    )
+                    baseline_task = progress_bar.add_task(
+                        "Computing baselines", total=n_budgets
+                    )
+
+                    def _on_ds_progress(event: dict[str, Any]) -> None:
+                        phase = str(event.get("phase", ""))
+                        completed = int(event.get("completed", 0))
+                        if phase == "generating":
+                            progress_bar.update(gen_task, completed=completed)
+                        elif phase == "sampling":
+                            progress_bar.update(sample_task, completed=completed)
+                        elif phase == "baselines":
+                            progress_bar.update(baseline_task, completed=completed)
+
+                    with progress_bar:
+                        out = _create_dataset(
+                            n_circuits=n_circuits_ds,
+                            n_samples=int(args.n_samples),
+                            width=ds_width,
+                            max_depth=ds_max_depth,
+                            budgets=ds_budgets,
+                            seed=getattr(args, "seed", None),
+                            output_path=Path(args.output),
+                            progress=_on_ds_progress,
+                        )
+                except ImportError:
+                    out = _create_dataset(
+                        n_circuits=n_circuits_ds,
+                        n_samples=int(args.n_samples),
+                        width=ds_width,
+                        max_depth=ds_max_depth,
+                        budgets=ds_budgets,
+                        seed=getattr(args, "seed", None),
+                        output_path=Path(args.output),
+                    )
                 print(f"Dataset created: {out}")
+            else:
+                out = _create_dataset(
+                    n_circuits=n_circuits_ds,
+                    n_samples=int(args.n_samples),
+                    width=ds_width,
+                    max_depth=ds_max_depth,
+                    budgets=ds_budgets,
+                    seed=getattr(args, "seed", None),
+                    output_path=Path(args.output),
+                )
+                print(json.dumps({"ok": True, "path": str(out)}, indent=2))
             return 0
 
         if command == "run":

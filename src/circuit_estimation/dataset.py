@@ -79,7 +79,11 @@ def create_dataset(
     rng = np.random.default_rng(seed)
 
     # --- Generate circuits ---
-    circuits = [random_circuit(width, max_depth, rng) for _ in range(n_circuits)]
+    circuits: list[Circuit] = []
+    for i in range(n_circuits):
+        circuits.append(random_circuit(width, max_depth, rng))
+        if progress is not None:
+            progress({"phase": "generating", "completed": i + 1, "total": n_circuits})
 
     # --- Pack circuit arrays ---
     circuits_first = np.stack(
@@ -119,8 +123,10 @@ def create_dataset(
 
     # --- Compute baselines ---
     baseline_rows: list[list[float]] = []
-    for budget in budgets:
+    for bi, budget in enumerate(budgets):
         baseline_rows.append(sampling_baseline_time(budget, width, max_depth))
+        if progress is not None:
+            progress({"phase": "baselines", "completed": bi + 1, "total": len(budgets)})
     baseline_times = np.array(baseline_rows, dtype=np.float64)
 
     # --- Metadata ---
