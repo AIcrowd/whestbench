@@ -821,6 +821,13 @@ def _main_participant(argv: list[str]) -> int:
                     estimator_path=str(entrypoint.file_path),
                 )
                 total_units = len(contest_params.budgets) * n_circuits
+                if dataset_path is None:
+                    print(
+                        "\n💡 Tip: Ground truth is recomputed on every run. "
+                        "Consider creating and reusing a dataset:\n"
+                        "   cestim create-dataset -o my_dataset.npz\n"
+                        "   cestim run --estimator ... --dataset my_dataset.npz\n"
+                    )
                 if rich_tqdm is None:
                     _print_human_startup(
                         pre_report,
