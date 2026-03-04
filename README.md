@@ -79,9 +79,9 @@ cestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
 Quick debug sequence when `run` fails:
 
 ```bash
-cestim run --estimator ./my-estimator/estimator.py
-cestim run --estimator ./my-estimator/estimator.py --debug
-cestim run --estimator ./my-estimator/estimator.py --runner inprocess --debug
+cestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
+cestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --debug
+cestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --runner inprocess --debug
 ```
 
 For local editable invocation without global install:
