@@ -51,7 +51,7 @@ def render_human_context_panels(report: dict[str, Any]) -> str:
     """Render context panels shown before scoring starts."""
     buffer = io.StringIO()
     console = _new_console(buffer)
-    _render_context_row(console, report)
+    console.print(build_human_context_renderable(report, console_width=console.width))
     return buffer.getvalue()
 
 
@@ -204,7 +204,14 @@ def _render_top_row(console: Console, report: dict[str, Any]) -> None:
 
 
 def _render_context_row(console: Console, report: dict[str, Any]) -> None:
-    mode = _layout_mode(console.width)
+    console.print(build_human_context_renderable(report, console_width=console.width))
+
+
+def build_human_context_renderable(
+    report: dict[str, Any], *, console_width: int | None = None
+) -> Any:
+    width = _dashboard_width() if console_width is None else max(80, int(console_width))
+    mode = _layout_mode(width)
     run_context = _run_context_panel(report)
     hardware = _hardware_runtime_panel(report)
 
@@ -213,11 +220,9 @@ def _render_context_row(console: Console, report: dict[str, Any]) -> None:
         grid.add_column(ratio=1)
         grid.add_column(ratio=1)
         grid.add_row(run_context, hardware)
-        console.print(grid)
-        return
+        return grid
 
-    console.print(run_context)
-    console.print(hardware)
+    return Group(run_context, hardware)
 
 
 def _dashboard_width() -> int:
@@ -277,7 +282,7 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
             "Finished [run_finished_at_utc]",
             _human_utc(str(run_meta.get("run_finished_at_utc", "n/a"))),
         ),
-        ("Duration(s) [run_duration_s]", _fmt_float(run_meta.get("run_duration_s", 0.0), 6)),
+        ("Duration(s) [run_duration_s]", _fmt_duration(run_meta.get("run_duration_s"))),
         ("Circuits [n_circuits]", str(run_config.get("n_circuits", "n/a"))),
         ("Samples/Circuit [n_samples]", str(run_config.get("n_samples", "n/a"))),
         ("Width/Wires [width]", str(run_config.get("width", "n/a"))),
@@ -834,6 +839,22 @@ def _human_utc(value: str) -> str:
         dt = dt.replace(tzinfo=timezone.utc)
     dt_utc = dt.astimezone(timezone.utc)
     return dt_utc.strftime("%b %d, %Y %H:%M:%S UTC")
+
+
+def _fmt_duration(value: object) -> str:
+    if value is None:
+        return "n/a"
+    if isinstance(value, (int, float)):
+        return f"{float(value):.6f}"
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"", "n/a", "na", "none"}:
+            return "n/a"
+        try:
+            return f"{float(value):.6f}"
+        except ValueError:
+            return "n/a"
+    return "n/a"
 
 
 def _left_ellipsis(value: str, max_chars: int) -> str:

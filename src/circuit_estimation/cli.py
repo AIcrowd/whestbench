@@ -16,6 +16,7 @@ from typing import Any, Callable, Iterator, Literal, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
+from rich.console import Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
@@ -39,11 +40,12 @@ from .estimators import CombinedEstimator
 from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
 from .reporting import (
+    build_human_context_renderable,
     render_agent_report,
     render_human_context_panels,
     render_human_header,
-    render_human_results,
     render_human_report,
+    render_human_results,
     render_smoke_test_next_steps,
 )
 from .runner import (
@@ -58,7 +60,7 @@ from .sdk import SetupContext
 from .streaming import validate_depth_row
 
 _DEFAULT_ESTIMATOR = CombinedEstimator()
-ProgressCallback = Callable[[dict[str, int]], None]
+ProgressCallback = Callable[[dict[str, int | str]], None]
 
 
 def _default_contest_params() -> ContestParams:
@@ -174,7 +176,7 @@ def _pre_run_report(
         "run_meta": {
             "run_started_at_utc": datetime.now(timezone.utc).isoformat(),
             "run_finished_at_utc": "n/a",
-            "run_duration_s": 0.0,
+            "run_duration_s": None,
             "host": _host_metadata(),
         },
         "run_config": {
@@ -199,16 +201,82 @@ def _print_human_startup(
     estimator_class: str,
     estimator_path: str,
 ) -> None:
+    _print_human_header_and_hints()
     run_config = pre_report.get("run_config")
     if isinstance(run_config, dict):
         run_config["estimator_class"] = estimator_class
         run_config["estimator_path"] = estimator_path
 
+    print(render_human_context_panels(pre_report), end="")
+
+
+def _print_human_header_and_hints() -> None:
     print(render_human_header(), end="")
     print("Use --json for JSON output when calling from automated agents or UIs.")
     print("Use --show-diagnostic-plots to include diagnostic plot panes.")
     print("Runtime scoring uses budget-by-depth checks at each streamed predict() row.")
-    print(render_human_context_panels(pre_report), end="")
+
+
+class _LiveTopPaneSession:
+    def __init__(self, pre_report: dict[str, Any], total: int) -> None:
+        self._pre_report = pre_report
+        self._progress = Progress(
+            TextColumn("[bold bright_yellow]{task.description}[/]"),
+            BarColumn(bar_width=None, complete_style="bright_green", finished_style="bright_green"),
+            TaskProgressColumn(show_speed=True),
+            TimeElapsedColumn(),
+            TimeRemainingColumn(),
+        )
+        self._sampling_task_id = self._progress.add_task("Sampling (Ground Truth)", total=None)
+        self._scoring_task_id = self._progress.add_task("Scoring", total=total)
+        self._live = Live(
+            self._renderable(),
+            console=None,
+            refresh_per_second=8,
+            transient=False,
+        )
+
+    def _renderable(self) -> Group:
+        context = build_human_context_renderable(self._pre_report)
+        progress_panel = Panel(
+            self._progress,
+            title="[bold bright_yellow]Progress[/]",
+            border_style="bright_yellow",
+        )
+        return Group(context, progress_panel)
+
+    def on_progress(self, event: dict[str, int | str]) -> None:
+        phase = str(event.get("phase", "scoring"))
+        completed = int(event.get("completed", 0))
+        total_value = event.get("total")
+        if phase == "sampling":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            self._progress.update(self._sampling_task_id, completed=completed, total=total_update)
+            return
+        self._progress.update(self._scoring_task_id, completed=completed)
+
+    def update_run_meta(self, run_meta: dict[str, Any]) -> None:
+        current_meta = self._pre_report.get("run_meta")
+        if isinstance(current_meta, dict):
+            current_meta.update(run_meta)
+        self._live.update(self._renderable())
+
+    def start(self) -> None:
+        self._live.start()
+
+    def stop(self) -> None:
+        self._live.stop()
+        print()
+
+
+@contextmanager
+def _live_top_pane_session(pre_report: dict[str, Any], total: int) -> Iterator[_LiveTopPaneSession]:
+    session = _LiveTopPaneSession(pre_report, total)
+    session.start()
+    try:
+        yield session
+    finally:
+        session.stop()
 
 
 @contextmanager
@@ -216,42 +284,74 @@ def _progress_callback(total: int) -> Iterator[ProgressCallback]:
     if rich_tqdm is None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", TqdmExperimentalWarning)
-            progress_bar = classic_tqdm(total=total, desc="Scoring", unit="eval", file=sys.stdout)
+            sampling_bar = classic_tqdm(
+                total=None,
+                desc="Sampling (Ground Truth)",
+                unit="circuit",
+                file=sys.stdout,
+                position=0,
+            )
+            scoring_bar = classic_tqdm(
+                total=total,
+                desc="Scoring",
+                unit="eval",
+                file=sys.stdout,
+                position=1,
+            )
 
-        state = {"completed": 0}
+        state = {"sampling_completed": 0, "scoring_completed": 0}
 
-        def _on_progress(event: dict[str, int]) -> None:
+        def _on_progress(event: dict[str, int | str]) -> None:
+            phase = str(event.get("phase", "scoring"))
             completed = int(event.get("completed", 0))
-            delta = completed - state["completed"]
+            if phase == "sampling":
+                total_value = event.get("total")
+                if isinstance(total_value, int) and sampling_bar.total != total_value:
+                    sampling_bar.total = total_value
+                    sampling_bar.refresh()
+                delta = completed - state["sampling_completed"]
+                if delta > 0:
+                    sampling_bar.update(delta)
+                    state["sampling_completed"] = completed
+                return
+            delta = completed - state["scoring_completed"]
             if delta > 0:
-                progress_bar.update(delta)
-                state["completed"] = completed
+                scoring_bar.update(delta)
+                state["scoring_completed"] = completed
 
         try:
             yield _on_progress
         finally:
-            progress_bar.close()
+            sampling_bar.close()
+            scoring_bar.close()
             print()
         return
 
     progress = Progress(
-        TextColumn("[bold bright_yellow]Progress[/]"),
+        TextColumn("[bold bright_yellow]{task.description}[/]"),
         BarColumn(bar_width=None, complete_style="bright_green", finished_style="bright_green"),
         TaskProgressColumn(show_speed=True),
         TimeElapsedColumn(),
         TimeRemainingColumn(),
     )
-    task_id = progress.add_task("scoring", total=total)
+    sampling_task_id = progress.add_task("Sampling (Ground Truth)", total=None)
+    scoring_task_id = progress.add_task("Scoring", total=total)
     live = Live(
-        Panel(progress, title="[bold bright_yellow]Scoring[/]", border_style="bright_yellow"),
+        Panel(progress, title="[bold bright_yellow]Progress[/]", border_style="bright_yellow"),
         console=None,
         refresh_per_second=8,
         transient=False,
     )
 
-    def _on_progress(event: dict[str, int]) -> None:
+    def _on_progress(event: dict[str, int | str]) -> None:
+        phase = str(event.get("phase", "scoring"))
         completed = int(event.get("completed", 0))
-        progress.update(task_id, completed=completed)
+        total_value = event.get("total")
+        if phase == "sampling":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            progress.update(sampling_task_id, completed=completed, total=total_update)
+            return
+        progress.update(scoring_task_id, completed=completed)
 
     try:
         live.start()
@@ -495,24 +595,44 @@ def _main_participant(argv: list[str]) -> int:
                     estimator_class=metadata.class_name,
                     estimator_path=str(entrypoint.file_path),
                 )
-                _print_human_startup(
-                    pre_report,
-                    estimator_class=metadata.class_name,
-                    estimator_path=str(entrypoint.file_path),
-                )
                 total_units = len(contest_params.budgets) * n_circuits
-                with _progress_callback(total_units) as progress_cb:
-                    report = score_estimator_report(
-                        runner,
-                        n_circuits=n_circuits,
-                        n_samples=n_samples,
-                        contest_params=contest_params,
-                        entrypoint=entrypoint,
-                        limits=_default_resource_limits(),
-                        profile=bool(args.profile),
-                        detail=str(args.detail),
-                        progress=progress_cb,
+                if rich_tqdm is None:
+                    _print_human_startup(
+                        pre_report,
+                        estimator_class=metadata.class_name,
+                        estimator_path=str(entrypoint.file_path),
                     )
+                    with _progress_callback(total_units) as progress_cb:
+                        report = score_estimator_report(
+                            runner,
+                            n_circuits=n_circuits,
+                            n_samples=n_samples,
+                            contest_params=contest_params,
+                            entrypoint=entrypoint,
+                            limits=_default_resource_limits(),
+                            profile=bool(args.profile),
+                            detail=str(args.detail),
+                            progress=progress_cb,
+                            sampling_progress=progress_cb,
+                        )
+                else:
+                    _print_human_header_and_hints()
+                    with _live_top_pane_session(pre_report, total_units) as live_session:
+                        report = score_estimator_report(
+                            runner,
+                            n_circuits=n_circuits,
+                            n_samples=n_samples,
+                            contest_params=contest_params,
+                            entrypoint=entrypoint,
+                            limits=_default_resource_limits(),
+                            profile=bool(args.profile),
+                            detail=str(args.detail),
+                            progress=live_session.on_progress,
+                            sampling_progress=live_session.on_progress,
+                        )
+                        run_meta = report.get("run_meta")
+                        if isinstance(run_meta, dict):
+                            live_session.update_run_meta(run_meta)
                 report["mode"] = "human"
                 try:
                     output = render_human_results(

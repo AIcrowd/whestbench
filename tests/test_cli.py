@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import Any
 
 import pytest
@@ -268,6 +269,65 @@ def test_run_inprocess_error_omits_inprocess_debug_hint(
     assert "Error [setup:SETUP_ERROR]: runner failed" in captured.out
     assert "Use --debug to include a traceback." in captured.out
     assert "rerun with --runner inprocess --debug" not in captured.out
+
+
+def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    observed: dict[str, Any] = {}
+
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "rich_tqdm", object(), raising=False)
+
+    @contextmanager
+    def fake_live_session(pre_report: dict[str, Any], total: int):
+        observed["initial_finished"] = pre_report["run_meta"]["run_finished_at_utc"]
+        observed["initial_duration"] = pre_report["run_meta"]["run_duration_s"]
+        observed["total"] = total
+
+        class Session:
+            def on_progress(self, event: dict[str, int]) -> None:
+                observed["progress_event"] = event
+
+            def update_run_meta(self, run_meta: dict[str, Any]) -> None:
+                observed["final_meta"] = run_meta
+
+        yield Session()
+
+    monkeypatch.setattr(cli, "_live_top_pane_session", fake_live_session, raising=False)
+
+    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        progress_cb = kwargs.get("progress")
+        assert callable(progress_cb)
+        progress_cb({"completed": 1})
+        report = _sample_report(profile_enabled=False, detail=str(kwargs.get("detail", "raw")))
+        run_meta = report["run_meta"]
+        assert isinstance(run_meta, dict)
+        run_meta["run_finished_at_utc"] = "2026-03-01T00:00:03+00:00"
+        run_meta["run_duration_s"] = 3.0
+        return report
+
+    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(
+        cli, "render_human_results", lambda _report, *, show_diagnostic_plots=False: "results\n"
+    )
+
+    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "results" in captured.out
+    assert observed["initial_finished"] == "n/a"
+    assert observed["initial_duration"] is None
+    assert observed["total"] == 4 * 10
+    assert observed["progress_event"] == {"completed": 1}
+    assert observed["final_meta"]["run_finished_at_utc"] == "2026-03-01T00:00:03+00:00"
+    assert observed["final_meta"]["run_duration_s"] == 3.0
 
 
 def test_smoke_test_json_flag_is_rejected() -> None:

@@ -296,6 +296,26 @@ def test_run_context_styles_estimator_class_and_left_trims_estimator_path() -> N
     assert estimator_path_value.endswith("examples/estimators/combined_estimator.py")
 
 
+def test_run_context_duration_defaults_to_na_when_unavailable() -> None:
+    report = _sample_report(include_profile=False)
+    run_meta = cast(dict[str, Any], report["run_meta"])
+    run_meta["run_duration_s"] = None
+
+    panel = reporting._run_context_panel(report)
+    assert isinstance(panel.renderable, Align)
+    table = cast(Table, panel.renderable.renderable)
+
+    labels = table.columns[0]._cells
+    values = table.columns[1]._cells
+    lookup = {
+        cast(Text, label).plain: value
+        for label, value in zip(labels, values, strict=True)
+        if isinstance(label, Text)
+    }
+
+    assert lookup["Duration(s) [run_duration_s]"] == "n/a"
+
+
 def test_primary_tables_are_centered() -> None:
     report = _sample_report(include_profile=False)
 
