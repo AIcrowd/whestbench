@@ -725,7 +725,118 @@ git commit -m "feat(dashboard): enrich Hardware & Runtime panel with CPU/RAM/Num
 
 ---
 
-### Task 8: Manual End-to-End Verification
+### Task 8: User-Facing Documentation
+
+**Files:**
+- Create: `docs/how-to/use-evaluation-datasets.md`
+- Modify: `docs/reference/cli-reference.md` — add `create-dataset` command and `run --dataset` flags
+- Modify: `docs/index.md` — add link under "📈 I want to improve score" and Full Taxonomy
+
+**Step 1: Write the how-to guide**
+
+Create `docs/how-to/use-evaluation-datasets.md` with user-focused content:
+
+```markdown
+# Use Evaluation Datasets
+
+## When to use this
+
+Use pre-created evaluation datasets when you want to:
+
+- **Skip repeated sampling** — circuit generation and ground truth sampling happen once, not on every run
+- **Compare estimators fairly** — all estimators are scored against the exact same circuits
+- **Iterate faster** — `cestim run --dataset` skips the "Sampling (Ground Truth)" phase entirely
+
+## Create a dataset
+
+```bash
+cestim create-dataset -o my_dataset.npz
+```
+
+This generates circuits, samples ground truth means, and computes sampling baselines. All parameters are stored in the file so results are fully reproducible.
+
+Common options:
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--n-circuits` | 10 | Number of circuits to generate |
+| `--n-samples` | 10000 | Samples per circuit for ground truth |
+| `--seed` | auto | RNG seed (auto-generated if omitted, always recorded) |
+| `-o, --output` | `eval_dataset.npz` | Output file path |
+| `--width` | 100 | Wire count per circuit |
+| `--max-depth` | 30 | Layers per circuit |
+| `--budgets` | `10,100,1000,10000` | Comma-separated budget list |
+
+## Run with a dataset
+
+```bash
+cestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
+```
+
+The `--n-circuits` and `--n-samples` flags are ignored when `--dataset` is provided — these values come from the dataset file.
+
+## Hardware and baseline handling
+
+The dataset records which machine it was created on. When you run on a different machine:
+
+- **Default**: baselines are automatically recomputed (a warning is printed)
+- **`--strict-baselines`**: refuses to run if hardware differs
+
+```bash
+# Strict mode — error if hardware doesn't match
+cestim run --estimator ./estimator.py --dataset my_dataset.npz --strict-baselines
+```
+
+## Dataset traceability
+
+When using `--dataset`, the results JSON includes a `dataset` reference under `run_config`:
+
+```json
+{
+  "run_config": {
+    "dataset": {
+      "path": "/path/to/my_dataset.npz",
+      "sha256": "a1b2c3...",
+      "seed": 42,
+      "n_circuits": 10,
+      "n_samples": 10000,
+      "baselines_recomputed": false
+    }
+  }
+}
+```
+
+## ➡️ Next step
+
+- [Validate, Run, and Package](./validate-run-package.md)
+- [Score Report Fields](../reference/score-report-fields.md)
+```
+
+**Step 2: Update CLI reference**
+
+In `docs/reference/cli-reference.md`:
+
+1. Add `cestim create-dataset` to the entry commands list
+2. Add a `## cestim create-dataset` section with synopsis and key options
+3. Add `--dataset` and `--strict-baselines` to the `cestim run` key options list
+
+**Step 3: Update docs index**
+
+In `docs/index.md`:
+
+1. Under "📈 I want to improve score", add: `[Use Evaluation Datasets](./how-to/use-evaluation-datasets.md)`
+2. In the Full Taxonomy How-To line, add the new guide
+
+**Step 4: Commit**
+
+```bash
+git add docs/how-to/use-evaluation-datasets.md docs/reference/cli-reference.md docs/index.md
+git commit -m "docs: add how-to guide for evaluation datasets and update CLI reference"
+```
+
+---
+
+### Task 9: Manual End-to-End Verification
 
 Run the full user workflow:
 
@@ -746,5 +857,6 @@ cestim run --estimator examples/estimators/combined_estimator.py --dataset /tmp/
 Expected:
 - `create-dataset` produces `.npz` file with reported path
 - `run --dataset` skips "Sampling (Ground Truth)" phase
-- Report includes correct score
+- Report includes correct score and `run_config.dataset` reference
 - Second run is noticeably faster than a fresh `cestim run` without `--dataset`
+
