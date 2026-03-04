@@ -16,6 +16,16 @@ from typing import Any, Callable, Iterator, Literal, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
+from rich.live import Live
+from rich.panel import Panel
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 from tqdm import tqdm as classic_tqdm
 from tqdm.std import TqdmExperimentalWarning
 
@@ -203,26 +213,51 @@ def _print_human_startup(
 
 @contextmanager
 def _progress_callback(total: int) -> Iterator[ProgressCallback]:
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", TqdmExperimentalWarning)
-        if rich_tqdm is not None:
-            progress_bar = rich_tqdm(total=total, desc="Scoring", unit="eval", file=sys.stdout)
-        else:
+    if rich_tqdm is None:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", TqdmExperimentalWarning)
             progress_bar = classic_tqdm(total=total, desc="Scoring", unit="eval", file=sys.stdout)
 
-    state = {"completed": 0}
+        state = {"completed": 0}
+
+        def _on_progress(event: dict[str, int]) -> None:
+            completed = int(event.get("completed", 0))
+            delta = completed - state["completed"]
+            if delta > 0:
+                progress_bar.update(delta)
+                state["completed"] = completed
+
+        try:
+            yield _on_progress
+        finally:
+            progress_bar.close()
+            print()
+        return
+
+    progress = Progress(
+        TextColumn("[bold bright_yellow]Progress[/]"),
+        BarColumn(bar_width=None, complete_style="bright_green", finished_style="bright_green"),
+        TaskProgressColumn(show_speed=True),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+    )
+    task_id = progress.add_task("scoring", total=total)
+    live = Live(
+        Panel(progress, title="[bold bright_yellow]Scoring[/]", border_style="bright_yellow"),
+        console=None,
+        refresh_per_second=8,
+        transient=False,
+    )
 
     def _on_progress(event: dict[str, int]) -> None:
         completed = int(event.get("completed", 0))
-        delta = completed - state["completed"]
-        if delta > 0:
-            progress_bar.update(delta)
-            state["completed"] = completed
+        progress.update(task_id, completed=completed)
 
     try:
+        live.start()
         yield _on_progress
     finally:
-        progress_bar.close()
+        live.stop()
         print()
 
 
