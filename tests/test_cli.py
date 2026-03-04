@@ -227,6 +227,12 @@ def test_run_subprocess_error_includes_inprocess_debug_hint(
             RunnerErrorDetail(code="SETUP_ERROR", message="runner failed"),
         )
 
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
     monkeypatch.setattr(cli, "score_estimator_report", fail_report)
 
     exit_code = cli.main(["run", "--estimator", "estimator.py"])
@@ -247,6 +253,12 @@ def test_run_inprocess_error_omits_inprocess_debug_hint(
             RunnerErrorDetail(code="SETUP_ERROR", message="runner failed"),
         )
 
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
     monkeypatch.setattr(cli, "score_estimator_report", fail_report)
 
     exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])

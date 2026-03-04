@@ -31,17 +31,47 @@ def render_agent_report(report: dict[str, Any]) -> str:
     return f"{json.dumps(report, indent=2)}\n"
 
 
+def render_human_header() -> str:
+    """Render only the title/header block for append-first human runs."""
+    buffer = io.StringIO()
+    console = _new_console(buffer)
+    console.print(
+        Panel(
+            Text("Circuit Estimation Report", style="bold white"),
+            expand=False,
+            border_style="bright_cyan",
+            subtitle="Rich Dashboard",
+            subtitle_align="right",
+        )
+    )
+    return buffer.getvalue()
+
+
+def render_human_context_panels(report: dict[str, Any]) -> str:
+    """Render context panels shown before scoring starts."""
+    buffer = io.StringIO()
+    console = _new_console(buffer)
+    _render_context_row(console, report)
+    return buffer.getvalue()
+
+
+def render_human_results(
+    report: dict[str, Any], *, show_diagnostic_plots: bool = False
+) -> str:
+    """Render post-run sections for append-only human flows."""
+    buffer = io.StringIO()
+    console = _new_console(buffer)
+    console.print(_score_summary_panel(report))
+    _render_budget_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    return buffer.getvalue()
+
+
 def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
     buffer = io.StringIO()
-    width = _dashboard_width()
-    console = Console(
-        record=True,
-        file=buffer,
-        force_terminal=True,
-        color_system="truecolor",
-        _environ=_rich_console_environ(width),
-    )
+    console = _new_console(buffer)
 
     console.print(
         Panel(
@@ -64,6 +94,17 @@ def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool =
     _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
+
+
+def _new_console(buffer: io.StringIO) -> Console:
+    width = _dashboard_width()
+    return Console(
+        record=True,
+        file=buffer,
+        force_terminal=True,
+        color_system="truecolor",
+        _environ=_rich_console_environ(width),
+    )
 
 
 def render_smoke_test_next_steps() -> str:
@@ -162,6 +203,23 @@ def _render_top_row(console: Console, report: dict[str, Any]) -> None:
     console.print(hardware)
 
 
+def _render_context_row(console: Console, report: dict[str, Any]) -> None:
+    mode = _layout_mode(console.width)
+    run_context = _run_context_panel(report)
+    hardware = _hardware_runtime_panel(report)
+
+    if mode in {"three_col", "two_col"}:
+        grid = Table.grid(expand=True)
+        grid.add_column(ratio=1)
+        grid.add_column(ratio=1)
+        grid.add_row(run_context, hardware)
+        console.print(grid)
+        return
+
+    console.print(run_context)
+    console.print(hardware)
+
+
 def _dashboard_width() -> int:
     columns = shutil.get_terminal_size((120, 40)).columns
     return max(80, columns)
@@ -190,7 +248,16 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
     table.add_column("field")
     table.add_column("value")
 
-    rows = [
+    rows: list[tuple[str, str]] = []
+    estimator_class = run_config.get("estimator_class")
+    if estimator_class is not None:
+        rows.append(("Estimator Class [estimator_class]", str(estimator_class)))
+    estimator_path = run_config.get("estimator_path")
+    if estimator_path is not None:
+        rows.append(("Estimator Path [estimator_path]", str(estimator_path)))
+
+    rows.extend(
+        [
         (
             "Started [run_started_at_utc]",
             _human_utc(str(run_meta.get("run_started_at_utc", "n/a"))),
@@ -207,7 +274,8 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
         ("Layers [layer_count]", str(run_config.get("layer_count", "n/a"))),
         ("Budgets [budgets]", str(run_config.get("budgets", []))),
         ("Tolerance [time_tolerance]", str(run_config.get("time_tolerance", "n/a"))),
-    ]
+        ]
+    )
     for key, value in rows:
         table.add_row(_render_context_label(key), value)
 
