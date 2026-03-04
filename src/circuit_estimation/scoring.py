@@ -39,7 +39,8 @@ except ImportError:  # pragma: no cover - optional dependency
 
 EstimatorFn = Callable[[Circuit, int], Iterator[NDArray[np.float32]]]
 ProfilerFn = Callable[[dict[str, float | int]], None]
-ProgressFn = Callable[[dict[str, int]], None]
+ProgressEvent = dict[str, int | str]
+ProgressFn = Callable[[ProgressEvent], None]
 T = TypeVar("T")
 
 
@@ -202,6 +203,7 @@ def score_estimator_report(
     detail: str = "raw",
     profiler: ProfilerFn | None = None,
     progress: ProgressFn | None = None,
+    sampling_progress: ProgressFn | None = None,
 ) -> dict[str, Any]:
     """Compute a structured scoring report for one estimator.
 
@@ -284,10 +286,19 @@ def score_estimator_report(
         }
         for idx, c in enumerate(circuits_to_score)
     ]
-    means: NDArray[np.float32] = np.array(
-        [list(empirical_mean(circuit, n_samples)) for circuit in circuits_to_score],
-        dtype=np.float32,
-    )
+    means_by_circuit: list[list[NDArray[np.float32]]] = []
+    for circuit_index, circuit in enumerate(circuits_to_score):
+        means_by_circuit.append(list(empirical_mean(circuit, n_samples)))
+        if sampling_progress is not None:
+            sampling_progress(
+                {
+                    "phase": "sampling",
+                    "circuit_index": int(circuit_index),
+                    "completed": int(circuit_index + 1),
+                    "total": int(n_circuits_effective),
+                }
+            )
+    means: NDArray[np.float32] = np.array(means_by_circuit, dtype=np.float32)
     by_budget_raw: list[dict[str, Any]] = []
     profile_calls: list[dict[str, float | int]] = []
     completed_units = 0
@@ -365,6 +376,7 @@ def score_estimator_report(
                 if progress is not None:
                     progress(
                         {
+                            "phase": "scoring",
                             "budget_index": int(budget_index),
                             "budget": int(budget),
                             "circuit_index": int(circuit_index),

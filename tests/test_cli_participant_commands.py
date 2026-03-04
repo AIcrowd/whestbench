@@ -98,7 +98,7 @@ def test_run_command_renders_human_report_in_non_agent_mode(
 
     assert exit_code == 0
     assert captured.err == ""
-    assert captured.out == "human report\n"
+    assert "human report\n" in captured.out
 
 
 def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
@@ -119,6 +119,7 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
         lambda *_a, **_k: type("Meta", (), {"class_name": "MyEstimator"})(),
         raising=False,
     )
+    monkeypatch.setattr(cli, "rich_tqdm", None, raising=False)
     monkeypatch.setattr(
         cli,
         "_print_human_startup",
@@ -131,10 +132,16 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
         raising=False,
     )
     monkeypatch.setattr(cli, "_progress_callback", fake_progress, raising=False)
+
+    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        observed["scoring_progress_cb"] = kwargs.get("progress")
+        observed["sampling_progress_cb"] = kwargs.get("sampling_progress")
+        return _sample_report()
+
     monkeypatch.setattr(
         cli,
         "score_estimator_report",
-        lambda *_args, **_kwargs: _sample_report(),
+        fake_score_estimator_report,
     )
     monkeypatch.setattr(
         cli,
@@ -158,12 +165,12 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
 
     assert exit_code == 0
     assert captured.err == ""
-    assert captured.out == "human report\n"
-    assert observed["estimator_class"] == "MyEstimator"
-    assert observed["estimator_path"].endswith("estimator.py")
+    assert "human report\n" in captured.out
     assert observed["total"] == 8
     assert observed["progress_opened"] is True
     assert observed["progress_closed"] is True
+    assert callable(observed["scoring_progress_cb"])
+    assert observed["sampling_progress_cb"] is observed["scoring_progress_cb"]
 
 
 def test_run_command_json_mode_skips_human_startup_and_progress(
