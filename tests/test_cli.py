@@ -31,7 +31,7 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict[str, Any]:
         },
         "circuits": [{"circuit_index": 0, "wire_count": 4, "layer_count": 3}],
         "results": {
-            "final_score": 0.42,
+            "adjusted_mse": 0.42,
             "score_direction": "lower_is_better",
             "by_budget_raw": [],
         },

@@ -447,7 +447,7 @@ def score_estimator_report(
         if runner is not None:
             runner.close()
 
-    final_score = float(np.mean([entry["adjusted_mse"] for entry in by_budget_raw]))
+    adjusted_mse = float(np.mean([entry["adjusted_mse"] for entry in by_budget_raw]))
     run_end = datetime.now(timezone.utc)
     host_meta = collect_hardware_fingerprint()
     report: dict[str, Any] = {
@@ -472,7 +472,7 @@ def score_estimator_report(
         },
         "circuits": circuits_meta,
         "results": {
-            "final_score": final_score,
+            "adjusted_mse": adjusted_mse,
             "score_direction": "lower_is_better",
             "by_budget_raw": by_budget_raw,
         },
@@ -507,7 +507,7 @@ def score_estimator(
         detail="raw",
         profiler=profiler,
     )
-    return float(report["results"]["final_score"])
+    return float(report["results"]["adjusted_mse"])
 
 
 def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dict[str, Any]:

@@ -46,7 +46,7 @@ def _sample_report(*, include_profile: bool = False) -> dict[str, object]:
             {"circuit_index": 1, "wire_count": 4, "layer_count": 3},
         ],
         "results": {
-            "final_score": 0.123,
+            "adjusted_mse": 0.123,
             "score_direction": "lower_is_better",
             "by_budget_raw": [
                 {
@@ -165,7 +165,7 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     assert "Circuit Estimation Report" in rendered
     assert "Use --json for JSON output" in rendered
     assert "Run Context" in rendered
-    assert "Readiness Scorecard" in rendered
+    assert "Final Score" in rendered
     assert "Budget" in rendered
     assert "Layer Diagnostics" not in rendered
     assert "Budget Breakdown" not in rendered
@@ -191,20 +191,20 @@ def test_human_report_uses_three_column_top_row_on_wide_layout(
     title_lines = [
         line
         for line in plain.splitlines()
-        if "Run Context" in line or "Readiness Scorecard" in line or "Hardware & Runtime" in line
+        if "Run Context" in line or "Final Score" in line or "Hardware & Runtime" in line
     ]
 
     assert "Run Context" in rendered
-    assert "Readiness Scorecard" in rendered
+    assert "Final Score" in rendered
     assert "Hardware & Runtime" in rendered
     assert any(
-        "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" in line
+        "Run Context" in line and "Final Score" in line and "Hardware & Runtime" in line
         for line in title_lines
     )
     assert not any(
         "Hardware & Runtime" in line
         and "Run Context" not in line
-        and "Readiness Scorecard" not in line
+        and "Final Score" not in line
         for line in title_lines
     )
 
@@ -218,17 +218,17 @@ def test_human_report_uses_two_column_plus_stack_layout_on_medium_width(
     title_lines = [
         line
         for line in plain.splitlines()
-        if "Run Context" in line or "Readiness Scorecard" in line or "Hardware & Runtime" in line
+        if "Run Context" in line or "Final Score" in line or "Hardware & Runtime" in line
     ]
 
     assert any(
-        "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" not in line
+        "Run Context" in line and "Final Score" in line and "Hardware & Runtime" not in line
         for line in title_lines
     )
     assert any(
         "Hardware & Runtime" in line
         and "Run Context" not in line
-        and "Readiness Scorecard" not in line
+        and "Final Score" not in line
         for line in title_lines
     )
 

@@ -20,7 +20,7 @@ def _sample_report() -> dict[str, Any]:
             "budgets": [10, 100],
         },
         "results": {
-            "final_score": 0.42,
+            "adjusted_mse": 0.42,
             "by_budget_raw": [
                 {"budget": 10, "score": 0.6},
                 {"budget": 100, "score": 0.3},
@@ -52,7 +52,7 @@ def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
     assert exit_code == 0
     assert "Rich dashboard unavailable (rich boom)" in captured.err
     assert "Circuit Estimation Report (Plain Text)" in captured.out
-    assert "Final Score: 0.42" in captured.out
+    assert "Adjusted MSE: 0.42" in captured.out
     assert "Best Budget Score: 0.3" in captured.out
 
 

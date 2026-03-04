@@ -37,7 +37,7 @@ def render_human_header() -> str:
     console = _new_console(buffer)
     console.print(
         Panel(
-            Text("Circuit Estimation Report", style="bold white"),
+            Align.center(Text("Circuit Estimation Report", style="bold white")),
             expand=True,
             border_style="bright_cyan",
         )
@@ -73,7 +73,7 @@ def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool =
 
     console.print(
         Panel(
-            Text("Circuit Estimation Report", style="bold white"),
+            Align.center(Text("Circuit Estimation Report", style="bold white")),
             expand=True,
             border_style="bright_cyan",
         )
@@ -326,7 +326,7 @@ def _hardware_runtime_panel(report: dict[str, Any]) -> Panel:
 
 def _score_summary_panel(report: dict[str, Any]) -> Panel:
     results = report.get("results", {})
-    final_score = _as_float(results.get("final_score", 0.0))
+    adjusted_mse = _as_float(results.get("adjusted_mse", 0.0))
     by_budget = _budget_rows(report)
     budget_scores = [_as_float(entry.get("adjusted_mse", 0.0)) for entry in by_budget]
     mse_means = [_as_float(entry.get("mse_mean", 0.0)) for entry in by_budget]
@@ -334,8 +334,8 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
     summary.add_column("metric")
     summary.add_column("value", justify="right")
     summary.add_row(
-        _label_with_code("Final Score", "final_score", "bold bright_green"),
-        f"[bold bright_green]✓ {_fmt_float(final_score, 8)}[/]",
+        _label_with_code("Adjusted MSE", "adjusted_mse", "bold bright_green"),
+        f"[bold bright_green]✓ {_fmt_float(adjusted_mse, 8)}[/]",
     )
     if mse_means:
         summary.add_row(
@@ -358,7 +358,7 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
         summary.add_row("", "")
     return Panel(
         Align.center(summary),
-        title="Readiness Scorecard",
+        title="Final Score",
         subtitle="lower score is better; final score is adjusted MSE mean",
         subtitle_align="left",
         border_style="bright_cyan",

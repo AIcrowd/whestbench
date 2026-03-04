@@ -94,7 +94,7 @@ def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[s
     When ``profile`` is true, this returns ``(score, profile_calls)``.
     """
     report = run_default_report(profile=profile, detail="raw")
-    score = float(report["results"]["final_score"])
+    score = float(report["results"]["adjusted_mse"])
     if profile:
         return score, list(report.get("profile_calls", []))
     return score
@@ -120,7 +120,7 @@ def _render_plain_text_report(report: dict[str, Any]) -> str:
     best_budget_score, worst_budget_score = _budget_score_bounds(results.get("by_budget_raw"))
     lines = [
         "Circuit Estimation Report (Plain Text)",
-        f"Final Score: {results.get('final_score', 'n/a')}",
+        f"Adjusted MSE: {results.get('adjusted_mse', 'n/a')}",
         f"Best Budget Score: {best_budget_score}",
         f"Worst Budget Score: {worst_budget_score}",
         f"Duration(s): {run_meta.get('run_duration_s', 'n/a')}",
