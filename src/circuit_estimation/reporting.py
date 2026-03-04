@@ -31,17 +31,47 @@ def render_agent_report(report: dict[str, Any]) -> str:
     return f"{json.dumps(report, indent=2)}\n"
 
 
+def render_human_header() -> str:
+    """Render only the title/header block for append-first human runs."""
+    buffer = io.StringIO()
+    console = _new_console(buffer)
+    console.print(
+        Panel(
+            Text("Circuit Estimation Report", style="bold white"),
+            expand=False,
+            border_style="bright_cyan",
+            subtitle="Rich Dashboard",
+            subtitle_align="right",
+        )
+    )
+    return buffer.getvalue()
+
+
+def render_human_context_panels(report: dict[str, Any]) -> str:
+    """Render context panels shown before scoring starts."""
+    buffer = io.StringIO()
+    console = _new_console(buffer)
+    console.print(build_human_context_renderable(report, console_width=console.width))
+    return buffer.getvalue()
+
+
+def render_human_results(
+    report: dict[str, Any], *, show_diagnostic_plots: bool = False
+) -> str:
+    """Render post-run sections for append-only human flows."""
+    buffer = io.StringIO()
+    console = _new_console(buffer)
+    console.print(_score_summary_panel(report))
+    _render_budget_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    return buffer.getvalue()
+
+
 def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
     buffer = io.StringIO()
-    width = _dashboard_width()
-    console = Console(
-        record=True,
-        file=buffer,
-        force_terminal=True,
-        color_system="truecolor",
-        _environ=_rich_console_environ(width),
-    )
+    console = _new_console(buffer)
 
     console.print(
         Panel(
@@ -64,6 +94,17 @@ def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool =
     _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
+
+
+def _new_console(buffer: io.StringIO) -> Console:
+    width = _dashboard_width()
+    return Console(
+        record=True,
+        file=buffer,
+        force_terminal=True,
+        color_system="truecolor",
+        _environ=_rich_console_environ(width),
+    )
 
 
 def render_smoke_test_next_steps() -> str:
@@ -162,6 +203,28 @@ def _render_top_row(console: Console, report: dict[str, Any]) -> None:
     console.print(hardware)
 
 
+def _render_context_row(console: Console, report: dict[str, Any]) -> None:
+    console.print(build_human_context_renderable(report, console_width=console.width))
+
+
+def build_human_context_renderable(
+    report: dict[str, Any], *, console_width: int | None = None
+) -> Any:
+    width = _dashboard_width() if console_width is None else max(80, int(console_width))
+    mode = _layout_mode(width)
+    run_context = _run_context_panel(report)
+    hardware = _hardware_runtime_panel(report)
+
+    if mode in {"three_col", "two_col"}:
+        grid = Table.grid(expand=True)
+        grid.add_column(ratio=1)
+        grid.add_column(ratio=1)
+        grid.add_row(run_context, hardware)
+        return grid
+
+    return Group(run_context, hardware)
+
+
 def _dashboard_width() -> int:
     columns = shutil.get_terminal_size((120, 40)).columns
     return max(80, columns)
@@ -190,7 +253,27 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
     table.add_column("field")
     table.add_column("value")
 
-    rows = [
+    rows: list[tuple[str, Any]] = []
+    estimator_class = run_config.get("estimator_class")
+    if estimator_class is not None:
+        rows.append(
+            (
+                "Estimator Class [estimator_class]",
+                Text(str(estimator_class), style="bold bright_cyan"),
+            )
+        )
+    estimator_path = run_config.get("estimator_path")
+    if estimator_path is not None:
+        max_path_chars = max(36, min(120, _dashboard_width() - 60))
+        rows.append(
+            (
+                "Estimator Path [estimator_path]",
+                _left_ellipsis(str(estimator_path), max_path_chars),
+            )
+        )
+
+    rows.extend(
+        [
         (
             "Started [run_started_at_utc]",
             _human_utc(str(run_meta.get("run_started_at_utc", "n/a"))),
@@ -199,7 +282,7 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
             "Finished [run_finished_at_utc]",
             _human_utc(str(run_meta.get("run_finished_at_utc", "n/a"))),
         ),
-        ("Duration(s) [run_duration_s]", _fmt_float(run_meta.get("run_duration_s", 0.0), 6)),
+        ("Duration(s) [run_duration_s]", _fmt_duration(run_meta.get("run_duration_s"))),
         ("Circuits [n_circuits]", str(run_config.get("n_circuits", "n/a"))),
         ("Samples/Circuit [n_samples]", str(run_config.get("n_samples", "n/a"))),
         ("Width/Wires [width]", str(run_config.get("width", "n/a"))),
@@ -207,7 +290,8 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
         ("Layers [layer_count]", str(run_config.get("layer_count", "n/a"))),
         ("Budgets [budgets]", str(run_config.get("budgets", []))),
         ("Tolerance [time_tolerance]", str(run_config.get("time_tolerance", "n/a"))),
-    ]
+        ]
+    )
     for key, value in rows:
         table.add_row(_render_context_label(key), value)
 
@@ -309,7 +393,16 @@ def _budget_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = 
     if show_diagnostic_plots:
         accuracy_plot = _budget_frontier_plot_panel(by_budget)
         runtime_plot = _budget_runtime_plot_panel(by_budget)
-        body.append(Columns([accuracy_plot, runtime_plot], equal=True, expand=True))
+        body.append(
+            Align.center(
+                Columns(
+                    [accuracy_plot, runtime_plot],
+                    align="center",
+                    equal=True,
+                    expand=False,
+                )
+            )
+        )
     return Panel(Group(*body), title="Budget", border_style="bright_cyan")
 
 
@@ -330,13 +423,16 @@ def _layer_lane_panel(
     by_budget = _budget_rows(report)
     mse_series = [_to_float_list(entry.get("mse_by_layer", [])) for entry in by_budget]
     avg_mse = _mean_series(mse_series)
-    body = Columns(
-        [
-            _layer_histogram_panel(report),
-            _layer_trend_plot_panel(avg_mse),
-        ],
-        equal=True,
-        expand=True,
+    body = Align.center(
+        Columns(
+            [
+                _layer_histogram_panel(report),
+                _layer_trend_plot_panel(avg_mse),
+            ],
+            align="center",
+            equal=True,
+            expand=False,
+        )
     )
     return Panel(body, title="Layer Diagnostics", border_style="bright_magenta")
 
@@ -475,11 +571,21 @@ def _render_profile_section(
         equal=True,
         expand=False,
     )
-    console.print(Panel(Align.center(profile_tables), title="Profile", border_style="bright_blue"))
+    profile_body: list[Any] = [Align.center(profile_tables)]
     if show_diagnostic_plots:
         runtime_plot = _profile_runtime_plot_panel(wall, cpu)
         memory_plot = _profile_memory_plot_panel(rss, peak)
-        console.print(Columns([runtime_plot, memory_plot], equal=True, expand=True))
+        profile_body.append(
+            Align.center(
+                Columns(
+                    [runtime_plot, memory_plot],
+                    align="center",
+                    equal=True,
+                    expand=False,
+                )
+            )
+        )
+    console.print(Panel(Group(*profile_body), title="Profile", border_style="bright_blue"))
 
 
 def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
@@ -733,6 +839,32 @@ def _human_utc(value: str) -> str:
         dt = dt.replace(tzinfo=timezone.utc)
     dt_utc = dt.astimezone(timezone.utc)
     return dt_utc.strftime("%b %d, %Y %H:%M:%S UTC")
+
+
+def _fmt_duration(value: object) -> str:
+    if value is None:
+        return "n/a"
+    if isinstance(value, (int, float)):
+        return f"{float(value):.6f}"
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"", "n/a", "na", "none"}:
+            return "n/a"
+        try:
+            return f"{float(value):.6f}"
+        except ValueError:
+            return "n/a"
+    return "n/a"
+
+
+def _left_ellipsis(value: str, max_chars: int) -> str:
+    if max_chars <= 0:
+        return ""
+    if len(value) <= max_chars:
+        return value
+    if max_chars <= 3:
+        return "." * max_chars
+    return "..." + value[-(max_chars - 3) :]
 
 
 def _context_key_style(key: str) -> str:

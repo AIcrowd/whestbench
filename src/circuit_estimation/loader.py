@@ -33,6 +33,19 @@ def load_estimator_from_path(
     )
 
 
+def resolve_estimator_class_metadata(
+    file_path: str | Path, class_name: str | None = None
+) -> EstimatorClassMetadata:
+    """Resolve estimator class metadata without instantiating the estimator."""
+    module_path = Path(file_path).resolve()
+    module = _import_module_from_path(module_path)
+    estimator_class = _resolve_estimator_class(module, module_path, class_name=class_name)
+    return EstimatorClassMetadata(
+        class_name=estimator_class.__name__,
+        module_name=module.__name__,
+    )
+
+
 def _import_module_from_path(module_path: Path) -> ModuleType:
     if not module_path.is_file():
         raise FileNotFoundError(f"Estimator module file not found: {module_path}")

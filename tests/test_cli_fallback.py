@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import Any
 
 import circuit_estimation.cli as cli
@@ -28,6 +29,11 @@ def _sample_report() -> dict[str, Any]:
     }
 
 
+@contextmanager
+def _noop_progress(*_args: Any, **_kwargs: Any):
+    yield lambda _event: None
+
+
 def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch, capsys) -> None:
     monkeypatch.setattr(cli, "score_estimator_report", lambda *_a, **_k: _sample_report())
 
@@ -53,16 +59,30 @@ def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
 def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
     monkeypatch, capsys
 ) -> None:
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
     monkeypatch.setattr(cli, "score_estimator_report", lambda *_a, **_k: _sample_report())
+    monkeypatch.setattr(
+        cli,
+        "_print_human_startup",
+        lambda *_a, **_k: None,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
+        "_progress_callback",
+        _noop_progress,
+        raising=False,
+    )
 
     def fail_render(*_args, **_kwargs):
         raise RuntimeError("render failed")
 
-    monkeypatch.setattr(
-        cli,
-        "render_human_report",
-        fail_render,
-    )
+    monkeypatch.setattr(cli, "render_human_results", fail_render, raising=False)
 
     exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
     captured = capsys.readouterr()

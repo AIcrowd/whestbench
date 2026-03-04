@@ -4,21 +4,48 @@ from __future__ import annotations
 
 import argparse
 import json
+import platform
+import socket
 import sys
 import traceback
+import warnings
+from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal, cast, overload
+from typing import Any, Callable, Iterator, Literal, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
+from rich.console import Group
+from rich.live import Live
+from rich.panel import Panel
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
+from tqdm import tqdm as classic_tqdm
+from tqdm.std import TqdmExperimentalWarning
+
+try:
+    from tqdm.rich import tqdm as rich_tqdm
+except Exception:  # pragma: no cover - optional at runtime
+    rich_tqdm = None
 
 from .domain import Circuit, Layer
 from .estimators import CombinedEstimator
-from .loader import load_estimator_from_path
+from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
 from .reporting import (
+    build_human_context_renderable,
     render_agent_report,
+    render_human_context_panels,
+    render_human_header,
     render_human_report,
+    render_human_results,
     render_smoke_test_next_steps,
 )
 from .runner import (
@@ -33,6 +60,7 @@ from .sdk import SetupContext
 from .streaming import validate_depth_row
 
 _DEFAULT_ESTIMATOR = CombinedEstimator()
+ProgressCallback = Callable[[dict[str, int | str]], None]
 
 
 def _default_contest_params() -> ContestParams:
@@ -112,12 +140,225 @@ def _budget_score_bounds(by_budget_raw: object) -> tuple[float | str, float | st
         for item in by_budget_raw:
             if not isinstance(item, dict):
                 continue
-            score = item.get("score")
+            score = item.get("adjusted_mse", item.get("score"))
             if isinstance(score, (int, float)):
                 scores.append(float(score))
     if not scores:
         return "n/a", "n/a"
     return min(scores), max(scores)
+
+
+def _host_metadata() -> dict[str, str]:
+    return {
+        "hostname": socket.gethostname(),
+        "os": platform.system(),
+        "os_release": platform.release(),
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "python_version": platform.python_version(),
+    }
+
+
+def _pre_run_report(
+    *,
+    n_circuits: int,
+    n_samples: int,
+    contest_params: ContestParams,
+    profile: bool,
+    detail: str,
+    estimator_class: str,
+    estimator_path: str,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "1.0",
+        "mode": "human",
+        "detail": detail,
+        "run_meta": {
+            "run_started_at_utc": datetime.now(timezone.utc).isoformat(),
+            "run_finished_at_utc": "n/a",
+            "run_duration_s": None,
+            "host": _host_metadata(),
+        },
+        "run_config": {
+            "n_circuits": int(n_circuits),
+            "n_samples": int(n_samples),
+            "width": int(contest_params.width),
+            "max_depth": int(contest_params.max_depth),
+            "layer_count": int(contest_params.max_depth),
+            "budgets": [int(b) for b in contest_params.budgets],
+            "time_tolerance": float(contest_params.time_tolerance),
+            "profile_enabled": bool(profile),
+            "estimator_class": estimator_class,
+            "estimator_path": estimator_path,
+        },
+        "results": {"by_budget_raw": []},
+    }
+
+
+def _print_human_startup(
+    pre_report: dict[str, Any],
+    *,
+    estimator_class: str,
+    estimator_path: str,
+) -> None:
+    _print_human_header_and_hints()
+    run_config = pre_report.get("run_config")
+    if isinstance(run_config, dict):
+        run_config["estimator_class"] = estimator_class
+        run_config["estimator_path"] = estimator_path
+
+    print(render_human_context_panels(pre_report), end="")
+
+
+def _print_human_header_and_hints() -> None:
+    print(render_human_header(), end="")
+    print("Use --json for JSON output when calling from automated agents or UIs.")
+    print("Use --show-diagnostic-plots to include diagnostic plot panes.")
+    print("Runtime scoring uses budget-by-depth checks at each streamed predict() row.")
+
+
+class _LiveTopPaneSession:
+    def __init__(self, pre_report: dict[str, Any], total: int) -> None:
+        self._pre_report = pre_report
+        self._progress = Progress(
+            TextColumn("[bold bright_yellow]{task.description}[/]"),
+            BarColumn(bar_width=None, complete_style="bright_green", finished_style="bright_green"),
+            TaskProgressColumn(show_speed=True),
+            TimeElapsedColumn(),
+            TimeRemainingColumn(),
+        )
+        self._sampling_task_id = self._progress.add_task("Sampling (Ground Truth)", total=None)
+        self._scoring_task_id = self._progress.add_task("Scoring", total=total)
+        self._live = Live(
+            self._renderable(),
+            console=None,
+            refresh_per_second=8,
+            transient=False,
+        )
+
+    def _renderable(self) -> Group:
+        context = build_human_context_renderable(self._pre_report)
+        progress_panel = Panel(
+            self._progress,
+            title="[bold bright_yellow]Progress[/]",
+            border_style="bright_yellow",
+        )
+        return Group(context, progress_panel)
+
+    def on_progress(self, event: dict[str, int | str]) -> None:
+        phase = str(event.get("phase", "scoring"))
+        completed = int(event.get("completed", 0))
+        total_value = event.get("total")
+        if phase == "sampling":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            self._progress.update(self._sampling_task_id, completed=completed, total=total_update)
+            return
+        self._progress.update(self._scoring_task_id, completed=completed)
+
+    def update_run_meta(self, run_meta: dict[str, Any]) -> None:
+        current_meta = self._pre_report.get("run_meta")
+        if isinstance(current_meta, dict):
+            current_meta.update(run_meta)
+        self._live.update(self._renderable())
+
+    def start(self) -> None:
+        self._live.start()
+
+    def stop(self) -> None:
+        self._live.stop()
+        print()
+
+
+@contextmanager
+def _live_top_pane_session(pre_report: dict[str, Any], total: int) -> Iterator[_LiveTopPaneSession]:
+    session = _LiveTopPaneSession(pre_report, total)
+    session.start()
+    try:
+        yield session
+    finally:
+        session.stop()
+
+
+@contextmanager
+def _progress_callback(total: int) -> Iterator[ProgressCallback]:
+    if rich_tqdm is None:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", TqdmExperimentalWarning)
+            sampling_bar = classic_tqdm(
+                total=None,
+                desc="Sampling (Ground Truth)",
+                unit="circuit",
+                file=sys.stdout,
+                position=0,
+            )
+            scoring_bar = classic_tqdm(
+                total=total,
+                desc="Scoring",
+                unit="eval",
+                file=sys.stdout,
+                position=1,
+            )
+
+        state = {"sampling_completed": 0, "scoring_completed": 0}
+
+        def _on_progress(event: dict[str, int | str]) -> None:
+            phase = str(event.get("phase", "scoring"))
+            completed = int(event.get("completed", 0))
+            if phase == "sampling":
+                total_value = event.get("total")
+                if isinstance(total_value, int) and sampling_bar.total != total_value:
+                    sampling_bar.total = total_value
+                    sampling_bar.refresh()
+                delta = completed - state["sampling_completed"]
+                if delta > 0:
+                    sampling_bar.update(delta)
+                    state["sampling_completed"] = completed
+                return
+            delta = completed - state["scoring_completed"]
+            if delta > 0:
+                scoring_bar.update(delta)
+                state["scoring_completed"] = completed
+
+        try:
+            yield _on_progress
+        finally:
+            sampling_bar.close()
+            scoring_bar.close()
+            print()
+        return
+
+    progress = Progress(
+        TextColumn("[bold bright_yellow]{task.description}[/]"),
+        BarColumn(bar_width=None, complete_style="bright_green", finished_style="bright_green"),
+        TaskProgressColumn(show_speed=True),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+    )
+    sampling_task_id = progress.add_task("Sampling (Ground Truth)", total=None)
+    scoring_task_id = progress.add_task("Scoring", total=total)
+    live = Live(
+        Panel(progress, title="[bold bright_yellow]Progress[/]", border_style="bright_yellow"),
+        console=None,
+        refresh_per_second=8,
+        transient=False,
+    )
+
+    def _on_progress(event: dict[str, int | str]) -> None:
+        phase = str(event.get("phase", "scoring"))
+        completed = int(event.get("completed", 0))
+        total_value = event.get("total")
+        if phase == "sampling":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            progress.update(sampling_task_id, completed=completed, total=total_update)
+            return
+        progress.update(scoring_task_id, completed=completed)
+
+    try:
+        live.start()
+        yield _on_progress
+    finally:
+        live.stop()
+        print()
 
 
 def _write_init_template(target_dir: Path) -> list[str]:
@@ -321,25 +562,80 @@ def _main_participant(argv: list[str]) -> int:
 
         if command == "run":
             runner = InProcessRunner() if args.runner == "inprocess" else SubprocessRunner()
-            report = score_estimator_report(
-                runner,
-                n_circuits=int(args.n_circuits),
-                n_samples=int(args.n_samples),
-                contest_params=_default_contest_params(),
-                entrypoint=EstimatorEntrypoint(
-                    file_path=Path(args.estimator).resolve(),
-                    class_name=args.class_name,
-                ),
-                limits=_default_resource_limits(),
-                profile=bool(args.profile),
-                detail=str(args.detail),
+            contest_params = _default_contest_params()
+            n_circuits = int(args.n_circuits)
+            n_samples = int(args.n_samples)
+            entrypoint = EstimatorEntrypoint(
+                file_path=Path(args.estimator).resolve(),
+                class_name=args.class_name,
             )
-            report["mode"] = "agent" if json_output else "human"
             if json_output:
+                report = score_estimator_report(
+                    runner,
+                    n_circuits=n_circuits,
+                    n_samples=n_samples,
+                    contest_params=contest_params,
+                    entrypoint=entrypoint,
+                    limits=_default_resource_limits(),
+                    profile=bool(args.profile),
+                    detail=str(args.detail),
+                )
+                report["mode"] = "agent"
                 output = render_agent_report(report)
             else:
+                metadata = resolve_estimator_class_metadata(
+                    entrypoint.file_path, class_name=entrypoint.class_name
+                )
+                pre_report = _pre_run_report(
+                    n_circuits=n_circuits,
+                    n_samples=n_samples,
+                    contest_params=contest_params,
+                    profile=bool(args.profile),
+                    detail=str(args.detail),
+                    estimator_class=metadata.class_name,
+                    estimator_path=str(entrypoint.file_path),
+                )
+                total_units = len(contest_params.budgets) * n_circuits
+                if rich_tqdm is None:
+                    _print_human_startup(
+                        pre_report,
+                        estimator_class=metadata.class_name,
+                        estimator_path=str(entrypoint.file_path),
+                    )
+                    with _progress_callback(total_units) as progress_cb:
+                        report = score_estimator_report(
+                            runner,
+                            n_circuits=n_circuits,
+                            n_samples=n_samples,
+                            contest_params=contest_params,
+                            entrypoint=entrypoint,
+                            limits=_default_resource_limits(),
+                            profile=bool(args.profile),
+                            detail=str(args.detail),
+                            progress=progress_cb,
+                            sampling_progress=progress_cb,
+                        )
+                else:
+                    _print_human_header_and_hints()
+                    with _live_top_pane_session(pre_report, total_units) as live_session:
+                        report = score_estimator_report(
+                            runner,
+                            n_circuits=n_circuits,
+                            n_samples=n_samples,
+                            contest_params=contest_params,
+                            entrypoint=entrypoint,
+                            limits=_default_resource_limits(),
+                            profile=bool(args.profile),
+                            detail=str(args.detail),
+                            progress=live_session.on_progress,
+                            sampling_progress=live_session.on_progress,
+                        )
+                        run_meta = report.get("run_meta")
+                        if isinstance(run_meta, dict):
+                            live_session.update_run_meta(run_meta)
+                report["mode"] = "human"
                 try:
-                    output = render_human_report(
+                    output = render_human_results(
                         report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
                     )
                 except Exception as exc:

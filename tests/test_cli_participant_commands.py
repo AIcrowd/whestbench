@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 import json
 import tarfile
 from pathlib import Path
@@ -42,6 +43,11 @@ def _sample_report() -> dict[str, Any]:
     }
 
 
+@contextmanager
+def _noop_progress(*_args: Any, **_kwargs: Any):
+    yield lambda _event: None
+
+
 def test_validate_command_returns_json_only_with_json_flag(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -66,11 +72,20 @@ def test_validate_command_returns_json_only_with_json_flag(
 def test_run_command_renders_human_report_in_non_agent_mode(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(cli, "score_estimator_report", lambda *_args, **_kwargs: _sample_report())
     monkeypatch.setattr(
         cli,
-        "render_human_report",
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "score_estimator_report", lambda *_args, **_kwargs: _sample_report())
+    monkeypatch.setattr(cli, "_print_human_startup", lambda *_a, **_k: None, raising=False)
+    monkeypatch.setattr(cli, "_progress_callback", _noop_progress, raising=False)
+    monkeypatch.setattr(
+        cli,
+        "render_human_results",
         lambda _report, *, show_diagnostic_plots=False: "human report\n",
+        raising=False,
     )
     monkeypatch.setattr(
         cli,
@@ -83,7 +98,104 @@ def test_run_command_renders_human_report_in_non_agent_mode(
 
     assert exit_code == 0
     assert captured.err == ""
-    assert captured.out == "human report\n"
+    assert "human report\n" in captured.out
+
+
+def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    observed: dict[str, Any] = {}
+
+    @contextmanager
+    def fake_progress(total: int):
+        observed["total"] = total
+        observed["progress_opened"] = True
+        yield lambda _event: None
+        observed["progress_closed"] = True
+
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "MyEstimator"})(),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "rich_tqdm", None, raising=False)
+    monkeypatch.setattr(
+        cli,
+        "_print_human_startup",
+        lambda _pre_report, *, estimator_class, estimator_path: observed.update(
+            {
+                "estimator_class": estimator_class,
+                "estimator_path": str(estimator_path),
+            }
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "_progress_callback", fake_progress, raising=False)
+
+    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+        observed["scoring_progress_cb"] = kwargs.get("progress")
+        observed["sampling_progress_cb"] = kwargs.get("sampling_progress")
+        return _sample_report()
+
+    monkeypatch.setattr(
+        cli,
+        "score_estimator_report",
+        fake_score_estimator_report,
+    )
+    monkeypatch.setattr(
+        cli,
+        "render_human_results",
+        lambda _report, *, show_diagnostic_plots=False: "human report\n",
+        raising=False,
+    )
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--n-circuits",
+            "2",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert "human report\n" in captured.out
+    assert observed["total"] == 8
+    assert observed["progress_opened"] is True
+    assert observed["progress_closed"] is True
+    assert callable(observed["scoring_progress_cb"])
+    assert observed["sampling_progress_cb"] is observed["scoring_progress_cb"]
+
+
+def test_run_command_json_mode_skips_human_startup_and_progress(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(cli, "score_estimator_report", lambda *_args, **_kwargs: _sample_report())
+    monkeypatch.setattr(
+        cli,
+        "_print_human_startup",
+        lambda *_a, **_k: pytest.fail("human startup should not run in json mode"),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
+        "_progress_callback",
+        lambda *_a, **_k: pytest.fail("progress should not run in json mode"),
+        raising=False,
+    )
+
+    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.err == ""
+    assert json.loads(captured.out)["mode"] == "agent"
 
 
 def test_package_command_writes_manifest_with_entrypoint_and_hashes(

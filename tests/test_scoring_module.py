@@ -236,6 +236,58 @@ def test_score_estimator_report_collects_one_profile_call_per_circuit_budget() -
     } <= set(sample.keys())
 
 
+def test_score_estimator_report_emits_progress_events() -> None:
+    params = ContestParams(width=2, max_depth=2, budgets=[10, 100], time_tolerance=0.1)
+    circuits = [_constant_circuit(n=2, d=2, value=1.0) for _ in range(3)]
+    events: list[dict[str, int]] = []
+
+    def estimator(_circuit: Circuit, _budget: int):
+        for _ in range(2):
+            yield np.ones((2,), dtype=np.float32)
+
+    report = score_estimator_report(
+        estimator,
+        n_circuits=3,
+        n_samples=4,
+        contest_params=params,
+        circuits=circuits,
+        progress=events.append,
+    )
+
+    assert report["results"]["final_score"] >= 0.0
+    assert len(events) == len(circuits) * len(params.budgets)
+    assert events[-1]["completed"] == events[-1]["total"] == len(circuits) * len(params.budgets)
+    assert events[-1]["phase"] == "scoring"
+    assert {"budget", "budget_index", "circuit_index", "completed", "total"} <= set(
+        events[-1].keys()
+    )
+
+
+def test_score_estimator_report_emits_sampling_progress_events() -> None:
+    params = ContestParams(width=2, max_depth=2, budgets=[10, 100], time_tolerance=0.1)
+    circuits = [_constant_circuit(n=2, d=2, value=1.0) for _ in range(3)]
+    events: list[dict[str, int | str]] = []
+
+    def estimator(_circuit: Circuit, _budget: int):
+        for _ in range(2):
+            yield np.ones((2,), dtype=np.float32)
+
+    report = score_estimator_report(
+        estimator,
+        n_circuits=3,
+        n_samples=4,
+        contest_params=params,
+        circuits=circuits,
+        sampling_progress=events.append,
+    )
+
+    assert report["results"]["final_score"] >= 0.0
+    assert len(events) == len(circuits)
+    assert events[-1]["phase"] == "sampling"
+    assert events[-1]["completed"] == events[-1]["total"] == len(circuits)
+    assert {"phase", "circuit_index", "completed", "total"} <= set(events[-1].keys())
+
+
 def test_by_budget_raw_forbids_layer_runtime_fields() -> None:
     params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
     circuits = [_constant_circuit(n=2, d=2, value=1.0)]
