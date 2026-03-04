@@ -138,6 +138,22 @@ Recommended reading order:
 3. [`covariance_propagation.py`](examples/estimators/covariance_propagation.py)
 4. [`combined_estimator.py`](examples/estimators/combined_estimator.py)
 
+Try them out (adjust `--n-circuits` and `--n-samples` to control evaluation size):
+
+```bash
+# Quick smoke run (2 circuits, 500 samples — fast)
+cestim run --estimator examples/estimators/mean_propagation.py --n-circuits 2 --n-samples 500
+
+# Full evaluation against the combined estimator
+cestim run --estimator examples/estimators/combined_estimator.py --n-circuits 10 --n-samples 10000
+
+# Compare estimators on the same dataset for fair scoring
+cestim create-dataset --n-circuits 10 --n-samples 10000 -o eval.npz
+cestim run --estimator examples/estimators/mean_propagation.py --dataset eval.npz
+cestim run --estimator examples/estimators/covariance_propagation.py --dataset eval.npz
+cestim run --estimator examples/estimators/combined_estimator.py --dataset eval.npz
+```
+
 ## 📡 Current Platform Status
 
 This starter kit supports local development, validation, scoring, and packaging.
