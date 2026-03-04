@@ -817,7 +817,7 @@ def _main_participant(argv: list[str]) -> int:
                     profile=bool(args.profile),
                     detail=str(args.detail),
                     estimator_class=metadata.class_name,
-                    estimator_path=str(entrypoint.file_path),
+                    estimator_path=args.estimator,
                 )
                 total_units = len(contest_params.budgets) * n_circuits
                 _dataset_tip = (
@@ -830,7 +830,7 @@ def _main_participant(argv: list[str]) -> int:
                     _print_human_startup(
                         pre_report,
                         estimator_class=metadata.class_name,
-                        estimator_path=str(entrypoint.file_path),
+                        estimator_path=args.estimator,
                     )
                     if dataset_path is None:
                         print(_dataset_tip)

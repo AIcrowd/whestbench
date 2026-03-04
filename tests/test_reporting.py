@@ -263,14 +263,11 @@ def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:
     assert "[host.python_version]" in hardware
 
 
-def test_run_context_styles_estimator_class_and_left_trims_estimator_path() -> None:
+def test_run_context_styles_estimator_class_and_shows_estimator_path() -> None:
     report = _sample_report(include_profile=False)
     run_config = cast(dict[str, Any], report["run_config"])
     run_config["estimator_class"] = "CombinedEstimator"
-    run_config["estimator_path"] = (
-        "/Users/mohanty/work/AIcrowd/challenges/alignment-research-center/"
-        "circuit-estimation/circuit-estimation-mvp/examples/estimators/combined_estimator.py"
-    )
+    run_config["estimator_path"] = "examples/estimators/combined_estimator.py"
 
     panel = reporting._run_context_panel(report)
     assert isinstance(panel.renderable, Align)
@@ -291,8 +288,7 @@ def test_run_context_styles_estimator_class_and_left_trims_estimator_path() -> N
 
     estimator_path_value = lookup["Estimator Path [estimator_path]"]
     assert isinstance(estimator_path_value, str)
-    assert estimator_path_value.startswith("...")
-    assert estimator_path_value.endswith("examples/estimators/combined_estimator.py")
+    assert estimator_path_value == "examples/estimators/combined_estimator.py"
 
 
 def test_run_context_duration_defaults_to_na_when_unavailable() -> None:
