@@ -1,8 +1,6 @@
 <div align="center">
   <img src="assets/logo/logo.png" alt="Circuit Estimation Challenge logo" style="height: 120px;">
-  <br><br>
-  <img src="assets/circuit-explorer-visualization.svg" alt="Circuit Explorer Visualization" width="100%">
-  <br><br>
+  <br>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-green?logo=python&logoColor=white" alt="Python 3.10+"></a>
 </div>
 
@@ -24,6 +22,10 @@ Your estimator must stream exactly one vector per layer, each with shape `(width
 Your score combines prediction accuracy with compute efficiency: can you match sampling's accuracy while using less time? See [Scoring Model](docs/concepts/scoring-model.md) for details. Lower score is better.
 
 ### 🧠 Why this challenge matters
+
+<div align="center">
+  <img src="assets/circuit-explorer-visualization.svg" alt="Circuit Explorer Visualization" width="100%">
+</div>
 
 The natural way to estimate a circuit's expected output is brute force: sample many random inputs, propagate them, average the results. Sampling is the ground truth — with enough samples it converges to the exact answer. But it's inefficient: the error only shrinks as 1/√k with k samples, and it learns nothing from the circuit's structure.
 
