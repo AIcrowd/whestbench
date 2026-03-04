@@ -244,7 +244,7 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
 
     table = Table(box=box.SIMPLE_HEAVY, show_header=False)
     table.add_column("field")
-    table.add_column("value")
+    table.add_column("value", no_wrap=False)
 
     rows: list[tuple[str, Any]] = []
     estimator_class = run_config.get("estimator_class")
@@ -257,11 +257,10 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
         )
     estimator_path = run_config.get("estimator_path")
     if estimator_path is not None:
-        max_path_chars = max(36, min(120, _dashboard_width() - 60))
         rows.append(
             (
                 "Estimator Path [estimator_path]",
-                _left_ellipsis(str(estimator_path), max_path_chars),
+                str(estimator_path),
             )
         )
 
