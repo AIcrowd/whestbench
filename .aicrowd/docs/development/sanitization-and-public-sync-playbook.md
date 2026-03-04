@@ -1,5 +1,9 @@
 # Sanitization and Public Sync Playbook
 
+> [!IMPORTANT]
+> This playbook mirrors `.agent/workflows/sanitized-public-sync.md`.
+> Any updates here must be replicated there, and vice-versa.
+
 Last updated: 2026-03-03
 
 ## Purpose
@@ -21,6 +25,7 @@ Internal source-of-truth repo (active development):
 Sanitized public repo (distribution/collaboration surface):
 
 - `public`: `git@github.com:AIcrowd/circuit-estimation-challenge-internal.git`
+- Canonical publish URL: `https://github.com/AIcrowd/circuit-estimation-challenge-internal.git`
 
 Rule: do not assume commit hashes can match between internal and public. History has been rewritten/sanitized and will remain logically separate.
 
@@ -56,7 +61,7 @@ Key facts:
 1. We moved sensitive planning/context/internal workflow docs toward `.aicrowd` in internal workflow.
 2. We performed sanitized-history publishing from a rewrite clone to public.
 3. We force-pushed sanitized history to:
-   - `https://github.com/AIcrowd/circuit-estimation-challenge-internal`
+   - `https://github.com/AIcrowd/circuit-estimation-challenge-internal.git`
 4. Current known sanitized public tip after force-push:
    - `5a4c2b6` (as of 2026-03-03 local time)
 
@@ -186,6 +191,14 @@ Use a neutral sync/sanitization message only when the publish commit is primaril
 Always avoid sensitive terms/path references in public-facing commit messages (for example: `.aicrowd`, `.agent`, `sanitize`, `filter-repo`, or direct sensitive file paths).
 
 ## Standard Daily Workflow
+
+### 0) Push local state to origin
+
+Before any sync work, ensure all local commits are pushed to the internal remote.
+
+```bash
+git push origin main
+```
 
 ### A) Start of sync cycle
 
