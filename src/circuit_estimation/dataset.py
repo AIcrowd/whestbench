@@ -20,6 +20,17 @@ from .simulation import empirical_mean
 SCHEMA_VERSION = "1.0"
 
 
+def dataset_file_hash(path: Path | str) -> str:
+    """Return the SHA-256 hex digest of a dataset file."""
+    import hashlib
+
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 @dataclass(frozen=True, slots=True)
 class DatasetBundle:
     """In-memory representation of a loaded evaluation dataset."""

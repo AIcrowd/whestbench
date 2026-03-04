@@ -151,6 +151,14 @@ def _host_metadata() -> dict[str, Any]:
     return collect_hardware_fingerprint()
 
 
+def _fmt_ram(value: int | None) -> str:
+    """Format byte count as human-readable string for warning messages."""
+    if value is None:
+        return "unknown RAM"
+    gb = value / (1024 ** 3)
+    return f"{gb:.0f}GB"
+
+
 def _pre_run_report(
     *,
     n_circuits: int,
@@ -483,10 +491,25 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
     run_parser.add_argument("--profile", action="store_true")
     run_parser.add_argument("--show-diagnostic-plots", action="store_true")
-    run_parser.add_argument(
+    run_parser.add_argument("--json", dest="json_output", action="store_true", help="Return results as a JSON string.")
+    run_parser.add_argument("--dataset", default=None, help="Path to pre-created dataset .npz file.")
+    run_parser.add_argument("--strict-baselines", action="store_true", help="Refuse to run if dataset hardware differs.")
+    run_parser.add_argument("--debug", action="store_true")
+
+    create_ds_parser = subparsers.add_parser(
+        "create-dataset", help="Pre-create evaluation dataset."
+    )
+    create_ds_parser.add_argument("--n-circuits", type=int, default=10)
+    create_ds_parser.add_argument("--n-samples", type=int, default=10000)
+    create_ds_parser.add_argument("--width", type=int, default=None)
+    create_ds_parser.add_argument("--max-depth", type=int, default=None)
+    create_ds_parser.add_argument("--budgets", type=str, default=None)
+    create_ds_parser.add_argument("--seed", type=int, default=None)
+    create_ds_parser.add_argument("-o", "--output", default="eval_dataset.npz")
+    create_ds_parser.add_argument(
         "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
     )
-    run_parser.add_argument("--debug", action="store_true")
+    create_ds_parser.add_argument("--debug", action="store_true")
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
     package_parser.add_argument("--estimator", required=True)
@@ -552,6 +575,33 @@ def _main_participant(argv: list[str]) -> int:
                 )
             return 0
 
+        if command == "create-dataset":
+            from .dataset import create_dataset as _create_dataset
+
+            contest = _default_contest_params()
+            ds_width = args.width or contest.width
+            ds_max_depth = args.max_depth or contest.max_depth
+            ds_budgets = (
+                [int(b) for b in args.budgets.split(",")]
+                if args.budgets
+                else list(contest.budgets)
+            )
+            out = _create_dataset(
+                n_circuits=int(args.n_circuits),
+                n_samples=int(args.n_samples),
+                width=ds_width,
+                max_depth=ds_max_depth,
+                budgets=ds_budgets,
+                seed=getattr(args, "seed", None),
+                output_path=Path(args.output),
+            )
+            payload = {"ok": True, "path": str(out)}
+            if json_output:
+                print(json.dumps(payload, indent=2))
+            else:
+                print(f"Dataset created: {out}")
+            return 0
+
         if command == "run":
             runner = InProcessRunner() if args.runner == "inprocess" else SubprocessRunner()
             contest_params = _default_contest_params()
@@ -561,18 +611,97 @@ def _main_participant(argv: list[str]) -> int:
                 file_path=Path(args.estimator).resolve(),
                 class_name=args.class_name,
             )
-            if json_output:
-                report = score_estimator_report(
-                    runner,
-                    n_circuits=n_circuits,
-                    n_samples=n_samples,
-                    contest_params=contest_params,
-                    entrypoint=entrypoint,
-                    limits=_default_resource_limits(),
-                    profile=bool(args.profile),
-                    detail=str(args.detail),
+
+            # --- Dataset loading ---
+            preloaded_circuits: list[Circuit] | None = None
+            preloaded_means: Any = None
+            preloaded_baselines: dict[int, Any] | None = None
+            baselines_recomputed = False
+            dataset_path: str | None = getattr(args, "dataset", None)
+
+            if dataset_path is not None:
+                from .dataset import dataset_file_hash, load_dataset
+                from .hardware import hardware_matches
+
+                bundle = load_dataset(dataset_path)
+                ds_meta = bundle.metadata
+                # Override contest params from dataset
+                contest_params = ContestParams(
+                    width=ds_meta["width"],
+                    max_depth=ds_meta["max_depth"],
+                    budgets=ds_meta["budgets"],
+                    time_tolerance=ds_meta.get("time_tolerance", contest_params.time_tolerance),
                 )
+                n_circuits = bundle.n_circuits
+                preloaded_circuits = bundle.circuits
+                preloaded_means = bundle.ground_truth_means
+
+                # Hardware staleness check
+                current_hw = collect_hardware_fingerprint()
+                stored_hw = ds_meta.get("hardware", {})
+                if not hardware_matches(stored_hw, current_hw):
+                    if getattr(args, "strict_baselines", False):
+                        msg = (
+                            "Hardware mismatch detected and --strict-baselines is set.\n"
+                            f"  Dataset host: {stored_hw.get('hostname', 'unknown')} "
+                            f"({stored_hw.get('cpu_brand', '?')}, "
+                            f"{stored_hw.get('cpu_count_logical', '?')} cores)\n"
+                            f"  Current host: {current_hw['hostname']} "
+                            f"({current_hw['cpu_brand']}, "
+                            f"{current_hw['cpu_count_logical']} cores)"
+                        )
+                        print(msg, file=sys.stderr)
+                        return 1
+                    # Auto-recompute baselines
+                    import warnings as _warnings
+
+                    _warnings.warn(
+                        f"Dataset baselines computed on {stored_hw.get('hostname', 'unknown')} "
+                        f"({stored_hw.get('cpu_brand', '?')}, "
+                        f"{stored_hw.get('cpu_count_logical', '?')} cores, "
+                        f"{_fmt_ram(stored_hw.get('ram_total_bytes'))}). "
+                        f"Current hardware differs. Recomputing baselines...",
+                        stacklevel=1,
+                    )
+                    baselines_recomputed = True
+                    # Leave preloaded_baselines as None -> score_estimator_report
+                    # will recompute them.
+                else:
+                    # Hardware matches — use stored baselines
+                    budgets_list = list(contest_params.budgets)
+                    preloaded_baselines = {}
+                    for bi, budget in enumerate(budgets_list):
+                        preloaded_baselines[budget] = bundle.baseline_times[bi]
+
+            score_kwargs: dict[str, Any] = {
+                "n_circuits": n_circuits,
+                "n_samples": n_samples,
+                "contest_params": contest_params,
+                "entrypoint": entrypoint,
+                "limits": _default_resource_limits(),
+                "profile": bool(args.profile),
+                "detail": str(args.detail),
+            }
+            if preloaded_circuits is not None:
+                score_kwargs["circuits"] = preloaded_circuits
+            if preloaded_means is not None:
+                score_kwargs["ground_truth_means"] = preloaded_means
+            if preloaded_baselines is not None:
+                score_kwargs["baseline_times_by_budget"] = preloaded_baselines
+
+            if json_output:
+                report = score_estimator_report(runner, **score_kwargs)
                 report["mode"] = "agent"
+                # Inject dataset traceability
+                if dataset_path is not None:
+                    report.setdefault("run_config", {})["dataset"] = {
+                        "path": str(Path(dataset_path).resolve()),
+                        "sha256": dataset_file_hash(dataset_path),
+                        "seed": ds_meta.get("seed"),
+                        "n_circuits": ds_meta.get("n_circuits"),
+                        "n_samples": ds_meta.get("n_samples"),
+                        "baselines_recomputed": baselines_recomputed,
+                    }
                 output = render_agent_report(report)
             else:
                 metadata = resolve_estimator_class_metadata(
@@ -595,37 +724,29 @@ def _main_participant(argv: list[str]) -> int:
                         estimator_path=str(entrypoint.file_path),
                     )
                     with _progress_callback(total_units) as progress_cb:
-                        report = score_estimator_report(
-                            runner,
-                            n_circuits=n_circuits,
-                            n_samples=n_samples,
-                            contest_params=contest_params,
-                            entrypoint=entrypoint,
-                            limits=_default_resource_limits(),
-                            profile=bool(args.profile),
-                            detail=str(args.detail),
-                            progress=progress_cb,
-                            sampling_progress=progress_cb,
-                        )
+                        score_kwargs["progress"] = progress_cb
+                        score_kwargs["sampling_progress"] = progress_cb
+                        report = score_estimator_report(runner, **score_kwargs)
                 else:
                     _print_human_header_and_hints()
                     with _live_top_pane_session(pre_report, total_units) as live_session:
-                        report = score_estimator_report(
-                            runner,
-                            n_circuits=n_circuits,
-                            n_samples=n_samples,
-                            contest_params=contest_params,
-                            entrypoint=entrypoint,
-                            limits=_default_resource_limits(),
-                            profile=bool(args.profile),
-                            detail=str(args.detail),
-                            progress=live_session.on_progress,
-                            sampling_progress=live_session.on_progress,
-                        )
+                        score_kwargs["progress"] = live_session.on_progress
+                        score_kwargs["sampling_progress"] = live_session.on_progress
+                        report = score_estimator_report(runner, **score_kwargs)
                         run_meta = report.get("run_meta")
                         if isinstance(run_meta, dict):
                             live_session.update_run_meta(run_meta)
                 report["mode"] = "human"
+                # Inject dataset traceability for human mode too
+                if dataset_path is not None:
+                    report.setdefault("run_config", {})["dataset"] = {
+                        "path": str(Path(dataset_path).resolve()),
+                        "sha256": dataset_file_hash(dataset_path),
+                        "seed": ds_meta.get("seed"),
+                        "n_circuits": ds_meta.get("n_circuits"),
+                        "n_samples": ds_meta.get("n_samples"),
+                        "baselines_recomputed": baselines_recomputed,
+                    }
                 try:
                     output = render_human_results(
                         report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
