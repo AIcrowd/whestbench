@@ -7,7 +7,9 @@ from typing import Any, cast
 
 import pytest
 from rich.align import Align
+from rich.columns import Columns
 from rich.console import Console, Group
+from rich.panel import Panel
 from rich.table import Table
 
 import circuit_estimation.reporting as reporting
@@ -334,6 +336,16 @@ def test_budget_plots_render_side_by_side_below_full_width_table(
     assert table_line < plot_line
 
 
+def test_budget_plots_are_center_wrapped_when_enabled() -> None:
+    panel = reporting._budget_lane_panel(_sample_report(include_profile=False), show_diagnostic_plots=True)
+    assert isinstance(panel.renderable, Group)
+    assert len(panel.renderable.renderables) == 2
+
+    plots_row = panel.renderable.renderables[1]
+    assert isinstance(plots_row, Align)
+    assert isinstance(plots_row.renderable, Columns)
+
+
 def test_layer_plot_renders_when_enabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -361,6 +373,15 @@ def test_layer_diagnostics_has_plot_panes_without_stats_table() -> None:
     assert "Layer MSE Histogram" in rendered
     assert "Layer Trend Plot" in rendered
     assert "MSE by Layer [mse_by_layer]" not in rendered
+
+
+def test_layer_lane_plots_are_center_wrapped() -> None:
+    panel = reporting._layer_lane_panel(
+        _sample_report(include_profile=False), show_diagnostic_plots=True
+    )
+    assert panel is not None
+    assert isinstance(panel.renderable, Align)
+    assert isinstance(panel.renderable.renderable, Columns)
 
 
 def test_render_human_mode_includes_profile_section_when_available() -> None:
@@ -410,6 +431,67 @@ def test_profile_summary_contains_two_structured_side_by_side_tables(
     assert "Summary" in plain
     assert "Distribution" in plain
     assert any("Summary" in line and "Distribution" in line for line in plain.splitlines())
+
+
+def test_profile_summary_tables_are_center_wrapped() -> None:
+    class _CaptureConsole:
+        def __init__(self) -> None:
+            self.calls: list[object] = []
+
+        def print(self, *args: object, **_kwargs: object) -> None:
+            self.calls.extend(args)
+
+    report = _sample_report(include_profile=True)
+    console = _CaptureConsole()
+
+    reporting._render_profile_section(cast(Console, console), report, show_diagnostic_plots=False)
+
+    assert console.calls
+    profile_panel = cast(Panel, console.calls[0])
+    assert isinstance(profile_panel, Panel)
+    assert isinstance(profile_panel.renderable, Group)
+    assert len(profile_panel.renderable.renderables) == 1
+
+    summary_row = profile_panel.renderable.renderables[0]
+    assert isinstance(summary_row, Align)
+    assert isinstance(summary_row.renderable, Columns)
+
+    summary_panel, distribution_panel = summary_row.renderable.renderables
+    assert isinstance(summary_panel, Panel)
+    assert isinstance(summary_panel.renderable, Align)
+    assert isinstance(summary_panel.renderable.renderable, Table)
+    assert isinstance(distribution_panel, Panel)
+    assert isinstance(distribution_panel.renderable, Align)
+    assert isinstance(distribution_panel.renderable.renderable, Table)
+
+
+def test_profile_plots_render_inside_profile_panel_when_enabled() -> None:
+    class _CaptureConsole:
+        def __init__(self) -> None:
+            self.calls: list[object] = []
+
+        def print(self, *args: object, **_kwargs: object) -> None:
+            self.calls.extend(args)
+
+    report = _sample_report(include_profile=True)
+    console = _CaptureConsole()
+
+    reporting._render_profile_section(cast(Console, console), report, show_diagnostic_plots=True)
+
+    assert len(console.calls) == 1
+    profile_panel = cast(Panel, console.calls[0])
+    assert isinstance(profile_panel.renderable, Group)
+    assert len(profile_panel.renderable.renderables) == 2
+
+    plots_row = profile_panel.renderable.renderables[1]
+    assert isinstance(plots_row, Align)
+    assert isinstance(plots_row.renderable, Columns)
+
+    runtime_panel, memory_panel = plots_row.renderable.renderables
+    assert isinstance(runtime_panel, Panel)
+    assert runtime_panel.title == "Profile Runtime Plot"
+    assert isinstance(memory_panel, Panel)
+    assert memory_panel.title == "Profile Memory Plot"
 
 
 def test_profile_summary_prints_without_plots_by_default() -> None:

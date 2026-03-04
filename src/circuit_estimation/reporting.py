@@ -377,7 +377,16 @@ def _budget_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = 
     if show_diagnostic_plots:
         accuracy_plot = _budget_frontier_plot_panel(by_budget)
         runtime_plot = _budget_runtime_plot_panel(by_budget)
-        body.append(Columns([accuracy_plot, runtime_plot], equal=True, expand=True))
+        body.append(
+            Align.center(
+                Columns(
+                    [accuracy_plot, runtime_plot],
+                    align="center",
+                    equal=True,
+                    expand=False,
+                )
+            )
+        )
     return Panel(Group(*body), title="Budget", border_style="bright_cyan")
 
 
@@ -398,13 +407,16 @@ def _layer_lane_panel(
     by_budget = _budget_rows(report)
     mse_series = [_to_float_list(entry.get("mse_by_layer", [])) for entry in by_budget]
     avg_mse = _mean_series(mse_series)
-    body = Columns(
-        [
-            _layer_histogram_panel(report),
-            _layer_trend_plot_panel(avg_mse),
-        ],
-        equal=True,
-        expand=True,
+    body = Align.center(
+        Columns(
+            [
+                _layer_histogram_panel(report),
+                _layer_trend_plot_panel(avg_mse),
+            ],
+            align="center",
+            equal=True,
+            expand=False,
+        )
     )
     return Panel(body, title="Layer Diagnostics", border_style="bright_magenta")
 
@@ -543,11 +555,21 @@ def _render_profile_section(
         equal=True,
         expand=False,
     )
-    console.print(Panel(Align.center(profile_tables), title="Profile", border_style="bright_blue"))
+    profile_body: list[Any] = [Align.center(profile_tables)]
     if show_diagnostic_plots:
         runtime_plot = _profile_runtime_plot_panel(wall, cpu)
         memory_plot = _profile_memory_plot_panel(rss, peak)
-        console.print(Columns([runtime_plot, memory_plot], equal=True, expand=True))
+        profile_body.append(
+            Align.center(
+                Columns(
+                    [runtime_plot, memory_plot],
+                    align="center",
+                    equal=True,
+                    expand=False,
+                )
+            )
+        )
+    console.print(Panel(Group(*profile_body), title="Profile", border_style="bright_blue"))
 
 
 def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
