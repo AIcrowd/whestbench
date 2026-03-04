@@ -820,25 +820,28 @@ def _main_participant(argv: list[str]) -> int:
                     estimator_path=str(entrypoint.file_path),
                 )
                 total_units = len(contest_params.budgets) * n_circuits
-                if dataset_path is None:
-                    print(
-                        "\n💡 Tip: Ground truth is recomputed on every run. "
-                        "Consider creating and reusing a dataset:\n"
-                        "   cestim create-dataset -o my_dataset.npz\n"
-                        "   cestim run --estimator ... --dataset my_dataset.npz\n"
-                    )
+                _dataset_tip = (
+                    "\n💡 Tip: Ground truth is recomputed on every run. "
+                    "Consider creating and reusing a dataset:\n"
+                    "   cestim create-dataset -o my_dataset.npz\n"
+                    "   cestim run --estimator ... --dataset my_dataset.npz\n"
+                )
                 if rich_tqdm is None:
                     _print_human_startup(
                         pre_report,
                         estimator_class=metadata.class_name,
                         estimator_path=str(entrypoint.file_path),
                     )
+                    if dataset_path is None:
+                        print(_dataset_tip)
                     with _progress_callback(total_units, n_circuits, len(contest_params.budgets)) as progress_cb:
                         score_kwargs["progress"] = progress_cb
                         score_kwargs["sampling_progress"] = progress_cb
                         report = score_estimator_report(runner, **score_kwargs)
                 else:
                     _print_human_header_and_hints()
+                    if dataset_path is None:
+                        print(_dataset_tip)
                     with _live_top_pane_session(pre_report, total_units, n_circuits, len(contest_params.budgets)) as live_session:
                         score_kwargs["progress"] = live_session.on_progress
                         score_kwargs["sampling_progress"] = live_session.on_progress

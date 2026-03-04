@@ -38,10 +38,8 @@ def render_human_header() -> str:
     console.print(
         Panel(
             Text("Circuit Estimation Report", style="bold white"),
-            expand=False,
+            expand=True,
             border_style="bright_cyan",
-            subtitle="Rich Dashboard",
-            subtitle_align="right",
         )
     )
     return buffer.getvalue()
@@ -76,19 +74,14 @@ def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool =
     console.print(
         Panel(
             Text("Circuit Estimation Report", style="bold white"),
-            expand=False,
+            expand=True,
             border_style="bright_cyan",
-            subtitle="Rich Dashboard",
-            subtitle_align="right",
         )
     )
     console.print(
         "[dim]Use --json for JSON output when calling from automated agents or UIs.[/dim]"
     )
     console.print("[dim]Use --show-diagnostic-plots to include diagnostic plot panes.[/dim]")
-    console.print(
-        "[dim]Runtime scoring uses budget-by-depth checks at each streamed predict() row.[/dim]"
-    )
     _render_top_row(console, report)
     _render_budget_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)

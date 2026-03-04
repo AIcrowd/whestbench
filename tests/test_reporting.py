@@ -164,7 +164,6 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     # Human mode contract: high-level run summary without diagnostics panes by default.
     assert "Circuit Estimation Report" in rendered
     assert "Use --json for JSON output" in rendered
-    assert "budget-by-depth" in rendered.lower()
     assert "Run Context" in rendered
     assert "Readiness Scorecard" in rendered
     assert "Budget" in rendered
