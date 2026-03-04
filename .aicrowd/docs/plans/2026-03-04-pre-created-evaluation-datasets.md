@@ -582,9 +582,24 @@ git commit -m "feat(cli): add create-dataset subcommand"
 
 **Files:**
 - Modify: `src/circuit_estimation/cli.py` — add flags to `run` subcommand, wire dataset loading
+- Modify: `src/circuit_estimation/dataset.py` — add `dataset_file_hash()` utility
 - Test: `tests/test_cli_participant_commands.py` — add test
 
-**Step 1: Write the failing test**
+**Step 1: Add `dataset_file_hash()` to `dataset.py`**
+
+```python
+import hashlib
+
+def dataset_file_hash(path: Path | str) -> str:
+    """Return the SHA-256 hex digest of a dataset file."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest()
+```
+
+**Step 2: Write the failing test**
 
 ```python
 # Append to tests/test_cli_participant_commands.py
@@ -620,14 +635,21 @@ def test_run_with_dataset_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, 
     out = capsys.readouterr().out
     report = json.loads(out)
     assert "final_score" in report["results"]
+    # Verify dataset reference is included in results
+    ds_info = report["run_config"]["dataset"]
+    assert ds_info["sha256"]  # non-empty hash
+    assert ds_info["seed"] == 1
+    assert ds_info["n_circuits"] == 1
+    assert ds_info["n_samples"] == 50
+    assert isinstance(ds_info["baselines_recomputed"], bool)
 ```
 
-**Step 2: Run test to verify it fails**
+**Step 3: Run test to verify it fails**
 
 Run: `uv run pytest tests/test_cli_participant_commands.py::test_run_with_dataset_flag -v`
 Expected: FAIL (unrecognized arguments: --dataset)
 
-**Step 3: Add flags and wire the dataset path in `cli.py`**
+**Step 4: Add flags and wire the dataset path in `cli.py`**
 
 Add to `run_parser`:
 ```python
@@ -637,20 +659,33 @@ run_parser.add_argument("--strict-baselines", action="store_true", help="Refuse 
 
 In the `run` handler, when `args.dataset` is set:
 1. Load dataset via `load_dataset()`
-2. Compare hardware via `hardware_matches()` and `collect_hardware_fingerprint()`
-3. If mismatch and `--strict-baselines`: error
-4. If mismatch: warn + recompute baselines
-5. Pass circuits, ground_truth_means, and baselines to `score_estimator_report()`
+2. Compute SHA-256 hash via `dataset_file_hash()`
+3. Compare hardware via `hardware_matches()` and `collect_hardware_fingerprint()`
+4. If mismatch and `--strict-baselines`: error
+5. If mismatch: warn + recompute baselines (set `baselines_recomputed = True`)
+6. Pass circuits, ground_truth_means, and baselines to `score_estimator_report()`
+7. Inject `dataset` reference into `report["run_config"]`:
 
-**Step 4: Run tests**
+```python
+report["run_config"]["dataset"] = {
+    "path": str(Path(args.dataset).resolve()),
+    "sha256": dataset_file_hash(args.dataset),
+    "seed": bundle.metadata.get("seed"),
+    "n_circuits": bundle.metadata.get("n_circuits"),
+    "n_samples": bundle.metadata.get("n_samples"),
+    "baselines_recomputed": baselines_recomputed,
+}
+```
+
+**Step 5: Run tests**
 
 Run: `uv run pytest tests/test_cli_participant_commands.py -v`
 Expected: All PASS
 
-**Step 5: Commit**
+**Step 6: Commit**
 
 ```bash
-git add src/circuit_estimation/cli.py tests/test_cli_participant_commands.py
+git add src/circuit_estimation/cli.py src/circuit_estimation/dataset.py tests/test_cli_participant_commands.py
 git commit -m "feat(cli): add --dataset and --strict-baselines flags to run command"
 ```
 

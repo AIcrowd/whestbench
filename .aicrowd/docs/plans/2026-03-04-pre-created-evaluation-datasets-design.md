@@ -33,6 +33,7 @@ cestim run --estimator my_estimator.py --dataset eval_dataset.npz [--strict-base
 - On hardware mismatch: warns and auto-recomputes baselines
 - `--strict-baselines`: refuses to run on hardware mismatch
 - `--n-circuits` and `--n-samples` are ignored when `--dataset` is provided
+- Results JSON `run_config.dataset` includes dataset path, SHA-256 hash, key creation params, and whether baselines were recomputed
 
 ## File Format
 
@@ -95,16 +96,18 @@ Compares `machine` + `cpu_brand` + `cpu_count_logical` + `ram_total_bytes`. Mism
 
 - `create_dataset(...)` — generates circuits, samples ground truth, computes baselines, saves `.npz`
 - `load_dataset(path)` → `DatasetBundle` dataclass
-- `check_hardware_staleness(stored, current)` → `bool`
+- `dataset_file_hash(path)` → SHA-256 hex digest for traceability
 
 ### New module: `hardware.py`
 
 - `collect_hardware_fingerprint()` → `dict` — shared by dataset, scoring, and CLI dashboard
+- `hardware_matches(stored, current)` → `bool` — staleness check on key fields
 
 ### Modified: `cli.py`
 
 - Add `create-dataset` subcommand
 - Add `--dataset` and `--strict-baselines` flags to `run`
+- Inject `run_config.dataset` reference into results JSON when `--dataset` is used
 
 ### Modified: `scoring.py`
 
