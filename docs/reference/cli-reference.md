@@ -60,7 +60,7 @@ Key options:
 - `--show-diagnostic-plots`
 - `--json`
 - `--dataset <path>` — use pre-created dataset `.npz` file
-- `--strict-baselines` — refuse to run if dataset hardware differs
+- `--strict-baselines` — refuse to run if dataset creation hardware differs from execution runtime hardware
 - `--debug`
 
 Recommended debug sequence:

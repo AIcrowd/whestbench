@@ -13,6 +13,7 @@ Typical report sections include:
 - `detail`
 - `run_meta`
 - `run_config`
+- `run_config.dataset` (present when `--dataset` is used)
 - `results`
 
 ## Core result fields
@@ -55,6 +56,21 @@ Inside each `by_budget_raw` entry:
 - `final_score` is the average `adjusted_mse` across budgets.
 - `time_ratio_by_depth_mean` reveals which depths are slow relative to sampling.
 - `timeout_rate_by_depth` shows where your estimator is timing out per depth.
+
+## Dataset traceability fields
+
+When using `cestim run --dataset`, the report includes `run_config.dataset`:
+
+| Field | Description |
+|---|---|
+| `path` | Absolute path to the dataset file |
+| `sha256` | SHA-256 hash of the file for integrity |
+| `seed` | RNG seed used to generate the dataset |
+| `n_circuits` | Number of circuits in the dataset |
+| `n_samples` | Samples per circuit used for ground truth |
+| `baselines_recomputed` | `true` if baselines were recomputed due to hardware mismatch |
+
+See [Use Evaluation Datasets](../how-to/use-evaluation-datasets.md) for usage.
 
 ## ➡️ Next step
 

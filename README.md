@@ -69,6 +69,13 @@ cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar
 
 `cestim run` uses `--runner subprocess` by default.
 
+For faster repeated evaluations, pre-create a dataset and reuse it:
+
+```bash
+cestim create-dataset -o my_dataset.npz
+cestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
+```
+
 Quick debug sequence when `run` fails:
 
 ```bash
@@ -102,6 +109,7 @@ Start at: [Documentation Index](docs/index.md)
 - [Write an Estimator](docs/how-to/write-an-estimator.md)
 - [Inspect and Traverse Circuit Structure](docs/how-to/inspect-circuit-structure.md)
 - [Validate, Run, and Package](docs/how-to/validate-run-package.md)
+- [Use Evaluation Datasets](docs/how-to/use-evaluation-datasets.md)
 - [Use Circuit Explorer](docs/how-to/use-circuit-explorer.md)
 
 ### 📖 Reference
