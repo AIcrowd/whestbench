@@ -14,7 +14,7 @@ from typing import Any, Callable, Iterator, Literal, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
-from rich.console import Group
+from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
@@ -212,8 +212,6 @@ def _print_human_startup(
 
 def _print_human_header_and_hints() -> None:
     print(render_human_header(), end="")
-    print("Use --json for JSON output when calling from automated agents or UIs.")
-    print("Use --show-diagnostic-plots to include diagnostic plot panes.")
 
 
 class _LiveTopPaneSession:
@@ -222,7 +220,7 @@ class _LiveTopPaneSession:
         self._progress = Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
+            BarColumn(bar_width=None),
             MofNCompleteColumn(),
             TimeElapsedColumn(),
         )
@@ -365,7 +363,7 @@ def _progress_callback(total: int, n_circuits: int, n_budgets: int) -> Iterator[
     progress = Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
+        BarColumn(bar_width=None),
         MofNCompleteColumn(),
         TimeElapsedColumn(),
     )
@@ -646,7 +644,7 @@ def _main_participant(argv: list[str]) -> int:
                     progress_bar = Progress(
                         SpinnerColumn(),
                         TextColumn("[progress.description]{task.description}"),
-                        BarColumn(),
+                        BarColumn(bar_width=None),
                         MofNCompleteColumn(),
                         TimeElapsedColumn(),
                     )
@@ -821,27 +819,26 @@ def _main_participant(argv: list[str]) -> int:
                 )
                 total_units = len(contest_params.budgets) * n_circuits
                 _dataset_tip = (
-                    "\n💡 Tip: Ground truth is recomputed on every run. "
+                    "\n[bold bright_yellow]💡 Tip:[/] Ground truth is recomputed on every run. "
                     "Consider creating and reusing a dataset:\n"
-                    "   cestim create-dataset -o my_dataset.npz\n"
-                    "   cestim run --estimator ... --dataset my_dataset.npz\n"
+                    "   [cyan]cestim create-dataset[/] [green]--n-circuits[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]-o[/] [yellow]my_dataset.npz[/]\n"
+                    "   [cyan]cestim run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]my_dataset.npz[/]\n"
                 )
+                _tip_console = Console(highlight=False)
                 if rich_tqdm is None:
                     _print_human_startup(
                         pre_report,
                         estimator_class=metadata.class_name,
                         estimator_path=args.estimator,
                     )
-                    if dataset_path is None:
-                        print(_dataset_tip)
+
                     with _progress_callback(total_units, n_circuits, len(contest_params.budgets)) as progress_cb:
                         score_kwargs["progress"] = progress_cb
                         score_kwargs["sampling_progress"] = progress_cb
                         report = score_estimator_report(runner, **score_kwargs)
                 else:
                     _print_human_header_and_hints()
-                    if dataset_path is None:
-                        print(_dataset_tip)
+
                     with _live_top_pane_session(pre_report, total_units, n_circuits, len(contest_params.budgets)) as live_session:
                         score_kwargs["progress"] = live_session.on_progress
                         score_kwargs["sampling_progress"] = live_session.on_progress
@@ -871,6 +868,16 @@ def _main_participant(argv: list[str]) -> int:
                     )
                     output = _render_plain_text_report(report)
             print(output, end="" if output.endswith("\n") else "\n")
+            if not json_output:
+                _tip_console.print(
+                    "[bold bright_yellow]💡 Tip:[/] Use [green]--json[/] for JSON output when calling from automated agents or UIs."
+                )
+                if not args.show_diagnostic_plots:
+                    _tip_console.print(
+                        "[bold bright_yellow]💡 Tip:[/] Use [green]--show-diagnostic-plots[/] to include diagnostic plot panes."
+                    )
+                if dataset_path is None:
+                    _tip_console.print(_dataset_tip)
             return 0
 
         if command == "package":

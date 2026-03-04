@@ -59,7 +59,7 @@ def render_human_results(
     """Render post-run sections for append-only human flows."""
     buffer = io.StringIO()
     console = _new_console(buffer)
-    console.print(_score_summary_panel(report))
+    _render_score_budget_row(console, report)
     _render_budget_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
@@ -83,6 +83,7 @@ def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool =
     )
     console.print("[dim]Use --show-diagnostic-plots to include diagnostic plot panes.[/dim]")
     _render_top_row(console, report)
+    _render_score_budget_row(console, report)
     _render_budget_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
@@ -172,28 +173,33 @@ def _smoke_optional_example_commands() -> list[str]:
 def _render_top_row(console: Console, report: dict[str, Any]) -> None:
     mode = _layout_mode(console.width)
     run_context = _run_context_panel(report)
-    readiness = _score_summary_panel(report)
     hardware = _hardware_runtime_panel(report)
 
-    if mode == "three_col":
+    if mode in {"three_col", "two_col"}:
         grid = Table.grid(expand=True)
         grid.add_column(ratio=1)
         grid.add_column(ratio=1)
-        grid.add_column(ratio=1)
-        grid.add_row(run_context, readiness, hardware)
+        grid.add_row(run_context, hardware)
         console.print(grid)
-        return
-    if mode == "two_col":
-        grid = Table.grid(expand=True)
-        grid.add_column(ratio=1)
-        grid.add_column(ratio=1)
-        grid.add_row(run_context, readiness)
-        console.print(grid)
-        console.print(hardware)
         return
     console.print(run_context)
-    console.print(readiness)
     console.print(hardware)
+
+
+def _render_score_budget_row(console: Console, report: dict[str, Any]) -> None:
+    mode = _layout_mode(console.width)
+    score = _score_summary_panel(report)
+    budget_table = _budget_table_panel(report)
+
+    if mode in {"three_col", "two_col"}:
+        grid = Table.grid(expand=True)
+        grid.add_column(ratio=1)
+        grid.add_column(ratio=1)
+        grid.add_row(score, budget_table)
+        console.print(grid)
+        return
+    console.print(score)
+    console.print(budget_table)
 
 
 def _render_context_row(console: Console, report: dict[str, Any]) -> None:
@@ -305,18 +311,22 @@ def _hardware_runtime_panel(report: dict[str, Any]) -> Panel:
     table = Table(box=box.SIMPLE_HEAVY, show_header=False)
     table.add_column("field")
     table.add_column("value")
+    def _s(val: object) -> str:
+        """Stringify a metadata value, treating None as 'n/a'."""
+        return "n/a" if val is None else str(val)
+
     rows = [
-        ("Host [host.hostname]", str(host_meta.get("hostname", "n/a"))),
-        ("OS [host.os]", str(host_meta.get("os", "n/a"))),
-        ("Release [host.os_release]", str(host_meta.get("os_release", "n/a"))),
-        ("Platform [host.platform]", str(host_meta.get("platform", "n/a"))),
-        ("Arch [host.machine]", str(host_meta.get("machine", "n/a"))),
-        ("CPU [host.cpu_brand]", str(host_meta.get("cpu_brand", "n/a"))),
-        ("CPU Cores (logical) [host.cpu_count_logical]", str(host_meta.get("cpu_count_logical", "n/a"))),
-        ("CPU Cores (physical) [host.cpu_count_physical]", str(host_meta.get("cpu_count_physical", "n/a"))),
+        ("Host [host.hostname]", _s(host_meta.get("hostname"))),
+        ("OS [host.os]", _s(host_meta.get("os"))),
+        ("Release [host.os_release]", _s(host_meta.get("os_release"))),
+        ("Platform [host.platform]", _s(host_meta.get("platform"))),
+        ("Arch [host.machine]", _s(host_meta.get("machine"))),
+        ("CPU [host.cpu_brand]", _s(host_meta.get("cpu_brand"))),
+        ("CPU Cores (logical) [host.cpu_count_logical]", _s(host_meta.get("cpu_count_logical"))),
+        ("CPU Cores (physical) [host.cpu_count_physical]", _s(host_meta.get("cpu_count_physical"))),
         ("RAM Total [host.ram_total_bytes]", _fmt_bytes(host_meta.get("ram_total_bytes"))),
-        ("Python [host.python_version]", str(host_meta.get("python_version", "n/a"))),
-        ("NumPy [host.numpy_version]", str(host_meta.get("numpy_version", "n/a"))),
+        ("Python [host.python_version]", _s(host_meta.get("python_version"))),
+        ("NumPy [host.numpy_version]", _s(host_meta.get("numpy_version"))),
     ]
     for label, value in rows:
         table.add_row(_render_context_label(label), value)
@@ -351,10 +361,6 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
             f"[yellow]{_fmt_float(max(budget_scores), 8)}[/]",
         )
 
-    # Keep top-row panes visually balanced with the 10-row Run Context panel.
-    # Scorecard has a header + separator, so fewer data rows are needed to align heights.
-    while len(summary.rows) < 8:
-        summary.add_row("", "")
     return Panel(
         Align.center(summary),
         title="Final Score",
@@ -367,10 +373,14 @@ def _score_summary_panel(report: dict[str, Any]) -> Panel:
 def _render_budget_section(
     console: Console, report: dict[str, Any], *, show_diagnostic_plots: bool
 ) -> None:
-    console.print(_budget_lane_panel(report, show_diagnostic_plots=show_diagnostic_plots))
+    if not show_diagnostic_plots:
+        return
+    panel = _budget_plots_panel(report)
+    if panel is not None:
+        console.print(panel)
 
 
-def _budget_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> Panel:
+def _budget_table_panel(report: dict[str, Any]) -> Panel:
     by_budget = _budget_rows(report)
     best_score = min(
         (_as_float(entry.get("adjusted_mse", 0.0)) for entry in by_budget), default=0.0
@@ -394,21 +404,24 @@ def _budget_lane_panel(report: dict[str, Any], *, show_diagnostic_plots: bool = 
             style=row_style,
         )
 
-    body: list[Any] = [Align.center(table)]
-    if show_diagnostic_plots:
-        accuracy_plot = _budget_frontier_plot_panel(by_budget)
-        runtime_plot = _budget_runtime_plot_panel(by_budget)
-        body.append(
-            Align.center(
-                Columns(
-                    [accuracy_plot, runtime_plot],
-                    align="center",
-                    equal=True,
-                    expand=False,
-                )
-            )
+    return Panel(Align.center(table), title="Budget Table", border_style="bright_cyan")
+
+
+def _budget_plots_panel(report: dict[str, Any]) -> Panel | None:
+    by_budget = _budget_rows(report)
+    if not by_budget:
+        return None
+    accuracy_plot = _budget_frontier_plot_panel(by_budget)
+    runtime_plot = _budget_runtime_plot_panel(by_budget)
+    body = Align.center(
+        Columns(
+            [accuracy_plot, runtime_plot],
+            align="center",
+            equal=True,
+            expand=False,
         )
-    return Panel(Group(*body), title="Budget", border_style="bright_cyan")
+    )
+    return Panel(body, title="Budget Plots", border_style="bright_cyan")
 
 
 def _render_layer_section(

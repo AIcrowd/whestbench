@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import platform
 import socket
+import subprocess
 from typing import Any
 
 import numpy as np
@@ -15,12 +16,69 @@ except ImportError:  # pragma: no cover
     psutil = None
 
 
+def _physical_core_count_fallback() -> int | None:
+    """Try OS-native methods to get physical core count without psutil."""
+    system = platform.system()
+    try:
+        if system == "Darwin":
+            out = subprocess.check_output(
+                ["sysctl", "-n", "hw.physicalcpu"], text=True, timeout=5,
+            )
+            return int(out.strip())
+        if system == "Linux":
+            out = subprocess.check_output(
+                ["nproc", "--all"], text=True, timeout=5,
+            )
+            # nproc --all gives logical; parse /sys for physical
+            try:
+                cores = set()
+                with open("/sys/devices/system/cpu/online") as f:
+                    # e.g. "0-15"
+                    pass
+                import glob
+
+                for path in glob.glob(
+                    "/sys/devices/system/cpu/cpu[0-9]*/topology/core_id"
+                ):
+                    with open(path) as f:
+                        cores.add(f.read().strip())
+                if cores:
+                    return len(cores)
+            except Exception:
+                pass
+            return int(out.strip())
+    except Exception:
+        pass
+    return None
+
+
+def _ram_total_fallback() -> int | None:
+    """Try OS-native methods to get total RAM without psutil."""
+    system = platform.system()
+    try:
+        if system == "Darwin":
+            out = subprocess.check_output(
+                ["sysctl", "-n", "hw.memsize"], text=True, timeout=5,
+            )
+            return int(out.strip())
+        if system == "Linux":
+            with open("/proc/meminfo") as f:
+                for line in f:
+                    if line.startswith("MemTotal:"):
+                        # Value is in kB
+                        return int(line.split()[1]) * 1024
+    except Exception:
+        pass
+    return None
+
+
 def collect_hardware_fingerprint() -> dict[str, Any]:
     """Collect a hardware fingerprint dict for the current machine.
 
     Returns a dict containing hostname, OS info, CPU details,
-    RAM statistics, and numpy version. Fields that require ``psutil``
-    fall back to ``None`` when the library is unavailable.
+    RAM statistics, and numpy version. Uses ``psutil`` when available,
+    with OS-native fallbacks (sysctl on macOS, /proc on Linux) to
+    ensure fields are populated on all major platforms.
     """
     fp: dict[str, Any] = {
         "hostname": socket.gethostname(),
@@ -47,6 +105,12 @@ def collect_hardware_fingerprint() -> dict[str, Any]:
             fp["ram_available_bytes"] = int(mem.available)
         except Exception:
             pass
+
+    # OS-native fallbacks when psutil didn't provide values
+    if fp["cpu_count_physical"] is None:
+        fp["cpu_count_physical"] = _physical_core_count_fallback()
+    if fp["ram_total_bytes"] is None:
+        fp["ram_total_bytes"] = _ram_total_fallback()
     return fp
 
 
