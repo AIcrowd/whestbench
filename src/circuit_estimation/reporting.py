@@ -298,6 +298,14 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
     return Panel(Align.center(table), title="Run Context", border_style="bright_cyan")
 
 
+def _fmt_bytes(value: int | None) -> str:
+    """Format byte count as human-readable string (e.g. '32.0 GB')."""
+    if value is None:
+        return "n/a"
+    gb = value / (1024 ** 3)
+    return f"{gb:.1f} GB"
+
+
 def _hardware_runtime_panel(report: dict[str, Any]) -> Panel:
     host = report.get("run_meta", {}).get("host", {})
     host_meta = host if isinstance(host, dict) else {}
@@ -311,7 +319,12 @@ def _hardware_runtime_panel(report: dict[str, Any]) -> Panel:
         ("Release [host.os_release]", str(host_meta.get("os_release", "n/a"))),
         ("Platform [host.platform]", str(host_meta.get("platform", "n/a"))),
         ("Arch [host.machine]", str(host_meta.get("machine", "n/a"))),
+        ("CPU [host.cpu_brand]", str(host_meta.get("cpu_brand", "n/a"))),
+        ("CPU Cores (logical) [host.cpu_count_logical]", str(host_meta.get("cpu_count_logical", "n/a"))),
+        ("CPU Cores (physical) [host.cpu_count_physical]", str(host_meta.get("cpu_count_physical", "n/a"))),
+        ("RAM Total [host.ram_total_bytes]", _fmt_bytes(host_meta.get("ram_total_bytes"))),
         ("Python [host.python_version]", str(host_meta.get("python_version", "n/a"))),
+        ("NumPy [host.numpy_version]", str(host_meta.get("numpy_version", "n/a"))),
     ]
     for label, value in rows:
         table.add_row(_render_context_label(label), value)

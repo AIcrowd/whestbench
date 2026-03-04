@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import platform
-import socket
 import sys
 import traceback
 import warnings
@@ -37,6 +35,7 @@ except Exception:  # pragma: no cover - optional at runtime
 
 from .domain import Circuit, Layer
 from .estimators import CombinedEstimator
+from .hardware import collect_hardware_fingerprint
 from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
 from .reporting import (
@@ -148,15 +147,8 @@ def _budget_score_bounds(by_budget_raw: object) -> tuple[float | str, float | st
     return min(scores), max(scores)
 
 
-def _host_metadata() -> dict[str, str]:
-    return {
-        "hostname": socket.gethostname(),
-        "os": platform.system(),
-        "os_release": platform.release(),
-        "platform": platform.platform(),
-        "machine": platform.machine(),
-        "python_version": platform.python_version(),
-    }
+def _host_metadata() -> dict[str, Any]:
+    return collect_hardware_fingerprint()
 
 
 def _pre_run_report(

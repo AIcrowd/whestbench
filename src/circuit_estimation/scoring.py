@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import platform
-import socket
 import sys
 import time
 from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -16,6 +14,7 @@ from numpy.typing import NDArray
 
 from .domain import Circuit
 from .generation import random_circuit
+from .hardware import collect_hardware_fingerprint
 from .runner import (
     DepthRowOutcome,
     EstimatorEntrypoint,
@@ -424,14 +423,7 @@ def score_estimator_report(
 
     final_score = float(np.mean([entry["adjusted_mse"] for entry in by_budget_raw]))
     run_end = datetime.now(timezone.utc)
-    host_meta = {
-        "hostname": socket.gethostname(),
-        "os": platform.system(),
-        "os_release": platform.release(),
-        "platform": platform.platform(),
-        "machine": platform.machine(),
-        "python_version": platform.python_version(),
-    }
+    host_meta = collect_hardware_fingerprint()
     report: dict[str, Any] = {
         "schema_version": "1.0",
         "mode": "agent",
