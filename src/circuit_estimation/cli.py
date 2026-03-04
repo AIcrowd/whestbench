@@ -19,11 +19,11 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
     BarColumn,
+    MofNCompleteColumn,
     Progress,
-    TaskProgressColumn,
+    SpinnerColumn,
     TextColumn,
     TimeElapsedColumn,
-    TimeRemainingColumn,
 )
 from tqdm import tqdm as classic_tqdm
 from tqdm.std import TqdmExperimentalWarning
@@ -221,11 +221,11 @@ class _LiveTopPaneSession:
     def __init__(self, pre_report: dict[str, Any], total: int) -> None:
         self._pre_report = pre_report
         self._progress = Progress(
-            TextColumn("[bold bright_yellow]{task.description}[/]"),
-            BarColumn(bar_width=None, complete_style="bright_green", finished_style="bright_green"),
-            TaskProgressColumn(show_speed=True),
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
             TimeElapsedColumn(),
-            TimeRemainingColumn(),
         )
         self._sampling_task_id = self._progress.add_task("Sampling (Ground Truth)", total=None)
         self._scoring_task_id = self._progress.add_task("Scoring", total=total)
@@ -328,11 +328,11 @@ def _progress_callback(total: int) -> Iterator[ProgressCallback]:
         return
 
     progress = Progress(
-        TextColumn("[bold bright_yellow]{task.description}[/]"),
-        BarColumn(bar_width=None, complete_style="bright_green", finished_style="bright_green"),
-        TaskProgressColumn(show_speed=True),
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
         TimeElapsedColumn(),
-        TimeRemainingColumn(),
     )
     sampling_task_id = progress.add_task("Sampling (Ground Truth)", total=None)
     scoring_task_id = progress.add_task("Scoring", total=total)
