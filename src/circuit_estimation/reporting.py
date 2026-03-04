@@ -870,7 +870,17 @@ def _left_ellipsis(value: str, max_chars: int) -> str:
         return value
     if max_chars <= 3:
         return "." * max_chars
-    return "..." + value[-(max_chars - 3) :]
+    # Preserve the filename (last path component) and truncate the directory.
+    sep_idx = value.rfind("/")
+    if sep_idx == -1:
+        sep_idx = value.rfind("\\")
+    if sep_idx != -1:
+        basename = value[sep_idx:]  # includes the leading /
+        if len(basename) + 3 <= max_chars:
+            # Fit as much of the directory as possible before the basename
+            dir_budget = max_chars - len(basename) - 3  # 3 for "..."
+            return "..." + value[sep_idx - dir_budget : sep_idx] + basename
+    return "..." + value[-(max_chars - 3):]
 
 
 def _context_key_style(key: str) -> str:
