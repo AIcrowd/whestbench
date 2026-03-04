@@ -214,7 +214,6 @@ def _print_human_header_and_hints() -> None:
     print(render_human_header(), end="")
     print("Use --json for JSON output when calling from automated agents or UIs.")
     print("Use --show-diagnostic-plots to include diagnostic plot panes.")
-    print("Runtime scoring uses budget-by-depth checks at each streamed predict() row.")
 
 
 class _LiveTopPaneSession:
