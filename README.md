@@ -4,7 +4,7 @@
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-green?logo=python&logoColor=white" alt="Python 3.10+"></a>
 </div>
 
-# Circuit Estimation Challenge Starter Kit
+# Circuit Estimation Challenge
 
 Can you predict a circuit's behavior by analyzing its structure, instead of just running it thousands of times?
 
