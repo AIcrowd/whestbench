@@ -248,13 +248,24 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
     table.add_column("field")
     table.add_column("value")
 
-    rows: list[tuple[str, str]] = []
+    rows: list[tuple[str, Any]] = []
     estimator_class = run_config.get("estimator_class")
     if estimator_class is not None:
-        rows.append(("Estimator Class [estimator_class]", str(estimator_class)))
+        rows.append(
+            (
+                "Estimator Class [estimator_class]",
+                Text(str(estimator_class), style="bold bright_cyan"),
+            )
+        )
     estimator_path = run_config.get("estimator_path")
     if estimator_path is not None:
-        rows.append(("Estimator Path [estimator_path]", str(estimator_path)))
+        max_path_chars = max(36, min(120, _dashboard_width() - 60))
+        rows.append(
+            (
+                "Estimator Path [estimator_path]",
+                _left_ellipsis(str(estimator_path), max_path_chars),
+            )
+        )
 
     rows.extend(
         [
@@ -823,6 +834,16 @@ def _human_utc(value: str) -> str:
         dt = dt.replace(tzinfo=timezone.utc)
     dt_utc = dt.astimezone(timezone.utc)
     return dt_utc.strftime("%b %d, %Y %H:%M:%S UTC")
+
+
+def _left_ellipsis(value: str, max_chars: int) -> str:
+    if max_chars <= 0:
+        return ""
+    if len(value) <= max_chars:
+        return value
+    if max_chars <= 3:
+        return "." * max_chars
+    return "..." + value[-(max_chars - 3) :]
 
 
 def _context_key_style(key: str) -> str:

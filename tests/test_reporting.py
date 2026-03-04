@@ -11,6 +11,7 @@ from rich.columns import Columns
 from rich.console import Console, Group
 from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 
 import circuit_estimation.reporting as reporting
 from circuit_estimation.reporting import (
@@ -261,6 +262,38 @@ def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:
     assert "[host.platform]" in hardware
     assert "[host.machine]" in hardware
     assert "[host.python_version]" in hardware
+
+
+def test_run_context_styles_estimator_class_and_left_trims_estimator_path() -> None:
+    report = _sample_report(include_profile=False)
+    run_config = cast(dict[str, Any], report["run_config"])
+    run_config["estimator_class"] = "CombinedEstimator"
+    run_config["estimator_path"] = (
+        "/Users/mohanty/work/AIcrowd/challenges/alignment-research-center/"
+        "circuit-estimation/circuit-estimation-mvp/examples/estimators/combined_estimator.py"
+    )
+
+    panel = reporting._run_context_panel(report)
+    assert isinstance(panel.renderable, Align)
+    table = cast(Table, panel.renderable.renderable)
+
+    labels = table.columns[0]._cells
+    values = table.columns[1]._cells
+    lookup = {
+        cast(Text, label).plain: value
+        for label, value in zip(labels, values, strict=True)
+        if isinstance(label, Text)
+    }
+
+    estimator_class_value = lookup["Estimator Class [estimator_class]"]
+    assert isinstance(estimator_class_value, Text)
+    assert estimator_class_value.plain == "CombinedEstimator"
+    assert estimator_class_value.style == "bold bright_cyan"
+
+    estimator_path_value = lookup["Estimator Path [estimator_path]"]
+    assert isinstance(estimator_path_value, str)
+    assert estimator_path_value.startswith("...")
+    assert estimator_path_value.endswith("examples/estimators/combined_estimator.py")
 
 
 def test_primary_tables_are_centered() -> None:
@@ -864,6 +897,11 @@ def test_dashboard_width_uses_terminal_columns(monkeypatch: pytest.MonkeyPatch) 
 def test_plot_legend_styles_map_to_rich_colors() -> None:
     assert reporting._rich_style_for_plot_color("blue+") == "bright_blue"
     assert reporting._rich_style_for_plot_color("yellow+") == "bright_yellow"
+
+
+def test_left_ellipsis_keeps_tail() -> None:
+    value = reporting._left_ellipsis("/a/b/c/d/e/file.py", 10)
+    assert value == "...file.py"
 
 
 def _render_panel(panel: object) -> str:
