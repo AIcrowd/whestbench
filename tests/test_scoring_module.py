@@ -282,10 +282,11 @@ def test_score_estimator_report_emits_sampling_progress_events() -> None:
     )
 
     assert report["results"]["final_score"] >= 0.0
-    assert len(events) == len(circuits)
-    assert events[-1]["phase"] == "sampling"
-    assert events[-1]["completed"] == events[-1]["total"] == len(circuits)
-    assert {"phase", "circuit_index", "completed", "total"} <= set(events[-1].keys())
+    sampling_events = [e for e in events if e["phase"] == "sampling"]
+    assert len(sampling_events) == len(circuits)
+    assert sampling_events[-1]["phase"] == "sampling"
+    assert sampling_events[-1]["completed"] == sampling_events[-1]["total"] == len(circuits)
+    assert {"phase", "circuit_index", "completed", "total"} <= set(sampling_events[-1].keys())
 
 
 def test_by_budget_raw_forbids_layer_runtime_fields() -> None:

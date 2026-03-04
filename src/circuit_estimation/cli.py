@@ -218,7 +218,7 @@ def _print_human_header_and_hints() -> None:
 
 
 class _LiveTopPaneSession:
-    def __init__(self, pre_report: dict[str, Any], total: int) -> None:
+    def __init__(self, pre_report: dict[str, Any], total: int, n_circuits: int, n_budgets: int) -> None:
         self._pre_report = pre_report
         self._progress = Progress(
             SpinnerColumn(),
@@ -227,7 +227,9 @@ class _LiveTopPaneSession:
             MofNCompleteColumn(),
             TimeElapsedColumn(),
         )
-        self._sampling_task_id = self._progress.add_task("Sampling (Ground Truth)", total=None)
+        self._gen_task_id = self._progress.add_task("Generating circuits", total=n_circuits)
+        self._sampling_task_id = self._progress.add_task("Sampling ground truth", total=n_circuits)
+        self._baselines_task_id = self._progress.add_task("Computing baselines", total=n_budgets)
         self._scoring_task_id = self._progress.add_task("Scoring", total=total)
         self._live = Live(
             self._renderable(),
@@ -249,11 +251,17 @@ class _LiveTopPaneSession:
         phase = str(event.get("phase", "scoring"))
         completed = int(event.get("completed", 0))
         total_value = event.get("total")
-        if phase == "sampling":
+        if phase == "generating":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            self._progress.update(self._gen_task_id, completed=completed, total=total_update)
+        elif phase == "sampling":
             total_update = int(total_value) if isinstance(total_value, int) else None
             self._progress.update(self._sampling_task_id, completed=completed, total=total_update)
-            return
-        self._progress.update(self._scoring_task_id, completed=completed)
+        elif phase == "baselines":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            self._progress.update(self._baselines_task_id, completed=completed, total=total_update)
+        else:
+            self._progress.update(self._scoring_task_id, completed=completed)
 
     def update_run_meta(self, run_meta: dict[str, Any]) -> None:
         current_meta = self._pre_report.get("run_meta")
@@ -270,8 +278,10 @@ class _LiveTopPaneSession:
 
 
 @contextmanager
-def _live_top_pane_session(pre_report: dict[str, Any], total: int) -> Iterator[_LiveTopPaneSession]:
-    session = _LiveTopPaneSession(pre_report, total)
+def _live_top_pane_session(
+    pre_report: dict[str, Any], total: int, n_circuits: int, n_budgets: int
+) -> Iterator[_LiveTopPaneSession]:
+    session = _LiveTopPaneSession(pre_report, total, n_circuits, n_budgets)
     session.start()
     try:
         yield session
@@ -280,49 +290,75 @@ def _live_top_pane_session(pre_report: dict[str, Any], total: int) -> Iterator[_
 
 
 @contextmanager
-def _progress_callback(total: int) -> Iterator[ProgressCallback]:
+def _progress_callback(total: int, n_circuits: int, n_budgets: int) -> Iterator[ProgressCallback]:
     if rich_tqdm is None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", TqdmExperimentalWarning)
-            sampling_bar = classic_tqdm(
-                total=None,
-                desc="Sampling (Ground Truth)",
+            gen_bar = classic_tqdm(
+                total=n_circuits,
+                desc="Generating circuits",
                 unit="circuit",
                 file=sys.stdout,
                 position=0,
+            )
+            sampling_bar = classic_tqdm(
+                total=n_circuits,
+                desc="Sampling ground truth",
+                unit="circuit",
+                file=sys.stdout,
+                position=1,
+            )
+            baselines_bar = classic_tqdm(
+                total=n_budgets,
+                desc="Computing baselines",
+                unit="budget",
+                file=sys.stdout,
+                position=2,
             )
             scoring_bar = classic_tqdm(
                 total=total,
                 desc="Scoring",
                 unit="eval",
                 file=sys.stdout,
-                position=1,
+                position=3,
             )
 
-        state = {"sampling_completed": 0, "scoring_completed": 0}
+        state = {"gen": 0, "sampling": 0, "baselines": 0, "scoring": 0}
 
         def _on_progress(event: dict[str, int | str]) -> None:
             phase = str(event.get("phase", "scoring"))
             completed = int(event.get("completed", 0))
-            if phase == "sampling":
+            if phase == "generating":
+                delta = completed - state["gen"]
+                if delta > 0:
+                    gen_bar.update(delta)
+                    state["gen"] = completed
+            elif phase == "sampling":
                 total_value = event.get("total")
                 if isinstance(total_value, int) and sampling_bar.total != total_value:
                     sampling_bar.total = total_value
                     sampling_bar.refresh()
-                delta = completed - state["sampling_completed"]
+                delta = completed - state["sampling"]
                 if delta > 0:
                     sampling_bar.update(delta)
-                    state["sampling_completed"] = completed
-                return
-            delta = completed - state["scoring_completed"]
-            if delta > 0:
-                scoring_bar.update(delta)
-                state["scoring_completed"] = completed
+                    state["sampling"] = completed
+            elif phase == "baselines":
+                delta = completed - state["baselines"]
+                if delta > 0:
+                    baselines_bar.update(delta)
+                    state["baselines"] = completed
+            else:
+                delta = completed - state["scoring"]
+                if delta > 0:
+                    scoring_bar.update(delta)
+                    state["scoring"] = completed
 
         try:
             yield _on_progress
         finally:
+            gen_bar.close()
             sampling_bar.close()
+            baselines_bar.close()
             scoring_bar.close()
             print()
         return
@@ -334,7 +370,9 @@ def _progress_callback(total: int) -> Iterator[ProgressCallback]:
         MofNCompleteColumn(),
         TimeElapsedColumn(),
     )
-    sampling_task_id = progress.add_task("Sampling (Ground Truth)", total=None)
+    gen_task_id = progress.add_task("Generating circuits", total=n_circuits)
+    sampling_task_id = progress.add_task("Sampling ground truth", total=n_circuits)
+    baselines_task_id = progress.add_task("Computing baselines", total=n_budgets)
     scoring_task_id = progress.add_task("Scoring", total=total)
     live = Live(
         Panel(progress, title="[bold bright_yellow]Progress[/]", border_style="bright_yellow"),
@@ -347,11 +385,17 @@ def _progress_callback(total: int) -> Iterator[ProgressCallback]:
         phase = str(event.get("phase", "scoring"))
         completed = int(event.get("completed", 0))
         total_value = event.get("total")
-        if phase == "sampling":
+        if phase == "generating":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            progress.update(gen_task_id, completed=completed, total=total_update)
+        elif phase == "sampling":
             total_update = int(total_value) if isinstance(total_value, int) else None
             progress.update(sampling_task_id, completed=completed, total=total_update)
-            return
-        progress.update(scoring_task_id, completed=completed)
+        elif phase == "baselines":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            progress.update(baselines_task_id, completed=completed, total=total_update)
+        else:
+            progress.update(scoring_task_id, completed=completed)
 
     try:
         live.start()
@@ -783,13 +827,13 @@ def _main_participant(argv: list[str]) -> int:
                         estimator_class=metadata.class_name,
                         estimator_path=str(entrypoint.file_path),
                     )
-                    with _progress_callback(total_units) as progress_cb:
+                    with _progress_callback(total_units, n_circuits, len(contest_params.budgets)) as progress_cb:
                         score_kwargs["progress"] = progress_cb
                         score_kwargs["sampling_progress"] = progress_cb
                         report = score_estimator_report(runner, **score_kwargs)
                 else:
                     _print_human_header_and_hints()
-                    with _live_top_pane_session(pre_report, total_units) as live_session:
+                    with _live_top_pane_session(pre_report, total_units, n_circuits, len(contest_params.budgets)) as live_session:
                         score_kwargs["progress"] = live_session.on_progress
                         score_kwargs["sampling_progress"] = live_session.on_progress
                         report = score_estimator_report(runner, **score_kwargs)

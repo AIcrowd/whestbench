@@ -249,11 +249,16 @@ def score_estimator_report(
     else:
         estimator_fn = estimator  # type: ignore[assignment]
 
-    circuits_to_score = (
-        list(circuits)
-        if circuits is not None
-        else [random_circuit(width, depth) for _ in range(n_circuits)]
-    )
+    if circuits is not None:
+        circuits_to_score = list(circuits)
+    else:
+        circuits_to_score = []
+        for i in range(n_circuits):
+            circuits_to_score.append(random_circuit(width, depth))
+            if sampling_progress is not None:
+                sampling_progress(
+                    {"phase": "generating", "completed": i + 1, "total": n_circuits}
+                )
     if not circuits_to_score:
         raise ValueError("At least one circuit is required for scoring.")
     if any(c.n != width for c in circuits_to_score):
@@ -317,6 +322,14 @@ def score_estimator_report(
                 baseline_times = np.array(
                     sampling_baseline_time(budget, width, depth), dtype=np.float32
                 )
+                if sampling_progress is not None:
+                    sampling_progress(
+                        {
+                            "phase": "baselines",
+                            "completed": budget_index + 1,
+                            "total": len(contest_params.budgets),
+                        }
+                    )
             baseline_times = np.maximum(baseline_times, np.float32(1e-9))
             all_outputs: list[list[NDArray[np.float32]]] = []
             effective_time_sums_by_depth = np.zeros(depth, dtype=np.float64)

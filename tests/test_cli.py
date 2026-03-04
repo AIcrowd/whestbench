@@ -285,7 +285,7 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     monkeypatch.setattr(cli, "rich_tqdm", object(), raising=False)
 
     @contextmanager
-    def fake_live_session(pre_report: dict[str, Any], total: int):
+    def fake_live_session(pre_report: dict[str, Any], total: int, n_circuits: int, n_budgets: int):
         observed["initial_finished"] = pre_report["run_meta"]["run_finished_at_utc"]
         observed["initial_duration"] = pre_report["run_meta"]["run_duration_s"]
         observed["total"] = total

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
 import json
 import tarfile
+from contextlib import contextmanager
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
@@ -107,7 +107,7 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
     observed: dict[str, Any] = {}
 
     @contextmanager
-    def fake_progress(total: int):
+    def fake_progress(total: int, n_circuits: int, n_budgets: int):
         observed["total"] = total
         observed["progress_opened"] = True
         yield lambda _event: None
