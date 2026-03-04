@@ -46,7 +46,7 @@ def _sample_report(*, include_profile: bool = False) -> dict[str, object]:
             {"circuit_index": 1, "wire_count": 4, "layer_count": 3},
         ],
         "results": {
-            "final_score": 0.123,
+            "adjusted_mse": 0.123,
             "score_direction": "lower_is_better",
             "by_budget_raw": [
                 {
@@ -164,15 +164,14 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     # Human mode contract: high-level run summary without diagnostics panes by default.
     assert "Circuit Estimation Report" in rendered
     assert "Use --json for JSON output" in rendered
-    assert "budget-by-depth" in rendered.lower()
     assert "Run Context" in rendered
-    assert "Readiness Scorecard" in rendered
-    assert "Budget" in rendered
+    assert "Final Score" in rendered
+    assert "Budget Table" in rendered
     assert "Layer Diagnostics" not in rendered
     assert "Budget Breakdown" not in rendered
     assert "Budget Intelligence" not in rendered
-    assert "Budget Table" not in rendered
     assert "Layer Intelligence" not in rendered
+    assert "Budget Plots" not in rendered
     assert "Budget Frontier Plot" not in rendered
     assert "Budget Runtime Plot" not in rendered
     assert "Layer Trend Plot" not in rendered
@@ -183,7 +182,7 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     assert "Profiling" not in rendered
 
 
-def test_human_report_uses_three_column_top_row_on_wide_layout(
+def test_human_report_uses_two_column_top_row_on_wide_layout(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("COLUMNS", "220")
@@ -192,21 +191,25 @@ def test_human_report_uses_three_column_top_row_on_wide_layout(
     title_lines = [
         line
         for line in plain.splitlines()
-        if "Run Context" in line or "Readiness Scorecard" in line or "Hardware & Runtime" in line
+        if "Run Context" in line or "Hardware & Runtime" in line
     ]
 
     assert "Run Context" in rendered
-    assert "Readiness Scorecard" in rendered
     assert "Hardware & Runtime" in rendered
+    # Run Context and Hardware & Runtime share the same row
     assert any(
-        "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" in line
+        "Run Context" in line and "Hardware & Runtime" in line
         for line in title_lines
     )
-    assert not any(
-        "Hardware & Runtime" in line
-        and "Run Context" not in line
-        and "Readiness Scorecard" not in line
-        for line in title_lines
+    # Final Score and Budget Table share a separate row
+    score_budget_lines = [
+        line
+        for line in plain.splitlines()
+        if "Final Score" in line or "Budget Table" in line
+    ]
+    assert any(
+        "Final Score" in line and "Budget Table" in line
+        for line in score_budget_lines
     )
 
 
@@ -216,21 +219,25 @@ def test_human_report_uses_two_column_plus_stack_layout_on_medium_width(
     monkeypatch.setenv("COLUMNS", "140")
     rendered = render_human_report(_sample_report(include_profile=False))
     plain = _strip_ansi(rendered)
-    title_lines = [
+    # Run Context and Hardware share a row on medium width
+    context_lines = [
         line
         for line in plain.splitlines()
-        if "Run Context" in line or "Readiness Scorecard" in line or "Hardware & Runtime" in line
+        if "Run Context" in line or "Hardware & Runtime" in line
     ]
-
     assert any(
-        "Run Context" in line and "Readiness Scorecard" in line and "Hardware & Runtime" not in line
-        for line in title_lines
+        "Run Context" in line and "Hardware & Runtime" in line
+        for line in context_lines
     )
+    # Final Score and Budget Table share a row on medium width
+    score_lines = [
+        line
+        for line in plain.splitlines()
+        if "Final Score" in line or "Budget Table" in line
+    ]
     assert any(
-        "Hardware & Runtime" in line
-        and "Run Context" not in line
-        and "Readiness Scorecard" not in line
-        for line in title_lines
+        "Final Score" in line and "Budget Table" in line
+        for line in score_lines
     )
 
 
@@ -264,14 +271,11 @@ def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:
     assert "[host.python_version]" in hardware
 
 
-def test_run_context_styles_estimator_class_and_left_trims_estimator_path() -> None:
+def test_run_context_styles_estimator_class_and_shows_estimator_path() -> None:
     report = _sample_report(include_profile=False)
     run_config = cast(dict[str, Any], report["run_config"])
     run_config["estimator_class"] = "CombinedEstimator"
-    run_config["estimator_path"] = (
-        "/Users/mohanty/work/AIcrowd/challenges/alignment-research-center/"
-        "circuit-estimation/circuit-estimation-mvp/examples/estimators/combined_estimator.py"
-    )
+    run_config["estimator_path"] = "examples/estimators/combined_estimator.py"
 
     panel = reporting._run_context_panel(report)
     assert isinstance(panel.renderable, Align)
@@ -292,8 +296,7 @@ def test_run_context_styles_estimator_class_and_left_trims_estimator_path() -> N
 
     estimator_path_value = lookup["Estimator Path [estimator_path]"]
     assert isinstance(estimator_path_value, str)
-    assert estimator_path_value.startswith("...")
-    assert estimator_path_value.endswith("examples/estimators/combined_estimator.py")
+    assert estimator_path_value == "examples/estimators/combined_estimator.py"
 
 
 def test_run_context_duration_defaults_to_na_when_unavailable() -> None:
@@ -334,11 +337,9 @@ def test_primary_tables_are_centered() -> None:
 def test_budget_table_is_centered() -> None:
     report = _sample_report(include_profile=False)
 
-    budget = reporting._budget_lane_panel(report)
-    budget_body = cast(Group, budget.renderable)
-    budget_table = budget_body.renderables[0]
-    assert isinstance(budget_table, Align)
-    assert isinstance(budget_table.renderable, Table)
+    budget = reporting._budget_table_panel(report)
+    assert isinstance(budget.renderable, Align)
+    assert isinstance(budget.renderable.renderable, Table)
 
 
 def test_budget_lane_contains_table_and_two_plots() -> None:
@@ -346,7 +347,8 @@ def test_budget_lane_contains_table_and_two_plots() -> None:
         _sample_report(include_profile=False), show_diagnostic_plots=True
     )
 
-    assert "Budget" in rendered
+    assert "Budget Table" in rendered
+    assert "Budget Plots" in rendered
     assert "Budget Frontier Plot" in rendered
     assert "Budget Runtime Plot" in rendered
 
@@ -390,13 +392,10 @@ def test_budget_plots_render_side_by_side_below_full_width_table(
 
 
 def test_budget_plots_are_center_wrapped_when_enabled() -> None:
-    panel = reporting._budget_lane_panel(_sample_report(include_profile=False), show_diagnostic_plots=True)
-    assert isinstance(panel.renderable, Group)
-    assert len(panel.renderable.renderables) == 2
-
-    plots_row = panel.renderable.renderables[1]
-    assert isinstance(plots_row, Align)
-    assert isinstance(plots_row.renderable, Columns)
+    panel = reporting._budget_plots_panel(_sample_report(include_profile=False))
+    assert panel is not None
+    assert isinstance(panel.renderable, Align)
+    assert isinstance(panel.renderable.renderable, Columns)
 
 
 def test_layer_plot_renders_when_enabled(

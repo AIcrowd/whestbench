@@ -12,6 +12,7 @@ Participant workflow commands:
 - `cestim init`
 - `cestim validate`
 - `cestim run`
+- `cestim create-dataset`
 - `cestim package`
 
 ## `cestim smoke-test`
@@ -58,6 +59,8 @@ Key options:
 - `--profile`
 - `--show-diagnostic-plots`
 - `--json`
+- `--dataset <path>` — use pre-created dataset `.npz` file
+- `--strict-baselines` — refuse to run if dataset creation hardware differs from execution runtime hardware
 - `--debug`
 
 Recommended debug sequence:
@@ -72,6 +75,26 @@ Runner mode tradeoff:
 
 - `subprocess` (default): realistic isolation and safer runtime boundary.
 - `inprocess`: clearer estimator-level tracebacks for local debugging.
+
+## `cestim create-dataset`
+
+Pre-create an evaluation dataset for reuse across runs.
+
+```bash
+cestim create-dataset [options] -o <output-path>
+```
+
+Key options:
+
+- `--n-circuits <int>` (default: 10)
+- `--n-samples <int>` (default: 10000)
+- `--seed <int>` (optional, auto-generated if omitted)
+- `--width <int>`, `--max-depth <int>`, `--budgets <csv>`
+- `-o, --output <path>` (default: `eval_dataset.npz`)
+- `--json`
+- `--debug`
+
+See [Use Evaluation Datasets](../how-to/use-evaluation-datasets.md) for usage patterns.
 
 ## `cestim package`
 

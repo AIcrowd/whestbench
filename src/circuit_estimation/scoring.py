@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import platform
-import socket
 import sys
 import time
 from collections.abc import Callable, Iterator, Mapping, Sequence
@@ -16,6 +14,7 @@ from numpy.typing import NDArray
 
 from .domain import Circuit
 from .generation import random_circuit
+from .hardware import collect_hardware_fingerprint
 from .runner import (
     DepthRowOutcome,
     EstimatorEntrypoint,
@@ -199,6 +198,8 @@ def score_estimator_report(
     entrypoint: EstimatorEntrypoint | None = None,
     limits: ResourceLimits = default_resource_limits,
     circuits: Sequence[Circuit] | None = None,
+    ground_truth_means: NDArray[np.float32] | None = None,
+    baseline_times_by_budget: Mapping[int, NDArray[np.float64]] | None = None,
     profile: bool = False,
     detail: str = "raw",
     profiler: ProfilerFn | None = None,
@@ -248,11 +249,16 @@ def score_estimator_report(
     else:
         estimator_fn = estimator  # type: ignore[assignment]
 
-    circuits_to_score = (
-        list(circuits)
-        if circuits is not None
-        else [random_circuit(width, depth) for _ in range(n_circuits)]
-    )
+    if circuits is not None:
+        circuits_to_score = list(circuits)
+    else:
+        circuits_to_score = []
+        for i in range(n_circuits):
+            circuits_to_score.append(random_circuit(width, depth))
+            if sampling_progress is not None:
+                sampling_progress(
+                    {"phase": "generating", "completed": i + 1, "total": n_circuits}
+                )
     if not circuits_to_score:
         raise ValueError("At least one circuit is required for scoring.")
     if any(c.n != width for c in circuits_to_score):
@@ -287,24 +293,43 @@ def score_estimator_report(
         for idx, c in enumerate(circuits_to_score)
     ]
     means_by_circuit: list[list[NDArray[np.float32]]] = []
-    for circuit_index, circuit in enumerate(circuits_to_score):
-        means_by_circuit.append(list(empirical_mean(circuit, n_samples)))
-        if sampling_progress is not None:
-            sampling_progress(
-                {
-                    "phase": "sampling",
-                    "circuit_index": int(circuit_index),
-                    "completed": int(circuit_index + 1),
-                    "total": int(n_circuits_effective),
-                }
-            )
-    means: NDArray[np.float32] = np.array(means_by_circuit, dtype=np.float32)
+    if ground_truth_means is not None:
+        # Use preloaded ground truth — skip sampling entirely.
+        means = ground_truth_means
+    else:
+        for circuit_index, circuit in enumerate(circuits_to_score):
+            means_by_circuit.append(list(empirical_mean(circuit, n_samples)))
+            if sampling_progress is not None:
+                sampling_progress(
+                    {
+                        "phase": "sampling",
+                        "circuit_index": int(circuit_index),
+                        "completed": int(circuit_index + 1),
+                        "total": int(n_circuits_effective),
+                    }
+                )
+        means = np.array(means_by_circuit, dtype=np.float32)
     by_budget_raw: list[dict[str, Any]] = []
     profile_calls: list[dict[str, float | int]] = []
     completed_units = 0
     try:
         for budget_index, budget in enumerate(contest_params.budgets):
-            baseline_times = np.array(sampling_baseline_time(budget, width, depth), dtype=np.float32)
+            if baseline_times_by_budget is not None:
+                baseline_times = np.array(
+                    baseline_times_by_budget[budget], dtype=np.float32
+                )
+            else:
+                baseline_times = np.array(
+                    sampling_baseline_time(budget, width, depth), dtype=np.float32
+                )
+                if sampling_progress is not None:
+                    sampling_progress(
+                        {
+                            "phase": "baselines",
+                            "completed": budget_index + 1,
+                            "total": len(contest_params.budgets),
+                        }
+                    )
             baseline_times = np.maximum(baseline_times, np.float32(1e-9))
             all_outputs: list[list[NDArray[np.float32]]] = []
             effective_time_sums_by_depth = np.zeros(depth, dtype=np.float64)
@@ -422,16 +447,9 @@ def score_estimator_report(
         if runner is not None:
             runner.close()
 
-    final_score = float(np.mean([entry["adjusted_mse"] for entry in by_budget_raw]))
+    adjusted_mse = float(np.mean([entry["adjusted_mse"] for entry in by_budget_raw]))
     run_end = datetime.now(timezone.utc)
-    host_meta = {
-        "hostname": socket.gethostname(),
-        "os": platform.system(),
-        "os_release": platform.release(),
-        "platform": platform.platform(),
-        "machine": platform.machine(),
-        "python_version": platform.python_version(),
-    }
+    host_meta = collect_hardware_fingerprint()
     report: dict[str, Any] = {
         "schema_version": "1.0",
         "mode": "agent",
@@ -454,7 +472,7 @@ def score_estimator_report(
         },
         "circuits": circuits_meta,
         "results": {
-            "final_score": final_score,
+            "adjusted_mse": adjusted_mse,
             "score_direction": "lower_is_better",
             "by_budget_raw": by_budget_raw,
         },
@@ -489,7 +507,7 @@ def score_estimator(
         detail="raw",
         profiler=profiler,
     )
-    return float(report["results"]["final_score"])
+    return float(report["results"]["adjusted_mse"])
 
 
 def _compute_full_detail(by_budget_raw: list[dict[str, Any]], depth: int) -> dict[str, Any]:

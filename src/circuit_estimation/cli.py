@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import platform
-import socket
 import sys
 import traceback
 import warnings
@@ -16,16 +14,16 @@ from typing import Any, Callable, Iterator, Literal, cast, overload
 
 import numpy as np
 from numpy.typing import NDArray
-from rich.console import Group
+from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
     BarColumn,
+    MofNCompleteColumn,
     Progress,
-    TaskProgressColumn,
+    SpinnerColumn,
     TextColumn,
     TimeElapsedColumn,
-    TimeRemainingColumn,
 )
 from tqdm import tqdm as classic_tqdm
 from tqdm.std import TqdmExperimentalWarning
@@ -37,6 +35,7 @@ except Exception:  # pragma: no cover - optional at runtime
 
 from .domain import Circuit, Layer
 from .estimators import CombinedEstimator
+from .hardware import collect_hardware_fingerprint
 from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
 from .reporting import (
@@ -95,7 +94,7 @@ def run_default_score(profile: bool = False) -> float | tuple[float, list[dict[s
     When ``profile`` is true, this returns ``(score, profile_calls)``.
     """
     report = run_default_report(profile=profile, detail="raw")
-    score = float(report["results"]["final_score"])
+    score = float(report["results"]["adjusted_mse"])
     if profile:
         return score, list(report.get("profile_calls", []))
     return score
@@ -121,7 +120,7 @@ def _render_plain_text_report(report: dict[str, Any]) -> str:
     best_budget_score, worst_budget_score = _budget_score_bounds(results.get("by_budget_raw"))
     lines = [
         "Circuit Estimation Report (Plain Text)",
-        f"Final Score: {results.get('final_score', 'n/a')}",
+        f"Adjusted MSE: {results.get('adjusted_mse', 'n/a')}",
         f"Best Budget Score: {best_budget_score}",
         f"Worst Budget Score: {worst_budget_score}",
         f"Duration(s): {run_meta.get('run_duration_s', 'n/a')}",
@@ -148,15 +147,16 @@ def _budget_score_bounds(by_budget_raw: object) -> tuple[float | str, float | st
     return min(scores), max(scores)
 
 
-def _host_metadata() -> dict[str, str]:
-    return {
-        "hostname": socket.gethostname(),
-        "os": platform.system(),
-        "os_release": platform.release(),
-        "platform": platform.platform(),
-        "machine": platform.machine(),
-        "python_version": platform.python_version(),
-    }
+def _host_metadata() -> dict[str, Any]:
+    return collect_hardware_fingerprint()
+
+
+def _fmt_ram(value: int | None) -> str:
+    """Format byte count as human-readable string for warning messages."""
+    if value is None:
+        return "unknown RAM"
+    gb = value / (1024 ** 3)
+    return f"{gb:.0f}GB"
 
 
 def _pre_run_report(
@@ -212,22 +212,21 @@ def _print_human_startup(
 
 def _print_human_header_and_hints() -> None:
     print(render_human_header(), end="")
-    print("Use --json for JSON output when calling from automated agents or UIs.")
-    print("Use --show-diagnostic-plots to include diagnostic plot panes.")
-    print("Runtime scoring uses budget-by-depth checks at each streamed predict() row.")
 
 
 class _LiveTopPaneSession:
-    def __init__(self, pre_report: dict[str, Any], total: int) -> None:
+    def __init__(self, pre_report: dict[str, Any], total: int, n_circuits: int, n_budgets: int) -> None:
         self._pre_report = pre_report
         self._progress = Progress(
-            TextColumn("[bold bright_yellow]{task.description}[/]"),
-            BarColumn(bar_width=None, complete_style="bright_green", finished_style="bright_green"),
-            TaskProgressColumn(show_speed=True),
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(bar_width=None),
+            MofNCompleteColumn(),
             TimeElapsedColumn(),
-            TimeRemainingColumn(),
         )
-        self._sampling_task_id = self._progress.add_task("Sampling (Ground Truth)", total=None)
+        self._gen_task_id = self._progress.add_task("Generating circuits", total=n_circuits)
+        self._sampling_task_id = self._progress.add_task("Sampling ground truth", total=n_circuits)
+        self._baselines_task_id = self._progress.add_task("Computing baselines", total=n_budgets)
         self._scoring_task_id = self._progress.add_task("Scoring", total=total)
         self._live = Live(
             self._renderable(),
@@ -249,11 +248,17 @@ class _LiveTopPaneSession:
         phase = str(event.get("phase", "scoring"))
         completed = int(event.get("completed", 0))
         total_value = event.get("total")
-        if phase == "sampling":
+        if phase == "generating":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            self._progress.update(self._gen_task_id, completed=completed, total=total_update)
+        elif phase == "sampling":
             total_update = int(total_value) if isinstance(total_value, int) else None
             self._progress.update(self._sampling_task_id, completed=completed, total=total_update)
-            return
-        self._progress.update(self._scoring_task_id, completed=completed)
+        elif phase == "baselines":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            self._progress.update(self._baselines_task_id, completed=completed, total=total_update)
+        else:
+            self._progress.update(self._scoring_task_id, completed=completed)
 
     def update_run_meta(self, run_meta: dict[str, Any]) -> None:
         current_meta = self._pre_report.get("run_meta")
@@ -270,8 +275,10 @@ class _LiveTopPaneSession:
 
 
 @contextmanager
-def _live_top_pane_session(pre_report: dict[str, Any], total: int) -> Iterator[_LiveTopPaneSession]:
-    session = _LiveTopPaneSession(pre_report, total)
+def _live_top_pane_session(
+    pre_report: dict[str, Any], total: int, n_circuits: int, n_budgets: int
+) -> Iterator[_LiveTopPaneSession]:
+    session = _LiveTopPaneSession(pre_report, total, n_circuits, n_budgets)
     session.start()
     try:
         yield session
@@ -280,61 +287,89 @@ def _live_top_pane_session(pre_report: dict[str, Any], total: int) -> Iterator[_
 
 
 @contextmanager
-def _progress_callback(total: int) -> Iterator[ProgressCallback]:
+def _progress_callback(total: int, n_circuits: int, n_budgets: int) -> Iterator[ProgressCallback]:
     if rich_tqdm is None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", TqdmExperimentalWarning)
-            sampling_bar = classic_tqdm(
-                total=None,
-                desc="Sampling (Ground Truth)",
+            gen_bar = classic_tqdm(
+                total=n_circuits,
+                desc="Generating circuits",
                 unit="circuit",
                 file=sys.stdout,
                 position=0,
+            )
+            sampling_bar = classic_tqdm(
+                total=n_circuits,
+                desc="Sampling ground truth",
+                unit="circuit",
+                file=sys.stdout,
+                position=1,
+            )
+            baselines_bar = classic_tqdm(
+                total=n_budgets,
+                desc="Computing baselines",
+                unit="budget",
+                file=sys.stdout,
+                position=2,
             )
             scoring_bar = classic_tqdm(
                 total=total,
                 desc="Scoring",
                 unit="eval",
                 file=sys.stdout,
-                position=1,
+                position=3,
             )
 
-        state = {"sampling_completed": 0, "scoring_completed": 0}
+        state = {"gen": 0, "sampling": 0, "baselines": 0, "scoring": 0}
 
         def _on_progress(event: dict[str, int | str]) -> None:
             phase = str(event.get("phase", "scoring"))
             completed = int(event.get("completed", 0))
-            if phase == "sampling":
+            if phase == "generating":
+                delta = completed - state["gen"]
+                if delta > 0:
+                    gen_bar.update(delta)
+                    state["gen"] = completed
+            elif phase == "sampling":
                 total_value = event.get("total")
                 if isinstance(total_value, int) and sampling_bar.total != total_value:
                     sampling_bar.total = total_value
                     sampling_bar.refresh()
-                delta = completed - state["sampling_completed"]
+                delta = completed - state["sampling"]
                 if delta > 0:
                     sampling_bar.update(delta)
-                    state["sampling_completed"] = completed
-                return
-            delta = completed - state["scoring_completed"]
-            if delta > 0:
-                scoring_bar.update(delta)
-                state["scoring_completed"] = completed
+                    state["sampling"] = completed
+            elif phase == "baselines":
+                delta = completed - state["baselines"]
+                if delta > 0:
+                    baselines_bar.update(delta)
+                    state["baselines"] = completed
+            else:
+                delta = completed - state["scoring"]
+                if delta > 0:
+                    scoring_bar.update(delta)
+                    state["scoring"] = completed
 
         try:
             yield _on_progress
         finally:
+            gen_bar.close()
             sampling_bar.close()
+            baselines_bar.close()
             scoring_bar.close()
             print()
         return
 
     progress = Progress(
-        TextColumn("[bold bright_yellow]{task.description}[/]"),
-        BarColumn(bar_width=None, complete_style="bright_green", finished_style="bright_green"),
-        TaskProgressColumn(show_speed=True),
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(bar_width=None),
+        MofNCompleteColumn(),
         TimeElapsedColumn(),
-        TimeRemainingColumn(),
     )
-    sampling_task_id = progress.add_task("Sampling (Ground Truth)", total=None)
+    gen_task_id = progress.add_task("Generating circuits", total=n_circuits)
+    sampling_task_id = progress.add_task("Sampling ground truth", total=n_circuits)
+    baselines_task_id = progress.add_task("Computing baselines", total=n_budgets)
     scoring_task_id = progress.add_task("Scoring", total=total)
     live = Live(
         Panel(progress, title="[bold bright_yellow]Progress[/]", border_style="bright_yellow"),
@@ -347,11 +382,17 @@ def _progress_callback(total: int) -> Iterator[ProgressCallback]:
         phase = str(event.get("phase", "scoring"))
         completed = int(event.get("completed", 0))
         total_value = event.get("total")
-        if phase == "sampling":
+        if phase == "generating":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            progress.update(gen_task_id, completed=completed, total=total_update)
+        elif phase == "sampling":
             total_update = int(total_value) if isinstance(total_value, int) else None
             progress.update(sampling_task_id, completed=completed, total=total_update)
-            return
-        progress.update(scoring_task_id, completed=completed)
+        elif phase == "baselines":
+            total_update = int(total_value) if isinstance(total_value, int) else None
+            progress.update(baselines_task_id, completed=completed, total=total_update)
+        else:
+            progress.update(scoring_task_id, completed=completed)
 
     try:
         live.start()
@@ -491,10 +532,25 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
     run_parser.add_argument("--profile", action="store_true")
     run_parser.add_argument("--show-diagnostic-plots", action="store_true")
-    run_parser.add_argument(
+    run_parser.add_argument("--json", dest="json_output", action="store_true", help="Return results as a JSON string.")
+    run_parser.add_argument("--dataset", default=None, help="Path to pre-created dataset .npz file.")
+    run_parser.add_argument("--strict-baselines", action="store_true", help="Refuse to run if dataset hardware differs.")
+    run_parser.add_argument("--debug", action="store_true")
+
+    create_ds_parser = subparsers.add_parser(
+        "create-dataset", help="Pre-create evaluation dataset."
+    )
+    create_ds_parser.add_argument("--n-circuits", type=int, default=10)
+    create_ds_parser.add_argument("--n-samples", type=int, default=10000)
+    create_ds_parser.add_argument("--width", type=int, default=None)
+    create_ds_parser.add_argument("--max-depth", type=int, default=None)
+    create_ds_parser.add_argument("--budgets", type=str, default=None)
+    create_ds_parser.add_argument("--seed", type=int, default=None)
+    create_ds_parser.add_argument("-o", "--output", default="eval_dataset.npz")
+    create_ds_parser.add_argument(
         "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
     )
-    run_parser.add_argument("--debug", action="store_true")
+    create_ds_parser.add_argument("--debug", action="store_true")
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
     package_parser.add_argument("--estimator", required=True)
@@ -560,6 +616,93 @@ def _main_participant(argv: list[str]) -> int:
                 )
             return 0
 
+        if command == "create-dataset":
+            from .dataset import create_dataset as _create_dataset
+
+            contest = _default_contest_params()
+            ds_width = args.width or contest.width
+            ds_max_depth = args.max_depth or contest.max_depth
+            ds_budgets = (
+                [int(b) for b in args.budgets.split(",")]
+                if args.budgets
+                else list(contest.budgets)
+            )
+            n_circuits_ds = int(args.n_circuits)
+            n_budgets = len(ds_budgets)
+
+            if not json_output:
+                try:
+                    from rich.progress import (
+                        BarColumn,
+                        MofNCompleteColumn,
+                        Progress,
+                        SpinnerColumn,
+                        TextColumn,
+                        TimeElapsedColumn,
+                    )
+
+                    progress_bar = Progress(
+                        SpinnerColumn(),
+                        TextColumn("[progress.description]{task.description}"),
+                        BarColumn(bar_width=None),
+                        MofNCompleteColumn(),
+                        TimeElapsedColumn(),
+                    )
+                    gen_task = progress_bar.add_task(
+                        "Generating circuits", total=n_circuits_ds
+                    )
+                    sample_task = progress_bar.add_task(
+                        "Sampling ground truth", total=n_circuits_ds
+                    )
+                    baseline_task = progress_bar.add_task(
+                        "Computing baselines", total=n_budgets
+                    )
+
+                    def _on_ds_progress(event: dict[str, Any]) -> None:
+                        phase = str(event.get("phase", ""))
+                        completed = int(event.get("completed", 0))
+                        if phase == "generating":
+                            progress_bar.update(gen_task, completed=completed)
+                        elif phase == "sampling":
+                            progress_bar.update(sample_task, completed=completed)
+                        elif phase == "baselines":
+                            progress_bar.update(baseline_task, completed=completed)
+
+                    with progress_bar:
+                        out = _create_dataset(
+                            n_circuits=n_circuits_ds,
+                            n_samples=int(args.n_samples),
+                            width=ds_width,
+                            max_depth=ds_max_depth,
+                            budgets=ds_budgets,
+                            seed=getattr(args, "seed", None),
+                            output_path=Path(args.output),
+                            progress=_on_ds_progress,
+                        )
+                except ImportError:
+                    out = _create_dataset(
+                        n_circuits=n_circuits_ds,
+                        n_samples=int(args.n_samples),
+                        width=ds_width,
+                        max_depth=ds_max_depth,
+                        budgets=ds_budgets,
+                        seed=getattr(args, "seed", None),
+                        output_path=Path(args.output),
+                    )
+                print(f"Dataset created: {out}")
+            else:
+                out = _create_dataset(
+                    n_circuits=n_circuits_ds,
+                    n_samples=int(args.n_samples),
+                    width=ds_width,
+                    max_depth=ds_max_depth,
+                    budgets=ds_budgets,
+                    seed=getattr(args, "seed", None),
+                    output_path=Path(args.output),
+                )
+                print(json.dumps({"ok": True, "path": str(out)}, indent=2))
+            return 0
+
         if command == "run":
             runner = InProcessRunner() if args.runner == "inprocess" else SubprocessRunner()
             contest_params = _default_contest_params()
@@ -569,18 +712,97 @@ def _main_participant(argv: list[str]) -> int:
                 file_path=Path(args.estimator).resolve(),
                 class_name=args.class_name,
             )
-            if json_output:
-                report = score_estimator_report(
-                    runner,
-                    n_circuits=n_circuits,
-                    n_samples=n_samples,
-                    contest_params=contest_params,
-                    entrypoint=entrypoint,
-                    limits=_default_resource_limits(),
-                    profile=bool(args.profile),
-                    detail=str(args.detail),
+
+            # --- Dataset loading ---
+            preloaded_circuits: list[Circuit] | None = None
+            preloaded_means: Any = None
+            preloaded_baselines: dict[int, Any] | None = None
+            baselines_recomputed = False
+            dataset_path: str | None = getattr(args, "dataset", None)
+
+            if dataset_path is not None:
+                from .dataset import dataset_file_hash, load_dataset
+                from .hardware import hardware_matches
+
+                bundle = load_dataset(dataset_path)
+                ds_meta = bundle.metadata
+                # Override contest params from dataset
+                contest_params = ContestParams(
+                    width=ds_meta["width"],
+                    max_depth=ds_meta["max_depth"],
+                    budgets=ds_meta["budgets"],
+                    time_tolerance=ds_meta.get("time_tolerance", contest_params.time_tolerance),
                 )
+                n_circuits = bundle.n_circuits
+                preloaded_circuits = bundle.circuits
+                preloaded_means = bundle.ground_truth_means
+
+                # Hardware staleness check
+                current_hw = collect_hardware_fingerprint()
+                stored_hw = ds_meta.get("hardware", {})
+                if not hardware_matches(stored_hw, current_hw):
+                    if getattr(args, "strict_baselines", False):
+                        msg = (
+                            "Hardware mismatch detected and --strict-baselines is set.\n"
+                            f"  Dataset host: {stored_hw.get('hostname', 'unknown')} "
+                            f"({stored_hw.get('cpu_brand', '?')}, "
+                            f"{stored_hw.get('cpu_count_logical', '?')} cores)\n"
+                            f"  Current host: {current_hw['hostname']} "
+                            f"({current_hw['cpu_brand']}, "
+                            f"{current_hw['cpu_count_logical']} cores)"
+                        )
+                        print(msg, file=sys.stderr)
+                        return 1
+                    # Auto-recompute baselines
+                    import warnings as _warnings
+
+                    _warnings.warn(
+                        f"Dataset baselines computed on {stored_hw.get('hostname', 'unknown')} "
+                        f"({stored_hw.get('cpu_brand', '?')}, "
+                        f"{stored_hw.get('cpu_count_logical', '?')} cores, "
+                        f"{_fmt_ram(stored_hw.get('ram_total_bytes'))}). "
+                        f"Current hardware differs. Recomputing baselines...",
+                        stacklevel=1,
+                    )
+                    baselines_recomputed = True
+                    # Leave preloaded_baselines as None -> score_estimator_report
+                    # will recompute them.
+                else:
+                    # Hardware matches — use stored baselines
+                    budgets_list = list(contest_params.budgets)
+                    preloaded_baselines = {}
+                    for bi, budget in enumerate(budgets_list):
+                        preloaded_baselines[budget] = bundle.baseline_times[bi]
+
+            score_kwargs: dict[str, Any] = {
+                "n_circuits": n_circuits,
+                "n_samples": n_samples,
+                "contest_params": contest_params,
+                "entrypoint": entrypoint,
+                "limits": _default_resource_limits(),
+                "profile": bool(args.profile),
+                "detail": str(args.detail),
+            }
+            if preloaded_circuits is not None:
+                score_kwargs["circuits"] = preloaded_circuits
+            if preloaded_means is not None:
+                score_kwargs["ground_truth_means"] = preloaded_means
+            if preloaded_baselines is not None:
+                score_kwargs["baseline_times_by_budget"] = preloaded_baselines
+
+            if json_output:
+                report = score_estimator_report(runner, **score_kwargs)
                 report["mode"] = "agent"
+                # Inject dataset traceability
+                if dataset_path is not None:
+                    report.setdefault("run_config", {})["dataset"] = {
+                        "path": str(Path(dataset_path).resolve()),
+                        "sha256": dataset_file_hash(dataset_path),
+                        "seed": ds_meta.get("seed"),
+                        "n_circuits": ds_meta.get("n_circuits"),
+                        "n_samples": ds_meta.get("n_samples"),
+                        "baselines_recomputed": baselines_recomputed,
+                    }
                 output = render_agent_report(report)
             else:
                 metadata = resolve_estimator_class_metadata(
@@ -593,47 +815,48 @@ def _main_participant(argv: list[str]) -> int:
                     profile=bool(args.profile),
                     detail=str(args.detail),
                     estimator_class=metadata.class_name,
-                    estimator_path=str(entrypoint.file_path),
+                    estimator_path=args.estimator,
                 )
                 total_units = len(contest_params.budgets) * n_circuits
+                _dataset_tip = (
+                    "\n[bold bright_yellow]💡 Tip:[/] Ground truth is recomputed on every run. "
+                    "Consider creating and reusing a dataset:\n"
+                    "   [cyan]cestim create-dataset[/] [green]--n-circuits[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]-o[/] [yellow]my_dataset.npz[/]\n"
+                    "   [cyan]cestim run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]my_dataset.npz[/]\n"
+                )
+                _tip_console = Console(highlight=False)
                 if rich_tqdm is None:
                     _print_human_startup(
                         pre_report,
                         estimator_class=metadata.class_name,
-                        estimator_path=str(entrypoint.file_path),
+                        estimator_path=args.estimator,
                     )
-                    with _progress_callback(total_units) as progress_cb:
-                        report = score_estimator_report(
-                            runner,
-                            n_circuits=n_circuits,
-                            n_samples=n_samples,
-                            contest_params=contest_params,
-                            entrypoint=entrypoint,
-                            limits=_default_resource_limits(),
-                            profile=bool(args.profile),
-                            detail=str(args.detail),
-                            progress=progress_cb,
-                            sampling_progress=progress_cb,
-                        )
+
+                    with _progress_callback(total_units, n_circuits, len(contest_params.budgets)) as progress_cb:
+                        score_kwargs["progress"] = progress_cb
+                        score_kwargs["sampling_progress"] = progress_cb
+                        report = score_estimator_report(runner, **score_kwargs)
                 else:
                     _print_human_header_and_hints()
-                    with _live_top_pane_session(pre_report, total_units) as live_session:
-                        report = score_estimator_report(
-                            runner,
-                            n_circuits=n_circuits,
-                            n_samples=n_samples,
-                            contest_params=contest_params,
-                            entrypoint=entrypoint,
-                            limits=_default_resource_limits(),
-                            profile=bool(args.profile),
-                            detail=str(args.detail),
-                            progress=live_session.on_progress,
-                            sampling_progress=live_session.on_progress,
-                        )
+
+                    with _live_top_pane_session(pre_report, total_units, n_circuits, len(contest_params.budgets)) as live_session:
+                        score_kwargs["progress"] = live_session.on_progress
+                        score_kwargs["sampling_progress"] = live_session.on_progress
+                        report = score_estimator_report(runner, **score_kwargs)
                         run_meta = report.get("run_meta")
                         if isinstance(run_meta, dict):
                             live_session.update_run_meta(run_meta)
                 report["mode"] = "human"
+                # Inject dataset traceability for human mode too
+                if dataset_path is not None:
+                    report.setdefault("run_config", {})["dataset"] = {
+                        "path": str(Path(dataset_path).resolve()),
+                        "sha256": dataset_file_hash(dataset_path),
+                        "seed": ds_meta.get("seed"),
+                        "n_circuits": ds_meta.get("n_circuits"),
+                        "n_samples": ds_meta.get("n_samples"),
+                        "baselines_recomputed": baselines_recomputed,
+                    }
                 try:
                     output = render_human_results(
                         report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
@@ -645,6 +868,16 @@ def _main_participant(argv: list[str]) -> int:
                     )
                     output = _render_plain_text_report(report)
             print(output, end="" if output.endswith("\n") else "\n")
+            if not json_output:
+                _tip_console.print(
+                    "[bold bright_yellow]💡 Tip:[/] Use [green]--json[/] for JSON output when calling from automated agents or UIs."
+                )
+                if not args.show_diagnostic_plots:
+                    _tip_console.print(
+                        "[bold bright_yellow]💡 Tip:[/] Use [green]--show-diagnostic-plots[/] to include diagnostic plot panes."
+                    )
+                if dataset_path is None:
+                    _tip_console.print(_dataset_tip)
             return 0
 
         if command == "package":

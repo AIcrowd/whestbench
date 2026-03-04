@@ -69,12 +69,19 @@ cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar
 
 `cestim run` uses `--runner subprocess` by default.
 
+For faster repeated evaluations, pre-create a dataset and reuse it:
+
+```bash
+cestim create-dataset -o my_dataset.npz
+cestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
+```
+
 Quick debug sequence when `run` fails:
 
 ```bash
-cestim run --estimator ./my-estimator/estimator.py
-cestim run --estimator ./my-estimator/estimator.py --debug
-cestim run --estimator ./my-estimator/estimator.py --runner inprocess --debug
+cestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
+cestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --debug
+cestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --runner inprocess --debug
 ```
 
 For local editable invocation without global install:
@@ -102,6 +109,7 @@ Start at: [Documentation Index](docs/index.md)
 - [Write an Estimator](docs/how-to/write-an-estimator.md)
 - [Inspect and Traverse Circuit Structure](docs/how-to/inspect-circuit-structure.md)
 - [Validate, Run, and Package](docs/how-to/validate-run-package.md)
+- [Use Evaluation Datasets](docs/how-to/use-evaluation-datasets.md)
 - [Use Circuit Explorer](docs/how-to/use-circuit-explorer.md)
 
 ### 📖 Reference
@@ -129,6 +137,22 @@ Recommended reading order:
 2. [`mean_propagation.py`](examples/estimators/mean_propagation.py)
 3. [`covariance_propagation.py`](examples/estimators/covariance_propagation.py)
 4. [`combined_estimator.py`](examples/estimators/combined_estimator.py)
+
+Try them out (adjust `--n-circuits` and `--n-samples` to control evaluation size):
+
+```bash
+# Quick smoke run (10 circuits, 500 samples — fast)
+cestim run --estimator examples/estimators/mean_propagation.py --n-circuits 10 --n-samples 500
+
+# Full evaluation against the combined estimator
+cestim run --estimator examples/estimators/combined_estimator.py --n-circuits 100 --n-samples 10000
+
+# Compare estimators on the same dataset for fair scoring
+cestim create-dataset --n-circuits 100 --n-samples 10000 -o eval.npz
+cestim run --estimator examples/estimators/mean_propagation.py --dataset eval.npz
+cestim run --estimator examples/estimators/covariance_propagation.py --dataset eval.npz
+cestim run --estimator examples/estimators/combined_estimator.py --dataset eval.npz
+```
 
 ## 📡 Current Platform Status
 

@@ -52,7 +52,7 @@ def test_score_estimator_wrong_output_width_produces_error_row() -> None:
         circuits=[circuit],
     )
     # Zero-filled row has positive MSE
-    assert report["results"]["final_score"] >= 0.0
+    assert report["results"]["adjusted_mse"] >= 0.0
 
 
 def test_score_estimator_non_iterable_output_produces_error_row() -> None:
@@ -69,7 +69,7 @@ def test_score_estimator_non_iterable_output_produces_error_row() -> None:
         contest_params=params,
         circuits=[circuit],
     )
-    assert report["results"]["final_score"] >= 0.0
+    assert report["results"]["adjusted_mse"] >= 0.0
 
 
 def test_score_estimator_profile_hook_collects_runtime_cpu_and_memory() -> None:
@@ -118,7 +118,7 @@ def test_score_estimator_early_stop_produces_error_row() -> None:
         contest_params=params,
         circuits=[circuit],
     )
-    assert report["results"]["final_score"] >= 0.0
+    assert report["results"]["adjusted_mse"] >= 0.0
 
 
 def test_score_estimator_extra_rows_are_silently_consumed() -> None:
@@ -157,7 +157,7 @@ def test_generator_exception_after_partial_rows_produces_error_outcome() -> None
         circuits=[circuit],
     )
     # Error produces zero-filled remaining rows
-    assert report["results"]["final_score"] >= 0.0
+    assert report["results"]["adjusted_mse"] >= 0.0
 
 
 def test_non_iterable_predict_output_produces_error_row() -> None:
@@ -174,7 +174,7 @@ def test_non_iterable_predict_output_produces_error_row() -> None:
         contest_params=params,
         circuits=[circuit],
     )
-    assert report["results"]["final_score"] >= 0.0
+    assert report["results"]["adjusted_mse"] >= 0.0
 
 
 def test_row_dtype_cast_and_finite_validation_are_enforced() -> None:
@@ -204,7 +204,7 @@ def test_row_dtype_cast_and_finite_validation_are_enforced() -> None:
         contest_params=params,
         circuits=[circuit],
     )
-    assert report["results"]["final_score"] >= 0.0
+    assert report["results"]["adjusted_mse"] >= 0.0
 
 
 def test_score_estimator_report_collects_one_profile_call_per_circuit_budget() -> None:
@@ -254,7 +254,7 @@ def test_score_estimator_report_emits_progress_events() -> None:
         progress=events.append,
     )
 
-    assert report["results"]["final_score"] >= 0.0
+    assert report["results"]["adjusted_mse"] >= 0.0
     assert len(events) == len(circuits) * len(params.budgets)
     assert events[-1]["completed"] == events[-1]["total"] == len(circuits) * len(params.budgets)
     assert events[-1]["phase"] == "scoring"
@@ -281,11 +281,12 @@ def test_score_estimator_report_emits_sampling_progress_events() -> None:
         sampling_progress=events.append,
     )
 
-    assert report["results"]["final_score"] >= 0.0
-    assert len(events) == len(circuits)
-    assert events[-1]["phase"] == "sampling"
-    assert events[-1]["completed"] == events[-1]["total"] == len(circuits)
-    assert {"phase", "circuit_index", "completed", "total"} <= set(events[-1].keys())
+    assert report["results"]["adjusted_mse"] >= 0.0
+    sampling_events = [e for e in events if e["phase"] == "sampling"]
+    assert len(sampling_events) == len(circuits)
+    assert sampling_events[-1]["phase"] == "sampling"
+    assert sampling_events[-1]["completed"] == sampling_events[-1]["total"] == len(circuits)
+    assert {"phase", "circuit_index", "completed", "total"} <= set(sampling_events[-1].keys())
 
 
 def test_by_budget_raw_forbids_layer_runtime_fields() -> None:
@@ -459,7 +460,7 @@ def test_score_estimator_report_accepts_runner_stream(
     assert row["call_time_ratio_mean"] == pytest.approx(1.0)
     assert "time_budget_by_depth_s" in row
     assert "timeout_rate_by_depth" in row
-    assert report["results"]["final_score"] == pytest.approx(0.0)
+    assert report["results"]["adjusted_mse"] == pytest.approx(0.0)
     assert runner.started is False
 
 
