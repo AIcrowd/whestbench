@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 
 import circuit_estimation.visualizer as viz_mod
+from circuit_estimation import cli
 from circuit_estimation.visualizer import (
     ExplorerNotFoundError,
     NodeNotFoundError,
@@ -314,3 +315,36 @@ def test_run_visualizer_returns_1_when_node_missing(monkeypatch):
 
     result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
     assert result == 1
+
+
+# --- CLI dispatch tests ---
+
+
+def test_cli_visualizer_dispatches_to_run_visualizer(monkeypatch):
+    """cestim visualizer should call run_visualizer with correct args."""
+    captured: dict = {}
+
+    def fake_run_visualizer(*, host, port, no_open, debug):
+        captured.update(host=host, port=port, no_open=no_open, debug=debug)
+        return 0
+
+    monkeypatch.setattr(viz_mod, "run_visualizer", fake_run_visualizer)
+
+    exit_code = cli.main(["visualizer", "--host", "0.0.0.0", "--port", "8080", "--no-open"])
+    assert exit_code == 0
+    assert captured == {"host": "0.0.0.0", "port": 8080, "no_open": True, "debug": False}
+
+
+def test_cli_visualizer_defaults(monkeypatch):
+    """Default args: host=localhost, port=5173, no_open=False, debug=False."""
+    captured: dict = {}
+
+    def fake_run_visualizer(*, host, port, no_open, debug):
+        captured.update(host=host, port=port, no_open=no_open, debug=debug)
+        return 0
+
+    monkeypatch.setattr(viz_mod, "run_visualizer", fake_run_visualizer)
+
+    exit_code = cli.main(["visualizer"])
+    assert exit_code == 0
+    assert captured == {"host": "localhost", "port": 5173, "no_open": False, "debug": False}
