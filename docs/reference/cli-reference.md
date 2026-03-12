@@ -14,6 +14,7 @@ Participant workflow commands:
 - `cestim run`
 - `cestim create-dataset`
 - `cestim package`
+- `cestim visualizer`
 
 ## `cestim smoke-test`
 
@@ -113,6 +114,25 @@ Key options:
 - `--output <path>`
 - `--json`
 - `--debug`
+
+## `cestim visualizer`
+
+Launch the interactive Circuit Explorer in a browser.
+
+```bash
+cestim visualizer [--host HOST] [--port PORT] [--no-open] [--debug]
+```
+
+Checks for Node.js (>= 18), installs dependencies if needed, starts the Vite dev server, and auto-opens the browser.
+
+Key options:
+
+- `--host <address>` (default: `localhost`) — bind address, use `0.0.0.0` for remote access
+- `--port <number>` (default: `5173`) — port number
+- `--no-open` — suppress auto-open browser
+- `--debug` — show full npm/Vite output on errors
+
+On SSH/headless environments, browser auto-open is skipped automatically.
 
 ## ➡️ Next step
 

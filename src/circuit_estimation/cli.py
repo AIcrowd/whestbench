@@ -155,7 +155,7 @@ def _fmt_ram(value: int | None) -> str:
     """Format byte count as human-readable string for warning messages."""
     if value is None:
         return "unknown RAM"
-    gb = value / (1024 ** 3)
+    gb = value / (1024**3)
     return f"{gb:.0f}GB"
 
 
@@ -215,7 +215,9 @@ def _print_human_header_and_hints() -> None:
 
 
 class _LiveTopPaneSession:
-    def __init__(self, pre_report: dict[str, Any], total: int, n_circuits: int, n_budgets: int) -> None:
+    def __init__(
+        self, pre_report: dict[str, Any], total: int, n_circuits: int, n_budgets: int
+    ) -> None:
         self._pre_report = pre_report
         self._progress = Progress(
             SpinnerColumn(),
@@ -532,9 +534,15 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
     run_parser.add_argument("--profile", action="store_true")
     run_parser.add_argument("--show-diagnostic-plots", action="store_true")
-    run_parser.add_argument("--json", dest="json_output", action="store_true", help="Return results as a JSON string.")
-    run_parser.add_argument("--dataset", default=None, help="Path to pre-created dataset .npz file.")
-    run_parser.add_argument("--strict-baselines", action="store_true", help="Refuse to run if dataset hardware differs.")
+    run_parser.add_argument(
+        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
+    )
+    run_parser.add_argument(
+        "--dataset", default=None, help="Path to pre-created dataset .npz file."
+    )
+    run_parser.add_argument(
+        "--strict-baselines", action="store_true", help="Refuse to run if dataset hardware differs."
+    )
     run_parser.add_argument("--debug", action="store_true")
 
     create_ds_parser = subparsers.add_parser(
@@ -563,6 +571,21 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
     )
     package_parser.add_argument("--debug", action="store_true")
+
+    visualizer_parser = subparsers.add_parser(
+        "visualizer",
+        help="Launch the interactive Circuit Explorer in a browser.",
+    )
+    visualizer_parser.add_argument(
+        "--host", default="localhost", help="Bind address (default: localhost)."
+    )
+    visualizer_parser.add_argument(
+        "--port", type=int, default=5173, help="Port number (default: 5173)."
+    )
+    visualizer_parser.add_argument(
+        "--no-open", action="store_true", help="Don't auto-open browser."
+    )
+    visualizer_parser.add_argument("--debug", action="store_true")
 
     return parser
 
@@ -623,9 +646,7 @@ def _main_participant(argv: list[str]) -> int:
             ds_width = args.width or contest.width
             ds_max_depth = args.max_depth or contest.max_depth
             ds_budgets = (
-                [int(b) for b in args.budgets.split(",")]
-                if args.budgets
-                else list(contest.budgets)
+                [int(b) for b in args.budgets.split(",")] if args.budgets else list(contest.budgets)
             )
             n_circuits_ds = int(args.n_circuits)
             n_budgets = len(ds_budgets)
@@ -648,15 +669,11 @@ def _main_participant(argv: list[str]) -> int:
                         MofNCompleteColumn(),
                         TimeElapsedColumn(),
                     )
-                    gen_task = progress_bar.add_task(
-                        "Generating circuits", total=n_circuits_ds
-                    )
+                    gen_task = progress_bar.add_task("Generating circuits", total=n_circuits_ds)
                     sample_task = progress_bar.add_task(
                         "Sampling ground truth", total=n_circuits_ds
                     )
-                    baseline_task = progress_bar.add_task(
-                        "Computing baselines", total=n_budgets
-                    )
+                    baseline_task = progress_bar.add_task("Computing baselines", total=n_budgets)
 
                     def _on_ds_progress(event: dict[str, Any]) -> None:
                         phase = str(event.get("phase", ""))
@@ -832,14 +849,18 @@ def _main_participant(argv: list[str]) -> int:
                         estimator_path=args.estimator,
                     )
 
-                    with _progress_callback(total_units, n_circuits, len(contest_params.budgets)) as progress_cb:
+                    with _progress_callback(
+                        total_units, n_circuits, len(contest_params.budgets)
+                    ) as progress_cb:
                         score_kwargs["progress"] = progress_cb
                         score_kwargs["sampling_progress"] = progress_cb
                         report = score_estimator_report(runner, **score_kwargs)
                 else:
                     _print_human_header_and_hints()
 
-                    with _live_top_pane_session(pre_report, total_units, n_circuits, len(contest_params.budgets)) as live_session:
+                    with _live_top_pane_session(
+                        pre_report, total_units, n_circuits, len(contest_params.budgets)
+                    ) as live_session:
                         score_kwargs["progress"] = live_session.on_progress
                         score_kwargs["sampling_progress"] = live_session.on_progress
                         report = score_estimator_report(runner, **score_kwargs)
@@ -896,6 +917,16 @@ def _main_participant(argv: list[str]) -> int:
                 print(f"Packaged submission: {artifact_path}")
             return 0
 
+        if command == "visualizer":
+            from . import visualizer as _viz_mod
+
+            return _viz_mod.run_visualizer(
+                host=str(args.host),
+                port=int(args.port),
+                no_open=bool(args.no_open),
+                debug=bool(args.debug),
+            )
+
         raise ValueError(f"Unsupported command: {command}")
     except Exception as exc:  # pragma: no cover - exercised by CLI tests
         stage = exc.stage if isinstance(exc, RunnerError) else command
@@ -904,7 +935,9 @@ def _main_participant(argv: list[str]) -> int:
             payload,
             json_output=json_output,
             debug=debug,
-            show_inprocess_hint=(command == "run" and getattr(args, "runner", None) == "subprocess"),
+            show_inprocess_hint=(
+                command == "run" and getattr(args, "runner", None) == "subprocess"
+            ),
         )
         return 1
 
