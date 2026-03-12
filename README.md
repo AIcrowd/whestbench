@@ -46,9 +46,11 @@ Install [`uv`](https://docs.astral.sh/uv/):
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-Install the CLI from this repository:
+Clone the repository and install the CLI:
 
 ```bash
+git clone git@github.com:AIcrowd/circuit-estimation-challenge-internal.git
+cd circuit-estimation-challenge-internal
 uv tool install -e .
 ```
 
@@ -56,6 +58,12 @@ Sanity-check CLI wiring:
 
 ```bash
 cestim smoke-test
+```
+
+Explore circuits visually (requires Node.js):
+
+```bash
+cestim visualizer
 ```
 
 Run your first full loop:
