@@ -9,17 +9,17 @@ import tarfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from .loader import load_estimator_from_path
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class SubmissionFiles:
     estimator: Path
-    requirements: Path | None = None
-    submission_yaml: Path | None = None
-    approach_md: Path | None = None
+    requirements: Optional[Path] = None
+    submission_yaml: Optional[Path] = None
+    approach_md: Optional[Path] = None
 
 
 def _sha256(path: Path) -> str:
@@ -35,8 +35,8 @@ def build_manifest(
     class_name: str,
     files: SubmissionFiles,
     packager_version: str = "0.1.0",
-) -> dict[str, Any]:
-    included_files: list[tuple[str, Path]] = [("estimator.py", files.estimator)]
+) -> Dict[str, Any]:
+    included_files: List["tuple[str, Path]"] = [("estimator.py", files.estimator)]
     if files.requirements is not None:
         included_files.append(("requirements.txt", files.requirements))
     if files.submission_yaml is not None:
@@ -65,13 +65,13 @@ def build_manifest(
 
 
 def package_submission(
-    estimator_path: str | Path,
+    estimator_path: "Any",
     *,
-    class_name: str | None = None,
-    requirements_path: str | Path | None = None,
-    submission_yaml_path: str | Path | None = None,
-    approach_md_path: str | Path | None = None,
-    output_path: str | Path | None = None,
+    class_name: Optional[str] = None,
+    requirements_path: "Any" = None,
+    submission_yaml_path: "Any" = None,
+    approach_md_path: "Any" = None,
+    output_path: "Any" = None,
 ) -> Path:
     estimator = Path(estimator_path).resolve()
     if not estimator.is_file():
