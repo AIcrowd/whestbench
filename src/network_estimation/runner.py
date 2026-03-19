@@ -1,4 +1,4 @@
-"""Runner interfaces and structured execution outcomes for estimator isolation."""
+"""Runner interfaces for estimator isolation."""
 
 from __future__ import annotations
 
@@ -7,48 +7,42 @@ import os
 import subprocess
 import sys
 import time
-from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal, Protocol, cast
+from typing import Any, Dict, List, Literal, Optional, Protocol, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
 
-from .domain import Circuit
+from .domain import MLP
 from .loader import load_estimator_from_path
 from .sdk import BaseEstimator, SetupContext
-from .streaming import validate_depth_row
 
 try:
     import resource
-except ImportError:  # pragma: no cover - non-POSIX environments
-    resource = None
+except ImportError:  # pragma: no cover
+    resource = None  # type: ignore[assignment]
 
 try:
     import psutil  # pyright: ignore[reportMissingModuleSource]
-except ImportError:  # pragma: no cover - optional dependency
+except ImportError:  # pragma: no cover
     psutil = None
 
 RunnerStage = Literal["load", "setup", "predict", "validate", "package", "submit"]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class EstimatorEntrypoint:
-    """Location of participant estimator implementation."""
-
     file_path: Path
-    class_name: str | None = None
+    class_name: Optional[str] = None
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class ResourceLimits:
-    """Runtime limits applied by concrete runner implementations."""
-
     setup_timeout_s: float
     predict_timeout_s: float
     memory_limit_mb: int
-    cpu_time_limit_s: float | None = None
+    cpu_time_limit_s: Optional[float] = None
 
     def __post_init__(self) -> None:
         if self.setup_timeout_s <= 0:
@@ -61,136 +55,65 @@ class ResourceLimits:
             raise ValueError("cpu_time_limit_s must be positive when provided.")
 
 
-DepthRowStatus = Literal["ok", "error"]
-
-
-@dataclass(slots=True)
-class DepthRowOutcome:
-    """Per-depth-row outcome yielded by streaming runner predict."""
-
-    depth_index: int
-    row: NDArray[np.float32] | None
-    wall_time_s: float
-    status: DepthRowStatus
-    error_message: str | None = None
-
-
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class RunnerErrorDetail:
-    """Machine-readable error payload surfaced to CLI and report layers."""
-
     code: str
     message: str
-    details: dict[str, str | int | float | bool] | None = None
-    traceback: str | None = None
+    details: Optional[Dict[str, Any]] = None
+    traceback: Optional[str] = None
 
 
 class RunnerError(RuntimeError):
-    """Structured runner exception carrying stable stage + error detail."""
-
-    def __init__(self, stage: RunnerStage, detail: RunnerErrorDetail):
+    def __init__(self, stage: str, detail: RunnerErrorDetail):
         super().__init__(detail.message)
         self.stage = stage
         self.detail = detail
 
 
 class EstimatorRunner(Protocol):
-    """Protocol for in-process, subprocess, and future cloud runners."""
-
     def start(
-        self,
-        entrypoint: EstimatorEntrypoint,
-        context: SetupContext,
-        limits: ResourceLimits,
+        self, entrypoint: EstimatorEntrypoint, context: SetupContext, limits: ResourceLimits,
     ) -> None: ...
 
-    def predict(self, circuit: Circuit, budget: int) -> Iterator[DepthRowOutcome]: ...
+    def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]: ...
 
     def close(self) -> None: ...
 
 
-def _peak_rss_bytes() -> int:
-    if resource is None:
-        return 0
-    usage = int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-    if sys.platform == "darwin":
-        return usage
-    return usage * 1024
+def _mlp_to_payload(mlp: MLP) -> Dict[str, Any]:
+    return {
+        "width": int(mlp.width),
+        "depth": int(mlp.depth),
+        "weights": [w.tolist() for w in mlp.weights],
+    }
 
 
-def _rss_bytes() -> int:
-    if psutil is not None:
-        return int(psutil.Process().memory_info().rss)
-    return _peak_rss_bytes()
-
-
-def _circuit_to_payload(circuit: Circuit) -> dict[str, Any]:
-    gates: list[dict[str, list[float] | list[int]]] = []
-    for layer in circuit.gates:
-        gates.append(
-            {
-                "first": layer.first.astype(np.int32).tolist(),
-                "second": layer.second.astype(np.int32).tolist(),
-                "first_coeff": layer.first_coeff.astype(np.float32).tolist(),
-                "second_coeff": layer.second_coeff.astype(np.float32).tolist(),
-                "const": layer.const.astype(np.float32).tolist(),
-                "product_coeff": layer.product_coeff.astype(np.float32).tolist(),
-            }
-        )
-    return {"n": int(circuit.n), "d": int(circuit.d), "gates": gates}
-
-
-def _collect_prediction_tensor(
-    predictions: object,
-    *,
-    width: int,
-    depth: int,
+def validate_predictions(
+    predictions: object, *, depth: int, width: int,
 ) -> NDArray[np.float32]:
-    try:
-        output_iter = iter(cast(Any, predictions))
-    except TypeError as exc:
-        raise ValueError("Estimator must return an iterator of depth-row outputs.") from exc
-
-    rows: list[NDArray[np.float32]] = []
-    for depth_index in range(depth):
-        try:
-            raw_row = next(output_iter)
-        except StopIteration as exc:
-            raise ValueError("Estimator must emit exactly max_depth rows.") from exc
-        except Exception as exc:
-            raise ValueError(
-                f"Estimator stream failed while producing depth row {depth_index}: {exc}"
-            ) from exc
-        rows.append(validate_depth_row(raw_row, width=width, depth_index=depth_index))
-
-    try:
-        _extra = next(output_iter)
-    except StopIteration:
-        pass
-    except Exception as exc:
-        raise ValueError(f"Estimator stream failed after emitting max_depth rows: {exc}") from exc
-    else:
-        raise ValueError("Estimator emitted more than max_depth rows.")
-
-    return np.stack(rows, axis=0).astype(np.float32)
+    arr = np.asarray(predictions, dtype=np.float32)
+    if arr.shape != (depth, width):
+        raise ValueError(
+            f"Predictions must have shape ({depth}, {width}), got {arr.shape}."
+        )
+    if not np.all(np.isfinite(arr)):
+        raise ValueError("Predictions must contain only finite values.")
+    return arr
 
 
 class InProcessRunner:
-    """Local runner that executes estimator methods in this Python process."""
-
     def __init__(self) -> None:
-        self._estimator: BaseEstimator | None = None
-        self._limits: ResourceLimits | None = None
+        self._estimator: Optional[BaseEstimator] = None
+        self._limits: Optional[ResourceLimits] = None
+        self._context: Optional[SetupContext] = None
         self._started = False
 
     def start(
-        self,
-        entrypoint: EstimatorEntrypoint,
-        context: SetupContext,
-        limits: ResourceLimits,
+        self, entrypoint: EstimatorEntrypoint, context: SetupContext, limits: ResourceLimits,
     ) -> None:
         self.close()
         self._limits = limits
+        self._context = context
         start_wall = time.time()
         estimator, _ = load_estimator_from_path(
             entrypoint.file_path, class_name=entrypoint.class_name
@@ -200,8 +123,7 @@ class InProcessRunner:
             estimator.setup(context)
         except Exception as exc:
             raise RunnerError(
-                "setup",
-                RunnerErrorDetail(code="SETUP_ERROR", message=str(exc)),
+                "setup", RunnerErrorDetail(code="SETUP_ERROR", message=str(exc)),
             ) from exc
         setup_elapsed = time.time() - start_wall
         if setup_elapsed > limits.setup_timeout_s:
@@ -214,8 +136,8 @@ class InProcessRunner:
             )
         self._started = True
 
-    def predict(self, circuit: Circuit, budget: int) -> Iterator[DepthRowOutcome]:
-        if not self._started or self._estimator is None or self._limits is None:
+    def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
+        if not self._started or self._estimator is None:
             raise RunnerError(
                 "predict",
                 RunnerErrorDetail(
@@ -223,72 +145,8 @@ class InProcessRunner:
                     message="Runner must be started before calling predict.",
                 ),
             )
-
-        start_wall = time.time()
-        try:
-            raw_predictions = self._estimator.predict(circuit, budget)
-        except Exception as exc:
-            yield DepthRowOutcome(
-                depth_index=0, row=None,
-                wall_time_s=time.time() - start_wall,
-                status="error", error_message=str(exc),
-            )
-            return
-
-        try:
-            output_iter = iter(cast(Any, raw_predictions))
-        except TypeError:
-            yield DepthRowOutcome(
-                depth_index=0, row=None,
-                wall_time_s=time.time() - start_wall,
-                status="error",
-                error_message="Estimator must return an iterator of depth-row outputs.",
-            )
-            return
-
-        for depth_index in range(circuit.d):
-            try:
-                raw_row = next(output_iter)
-            except StopIteration:
-                yield DepthRowOutcome(
-                    depth_index=depth_index, row=None,
-                    wall_time_s=time.time() - start_wall,
-                    status="error",
-                    error_message="Estimator must emit exactly max_depth rows.",
-                )
-                return
-            except Exception as exc:
-                yield DepthRowOutcome(
-                    depth_index=depth_index, row=None,
-                    wall_time_s=time.time() - start_wall,
-                    status="error",
-                    error_message=f"Estimator stream failed at depth {depth_index}: {exc}",
-                )
-                return
-
-            elapsed = time.time() - start_wall
-            try:
-                row = validate_depth_row(raw_row, width=circuit.n, depth_index=depth_index)
-            except ValueError as exc:
-                yield DepthRowOutcome(
-                    depth_index=depth_index, row=None,
-                    wall_time_s=elapsed, status="error",
-                    error_message=str(exc),
-                )
-                return
-
-            yield DepthRowOutcome(
-                depth_index=depth_index, row=row,
-                wall_time_s=elapsed, status="ok",
-            )
-
-        # Check for extra rows (silently consume)
-        try:
-            _extra = next(output_iter)
-        except StopIteration:
-            pass
-        except Exception:
-            pass
+        raw = self._estimator.predict(mlp, budget)
+        return validate_predictions(raw, depth=mlp.depth, width=mlp.width)
 
     def close(self) -> None:
         if self._estimator is not None:
@@ -297,83 +155,63 @@ class InProcessRunner:
                 teardown()
         self._estimator = None
         self._limits = None
+        self._context = None
         self._started = False
 
 
 class SubprocessRunner:
-    """Runner that executes estimators in a dedicated subprocess worker."""
-
-    def __init__(
-        self,
-        *,
-        worker_command: list[str] | None = None,
-    ) -> None:
+    def __init__(self, *, worker_command: Optional[List[str]] = None) -> None:
         self._worker_command = (
             worker_command
             if worker_command is not None
-            else [sys.executable, "-m", "circuit_estimation.subprocess_worker"]
+            else [sys.executable, "-m", "network_estimation.subprocess_worker"]
         )
-        self._process: subprocess.Popen[str] | None = None
-        self._limits: ResourceLimits | None = None
+        self._process: Optional[subprocess.Popen] = None
+        self._limits: Optional[ResourceLimits] = None
+        self._context: Optional[SetupContext] = None
         self._started = False
 
     def start(
-        self,
-        entrypoint: EstimatorEntrypoint,
-        context: SetupContext,
-        limits: ResourceLimits,
+        self, entrypoint: EstimatorEntrypoint, context: SetupContext, limits: ResourceLimits,
     ) -> None:
         self.close()
         self._limits = limits
+        self._context = context
         self._process = subprocess.Popen(
             self._worker_command,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            env=self._worker_env(),
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, bufsize=1, env=self._worker_env(),
         )
-        self._send_request(
-            {
-                "command": "start",
-                "entrypoint": {
-                    "file_path": str(entrypoint.file_path),
-                    "class_name": entrypoint.class_name,
-                },
-                "context": {
-                    "width": context.width,
-                    "max_depth": context.max_depth,
-                    "budgets": list(context.budgets),
-                    "time_tolerance": context.time_tolerance,
-                    "api_version": context.api_version,
-                    "scratch_dir": context.scratch_dir,
-                },
-            }
-        )
+        self._send_request({
+            "command": "start",
+            "entrypoint": {
+                "file_path": str(entrypoint.file_path),
+                "class_name": entrypoint.class_name,
+            },
+            "context": {
+                "width": context.width,
+                "depth": context.depth,
+                "estimator_budget": context.estimator_budget,
+                "api_version": context.api_version,
+                "scratch_dir": context.scratch_dir,
+            },
+        })
         try:
             response = self._read_response(timeout_s=limits.setup_timeout_s)
         except TimeoutError as exc:
             self._terminate_process()
             raise RunnerError(
                 "setup",
-                RunnerErrorDetail(
-                    code="SETUP_TIMEOUT",
-                    message="worker setup timed out waiting for startup response.",
-                ),
+                RunnerErrorDetail(code="SETUP_TIMEOUT", message="worker setup timed out."),
             ) from exc
         except RunnerError as exc:
             stderr_tail = self._read_stderr_tail()
-            detail_message = exc.detail.message
+            msg = exc.detail.message
             if stderr_tail:
-                detail_message = f"{detail_message} stderr: {stderr_tail}"
+                msg = f"{msg} stderr: {stderr_tail}"
             self._terminate_process()
             raise RunnerError(
-                "setup",
-                RunnerErrorDetail(
-                    code="SETUP_PROTOCOL_ERROR",
-                    message=detail_message,
-                ),
+                "setup", RunnerErrorDetail(code="SETUP_PROTOCOL_ERROR", message=msg),
             ) from exc
         if response.get("status") != "ok":
             raise RunnerError(
@@ -385,87 +223,44 @@ class SubprocessRunner:
             )
         self._started = True
 
-    def predict(self, circuit: Circuit, budget: int) -> Iterator[DepthRowOutcome]:
+    def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
         if not self._started or self._process is None or self._limits is None:
             raise RunnerError(
                 "predict",
+                RunnerErrorDetail(code="RUNNER_NOT_STARTED", message="Runner must be started."),
+            )
+        self._send_request({
+            "command": "predict",
+            "budget": int(budget),
+            "mlp": _mlp_to_payload(mlp),
+        })
+        try:
+            response = self._read_response(timeout_s=self._limits.predict_timeout_s)
+        except TimeoutError:
+            self._terminate_process()
+            self._started = False
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(code="PREDICT_TIMEOUT", message="predict timed out."),
+            )
+        except RunnerError:
+            raise
+
+        if response.get("status") == "error":
+            raise RunnerError(
+                "predict",
                 RunnerErrorDetail(
-                    code="RUNNER_NOT_STARTED",
-                    message="Runner must be started before calling predict.",
+                    code="PREDICT_ERROR",
+                    message=str(response.get("error_message", "unknown error")),
                 ),
             )
-
-        start_wall = time.time()
-        try:
-            self._send_request(
-                {
-                    "command": "predict",
-                    "budget": int(budget),
-                    "circuit": _circuit_to_payload(circuit),
-                }
+        predictions_data = response.get("predictions")
+        if predictions_data is None:
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(code="PREDICT_NO_DATA", message="No predictions in response."),
             )
-        except RunnerError as exc:
-            yield DepthRowOutcome(
-                depth_index=0, row=None,
-                wall_time_s=time.time() - start_wall,
-                status="error", error_message=exc.detail.message,
-            )
-            return
-
-        # Read streaming responses — one JSON line per depth row
-        while True:
-            try:
-                response = self._read_response(timeout_s=self._limits.predict_timeout_s)
-            except TimeoutError:
-                self._terminate_process()
-                self._started = False
-                yield DepthRowOutcome(
-                    depth_index=-1, row=None,
-                    wall_time_s=time.time() - start_wall,
-                    status="error",
-                    error_message="predict timed out waiting for worker response.",
-                )
-                return
-            except RunnerError as exc:
-                yield DepthRowOutcome(
-                    depth_index=-1, row=None,
-                    wall_time_s=time.time() - start_wall,
-                    status="error",
-                    error_message=exc.detail.message,
-                )
-                return
-
-            status = response.get("status")
-            if status == "done":
-                return
-            elif status == "row":
-                elapsed = time.time() - start_wall
-                row_data = response.get("row")
-                row = np.asarray(row_data, dtype=np.float32) if row_data is not None else None
-                yield DepthRowOutcome(
-                    depth_index=int(response.get("depth_index", -1)),
-                    row=row,
-                    wall_time_s=elapsed,
-                    status="ok",
-                )
-            elif status == "error":
-                elapsed = time.time() - start_wall
-                yield DepthRowOutcome(
-                    depth_index=int(response.get("depth_index", -1)),
-                    row=None,
-                    wall_time_s=elapsed,
-                    status="error",
-                    error_message=str(response.get("error_message", "unknown worker error")),
-                )
-                # Continue reading until "done"
-            else:
-                yield DepthRowOutcome(
-                    depth_index=-1, row=None,
-                    wall_time_s=time.time() - start_wall,
-                    status="error",
-                    error_message=f"Unknown worker response status: {status}",
-                )
-                return
+        return np.asarray(predictions_data, dtype=np.float32)
 
     def close(self) -> None:
         if self._process is None:
@@ -480,16 +275,14 @@ class SubprocessRunner:
             self._terminate_process()
         self._process = None
         self._limits = None
+        self._context = None
         self._started = False
 
-    def _send_request(self, payload: dict[str, Any]) -> None:
+    def _send_request(self, payload: Dict[str, Any]) -> None:
         if self._process is None or self._process.stdin is None:
             raise RunnerError(
                 "predict",
-                RunnerErrorDetail(
-                    code="WORKER_IO_ERROR",
-                    message="Worker stdin is unavailable.",
-                ),
+                RunnerErrorDetail(code="WORKER_IO_ERROR", message="Worker stdin unavailable."),
             )
         try:
             self._process.stdin.write(json.dumps(payload) + "\n")
@@ -497,28 +290,17 @@ class SubprocessRunner:
         except BrokenPipeError as exc:
             raise RunnerError(
                 "predict",
-                RunnerErrorDetail(
-                    code="WORKER_BROKEN_PIPE",
-                    message="Worker process closed stdin unexpectedly.",
-                ),
+                RunnerErrorDetail(code="WORKER_BROKEN_PIPE", message="Worker stdin closed."),
             ) from exc
 
-    def _read_response(self, timeout_s: float) -> dict[str, Any]:
+    def _read_response(self, timeout_s: float) -> Dict[str, Any]:
         if self._process is None or self._process.stdout is None:
             raise RunnerError(
                 "predict",
-                RunnerErrorDetail(
-                    code="WORKER_IO_ERROR",
-                    message="Worker stdout is unavailable.",
-                ),
+                RunnerErrorDetail(code="WORKER_IO_ERROR", message="Worker stdout unavailable."),
             )
-        # Use a thread for readline to implement timeout. This is needed
-        # because selectors can miss data already buffered in Python's
-        # internal text buffer (e.g. when the worker sends multiple JSON
-        # lines in rapid succession).
         import threading
-
-        result: list[str] = []
+        result: List[str] = []
 
         def _read() -> None:
             assert self._process is not None and self._process.stdout is not None
@@ -529,42 +311,18 @@ class SubprocessRunner:
         reader.join(timeout=timeout_s)
         if reader.is_alive():
             raise TimeoutError("worker response timed out")
-        if not result:
+        if not result or result[0] == "":
             raise RunnerError(
                 "predict",
-                RunnerErrorDetail(
-                    code="WORKER_EOF",
-                    message="Worker closed stdout unexpectedly.",
-                ),
-            )
-        line = result[0]
-        if line == "":
-            raise RunnerError(
-                "predict",
-                RunnerErrorDetail(
-                    code="WORKER_EOF",
-                    message="Worker closed stdout unexpectedly.",
-                ),
+                RunnerErrorDetail(code="WORKER_EOF", message="Worker closed stdout."),
             )
         try:
-            payload = json.loads(line)
+            payload = json.loads(result[0])
         except json.JSONDecodeError as exc:
             raise RunnerError(
                 "predict",
-                RunnerErrorDetail(
-                    code="WORKER_PROTOCOL_ERROR",
-                    message="Worker returned invalid JSON response.",
-                    details={"raw": line.strip()},
-                ),
+                RunnerErrorDetail(code="WORKER_PROTOCOL_ERROR", message="Invalid JSON."),
             ) from exc
-        if not isinstance(payload, dict):
-            raise RunnerError(
-                "predict",
-                RunnerErrorDetail(
-                    code="WORKER_PROTOCOL_ERROR",
-                    message="Worker response must be a JSON object.",
-                ),
-            )
         return payload
 
     def _terminate_process(self) -> None:
@@ -580,12 +338,9 @@ class SubprocessRunner:
         if self._process.poll() is None:
             return ""
         stderr = self._process.stderr.read().strip()
-        if not stderr:
-            return ""
-        lines = stderr.splitlines()
-        return lines[-1]
+        return stderr.splitlines()[-1] if stderr else ""
 
-    def _worker_env(self) -> dict[str, str]:
+    def _worker_env(self) -> Dict[str, str]:
         env = dict(os.environ)
         src_root = str(Path(__file__).resolve().parents[1])
         current = env.get("PYTHONPATH")
