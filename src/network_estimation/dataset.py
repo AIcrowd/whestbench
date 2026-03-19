@@ -6,24 +6,21 @@ import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 from numpy.typing import NDArray
 
-from .domain import Circuit, Layer
-from .generation import random_circuit
+from .domain import MLP
+from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
-from .scoring import sampling_baseline_time
-from .simulation import empirical_mean
+from .simulation import output_stats
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "2.0"
 
 
-def dataset_file_hash(path: Path | str) -> str:
-    """Return the SHA-256 hex digest of a dataset file."""
+def dataset_file_hash(path: "Path | str") -> str:
     import hashlib
-
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
@@ -31,179 +28,113 @@ def dataset_file_hash(path: Path | str) -> str:
     return h.hexdigest()
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class DatasetBundle:
-    """In-memory representation of a loaded evaluation dataset."""
-
-    metadata: dict[str, Any]
-    circuits: list[Circuit]
-    ground_truth_means: NDArray[np.float32]
-    baseline_times: NDArray[np.float64]
+    metadata: Dict[str, Any]
+    mlps: List[MLP]
+    all_layer_means: NDArray[np.float32]
+    final_means: NDArray[np.float32]
+    avg_variances: List[float]
 
     @property
-    def n_circuits(self) -> int:
-        return len(self.circuits)
+    def n_mlps(self) -> int:
+        return len(self.mlps)
 
 
 def create_dataset(
     *,
-    n_circuits: int,
+    n_mlps: int,
     n_samples: int,
     width: int,
-    max_depth: int,
-    budgets: list[int],
-    seed: int | None = None,
-    time_tolerance: float = 0.1,
-    output_path: Path | str,
-    progress: Any | None = None,
+    depth: int,
+    estimator_budget: int,
+    seed: Optional[int] = None,
+    output_path: "Path | str",
+    progress: Optional[Any] = None,
 ) -> Path:
-    """Generate circuits, sample ground truth, compute baselines, and save.
-
-    Args:
-        n_circuits: Number of random circuits to generate.
-        n_samples: Samples per circuit for ground truth estimation.
-        width: Wire count per circuit.
-        max_depth: Number of layers per circuit.
-        budgets: Budget values for baseline timing.
-        seed: RNG seed; auto-generated if ``None``.
-        time_tolerance: Time tolerance factor stored in metadata.
-        output_path: Destination for the ``.npz`` file.
-        progress: Optional callback ``(dict) -> None`` for progress events.
-
-    Returns:
-        Resolved path of the saved dataset file.
-    """
+    """Generate MLPs, compute ground truth, and save to .npz."""
     output_path = Path(output_path)
     if seed is None:
         seed = int(np.random.SeedSequence().entropy)  # type: ignore[arg-type]
     rng = np.random.default_rng(seed)
 
-    # --- Generate circuits ---
-    circuits: list[Circuit] = []
-    for i in range(n_circuits):
-        circuits.append(random_circuit(width, max_depth, rng))
+    mlps: List[MLP] = []
+    for i in range(n_mlps):
+        mlps.append(sample_mlp(width, depth, rng))
         if progress is not None:
-            progress({"phase": "generating", "completed": i + 1, "total": n_circuits})
+            progress({"phase": "generating", "completed": i + 1, "total": n_mlps})
 
-    # --- Pack circuit arrays ---
-    circuits_first = np.stack(
-        [np.stack([layer.first for layer in c.gates]) for c in circuits]
-    ).astype(np.int32)
-    circuits_second = np.stack(
-        [np.stack([layer.second for layer in c.gates]) for c in circuits]
-    ).astype(np.int32)
-    circuits_coeff = np.stack(
-        [
-            np.stack(
-                [
-                    np.stack(
-                        [
-                            layer.const,
-                            layer.first_coeff,
-                            layer.second_coeff,
-                            layer.product_coeff,
-                        ],
-                        axis=-1,
-                    )
-                    for layer in c.gates
-                ]
-            )
-            for c in circuits
-        ]
+    # Pack weight matrices: shape (n_mlps, depth, width, width)
+    weights_array = np.stack(
+        [np.stack(mlp.weights) for mlp in mlps]
     ).astype(np.float32)
 
-    # --- Sample ground truth ---
-    means_list: list[NDArray[np.float32]] = []
-    for i, circuit in enumerate(circuits):
-        depth_means = np.stack(list(empirical_mean(circuit, n_samples)))
-        means_list.append(depth_means)
+    # Compute ground truth
+    all_means_list: List[NDArray[np.float32]] = []
+    final_means_list: List[NDArray[np.float32]] = []
+    avg_variances: List[float] = []
+    for i, mlp in enumerate(mlps):
+        all_means, final_mean, avg_var = output_stats(mlp, n_samples)
+        all_means_list.append(all_means)
+        final_means_list.append(final_mean)
+        avg_variances.append(avg_var)
         if progress is not None:
-            progress({"phase": "sampling", "completed": i + 1, "total": n_circuits})
-    ground_truth_means = np.stack(means_list).astype(np.float32)
+            progress({"phase": "sampling", "completed": i + 1, "total": n_mlps})
 
-    # --- Compute baselines ---
-    baseline_rows: list[list[float]] = []
-    for bi, budget in enumerate(budgets):
-        baseline_rows.append(sampling_baseline_time(budget, width, max_depth))
-        if progress is not None:
-            progress({"phase": "baselines", "completed": bi + 1, "total": len(budgets)})
-    baseline_times = np.array(baseline_rows, dtype=np.float64)
+    all_layer_means = np.stack(all_means_list).astype(np.float32)
+    final_means = np.stack(final_means_list).astype(np.float32)
 
-    # --- Metadata ---
-    metadata = {
+    metadata: Dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "seed": seed,
-        "n_circuits": n_circuits,
+        "n_mlps": n_mlps,
         "n_samples": n_samples,
         "width": width,
-        "max_depth": max_depth,
-        "budgets": budgets,
-        "time_tolerance": time_tolerance,
+        "depth": depth,
+        "estimator_budget": estimator_budget,
         "hardware": collect_hardware_fingerprint(),
     }
 
     np.savez(
         output_path,
         metadata=np.array(json.dumps(metadata)),
-        circuits_first=circuits_first,
-        circuits_second=circuits_second,
-        circuits_coeff=circuits_coeff,
-        ground_truth_means=ground_truth_means,
-        baseline_times=baseline_times,
+        weights=weights_array,
+        all_layer_means=all_layer_means,
+        final_means=final_means,
+        avg_variances=np.array(avg_variances, dtype=np.float64),
     )
     return output_path
 
 
-def load_dataset(path: Path | str) -> DatasetBundle:
-    """Load a dataset bundle from a ``.npz`` file.
-
-    Raises:
-        ValueError: If the file is missing ``schema_version`` in metadata.
-    """
+def load_dataset(path: "Path | str") -> DatasetBundle:
     path = Path(path)
     data = np.load(path, allow_pickle=False)
-
-    metadata_raw = str(data["metadata"])
-    metadata = json.loads(metadata_raw)
+    metadata = json.loads(str(data["metadata"]))
 
     if "schema_version" not in metadata:
-        raise ValueError(
-            "Invalid dataset file: missing 'schema_version' in metadata."
-        )
+        raise ValueError("Invalid dataset: missing schema_version.")
 
-    circuits_first = data["circuits_first"]
-    circuits_second = data["circuits_second"]
-    circuits_coeff = data["circuits_coeff"]
-    ground_truth_means = data["ground_truth_means"].astype(np.float32)
-    baseline_times = data["baseline_times"].astype(np.float64)
+    weights_array = data["weights"].astype(np.float32)
+    all_layer_means = data["all_layer_means"].astype(np.float32)
+    final_means = data["final_means"].astype(np.float32)
+    avg_variances = data["avg_variances"].astype(np.float64).tolist()
 
-    n_circuits = int(circuits_first.shape[0])
-    depth = int(circuits_first.shape[1])
-    width = int(circuits_first.shape[2])
+    n_mlps = int(weights_array.shape[0])
+    depth = int(weights_array.shape[1])
+    width = int(weights_array.shape[2])
 
-    circuits: list[Circuit] = []
-    for i in range(n_circuits):
-        gates: list[Layer] = []
-        for j in range(depth):
-            coeff = circuits_coeff[i, j]  # shape (width, 4)
-            gates.append(
-                Layer(
-                    first=circuits_first[i, j].astype(np.int32),
-                    second=circuits_second[i, j].astype(np.int32),
-                    const=coeff[:, 0].astype(np.float32),
-                    first_coeff=coeff[:, 1].astype(np.float32),
-                    second_coeff=coeff[:, 2].astype(np.float32),
-                    product_coeff=coeff[:, 3].astype(np.float32),
-                )
-            )
-        circuit = Circuit(n=width, d=depth, gates=gates)
-        circuit.validate()
-        circuits.append(circuit)
+    mlps: List[MLP] = []
+    for i in range(n_mlps):
+        layer_weights = [weights_array[i, j] for j in range(depth)]
+        mlp = MLP(width=width, depth=depth, weights=layer_weights)
+        mlp.validate()
+        mlps.append(mlp)
 
     return DatasetBundle(
         metadata=metadata,
-        circuits=circuits,
-        ground_truth_means=ground_truth_means,
-        baseline_times=baseline_times,
+        mlps=mlps,
+        all_layer_means=all_layer_means,
+        final_means=final_means,
+        avg_variances=avg_variances,
     )
