@@ -26,6 +26,7 @@ class ContestSpec:
     ground_truth_budget: int
 
     def validate(self) -> None:
+        """Validate contest specification parameters are all positive."""
         if self.width <= 0:
             raise ValueError("width must be positive.")
         if self.depth <= 0:

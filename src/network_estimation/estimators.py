@@ -34,6 +34,7 @@ class MeanPropagationEstimator(BaseEstimator):
     """
 
     def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
+        """Predict per-layer output means via first-moment propagation through ReLU layers."""
         _ = budget
         width = mlp.width
         mu = np.zeros(width, dtype=np.float64)
@@ -67,6 +68,7 @@ class CovariancePropagationEstimator(BaseEstimator):
     """Full covariance propagation estimator for ReLU MLPs."""
 
     def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
+        """Predict per-layer output means via full covariance propagation through ReLU layers."""
         _ = budget
         width = mlp.width
         mu = np.zeros(width, dtype=np.float64)
@@ -116,6 +118,7 @@ class CombinedEstimator(BaseEstimator):
         self._covariance_estimator = covariance_estimator or CovariancePropagationEstimator()
 
     def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
+        """Route prediction to covariance or mean estimator based on budget threshold."""
         if budget >= self._COVARIANCE_BUDGET_MULTIPLIER * mlp.width:
             return self._covariance_estimator.predict(mlp, budget)
         return self._mean_estimator.predict(mlp, budget)

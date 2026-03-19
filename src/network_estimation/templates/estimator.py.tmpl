@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
-
 import numpy as np
+from numpy.typing import NDArray
 
-from circuit_estimation import BaseEstimator, Circuit
+from network_estimation import BaseEstimator, MLP
 
 
 class Estimator(BaseEstimator):
-    def predict(self, circuit: Circuit, budget: int) -> Iterator[np.ndarray]:
+    def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
         _ = budget
-        for _ in range(circuit.d):
-            yield np.zeros((circuit.n,), dtype=np.float32)
+        return np.zeros((mlp.depth, mlp.width), dtype=np.float32)
