@@ -35,7 +35,7 @@ class MLP:
     weights: Weights  # len == depth, each shape (width, width)
 
     def validate(self) -> None:
-        # width > 0, depth >= 0, len(weights) == depth
+        # width > 0, depth > 0, len(weights) == depth
         # each matrix is (width, width) float32
 ```
 
@@ -130,19 +130,21 @@ class ContestData:
     mlps: list[MLP]
     all_layer_targets: list[NDArray[np.float32]]  # (depth, width) per MLP
     final_targets: list[NDArray[np.float32]]       # (width,) per MLP
-    avg_variance: float                             # for sampling_mse normalization
+    avg_variances: list[float]                      # per-MLP final-layer avg variance
 ```
+
+`ground_truth_budget` is the `n_samples` passed to `output_stats()` when computing ground truth means and variances. It controls the accuracy of the ground truth — larger values give more precise targets.
 
 ### Scoring flow per MLP
 
-1. **Baseline time** — run forward pass with `estimator_budget` samples, measure wall time.
+1. **Baseline time** — draw `estimator_budget` random Gaussian inputs and run `run_mlp(mlp, inputs)`. Measure wall time. This wall time is the `time_budget` for this MLP.
 2. **Call estimator** — `predictions = estimator.predict(mlp, budget)` returns `(depth, width)`.
 3. **Time check** — if `time_spent > time_budget`, predictions become zeros.
-4. **Time credit** — `fraction_spent = max(time_spent / time_budget, 0.5)`.
-5. **Final-layer score** — `sampling_mse = avg_variance / (estimator_budget * fraction_spent)`, then `score = mse(final_predictions, final_targets) / sampling_mse`.
-6. **Secondary all-layer score** — same formula applied across all layers, reported but not the primary score.
+4. **Time credit** — `fraction_spent = max(time_spent / time_budget, 0.5)`. Estimators faster than 50% of baseline get no additional credit.
+5. **Final-layer score** — `sampling_mse = avg_variances[i] / (estimator_budget * fraction_spent)`, then `score = mean((final_predictions - final_targets) ** 2) / sampling_mse`. The MSE averages over the `width` dimension.
+6. **Secondary all-layer score** — `mean((all_layer_predictions - all_layer_targets) ** 2) / sampling_mse`, averaging over both depth and width dimensions. Uses the same final-layer `sampling_mse` normalization. This is a diagnostic metric only.
 
-Return: average score across all MLPs, plus report dict with per-MLP details.
+Return: average primary score across all MLPs, plus report dict with per-MLP details.
 
 ## Participant Interface (`sdk.py`)
 
@@ -201,6 +203,34 @@ No per-depth streaming. Validation of the `(depth, width)` return happens inline
 
 Match new `ContestSpec` fields.
 
+### `hardware.py` — No change
+
+Domain-agnostic hardware fingerprinting. Survives as-is.
+
+### `loader.py` — Rename internals
+
+Update the dynamic module naming prefix from `_circuit_estimation_submission_` to `_network_estimation_submission_`. No structural change.
+
+### `reporting.py` — Text updates
+
+Replace all circuit-domain terminology ("Circuit Estimation Report", `cestim` references, circuit labels) with MLP/network equivalents. Structural layout stays the same.
+
+### `subprocess_worker.py` — Rewrite
+
+Replace circuit deserialization (`_payload_to_circuit`) with MLP deserialization (`_payload_to_mlp`). Update `SetupContext` construction to use new fields (`depth`, `estimator_budget` instead of `max_depth`, `budgets`, `time_tolerance`). Remove streaming depth-row protocol — worker returns a single `(depth, width)` array per predict call.
+
+### `visualizer.py` — Text updates
+
+Update "circuit-explorer" references to "network-explorer" or equivalent. Functionality unchanged.
+
+### `__init__.py` — Update exports
+
+Replace `Circuit`, `Layer`, `VectorizedCircuit`, `random_circuit`, `random_gates` with `MLP`, `sample_mlp`, and new public API.
+
+### `main.py` — Update import
+
+Change `from circuit_estimation.cli` to `from network_estimation.cli`.
+
 ### `cli.py` — Rename
 
 Entrypoint `cestim` becomes `nestim`. Update subcommands and help text.
@@ -219,7 +249,7 @@ Problem setup, scoring model, estimator contract, CLI reference, how-to guides, 
 
 ### `pyproject.toml` — Rename
 
-Package name, `[project.scripts]` entry from `cestim` to `nestim`.
+Package name, `[project.scripts]` entries: `cestim` becomes `nestim`, `circuit-estimation` becomes `network-estimation`.
 
 ## Modules Deleted
 
@@ -229,13 +259,21 @@ Package name, `[project.scripts]` entry from `cestim` to `nestim`.
 
 | Module | Change |
 |--------|--------|
+| `__init__.py` | Update exports: `MLP`, `sample_mlp`, new public API |
 | `domain.py` | `Layer`/`Circuit`/`VectorizedCircuit` → `MLP` |
 | `generation.py` | `random_gates`/`random_circuit` → `sample_mlp` |
 | `simulation.py` | Circuit forward pass → MLP + ReLU forward pass |
 | `scoring.py` | Multi-budget per-depth → single-budget final-layer scoring |
 | `sdk.py` | `predict(Circuit, int) -> Iterator` → `predict(MLP, int) -> NDArray` |
 | `runner.py` | Drop streaming, simplify to single-array predict |
+| `subprocess_worker.py` | Circuit deserialization → MLP deserialization, drop streaming protocol |
 | `dataset.py` | Circuit packing → weight matrix packing |
 | `estimators.py` | Bilinear gate math → ReLU moment propagation math |
 | `protocol.py` | Field updates |
+| `hardware.py` | No change (domain-agnostic) |
+| `loader.py` | Rename dynamic module prefix |
+| `reporting.py` | Replace circuit terminology with MLP/network terminology |
+| `visualizer.py` | Update "circuit-explorer" references |
 | `cli.py` | `cestim` → `nestim` |
+| `main.py` | Update import path |
+| `pyproject.toml` | Package name, script entries |
