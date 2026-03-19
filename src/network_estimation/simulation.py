@@ -1,60 +1,81 @@
-"""Circuit execution helpers for batched simulation and empirical moments.
+"""MLP execution helpers for batched forward passes and empirical moments.
 
-These utilities execute a sampled circuit layer-by-layer over many random
-inputs and expose per-layer outputs/means used by score computation.
+These utilities run an MLP layer-by-layer over random inputs and expose
+per-layer outputs/means used by score computation.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from typing import List, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
 
-from .domain import Circuit
+from .domain import MLP
 
 
-def run_batched(circuit: Circuit, inputs: NDArray[np.float16]) -> Iterator[NDArray[np.float16]]:
-    """Yield batched outputs after each layer for a fixed input matrix.
-
-    Args:
-        circuit: Circuit to execute.
-        inputs: Input matrix of shape ``(trials, circuit.n)``.
-
-    Yields:
-        ``np.float16`` arrays of shape ``(trials, circuit.n)``, one per layer.
-    """
-    x: NDArray[np.float16] = inputs
-    for layer in circuit.gates:
-        # Runtime baseline and evaluator paths both use float16 execution to
-        # keep simulation cost aligned with intended contest conditions.
-        x = (
-            layer.const
-            + layer.first_coeff * x[:, layer.first]
-            + layer.second_coeff * x[:, layer.second]
-            + layer.product_coeff * x[:, layer.first] * x[:, layer.second]
-        ).astype(np.float16)
-        yield x
+def relu(x: NDArray[np.float32]) -> NDArray[np.float32]:
+    """Element-wise ReLU activation."""
+    return np.maximum(x, np.float32(0.0))
 
 
-def run_on_random(circuit: Circuit, trials: int) -> Iterator[NDArray[np.float16]]:
-    """Sample random ``{-1, +1}`` inputs and yield outputs after each layer.
+def run_mlp(mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
+    """Forward pass returning final-layer activations.
 
     Args:
-        circuit: Circuit to execute.
-        trials: Number of random input vectors to draw.
+        mlp: MLP to execute.
+        inputs: Input matrix of shape ``(samples, mlp.width)``.
+
+    Returns:
+        Activations of shape ``(samples, mlp.width)`` after the last layer.
     """
-    if trials <= 0:
-        raise ValueError("trials must be positive.")
-    inputs = np.random.choice([-1.0, 1.0], size=(trials, circuit.n)).astype(np.float16)
-    yield from run_batched(circuit, inputs)
+    x = inputs
+    for w in mlp.weights:
+        x = relu(x @ w)
+    return x
 
 
-def empirical_mean(circuit: Circuit, trials: int) -> Iterator[NDArray[np.float32]]:
-    """Yield empirical per-wire means for each layer under random inputs.
+def run_mlp_all_layers(
+    mlp: MLP, inputs: NDArray[np.float32]
+) -> List[NDArray[np.float32]]:
+    """Forward pass returning activations after each layer.
 
-    Means are accumulated from float16 simulation outputs but converted to
-    float32 before reduction to avoid unnecessary precision loss in averaging.
+    Args:
+        mlp: MLP to execute.
+        inputs: Input matrix of shape ``(samples, mlp.width)``.
+
+    Returns:
+        List of ``depth`` arrays, each shape ``(samples, mlp.width)``.
     """
-    for output in run_on_random(circuit, trials):
-        yield np.mean(output.astype(np.float32), axis=0)
+    x = inputs
+    layers: List[NDArray[np.float32]] = []
+    for w in mlp.weights:
+        x = relu(x @ w)
+        layers.append(x)
+    return layers
+
+
+def output_stats(
+    mlp: MLP, n_samples: int
+) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
+    """Compute per-layer means and average variance of the final layer.
+
+    Args:
+        mlp: MLP to evaluate.
+        n_samples: Number of random Gaussian N(0,1) input vectors.
+
+    Returns:
+        all_layer_means: shape ``(depth, width)`` — mean activations per layer.
+        final_mean: shape ``(width,)`` — mean activations at the final layer.
+        avg_variance: scalar — average per-neuron variance at the final layer,
+            used for ``sampling_mse`` normalization.
+    """
+    inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
+    layer_outputs = run_mlp_all_layers(mlp, inputs)
+    all_layer_means = np.stack(
+        [np.mean(out, axis=0) for out in layer_outputs]
+    ).astype(np.float32)
+    final_outputs = layer_outputs[-1]
+    final_mean = np.mean(final_outputs, axis=0).astype(np.float32)
+    avg_variance = float(np.mean(np.var(final_outputs, axis=0)))
+    return all_layer_means, final_mean, avg_variance
