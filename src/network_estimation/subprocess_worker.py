@@ -1,113 +1,64 @@
-"""Subprocess worker entrypoint for running participant estimators in isolation."""
+"""Subprocess worker for running participant estimators in isolation."""
 
 from __future__ import annotations
 
 import json
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Optional
 
 import numpy as np
 
-from .domain import Circuit, Layer
+from .domain import MLP
 from .loader import load_estimator_from_path
 from .sdk import BaseEstimator, SetupContext
-from .streaming import validate_depth_row
 
 
-def _payload_to_circuit(payload: dict[str, Any]) -> Circuit:
-    gates: list[Layer] = []
-    for gate_payload in payload["gates"]:
-        gates.append(
-            Layer(
-                first=np.asarray(gate_payload["first"], dtype=np.int32),
-                second=np.asarray(gate_payload["second"], dtype=np.int32),
-                first_coeff=np.asarray(gate_payload["first_coeff"], dtype=np.float32),
-                second_coeff=np.asarray(gate_payload["second_coeff"], dtype=np.float32),
-                const=np.asarray(gate_payload["const"], dtype=np.float32),
-                product_coeff=np.asarray(gate_payload["product_coeff"], dtype=np.float32),
-            )
-        )
-    circuit = Circuit(n=int(payload["n"]), d=int(payload["d"]), gates=gates)
-    circuit.validate()
-    return circuit
+def _payload_to_mlp(payload: dict) -> MLP:
+    weights = [
+        np.asarray(w, dtype=np.float32) for w in payload["weights"]
+    ]
+    mlp = MLP(
+        width=int(payload["width"]),
+        depth=int(payload["depth"]),
+        weights=weights,
+    )
+    mlp.validate()
+    return mlp
 
 
-def _write_response(payload: dict[str, Any]) -> None:
+def _write_response(payload: dict) -> None:
     sys.stdout.write(json.dumps(payload) + "\n")
     sys.stdout.flush()
 
 
-def _handle_predict(estimator: BaseEstimator, request: dict[str, Any]) -> None:
-    """Stream one JSON line per depth row back to the runner."""
+def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
     try:
-        circuit = _payload_to_circuit(request["circuit"])
+        mlp = _payload_to_mlp(request["mlp"])
         budget = int(request["budget"])
     except Exception as exc:
-        _write_response({"status": "error", "depth_index": 0, "error_message": str(exc)})
-        _write_response({"status": "done"})
+        _write_response({"status": "error", "error_message": str(exc)})
         return
 
     try:
-        raw_predictions = estimator.predict(circuit, budget)
+        predictions = estimator.predict(mlp, budget)
+        arr = np.asarray(predictions, dtype=np.float32)
+        if arr.shape != (mlp.depth, mlp.width):
+            _write_response({
+                "status": "error",
+                "error_message": f"Predictions shape {arr.shape} != ({mlp.depth}, {mlp.width})",
+            })
+            return
+        if not np.all(np.isfinite(arr)):
+            _write_response({"status": "error", "error_message": "Non-finite predictions."})
+            return
+        _write_response({"status": "ok", "predictions": arr.tolist()})
     except Exception as exc:
-        _write_response({"status": "error", "depth_index": 0, "error_message": str(exc)})
-        _write_response({"status": "done"})
-        return
-
-    try:
-        output_iter = iter(cast(Any, raw_predictions))
-    except TypeError:
-        _write_response({
-            "status": "error",
-            "depth_index": 0,
-            "error_message": "Estimator must return an iterator of depth-row outputs.",
-        })
-        _write_response({"status": "done"})
-        return
-
-    for depth_index in range(circuit.d):
-        try:
-            raw_row = next(output_iter)
-        except StopIteration:
-            _write_response({
-                "status": "error",
-                "depth_index": depth_index,
-                "error_message": "Estimator must emit exactly max_depth rows.",
-            })
-            _write_response({"status": "done"})
-            return
-        except Exception as exc:
-            _write_response({
-                "status": "error",
-                "depth_index": depth_index,
-                "error_message": f"Estimator stream failed at depth {depth_index}: {exc}",
-            })
-            _write_response({"status": "done"})
-            return
-
-        try:
-            row = validate_depth_row(raw_row, width=circuit.n, depth_index=depth_index)
-        except ValueError as exc:
-            _write_response({
-                "status": "error",
-                "depth_index": depth_index,
-                "error_message": str(exc),
-            })
-            _write_response({"status": "done"})
-            return
-
-        _write_response({
-            "status": "row",
-            "depth_index": depth_index,
-            "row": row.tolist(),
-        })
-
-    _write_response({"status": "done"})
+        _write_response({"status": "error", "error_message": str(exc)})
 
 
 def main() -> int:
-    estimator: BaseEstimator | None = None
+    estimator: Optional[BaseEstimator] = None
     for line in sys.stdin:
         raw = line.strip()
         if not raw:
@@ -115,45 +66,36 @@ def main() -> int:
         try:
             request = json.loads(raw)
         except json.JSONDecodeError:
-            _write_response(
-                {
-                    "status": "protocol_error",
-                    "error_message": "Invalid JSON request payload.",
-                }
-            )
+            _write_response({"status": "protocol_error", "error_message": "Invalid JSON."})
             continue
 
         command = request.get("command")
         if command == "start":
             try:
                 entrypoint = request["entrypoint"]
-                context_payload = request["context"]
+                ctx_payload = request["context"]
                 estimator, _ = load_estimator_from_path(
                     Path(entrypoint["file_path"]),
                     class_name=entrypoint.get("class_name"),
                 )
                 context = SetupContext(
-                    width=int(context_payload["width"]),
-                    max_depth=int(context_payload["max_depth"]),
-                    budgets=tuple(int(b) for b in context_payload["budgets"]),
-                    time_tolerance=float(context_payload["time_tolerance"]),
-                    api_version=str(context_payload["api_version"]),
+                    width=int(ctx_payload["width"]),
+                    depth=int(ctx_payload["depth"]),
+                    estimator_budget=int(ctx_payload["estimator_budget"]),
+                    api_version=str(ctx_payload["api_version"]),
                     scratch_dir=(
-                        str(context_payload["scratch_dir"])
-                        if context_payload.get("scratch_dir") is not None
+                        str(ctx_payload["scratch_dir"])
+                        if ctx_payload.get("scratch_dir") is not None
                         else None
                     ),
                 )
                 estimator.setup(context)
                 _write_response({"status": "ok"})
-            except Exception as exc:  # pragma: no cover - exercised via integration tests
+            except Exception as exc:
                 _write_response({"status": "runtime_error", "error_message": str(exc)})
         elif command == "predict":
             if estimator is None:
-                _write_response(
-                    {"status": "error", "depth_index": 0, "error_message": "Estimator not initialized."}
-                )
-                _write_response({"status": "done"})
+                _write_response({"status": "error", "error_message": "Estimator not initialized."})
                 continue
             _handle_predict(estimator, request)
         elif command == "close":
