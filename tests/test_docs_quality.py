@@ -192,14 +192,14 @@ def test_readme_links_primary_docs_pages():
         assert link in text
 
 
-def test_readme_documents_cestim_install_and_usage():
+def test_readme_documents_nestim_install_and_usage():
     # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
     assert "uv tool install -e ." in text
-    assert "cestim smoke-test" in text
-    assert "uv run --with-editable . cestim" in text
-    assert "uv run cestim --" not in text
+    assert "nestim smoke-test" in text
+    assert "uv run --with-editable . nestim" in text
+    assert "uv run nestim --" not in text
 
 
 def test_participant_docs_do_not_use_mermaid_blocks():
