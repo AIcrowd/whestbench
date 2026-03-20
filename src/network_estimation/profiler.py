@@ -1,5 +1,49 @@
 # src/network_estimation/profiler.py
-"""Profiling engine for simulation backends."""
+"""Profiling engine for simulation backends.
+
+Benchmarks every available simulation backend (numpy, pytorch, numba, jax,
+scipy, cython) head-to-head on the two core operations — ``run_mlp`` and
+``output_stats`` — across a configurable grid of network sizes and sample
+counts.
+
+Workflow
+--------
+1. **Discovery** — detect which backends are installed.
+2. **Correctness check** — each backend's outputs are compared to the NumPy
+   reference implementation before any timing is recorded.  Backends that
+   fail are excluded from the timing sweep.
+3. **Timing sweep** — for every (backend, operation, width, depth, n_samples)
+   combination the operation is timed ``n_iterations`` times (default 3).
+   Garbage collection is disabled during measurement.  Results are expressed
+   as median wall-clock seconds and as a speedup factor relative to NumPy.
+4. **Output** — a Rich-formatted terminal table and, optionally, a
+   machine-readable JSON file that includes hardware metadata and library
+   versions for reproducibility.
+
+CLI usage
+---------
+::
+
+    nestim profile-simulation                        # standard sweep, all backends
+    nestim profile-simulation --preset quick          # fast smoke test
+    nestim profile-simulation --preset exhaustive     # full matrix
+    nestim profile-simulation --backends numpy,pytorch
+    nestim profile-simulation --output results.json   # save JSON report
+
+Presets
+-------
+``quick``
+    One width (256), two depths, two sample counts — finishes in seconds.
+``standard`` *(default)*
+    Two widths, five depths, three sample counts — a few minutes.
+``exhaustive``
+    Three widths, five depths, five sample counts (up to 16.7 M) — thorough
+    but slow.
+
+See Also
+--------
+``nestim profile-simulation --help`` for the full list of CLI flags.
+"""
 
 from __future__ import annotations
 
@@ -25,7 +69,17 @@ from .simulation_backends import ALL_BACKEND_NAMES, INSTALL_HINTS, get_available
 
 @dataclass
 class PresetConfig:
-    """Parameter sweep grid for profiling."""
+    """Parameter sweep grid for profiling.
+
+    Each preset defines a cross-product of network shapes and sample counts.
+    Every (width, depth, n_samples) triple is evaluated for both ``run_mlp``
+    and ``output_stats``.
+
+    Attributes:
+        widths: Hidden-layer widths to benchmark (e.g. ``[64, 256]``).
+        depths: Network depths (number of layers) to benchmark.
+        n_samples_list: Number of random input samples per timing call.
+    """
 
     widths: List[int]
     depths: List[int]
@@ -53,6 +107,14 @@ PRESETS: Dict[str, PresetConfig] = {
 
 @dataclass
 class CorrectnessResult:
+    """Result of a pre-flight correctness check for one backend.
+
+    Attributes:
+        backend_name: Identifier of the backend that was tested.
+        passed: ``True`` if the backend matched the NumPy reference.
+        error: Human-readable error message when ``passed`` is ``False``.
+    """
+
     backend_name: str
     passed: bool
     error: str = ""
@@ -60,6 +122,20 @@ class CorrectnessResult:
 
 @dataclass
 class TimingResult:
+    """Timing measurement for one (backend, operation, parameter) combination.
+
+    Attributes:
+        backend_name: Identifier of the backend.
+        operation: ``"run_mlp"`` or ``"output_stats"``.
+        width: Hidden-layer width of the network used.
+        depth: Depth (number of layers) of the network used.
+        n_samples: Number of random input samples.
+        times: Raw wall-clock seconds for each iteration.
+        median_time: Median of *times* (seconds).
+        speedup_vs_numpy: ``numpy_median / median_time``.
+            Values > 1 mean the backend is faster than NumPy.
+    """
+
     backend_name: str
     operation: str
     width: int
@@ -121,7 +197,20 @@ def _collect_backend_versions(backend_names: List[str]) -> Dict[str, str]:
 def correctness_check(
     backend: SimulationBackend,
 ) -> CorrectnessResult:
-    """Pre-flight correctness check against NumPy reference."""
+    """Pre-flight correctness check against the NumPy reference implementation.
+
+    Validates both ``run_mlp`` (exact match, rtol=1e-5, atol=1e-6) and
+    ``output_stats`` (statistical match, atol=0.15 for means, relative
+    tolerance for variance).  A backend that fails this check is excluded
+    from subsequent timing sweeps.
+
+    Args:
+        backend: The simulation backend instance to verify.
+
+    Returns:
+        A :class:`CorrectnessResult` indicating pass/fail and any error
+        details.
+    """
     try:
         mlp = sample_mlp(8, 4, np.random.default_rng(42))
         inputs = np.random.default_rng(123).standard_normal((64, 8)).astype(np.float32)
@@ -173,11 +262,28 @@ def run_timing_sweep(
     n_iterations: int = 3,
     progress_callback: Optional[Any] = None,
 ) -> Tuple[List[TimingResult], Dict[str, List[float]]]:
-    """Run timing sweep across all backends and parameter combos.
+    """Run the full timing sweep across all backends and parameter combinations.
+
+    For each (width, depth, n_samples, operation) tuple the sweep:
+
+    1. Performs an untimed warmup call (critical for JIT backends like Numba
+       and JAX).
+    2. Disables garbage collection and records *n_iterations* timed calls.
+    3. Computes the median time and speedup relative to the NumPy baseline.
+
+    Args:
+        backends: Mapping of backend name to instantiated backend.  Should
+            only contain backends that already passed the correctness check.
+        preset: The parameter grid to iterate over.
+        n_iterations: Number of timed repetitions per combination (default 3).
+        progress_callback: Optional callable invoked after each measurement.
+            Receives keyword arguments ``backend_name``, ``operation``,
+            ``width``, ``depth``, and ``n_samples``.
 
     Returns:
-        results: List of TimingResult for each (backend, operation, params) combo
-        numpy_baselines: Dict mapping "op:w:d:n" -> list of numpy times
+        A tuple of ``(results, numpy_baselines)`` where *results* is a list
+        of :class:`TimingResult` objects and *numpy_baselines* maps
+        ``"op:width:depth:n_samples"`` keys to the raw NumPy timing lists.
     """
     results: List[TimingResult] = []
     numpy_baselines: Dict[str, List[float]] = {}
@@ -238,7 +344,13 @@ def run_timing_sweep(
                         ))
 
                         if progress_callback:
-                            progress_callback()
+                            progress_callback(
+                                backend_name=backend_name,
+                                operation=op,
+                                width=width,
+                                depth=depth,
+                                n_samples=n_samples,
+                            )
 
     return results, numpy_baselines
 
@@ -248,7 +360,20 @@ def format_terminal_table(
     timing_results: List[TimingResult],
     skipped_backends: Dict[str, str],
 ) -> str:
-    """Format results as a Rich table string."""
+    """Format profiling results as a Rich-rendered terminal table.
+
+    The output includes three sections:
+
+    * **Skipped backends** — lists backends that were not installed, with
+      ``pip install`` hints.
+    * **Correctness check** — pass/fail status for each backend.
+    * **Timing table** — median time, speedup vs NumPy (green for faster,
+      red for slower), and correctness status per combination.
+
+    Returns:
+        A string containing ANSI-styled output suitable for printing to a
+        terminal.
+    """
     from rich.console import Console
     from rich.table import Table
     import io
@@ -314,7 +439,18 @@ def format_json_output(
     skipped_backends: Dict[str, str],
     backend_names: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Format results as a JSON-serializable dict."""
+    """Format profiling results as a JSON-serializable dictionary.
+
+    The top-level keys are:
+
+    * ``hardware`` — platform, CPU, Python version (for reproducibility).
+    * ``backend_versions`` — version strings for each library.
+    * ``skipped_backends`` — backends not installed, with install hints.
+    * ``correctness`` — per-backend pass/fail + error message.
+    * ``timing`` — per-combination raw times, median, and speedup.
+
+    Use ``--output results.json`` on the CLI to write this automatically.
+    """
     return {
         "hardware": _collect_hardware_info(),
         "backend_versions": _collect_backend_versions(backend_names or []),
@@ -345,11 +481,43 @@ def run_profile(
     output_path: Optional[str] = None,
     show_progress: bool = False,
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
-    """Main profiling entry point.
+    """Run the complete profiling pipeline and return formatted results.
+
+    This is the main entry point used by ``nestim profile-simulation``.
+    It discovers backends, runs correctness checks, performs the timing
+    sweep, and formats the output.
+
+    Args:
+        preset_name: One of ``"quick"``, ``"standard"``, or ``"exhaustive"``.
+            Controls the size of the parameter grid.  See module docstring
+            for details.
+        backend_filter: If provided, only these backends are profiled.
+            Names must be from :data:`ALL_BACKEND_NAMES`; a ``ValueError``
+            is raised for unknown names.
+        output_path: Optional file path to write a JSON report.  The file
+            includes hardware info and library versions for reproducibility.
+        show_progress: When ``True``, display a Rich progress bar in the
+            terminal during correctness checks and timing sweeps.
 
     Returns:
-        terminal_output: Rich-formatted string for terminal display
-        json_data: JSON dict if output_path is set, else None
+        A tuple of ``(terminal_output, json_data)`` where *terminal_output*
+        is a Rich-formatted string and *json_data* is the JSON dict (or
+        ``None`` if *output_path* was not set).
+
+    Raises:
+        ValueError: If *backend_filter* contains an unrecognised backend
+            name.
+        KeyError: If *preset_name* is not a valid preset.
+
+    Example::
+
+        terminal_output, json_data = run_profile(
+            preset_name="quick",
+            backend_filter=["numpy", "pytorch"],
+            output_path="results.json",
+            show_progress=True,
+        )
+        print(terminal_output)
     """
     # Suppress float32 overflow warnings from deep random-weight networks
     warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*encountered in matmul.*")
@@ -411,6 +579,11 @@ def run_profile(
         progress_ctx.start()
 
     for name, backend in backend_instances.items():
+        if progress_ctx is not None:
+            progress_ctx.update(
+                correctness_task,
+                description=f"Correctness check [cyan]{name}[/]",
+            )
         cr = correctness_check(backend)
         correctness_results.append(cr)
         if cr.passed:
@@ -431,7 +604,16 @@ def run_profile(
         )
         if progress_ctx is not None:
             timing_task = progress_ctx.add_task("Timing sweep", total=n_combos)
-            callback = lambda: progress_ctx.advance(timing_task)
+
+            def callback(
+                backend_name: str = "",
+                operation: str = "",
+                width: int = 0,
+                depth: int = 0,
+                n_samples: int = 0,
+            ) -> None:
+                desc = f"Timing sweep [cyan]{backend_name}[/] {operation} w={width} d={depth} n={n_samples:,}"
+                progress_ctx.update(timing_task, advance=1, description=desc)
         else:
             callback = None
         timing_results, _ = run_timing_sweep(
