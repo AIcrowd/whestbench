@@ -140,7 +140,7 @@ On SSH/headless environments, browser auto-open is skipped automatically.
 Benchmark simulation backends head-to-head. Runs a correctness check followed by a timing sweep across a grid of network sizes and sample counts, reporting speedup relative to the NumPy reference.
 
 ```bash
-nestim profile-simulation [--preset quick|standard|exhaustive]
+nestim profile-simulation [--preset super-quick|quick|standard|exhaustive]
                           [--backends <comma-separated>]
                           [--output <path>]
                           [--debug]
@@ -149,6 +149,7 @@ nestim profile-simulation [--preset quick|standard|exhaustive]
 Key options:
 
 - `--preset <name>` (default: `standard`) — parameter sweep size:
+  - `super-quick` — 1 width (64), 1 depth (4), 1k samples. Sub-second, for testing the debug loop.
   - `quick` — 1 width, 2 depths, 2 sample counts. Finishes in seconds.
   - `standard` — 2 widths, 5 depths, 3 sample counts. A few minutes.
   - `exhaustive` — 3 widths, 5 depths, 5 sample counts (up to 16.7 M samples). Thorough but slow.

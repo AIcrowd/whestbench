@@ -493,7 +493,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     profile_parser.add_argument(
         "--preset",
-        choices=("quick", "standard", "exhaustive"),
+        choices=("super-quick", "quick", "standard", "exhaustive"),
         default="standard",
         help="Parameter sweep preset (default: standard).",
     )
