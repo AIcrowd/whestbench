@@ -867,6 +867,7 @@ def _main_participant(argv: "list[str]") -> int:
                 preset_name=str(args.preset),
                 backend_filter=backend_filter,
                 output_path=args.output,
+                show_progress=not json_output,
             )
             print(terminal_output)
             return 0
