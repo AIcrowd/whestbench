@@ -401,7 +401,7 @@ def run_timing_sweep(
     return results, numpy_baselines
 
 
-def format_terminal_table(
+def format_verbose_output(
     correctness_results: List[CorrectnessResult],
     timing_results: List[TimingResult],
     skipped_backends: Dict[str, str],
@@ -747,7 +747,7 @@ def run_profile(
         progress_ctx.stop()
 
     # Format output
-    terminal_output = format_terminal_table(
+    terminal_output = format_verbose_output(
         correctness_results, timing_results, skipped,
         hardware_info=hardware_info,
     )
