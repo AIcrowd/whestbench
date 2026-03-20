@@ -1,203 +1,226 @@
 /**
- * estimators.js — JS port of mean propagation from estimators.py
+ * estimators.js — ReLU moment-propagation estimators for MLP networks
  *
- * Mean propagation: propagates wire means through each layer,
- * approximating E[output] using E[x] * E[y] ≈ E[xy].
- * This is the simplest analytic estimator — fast but approximate.
+ * Ports estimators.py (MeanPropagationEstimator, CovariancePropagationEstimator)
+ * to JavaScript for use in the network explorer.
+ *
+ * Weight matrix convention: W[i * width + j] where i = input neuron, j = output neuron.
+ * Forward pass: x_next = ReLU(x @ W)  (row-vector convention, matching mlp.js).
+ *
+ * Exports:
+ *   meanPropagation(mlp)       — diagonal-variance first-moment propagation
+ *   covariancePropagation(mlp) — full-covariance first+second-moment propagation
  */
+
+import { normalPdf, normalCdf } from './math-utils.js';
 
 /**
- * Compute mean propagation estimates for each layer.
- * Returns: Float32Array[] — one per layer, each of length n
+ * Mean propagation estimator.
  *
- * Mirrors estimators.py::mean_propagation
+ * Propagates both E[x] (mean) and Var[x] (diagonal variance) per neuron,
+ * assuming independence across neurons within each layer.
+ *
+ * Per layer, for each output neuron j:
+ *   Pre-activation:
+ *     mu_j  = sum_i  W[i,j] * mean_i
+ *     var_j = sum_i  W[i,j]^2 * var_i
+ *   Numerical floor: var_j = max(var_j, 1e-12)
+ *   sigma_j = sqrt(var_j),  alpha_j = mu_j / sigma_j
+ *   Post-ReLU mean:
+ *     mean_j = mu_j * Phi(alpha_j) + sigma_j * phi(alpha_j)
+ *   Post-ReLU variance:
+ *     E[z^2] = (mu_j^2 + var_j) * Phi(alpha_j) + mu_j * sigma_j * phi(alpha_j)
+ *     var_j  = max(E[z^2] - mean_j^2, 0)
+ *
+ * Initial state: mean = 0, var = 1 for each neuron (Gaussian N(0,1) inputs).
+ *
+ * @param {{ width: number, depth: number, weights: Float32Array[] }} mlp
+ * @returns {Float32Array} shape (depth × width), per-layer post-ReLU means
  */
-export function meanPropagation(circuit) {
-  const n = circuit.n;
-  let xMean = new Float32Array(n); // inputs are uniform ±1 → mean = 0
+export function meanPropagation(mlp) {
+  const { width, weights } = mlp;
 
-  const results = [];
-  for (const layer of circuit.gates) {
-    const newMean = new Float32Array(n);
-    for (let i = 0; i < n; i++) {
-      const muFirst = xMean[layer.first[i]];
-      const muSecond = xMean[layer.second[i]];
-      newMean[i] =
-        layer.firstCoeff[i] * muFirst +
-        layer.secondCoeff[i] * muSecond +
-        layer.const[i] +
-        layer.productCoeff[i] * muFirst * muSecond;
+  // Initial state: N(0,1) inputs
+  let mean = new Float64Array(width);   // all zeros
+  let vari = new Float64Array(width);   // all ones
+  for (let i = 0; i < width; i++) vari[i] = 1.0;
+
+  // Output: one row per layer, each row has `width` predicted means
+  const result = new Float32Array(weights.length * width);
+
+  for (let layerIdx = 0; layerIdx < weights.length; layerIdx++) {
+    const W = weights[layerIdx]; // Float32Array, row-major: W[i * width + j]
+
+    const muPre  = new Float64Array(width);
+    const varPre = new Float64Array(width);
+
+    // Pre-activation: mu_pre[j] = sum_i W[i,j] * mean[i]
+    //                 var_pre[j] = sum_i W[i,j]^2 * var[i]
+    for (let i = 0; i < width; i++) {
+      const m = mean[i];
+      const v = vari[i];
+      for (let j = 0; j < width; j++) {
+        const w = W[i * width + j];
+        muPre[j]  += w * m;
+        varPre[j] += w * w * v;
+      }
     }
-    xMean = newMean;
-    results.push(Float32Array.from(xMean));
-  }
-  return results;
-}
 
-/**
- * Covariance propagation estimator — tracks mean + full covariance matrix.
- *
- * Mirrors estimators.py::CovariancePropagationEstimator.
- * More accurate than mean propagation because it accounts for wire
- * correlations via E[x_f * x_s] = m_f * m_s + C_fs.
- *
- * State: mean (n), covariance (n×n flat row-major Float32Array).
- * Runtime: O(depth × n²) per layer.
- *
- * Returns: Float32Array[] — one per layer, each of length n.
- */
-export function covariancePropagation(circuit) {
-  const n = circuit.n;
-  let xMean = new Float32Array(n);           // E[x] = 0 for uniform ±1
-  let xCov = new Float32Array(n * n);        // Cov = I  (variance 1 each)
-  for (let i = 0; i < n; i++) xCov[i * n + i] = 1.0;
+    const newMean = new Float64Array(width);
+    const newVar  = new Float64Array(width);
 
-  const results = [];
-  for (const layer of circuit.gates) {
-    const out = propagateLayerCov(n, layer, xMean, xCov);
-    xMean = out.mean;
-    xCov = out.cov;
-    results.push(Float32Array.from(xMean));
-  }
-  return results;
-}
+    for (let j = 0; j < width; j++) {
+      const mu  = muPre[j];
+      const vp  = Math.max(varPre[j], 1e-12);
+      const sig = Math.sqrt(vp);
+      const alpha = mu / sig;
 
-// ── internal helpers (flat row-major cov) ──
+      const phi = normalPdf(alpha);
+      const Phi = normalCdf(alpha);
 
-/** Propagate one layer: mean + covariance. */
-function propagateLayerCov(n, layer, xMean, xCov) {
-  const first = layer.first;
-  const second = layer.second;
-  const a = layer.firstCoeff;
-  const b = layer.secondCoeff;
-  const c = layer.const;
-  const p = layer.productCoeff;
+      const postMean = mu * Phi + sig * phi;
+      const ez2 = (mu * mu + vp) * Phi + mu * sig * phi;
+      const postVar = Math.max(ez2 - postMean * postMean, 0.0);
 
-  // Pre-gather means and pair covariances
-  const mF = new Float32Array(n);
-  const mS = new Float32Array(n);
-  const pairCov = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    mF[i] = xMean[first[i]];
-    mS[i] = xMean[second[i]];
-    pairCov[i] = xCov[first[i] * n + second[i]];
-  }
+      newMean[j] = postMean;
+      newVar[j]  = postVar;
+    }
 
-  // Step 1: mean update (with covariance correction)
-  const newMean = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    newMean[i] = a[i] * mF[i]
-               + b[i] * mS[i]
-               + c[i]
-               + p[i] * (mF[i] * mS[i] + pairCov[i]);
-  }
+    mean = newMean;
+    vari = newVar;
 
-  // Step 2: linear-linear covariance
-  const newCov = new Float32Array(n * n); // zeros
-  linearLinearCov(n, layer, xCov, newCov);
-
-  // Step 3: 1v2 cross terms (first-coeff × product-coeff path)
-  addOneVTwoCross(n, a, p, first, first, second, xCov, xMean, newCov);
-  // Step 3b: second-coeff × product-coeff path
-  addOneVTwoCross(n, b, p, second, first, second, xCov, xMean, newCov);
-
-  // Step 4: 2v2 bilinear-bilinear
-  addTwoVTwo(n, p, first, second, xCov, xMean, newCov);
-
-  // Step 5: clip moments
-  clipMoments(n, newMean, newCov);
-
-  return { mean: newMean, cov: newCov };
-}
-
-/** Linear-linear covariance: 4 outer-product-like terms. */
-function linearLinearCov(n, layer, xCov, out) {
-  const f = layer.first, s = layer.second;
-  const a = layer.firstCoeff, b = layer.secondCoeff;
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      const idx = i * n + j;
-      out[idx] +=
-        a[i] * a[j] * xCov[f[i] * n + f[j]]
-      + b[i] * b[j] * xCov[s[i] * n + s[j]]
-      + a[i] * b[j] * xCov[f[i] * n + s[j]]
-      + b[i] * a[j] * xCov[s[i] * n + f[j]];
+    // Store this layer's means into the flat output
+    const base = layerIdx * width;
+    for (let j = 0; j < width; j++) {
+      result[base + j] = mean[j];
     }
   }
+
+  return result;
 }
 
 /**
- * Add 1v2 cross-covariance term: outer(coeffRow, coeffCol) * Cov(x[aIdx], x[bIdx]*x[cIdx]).
- * Cov(x[a], x[b]*x[c]) ≈ mean[b] * C[a,c] + mean[c] * C[a,b]  (pairwise closure).
- * Adds both the term and its transpose (symmetry).
+ * Covariance propagation estimator.
+ *
+ * Tracks full covariance matrix and mean vector per layer.
+ * More accurate than meanPropagation for deep networks because it
+ * accounts for inter-neuron correlations when computing pre-activation variance.
+ *
+ * Per layer:
+ *   Pre-activation mean:       mu = W^T @ mean  (mu[j] = sum_i W[i,j] * mean[i])
+ *   Pre-activation covariance: Cov_pre = W^T @ Cov @ W
+ *   Diagonal variances:        var_j = max(Cov_pre[j,j], 1e-12)
+ *   sigma_j = sqrt(var_j),     alpha_j = mu_j / sigma_j
+ *   Post-ReLU means:           same formula as mean propagation
+ *   Post-ReLU covariance:      diag = postVar,
+ *                              off-diag[a,b] = gain_a * gain_b * Cov_pre[a,b]
+ *                              where gain_j = Phi(alpha_j)
+ *
+ * Initial state: mean = 0, Cov = I (identity).
+ * Uses Float64Array for internal computation.
+ * Covariance is stored flat row-major: Cov[a * width + b].
+ *
+ * @param {{ width: number, depth: number, weights: Float32Array[] }} mlp
+ * @returns {Float32Array} shape (depth × width), per-layer post-ReLU means
  */
-function addOneVTwoCross(n, coeffRow, coeffCol, aIdx, bIdx, cIdx, xCov, xMean, out) {
-  // Compute the n×n one-v-two block
-  // result[i][j] = coeffRow[i] * coeffCol[j] * (mean[bIdx[j]] * C[aIdx[i], cIdx[j]]
-  //                                            + mean[cIdx[j]] * C[aIdx[i], bIdx[j]])
-  for (let i = 0; i < n; i++) {
-    const cr = coeffRow[i];
-    if (cr === 0) continue;
-    const ai = aIdx[i];
-    for (let j = 0; j < n; j++) {
-      const cc = coeffCol[j];
-      if (cc === 0) continue;
-      const val = cr * cc * (
-        xMean[bIdx[j]] * xCov[ai * n + cIdx[j]]
-      + xMean[cIdx[j]] * xCov[ai * n + bIdx[j]]
-      );
-      out[i * n + j] += val;
-      out[j * n + i] += val; // transpose
-    }
-  }
-}
+export function covariancePropagation(mlp) {
+  const { width, weights } = mlp;
 
-/**
- * Add 2v2 bilinear-bilinear term:
- * outer(p, p) * Cov(x[a]*x[b], x[c]*x[d])
- * ≈ μa·μc·C[b,d] + μa·μd·C[b,c] + μb·μc·C[a,d] + μb·μd·C[a,c]  (Isserlis/Wick)
- */
-function addTwoVTwo(n, p, aIdx, bIdx, xCov, xMean, out) {
-  for (let i = 0; i < n; i++) {
-    const pi = p[i];
-    if (pi === 0) continue;
-    const ai = aIdx[i], bi = bIdx[i];
-    const muA = xMean[ai], muB = xMean[bi];
-    for (let j = 0; j < n; j++) {
-      const pj = p[j];
-      if (pj === 0) continue;
-      const cj = aIdx[j], dj = bIdx[j];
-      const muC = xMean[cj], muD = xMean[dj];
-      out[i * n + j] += pi * pj * (
-        muA * muC * xCov[bi * n + dj]
-      + muA * muD * xCov[bi * n + cj]
-      + muB * muC * xCov[ai * n + dj]
-      + muB * muD * xCov[ai * n + cj]
-      );
-    }
-  }
-}
+  // Initial state: mean = 0, Cov = I
+  let mean = new Float64Array(width);  // all zeros
+  let cov  = new Float64Array(width * width);
+  for (let i = 0; i < width; i++) cov[i * width + i] = 1.0;
 
-/** Clip moments to feasible bounds for {-1, +1} wire values. */
-function clipMoments(n, mean, cov) {
-  // Clip means to [-1, 1]
-  for (let i = 0; i < n; i++) {
-    mean[i] = Math.max(-1, Math.min(1, mean[i]));
-  }
-  // Set diagonal = 1 - μ²
-  const vari = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    vari[i] = 1 - mean[i] * mean[i];
-    cov[i * n + i] = vari[i];
-  }
-  // Clip off-diagonal by ±√(var_i * var_j)
-  for (let i = 0; i < n; i++) {
-    const si = Math.sqrt(Math.max(0, vari[i]));
-    for (let j = 0; j < n; j++) {
-      if (i === j) continue;
-      const maxC = si * Math.sqrt(Math.max(0, vari[j]));
-      const idx = i * n + j;
-      cov[idx] = Math.max(-maxC, Math.min(maxC, cov[idx]));
+  const result = new Float32Array(weights.length * width);
+
+  for (let layerIdx = 0; layerIdx < weights.length; layerIdx++) {
+    const W = weights[layerIdx]; // Float32Array, row-major: W[i * width + j]
+
+    // Pre-activation mean: mu_pre[j] = sum_i W[i,j] * mean[i]
+    const muPre = new Float64Array(width);
+    for (let i = 0; i < width; i++) {
+      const m = mean[i];
+      for (let j = 0; j < width; j++) {
+        muPre[j] += W[i * width + j] * m;
+      }
+    }
+
+    // Pre-activation covariance: Cov_pre = W^T @ Cov @ W
+    // Step 1: tmp = Cov @ W  (shape width × width)
+    //   tmp[a,j] = sum_b Cov[a,b] * W[b,j]
+    const tmp = new Float64Array(width * width);
+    for (let a = 0; a < width; a++) {
+      for (let b = 0; b < width; b++) {
+        const c = cov[a * width + b];
+        if (c === 0) continue;
+        for (let j = 0; j < width; j++) {
+          tmp[a * width + j] += c * W[b * width + j];
+        }
+      }
+    }
+
+    // Step 2: Cov_pre = W^T @ tmp  (shape width × width)
+    //   covPre[i,j] = sum_a W[a,i] * tmp[a,j]  (W^T[i,a] = W[a,i])
+    const covPre = new Float64Array(width * width);
+    for (let a = 0; a < width; a++) {
+      for (let i = 0; i < width; i++) {
+        const w = W[a * width + i];
+        if (w === 0) continue;
+        for (let j = 0; j < width; j++) {
+          covPre[i * width + j] += w * tmp[a * width + j];
+        }
+      }
+    }
+
+    // Per-neuron: extract diagonal variances, compute ReLU moments and gains
+    const varPre  = new Float64Array(width);
+    const alpha   = new Float64Array(width);
+    const phi     = new Float64Array(width);
+    const Phi     = new Float64Array(width);
+    const newMean = new Float64Array(width);
+    const postVar = new Float64Array(width);
+    const gain    = new Float64Array(width);
+
+    for (let j = 0; j < width; j++) {
+      const vp  = Math.max(covPre[j * width + j], 1e-12);
+      const sig = Math.sqrt(vp);
+      const a   = muPre[j] / sig;
+
+      varPre[j] = vp;
+      alpha[j]  = a;
+      phi[j]    = normalPdf(a);
+      Phi[j]    = normalCdf(a);
+
+      const mu = muPre[j];
+      const pm = mu * Phi[j] + sig * phi[j];
+      const ez2 = (mu * mu + vp) * Phi[j] + mu * sig * phi[j];
+      newMean[j] = pm;
+      postVar[j] = Math.max(ez2 - pm * pm, 0.0);
+
+      // gain_j = Phi(alpha_j) (or 0 if sigma was negligible before flooring)
+      gain[j] = Phi[j];
+    }
+
+    // Post-ReLU covariance:
+    //   off-diagonal: newCov[a,b] = gain[a] * gain[b] * covPre[a,b]
+    //   diagonal:     newCov[j,j] = postVar[j]
+    const newCov = new Float64Array(width * width);
+    for (let a = 0; a < width; a++) {
+      for (let b = 0; b < width; b++) {
+        newCov[a * width + b] = gain[a] * gain[b] * covPre[a * width + b];
+      }
+      // Override diagonal with proper post-ReLU variance
+      newCov[a * width + a] = postVar[a];
+    }
+
+    mean = newMean;
+    cov  = newCov;
+
+    const base = layerIdx * width;
+    for (let j = 0; j < width; j++) {
+      result[base + j] = mean[j];
     }
   }
+
+  return result;
 }
