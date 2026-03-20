@@ -152,9 +152,9 @@ nestim profile-simulation [--preset {quick,standard,exhaustive}] [--backends num
 
 | Preset | Widths | Depths | n_samples | Est. time |
 |--------|--------|--------|-----------|-----------|
-| `quick` | 256 | 4 | 10K, 100K | ~30s |
-| `standard` | 64, 256 | 2, 4 | 10K, 100K, 1M | ~2min |
-| `exhaustive` | 64, 128, 256 | 2, 4, 8 | 10K, 100K, 500K, 1M, 16.7M | ~10min |
+| `quick` | 256 | 4, 32 | 10K, 100K | ~30s |
+| `standard` | 64, 256 | 4, 16, 32, 64, 128 | 10K, 100K, 1M | ~5min |
+| `exhaustive` | 64, 128, 256 | 4, 16, 32, 64, 128 | 10K, 100K, 500K, 1M, 16.7M | ~20min |
 
 **Flow:**
 
