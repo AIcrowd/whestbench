@@ -66,7 +66,7 @@ from .simulation import (
     output_stats as ref_output_stats,
     run_mlp as ref_run_mlp,
 )
-from .simulation_backend import SimulationBackend
+from .simulation_backend import PrimitiveBreakdown, SimulationBackend
 from .simulation_backends import ALL_BACKEND_NAMES, INSTALL_HINTS, get_available_backends
 
 
@@ -152,6 +152,7 @@ class TimingResult:
     times: List[float]
     median_time: float
     speedup_vs_numpy: float
+    breakdown: Optional[PrimitiveBreakdown] = None
 
 
 def _collect_hardware_info() -> Dict[str, Any]:
@@ -264,6 +265,17 @@ def _time_output_stats(
     return time.perf_counter() - t0
 
 
+def _time_run_mlp_profiled(
+    backend: SimulationBackend, mlp: MLP, n_samples: int
+) -> Tuple[float, PrimitiveBreakdown]:
+    """Time a single run_mlp_profiled call, returning both total time and breakdown."""
+    inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
+    t0 = time.perf_counter()
+    _, breakdown = backend.run_mlp_profiled(mlp, inputs)
+    total = time.perf_counter() - t0
+    return total, breakdown
+
+
 def run_timing_sweep(
     backends: Dict[str, SimulationBackend],
     preset: PresetConfig,
@@ -299,7 +311,7 @@ def run_timing_sweep(
     # Collect numpy baselines first
     numpy_backend = backends.get("numpy")
 
-    operations = ["run_mlp", "output_stats"]
+    operations = ["run_mlp", "output_stats", "run_mlp_profiled"]
 
     for width in preset.widths:
         for depth in preset.depths:
@@ -309,24 +321,46 @@ def run_timing_sweep(
                     key = f"{op}:{width}:{depth}:{n_samples}"
 
                     for backend_name, backend in backends.items():
-                        time_fn = _time_run_mlp if op == "run_mlp" else _time_output_stats
+                        if op == "run_mlp_profiled":
+                            # Warmup
+                            _time_run_mlp_profiled(backend, mlp, min(n_samples, 1000))
 
-                        # Warmup (untimed, critical for JIT backends)
-                        time_fn(backend, mlp, min(n_samples, 1000))
+                            gc_was_enabled = gc.isenabled()
+                            gc.disable()
+                            times = []
+                            breakdowns: List[PrimitiveBreakdown] = []
+                            try:
+                                for _ in range(n_iterations):
+                                    t, bd = _time_run_mlp_profiled(backend, mlp, n_samples)
+                                    times.append(t)
+                                    breakdowns.append(bd)
+                            finally:
+                                if gc_was_enabled:
+                                    gc.enable()
 
-                        # Timed iterations with GC disabled
-                        gc_was_enabled = gc.isenabled()
-                        gc.disable()
-                        times = []
-                        try:
-                            for _ in range(n_iterations):
-                                t = time_fn(backend, mlp, n_samples)
-                                times.append(t)
-                        finally:
-                            if gc_was_enabled:
-                                gc.enable()
+                            # Pick the breakdown from the median-time iteration
+                            median_t = float(np.median(times))
+                            median_idx = int(np.argmin([abs(t - median_t) for t in times]))
+                            median_breakdown = breakdowns[median_idx]
+                        else:
+                            time_fn = _time_run_mlp if op == "run_mlp" else _time_output_stats
 
-                        median_t = float(np.median(times))
+                            # Warmup (untimed, critical for JIT backends)
+                            time_fn(backend, mlp, min(n_samples, 1000))
+
+                            gc_was_enabled = gc.isenabled()
+                            gc.disable()
+                            times = []
+                            try:
+                                for _ in range(n_iterations):
+                                    t = time_fn(backend, mlp, n_samples)
+                                    times.append(t)
+                            finally:
+                                if gc_was_enabled:
+                                    gc.enable()
+
+                            median_t = float(np.median(times))
+                            median_breakdown = None
 
                         # Store numpy baselines
                         if backend_name == "numpy":
@@ -349,6 +383,7 @@ def run_timing_sweep(
                             times=times,
                             median_time=median_t,
                             speedup_vs_numpy=speedup,
+                            breakdown=median_breakdown,
                         ))
 
                         if progress_callback:
@@ -404,8 +439,9 @@ def format_terminal_table(
     # Build a set of passed backend names for status lookup
     passed_names = {cr.backend_name for cr in correctness_results if cr.passed}
 
-    # Timing table
-    if timing_results:
+    # Timing table (run_mlp + output_stats only)
+    non_profiled = [tr for tr in timing_results if tr.operation != "run_mlp_profiled"]
+    if non_profiled:
         table = Table(title="\nTiming Results", show_lines=True)
         table.add_column("Backend", style="cyan")
         table.add_column("Operation")
@@ -416,7 +452,7 @@ def format_terminal_table(
         table.add_column("Speedup vs NumPy", justify="right")
         table.add_column("Status")
 
-        for tr in timing_results:
+        for tr in non_profiled:
             speedup_str = f"{tr.speedup_vs_numpy:.2f}x"
             if tr.speedup_vs_numpy > 1.0:
                 speedup_str = f"[green]{speedup_str}[/green]"
@@ -437,6 +473,38 @@ def format_terminal_table(
             )
 
         console.print(table)
+
+    # Primitive breakdown table (run_mlp_profiled results)
+    profiled = [tr for tr in timing_results if tr.breakdown is not None]
+    if profiled:
+        bd_table = Table(title="\nPrimitive Breakdown (run_mlp_profiled)", show_lines=True)
+        bd_table.add_column("Backend", style="cyan")
+        bd_table.add_column("Width", justify="right")
+        bd_table.add_column("Depth", justify="right")
+        bd_table.add_column("N_Samples", justify="right")
+        bd_table.add_column("Total (s)", justify="right")
+        bd_table.add_column("Matmul (s)", justify="right")
+        bd_table.add_column("Matmul %", justify="right")
+        bd_table.add_column("ReLU (s)", justify="right")
+        bd_table.add_column("ReLU %", justify="right")
+        bd_table.add_column("Overhead %", justify="right")
+
+        for tr in profiled:
+            bd = tr.breakdown
+            bd_table.add_row(
+                tr.backend_name,
+                str(tr.width),
+                str(tr.depth),
+                f"{tr.n_samples:,}",
+                f"{bd.total:.4f}",
+                f"{bd.total_matmul:.4f}",
+                f"[bold]{bd.matmul_pct:.1f}%[/bold]",
+                f"{bd.total_relu:.6f}",
+                f"{bd.relu_pct:.1f}%",
+                f"{bd.overhead_pct:.1f}%",
+            )
+
+        console.print(bd_table)
 
     return buf.getvalue()
 
@@ -477,6 +545,7 @@ def format_json_output(
                 "times": tr.times,
                 "median_time": tr.median_time,
                 "speedup_vs_numpy": tr.speedup_vs_numpy,
+                **({"breakdown": tr.breakdown.to_dict()} if tr.breakdown else {}),
             }
             for tr in timing_results
         ],
@@ -566,9 +635,14 @@ def run_profile(
                 TextColumn,
                 TimeElapsedColumn,
             )
+            from rich.table import Column
+
             progress_ctx = Progress(
                 SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
+                TextColumn(
+                    "[progress.description]{task.description}",
+                    table_column=Column(min_width=60),
+                ),
                 BarColumn(bar_width=None),
                 MofNCompleteColumn(),
                 TimeElapsedColumn(),
@@ -590,7 +664,7 @@ def run_profile(
         if progress_ctx is not None:
             progress_ctx.update(
                 correctness_task,
-                description=f"Correctness check [cyan]{name}[/]",
+                description=f"Correctness check [cyan]{name:<8}[/]",
             )
         cr = correctness_check(backend)
         correctness_results.append(cr)
@@ -607,7 +681,7 @@ def run_profile(
             len(preset.widths)
             * len(preset.depths)
             * len(preset.n_samples_list)
-            * 2  # run_mlp + output_stats
+            * 3  # run_mlp + output_stats + run_mlp_profiled
             * len(passed_backends)
         )
         if progress_ctx is not None:
@@ -620,7 +694,10 @@ def run_profile(
                 depth: int = 0,
                 n_samples: int = 0,
             ) -> None:
-                desc = f"Timing sweep [cyan]{backend_name}[/] {operation} w={width} d={depth} n={n_samples:,}"
+                desc = (
+                    f"[cyan]{backend_name:<8}[/] {operation:<18} "
+                    f"w={width:<4} d={depth:<4} n={n_samples:>11,}"
+                )
                 progress_ctx.update(timing_task, advance=1, description=desc)
         else:
             callback = None
