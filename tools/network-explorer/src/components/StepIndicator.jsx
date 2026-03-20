@@ -4,12 +4,12 @@
  */
 export default function StepIndicator({ currentStep, onSkipTour }) {
   const steps = [
-    { num: 1, label: "The Circuit" },
-    { num: 2, label: "The Problem" },
-    { num: 3, label: "Brute Force" },
-    { num: 4, label: "On a Budget" },
-    { num: 5, label: "Mechanistic" },
-    { num: 6, label: "Explore" },
+    { num: 1, label: "The MLP" },
+    { num: 2, label: "Forward Pass" },
+    { num: 3, label: "Neuron Means" },
+    { num: 4, label: "Sampling" },
+    { num: 5, label: "Mean Prop" },
+    { num: 6, label: "Challenge" },
   ];
 
   return (

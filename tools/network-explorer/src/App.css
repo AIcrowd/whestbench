@@ -681,12 +681,12 @@ body {
   stroke: var(--gray-200);
 }
 
-.motif-wire-dash {
+.motif-connection-dash {
   stroke: var(--gray-200);
   stroke-dasharray: 3 3;
 }
 
-.motif-wire {
+.motif-connection {
   stroke: var(--gray-100);
 }
 

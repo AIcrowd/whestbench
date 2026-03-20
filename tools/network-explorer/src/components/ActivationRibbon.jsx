@@ -141,19 +141,19 @@ export default function ActivationRibbon({ means, stds, mins, maxs, depth: d, wi
   return (
     <div className="panel">
       <h2>
-        Output Variance <small>(per wire)</small>
+        Output Variance <small>(per neuron)</small>
         <InfoTip>
           <span className="tip-title">Output Variance</span>
           <p className="tip-desc">
-            Each wire's <span className="tip-highlight">σ</span> measures how much its output varies across 10,000 random ±1 inputs.
+            Each neuron's <span className="tip-highlight">σ</span> measures how much its activation varies across 10,000 random inputs.
           </p>
           <div className="tip-sep" />
-          <div className="tip-kv"><span className="tip-kv-key">Solid line</span><span className="tip-kv-val">Average σ across all wires per layer</span></div>
+          <div className="tip-kv"><span className="tip-kv-key">Solid line</span><span className="tip-kv-val">Average σ across all neurons per layer</span></div>
           <div className="tip-kv"><span className="tip-kv-key">Bands</span><span className="tip-kv-val">±1σ, ±2σ, and min–max spread</span></div>
           <div className="tip-sep" />
           <p className="tip-desc">
-            <span className="tip-highlight">Wide bands</span> → some wires are highly input-dependent while others are nearly constant.{" "}
-            <span className="tip-highlight">Narrow bands</span> → all wires respond similarly to inputs.
+            <span className="tip-highlight">Wide bands</span> → some neurons are highly input-dependent while others are nearly constant.{" "}
+            <span className="tip-highlight">Narrow bands</span> → all neurons respond similarly to inputs.
           </p>
         </InfoTip>
       </h2>

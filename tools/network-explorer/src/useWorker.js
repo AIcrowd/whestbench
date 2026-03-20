@@ -1,12 +1,12 @@
 /**
- * useCircuitWorker — React hook wrapping the circuit Web Worker.
+ * useMLPWorker — React hook wrapping the MLP Web Worker.
  *
  * Returns { run, isRunning } where run(type, params) returns a Promise
  * that resolves with the worker's result.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-export function useCircuitWorker() {
+export function useMLPWorker() {
   const workerRef = useRef(null);
   const callbackRef = useRef(null);
   const idRef = useRef(0);
@@ -14,7 +14,7 @@ export function useCircuitWorker() {
 
   useEffect(() => {
     const worker = new Worker(
-      new URL('./circuit.worker.js', import.meta.url),
+      new URL('./mlp.worker.js', import.meta.url),
       { type: 'module' }
     );
     worker.onmessage = (e) => {

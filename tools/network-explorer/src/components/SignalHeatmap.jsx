@@ -1,11 +1,19 @@
 /**
- * SignalHeatmap — Wire means heatmap using canvas rendering.
+ * SignalHeatmap — Neuron means heatmap using canvas rendering.
  * Uses meanToColor for exact palette matching (dark slate → white → coral).
- * Orientation: X-axis = Layer, Y-axis = Wire (matches circuit layout).
+ * Orientation: X-axis = Layer, Y-axis = Neuron (matches network layout).
  */
 import { useEffect, useRef } from "react";
-import { meanToColor } from "./gateShapes";
 import InfoTip from "./InfoTip";
+
+// Activation magnitude color: 0 = dark slate, high = coral
+function meanToColor(v) {
+  const t = Math.max(0, Math.min(1, v));
+  const r = Math.round(51 + 204 * t);
+  const g = Math.round(65 - 65 * t);
+  const b = Math.round(85 - 85 * t);
+  return `rgb(${r},${g},${b})`;
+}
 
 export default function SignalHeatmap({ means, width: n, depth: d, source }) {
   const canvasRef = useRef(null);
@@ -41,7 +49,7 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, totalW, totalH);
 
-    // Draw cells: X = layer, Y = wire
+    // Draw cells: X = layer, Y = neuron
     const gapW = cellW > 3 ? 1 : 0;
     const gapH = cellH > 3 ? 1 : 0;
     for (let l = 0; l < d && l < means.length; l++) {
@@ -68,7 +76,7 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
       }
     }
 
-    // Y-axis labels: Wire
+    // Y-axis labels: Neuron
     const wireStep = n > 16 ? Math.ceil(n / 8) : 1;
     ctx.textAlign = "right";
     for (let w = 0; w < n; w++) {
@@ -85,7 +93,7 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
     ctx.save();
     ctx.translate(10, chartH / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Wire", 0, 0);
+    ctx.fillText("Neuron", 0, 0);
     ctx.restore();
   }, [means, n, d]);
 
@@ -94,19 +102,18 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
   return (
     <div className="panel">
       <h2>
-        Wire Means Heatmap
+        Neuron Means Heatmap
         <InfoTip>
-          <span className="tip-title">Wire Means Heatmap</span>
+          <span className="tip-title">Neuron Means Heatmap</span>
           <p className="tip-desc">
-            Color-coded grid of <span className="tip-mono">E[wire]</span> values for every wire at every layer.
+            Color-coded grid of <span className="tip-mono">E[neuron]</span> values for every neuron at every layer.
           </p>
           <div className="tip-sep" />
-          <div className="tip-kv"><span className="tip-kv-key">Dark slate</span><span className="tip-kv-val">E[wire] near −1</span></div>
-          <div className="tip-kv"><span className="tip-kv-key">White</span><span className="tip-kv-val">E[wire] near 0</span></div>
-          <div className="tip-kv"><span className="tip-kv-key">Coral</span><span className="tip-kv-val">E[wire] near +1</span></div>
+          <div className="tip-kv"><span className="tip-kv-key">Dark slate</span><span className="tip-kv-val">E[neuron] near 0</span></div>
+          <div className="tip-kv"><span className="tip-kv-key">Coral</span><span className="tip-kv-val">E[neuron] high</span></div>
           <div className="tip-sep" />
           <p className="tip-desc">
-            Patterns here reveal structural biases in the gate coefficients.
+            Patterns here reveal structural biases in the network weights.
           </p>
         </InfoTip>
         {source && <span className="source-badge">{source}</span>}

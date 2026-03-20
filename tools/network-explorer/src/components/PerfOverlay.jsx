@@ -16,9 +16,9 @@ function badge(ms) {
 
 /**
  * Build a clean, standalone SVG blob from the JointJS paper element.
- * Returns null if no circuit SVG is found.
+ * Returns null if no network SVG is found.
  */
-function buildCircuitSVGBlob() {
+function buildNetworkSVGBlob() {
   const svgEl = document.querySelector('.joint-paper svg');
   if (!svgEl) return null;
 
@@ -60,16 +60,16 @@ function buildCircuitSVGBlob() {
   return new Blob([svgString], { type: 'image/svg+xml' });
 }
 
-const SVG_FILENAME = 'circuit-explorer-visualization.svg';
+const SVG_FILENAME = 'network-explorer-visualization.svg';
 
 /**
- * Download the circuit SVG. Uses the File System Access API (showSaveFilePicker)
+ * Download the network SVG. Uses the File System Access API (showSaveFilePicker)
  * for a native save dialog with proper filename; falls back to blob URL.
  */
 async function downloadSVG() {
-  const blob = buildCircuitSVGBlob();
+  const blob = buildNetworkSVGBlob();
   if (!blob) {
-    alert('No circuit SVG found on the page.');
+    alert('No network SVG found on the page.');
     return;
   }
 
@@ -114,7 +114,7 @@ export default function PerfOverlay() {
 
   return (
     <div className="perf-overlay" data-open={open}>
-      <button className="perf-toggle" onClick={downloadSVG} title="Download circuit as SVG">
+      <button className="perf-toggle" onClick={downloadSVG} title="Download network as SVG">
         ↓ SVG
       </button>
       <button className="perf-toggle" onClick={() => setOpen(!open)}>

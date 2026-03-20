@@ -210,14 +210,14 @@ export default function EstimatorComparison({
         <InfoTip>
           <span className="tip-title">Estimation Error (MSE)</span>
           <p className="tip-desc">
-            Per-layer <span className="tip-mono">Mean Squared Error</span> between each estimator's E[wire] predictions and the ground truth.
+            Per-layer <span className="tip-mono">Mean Squared Error</span> between each estimator's E[neuron] predictions and the ground truth.
           </p>
           <div className="tip-sep" />
           <div className="tip-kv"><span className="tip-kv-key">Lower</span><span className="tip-kv-val">Better estimation accuracy</span></div>
           <div className="tip-kv"><span className="tip-kv-key">Trend</span><span className="tip-kv-val">Error typically grows with depth</span></div>
           <div className="tip-sep" />
           <p className="tip-desc">
-            Approximation assumptions (e.g. wire independence in mean propagation) <span className="tip-highlight">compound across layers</span>.
+            Approximation assumptions (e.g. neuron independence in mean propagation) <span className="tip-highlight">compound across layers</span>.
           </p>
         </InfoTip>
       </h2>

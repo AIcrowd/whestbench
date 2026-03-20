@@ -17,7 +17,7 @@ export default function Controls({ params, onParamsChange }) {
     const next = { ...localParams, [key]: value };
     setLocalParams(next);
 
-    // Debounce: wait 300ms after last change before triggering circuit generation
+    // Debounce: wait 300ms after last change before triggering network generation
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       debounceRef.current = null;
@@ -84,9 +84,9 @@ export default function Controls({ params, onParamsChange }) {
 
   return (
     <div className="controls-panel">
-      <h2>Circuit</h2>
-      {slider(<>Width <code>n</code> (Wires)</>, "width", 2, 1024, 1, "Number of wires (parallel values) per layer")}
-      {slider(<>Depth <code>d</code> (Layers)</>, "depth", 1, 256, 1, "Number of gate layers in the circuit")}
+      <h2>Network</h2>
+      {slider(<>Width <code>n</code> (Neurons per layer)</>, "width", 4, 256, 1, "Number of neurons per layer")}
+      {slider(<>Depth <code>d</code> (Layers)</>, "depth", 2, 32, 1, "Number of layers in the network")}
 
       <div className="control-row">
         <label>
@@ -122,7 +122,7 @@ export default function Controls({ params, onParamsChange }) {
 
       <div className="controls-help">
         <p className="controls-hint">
-          Circuit regenerates automatically when you change parameters.
+          Network regenerates automatically when you change parameters.
         </p>
       </div>
     </div>
