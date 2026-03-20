@@ -115,6 +115,23 @@ PRESETS: Dict[str, PresetConfig] = {
 }
 
 
+def format_dims(width: int, depth: int, n_samples: int) -> str:
+    """Format dimensions as compact 'w×d×n' string with k/M suffixes."""
+    if n_samples >= 1_000_000:
+        if n_samples % 1_000_000 == 0:
+            n_str = f"{n_samples // 1_000_000}M"
+        else:
+            n_str = f"{n_samples / 1_000_000:.1f}M"
+    elif n_samples >= 1_000:
+        if n_samples % 1_000 == 0:
+            n_str = f"{n_samples // 1_000}k"
+        else:
+            n_str = f"{n_samples / 1_000:.1f}k"
+    else:
+        n_str = str(n_samples)
+    return f"{width}×{depth}×{n_str}"
+
+
 @dataclass
 class CorrectnessResult:
     """Result of a pre-flight correctness check for one backend.

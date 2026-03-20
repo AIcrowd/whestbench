@@ -12,6 +12,7 @@ import pytest
 from network_estimation.profiler import (
     PRESETS,
     correctness_check,
+    format_dims,
     run_profile,
 )
 from network_estimation.simulation_backends import get_available_backends, get_backend
@@ -63,6 +64,23 @@ class TestRunProfile:
         )
         # At minimum numpy should appear
         assert "numpy" in terminal_output
+
+
+class TestFormatDims:
+    def test_small_number(self) -> None:
+        assert format_dims(64, 4, 500) == "64×4×500"
+
+    def test_thousands(self) -> None:
+        assert format_dims(64, 4, 10_000) == "64×4×10k"
+
+    def test_hundreds_of_thousands(self) -> None:
+        assert format_dims(256, 8, 100_000) == "256×8×100k"
+
+    def test_millions(self) -> None:
+        assert format_dims(256, 8, 1_000_000) == "256×8×1M"
+
+    def test_large_millions(self) -> None:
+        assert format_dims(256, 8, 16_700_000) == "256×8×16.7M"
 
 
 class TestPresets:
