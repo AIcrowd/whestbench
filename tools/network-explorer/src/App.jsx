@@ -18,6 +18,15 @@ import { sampleMLP, forwardPass, sampleInputs } from "./mlp.js";
 import { perfEnd, perfStart } from "./perf";
 import { useMLPWorker } from "./useWorker";
 
+/** Reshape flat Float32Array(depth × width) → Array of Float32Array, one per layer */
+function reshapeFlat(flat, depth, width) {
+  const result = [];
+  for (let l = 0; l < depth; l++) {
+    result.push(flat.slice(l * width, (l + 1) * width));
+  }
+  return result;
+}
+
 const DEFAULT_PARAMS = { width: 8, depth: 6, seed: 42 };
 const TOUR_PARAMS = { width: 8, depth: 6, seed: 42 };
 const GRAPH_MODE_MAX_WIDTH = 8;
@@ -110,7 +119,7 @@ export default function App() {
       autoRunDone.current.gt = true;
       worker.run('outputStats', { mlp: tourMlp, nSamples: 10000, seed: 99 })
         .then(({ means, time }) => {
-          setTourMeans(means);
+          setTourMeans(reshapeFlat(means, TOUR_PARAMS.depth, TOUR_PARAMS.width));
           setTourMeansTime(time);
         });
     }
@@ -122,7 +131,7 @@ export default function App() {
       autoRunDone.current.sampling = true;
       worker.run('sampling', { mlp: tourMlp, budget: tourBudget, seed: 77 })
         .then(({ estimates }) => {
-          setTourSampling(estimates);
+          setTourSampling(reshapeFlat(estimates, TOUR_PARAMS.depth, TOUR_PARAMS.width));
         });
     }
   }, [step, tourMlp, tourBudget, worker]);
@@ -133,7 +142,7 @@ export default function App() {
       setTourBudget(newBudget);
       worker.run('sampling', { mlp: tourMlp, budget: newBudget, seed: 77 })
         .then(({ estimates }) => {
-          setTourSampling(estimates);
+          setTourSampling(reshapeFlat(estimates, TOUR_PARAMS.depth, TOUR_PARAMS.width));
         });
     },
     [tourMlp, worker]
@@ -145,7 +154,7 @@ export default function App() {
       autoRunDone.current.meanprop = true;
       worker.run('meanPropagation', { mlp: tourMlp })
         .then(({ estimates }) => {
-          setTourMeanProp(estimates);
+          setTourMeanProp(reshapeFlat(estimates, TOUR_PARAMS.depth, TOUR_PARAMS.width));
         });
     }
   }, [step, tourMlp, worker]);

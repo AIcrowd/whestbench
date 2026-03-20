@@ -23,13 +23,12 @@ export default function CoeffHistograms({ mlp }) {
     const { depth, width, weights } = mlp;
     const result = [];
     for (let l = 0; l < depth; l++) {
-      // weights layout: Float32Array of shape [depth, width, width]
-      // layer l starts at offset l * width * width
-      const offset = l * width * width;
+      // weights: Array<Float32Array>, one per layer, each length width×width
+      const W = weights[l];
       let sum = 0, sumSq = 0, mn = Infinity, mx = -Infinity;
-      const count = width * width;
+      const count = W.length;
       for (let i = 0; i < count; i++) {
-        const v = weights[offset + i];
+        const v = W[i];
         sum += v;
         sumSq += v * v;
         if (v < mn) mn = v;

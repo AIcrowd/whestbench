@@ -2,6 +2,15 @@ import { useCallback, useState } from "react";
 import { perfEnd, perfStart } from "../perf";
 import InfoTip from "./InfoTip";
 
+/** Reshape flat Float32Array(depth × width) → Array of Float32Array, one per layer */
+function reshapeFlat(flat, depth, width) {
+  const result = [];
+  for (let l = 0; l < depth; l++) {
+    result.push(flat.slice(l * width, (l + 1) * width));
+  }
+  return result;
+}
+
 /**
  * EstimatorRunner — lets users run estimators one at a time,
  * with timing stats. All estimators route through the MLP Web Worker.
@@ -48,11 +57,18 @@ export default function EstimatorRunner({ mlp, onResult, worker }) {
       const result = await worker.run("outputStats", { mlp, nSamples: 10000, seed: 7777 });
       perfEnd("estimator-groundTruth");
       setProgress(1);
+      const { depth, width } = mlp;
+      const meansArr = reshapeFlat(result.means, depth, width);
+      const stdsArr = result.variances
+        ? reshapeFlat(result.variances, depth, width).map((layer) =>
+            Float32Array.from(layer, (v) => Math.sqrt(v))
+          )
+        : null;
       const enriched = {
         name: "Ground Truth (10k samples)",
         budget: 10000,
-        estimates: result.means,
-        stds: result.variances ? result.variances.map((layer) => layer.map(Math.sqrt)) : null,
+        estimates: meansArr,
+        stds: stdsArr,
         time: result.time,
       };
       setResults((prev) => ({ ...prev, groundTruth: enriched }));
@@ -78,7 +94,7 @@ export default function EstimatorRunner({ mlp, onResult, worker }) {
       const enriched = {
         name: "Sampling",
         budget,
-        estimates: result.estimates,
+        estimates: reshapeFlat(result.estimates, mlp.depth, mlp.width),
         time: result.time,
       };
       setResults((prev) => ({ ...prev, sampling: enriched }));
@@ -101,7 +117,7 @@ export default function EstimatorRunner({ mlp, onResult, worker }) {
       const result = await worker.run("meanPropagation", { mlp });
       perfEnd("estimator-meanprop");
       setProgress(1);
-      const enriched = { name: "Mean Propagation", estimates: result.estimates, time: result.time };
+      const enriched = { name: "Mean Propagation", estimates: reshapeFlat(result.estimates, mlp.depth, mlp.width), time: result.time };
       setResults((prev) => ({ ...prev, meanprop: enriched }));
       onResult("meanprop", enriched);
     } catch (err) {
@@ -122,7 +138,7 @@ export default function EstimatorRunner({ mlp, onResult, worker }) {
       const result = await worker.run("covPropagation", { mlp });
       perfEnd("estimator-covprop");
       setProgress(1);
-      const enriched = { name: "Cov Propagation", estimates: result.estimates, time: result.time };
+      const enriched = { name: "Cov Propagation", estimates: reshapeFlat(result.estimates, mlp.depth, mlp.width), time: result.time };
       setResults((prev) => ({ ...prev, covprop: enriched }));
       onResult("covprop", enriched);
     } catch (err) {
