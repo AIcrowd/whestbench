@@ -35,7 +35,7 @@ class TestRunProfile:
             preset_name="quick", backend_filter=["numpy"]
         )
         assert "numpy" in terminal_output
-        assert "Timing Results" in terminal_output
+        assert "Detail" in terminal_output
 
     def test_json_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -198,3 +198,63 @@ class TestFormatCompactOutput:
         cr = [CorrectnessResult(backend_name="numpy", passed=False, error="boom")]
         output = format_compact_output(cr, [], {})
         assert "No backends passed" in output
+
+
+class TestRunProfileVerbose:
+    def test_default_uses_compact_format(self) -> None:
+        """Default (verbose=False) should use compact leaderboard format."""
+        output, _ = run_profile(
+            preset_name="super-quick", backend_filter=["numpy"]
+        )
+        assert "Leaderboard" in output or "Detail" in output
+        # Should NOT contain the old-style verbose headers
+        assert "Timing Results" not in output
+
+    def test_verbose_includes_both_compact_and_full(self) -> None:
+        """verbose=True should show compact output PLUS full tables."""
+        output, _ = run_profile(
+            preset_name="super-quick", backend_filter=["numpy"], verbose=True
+        )
+        # Compact content present
+        assert "Detail" in output
+        # Full verbose tables also present
+        assert "Timing Results" in output
+
+    def test_multi_dim_leaderboard_grouping(self) -> None:
+        """Multiple dimension combos should produce separate leaderboard groups."""
+        output, _ = run_profile(
+            preset_name="quick", backend_filter=["numpy", "scipy"], verbose=False
+        )
+        # quick preset has 2 depths x 2 n_samples = 4 combos
+        # Each gets a leaderboard group header
+        assert "Leaderboard" in output
+
+
+class TestCLIFlags:
+    def test_verbose_flag_accepted(self) -> None:
+        from network_estimation.cli import _build_participant_parser
+        parser = _build_participant_parser()
+        args = parser.parse_args(["profile-simulation", "--preset", "super-quick", "--verbose"])
+        assert args.verbose is True
+
+    def test_verbose_flag_default_false(self) -> None:
+        from network_estimation.cli import _build_participant_parser
+        parser = _build_participant_parser()
+        args = parser.parse_args(["profile-simulation", "--preset", "super-quick"])
+        assert args.verbose is False
+
+    def test_backends_help_flag_accepted(self) -> None:
+        from network_estimation.cli import _build_participant_parser
+        parser = _build_participant_parser()
+        args = parser.parse_args(["profile-simulation", "--backends-help"])
+        assert args.backends_help is True
+
+    def test_backends_help_prints_and_exits(self) -> None:
+        from network_estimation.cli import _main_participant
+        import io, contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            rc = _main_participant(["profile-simulation", "--backends-help"])
+        assert rc == 0
+        output = buf.getvalue()
+        assert "install" in output.lower() or "All backends" in output

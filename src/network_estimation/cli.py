@@ -527,6 +527,14 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Limit all backends to at most N CPU threads.",
     )
+    profile_parser.add_argument(
+        "--verbose", action="store_true", default=False,
+        help="Show full timing tables with all columns and raw data.",
+    )
+    profile_parser.add_argument(
+        "--backends-help", action="store_true", default=False,
+        help="Print install instructions for all backends and exit.",
+    )
 
     return parser
 
@@ -885,6 +893,23 @@ def _main_participant(argv: "list[str]") -> int:
 
         if command == "profile-simulation":
             from .profiler import run_profile
+            from .simulation_backends import ALL_BACKEND_NAMES, INSTALL_HINTS, get_available_backends
+
+            # Handle --backends-help early exit
+            if getattr(args, "backends_help", False):
+                available = get_available_backends()
+                skipped = {
+                    name: INSTALL_HINTS.get(name, "")
+                    for name in ALL_BACKEND_NAMES
+                    if name not in available
+                }
+                if skipped:
+                    for name, hint in skipped.items():
+                        print(f"  {name}: {hint}")
+                else:
+                    print("All backends are installed.")
+                return 0
+
             backend_filter = None
             if args.backends:
                 backend_filter = [b.strip() for b in args.backends.split(",")]
@@ -894,6 +919,7 @@ def _main_participant(argv: "list[str]") -> int:
                 output_path=args.output,
                 show_progress=not json_output,
                 max_threads=args.max_threads,
+                verbose=bool(args.verbose),
             )
             print(terminal_output)
             return 0
