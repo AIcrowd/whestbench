@@ -150,16 +150,13 @@ class NumbaBackend(SimulationBackend):
             n = min(chunk_size, n_samples - start)
             x = np.random.randn(n, width).astype(np.float32)
 
-            # Run forward pass collecting all layers
-            stacked = _forward_pass_all_layers(x, weights_tuple)
-
+            # Compute stats inline per-layer to avoid materializing all layers
             for layer_idx in range(depth):
-                layer_sums[layer_idx] += stacked[layer_idx].sum(axis=0).astype(
-                    np.float64
-                )
+                x = x @ weights_tuple[layer_idx]
+                _relu_inplace(x)
+                layer_sums[layer_idx] += x.sum(axis=0).astype(np.float64)
 
-            final = stacked[depth - 1]
-            final_sum_sq += (final.astype(np.float64) ** 2).sum(axis=0)
+            final_sum_sq += (x.astype(np.float64) ** 2).sum(axis=0)
             n_processed += n
 
         layer_means = (layer_sums / n_processed).astype(np.float32)

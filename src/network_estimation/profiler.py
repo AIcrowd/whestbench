@@ -52,7 +52,9 @@ from __future__ import annotations
 
 import gc
 import json
+import os
 import platform
+import shutil
 import time
 import warnings
 from dataclasses import dataclass
@@ -62,6 +64,7 @@ import numpy as np
 
 from .domain import MLP
 from .generation import sample_mlp
+from .hardware import collect_hardware_fingerprint
 from .simulation import (
     output_stats as ref_output_stats,
     run_mlp as ref_run_mlp,
@@ -113,6 +116,23 @@ PRESETS: Dict[str, PresetConfig] = {
 }
 
 
+def format_dims(width: int, depth: int, n_samples: int) -> str:
+    """Format dimensions as compact 'w×d×n' string with k/M suffixes."""
+    if n_samples >= 1_000_000:
+        if n_samples % 1_000_000 == 0:
+            n_str = f"{n_samples // 1_000_000}M"
+        else:
+            n_str = f"{n_samples / 1_000_000:.1f}M"
+    elif n_samples >= 1_000:
+        if n_samples % 1_000 == 0:
+            n_str = f"{n_samples // 1_000}k"
+        else:
+            n_str = f"{n_samples / 1_000:.1f}k"
+    else:
+        n_str = str(n_samples)
+    return f"{width}×{depth}×{n_str}"
+
+
 @dataclass
 class CorrectnessResult:
     """Result of a pre-flight correctness check for one backend.
@@ -155,16 +175,17 @@ class TimingResult:
     breakdown: Optional[PrimitiveBreakdown] = None
 
 
-def _collect_hardware_info() -> Dict[str, Any]:
-    """Collect hardware info for the profiling report."""
-    import os
-    return {
-        "platform": platform.platform(),
-        "processor": platform.processor(),
-        "cpu_count": os.cpu_count(),
-        "python_version": platform.python_version(),
-        "machine": platform.machine(),
-    }
+def _collect_hardware_info(max_threads: Optional[int] = None) -> Dict[str, Any]:
+    """Collect hardware info for the profiling report.
+
+    Delegates to :func:`collect_hardware_fingerprint` for detailed CPU,
+    RAM, and platform info, then adds profiler-specific fields like
+    ``max_threads``.
+    """
+    info = collect_hardware_fingerprint()
+    if max_threads is not None:
+        info["max_threads"] = max_threads
+    return info
 
 
 def _collect_backend_versions(backend_names: List[str]) -> Dict[str, str]:
@@ -398,10 +419,11 @@ def run_timing_sweep(
     return results, numpy_baselines
 
 
-def format_terminal_table(
+def format_verbose_output(
     correctness_results: List[CorrectnessResult],
     timing_results: List[TimingResult],
     skipped_backends: Dict[str, str],
+    hardware_info: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Format profiling results as a Rich-rendered terminal table.
 
@@ -423,6 +445,28 @@ def format_terminal_table(
 
     buf = io.StringIO()
     console = Console(file=buf, force_terminal=True, width=140)
+
+    # Hardware summary
+    if hardware_info:
+        console.print("\n[bold]Hardware[/bold]")
+        _hw_label = {
+            "platform": "Platform",
+            "machine": "Architecture",
+            "cpu_brand": "CPU",
+            "cpu_count_physical": "Physical Cores",
+            "cpu_count_logical": "Logical Cores",
+            "ram_total_bytes": "RAM",
+            "python_version": "Python",
+            "numpy_version": "NumPy",
+            "max_threads": "Thread Limit",
+        }
+        for key, label in _hw_label.items():
+            val = hardware_info.get(key)
+            if val is None:
+                continue
+            if key == "ram_total_bytes":
+                val = f"{val / (1024**3):.1f} GB"
+            console.print(f"  {label}: {val}")
 
     # Skipped backends
     if skipped_backends:
@@ -509,11 +553,254 @@ def format_terminal_table(
     return buf.getvalue()
 
 
+def format_compact_output(
+    correctness_results: List[CorrectnessResult],
+    timing_results: List[TimingResult],
+    skipped_backends: Dict[str, str],
+    hardware_info: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Format profiling results as a compact Rich-rendered summary.
+
+    Produces a 3-zone view: one-line hardware context, a leaderboard showing
+    which backend wins, and a single detail table merging timing and primitive
+    breakdown data.
+
+    Args:
+        correctness_results: Per-backend correctness check results.
+        timing_results: All timing measurements from the sweep.
+        skipped_backends: Mapping of skipped backend names to install hints.
+        hardware_info: Optional hardware fingerprint dictionary.
+
+    Returns:
+        A string containing ANSI-styled output suitable for printing to a
+        terminal.
+    """
+    from collections import defaultdict
+    from rich.console import Console
+    from rich.table import Table
+    import io
+
+    term_width = shutil.get_terminal_size((120, 24)).columns
+    buf = io.StringIO()
+    console = Console(file=buf, force_terminal=True, width=term_width)
+
+    passed_names = {cr.backend_name for cr in correctness_results if cr.passed}
+    all_failed = len(passed_names) == 0
+
+    # --- Zone 1: Context lines ---
+
+    # Line 1 — Hardware
+    if hardware_info is not None:
+        parts: List[str] = []
+        os_name = hardware_info.get("os", "")
+        machine = hardware_info.get("machine", "")
+        if os_name or machine:
+            parts.append(f"{os_name} {machine}".strip())
+
+        cores = hardware_info.get("cpu_count_physical")
+        if cores is None:
+            cores = hardware_info.get("cpu_count_logical")
+        if cores is not None:
+            parts.append(f"{cores} cores")
+
+        ram_bytes = hardware_info.get("ram_total_bytes")
+        if ram_bytes is not None:
+            parts.append(f"{ram_bytes / (1024**3):.1f} GB")
+
+        py_ver = hardware_info.get("python_version")
+        if py_ver is not None:
+            parts.append(f"Python {py_ver}")
+
+        np_ver = hardware_info.get("numpy_version")
+        if np_ver is not None:
+            parts.append(f"NumPy {np_ver}")
+
+        if parts:
+            console.print(" \u00b7 ".join(parts), highlight=False)
+
+    # Line 2 — Skipped
+    if skipped_backends:
+        names = ", ".join(skipped_backends.keys())
+        console.print(f"Skipped: {names} (--backends-help for install info)")
+
+    # Line 3 — Correctness
+    if all_failed:
+        console.print(
+            "No backends passed correctness checks. Use --verbose for error details."
+        )
+        return buf.getvalue()
+
+    corr_parts: List[str] = []
+    for cr in correctness_results:
+        if cr.passed:
+            corr_parts.append(f"{cr.backend_name} \u2713")
+        else:
+            corr_parts.append(
+                f"\u26a0 FAIL: {cr.backend_name} (use --verbose for details)"
+            )
+    console.print("Correctness: " + "  ".join(corr_parts))
+
+    # --- Helpers for grouping ---
+    def _dim_key(tr: TimingResult) -> Tuple[int, int, int]:
+        return (tr.width, tr.depth, tr.n_samples)
+
+    def _dim_label(w: int, d: int, n: int) -> str:
+        return f"w={w} d={d} n={n:,}"
+
+    # Filter to passed backends only
+    passed_timing = [tr for tr in timing_results if tr.backend_name in passed_names]
+
+    # --- Zone 2: Leaderboard (only if 2+ backends passed) ---
+    if len(passed_names) >= 2:
+        run_mlp_results = [tr for tr in passed_timing if tr.operation == "run_mlp"]
+
+        # Group by dims
+        groups: Dict[Tuple[int, int, int], List[TimingResult]] = defaultdict(list)
+        for tr in run_mlp_results:
+            groups[_dim_key(tr)].append(tr)
+
+        console.print()
+        console.rule("Leaderboard")
+
+        multiple_groups = len(groups) > 1
+
+        for dim_key in sorted(groups.keys()):
+            entries = sorted(groups[dim_key], key=lambda t: t.median_time)
+            if multiple_groups:
+                console.print(f"  [bold]{_dim_label(*dim_key)}[/bold]")
+
+            # Determine baseline backend (numpy if present, else fastest)
+            baseline_name = "numpy" if any(
+                e.backend_name == "numpy" for e in entries
+            ) else entries[0].backend_name
+
+            baseline_median = next(
+                e.median_time for e in entries if e.backend_name == baseline_name
+            )
+
+            for rank, tr in enumerate(entries, 1):
+                speedup_str = ""
+                if tr.backend_name != baseline_name:
+                    sp = baseline_median / tr.median_time if tr.median_time > 0 else float("inf")
+                    if sp > 1.0:
+                        speedup_str = f"  [green]({sp:.2f}x)[/green]"
+                    elif sp < 1.0:
+                        speedup_str = f"  [red]({sp:.2f}x)[/red]"
+                    else:
+                        speedup_str = f"  ({sp:.2f}x)"
+                console.print(
+                    f"  #{rank}  {tr.backend_name:<12} {tr.median_time:.4f}s{speedup_str}",
+                    highlight=False,
+                )
+
+    # --- Zone 3: Compact Detail Table ---
+    console.print()
+    console.rule("Detail")
+
+    table = Table(show_header=True, show_lines=False, pad_edge=False)
+    table.add_column("Backend", style="cyan")
+    table.add_column("Dims")
+    table.add_column("run_mlp", justify="right")
+    table.add_column("output_stats", justify="right")
+    table.add_column("Matmul", justify="right")
+    table.add_column("ReLU", justify="right")
+    table.add_column("Ovhd", justify="right")
+    table.add_column("", justify="center")  # status checkmark
+
+    # Build lookup for breakdown data: (backend, dims) -> PrimitiveBreakdown
+    breakdown_lookup: Dict[Tuple[str, Tuple[int, int, int]], Any] = {}
+    for tr in timing_results:
+        if tr.operation == "run_mlp_profiled" and tr.breakdown is not None:
+            breakdown_lookup[(tr.backend_name, _dim_key(tr))] = tr.breakdown
+
+    # Build lookup for timing: (backend, dims, operation) -> median_time
+    time_lookup: Dict[Tuple[str, Tuple[int, int, int], str], float] = {}
+    for tr in passed_timing:
+        if tr.operation in ("run_mlp", "output_stats"):
+            time_lookup[(tr.backend_name, _dim_key(tr), tr.operation)] = tr.median_time
+
+    # Collect all dim groups present in timing
+    all_dims: List[Tuple[int, int, int]] = []
+    seen_dims: set = set()
+    for tr in passed_timing:
+        dk = _dim_key(tr)
+        if dk not in seen_dims:
+            seen_dims.add(dk)
+            all_dims.append(dk)
+    all_dims.sort()
+
+    # For each dim group, sort backends by run_mlp time (fastest first)
+    first_group = True
+    for dim_key in all_dims:
+        # Get backends that have run_mlp results for this dim
+        backend_times: List[Tuple[str, float]] = []
+        for bname in passed_names:
+            t = time_lookup.get((bname, dim_key, "run_mlp"))
+            if t is not None:
+                backend_times.append((bname, t))
+        backend_times.sort(key=lambda x: x[1])
+
+        if not first_group:
+            table.add_section()
+        first_group = False
+
+        for bname, _ in backend_times:
+            run_mlp_t = time_lookup.get((bname, dim_key, "run_mlp"))
+            out_stats_t = time_lookup.get((bname, dim_key, "output_stats"))
+            bd = breakdown_lookup.get((bname, dim_key))
+
+            run_mlp_str = f"{run_mlp_t:.4f}s" if run_mlp_t is not None else "\u2014"
+            out_stats_str = f"{out_stats_t:.4f}s" if out_stats_t is not None else "\u2014"
+
+            def _bar(pct: float, color: str) -> str:
+                n_blocks = int(pct / 20)
+                n_blocks = min(n_blocks, 5)
+                bar = "\u2588" * n_blocks
+                if bar:
+                    return f"[{color}]{bar}[/{color}] {pct:.0f}%"
+                return f"{pct:.0f}%"
+
+            if bd is not None:
+                matmul_str = _bar(bd.matmul_pct, "blue")
+                relu_str = _bar(bd.relu_pct, "green")
+                ovhd_str = _bar(bd.overhead_pct, "dim")
+            else:
+                matmul_str = "\u2014"
+                relu_str = "\u2014"
+                ovhd_str = "\u2014"
+
+            status = "\u2713" if bname in passed_names else "\u2717"
+
+            table.add_row(
+                bname,
+                format_dims(dim_key[0], dim_key[1], dim_key[2]),
+                run_mlp_str,
+                out_stats_str,
+                matmul_str,
+                relu_str,
+                ovhd_str,
+                status,
+            )
+
+    console.print(table)
+
+    # Footer
+    console.print("  [blue]█[/blue] Matmul  [green]█[/green] ReLU  [dim]█[/dim] Overhead", highlight=False)
+    console.print()
+    console.print(
+        "[dim italic]Use --verbose for full timing tables with raw times "
+        "and per-layer breakdowns[/dim italic]"
+    )
+
+    return buf.getvalue()
+
+
 def format_json_output(
     correctness_results: List[CorrectnessResult],
     timing_results: List[TimingResult],
     skipped_backends: Dict[str, str],
     backend_names: Optional[List[str]] = None,
+    hardware_info: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Format profiling results as a JSON-serializable dictionary.
 
@@ -528,7 +815,7 @@ def format_json_output(
     Use ``--output results.json`` on the CLI to write this automatically.
     """
     return {
-        "hardware": _collect_hardware_info(),
+        "hardware": hardware_info or _collect_hardware_info(),
         "backend_versions": _collect_backend_versions(backend_names or []),
         "skipped_backends": skipped_backends,
         "correctness": [
@@ -557,6 +844,8 @@ def run_profile(
     backend_filter: Optional[List[str]] = None,
     output_path: Optional[str] = None,
     show_progress: bool = False,
+    max_threads: Optional[int] = None,
+    verbose: bool = False,
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     """Run the complete profiling pipeline and return formatted results.
 
@@ -575,6 +864,9 @@ def run_profile(
             includes hardware info and library versions for reproducibility.
         show_progress: When ``True``, display a Rich progress bar in the
             terminal during correctness checks and timing sweeps.
+        max_threads: If set, cap all backends to at most this many CPU
+            threads.  Affects BLAS (OpenBLAS/MKL), Numba, PyTorch, and
+            JAX/XLA thread pools.
 
     Returns:
         A tuple of ``(terminal_output, json_data)`` where *terminal_output*
@@ -596,6 +888,13 @@ def run_profile(
         )
         print(terminal_output)
     """
+    if max_threads is not None:
+        from .concurrency import apply_thread_limit
+        apply_thread_limit(max_threads)
+
+    # Collect hardware info early (before timing, so it doesn't interfere)
+    hardware_info = _collect_hardware_info(max_threads=max_threads)
+
     # Suppress float32 overflow warnings from deep random-weight networks
     warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*encountered in matmul.*")
 
@@ -709,15 +1008,22 @@ def run_profile(
         progress_ctx.stop()
 
     # Format output
-    terminal_output = format_terminal_table(
-        correctness_results, timing_results, skipped
+    terminal_output = format_compact_output(
+        correctness_results, timing_results, skipped,
+        hardware_info=hardware_info,
     )
+    if verbose:
+        terminal_output += "\n" + format_verbose_output(
+            correctness_results, timing_results, skipped,
+            hardware_info=hardware_info,
+        )
 
     json_data = None
     if output_path:
         json_data = format_json_output(
             correctness_results, timing_results, skipped,
             backend_names=list(backend_instances.keys()),
+            hardware_info=hardware_info,
         )
         with open(output_path, "w") as f:
             json.dump(json_data, f, indent=2)
