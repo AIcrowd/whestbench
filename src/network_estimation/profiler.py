@@ -32,6 +32,9 @@ CLI usage
 
 Presets
 -------
+``super-quick``
+    One width (64), one depth (4), 1 000 samples — sub-second, for testing
+    the debug loop.
 ``quick``
     One width (256), two depths, two sample counts — finishes in seconds.
 ``standard`` *(default)*
@@ -87,6 +90,11 @@ class PresetConfig:
 
 
 PRESETS: Dict[str, PresetConfig] = {
+    "super-quick": PresetConfig(
+        widths=[64],
+        depths=[4],
+        n_samples_list=[1_000],
+    ),
     "quick": PresetConfig(
         widths=[256],
         depths=[4, 32],
