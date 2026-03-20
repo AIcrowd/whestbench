@@ -119,6 +119,7 @@ Start at: [Documentation Index](docs/index.md)
 - [Validate, Run, and Package](docs/how-to/validate-run-package.md)
 - [Use Evaluation Datasets](docs/how-to/use-evaluation-datasets.md)
 - [Use Network Explorer](docs/how-to/use-network-explorer.md)
+- [Profile Simulation Backends](docs/how-to/profile-simulation-backends.md) — benchmark numpy, pytorch, numba, jax, scipy, and cython head-to-head
 
 ### 📖 Reference
 
