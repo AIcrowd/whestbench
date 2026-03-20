@@ -56,13 +56,11 @@ Key options:
 - `--class <name>`
 - `--runner inprocess|subprocess`
 - `--n-mlps <int>`
-- `--n-samples <int>`
 - `--detail raw|full`
 - `--profile`
 - `--show-diagnostic-plots`
 - `--json`
 - `--dataset <path>` — use pre-created dataset `.npz` file
-- `--strict-baselines` — refuse to run if dataset creation hardware differs from execution runtime hardware
 - `--max-threads N` — limit all backends to at most N CPU threads (see [Thread limiting](#thread-limiting))
 - `--debug`
 
@@ -92,7 +90,7 @@ Key options:
 - `--n-mlps <int>` (default: 10)
 - `--n-samples <int>` (default: 10000)
 - `--seed <int>` (optional, auto-generated if omitted)
-- `--width <int>`, `--max-depth <int>`, `--budgets <csv>`
+- `--width <int>`, `--depth <int>`, `--estimator-budget <int>`
 - `-o, --output <path>` (default: `eval_dataset.npz`)
 - `--max-threads N` — limit all backends to at most N CPU threads (see [Thread limiting](#thread-limiting))
 - `--json`
@@ -146,6 +144,8 @@ nestim profile-simulation [--preset super-quick|quick|standard|exhaustive]
                           [--backends <comma-separated>]
                           [--output <path>]
                           [--max-threads N]
+                          [--verbose]
+                          [--backends-help]
                           [--debug]
 ```
 
@@ -160,6 +160,8 @@ Key options:
 - `--output <path>` — save a JSON report with hardware info, library versions, correctness results, and raw timing data.
 - `--max-threads N` — limit all backends to at most N CPU threads (see [Thread limiting](#thread-limiting)).
 - `--debug` — show full tracebacks on errors.
+- `--verbose` — show full timing tables with all columns and raw data.
+- `--backends-help` — print install instructions for all backends and exit.
 
 The profiler automatically skips backends whose dependencies are not installed and prints `pip install` hints for them. Only backends that pass the pre-flight correctness check are included in the timing sweep.
 

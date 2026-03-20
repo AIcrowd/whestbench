@@ -18,9 +18,8 @@ Optional lifecycle hooks:
 | Field | Type | Description |
 |---|---|---|
 | `width` | `int` | Neuron count for generated MLPs |
-| `max_depth` | `int` | Number of layers per MLP |
-| `budgets` | `tuple[int, ...]` | Sampling budgets used during evaluation |
-| `time_tolerance` | `float` | Relative slack for timeout/floor semantics |
+| `depth` | `int` | Number of layers per MLP |
+| `estimator_budget` | `int` | Sampling budget for the estimator |
 | `api_version` | `str` | Contract version string |
 | `scratch_dir` | `str \| None` | Optional writable directory for caching |
 
