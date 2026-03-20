@@ -228,3 +228,8 @@ node_modules/
 .roo/
 .windsurf/
 .aicrowd/sanitization/public-sync-state.local.env
+
+# Cloud profiling infrastructure
+profiling/results/*
+!profiling/results/.gitkeep
+profiling/.infra-config.json
