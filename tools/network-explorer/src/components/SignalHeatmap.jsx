@@ -1,7 +1,7 @@
 /**
- * SignalHeatmap — Wire means heatmap using canvas rendering.
+ * SignalHeatmap — Neuron means heatmap using canvas rendering.
  * Uses meanToColor for exact palette matching (dark slate → white → coral).
- * Orientation: X-axis = Layer, Y-axis = Wire (matches circuit layout).
+ * Orientation: X-axis = Layer, Y-axis = Neuron (matches network layout).
  */
 import { useEffect, useRef } from "react";
 import InfoTip from "./InfoTip";
@@ -49,7 +49,7 @@ export default function SignalHeatmap({ means, width: n, depth: d, source }) {
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, totalW, totalH);
 
-    // Draw cells: X = layer, Y = wire
+    // Draw cells: X = layer, Y = neuron
     const gapW = cellW > 3 ? 1 : 0;
     const gapH = cellH > 3 ? 1 : 0;
     for (let l = 0; l < d && l < means.length; l++) {
