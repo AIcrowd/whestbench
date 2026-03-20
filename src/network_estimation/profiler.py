@@ -845,6 +845,7 @@ def run_profile(
     output_path: Optional[str] = None,
     show_progress: bool = False,
     max_threads: Optional[int] = None,
+    verbose: bool = False,
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     """Run the complete profiling pipeline and return formatted results.
 
@@ -1007,10 +1008,15 @@ def run_profile(
         progress_ctx.stop()
 
     # Format output
-    terminal_output = format_verbose_output(
+    terminal_output = format_compact_output(
         correctness_results, timing_results, skipped,
         hardware_info=hardware_info,
     )
+    if verbose:
+        terminal_output += "\n" + format_verbose_output(
+            correctness_results, timing_results, skipped,
+            hardware_info=hardware_info,
+        )
 
     json_data = None
     if output_path:
