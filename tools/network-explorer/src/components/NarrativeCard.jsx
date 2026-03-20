@@ -35,20 +35,73 @@ function MathTerm({ children, tip }) {
   );
 }
 
-const Ewire = () => (
+const Eneuron = () => (
   <MathTerm
     tip={
       <>
-        <strong>E[wire]</strong> = the <em>expected value</em> (average output)
-        of a wire over all possible ±1 inputs. With <em>n</em> input wires
-        there are 2<sup>n</sup> combinations — for 4 wires that&apos;s just 16,
-        but for 1,000 wires it&apos;s 2<sup>1000</sup>, far too many to
-        enumerate. So we <em>estimate</em> by sampling random inputs and
-        averaging.
+        <strong>E[neuron]</strong> = the <em>expected value</em> (average activation)
+        of a neuron over all possible random Gaussian inputs. Because the input
+        space is continuous and high-dimensional, we <em>estimate</em> by
+        sampling random inputs and averaging.
       </>
     }
   >
-    E[wire]
+    E[neuron]
+  </MathTerm>
+);
+
+const ReLU = () => (
+  <MathTerm
+    tip={
+      <>
+        <strong>ReLU(x)</strong> = max(0, x). Keeps positive values unchanged,
+        clips negatives to zero. The standard non-linearity in modern MLPs.
+      </>
+    }
+  >
+    ReLU
+  </MathTerm>
+);
+
+const NormalCDF = () => (
+  <MathTerm
+    tip={
+      <>
+        <strong>Φ (normal CDF)</strong> — the cumulative distribution function
+        of the standard normal distribution. Φ(z) gives the probability that a
+        standard normal random variable is ≤ z.
+      </>
+    }
+  >
+    Φ
+  </MathTerm>
+);
+
+const NormalPDF = () => (
+  <MathTerm
+    tip={
+      <>
+        <strong>φ (normal PDF)</strong> — the probability density function
+        of the standard normal distribution: φ(z) = (1/√2π)·exp(−z²/2).
+      </>
+    }
+  >
+    φ
+  </MathTerm>
+);
+
+const Covariance = () => (
+  <MathTerm
+    tip={
+      <>
+        <strong>Covariance</strong> = Cov(x, y) = E[xy] − E[x]·E[y]. Measures
+        how much two neurons move together. Positive = tend to be large/small
+        together. Zero = independent. Tracking covariance improves estimation
+        accuracy at the cost of O(width²) state per layer.
+      </>
+    }
+  >
+    covariance
   </MathTerm>
 );
 
@@ -57,10 +110,10 @@ const STEP_CONTENT = {
     border: "var(--gray-400)",
     text: (
       <>
-        This is a random Boolean circuit with <strong>8 wires</strong> and{" "}
-        <strong>6 layers</strong> of gates. Each gate takes two inputs (±1) and
-        computes: <code>out = c + a·x + b·y + p·x·y</code>.{" "}
-        <strong>Click any gate</strong> to see its coefficients.
+        This is a Multi-Layer Perceptron — a stack of layers where each neuron
+        computes a weighted sum of its inputs, then applies{" "}
+        <ReLU /> (keeping only positive values). The inputs are random Gaussian
+        numbers.
       </>
     ),
   },
@@ -68,26 +121,30 @@ const STEP_CONTENT = {
     border: "var(--gray-400)",
     text: (
       <>
-        <strong>Your challenge:</strong> if we feed random ±1 inputs, what is
-        the <strong>expected output</strong> <Ewire /> of each wire? The outputs
-        are highlighted on the right (y₀, y₁, …). Each one is a complex
-        function of all inputs — and the circuit makes it hard to reason about
-        analytically.
+        Watch as random inputs flow through the network. Each layer transforms
+        the signal — weights amplify or dampen, <ReLU /> clips negatives to
+        zero. Notice how the activation pattern changes layer by layer.
       </>
     ),
   },
   3: {
     border: "var(--coral)",
-    text: null, // filled dynamically with timing data
+    text: (
+      <>
+        These colored cells show the average neuron activation across many
+        random inputs. Your challenge: predict these averages without running
+        thousands of samples. Can you figure out <Eneuron /> from the weights
+        alone?
+      </>
+    ),
   },
   4: {
     border: "var(--coral)",
     text: (
       <>
-        With only <strong>1,000 samples</strong> instead of 10,000, the estimate
-        is faster but noisier. <strong>Try the slider</strong> — watch how MSE
-        drops as you increase the budget. The challenge:{" "}
-        <strong>beat sampling&apos;s accuracy without using more samples.</strong>
+        The simplest approach: draw random inputs, run them through, average the
+        outputs. More samples = better estimates, but it&apos;s slow. Notice the
+        noise — with only a small budget, estimates are rough.
       </>
     ),
   },
@@ -95,33 +152,28 @@ const STEP_CONTENT = {
     border: "var(--coral)",
     text: (
       <>
+        Instead of sampling, propagate the expected value analytically:{" "}
         <MathTerm
           tip={
             <span className="math-term-tip-body">
               <span className="math-term-tip-row">
-                Each gate computes:<br />
-                <code>out = c + a·x + b·y + p·x·y</code>
+                For a pre-activation z ~ N(μ, σ²):<br />
+                <strong>E[ReLU(z)] = μΦ(μ/σ) + σφ(μ/σ)</strong>
               </span>
               <span className="math-term-tip-row">
-                Mean Propagation replaces each value with its expected value:<br />
-                <strong>E[out] = c + a·E[x] + b·E[y] + p·E[x]·E[y]</strong>
+                where Φ is the normal CDF and φ is the normal PDF.
               </span>
               <span className="math-term-tip-row">
-                ⚠️ The <em>key assumption</em>: wires are independent, so{" "}
-                E[x·y] = E[x]·E[y]. This breaks when wires share upstream
-                gates — which happens more as depth increases.
+                This is exact for Gaussian z, but neurons at layer 2+ are
+                not quite Gaussian — so it&apos;s an approximation.
               </span>
             </span>
           }
         >
-          Mean Propagation
-        </MathTerm>{" "}
-        doesn&apos;t sample at all. For each gate, it plugs{" "}
-        <Ewire /> of the two inputs into the gate formula to get{" "}
-        <Ewire /> of the output — layer by layer, front to back.{" "}
-        <strong>Instant</strong> · No sampling noise · But it assumes wire
-        values are independent, which isn&apos;t always true.{" "}
-        <strong>Can you do better?</strong>
+          E[ReLU(z)] = μ<NormalCDF />(μ/σ) + σ<NormalPDF />(μ/σ)
+        </MathTerm>
+        . It&apos;s instant — but assumes neurons are independent. Watch it drift
+        at deeper layers where correlations build up.
       </>
     ),
   },
@@ -129,9 +181,9 @@ const STEP_CONTENT = {
     border: "#10B981",
     text: (
       <>
-        🔓 Full explorer mode. Try increasing <strong>depth</strong> to see how
-        estimation gets harder. Product-heavy circuits (p·x·y) create non-linear
-        dependencies that are hardest to estimate.
+        <Covariance /> propagation tracks correlations and does better — but
+        costs O(width²) per layer. The contest: given a compute budget, can you
+        beat sampling? You now have all the tools. Explore freely!
       </>
     ),
   },
@@ -167,5 +219,4 @@ export default function NarrativeCard({ step, onNext, onBack, children }) {
   );
 }
 
-export { Ewire, STEP_CONTENT };
-
+export { Eneuron, STEP_CONTENT };
