@@ -77,7 +77,7 @@ Functions:
 - `get_available_backends()` — Returns only backends whose dependencies are installed.
 - `get_backend(name=None)` — Returns a backend instance. Reads `NESTIM_BACKEND` env var if name not provided, defaults to `"numpy"`.
 
-If a requested backend is unavailable, raises `RuntimeError` with the install hint.
+If a requested backend name is unrecognized, raises `ValueError` listing valid options. If recognized but dependencies missing, raises `RuntimeError` with the install hint.
 
 ### Backend Implementations
 
