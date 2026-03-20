@@ -1,8 +1,8 @@
 /**
- * ErrorHeatmap — Estimation error per wire per layer.
+ * ErrorHeatmap — Estimation error per neuron per layer.
  * Shows |groundTruth - estimate| as a heatmap for either Mean Propagation
  * or Sampling estimator, selectable via dropdown.
- * Orientation: X-axis = Layer, Y-axis = Wire (matches circuit layout).
+ * Orientation: X-axis = Layer, Y-axis = Neuron (matches network layout).
  * Uses putImageData for gap-free pixel-perfect rendering.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -115,11 +115,11 @@ export default function ErrorHeatmap({
     const pixels = imgData.data;
 
     for (let py = 0; py < canvasH; py++) {
-      const wire = Math.floor((py / canvasH) * n);
+      const neuron = Math.floor((py / canvasH) * n);
       for (let px = 0; px < canvasW; px++) {
         const layer = Math.floor((px / canvasW) * d);
         const idx = (py * canvasW + px) * 4;
-        const val = (layer < errors.length) ? (errors[layer][wire] || 0) : 0;
+        const val = (layer < errors.length) ? (errors[layer][neuron] || 0) : 0;
         const [r, g, b] = errorToRGB(val, maxErr);
         pixels[idx] = r;
         pixels[idx + 1] = g;
@@ -132,14 +132,14 @@ export default function ErrorHeatmap({
     setDims({ width, height });
   }, [errors, maxErr, n, d]);
 
-  const getData = useCallback((layer, wire) => {
+  const getData = useCallback((layer, neuron) => {
     if (!errors || layer >= errors.length) return 0;
-    return errors[layer][wire] || 0;
+    return errors[layer][neuron] || 0;
   }, [errors]);
 
-  const getColor = useCallback((layer, wire) => {
+  const getColor = useCallback((layer, neuron) => {
     if (!errors || layer >= errors.length) return [30, 41, 59];
-    return errorToRGB(errors[layer][wire] || 0, maxErr);
+    return errorToRGB(errors[layer][neuron] || 0, maxErr);
   }, [errors, maxErr]);
 
   const hasData = !!errors;

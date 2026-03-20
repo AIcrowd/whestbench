@@ -235,7 +235,7 @@ export default function NetworkHeatmap({ mlp, means, activeLayer, onLayerClick }
   }, [drawCrosshair]);
 
   return (
-    <div className="panel circuit-heatmap" ref={containerRef} style={{ position: "relative" }}>
+    <div className="panel network-heatmap" ref={containerRef} style={{ position: "relative" }}>
       <h2>
         Network Structure
         <span className="mode-badge">
