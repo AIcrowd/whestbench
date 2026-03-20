@@ -18,9 +18,9 @@ Pick the path that matches what you need right now.
 ## 📈 I want to improve score
 
 - [Write an Estimator](./how-to/write-an-estimator.md)
-- [Inspect and Traverse MLP Structure](./how-to/inspect-circuit-structure.md)
+- [Inspect and Traverse MLP Structure](./how-to/inspect-mlp-structure.md)
 - [Validate, Run, and Package](./how-to/validate-run-package.md)
-- [Use Network Explorer](./how-to/use-circuit-explorer.md)
+- [Use Network Explorer](./how-to/use-network-explorer.md)
 - [Use Evaluation Datasets](./how-to/use-evaluation-datasets.md)
 - [Score Report Fields](./reference/score-report-fields.md)
 
@@ -33,6 +33,6 @@ Pick the path that matches what you need right now.
 
 - Getting Started: [Install and CLI Quickstart](./getting-started/install-and-cli-quickstart.md), [First Local Run](./getting-started/first-local-run.md)
 - Concepts: [Problem Setup](./concepts/problem-setup.md), [Scoring Model](./concepts/scoring-model.md)
-- How-To: [Write an Estimator](./how-to/write-an-estimator.md), [Inspect and Traverse MLP Structure](./how-to/inspect-circuit-structure.md), [Validate, Run, and Package](./how-to/validate-run-package.md), [Use Network Explorer](./how-to/use-circuit-explorer.md), [Use Evaluation Datasets](./how-to/use-evaluation-datasets.md)
+- How-To: [Write an Estimator](./how-to/write-an-estimator.md), [Inspect and Traverse MLP Structure](./how-to/inspect-mlp-structure.md), [Validate, Run, and Package](./how-to/validate-run-package.md), [Use Network Explorer](./how-to/use-network-explorer.md), [Use Evaluation Datasets](./how-to/use-evaluation-datasets.md)
 - Reference: [Estimator Contract](./reference/estimator-contract.md), [CLI Reference](./reference/cli-reference.md), [Score Report Fields](./reference/score-report-fields.md)
 - Troubleshooting: [Common Participant Errors](./troubleshooting/common-participant-errors.md)

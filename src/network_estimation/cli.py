@@ -55,7 +55,7 @@ from .runner import (
     SubprocessRunner,
 )
 from .scoring import ContestSpec, evaluate_estimator, make_contest, validate_predictions
-from .sdk import SetupContext
+from .sdk import BaseEstimator, SetupContext
 
 _DEFAULT_ESTIMATOR = CombinedEstimator()
 ProgressCallback = Callable[[Dict[str, Any]], None]
@@ -490,6 +490,16 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     return parser
 
 
+class _RunnerEstimator(BaseEstimator):
+    """Adapter that wraps a started runner as a BaseEstimator for scoring."""
+
+    def __init__(self, runner: "Any") -> None:
+        self._runner = runner
+
+    def predict(self, mlp: "Any", budget: int) -> "NDArray[np.float32]":
+        return self._runner.predict(mlp, budget)
+
+
 def _run_estimator_with_runner(
     runner: "Any",
     *,
@@ -502,12 +512,10 @@ def _run_estimator_with_runner(
 ) -> Dict[str, Any]:
     """Run estimator through a runner and score against contest data.
 
-    Builds contest data, starts the runner, calls predict for each MLP,
-    and computes scores using the scoring module's formulas.
+    Builds contest data, starts the runner, wraps it as a BaseEstimator,
+    and delegates scoring to ``evaluate_estimator``.
     """
     import time as _time
-
-    from .scoring import baseline_time as _baseline_time
 
     spec = contest_spec
     data = make_contest(spec)
@@ -523,71 +531,16 @@ def _run_estimator_with_runner(
     t0 = _time.time()
     runner.start(entrypoint, context, limits)
 
-    per_mlp: "list[dict[str, Any]]" = []
-    primary_scores: "list[float]" = []
-    secondary_scores: "list[float]" = []
-
     try:
-        for i, mlp in enumerate(data.mlps):
-            time_budget = _baseline_time(mlp, spec.estimator_budget)
-            time_budget = max(time_budget, 1e-9)
-
-            predict_t0 = _time.perf_counter()
-            try:
-                predictions = runner.predict(mlp, spec.estimator_budget)
-                predictions = validate_predictions(
-                    predictions, depth=spec.depth, width=spec.width
-                )
-            except Exception as exc:
-                predictions = np.zeros((spec.depth, spec.width), dtype=np.float32)
-                per_mlp.append({"mlp_index": i, "error": str(exc)})
-                time_spent = time_budget
-            else:
-                time_spent = _time.perf_counter() - predict_t0
-
-            if time_spent > time_budget:
-                predictions = np.zeros((spec.depth, spec.width), dtype=np.float32)
-
-            fraction_spent = max(time_spent / time_budget, 0.5)
-            avg_var = data.avg_variances[i]
-            sampling_mse = avg_var / (spec.estimator_budget * fraction_spent)
-            sampling_mse = max(sampling_mse, 1e-30)
-
-            final_pred = predictions[-1]
-            final_target = data.final_targets[i]
-            final_mse = float(np.mean((final_pred - final_target) ** 2))
-            primary = final_mse / sampling_mse
-
-            all_target = data.all_layer_targets[i]
-            all_mse = float(np.mean((predictions - all_target) ** 2))
-            secondary = all_mse / sampling_mse
-
-            primary_scores.append(primary)
-            secondary_scores.append(secondary)
-
-            if not per_mlp or per_mlp[-1].get("mlp_index") != i:
-                per_mlp.append({
-                    "mlp_index": i,
-                    "time_budget_s": time_budget,
-                    "time_spent_s": time_spent,
-                    "fraction_spent": fraction_spent,
-                    "final_mse": final_mse,
-                    "all_layer_mse": all_mse,
-                    "primary_score": primary,
-                    "secondary_score": secondary,
-                })
-
-            if progress is not None:
-                progress({"phase": "scoring", "completed": i + 1, "total": n_mlps})
+        results = evaluate_estimator(_RunnerEstimator(runner), data)
     finally:
         runner.close()
 
+    # Fire progress callback for completion if provided
+    if progress is not None:
+        progress({"phase": "scoring", "completed": n_mlps, "total": n_mlps})
+
     elapsed = _time.time() - t0
-    results = {
-        "primary_score": float(np.mean(primary_scores)) if primary_scores else 0.0,
-        "secondary_score": float(np.mean(secondary_scores)) if secondary_scores else 0.0,
-        "per_mlp": per_mlp,
-    }
     return {
         "schema_version": "1.0",
         "mode": "human",

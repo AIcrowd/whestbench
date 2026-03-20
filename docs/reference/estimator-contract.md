@@ -32,7 +32,7 @@ Optional lifecycle hooks:
 | `MLP` | `depth` | Number of weight matrices (layers) |
 | `MLP` | `weights` | Ordered weight matrices, each `(width, width)` |
 
-For traversal examples, see [Inspect and Traverse MLP Structure](../how-to/inspect-circuit-structure.md).
+For traversal examples, see [Inspect and Traverse MLP Structure](../how-to/inspect-mlp-structure.md).
 
 ## Output requirements per `predict` call
 
