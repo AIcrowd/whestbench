@@ -8,7 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .domain import MLP
-from .simulation_backend import SimulationBackend
+from .simulation_backend import PrimitiveBreakdown, SimulationBackend
 
 try:
     import jax
@@ -53,6 +53,30 @@ class JAXBackend(SimulationBackend):
         jax_weights = [jnp.array(w) for w in mlp.weights]
         result = _jax_forward(inputs, jax_weights)
         return np.asarray(result, dtype=np.float32)
+
+    def run_mlp_profiled(
+        self, mlp: MLP, inputs: NDArray[np.float32]
+    ) -> Tuple[NDArray[np.float32], PrimitiveBreakdown]:
+        import time
+
+        breakdown = PrimitiveBreakdown()
+        t_start = time.perf_counter()
+        x = jnp.array(inputs)
+        jax_weights = [jnp.array(w) for w in mlp.weights]
+        for w in jax_weights:
+            t0 = time.perf_counter()
+            x = x @ w
+            x.block_until_ready()  # JAX is async; force sync for accurate timing
+            t1 = time.perf_counter()
+            x = jnp.maximum(x, 0.0)
+            x.block_until_ready()
+            t2 = time.perf_counter()
+            breakdown.matmul.append(t1 - t0)
+            breakdown.relu.append(t2 - t1)
+        result = np.asarray(x, dtype=np.float32)
+        breakdown.total = time.perf_counter() - t_start
+        breakdown.overhead = breakdown.total - breakdown.total_matmul - breakdown.total_relu
+        return result, breakdown
 
     def run_mlp_all_layers(
         self, mlp: MLP, inputs: NDArray[np.float32]
