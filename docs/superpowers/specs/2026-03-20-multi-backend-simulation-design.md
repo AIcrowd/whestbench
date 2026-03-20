@@ -70,6 +70,7 @@ BACKENDS: Dict[str, Type[SimulationBackend]] = {
     "numba": NumbaBackend,
     "scipy": SciPyBackend,
     "jax": JAXBackend,
+    "cython": CythonBackend,
 }
 ```
 
@@ -90,6 +91,7 @@ Each backend lives in its own file implementing `SimulationBackend`:
 | `simulation_numba.py` | NumbaBackend | `@njit` JIT-compiled matmul+ReLU loop | numba>=0.58 |
 | `simulation_scipy.py` | SciPyBackend | `scipy.linalg.blas.sgemm` direct BLAS calls | scipy (already a runtime dep) |
 | `simulation_jax.py` | JAXBackend | `@jax.jit` fused operations, `jax.random` for RNG | jax[cpu]>=0.4 |
+| `simulation_cython.py` | CythonBackend | Cython-compiled matmul+ReLU calling BLAS directly via typed memoryviews | cython>=3.0, build step required |
 
 All backends implement chunked `output_stats` with online accumulation to cap memory at O(chunk_size * width). Chunk sizing uses the `_pick_chunk_size(width)` heuristic targeting 2-8 MB working set.
 
@@ -106,6 +108,7 @@ Each backend uses its own RNG for `output_stats` random input generation:
 - **PyTorch:** `torch.randn`
 - **Numba:** `np.random.randn` (pre-generated, passed into JIT)
 - **JAX:** `jax.random.normal` with a key derived from system entropy per call
+- **Cython:** `np.random.randn` (pre-generated, passed into compiled code)
 
 Results from `output_stats` are **non-deterministic** across backends and across calls. Statistical equivalence (not bitwise equality) is the correctness contract. This matches the existing behavior where `simulation.py` and `simulation_fast.py` already produce different random streams.
 
@@ -179,7 +182,8 @@ dev = [
 pytorch = ["torch>=2.0"]
 numba = ["numba>=0.58"]
 jax = ["jax[cpu]>=0.4"]
-all-backends = ["torch>=2.0", "numba>=0.58", "jax[cpu]>=0.4"]
+cython = ["cython>=3.0"]
+all-backends = ["torch>=2.0", "numba>=0.58", "jax[cpu]>=0.4", "cython>=3.0"]
 ```
 
 SciPy is already a runtime dependency. NumPy is always available.
@@ -221,6 +225,8 @@ Install: `uv sync --group all-backends` or `uv sync --group pytorch` etc.
 - `src/network_estimation/simulation_numba.py` — Numba backend
 - `src/network_estimation/simulation_scipy.py` — SciPy BLAS backend
 - `src/network_estimation/simulation_jax.py` — JAX backend
+- `src/network_estimation/simulation_cython.py` — Cython backend (pure Python with Cython compilation)
+- `src/network_estimation/_cython_kernels.pyx` — Cython extension with typed memoryviews for matmul+ReLU
 - `tests/test_simulation_backends.py` — Parametrized correctness tests
 - `tests/test_profiler.py` — Profiler CLI tests
 
