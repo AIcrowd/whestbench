@@ -11,7 +11,10 @@ import pytest
 
 from network_estimation.profiler import (
     PRESETS,
+    CorrectnessResult,
+    TimingResult,
     correctness_check,
+    format_compact_output,
     format_dims,
     run_profile,
 )
@@ -94,3 +97,104 @@ class TestPresets:
         s = PRESETS["standard"]
         assert len(q.widths) <= len(s.widths)
         assert len(q.n_samples_list) <= len(s.n_samples_list)
+
+
+class TestFormatCompactOutput:
+    def _make_results(self):
+        """Build minimal test data with two backends."""
+        correctness = [
+            CorrectnessResult(backend_name="numpy", passed=True),
+            CorrectnessResult(backend_name="scipy", passed=True),
+        ]
+        timing = [
+            TimingResult(
+                backend_name="numpy", operation="run_mlp",
+                width=64, depth=4, n_samples=1000,
+                times=[0.0001], median_time=0.0001, speedup_vs_numpy=1.0,
+            ),
+            TimingResult(
+                backend_name="scipy", operation="run_mlp",
+                width=64, depth=4, n_samples=1000,
+                times=[0.0002], median_time=0.0002, speedup_vs_numpy=0.5,
+            ),
+            TimingResult(
+                backend_name="numpy", operation="output_stats",
+                width=64, depth=4, n_samples=1000,
+                times=[0.0009], median_time=0.0009, speedup_vs_numpy=1.0,
+            ),
+            TimingResult(
+                backend_name="scipy", operation="output_stats",
+                width=64, depth=4, n_samples=1000,
+                times=[0.0009], median_time=0.0009, speedup_vs_numpy=1.0,
+            ),
+        ]
+        skipped = {"pytorch": "pip install torch>=2.0"}
+        hardware = {
+            "platform": "macOS-26.3-arm64",
+            "machine": "arm64",
+            "cpu_count_physical": 16,
+            "cpu_count_logical": 16,
+            "ram_total_bytes": 64 * 1024**3,
+            "python_version": "3.10.17",
+            "numpy_version": "2.2.6",
+            "os": "Darwin",
+        }
+        return correctness, timing, skipped, hardware
+
+    def test_contains_hardware_context_line(self) -> None:
+        cr, tr, sk, hw = self._make_results()
+        output = format_compact_output(cr, tr, sk, hardware_info=hw)
+        assert "arm64" in output
+        assert "16 cores" in output
+        assert "64.0 GB" in output
+
+    def test_contains_skipped_one_liner(self) -> None:
+        cr, tr, sk, hw = self._make_results()
+        output = format_compact_output(cr, tr, sk, hardware_info=hw)
+        assert "Skipped:" in output
+        assert "pytorch" in output
+        assert "--backends-help" in output
+
+    def test_no_skipped_line_when_none_skipped(self) -> None:
+        cr, tr, _, hw = self._make_results()
+        output = format_compact_output(cr, tr, {}, hardware_info=hw)
+        assert "Skipped:" not in output
+
+    def test_contains_leaderboard(self) -> None:
+        cr, tr, sk, hw = self._make_results()
+        output = format_compact_output(cr, tr, sk, hardware_info=hw)
+        assert "#1" in output
+        assert "#2" in output
+        assert "Leaderboard" in output
+
+    def test_contains_detail_table(self) -> None:
+        cr, tr, sk, hw = self._make_results()
+        output = format_compact_output(cr, tr, sk, hardware_info=hw)
+        assert "Detail" in output
+
+    def test_contains_verbose_hint(self) -> None:
+        cr, tr, sk, hw = self._make_results()
+        output = format_compact_output(cr, tr, sk, hardware_info=hw)
+        assert "--verbose" in output
+
+    def test_single_backend_omits_leaderboard(self) -> None:
+        cr = [CorrectnessResult(backend_name="numpy", passed=True)]
+        tr = [
+            TimingResult(
+                backend_name="numpy", operation="run_mlp",
+                width=64, depth=4, n_samples=1000,
+                times=[0.0001], median_time=0.0001, speedup_vs_numpy=1.0,
+            ),
+            TimingResult(
+                backend_name="numpy", operation="output_stats",
+                width=64, depth=4, n_samples=1000,
+                times=[0.0009], median_time=0.0009, speedup_vs_numpy=1.0,
+            ),
+        ]
+        output = format_compact_output(cr, tr, {})
+        assert "Leaderboard" not in output
+
+    def test_zero_passed_backends(self) -> None:
+        cr = [CorrectnessResult(backend_name="numpy", passed=False, error="boom")]
+        output = format_compact_output(cr, [], {})
+        assert "No backends passed" in output

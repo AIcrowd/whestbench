@@ -54,6 +54,7 @@ import gc
 import json
 import os
 import platform
+import shutil
 import time
 import warnings
 from dataclasses import dataclass
@@ -548,6 +549,243 @@ def format_verbose_output(
             )
 
         console.print(bd_table)
+
+    return buf.getvalue()
+
+
+def format_compact_output(
+    correctness_results: List[CorrectnessResult],
+    timing_results: List[TimingResult],
+    skipped_backends: Dict[str, str],
+    hardware_info: Optional[Dict[str, Any]] = None,
+) -> str:
+    """Format profiling results as a compact Rich-rendered summary.
+
+    Produces a 3-zone view: one-line hardware context, a leaderboard showing
+    which backend wins, and a single detail table merging timing and primitive
+    breakdown data.
+
+    Args:
+        correctness_results: Per-backend correctness check results.
+        timing_results: All timing measurements from the sweep.
+        skipped_backends: Mapping of skipped backend names to install hints.
+        hardware_info: Optional hardware fingerprint dictionary.
+
+    Returns:
+        A string containing ANSI-styled output suitable for printing to a
+        terminal.
+    """
+    from collections import defaultdict
+    from rich.console import Console
+    from rich.table import Table
+    import io
+
+    term_width = shutil.get_terminal_size((120, 24)).columns
+    buf = io.StringIO()
+    console = Console(file=buf, force_terminal=True, width=term_width)
+
+    passed_names = {cr.backend_name for cr in correctness_results if cr.passed}
+    all_failed = len(passed_names) == 0
+
+    # --- Zone 1: Context lines ---
+
+    # Line 1 — Hardware
+    if hardware_info is not None:
+        parts: List[str] = []
+        os_name = hardware_info.get("os", "")
+        machine = hardware_info.get("machine", "")
+        if os_name or machine:
+            parts.append(f"{os_name} {machine}".strip())
+
+        cores = hardware_info.get("cpu_count_physical")
+        if cores is None:
+            cores = hardware_info.get("cpu_count_logical")
+        if cores is not None:
+            parts.append(f"{cores} cores")
+
+        ram_bytes = hardware_info.get("ram_total_bytes")
+        if ram_bytes is not None:
+            parts.append(f"{ram_bytes / (1024**3):.1f} GB")
+
+        py_ver = hardware_info.get("python_version")
+        if py_ver is not None:
+            parts.append(f"Python {py_ver}")
+
+        np_ver = hardware_info.get("numpy_version")
+        if np_ver is not None:
+            parts.append(f"NumPy {np_ver}")
+
+        if parts:
+            console.print(" \u00b7 ".join(parts), highlight=False)
+
+    # Line 2 — Skipped
+    if skipped_backends:
+        names = ", ".join(skipped_backends.keys())
+        console.print(f"Skipped: {names} (--backends-help for install info)")
+
+    # Line 3 — Correctness
+    if all_failed:
+        console.print(
+            "No backends passed correctness checks. Use --verbose for error details."
+        )
+        return buf.getvalue()
+
+    corr_parts: List[str] = []
+    for cr in correctness_results:
+        if cr.passed:
+            corr_parts.append(f"{cr.backend_name} \u2713")
+        else:
+            corr_parts.append(
+                f"\u26a0 FAIL: {cr.backend_name} (use --verbose for details)"
+            )
+    console.print("Correctness: " + "  ".join(corr_parts))
+
+    # --- Helpers for grouping ---
+    def _dim_key(tr: TimingResult) -> Tuple[int, int, int]:
+        return (tr.width, tr.depth, tr.n_samples)
+
+    def _dim_label(w: int, d: int, n: int) -> str:
+        return f"w={w} d={d} n={n:,}"
+
+    # Filter to passed backends only
+    passed_timing = [tr for tr in timing_results if tr.backend_name in passed_names]
+
+    # --- Zone 2: Leaderboard (only if 2+ backends passed) ---
+    if len(passed_names) >= 2:
+        run_mlp_results = [tr for tr in passed_timing if tr.operation == "run_mlp"]
+
+        # Group by dims
+        groups: Dict[Tuple[int, int, int], List[TimingResult]] = defaultdict(list)
+        for tr in run_mlp_results:
+            groups[_dim_key(tr)].append(tr)
+
+        console.print()
+        console.rule("Leaderboard")
+
+        multiple_groups = len(groups) > 1
+
+        for dim_key in sorted(groups.keys()):
+            entries = sorted(groups[dim_key], key=lambda t: t.median_time)
+            if multiple_groups:
+                console.print(f"  [bold]{_dim_label(*dim_key)}[/bold]")
+
+            # Determine baseline backend (numpy if present, else fastest)
+            baseline_name = "numpy" if any(
+                e.backend_name == "numpy" for e in entries
+            ) else entries[0].backend_name
+
+            for rank, tr in enumerate(entries, 1):
+                speedup_str = ""
+                if tr.backend_name != baseline_name:
+                    sp = tr.speedup_vs_numpy
+                    if sp > 1.0:
+                        speedup_str = f"  [green]({sp:.2f}x)[/green]"
+                    elif sp < 1.0:
+                        speedup_str = f"  [red]({sp:.2f}x)[/red]"
+                    else:
+                        speedup_str = f"  ({sp:.2f}x)"
+                console.print(
+                    f"  #{rank}  {tr.backend_name:<12} {tr.median_time:.4f}s{speedup_str}",
+                    highlight=False,
+                )
+
+    # --- Zone 3: Compact Detail Table ---
+    console.print()
+    console.rule("Detail")
+
+    table = Table(show_header=True, show_lines=False, pad_edge=False)
+    table.add_column("Backend", style="cyan")
+    table.add_column("Dims")
+    table.add_column("run_mlp", justify="right")
+    table.add_column("output_stats", justify="right")
+    table.add_column("Matmul", justify="right")
+    table.add_column("ReLU", justify="right")
+    table.add_column("Ovhd", justify="right")
+    table.add_column("", justify="center")  # status checkmark
+
+    # Build lookup for breakdown data: (backend, dims) -> PrimitiveBreakdown
+    breakdown_lookup: Dict[Tuple[str, Tuple[int, int, int]], Any] = {}
+    for tr in timing_results:
+        if tr.operation == "run_mlp_profiled" and tr.breakdown is not None:
+            breakdown_lookup[(tr.backend_name, _dim_key(tr))] = tr.breakdown
+
+    # Build lookup for timing: (backend, dims, operation) -> median_time
+    time_lookup: Dict[Tuple[str, Tuple[int, int, int], str], float] = {}
+    for tr in passed_timing:
+        if tr.operation in ("run_mlp", "output_stats"):
+            time_lookup[(tr.backend_name, _dim_key(tr), tr.operation)] = tr.median_time
+
+    # Collect all dim groups present in timing
+    all_dims: List[Tuple[int, int, int]] = []
+    seen_dims: set = set()
+    for tr in passed_timing:
+        dk = _dim_key(tr)
+        if dk not in seen_dims:
+            seen_dims.add(dk)
+            all_dims.append(dk)
+    all_dims.sort()
+
+    # For each dim group, sort backends by run_mlp time (fastest first)
+    first_group = True
+    for dim_key in all_dims:
+        # Get backends that have run_mlp results for this dim
+        backend_times: List[Tuple[str, float]] = []
+        for bname in passed_names:
+            t = time_lookup.get((bname, dim_key, "run_mlp"))
+            if t is not None:
+                backend_times.append((bname, t))
+        backend_times.sort(key=lambda x: x[1])
+
+        if not first_group:
+            table.add_section()
+        first_group = False
+
+        for bname, _ in backend_times:
+            run_mlp_t = time_lookup.get((bname, dim_key, "run_mlp"))
+            out_stats_t = time_lookup.get((bname, dim_key, "output_stats"))
+            bd = breakdown_lookup.get((bname, dim_key))
+
+            run_mlp_str = f"{run_mlp_t:.4f}s" if run_mlp_t is not None else "\u2014"
+            out_stats_str = f"{out_stats_t:.4f}s" if out_stats_t is not None else "\u2014"
+
+            def _bar(pct: float, color: str) -> str:
+                n_blocks = int(pct / 20)
+                n_blocks = min(n_blocks, 5)
+                bar = "\u2588" * n_blocks
+                if bar:
+                    return f"[{color}]{bar}[/{color}] {pct:.0f}%"
+                return f"{pct:.0f}%"
+
+            if bd is not None:
+                matmul_str = _bar(bd.matmul_pct, "blue")
+                relu_str = _bar(bd.relu_pct, "green")
+                ovhd_str = _bar(bd.overhead_pct, "dim")
+            else:
+                matmul_str = "\u2014"
+                relu_str = "\u2014"
+                ovhd_str = "\u2014"
+
+            status = "\u2713" if bname in passed_names else "\u2717"
+
+            table.add_row(
+                bname,
+                format_dims(dim_key[0], dim_key[1], dim_key[2]),
+                run_mlp_str,
+                out_stats_str,
+                matmul_str,
+                relu_str,
+                ovhd_str,
+                status,
+            )
+
+    console.print(table)
+
+    # Footer
+    console.print()
+    console.print(
+        "[dim italic]Use --verbose for full timing tables with raw times "
+        "and per-layer breakdowns[/dim italic]"
+    )
 
     return buf.getvalue()
 
