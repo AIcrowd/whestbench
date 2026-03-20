@@ -116,7 +116,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
         } else {
           // Hidden layer — colored by activation mean
           const layerIdx = col - 1;
-          const activation = means && means[layerIdx] ? means[layerIdx][row] : null;
+          const activation = means ? means[layerIdx * width + row] : null;
           fillColor = activationColor(activation);
         }
 
@@ -149,25 +149,26 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
     }
 
     /* ---- Create weight edges ---- */
-    // weights: Float32Array of shape [depth, width, width]
-    // weights[l][j][i] = weight from input neuron i to output neuron j at layer l
-    // i.e., offset = l * width * width + j * width + i
+    // weights: Array of Float32Array, one per layer, each width×width row-major
+    // weights[l][i * width + j] = weight from input neuron i to output neuron j
+    // (row-vector convention: x @ W, so W[i,j] connects input i to output j)
     for (let l = 0; l < depth; l++) {
       const srcCol = l;       // input column for this layer
       const dstCol = l + 1;   // output column for this layer
+      const W = weights[l];
 
       for (let j = 0; j < width; j++) {
         // destination neuron j
         for (let i = 0; i < width; i++) {
           // source neuron i
-          const wVal = weights[l * width * width + j * width + i];
+          const wVal = W[i * width + j];
           if (Math.abs(wVal) < 0.01) continue; // skip near-zero weights for clarity
 
           const srcId = nodeMap[`${srcCol},${i}`];
           const dstId = nodeMap[`${dstCol},${j}`];
           if (!srcId || !dstId) continue;
 
-          const link = new dia.Link({
+          const link = new shapes.standard.Link({
             source: { id: srcId },
             target: { id: dstId },
             attrs: {
