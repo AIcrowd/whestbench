@@ -39,6 +39,15 @@ def _lazy_backends() -> Dict[str, Type[SimulationBackend]]:
 
 ALL_BACKEND_NAMES = ("numpy", "pytorch", "numba", "scipy", "jax", "cython")
 
+INSTALL_HINTS: Dict[str, str] = {
+    "numpy": "",
+    "pytorch": "pip install torch>=2.0",
+    "numba": "pip install numba>=0.58",
+    "scipy": "pip install scipy",
+    "jax": "pip install 'jax[cpu]>=0.4'",
+    "cython": "pip install cython>=3.0 && python setup_cython.py build_ext --inplace",
+}
+
 
 def get_available_backends() -> Dict[str, Type[SimulationBackend]]:
     return {k: v for k, v in _lazy_backends().items() if v.is_available()}
@@ -52,8 +61,6 @@ def get_backend(name: Optional[str] = None) -> SimulationBackend:
     backends = _lazy_backends()
     cls = backends.get(name)
     if cls is None or not cls.is_available():
-        hint = ""
-        if cls is not None:
-            hint = cls.install_hint()
+        hint = INSTALL_HINTS.get(name, "")
         raise RuntimeError(f"Backend {name!r} is not available." + (f" Install: {hint}" if hint else ""))
     return cls()
