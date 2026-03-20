@@ -28,7 +28,7 @@ echo ""
 
 # Build from repo root so Dockerfile can access src/, pyproject.toml, etc.
 echo "Building Docker image..."
-docker build -f "${SCRIPT_DIR}/Dockerfile" -t "nestim-profiler:${IMAGE_TAG}" "${REPO_ROOT}"
+docker build --platform linux/amd64 -f "${SCRIPT_DIR}/Dockerfile" -t "nestim-profiler:${IMAGE_TAG}" "${REPO_ROOT}"
 echo ""
 
 # Authenticate to ECR
