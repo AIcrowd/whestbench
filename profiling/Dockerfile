@@ -1,6 +1,6 @@
 # Cloud profiling image — all 6 CPU simulation backends pre-installed.
 # Build from repo root: docker build -f profiling/Dockerfile .
-FROM python:3.10-slim
+FROM --platform=linux/amd64 python:3.10-slim
 
 # System deps for Cython compilation and BLAS
 RUN apt-get update && apt-get install -y --no-install-recommends \
