@@ -487,6 +487,28 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     visualizer_parser.add_argument("--debug", action="store_true")
 
+    profile_parser = subparsers.add_parser(
+        "profile-simulation",
+        help="Benchmark simulation backends head-to-head.",
+    )
+    profile_parser.add_argument(
+        "--preset",
+        choices=("quick", "standard", "exhaustive"),
+        default="standard",
+        help="Parameter sweep preset (default: standard).",
+    )
+    profile_parser.add_argument(
+        "--backends",
+        default=None,
+        help="Comma-separated list of backends to profile (default: all available).",
+    )
+    profile_parser.add_argument(
+        "--output",
+        default=None,
+        help="Path to save JSON results.",
+    )
+    profile_parser.add_argument("--debug", action="store_true")
+
     return parser
 
 
@@ -835,6 +857,19 @@ def _main_participant(argv: "list[str]") -> int:
                 no_open=bool(args.no_open),
                 debug=bool(args.debug),
             )
+
+        if command == "profile-simulation":
+            from .profiler import run_profile
+            backend_filter = None
+            if args.backends:
+                backend_filter = [b.strip() for b in args.backends.split(",")]
+            terminal_output, _ = run_profile(
+                preset_name=str(args.preset),
+                backend_filter=backend_filter,
+                output_path=args.output,
+            )
+            print(terminal_output)
+            return 0
 
         raise ValueError(f"Unsupported command: {command}")
     except Exception as exc:  # pragma: no cover - exercised by CLI tests
