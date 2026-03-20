@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 from .domain import MLP
 from .generation import sample_mlp
 from .sdk import BaseEstimator
-from .simulation import output_stats, run_mlp
+from .simulation_fast import output_stats, run_mlp
 
 
 @dataclass
