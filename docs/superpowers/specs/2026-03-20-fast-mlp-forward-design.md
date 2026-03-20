@@ -72,11 +72,13 @@ NumPy.
 
 ### Weight caching
 
-MLP is a frozen dataclass (immutable), so torch weight tensors are cached using
-a `weakref.WeakKeyDictionary` keyed on the MLP object itself. This avoids
-repeated NumPy-to-Torch conversion when the same MLP is reused across
-`baseline_time` and `estimator.predict`, and automatically evicts entries when
-the MLP is garbage-collected (no stale-pointer risk from `id()` reuse).
+MLP is a frozen dataclass but contains a `list` field (unhashable), so it
+cannot be used as a `WeakKeyDictionary` key. Instead, torch weight tensors
+are cached in a plain dict keyed on `id(mlp)`, with a `weakref.ref`
+destructor callback registered on each MLP to evict the cache entry when
+the object is garbage-collected. This avoids repeated NumPy-to-Torch
+conversion when the same MLP is reused across `baseline_time` and
+`estimator.predict`.
 
 ### Thread control
 
