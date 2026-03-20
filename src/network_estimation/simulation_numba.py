@@ -13,7 +13,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .domain import MLP
-from .simulation_backend import SimulationBackend
+from .simulation_backend import PrimitiveBreakdown, SimulationBackend
 
 try:
     from numba import njit, prange
@@ -101,6 +101,26 @@ class NumbaBackend(SimulationBackend):
     ) -> NDArray[np.float32]:
         weights_tuple = tuple(mlp.weights)
         return _forward_pass(inputs.astype(np.float32, copy=False), weights_tuple)
+
+    def run_mlp_profiled(
+        self, mlp: MLP, inputs: NDArray[np.float32]
+    ) -> Tuple[NDArray[np.float32], PrimitiveBreakdown]:
+        import time
+
+        breakdown = PrimitiveBreakdown()
+        t_start = time.perf_counter()
+        x = inputs.astype(np.float32, copy=False).copy()
+        for w in mlp.weights:
+            t0 = time.perf_counter()
+            x = x @ w  # uses numpy matmul (numba can't be timed per-op inside @njit)
+            t1 = time.perf_counter()
+            _relu_inplace(x)  # JIT-compiled parallel relu
+            t2 = time.perf_counter()
+            breakdown.matmul.append(t1 - t0)
+            breakdown.relu.append(t2 - t1)
+        breakdown.total = time.perf_counter() - t_start
+        breakdown.overhead = breakdown.total - breakdown.total_matmul - breakdown.total_relu
+        return x, breakdown
 
     def run_mlp_all_layers(
         self, mlp: MLP, inputs: NDArray[np.float32]
