@@ -23,13 +23,12 @@ except ImportError:
 
 # --- Thread control ---
 # Respect NESTIM_MAX_THREADS / OMP_NUM_THREADS if set (e.g. by --max-threads),
-# otherwise cap at 4.
-_MAX_THREADS = 4
+# otherwise use all available CPU cores.
 _env_limit = os.environ.get("NESTIM_MAX_THREADS") or os.environ.get("OMP_NUM_THREADS")
 if _env_limit is not None:
     _n_threads = int(_env_limit)
 else:
-    _n_threads = min(os.cpu_count() or _MAX_THREADS, _MAX_THREADS)
+    _n_threads = os.cpu_count() or 1
 torch.set_num_threads(_n_threads)
 
 # --- Module-level weight cache ---

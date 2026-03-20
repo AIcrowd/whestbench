@@ -49,7 +49,7 @@ class TestRunProfile:
             # Verify file was written
             with open(out_path) as f:
                 saved = json.load(f)
-            assert saved["hardware"]["cpu_count"] is not None
+            assert saved["hardware"]["cpu_count_logical"] is not None
 
     def test_unknown_backend_raises(self) -> None:
         with pytest.raises(ValueError, match="Unknown backend"):
