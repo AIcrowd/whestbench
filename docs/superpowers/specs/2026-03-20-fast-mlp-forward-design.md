@@ -55,6 +55,15 @@ if not _HAS_TORCH:
 When PyTorch is absent, the module re-exports the reference implementations
 unchanged. Zero behavior difference.
 
+### Module structure
+
+The file uses an early-return pattern: the fallback `from .simulation import
+...` block is followed by a module-level return-equivalent (the rest of the
+file is inside `if _HAS_TORCH:` or, more practically, the four function defs
+are only reached when `_HAS_TORCH` is True). All `torch.randn` calls
+explicitly pass `dtype=torch.float32` to avoid sensitivity to
+`torch.set_default_dtype()`.
+
 ## Core forward pass
 
 `run_mlp` and `run_mlp_all_layers` convert inputs and weights to
@@ -63,9 +72,11 @@ NumPy.
 
 ### Weight caching
 
-MLP is a frozen dataclass, so torch weight tensors are cached by `id(mlp)` to
-avoid repeated conversion when the same MLP is reused across `baseline_time`
-and `estimator.predict`.
+MLP is a frozen dataclass (immutable), so torch weight tensors are cached using
+a `weakref.WeakKeyDictionary` keyed on the MLP object itself. This avoids
+repeated NumPy-to-Torch conversion when the same MLP is reused across
+`baseline_time` and `estimator.predict`, and automatically evicts entries when
+the MLP is garbage-collected (no stale-pointer risk from `id()` reuse).
 
 ### Thread control
 
@@ -84,7 +95,7 @@ chunks and accumulate statistics online.
 accumulators: layer_sums (depth, width), final_sum_sq (width,)
 
 for each chunk of size C from n_samples:
-    x = torch.randn(C, width)
+    x = torch.randn(C, width, dtype=torch.float32)
     for each layer:
         x = relu(x @ w)
         layer_sums[layer] += x.sum(dim=0)
@@ -102,9 +113,19 @@ Compared to O(n_samples * width * depth) for the reference path.
 
 ### Chunk size selection
 
-`_pick_chunk_size(width)` targets a 2-8 MB working set:
-`max(1024, min(16384, 2**20 // width))`. Configurable via optional parameter
-for benchmarking.
+`_pick_chunk_size(width)` targets a working set that fits comfortably in L2/L3
+cache: `max(1024, min(16384, 2**20 // width))`. For typical widths (100-256)
+this yields 4096-10240 rows and a ~2-8 MB working set. For very small widths
+the chunk may be smaller; the formula is a heuristic, not a guarantee.
+Configurable via optional parameter for benchmarking.
+
+### Numerical stability note
+
+The variance formula `E[X^2] - E[X]^2` is mathematically exact but can suffer
+from catastrophic cancellation when values are large. For ReLU-activated MLPs
+with He initialization, activations stay bounded and this is not a practical
+concern at the sample sizes used here (thousands to millions). If precision
+ever becomes an issue, Welford's online algorithm is a drop-in replacement.
 
 ### RNG note
 
@@ -119,18 +140,39 @@ and any i.i.d. Gaussian source produces statistically equivalent results.
 - `scoring.py` — imports `run_mlp` and `output_stats`
 - `dataset.py` — imports `output_stats`
 
+### `__init__.py` — deliberately stays on `simulation`
+
+`__init__.py` re-exports `relu`, `run_mlp`, `run_mlp_all_layers`, and
+`output_stats` from `simulation`. This is the participant-facing public API
+and intentionally remains on the reference implementation. Participants who do
+`from network_estimation import run_mlp` get the readable NumPy version.
+Internal callers (`scoring.py`, `dataset.py`) import `simulation_fast`
+directly for the optimized path.
+
+### `baseline_time` behavioral note
+
+`scoring.py:baseline_time` uses `run_mlp` to measure wall-clock time that
+becomes the estimator's time budget. Switching to the fast `run_mlp` means
+baseline times will be shorter, giving estimators less time. This is the
+correct behavior: the baseline should reflect the platform's actual forward
+pass speed. A faster baseline is a harder (fairer) benchmark — estimators must
+beat the optimized sampling, not the unoptimized one.
+
 ### What stays on `simulation`
 
 - The reference module itself (untouched, importable by participants)
+- `__init__.py` public API (participant-facing)
 - Participant estimators
 - Existing test suite
 
 ### Dependency
 
-PyTorch added as an optional dependency:
+PyTorch added as an optional dependency under `[dependency-groups]` to match
+the existing project convention:
 
 ```toml
-[project.optional-dependencies]
+[dependency-groups]
+dev = [...]
 fast = ["torch>=2.0"]
 ```
 
