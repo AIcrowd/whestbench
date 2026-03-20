@@ -23,6 +23,8 @@
 | `src/network_estimation/simulation_numba.py` | Numba JIT backend |
 | `src/network_estimation/simulation_scipy.py` | SciPy BLAS backend |
 | `src/network_estimation/simulation_jax.py` | JAX JIT backend |
+| `src/network_estimation/simulation_cython.py` | Cython backend (Python wrapper + compiled kernels) |
+| `src/network_estimation/_cython_kernels.pyx` | Cython extension: typed memoryview matmul+ReLU calling BLAS |
 | `src/network_estimation/profiler.py` | Profiling engine (correctness check + timing sweep + output) |
 | `src/network_estimation/scoring.py` | Modified: use `get_backend()` instead of `simulation_fast` imports |
 | `src/network_estimation/dataset.py` | Modified: use `get_backend()` instead of `simulation_fast` imports |
@@ -252,11 +254,17 @@ def _lazy_backends() -> Dict[str, Type[SimulationBackend]]:
     except ImportError:
         pass
 
+    try:
+        from .simulation_cython import CythonBackend
+        backends["cython"] = CythonBackend
+    except ImportError:
+        pass
+
     return backends
 
 
 # All known backend names (for error messages before backends are created)
-ALL_BACKEND_NAMES = ("numpy", "pytorch", "numba", "scipy", "jax")
+ALL_BACKEND_NAMES = ("numpy", "pytorch", "numba", "scipy", "jax", "cython")
 
 
 def get_available_backends() -> Dict[str, Type[SimulationBackend]]:
@@ -990,11 +998,265 @@ git add src/network_estimation/simulation_jax.py
 git commit -m "feat: add JAX simulation backend"
 ```
 
+### Task 9: Create the Cython Backend
+
+**Files:**
+- Create: `src/network_estimation/_cython_kernels.pyx`
+- Create: `src/network_estimation/simulation_cython.py`
+
+The Cython backend has two parts: a `.pyx` extension with typed memoryviews that calls BLAS directly for maximum throughput, and a Python wrapper that implements the `SimulationBackend` ABC.
+
+**Key design:** The `.pyx` file uses `scipy.linalg.cython_blas.sgemm` for matrix multiply and a typed memoryview loop for ReLU. The Python wrapper (`simulation_cython.py`) handles chunking and the ABC interface. If the compiled extension is not available (not built), the backend reports `is_available() = False`.
+
+- [ ] **Step 1: Write the Cython extension**
+
+```cython
+# src/network_estimation/_cython_kernels.pyx
+# cython: language_level=3, boundscheck=False, wraparound=False, cdivision=True
+"""Cython kernels for MLP forward pass using BLAS sgemm."""
+
+import numpy as np
+cimport numpy as cnp
+from scipy.linalg.cython_blas cimport sgemm
+
+cnp.import_array()
+
+
+def forward_pass(
+    float[:, :] inputs,
+    list weights,
+):
+    """Forward pass through all layers, returning final activations.
+
+    Args:
+        inputs: (n_samples, width) float32 input matrix
+        weights: list of (width, width) float32 weight matrices
+
+    Returns:
+        (n_samples, width) float32 output matrix
+    """
+    cdef int n = inputs.shape[0]
+    cdef int width = inputs.shape[1]
+    cdef float alpha = 1.0
+    cdef float beta = 0.0
+    cdef int i, j
+
+    # Work buffers
+    x = np.array(inputs, dtype=np.float32, order='C', copy=True)
+    cdef float[:, :] x_view = x
+    out = np.empty((n, width), dtype=np.float32, order='C')
+    cdef float[:, :] out_view = out
+
+    for w_np in weights:
+        cdef float[:, :] w_view = np.ascontiguousarray(w_np, dtype=np.float32)
+
+        # sgemm: C = alpha * A @ B + beta * C
+        # Note: sgemm uses column-major (Fortran) order, so we compute
+        # C^T = B^T @ A^T which gives us C = A @ B in row-major
+        sgemm(
+            b"N",       # transB (no transpose of B^T = no transpose in row-major A)
+            b"N",       # transA (no transpose of A^T = no transpose in row-major B)
+            &width,     # M = columns of C (= width)
+            &n,         # N = rows of C (= n_samples)
+            &width,     # K = shared dimension (= width)
+            &alpha,
+            &w_view[0, 0],     # B in col-major = W^T
+            &width,            # ldb
+            &x_view[0, 0],     # A in col-major = X^T
+            &width,            # lda
+            &beta,
+            &out_view[0, 0],   # C in col-major = result^T
+            &width,            # ldc
+        )
+
+        # ReLU in-place on out
+        for i in range(n):
+            for j in range(width):
+                if out_view[i, j] < 0.0:
+                    out_view[i, j] = 0.0
+
+        # Swap buffers for next layer
+        x_view, out_view = out_view, x_view
+        x, out = out, x
+
+    return np.asarray(x_view)
+
+
+def forward_pass_all_layers(
+    float[:, :] inputs,
+    list weights,
+):
+    """Forward pass returning activations after each layer.
+
+    Returns:
+        List of (n_samples, width) float32 arrays.
+    """
+    cdef int n = inputs.shape[0]
+    cdef int width = inputs.shape[1]
+    cdef float alpha = 1.0
+    cdef float beta = 0.0
+    cdef int i, j
+
+    x = np.array(inputs, dtype=np.float32, order='C', copy=True)
+    cdef float[:, :] x_view = x
+    out = np.empty((n, width), dtype=np.float32, order='C')
+    cdef float[:, :] out_view = out
+
+    layers = []
+
+    for w_np in weights:
+        cdef float[:, :] w_view = np.ascontiguousarray(w_np, dtype=np.float32)
+
+        sgemm(
+            b"N", b"N",
+            &width, &n, &width,
+            &alpha,
+            &w_view[0, 0], &width,
+            &x_view[0, 0], &width,
+            &beta,
+            &out_view[0, 0], &width,
+        )
+
+        for i in range(n):
+            for j in range(width):
+                if out_view[i, j] < 0.0:
+                    out_view[i, j] = 0.0
+
+        layers.append(np.asarray(out_view).copy())
+        x_view, out_view = out_view, x_view
+        x, out = out, x
+
+    return layers
+```
+
+- [ ] **Step 2: Write the Python backend wrapper**
+
+```python
+# src/network_estimation/simulation_cython.py
+"""Cython backend — compiled matmul+ReLU with direct BLAS calls."""
+
+from __future__ import annotations
+
+from typing import List, Tuple
+
+import numpy as np
+from numpy.typing import NDArray
+
+from .domain import MLP
+from .simulation_backend import SimulationBackend
+
+try:
+    from . import _cython_kernels
+    _HAS_CYTHON_EXT = True
+except ImportError:
+    _HAS_CYTHON_EXT = False
+
+
+def _pick_chunk_size(width: int) -> int:
+    return max(1024, min(16384, 2**20 // width))
+
+
+class CythonBackend(SimulationBackend):
+    """Cython backend with compiled BLAS matmul+ReLU kernels."""
+
+    @property
+    def name(self) -> str:
+        return "cython"
+
+    @classmethod
+    def is_available(cls) -> bool:
+        return _HAS_CYTHON_EXT
+
+    @classmethod
+    def install_hint(cls) -> str:
+        return "pip install cython>=3.0 && python setup.py build_ext --inplace"
+
+    def run_mlp(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
+        result = _cython_kernels.forward_pass(inputs, mlp.weights)
+        return np.asarray(result, dtype=np.float32)
+
+    def run_mlp_all_layers(
+        self, mlp: MLP, inputs: NDArray[np.float32]
+    ) -> List[NDArray[np.float32]]:
+        layers = _cython_kernels.forward_pass_all_layers(inputs, mlp.weights)
+        return [np.asarray(layer, dtype=np.float32) for layer in layers]
+
+    def output_stats(
+        self, mlp: MLP, n_samples: int
+    ) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
+        width = mlp.width
+        depth = mlp.depth
+        chunk_size = _pick_chunk_size(width)
+
+        layer_sums = np.zeros((depth, width), dtype=np.float64)
+        final_sum_sq = np.zeros(width, dtype=np.float64)
+        n_processed = 0
+
+        for start in range(0, n_samples, chunk_size):
+            n = min(chunk_size, n_samples - start)
+            x = np.random.randn(n, width).astype(np.float32)
+
+            layers = _cython_kernels.forward_pass_all_layers(x, mlp.weights)
+            for layer_idx, layer_out in enumerate(layers):
+                layer_sums[layer_idx] += layer_out.sum(axis=0).astype(np.float64)
+
+            final_out = layers[-1]
+            final_sum_sq += (final_out.astype(np.float64) ** 2).sum(axis=0)
+            n_processed += n
+
+        layer_means = (layer_sums / n_processed).astype(np.float32)
+        final_mean = layer_means[-1].copy()
+        avg_variance = float(
+            np.mean(final_sum_sq / n_processed - final_mean.astype(np.float64) ** 2)
+        )
+        return layer_means, final_mean, avg_variance
+```
+
+- [ ] **Step 3: Add a build script for the Cython extension**
+
+Create a `setup_cython.py` at the project root:
+
+```python
+# setup_cython.py
+"""Build script for Cython extensions."""
+from setuptools import setup, Extension
+from Cython.Build import cythonize
+import numpy as np
+
+extensions = [
+    Extension(
+        "network_estimation._cython_kernels",
+        ["src/network_estimation/_cython_kernels.pyx"],
+        include_dirs=[np.get_include()],
+    ),
+]
+
+setup(
+    ext_modules=cythonize(extensions, language_level=3),
+)
+```
+
+Build with: `cd /Users/mohanty/conductor/workspaces/circuit-estimation-mvp/fast-mlp-cpu-forward && python setup_cython.py build_ext --inplace`
+
+Note: The compiled `.so`/`.pyd` file will be placed in `src/network_estimation/`. If Cython is not installed or the extension hasn't been built, the backend gracefully reports `is_available() = False`.
+
+- [ ] **Step 4: Run tests**
+
+Run: `cd /Users/mohanty/conductor/workspaces/circuit-estimation-mvp/fast-mlp-cpu-forward && PYTHONPATH=src python -m pytest tests/test_simulation_backends.py -v`
+Expected: Cython tests pass (if built) or are skipped
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/network_estimation/_cython_kernels.pyx src/network_estimation/simulation_cython.py setup_cython.py
+git commit -m "feat: add Cython BLAS simulation backend"
+```
+
 ---
 
 ## Chunk 3: Integration (scoring.py, dataset.py, pyproject.toml, cleanup)
 
-### Task 9: Update scoring.py to Use Backend Registry
+### Task 10: Update scoring.py to Use Backend Registry (was Task 9)
 
 **Files:**
 - Modify: `src/network_estimation/scoring.py:15` (import), `:62-84` (make_contest), `:87-92` (baseline_time), `:109-178` (evaluate_estimator)
@@ -1155,7 +1417,8 @@ dev = [
 pytorch = ["torch>=2.0"]
 numba = ["numba>=0.58"]
 jax = ["jax[cpu]>=0.4"]
-all-backends = ["torch>=2.0", "numba>=0.58", "jax[cpu]>=0.4"]
+cython = ["cython>=3.0"]
+all-backends = ["torch>=2.0", "numba>=0.58", "jax[cpu]>=0.4", "cython>=3.0"]
 ```
 
 - [ ] **Step 2: Commit**
@@ -1308,6 +1571,12 @@ def _collect_backend_versions(backend_names: List[str]) -> Dict[str, str]:
         try:
             import jax
             versions["jax"] = jax.__version__
+        except ImportError:
+            pass
+    if "cython" in backend_names:
+        try:
+            import Cython
+            versions["cython"] = Cython.__version__
         except ImportError:
             pass
     return versions
