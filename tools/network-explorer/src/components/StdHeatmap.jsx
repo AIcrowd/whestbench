@@ -1,8 +1,8 @@
 /**
- * StdHeatmap — Wire × Layer standard deviation heatmap.
+ * StdHeatmap — Neuron × Layer standard deviation heatmap.
  * Shows where activations are most variable (input-dependent).
  * Low σ = dark (predictable), High σ = bright coral (variable).
- * Orientation: X-axis = Layer, Y-axis = Wire (matches circuit layout).
+ * Orientation: X-axis = Layer, Y-axis = Neuron (matches network layout).
  * Uses putImageData for gap-free pixel-perfect rendering.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -67,11 +67,11 @@ export default function StdHeatmap({ stds, width: n, depth: d }) {
     const pixels = imgData.data;
 
     for (let py = 0; py < canvasH; py++) {
-      const wire = Math.floor((py / canvasH) * n);
+      const neuron = Math.floor((py / canvasH) * n);
       for (let px = 0; px < canvasW; px++) {
         const layer = Math.floor((px / canvasW) * d);
         const idx = (py * canvasW + px) * 4;
-        const val = (layer < stds.length) ? (stds[layer][wire] || 0) : 0;
+        const val = (layer < stds.length) ? (stds[layer][neuron] || 0) : 0;
         const [r, g, b] = stdToRGB(val, maxStd);
         pixels[idx] = r;
         pixels[idx + 1] = g;
@@ -84,14 +84,14 @@ export default function StdHeatmap({ stds, width: n, depth: d }) {
     setDims({ width, height });
   }, [stds, n, d]);
 
-  const getData = useCallback((layer, wire) => {
+  const getData = useCallback((layer, neuron) => {
     if (!stds || layer >= stds.length) return 0;
-    return stds[layer][wire] || 0;
+    return stds[layer][neuron] || 0;
   }, [stds]);
 
-  const getColor = useCallback((layer, wire) => {
+  const getColor = useCallback((layer, neuron) => {
     if (!stds || layer >= stds.length) return [30, 41, 59];
-    return stdToRGB(stds[layer][wire] || 0, maxStdRef.current);
+    return stdToRGB(stds[layer][neuron] || 0, maxStdRef.current);
   }, [stds]);
 
   if (!stds || stds.length === 0) return null;
