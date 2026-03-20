@@ -19,7 +19,7 @@ import StepIndicator from "./components/StepIndicator";
 import WireStats from "./components/WireStats";
 
 import { perfEnd, perfStart } from "./perf";
-import { useCircuitWorker } from "./useWorker";
+import { useMLPWorker } from "./useWorker";
 
 const DEFAULT_PARAMS = { width: 8, depth: 6, seed: 42 };
 const TOUR_PARAMS = { width: 8, depth: 6, seed: 42 };
@@ -33,7 +33,7 @@ function formatTime(ms) {
 
 export default function App() {
   // ── Web Worker ──
-  const worker = useCircuitWorker();
+  const worker = useMLPWorker();
 
   // ── Step state (tour) ──
   const [step, setStep] = useState(() => {
