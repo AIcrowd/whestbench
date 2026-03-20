@@ -1,10 +1,11 @@
 /**
  * NetworkGraph — JointJS-based visualization for small MLPs (width ≤ 8).
  *
- * Layout: one column of nodes per layer (input + hidden layers).
- * - Input layer: neutral gray nodes
- * - Hidden layers: nodes colored by activation magnitude (dark → coral)
- * - Edges: weight value → color (negative=blue, zero=gray, positive=red),
+ * Layout: one column of nodes per layer (input + hidden layers + output).
+ * - Input layer: open/outlined circles with dashed border (visually distinct)
+ * - Hidden layers: solid circles colored by activation magnitude (gray → coral)
+ * - Output layer: double-bordered circles (visually distinct from hidden)
+ * - Edges: weight value → color (negative=dark slate, zero=gray, positive=coral),
  *          thickness proportional to |weight|
  * - Interactivity: click neuron to highlight incoming/outgoing connections
  */
@@ -23,26 +24,38 @@ const PAD_Y    = 30;
 /* ------------------------------------------------------------------ */
 /*  Color helpers                                                      */
 /* ------------------------------------------------------------------ */
+// Activation magnitude → color (gray-200 → coral)
+// Matches app palette: --gray-200 (#D9DCDC) at 0, --coral (#F0524D) at high
 function activationColor(v) {
-  if (v === null || v === undefined) return "#CBD5E1";
+  if (v === null || v === undefined) return "#D9DCDC";
   const t = Math.max(0, Math.min(1, v));
-  const r = Math.round(51 + 204 * t);
-  const g = Math.round(65 - 65 * t);
-  const b = Math.round(85 - 85 * t);
+  // Interpolate: #D9DCDC (217,220,220) → #F0524D (240,82,77)
+  const r = Math.round(217 + (240 - 217) * t);
+  const g = Math.round(220 + (82 - 220) * t);
+  const b = Math.round(220 + (77 - 220) * t);
   return `rgb(${r},${g},${b})`;
 }
 
+// Weight value → color using app palette
+// Negative: dark slate (#334155), zero: gray (#94A3B8), positive: coral (#F0524D)
 function weightColor(w) {
-  if (Math.abs(w) < 0.001) return "#94A3B8";
+  if (Math.abs(w) < 0.001) return "#AAACAD"; // --gray-400
   if (w < 0) {
+    // Interpolate gray-400 → dark slate as magnitude increases
     const t = Math.min(1, Math.abs(w) * 2);
-    const r = Math.round(59 + (1 - t) * (200 - 59));
-    const g = Math.round(130 + (1 - t) * (200 - 130));
-    const b = Math.round(246);
+    // #AAACAD (170,172,173) → #334155 (51,65,85)
+    const r = Math.round(170 + (51 - 170) * t);
+    const g = Math.round(172 + (65 - 172) * t);
+    const b = Math.round(173 + (85 - 173) * t);
     return `rgb(${r},${g},${b})`;
   } else {
+    // Interpolate gray-400 → coral as magnitude increases
     const t = Math.min(1, w * 2);
-    return `rgb(${Math.round(240 - (1 - t) * 80)},${Math.round(82 - (1 - t) * 40)},${Math.round(77 - (1 - t) * 30)})`;
+    // #AAACAD (170,172,173) → #F0524D (240,82,77)
+    const r = Math.round(170 + (240 - 170) * t);
+    const g = Math.round(172 + (82 - 172) * t);
+    const b = Math.round(173 + (77 - 173) * t);
+    return `rgb(${r},${g},${b})`;
   }
 }
 
@@ -108,21 +121,39 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
       for (let row = 0; row < width; row++) {
         const cy = PAD_Y + NODE_R + row * (nodeH + ROW_GAP);
 
-        // Determine fill color
-        let fillColor;
-        if (col === 0) {
-          // Input layer — neutral
-          fillColor = "#CBD5E1";
-        } else {
-          // Hidden layer — colored by activation mean
+        // Determine fill, stroke, and style per layer type
+        const isInput = col === 0;
+        const isOutput = col === numCols - 1;
+        const isActive = activeLayer !== undefined && activeLayer !== null && col === activeLayer + 1;
+
+        let fillColor, strokeColor, strokeW, strokeDash, labelColor;
+
+        if (isInput) {
+          // Input layer — open circles with dashed border
+          fillColor = "#FFFFFF";
+          strokeColor = isActive ? "#F0524D" : "#5D5F60"; // --gray-600
+          strokeW = isActive ? 2.5 : 2;
+          strokeDash = "4,3";
+          labelColor = "#5D5F60";
+        } else if (isOutput) {
+          // Output layer — double-border effect (thicker stroke + filled)
           const layerIdx = col - 1;
           const activation = means ? means[layerIdx * width + row] : null;
           fillColor = activationColor(activation);
+          strokeColor = isActive ? "#F0524D" : "#292C2D"; // --gray-900
+          strokeW = isActive ? 3 : 3;
+          strokeDash = "";
+          labelColor = "#fff";
+        } else {
+          // Hidden layers — solid circles colored by activation
+          const layerIdx = col - 1;
+          const activation = means ? means[layerIdx * width + row] : null;
+          fillColor = activationColor(activation);
+          strokeColor = isActive ? "#F0524D" : "#292C2D"; // --gray-900
+          strokeW = isActive ? 2.5 : 1.5;
+          strokeDash = "";
+          labelColor = "#fff";
         }
-
-        const isActive = activeLayer !== undefined && activeLayer !== null && col === activeLayer + 1;
-        const strokeColor = isActive ? "#F0524D" : "#1E293B";
-        const strokeW = isActive ? 2.5 : 1.5;
 
         const ellipse = new shapes.standard.Ellipse({
           position: { x: cx - NODE_R, y: cy - NODE_R },
@@ -132,12 +163,13 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
               fill: fillColor,
               stroke: strokeColor,
               strokeWidth: strokeW,
+              strokeDasharray: strokeDash,
               cursor: "pointer",
             },
             label: {
-              text: `${row}`,
+              text: isInput ? `x${row}` : isOutput ? `y${row}` : `${row}`,
               fontSize: 9,
-              fill: col === 0 ? "#475569" : "#fff",
+              fill: labelColor,
               fontFamily: "'IBM Plex Mono', monospace",
             },
           },
@@ -255,11 +287,16 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
         <div ref={containerRef} style={{ display: "inline-block" }} />
       </div>
       <div className="formula-legend" style={{ marginTop: 6 }}>
-        <span style={{ color: "#3B82F6" }}>━ negative weight</span>
-        <span style={{ color: "#94A3B8" }}>━ ~zero</span>
+        <span style={{ color: "#334155" }}>━ negative weight</span>
+        <span style={{ color: "#AAACAD" }}>━ ~zero</span>
         <span style={{ color: "#F0524D" }}>━ positive weight</span>
-        <span style={{ color: "#CBD5E1", marginLeft: 12 }}>● input</span>
-        <span style={{ color: "#F0524D" }}>● high activation</span>
+        <span style={{ marginLeft: 12 }}>
+          <span style={{ border: "2px dashed #5D5F60", borderRadius: "50%", display: "inline-block", width: 10, height: 10, verticalAlign: "middle" }} /> input
+        </span>
+        <span style={{ marginLeft: 6 }}>
+          <span style={{ border: "3px solid #292C2D", borderRadius: "50%", display: "inline-block", width: 10, height: 10, verticalAlign: "middle", background: "#F7A09D" }} /> output
+        </span>
+        <span style={{ color: "#F0524D", marginLeft: 6 }}>● high activation</span>
       </div>
       {highlighted && (
         <p style={{ fontSize: 11, color: "#9CA3AF", margin: "4px 0 0" }}>
