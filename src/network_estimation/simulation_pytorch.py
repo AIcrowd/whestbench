@@ -22,8 +22,14 @@ except ImportError:
     raise ImportError("PyTorch is not installed")
 
 # --- Thread control ---
+# Respect NESTIM_MAX_THREADS / OMP_NUM_THREADS if set (e.g. by --max-threads),
+# otherwise cap at 4.
 _MAX_THREADS = 4
-_n_threads = min(os.cpu_count() or _MAX_THREADS, _MAX_THREADS)
+_env_limit = os.environ.get("NESTIM_MAX_THREADS") or os.environ.get("OMP_NUM_THREADS")
+if _env_limit is not None:
+    _n_threads = int(_env_limit)
+else:
+    _n_threads = min(os.cpu_count() or _MAX_THREADS, _MAX_THREADS)
 torch.set_num_threads(_n_threads)
 
 # --- Module-level weight cache ---

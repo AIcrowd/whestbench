@@ -405,6 +405,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     smoke_test_parser.add_argument("--profile", action="store_true")
     smoke_test_parser.add_argument("--show-diagnostic-plots", action="store_true")
     smoke_test_parser.add_argument("--debug", action="store_true")
+    smoke_test_parser.add_argument(
+        "--max-threads", type=int, default=None, metavar="N",
+        help="Limit all backends to at most N CPU threads.",
+    )
 
     init_parser = subparsers.add_parser("init", help="Create starter estimator files.")
     init_parser.add_argument("path", nargs="?", default=".")
@@ -444,6 +448,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--dataset", default=None, help="Path to pre-created dataset .npz file."
     )
     run_parser.add_argument("--debug", action="store_true")
+    run_parser.add_argument(
+        "--max-threads", type=int, default=None, metavar="N",
+        help="Limit all backends to at most N CPU threads.",
+    )
 
     create_ds_parser = subparsers.add_parser(
         "create-dataset", help="Pre-create evaluation dataset."
@@ -459,6 +467,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
     )
     create_ds_parser.add_argument("--debug", action="store_true")
+    create_ds_parser.add_argument(
+        "--max-threads", type=int, default=None, metavar="N",
+        help="Limit all backends to at most N CPU threads.",
+    )
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
     package_parser.add_argument("--estimator", required=True)
@@ -508,6 +520,13 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Path to save JSON results.",
     )
     profile_parser.add_argument("--debug", action="store_true")
+    profile_parser.add_argument(
+        "--max-threads",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Limit all backends to at most N CPU threads.",
+    )
 
     return parser
 
@@ -586,6 +605,12 @@ def _main_participant(argv: "list[str]") -> int:
     args = _build_participant_parser().parse_args(argv)
     command = str(args.command)
     json_output = bool(getattr(args, "json_output", False))
+
+    # Apply thread limit early, before any backend module is imported.
+    max_threads = getattr(args, "max_threads", None)
+    if max_threads is not None:
+        from .concurrency import apply_thread_limit
+        apply_thread_limit(max_threads)
     debug = bool(getattr(args, "debug", False))
 
     try:
@@ -868,6 +893,7 @@ def _main_participant(argv: "list[str]") -> int:
                 backend_filter=backend_filter,
                 output_path=args.output,
                 show_progress=not json_output,
+                max_threads=args.max_threads,
             )
             print(terminal_output)
             return 0

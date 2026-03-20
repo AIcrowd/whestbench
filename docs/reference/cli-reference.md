@@ -22,7 +22,7 @@ Participant workflow commands:
 Run a built-in `CombinedEstimator` dashboard check and print next-step participant commands.
 
 ```bash
-nestim smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--debug]
+nestim smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--max-threads N] [--debug]
 ```
 
 ## `nestim init`
@@ -63,6 +63,7 @@ Key options:
 - `--json`
 - `--dataset <path>` — use pre-created dataset `.npz` file
 - `--strict-baselines` — refuse to run if dataset creation hardware differs from execution runtime hardware
+- `--max-threads N` — limit all backends to at most N CPU threads (see [Thread limiting](#thread-limiting))
 - `--debug`
 
 Recommended debug sequence:
@@ -93,6 +94,7 @@ Key options:
 - `--seed <int>` (optional, auto-generated if omitted)
 - `--width <int>`, `--max-depth <int>`, `--budgets <csv>`
 - `-o, --output <path>` (default: `eval_dataset.npz`)
+- `--max-threads N` — limit all backends to at most N CPU threads (see [Thread limiting](#thread-limiting))
 - `--json`
 - `--debug`
 
@@ -143,6 +145,7 @@ Benchmark simulation backends head-to-head. Runs a correctness check followed by
 nestim profile-simulation [--preset super-quick|quick|standard|exhaustive]
                           [--backends <comma-separated>]
                           [--output <path>]
+                          [--max-threads N]
                           [--debug]
 ```
 
@@ -155,6 +158,7 @@ Key options:
   - `exhaustive` — 3 widths, 5 depths, 5 sample counts (up to 16.7 M samples). Thorough but slow.
 - `--backends <list>` — comma-separated list of backends to profile (default: all installed). Valid names: `numpy`, `pytorch`, `numba`, `jax`, `scipy`, `cython`.
 - `--output <path>` — save a JSON report with hardware info, library versions, correctness results, and raw timing data.
+- `--max-threads N` — limit all backends to at most N CPU threads (see [Thread limiting](#thread-limiting)).
 - `--debug` — show full tracebacks on errors.
 
 The profiler automatically skips backends whose dependencies are not installed and prints `pip install` hints for them. Only backends that pass the pre-flight correctness check are included in the timing sweep.
@@ -171,6 +175,45 @@ nestim profile-simulation --preset exhaustive --output profile_results.json
 # Check which backends are available (quick correctness-only pass)
 nestim profile-simulation --preset quick
 ```
+
+## Thread limiting
+
+Several commands accept `--max-threads N` to cap the number of CPU threads used by all numerical backends (BLAS, Numba, PyTorch, JAX/XLA). This is useful for:
+
+- **Reproducible benchmarks** — pin thread count so results don't vary with machine load.
+- **Shared machines** — avoid saturating all cores when others need them.
+- **Single-threaded baselines** — use `--max-threads 1` to measure per-core performance.
+
+### CLI flag
+
+```bash
+nestim run --estimator ./my-estimator/estimator.py --max-threads 2
+nestim create-dataset --max-threads 2
+nestim profile-simulation --max-threads 1 --preset quick
+nestim smoke-test --max-threads 4
+```
+
+### Environment variable
+
+Set `NESTIM_MAX_THREADS` before launching the process. The CLI flag takes precedence if both are set.
+
+```bash
+export NESTIM_MAX_THREADS=2
+nestim profile-simulation
+```
+
+### What it controls
+
+| Library / pool | Environment variable set |
+|----------------|------------------------|
+| OpenBLAS | `OPENBLAS_NUM_THREADS` |
+| Intel MKL | `MKL_NUM_THREADS` |
+| OpenMP | `OMP_NUM_THREADS` |
+| Apple vecLib | `VECLIB_MAXIMUM_THREADS` |
+| Numba | `NUMBA_NUM_THREADS` |
+| NumExpr | `NUMEXPR_NUM_THREADS` |
+| JAX / XLA | `XLA_FLAGS` (intra-op parallelism) |
+| PyTorch | `torch.set_num_threads()` |
 
 ## ➡️ Next step
 
