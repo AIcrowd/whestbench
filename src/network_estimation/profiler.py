@@ -20,7 +20,7 @@ from .simulation import (
     run_mlp as ref_run_mlp,
 )
 from .simulation_backend import SimulationBackend
-from .simulation_backends import ALL_BACKEND_NAMES, get_available_backends
+from .simulation_backends import ALL_BACKEND_NAMES, INSTALL_HINTS, get_available_backends
 
 
 @dataclass
@@ -371,15 +371,7 @@ def run_profile(
     all_names = list(backend_filter) if backend_filter else list(ALL_BACKEND_NAMES)
     for name in all_names:
         if name not in available:
-            # Try to get install hint
-            try:
-                from . import simulation_backends
-                backends_dict = simulation_backends._lazy_backends()
-                cls = backends_dict.get(name)
-                hint = cls.install_hint() if cls else ""
-            except Exception:
-                hint = ""
-            skipped[name] = hint
+            skipped[name] = INSTALL_HINTS.get(name, "")
 
     # Instantiate backends
     backend_instances: Dict[str, SimulationBackend] = {}
