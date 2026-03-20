@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 from .domain import MLP
 from .generation import sample_mlp
 from .sdk import BaseEstimator
-from .simulation_fast import output_stats, run_mlp
+from .simulation_backends import get_backend
 
 
 @dataclass
@@ -62,6 +62,7 @@ class ContestData:
 def make_contest(spec: ContestSpec) -> ContestData:
     """Generate MLPs and compute ground truth for a contest run."""
     spec.validate()
+    backend = get_backend()
     mlps: List[MLP] = []
     all_layer_targets: List[NDArray[np.float32]] = []
     final_targets: List[NDArray[np.float32]] = []
@@ -69,7 +70,7 @@ def make_contest(spec: ContestSpec) -> ContestData:
 
     for _ in range(spec.n_mlps):
         mlp = sample_mlp(spec.width, spec.depth)
-        all_means, final_mean, avg_var = output_stats(mlp, spec.ground_truth_budget)
+        all_means, final_mean, avg_var = backend.output_stats(mlp, spec.ground_truth_budget)
         mlps.append(mlp)
         all_layer_targets.append(all_means)
         final_targets.append(final_mean)
@@ -84,11 +85,14 @@ def make_contest(spec: ContestSpec) -> ContestData:
     )
 
 
-def baseline_time(mlp: MLP, n_samples: int) -> float:
+def baseline_time(mlp: MLP, n_samples: int, backend: "SimulationBackend | None" = None) -> float:
     """Measure wall time for a single forward pass with ``n_samples`` inputs."""
+    if backend is None:
+        from .simulation_backends import get_backend
+        backend = get_backend()
     inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
     t0 = time.perf_counter()
-    run_mlp(mlp, inputs)
+    backend.run_mlp(mlp, inputs)
     return time.perf_counter() - t0
 
 
@@ -112,12 +116,13 @@ def evaluate_estimator(
 ) -> Dict[str, Any]:
     """Score an estimator against precomputed contest data."""
     spec = data.spec
+    backend = get_backend()
     per_mlp: List[Dict[str, Any]] = []
     primary_scores: List[float] = []
     secondary_scores: List[float] = []
 
     for i, mlp in enumerate(data.mlps):
-        time_budget = baseline_time(mlp, spec.estimator_budget)
+        time_budget = baseline_time(mlp, spec.estimator_budget, backend)
         time_budget = max(time_budget, 1e-9)
 
         t0 = time.perf_counter()
