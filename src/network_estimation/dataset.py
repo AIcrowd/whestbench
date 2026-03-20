@@ -14,7 +14,7 @@ from numpy.typing import NDArray
 from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
-from .simulation_fast import output_stats
+from .simulation_backends import get_backend
 
 SCHEMA_VERSION = "2.0"
 
@@ -57,6 +57,7 @@ def create_dataset(
     if seed is None:
         seed = int(np.random.SeedSequence().entropy)  # type: ignore[arg-type]
     rng = np.random.default_rng(seed)
+    backend = get_backend()
 
     mlps: List[MLP] = []
     for i in range(n_mlps):
@@ -74,7 +75,7 @@ def create_dataset(
     final_means_list: List[NDArray[np.float32]] = []
     avg_variances: List[float] = []
     for i, mlp in enumerate(mlps):
-        all_means, final_mean, avg_var = output_stats(mlp, n_samples)
+        all_means, final_mean, avg_var = backend.output_stats(mlp, n_samples)
         all_means_list.append(all_means)
         final_means_list.append(final_mean)
         avg_variances.append(avg_var)
