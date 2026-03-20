@@ -12,27 +12,27 @@ def _lazy_backends() -> Dict[str, Type[SimulationBackend]]:
     try:
         from .simulation_pytorch import PyTorchBackend
         backends["pytorch"] = PyTorchBackend
-    except ImportError:
+    except Exception:
         pass
     try:
         from .simulation_numba import NumbaBackend
         backends["numba"] = NumbaBackend
-    except ImportError:
+    except Exception:
         pass
     try:
         from .simulation_scipy import SciPyBackend
         backends["scipy"] = SciPyBackend
-    except ImportError:
+    except Exception:
         pass
     try:
         from .simulation_jax import JAXBackend
         backends["jax"] = JAXBackend
-    except ImportError:
+    except Exception:
         pass
     try:
         from .simulation_cython import CythonBackend
         backends["cython"] = CythonBackend
-    except ImportError:
+    except Exception:
         pass
     return backends
 
