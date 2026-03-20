@@ -5,8 +5,9 @@ import json
 import tarfile
 from pathlib import Path
 from textwrap import dedent
+from typing import Dict
 
-from circuit_estimation.packaging import package_submission
+from network_estimation.packaging import package_submission
 
 
 def _write_estimator_module(tmp_path: Path, class_name: str = "Estimator") -> Path:
@@ -15,12 +16,12 @@ def _write_estimator_module(tmp_path: Path, class_name: str = "Estimator") -> Pa
         dedent(
             f"""
             import numpy as np
-            from circuit_estimation import BaseEstimator, Circuit
+            from numpy.typing import NDArray
+            from network_estimation import BaseEstimator, MLP
 
             class {class_name}(BaseEstimator):
-                def predict(self, circuit: Circuit, budget: int):
-                    for _ in range(circuit.d):
-                        yield np.zeros((circuit.n,), dtype=np.float32)
+                def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
+                    return np.zeros((mlp.depth, mlp.width), dtype=np.float32)
             """
         ).strip()
         + "\n",
@@ -29,7 +30,7 @@ def _write_estimator_module(tmp_path: Path, class_name: str = "Estimator") -> Pa
     return module_path
 
 
-def _read_tar_json(archive_path: Path, member: str) -> dict[str, object]:
+def _read_tar_json(archive_path: Path, member: str) -> Dict[str, object]:
     with tarfile.open(archive_path, "r:gz") as archive:
         file_obj = archive.extractfile(member)
         assert file_obj is not None

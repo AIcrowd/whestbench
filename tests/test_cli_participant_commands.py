@@ -9,10 +9,10 @@ from typing import Any
 
 import pytest
 
-import circuit_estimation.cli as cli
+import network_estimation.cli as cli
 
 
-def _sample_report() -> dict[str, Any]:
+def _sample_report() -> dict:
     return {
         "schema_version": "1.0",
         "mode": "agent",
@@ -24,20 +24,16 @@ def _sample_report() -> dict[str, Any]:
             "host": {},
         },
         "run_config": {
-            "n_circuits": 1,
-            "n_samples": 10,
+            "n_mlps": 1,
             "width": 4,
-            "max_depth": 3,
-            "layer_count": 3,
-            "budgets": [10],
-            "time_tolerance": 0.1,
+            "depth": 3,
+            "estimator_budget": 40000,
             "profile_enabled": False,
         },
-        "circuits": [{"circuit_index": 0, "wire_count": 4, "layer_count": 3}],
         "results": {
-            "adjusted_mse": 0.42,
-            "score_direction": "lower_is_better",
-            "by_budget_raw": [],
+            "primary_score": 0.42,
+            "secondary_score": 0.55,
+            "per_mlp": [],
         },
         "notes": [],
     }
@@ -54,7 +50,7 @@ def test_validate_command_returns_json_only_with_json_flag(
     monkeypatch.setattr(
         cli,
         "validate_submission_entrypoint",
-        lambda *_args, **_kwargs: {"ok": True, "class_name": "Estimator", "output_shape": [1, 4]},
+        lambda *_args, **_kwargs: {"ok": True, "class_name": "Estimator", "output_shape": [2, 4]},
     )
 
     exit_code = cli.main(["validate", "--estimator", "estimator.py", "--json"])
@@ -65,7 +61,7 @@ def test_validate_command_returns_json_only_with_json_flag(
     assert json.loads(captured.out) == {
         "ok": True,
         "class_name": "Estimator",
-        "output_shape": [1, 4],
+        "output_shape": [2, 4],
     }
 
 
@@ -78,7 +74,7 @@ def test_run_command_renders_human_report_in_non_agent_mode(
         lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
         raising=False,
     )
-    monkeypatch.setattr(cli, "score_estimator_report", lambda *_args, **_kwargs: _sample_report())
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_args, **_kwargs: _sample_report())
     monkeypatch.setattr(cli, "_print_human_startup", lambda *_a, **_k: None, raising=False)
     monkeypatch.setattr(cli, "_progress_callback", _noop_progress, raising=False)
     monkeypatch.setattr(
@@ -104,10 +100,10 @@ def test_run_command_renders_human_report_in_non_agent_mode(
 def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    observed: dict[str, Any] = {}
+    observed: dict = {}
 
     @contextmanager
-    def fake_progress(total: int, n_circuits: int, n_budgets: int):
+    def fake_progress(total: int, n_mlps: int):
         observed["total"] = total
         observed["progress_opened"] = True
         yield lambda _event: None
@@ -133,15 +129,14 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
     )
     monkeypatch.setattr(cli, "_progress_callback", fake_progress, raising=False)
 
-    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+    def fake_run_estimator_with_runner(*_args: Any, **kwargs: Any) -> dict:
         observed["scoring_progress_cb"] = kwargs.get("progress")
-        observed["sampling_progress_cb"] = kwargs.get("sampling_progress")
         return _sample_report()
 
     monkeypatch.setattr(
         cli,
-        "score_estimator_report",
-        fake_score_estimator_report,
+        "_run_estimator_with_runner",
+        fake_run_estimator_with_runner,
     )
     monkeypatch.setattr(
         cli,
@@ -157,7 +152,7 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
             "estimator.py",
             "--runner",
             "inprocess",
-            "--n-circuits",
+            "--n-mlps",
             "2",
         ]
     )
@@ -166,17 +161,16 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
     assert exit_code == 0
     assert captured.err == ""
     assert "human report\n" in captured.out
-    assert observed["total"] == 8
+    assert observed["total"] == 2
     assert observed["progress_opened"] is True
     assert observed["progress_closed"] is True
     assert callable(observed["scoring_progress_cb"])
-    assert observed["sampling_progress_cb"] is observed["scoring_progress_cb"]
 
 
 def test_run_command_json_mode_skips_human_startup_and_progress(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(cli, "score_estimator_report", lambda *_args, **_kwargs: _sample_report())
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_args, **_kwargs: _sample_report())
     monkeypatch.setattr(
         cli,
         "_print_human_startup",
@@ -206,12 +200,12 @@ def test_package_command_writes_manifest_with_entrypoint_and_hashes(
         dedent(
             """
             import numpy as np
-            from circuit_estimation import BaseEstimator, Circuit
+            from network_estimation import BaseEstimator
+            from network_estimation.domain import MLP
 
             class Estimator(BaseEstimator):
-                def predict(self, circuit: Circuit, budget: int):
-                    for _ in range(circuit.d):
-                        yield np.zeros((circuit.n,), dtype=np.float32)
+                def predict(self, mlp: MLP, budget: int):
+                    return np.zeros((mlp.depth, mlp.width), dtype=np.float32)
             """
         ).strip()
         + "\n",
@@ -257,17 +251,16 @@ def test_init_and_run_help_text_reference_examples_estimators_path() -> None:
 def test_main_uses_sys_argv_when_argv_is_none(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(
-        cli,
-        "score_estimator_report",
-        lambda *_args, **_kwargs: _sample_report(),
-    )
+    def fake_run_default_report(*, profile: bool = False, detail: str = "raw") -> dict:
+        return _sample_report()
+
+    monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
     monkeypatch.setattr(
         cli,
         "render_human_report",
         lambda _report, *, show_diagnostic_plots=False: "human report\n",
     )
-    monkeypatch.setattr(cli.sys, "argv", ["cestim", "smoke-test"])
+    monkeypatch.setattr(cli.sys, "argv", ["nestim", "smoke-test"])
 
     exit_code = cli.main(None)
     captured = capsys.readouterr()

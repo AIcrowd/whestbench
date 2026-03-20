@@ -1,0 +1,12 @@
+from __future__ import annotations
+
+import numpy as np
+from numpy.typing import NDArray
+
+from network_estimation import BaseEstimator, MLP
+
+
+class Estimator(BaseEstimator):
+    def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
+        _ = budget
+        return np.zeros((mlp.depth, mlp.width), dtype=np.float32)

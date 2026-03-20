@@ -8,53 +8,53 @@ Use this page for exact command syntax and key flags.
 
 Participant workflow commands:
 
-- `cestim smoke-test`
-- `cestim init`
-- `cestim validate`
-- `cestim run`
-- `cestim create-dataset`
-- `cestim package`
-- `cestim visualizer`
+- `nestim smoke-test`
+- `nestim init`
+- `nestim validate`
+- `nestim run`
+- `nestim create-dataset`
+- `nestim package`
+- `nestim visualizer`
 
-## `cestim smoke-test`
+## `nestim smoke-test`
 
 Run a built-in `CombinedEstimator` dashboard check and print next-step participant commands.
 
 ```bash
-cestim smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--debug]
+nestim smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--debug]
 ```
 
-## `cestim init`
+## `nestim init`
 
 Create starter files in a target directory.
 
 ```bash
-cestim init [path] [--json] [--debug]
+nestim init [path] [--json] [--debug]
 ```
 
-## `cestim validate`
+## `nestim validate`
 
-Validate estimator loading and stream contract.
+Validate estimator loading and output contract.
 
 ```bash
-cestim validate --estimator <path> [--class <name>] [--json] [--debug]
+nestim validate --estimator <path> [--class <name>] [--json] [--debug]
 ```
 
-## `cestim run`
+## `nestim run`
 
 Run local scoring with participant estimator.
 
 ```bash
-cestim run --estimator <path> [options]
+nestim run --estimator <path> [options]
 ```
 
-Default behavior: `cestim run --estimator <path>` is equivalent to `--runner subprocess`.
+Default behavior: `nestim run --estimator <path>` is equivalent to `--runner subprocess`.
 
 Key options:
 
 - `--class <name>`
 - `--runner inprocess|subprocess`
-- `--n-circuits <int>`
+- `--n-mlps <int>`
 - `--n-samples <int>`
 - `--detail raw|full`
 - `--profile`
@@ -67,9 +67,9 @@ Key options:
 Recommended debug sequence:
 
 ```bash
-cestim run --estimator ./path/to/estimator.py
-cestim run --estimator ./path/to/estimator.py --debug
-cestim run --estimator ./path/to/estimator.py --runner inprocess --debug
+nestim run --estimator ./path/to/estimator.py
+nestim run --estimator ./path/to/estimator.py --debug
+nestim run --estimator ./path/to/estimator.py --runner inprocess --debug
 ```
 
 Runner mode tradeoff:
@@ -77,17 +77,17 @@ Runner mode tradeoff:
 - `subprocess` (default): realistic isolation and safer runtime boundary.
 - `inprocess`: clearer estimator-level tracebacks for local debugging.
 
-## `cestim create-dataset`
+## `nestim create-dataset`
 
 Pre-create an evaluation dataset for reuse across runs.
 
 ```bash
-cestim create-dataset [options] -o <output-path>
+nestim create-dataset [options] -o <output-path>
 ```
 
 Key options:
 
-- `--n-circuits <int>` (default: 10)
+- `--n-mlps <int>` (default: 10)
 - `--n-samples <int>` (default: 10000)
 - `--seed <int>` (optional, auto-generated if omitted)
 - `--width <int>`, `--max-depth <int>`, `--budgets <csv>`
@@ -97,12 +97,12 @@ Key options:
 
 See [Use Evaluation Datasets](../how-to/use-evaluation-datasets.md) for usage patterns.
 
-## `cestim package`
+## `nestim package`
 
 Build a submission artifact.
 
 ```bash
-cestim package --estimator <path> [options]
+nestim package --estimator <path> [options]
 ```
 
 Key options:
@@ -115,12 +115,12 @@ Key options:
 - `--json`
 - `--debug`
 
-## `cestim visualizer`
+## `nestim visualizer`
 
-Launch the interactive Circuit Explorer in a browser.
+Launch the interactive Network Explorer in a browser.
 
 ```bash
-cestim visualizer [--host HOST] [--port PORT] [--no-open] [--debug]
+nestim visualizer [--host HOST] [--port PORT] [--no-open] [--debug]
 ```
 
 Checks for Node.js (>= 18), installs dependencies if needed, starts the Vite dev server, and auto-opens the browser.
@@ -137,5 +137,5 @@ On SSH/headless environments, browser auto-open is skipped automatically.
 ## ➡️ Next step
 
 - [Score Report Fields](./score-report-fields.md)
-- [Inspect and Traverse Circuit Structure](../how-to/inspect-circuit-structure.md)
+- [Inspect and Traverse MLP Structure](../how-to/inspect-mlp-structure.md)
 - [Validate, Run, and Package](../how-to/validate-run-package.md)

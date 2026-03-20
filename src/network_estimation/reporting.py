@@ -10,7 +10,7 @@ import shutil
 from collections.abc import Sequence
 from datetime import datetime, timezone
 from statistics import fmean
-from typing import Any
+from typing import Any, Optional
 
 from rich import box
 from rich.align import Align
@@ -26,7 +26,7 @@ except ImportError:  # pragma: no cover - optional dependency
     _plotext = None
 
 
-def render_agent_report(report: dict[str, Any]) -> str:
+def render_agent_report(report: "dict[str, Any]") -> str:
     """Return stable pretty JSON for machine parsing."""
     return f"{json.dumps(report, indent=2)}\n"
 
@@ -37,7 +37,7 @@ def render_human_header() -> str:
     console = _new_console(buffer)
     console.print(
         Panel(
-            Align.center(Text("Circuit Estimation Report", style="bold white")),
+            Align.center(Text("Network Estimation Report", style="bold white")),
             expand=True,
             border_style="bright_cyan",
         )
@@ -45,7 +45,7 @@ def render_human_header() -> str:
     return buffer.getvalue()
 
 
-def render_human_context_panels(report: dict[str, Any]) -> str:
+def render_human_context_panels(report: "dict[str, Any]") -> str:
     """Render context panels shown before scoring starts."""
     buffer = io.StringIO()
     console = _new_console(buffer)
@@ -54,26 +54,24 @@ def render_human_context_panels(report: dict[str, Any]) -> str:
 
 
 def render_human_results(
-    report: dict[str, Any], *, show_diagnostic_plots: bool = False
+    report: "dict[str, Any]", *, show_diagnostic_plots: bool = False
 ) -> str:
     """Render post-run sections for append-only human flows."""
     buffer = io.StringIO()
     console = _new_console(buffer)
-    _render_score_budget_row(console, report)
-    _render_budget_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
-    _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    _render_score_row(console, report)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
 
 
-def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool = False) -> str:
+def render_human_report(report: "dict[str, Any]", *, show_diagnostic_plots: bool = False) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
     buffer = io.StringIO()
     console = _new_console(buffer)
 
     console.print(
         Panel(
-            Align.center(Text("Circuit Estimation Report", style="bold white")),
+            Align.center(Text("Network Estimation Report", style="bold white")),
             expand=True,
             border_style="bright_cyan",
         )
@@ -83,9 +81,7 @@ def render_human_report(report: dict[str, Any], *, show_diagnostic_plots: bool =
     )
     console.print("[dim]Use --show-diagnostic-plots to include diagnostic plot panes.[/dim]")
     _render_top_row(console, report)
-    _render_score_budget_row(console, report)
-    _render_budget_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
-    _render_layer_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
+    _render_score_row(console, report)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
 
@@ -102,7 +98,7 @@ def _new_console(buffer: io.StringIO) -> Console:
 
 
 def render_smoke_test_next_steps() -> str:
-    """Render onboarding next-steps panel for `cestim smoke-test`."""
+    """Render onboarding next-steps panel for ``nestim smoke-test``."""
     buffer = io.StringIO()
     width = _dashboard_width()
     console = Console(
@@ -115,8 +111,8 @@ def render_smoke_test_next_steps() -> str:
 
     purpose_lines = _smoke_next_step_lines()
     commands = _smoke_next_step_commands()
-    body_items: list[Text] = [
-        Text("We are all set! Welcome onboard 🚀", style="bold bright_green"),
+    body_items: "list[Text]" = [
+        Text("We are all set! Welcome onboard", style="bold bright_green"),
         Text("Run these steps:", style="bold bright_white"),
         Text(),
     ]
@@ -142,16 +138,16 @@ def render_smoke_test_next_steps() -> str:
     return buffer.getvalue()
 
 
-def _smoke_next_step_commands() -> list[str]:
+def _smoke_next_step_commands() -> "list[str]":
     return [
-        "cestim init ./my-estimator",
-        "cestim validate --estimator ./my-estimator/estimator.py",
-        "cestim run --estimator ./my-estimator/estimator.py --runner subprocess",
-        "cestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
+        "nestim init ./my-estimator",
+        "nestim validate --estimator ./my-estimator/estimator.py",
+        "nestim run --estimator ./my-estimator/estimator.py --runner subprocess",
+        "nestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
     ]
 
 
-def _smoke_next_step_lines() -> list[Text]:
+def _smoke_next_step_lines() -> "list[Text]":
     purposes = [
         ("Create starter files you can edit.", "bold bright_cyan"),
         ("Validate an Estimator implementation.", "bold bright_green"),
@@ -161,16 +157,16 @@ def _smoke_next_step_lines() -> list[Text]:
     return [Text(f"# {idx}) {purpose}", style=style) for idx, (purpose, style) in enumerate(purposes, start=1)]
 
 
-def _smoke_optional_example_commands() -> list[str]:
+def _smoke_optional_example_commands() -> "list[str]":
     return [
-        "cestim run --estimator ./examples/estimators/combined_estimator.py --runner subprocess",
-        "cestim run --estimator ./examples/estimators/covariance_propagation.py --runner subprocess",
-        "cestim run --estimator ./examples/estimators/mean_propagation.py --runner subprocess",
-        "cestim run --estimator ./examples/estimators/random_estimator.py --runner subprocess",
+        "nestim run --estimator ./examples/estimators/combined_estimator.py --runner subprocess",
+        "nestim run --estimator ./examples/estimators/covariance_propagation.py --runner subprocess",
+        "nestim run --estimator ./examples/estimators/mean_propagation.py --runner subprocess",
+        "nestim run --estimator ./examples/estimators/random_estimator.py --runner subprocess",
     ]
 
 
-def _render_top_row(console: Console, report: dict[str, Any]) -> None:
+def _render_top_row(console: Console, report: "dict[str, Any]") -> None:
     mode = _layout_mode(console.width)
     run_context = _run_context_panel(report)
     hardware = _hardware_runtime_panel(report)
@@ -186,28 +182,17 @@ def _render_top_row(console: Console, report: dict[str, Any]) -> None:
     console.print(hardware)
 
 
-def _render_score_budget_row(console: Console, report: dict[str, Any]) -> None:
-    mode = _layout_mode(console.width)
+def _render_score_row(console: Console, report: "dict[str, Any]") -> None:
     score = _score_summary_panel(report)
-    budget_table = _budget_table_panel(report)
-
-    if mode in {"three_col", "two_col"}:
-        grid = Table.grid(expand=True)
-        grid.add_column(ratio=1)
-        grid.add_column(ratio=1)
-        grid.add_row(score, budget_table)
-        console.print(grid)
-        return
     console.print(score)
-    console.print(budget_table)
 
 
-def _render_context_row(console: Console, report: dict[str, Any]) -> None:
+def _render_context_row(console: Console, report: "dict[str, Any]") -> None:
     console.print(build_human_context_renderable(report, console_width=console.width))
 
 
 def build_human_context_renderable(
-    report: dict[str, Any], *, console_width: int | None = None
+    report: "dict[str, Any]", *, console_width: Optional[int] = None
 ) -> Any:
     width = _dashboard_width() if console_width is None else max(80, int(console_width))
     mode = _layout_mode(width)
@@ -229,7 +214,7 @@ def _dashboard_width() -> int:
     return max(80, columns)
 
 
-def _rich_console_environ(width: int) -> dict[str, str]:
+def _rich_console_environ(width: int) -> "dict[str, str]":
     environ = dict(os.environ)
     environ["COLUMNS"] = str(width)
     environ.setdefault("LINES", "40")
@@ -244,7 +229,7 @@ def _layout_mode(console_width: int) -> str:
     return "narrow"
 
 
-def _run_context_panel(report: dict[str, Any]) -> Panel:
+def _run_context_panel(report: "dict[str, Any]") -> Panel:
     run_meta = report.get("run_meta", {})
     run_config = report.get("run_config", {})
 
@@ -252,7 +237,7 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
     table.add_column("field")
     table.add_column("value", no_wrap=False)
 
-    rows: list[tuple[str, Any]] = []
+    rows: "list[tuple[str, Any]]" = []
     estimator_class = run_config.get("estimator_class")
     if estimator_class is not None:
         rows.append(
@@ -281,13 +266,10 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
             _human_utc(str(run_meta.get("run_finished_at_utc", "n/a"))),
         ),
         ("Duration(s) [run_duration_s]", _fmt_duration(run_meta.get("run_duration_s"))),
-        ("Circuits [n_circuits]", str(run_config.get("n_circuits", "n/a"))),
-        ("Samples/Circuit [n_samples]", str(run_config.get("n_samples", "n/a"))),
-        ("Width/Wires [width]", str(run_config.get("width", "n/a"))),
-        ("Max Depth [max_depth]", str(run_config.get("max_depth", "n/a"))),
-        ("Layers [layer_count]", str(run_config.get("layer_count", "n/a"))),
-        ("Budgets [budgets]", str(run_config.get("budgets", []))),
-        ("Tolerance [time_tolerance]", str(run_config.get("time_tolerance", "n/a"))),
+        ("MLPs [n_mlps]", str(run_config.get("n_mlps", "n/a"))),
+        ("Width [width]", str(run_config.get("width", "n/a"))),
+        ("Depth [depth]", str(run_config.get("depth", "n/a"))),
+        ("Estimator Budget [estimator_budget]", str(run_config.get("estimator_budget", "n/a"))),
         ]
     )
     for key, value in rows:
@@ -296,7 +278,7 @@ def _run_context_panel(report: dict[str, Any]) -> Panel:
     return Panel(Align.center(table), title="Run Context", border_style="bright_cyan")
 
 
-def _fmt_bytes(value: int | None) -> str:
+def _fmt_bytes(value: Optional[int]) -> str:
     """Format byte count as human-readable string (e.g. '32.0 GB')."""
     if value is None:
         return "n/a"
@@ -304,7 +286,7 @@ def _fmt_bytes(value: int | None) -> str:
     return f"{gb:.1f} GB"
 
 
-def _hardware_runtime_panel(report: dict[str, Any]) -> Panel:
+def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
     host = report.get("run_meta", {}).get("host", {})
     host_meta = host if isinstance(host, dict) else {}
 
@@ -333,170 +315,46 @@ def _hardware_runtime_panel(report: dict[str, Any]) -> Panel:
     return Panel(Align.center(table), title="Hardware & Runtime", border_style="bright_blue")
 
 
-def _score_summary_panel(report: dict[str, Any]) -> Panel:
+def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     results = report.get("results", {})
-    adjusted_mse = _as_float(results.get("adjusted_mse", 0.0))
-    by_budget = _budget_rows(report)
-    budget_scores = [_as_float(entry.get("adjusted_mse", 0.0)) for entry in by_budget]
-    mse_means = [_as_float(entry.get("mse_mean", 0.0)) for entry in by_budget]
+    primary_score = _as_float(results.get("primary_score", 0.0))
+    secondary_score = _as_float(results.get("secondary_score", 0.0))
     summary = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
     summary.add_column("metric")
     summary.add_column("value", justify="right")
     summary.add_row(
-        _label_with_code("Adjusted MSE", "adjusted_mse", "bold bright_green"),
-        f"[bold bright_green]✓ {_fmt_float(adjusted_mse, 8)}[/]",
+        _label_with_code("Primary Score", "primary_score", "bold bright_green"),
+        f"[bold bright_green]{_fmt_float(primary_score, 8)}[/]",
     )
-    if mse_means:
-        summary.add_row(
-            _label_with_code("MSE Mean", "mse_mean", "bold bright_cyan"),
-            f"[cyan]{_fmt_float(fmean(mse_means), 8)}[/]",
-        )
-    if budget_scores:
-        summary.add_row(
-            _label_with_code("Best Budget Score", "best_budget_score", "bold green"),
-            f"[green]{_fmt_float(min(budget_scores), 8)}[/]",
-        )
-        summary.add_row(
-            _label_with_code("Worst Budget Score", "worst_budget_score", "bold yellow"),
-            f"[yellow]{_fmt_float(max(budget_scores), 8)}[/]",
-        )
+    summary.add_row(
+        _label_with_code("Secondary Score", "secondary_score", "bold bright_cyan"),
+        f"[cyan]{_fmt_float(secondary_score, 8)}[/]",
+    )
+
+    per_mlp = results.get("per_mlp", [])
+    if isinstance(per_mlp, list) and per_mlp:
+        mlp_primaries = [_as_float(entry.get("primary_score", 0.0)) for entry in per_mlp if isinstance(entry, dict)]
+        if mlp_primaries:
+            summary.add_row(
+                _label_with_code("Best MLP Score", "best_mlp_score", "bold green"),
+                f"[green]{_fmt_float(min(mlp_primaries), 8)}[/]",
+            )
+            summary.add_row(
+                _label_with_code("Worst MLP Score", "worst_mlp_score", "bold yellow"),
+                f"[yellow]{_fmt_float(max(mlp_primaries), 8)}[/]",
+            )
 
     return Panel(
         Align.center(summary),
         title="Final Score",
-        subtitle="lower score is better; final score is adjusted MSE mean",
+        subtitle="lower score is better; final score is primary score mean",
         subtitle_align="left",
         border_style="bright_cyan",
     )
 
 
-def _render_budget_section(
-    console: Console, report: dict[str, Any], *, show_diagnostic_plots: bool
-) -> None:
-    if not show_diagnostic_plots:
-        return
-    panel = _budget_plots_panel(report)
-    if panel is not None:
-        console.print(panel)
-
-
-def _budget_table_panel(report: dict[str, Any]) -> Panel:
-    by_budget = _budget_rows(report)
-    best_score = min(
-        (_as_float(entry.get("adjusted_mse", 0.0)) for entry in by_budget), default=0.0
-    )
-
-    table = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
-    table.add_column("Budget [budget]", justify="right")
-    table.add_column("Score [adjusted_mse]", justify="right")
-    table.add_column("MSE Mean [mse_mean]", justify="right")
-    table.add_column("Call Time Ratio Mean [call_time_ratio_mean]", justify="right")
-    table.add_column("Effective Call Time Mean (s) [call_effective_time_s_mean]", justify="right")
-    for entry in by_budget:
-        score = _as_float(entry.get("adjusted_mse", 0.0))
-        row_style = "bold bright_green" if score == best_score else ""
-        table.add_row(
-            str(entry.get("budget", "n/a")),
-            _fmt_float(score, 8),
-            _fmt_float(entry.get("mse_mean", 0.0), 8),
-            _fmt_float(entry.get("call_time_ratio_mean", 0.0), 4),
-            _fmt_float(entry.get("call_effective_time_s_mean", 0.0), 6),
-            style=row_style,
-        )
-
-    return Panel(Align.center(table), title="Budget Table", border_style="bright_cyan")
-
-
-def _budget_plots_panel(report: dict[str, Any]) -> Panel | None:
-    by_budget = _budget_rows(report)
-    if not by_budget:
-        return None
-    accuracy_plot = _budget_frontier_plot_panel(by_budget)
-    runtime_plot = _budget_runtime_plot_panel(by_budget)
-    body = Align.center(
-        Columns(
-            [accuracy_plot, runtime_plot],
-            align="center",
-            equal=True,
-            expand=False,
-        )
-    )
-    return Panel(body, title="Budget Plots", border_style="bright_cyan")
-
-
-def _render_layer_section(
-    console: Console, report: dict[str, Any], *, show_diagnostic_plots: bool
-) -> None:
-    panel = _layer_lane_panel(report, show_diagnostic_plots=show_diagnostic_plots)
-    if panel is not None:
-        console.print(panel)
-
-
-def _layer_lane_panel(
-    report: dict[str, Any], *, show_diagnostic_plots: bool = False
-) -> Panel | None:
-    if not show_diagnostic_plots:
-        return None
-
-    by_budget = _budget_rows(report)
-    mse_series = [_to_float_list(entry.get("mse_by_layer", [])) for entry in by_budget]
-    avg_mse = _mean_series(mse_series)
-    body = Align.center(
-        Columns(
-            [
-                _layer_histogram_panel(report),
-                _layer_trend_plot_panel(avg_mse),
-            ],
-            align="center",
-            equal=True,
-            expand=False,
-        )
-    )
-    return Panel(body, title="Layer Diagnostics", border_style="bright_magenta")
-
-
-def _layer_histogram_panel(report: dict[str, Any]) -> Panel:
-    values = _layer_mse_average(report)
-    x, counts = _histogram_series(values, bins=10)
-    p50 = _percentile(values, 0.50) if values else 0.0
-    p95 = _percentile(values, 0.95) if values else 0.0
-    title = f"Layer MSE Histogram (p50={_fmt_float(p50, 6)}, p95={_fmt_float(p95, 6)})"
-    return _make_plot_panel(
-        title=title,
-        x=x,
-        series=[("layers_per_mse_bin", counts, "magenta+")],
-        x_label="mse bins",
-        y_label="layer count",
-        sparse_style="line",
-    )
-
-
-def _layer_mse_average(report: dict[str, Any]) -> list[float]:
-    by_budget = _budget_rows(report)
-    mse_series = [_to_float_list(entry.get("mse_by_layer", [])) for entry in by_budget]
-    return _mean_series(mse_series)
-
-
-def _histogram_series(values: Sequence[float], *, bins: int) -> tuple[list[float], list[float]]:
-    if not values or bins <= 0:
-        return [0.0], [0.0]
-    low = min(values)
-    high = max(values)
-    if high <= low:
-        return [low], [float(len(values))]
-
-    width = (high - low) / bins
-    counts = [0.0 for _ in range(bins)]
-    for value in values:
-        idx = int((value - low) / width)
-        idx = max(0, min(idx, bins - 1))
-        counts[idx] += 1.0
-    centers = [low + width * (i + 0.5) for i in range(bins)]
-    return centers, counts
-
-
 def _render_profile_section(
-    console: Console, report: dict[str, Any], *, show_diagnostic_plots: bool
+    console: Console, report: "dict[str, Any]", *, show_diagnostic_plots: bool
 ) -> None:
     profile_calls = report.get("profile_calls")
     if not isinstance(profile_calls, list) or not profile_calls:
@@ -589,7 +447,7 @@ def _render_profile_section(
         equal=True,
         expand=False,
     )
-    profile_body: list[Any] = [Align.center(profile_tables)]
+    profile_body: "list[Any]" = [Align.center(profile_tables)]
     if show_diagnostic_plots:
         runtime_plot = _profile_runtime_plot_panel(wall, cpu)
         memory_plot = _profile_memory_plot_panel(rss, peak)
@@ -604,56 +462,6 @@ def _render_profile_section(
             )
         )
     console.print(Panel(Group(*profile_body), title="Profile", border_style="bright_blue"))
-
-
-def _budget_frontier_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
-    budgets = [_as_float(entry.get("budget", 0.0)) for entry in by_budget]
-    scores = [_as_float(entry.get("adjusted_mse", 0.0)) for entry in by_budget]
-    mean_mse = [_as_float(entry.get("mse_mean", 0.0)) for entry in by_budget]
-    return _make_plot_panel(
-        title="Budget Frontier Plot",
-        x=budgets,
-        series=[
-            ("adjusted_mse", scores, "green+"),
-            ("mse_mean", mean_mse, "cyan+"),
-        ],
-        x_label="budget",
-        y_label="accuracy metrics",
-        x_scale="log",
-        sparse_style="line",
-    )
-
-
-def _budget_runtime_plot_panel(by_budget: Sequence[dict[str, Any]]) -> Panel:
-    budgets = [_as_float(entry.get("budget", 0.0)) for entry in by_budget]
-    mean_ratio = [_as_float(entry.get("call_time_ratio_mean", 0.0)) for entry in by_budget]
-    mean_effective = [
-        _as_float(entry.get("call_effective_time_s_mean", 0.0)) for entry in by_budget
-    ]
-
-    return _make_plot_panel(
-        title="Budget Runtime Plot",
-        x=budgets,
-        series=[
-            ("call_time_ratio_mean_norm", _normalize(mean_ratio), "yellow+"),
-            ("call_effective_time_s_mean_norm", _normalize(mean_effective), "magenta+"),
-        ],
-        x_label="budget",
-        y_label="normalized runtime [0,1]",
-        x_scale="log",
-        sparse_style="line",
-    )
-
-
-def _layer_trend_plot_panel(avg_mse: Sequence[float]) -> Panel:
-    x = list(range(len(avg_mse)))
-    return _make_plot_panel(
-        title="Layer Trend Plot",
-        x=x,
-        series=[("mse_by_layer", avg_mse, "cyan+")],
-        x_label="layer",
-        y_label="mse",
-    )
 
 
 def _profile_runtime_plot_panel(wall: Sequence[float], cpu: Sequence[float]) -> Panel:
@@ -674,7 +482,7 @@ def _profile_memory_plot_panel(rss: Sequence[float], peak: Sequence[float]) -> P
     x = list(range(len(rss)))
     rss_mb = [value / (1024.0 * 1024.0) for value in rss]
     peak_mb = [value / (1024.0 * 1024.0) for value in peak]
-    series: list[tuple[str, Sequence[float], str]] = [("rss_mb", rss_mb, "cyan+")]
+    series: "list[tuple[str, Sequence[float], str]]" = [("rss_mb", rss_mb, "cyan+")]
     if not _series_nearly_equal(rss, peak):
         series.append(("peak_rss_mb", peak_mb, "magenta+"))
     else:
@@ -692,11 +500,11 @@ def _make_plot_panel(
     *,
     title: str,
     x: Sequence[float],
-    series: Sequence[tuple[str, Sequence[float], str]],
+    series: Sequence["tuple[str, Sequence[float], str]"],
     x_label: str,
     y_label: str,
-    x_scale: str | None = None,
-    y_scale: str | None = None,
+    x_scale: Optional[str] = None,
+    y_scale: Optional[str] = None,
     sparse_style: str = "scatter",
 ) -> Panel:
     chart = _build_plotext_line_chart(
@@ -727,7 +535,7 @@ def _make_plot_panel(
                 _fmt_float(max(values) if values else 0.0, 6),
                 _fmt_float(_percentile(values, 0.95) if values else 0.0, 6),
             )
-        body: Table | Text | Group = Group(Align.center(fallback), legend)
+        body: "Any" = Group(Align.center(fallback), legend)
     else:
         body = Group(Text.from_ansi(chart), legend)
 
@@ -744,13 +552,13 @@ def _make_plot_panel(
 def _build_plotext_line_chart(
     *,
     x: Sequence[float],
-    series: Sequence[tuple[str, Sequence[float], str]],
+    series: Sequence["tuple[str, Sequence[float], str]"],
     x_label: str,
     y_label: str,
-    x_scale: str | None = None,
-    y_scale: str | None = None,
+    x_scale: Optional[str] = None,
+    y_scale: Optional[str] = None,
     sparse_style: str = "scatter",
-) -> str | None:
+) -> Optional[str]:
     if _plotext is None or not x:
         return None
 
@@ -834,12 +642,12 @@ def _sanitize_plotext_ansi(chart: str) -> str:
     return re.sub(r"\x1b\[49m", "", without_bg)
 
 
-def _legend_table(series: Sequence[tuple[str, Sequence[float], str]]) -> Table:
+def _legend_table(series: Sequence["tuple[str, Sequence[float], str]"]) -> Table:
     legend = Table(box=box.SIMPLE, show_header=False, pad_edge=False)
     legend.add_column("key")
     legend.add_column("range")
     for label, values, color in series:
-        key = Text("■ ", style=_rich_style_for_plot_color(color))
+        key = Text("  ", style=_rich_style_for_plot_color(color))
         key.append(label, style="bold")
         legend.add_row(
             key,
@@ -902,14 +710,12 @@ def _context_key_style(key: str) -> str:
         return "bold bright_cyan"
     if key.startswith("host."):
         return "bold bright_blue"
-    if key in {"n_circuits", "n_samples", "width", "layer_count"}:
+    if key in {"n_mlps", "width", "depth"}:
         return "bold bright_magenta"
-    if key == "budgets":
+    if key == "estimator_budget":
         return "bold bright_yellow"
     if key.endswith("_s"):
         return "bold bright_green"
-    if "tolerance" in key:
-        return "bold bright_red"
     return "bold bright_white"
 
 
@@ -944,17 +750,7 @@ def _rich_style_for_plot_color(color: str) -> str:
     return mapping.get(color, "bright_white")
 
 
-def _budget_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
-    results = report.get("results")
-    if not isinstance(results, dict):
-        return []
-    rows = results.get("by_budget_raw")
-    if not isinstance(rows, list):
-        return []
-    return [entry for entry in rows if isinstance(entry, dict)]
-
-
-def _mean_series(series_list: Sequence[Sequence[float]]) -> list[float]:
+def _mean_series(series_list: Sequence[Sequence[float]]) -> "list[float]":
     if not series_list:
         return []
     length = min(len(series) for series in series_list)
@@ -963,7 +759,7 @@ def _mean_series(series_list: Sequence[Sequence[float]]) -> list[float]:
     return [fmean(series[i] for series in series_list) for i in range(length)]
 
 
-def _normalize(values: Sequence[float]) -> list[float]:
+def _normalize(values: Sequence[float]) -> "list[float]":
     if not values:
         return []
     low = min(values)
@@ -978,7 +774,7 @@ def _series_nearly_equal(
 ) -> bool:
     if len(lhs) != len(rhs):
         return False
-    return all(abs(left - right) <= tolerance for left, right in zip(lhs, rhs, strict=True))
+    return all(abs(left - right) <= tolerance for left, right in zip(lhs, rhs))
 
 
 def _percentile(values: Sequence[float], q: float) -> float:
@@ -994,7 +790,7 @@ def _percentile(values: Sequence[float], q: float) -> float:
     return ordered[lower] * (1.0 - frac) + ordered[upper] * frac
 
 
-def _to_float_list(value: object) -> list[float]:
+def _to_float_list(value: object) -> "list[float]":
     if not isinstance(value, list):
         return []
     return [_as_float(item) for item in value]

@@ -1,17 +1,18 @@
 [project]
-name = "circuit-estimation"
+name = "network-estimation"
 version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
+    "scipy",
     "plotext",
     "rich",
     "tqdm",
 ]
 
 [project.scripts]
-cestim = "circuit_estimation.cli:main"
-circuit-estimation = "circuit_estimation.cli:main"
+nestim = "network_estimation.cli:main"
+network-estimation = "network_estimation.cli:main"
 
 [dependency-groups]
 dev = [

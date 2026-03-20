@@ -10,20 +10,20 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import cast
+from typing import List, Optional, Set, Tuple, Type, cast
 
 from .sdk import BaseEstimator
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class EstimatorClassMetadata:
     class_name: str
     module_name: str
 
 
 def load_estimator_from_path(
-    file_path: str | Path, class_name: str | None = None
-) -> tuple[BaseEstimator, EstimatorClassMetadata]:
+    file_path: "str | Path", class_name: Optional[str] = None
+) -> Tuple[BaseEstimator, EstimatorClassMetadata]:
     module_path = Path(file_path).resolve()
     module = _import_module_from_path(module_path)
     estimator_class = _resolve_estimator_class(module, module_path, class_name=class_name)
@@ -34,7 +34,7 @@ def load_estimator_from_path(
 
 
 def resolve_estimator_class_metadata(
-    file_path: str | Path, class_name: str | None = None
+    file_path: "str | Path", class_name: Optional[str] = None
 ) -> EstimatorClassMetadata:
     """Resolve estimator class metadata without instantiating the estimator."""
     module_path = Path(file_path).resolve()
@@ -51,7 +51,7 @@ def _import_module_from_path(module_path: Path) -> ModuleType:
         raise FileNotFoundError(f"Estimator module file not found: {module_path}")
 
     module_hash = hashlib.sha1(str(module_path).encode("utf-8")).hexdigest()[:12]
-    module_name = f"_circuit_estimation_submission_{module_hash}"
+    module_name = f"_network_estimation_submission_{module_hash}"
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Failed to import estimator module from path: {module_path}")
@@ -72,8 +72,8 @@ def _import_module_from_path(module_path: Path) -> ModuleType:
 
 
 def _resolve_estimator_class(
-    module: ModuleType, module_path: Path, class_name: str | None
-) -> type[BaseEstimator]:
+    module: ModuleType, module_path: Path, class_name: Optional[str] = None
+) -> Type[BaseEstimator]:
     if class_name is not None:
         explicit_candidate = getattr(module, class_name, None)
         if (
@@ -83,7 +83,7 @@ def _resolve_estimator_class(
             raise ValueError(
                 f"Estimator class '{class_name}' was not found as a BaseEstimator subclass in {module_path}."
             )
-        return cast(type[BaseEstimator], explicit_candidate)
+        return cast(Type[BaseEstimator], explicit_candidate)
 
     estimator_classes = _discover_estimator_classes(module)
 
@@ -104,9 +104,9 @@ def _resolve_estimator_class(
     )
 
 
-def _discover_estimator_classes(module: ModuleType) -> list[type[BaseEstimator]]:
-    estimator_classes: list[type[BaseEstimator]] = []
-    seen_class_ids: set[int] = set()
+def _discover_estimator_classes(module: ModuleType) -> List[Type[BaseEstimator]]:
+    estimator_classes: List[Type[BaseEstimator]] = []
+    seen_class_ids: Set[int] = set()
     for value in vars(module).values():
         if (
             _is_estimator_subclass(value)
@@ -117,7 +117,7 @@ def _discover_estimator_classes(module: ModuleType) -> list[type[BaseEstimator]]
             if class_id in seen_class_ids:
                 continue
             seen_class_ids.add(class_id)
-            estimator_classes.append(cast(type[BaseEstimator], value))
+            estimator_classes.append(cast(Type[BaseEstimator], value))
     return estimator_classes
 
 
