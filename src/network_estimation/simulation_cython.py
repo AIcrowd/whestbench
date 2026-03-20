@@ -1,11 +1,11 @@
-"""Cython backend — compiled matmul+ReLU with direct BLAS calls."""
+"""Cython backend — compiled loop dispatch with buffer reuse."""
 
 from __future__ import annotations
 from typing import List, Tuple
 import numpy as np
 from numpy.typing import NDArray
 from .domain import MLP
-from .simulation_backend import SimulationBackend
+from .simulation_backend import PrimitiveBreakdown, SimulationBackend
 
 try:
     from . import _cython_kernels
@@ -34,6 +34,29 @@ class CythonBackend(SimulationBackend):
     def run_mlp(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
         result = _cython_kernels.forward_pass(inputs, mlp.weights)
         return np.asarray(result, dtype=np.float32)
+
+    def run_mlp_profiled(
+        self, mlp: MLP, inputs: NDArray[np.float32]
+    ) -> Tuple[NDArray[np.float32], PrimitiveBreakdown]:
+        """Profile using the same primitives as the Cython kernel: np.matmul + np.maximum."""
+        import time
+
+        breakdown = PrimitiveBreakdown()
+        t_start = time.perf_counter()
+        x = np.ascontiguousarray(inputs, dtype=np.float32)
+        out = np.empty_like(x)
+        for w in mlp.weights:
+            t0 = time.perf_counter()
+            np.matmul(x, w, out=out)
+            t1 = time.perf_counter()
+            np.maximum(out, 0.0, out=out)
+            t2 = time.perf_counter()
+            breakdown.matmul.append(t1 - t0)
+            breakdown.relu.append(t2 - t1)
+            x, out = out, x
+        breakdown.total = time.perf_counter() - t_start
+        breakdown.overhead = breakdown.total - breakdown.total_matmul - breakdown.total_relu
+        return x, breakdown
 
     def run_mlp_all_layers(self, mlp: MLP, inputs: NDArray[np.float32]) -> List[NDArray[np.float32]]:
         layers = _cython_kernels.forward_pass_all_layers(inputs, mlp.weights)
