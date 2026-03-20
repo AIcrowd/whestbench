@@ -138,7 +138,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
         } else if (isOutput) {
           // Output layer — double-border effect (thicker stroke + filled)
           const layerIdx = col - 1;
-          const activation = means ? means[layerIdx * width + row] : null;
+          const activation = means ? means[layerIdx]?.[row] ?? null : null;
           fillColor = activationColor(activation);
           strokeColor = isActive ? "#F0524D" : "#292C2D"; // --gray-900
           strokeW = isActive ? 3 : 3;
@@ -147,7 +147,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
         } else {
           // Hidden layers — solid circles colored by activation
           const layerIdx = col - 1;
-          const activation = means ? means[layerIdx * width + row] : null;
+          const activation = means ? means[layerIdx]?.[row] ?? null : null;
           fillColor = activationColor(activation);
           strokeColor = isActive ? "#F0524D" : "#292C2D"; // --gray-900
           strokeW = isActive ? 2.5 : 1.5;
