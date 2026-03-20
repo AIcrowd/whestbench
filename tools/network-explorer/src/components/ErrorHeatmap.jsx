@@ -8,7 +8,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import HeatmapTooltip from "./HeatmapTooltip";
 import InfoTip from "./InfoTip";
-import { classifyGate } from "./gateShapes";
 
 function errorToRGB(err, maxErr) {
   const t = Math.min(1, err / Math.max(0.001, maxErr));
@@ -34,7 +33,6 @@ export default function ErrorHeatmap({
   samplingEstimates,
   width: n,
   depth: d,
-  gates,
 }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -158,7 +156,7 @@ export default function ErrorHeatmap({
           <InfoTip>
             <span className="tip-title">Estimation Error</span>
             <p className="tip-desc">
-              Heatmap of <span className="tip-mono">|ground truth − estimate|</span> for each wire at each layer.
+              Heatmap of <span className="tip-mono">|ground truth − estimate|</span> for each neuron at each layer.
             </p>
             <div className="tip-sep" />
             <div className="tip-kv"><span className="tip-kv-key">Bright coral</span><span className="tip-kv-val">Large estimation error</span></div>
@@ -218,13 +216,12 @@ export default function ErrorHeatmap({
                 getColor={getColor}
                 valueLabel="Abs. Error"
                 showZoom={n * d > 4096}
-                getGateInfo={gates ? (layer, wire) => classifyGate(gates[layer], wire) : null}
               />
             )}
           </div>
           <div className="heatmap-axes">
             <span className="axis-label-x">Layer →</span>
-            <span className="axis-label-y">Wire ↓</span>
+            <span className="axis-label-y">Neuron ↓</span>
           </div>
           <div className="heatmap-legend">
             <span className="legend-label">0</span>

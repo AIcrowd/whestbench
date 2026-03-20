@@ -1,7 +1,7 @@
 /**
- * CircuitHeatmap — Canvas-rendered wires × layers heatmap
- * for large circuits (n×d > 4096).
- * Shows wire means as a color grid, with hover triggering a detail overlay.
+ * NetworkHeatmap — Canvas-rendered neurons × layers heatmap
+ * for large networks (n×d > 4096).
+ * Shows neuron means as a color grid, with hover triggering a simple info tooltip.
  *
  * Performance notes:
  * - Uses a main canvas for the heatmap grid (redrawn only when data changes)
@@ -11,19 +11,18 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { perfEnd, perfStart } from "../perf";
-import GateDetailOverlay from "./GateDetailOverlay";
 
-export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerClick }) {
+export default function NetworkHeatmap({ mlp, means, activeLayer, onLayerClick }) {
   const canvasRef = useRef(null);
   const overlayCanvasRef = useRef(null);
   const containerRef = useRef(null);
-  const [hovered, setHovered] = useState(null); // { wire, layer, x, y }
+  const [hovered, setHovered] = useState(null); // { neuron, layer, x, y, value }
   const [dims, setDims] = useState({ cellW: 0, cellH: 0 });
   const lastCellRef = useRef(null);
   const rafRef = useRef(null);
 
-  const n = circuit.n;
-  const d = circuit.d;
+  const n = mlp.width;
+  const d = mlp.depth;
 
   // Max height for the heatmap — fits nicely in the viewport
   const MAX_HEIGHT = 500;
@@ -71,24 +70,18 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
     const pixels = imgData.data;
 
     for (let py = 0; py < canvasH; py++) {
-      const wire = Math.floor((py / canvasH) * n);
+      const neuron = Math.floor((py / canvasH) * n);
       for (let px = 0; px < canvasW; px++) {
         const layer = Math.floor((px / canvasW) * d);
         const idx = (py * canvasW + px) * 4;
-        const mean = means && means[layer] ? means[layer][wire] : null;
+        const mean = means && means[layer] ? means[layer][neuron] : null;
 
         if (mean !== null && mean !== undefined) {
-          const t = Math.max(-1, Math.min(1, mean));
-          if (t < 0) {
-            const s = 1 + t;
-            pixels[idx]     = 51 + (204 * s) | 0;
-            pixels[idx + 1] = 65 + (190 * s) | 0;
-            pixels[idx + 2] = 85 + (170 * s) | 0;
-          } else {
-            pixels[idx]     = 255 - (15 * t) | 0;
-            pixels[idx + 1] = 255 - (173 * t) | 0;
-            pixels[idx + 2] = 255 - (178 * t) | 0;
-          }
+          // Activation-magnitude color scale: 0 = dark/gray, high = bright coral
+          const t = Math.max(0, Math.min(1, mean));
+          pixels[idx]     = (51 + (204 * t)) | 0;
+          pixels[idx + 1] = (65  - (65  * t)) | 0;
+          pixels[idx + 2] = (85  - (85  * t)) | 0;
         } else {
           pixels[idx]     = 229;
           pixels[idx + 1] = 231;
@@ -110,7 +103,7 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
         ctx.lineTo(l * cellW, height);
         ctx.stroke();
       }
-      for (let w = 0; w <= n; w++) {
+      for (let w = 0; w <= n; w++) { // neuron rows
         ctx.beginPath();
         ctx.moveTo(0, w * cellH);
         ctx.lineTo(width, w * cellH);
@@ -130,10 +123,10 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
       ctx.fillText(`${l}`, l * cellW + cellW / 2, height - 2);
     }
     perfEnd('heatmap-paint');
-  }, [circuit, means, n, d]);
+  }, [mlp, means, n, d]);
 
   // Draw crosshair + activeLayer column on overlay canvas
-  const drawCrosshair = useCallback((layer, wire) => {
+  const drawCrosshair = useCallback((layer, neuron) => {
     const overlay = overlayCanvasRef.current;
     if (!overlay || !dims.cellW) return;
     const dpr = window.devicePixelRatio || 1;
@@ -150,9 +143,7 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
       ctx.strokeRect(activeLayer * dims.cellW, 0, dims.cellW, dims.height);
     }
 
-
-
-    if (layer === null || wire === null) return;
+    if (layer === null || neuron === null) return;
 
     ctx.strokeStyle = "rgba(255,255,255,0.6)";
     ctx.lineWidth = 1;
@@ -164,8 +155,8 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
     ctx.lineTo(lx, dims.height);
     ctx.stroke();
 
-    // Horizontal line (wire row)
-    const wy = wire * dims.cellH + dims.cellH / 2;
+    // Horizontal line (neuron row)
+    const wy = neuron * dims.cellH + dims.cellH / 2;
     ctx.beginPath();
     ctx.moveTo(0, wy);
     ctx.lineTo(dims.width, wy);
@@ -176,7 +167,7 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
     ctx.lineWidth = 1.5;
     ctx.strokeRect(
       layer * dims.cellW,
-      wire * dims.cellH,
+      neuron * dims.cellH,
       dims.cellW,
       dims.cellH
     );
@@ -212,17 +203,19 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
         const my = e.clientY - rect.top;
 
         const layer = Math.floor(mx / dims.cellW);
-        const wire = Math.floor(my / dims.cellH);
-        const cellKey = `${layer},${wire}`;
+        const neuron = Math.floor(my / dims.cellH);
+        const cellKey = `${layer},${neuron}`;
 
         if (cellKey === lastCellRef.current) return; // same cell, skip
         lastCellRef.current = cellKey;
 
-        if (layer >= 0 && layer < d && wire >= 0 && wire < n) {
-          drawCrosshair(layer, wire);
+        if (layer >= 0 && layer < d && neuron >= 0 && neuron < n) {
+          drawCrosshair(layer, neuron);
+          const value = means && means[layer] ? (means[layer][neuron] ?? null) : null;
           setHovered({
-            wire,
+            neuron,
             layer,
+            value,
             x: e.clientX - containerRef.current.getBoundingClientRect().left,
             y: e.clientY - containerRef.current.getBoundingClientRect().top,
           });
@@ -232,7 +225,7 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
         }
       });
     },
-    [dims, n, d, drawCrosshair]
+    [dims, n, d, drawCrosshair, means]
   );
 
   const handleMouseLeave = useCallback(() => {
@@ -242,11 +235,11 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
   }, [drawCrosshair]);
 
   return (
-    <div className="panel circuit-heatmap" ref={containerRef}>
+    <div className="panel circuit-heatmap" ref={containerRef} style={{ position: "relative" }}>
       <h2>
-        Circuit Structure
+        Network Structure
         <span className="mode-badge">
-          Heatmap Mode · {n}×{d} = {(n * d).toLocaleString()} gates
+          Heatmap Mode · {n}×{d} = {(n * d).toLocaleString()} neurons
         </span>
       </h2>
       <div className="heatmap-canvas-container">
@@ -263,23 +256,39 @@ export default function CircuitHeatmap({ circuit, means, activeLayer, onLayerCli
         />
         <div className="heatmap-axes">
           <span className="axis-label-x">Layer →</span>
-          <span className="axis-label-y">Wire ↓</span>
+          <span className="axis-label-y">Neuron ↓</span>
         </div>
         {/* Color legend */}
         <div className="heatmap-legend">
-          <span className="legend-label">−1</span>
+          <span className="legend-label">0</span>
           <div className="legend-gradient" />
-          <span className="legend-label">+1</span>
+          <span className="legend-label">high</span>
         </div>
       </div>
       {hovered && (
-        <GateDetailOverlay
-          circuit={circuit}
-          means={means}
-          hoveredWire={hovered.wire}
-          hoveredLayer={hovered.layer}
-          position={{ x: hovered.x, y: hovered.y }}
-        />
+        <div
+          className="canvas-data-tooltip"
+          style={{
+            position: "absolute",
+            left: hovered.x + 16,
+            top: hovered.y - 20,
+            pointerEvents: "none",
+          }}
+        >
+          <div className="canvas-tip-header">
+            Neuron <span className="layer-num">{hovered.neuron}</span>
+            {" · "}
+            Layer <span className="layer-num">{hovered.layer}</span>
+          </div>
+          <div className="canvas-tip-rows">
+            <div className="canvas-tip-row">
+              <span className="canvas-tip-label">Activation</span>
+              <span className="canvas-tip-value">
+                {hovered.value !== null ? hovered.value.toFixed(4) : "—"}
+              </span>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
