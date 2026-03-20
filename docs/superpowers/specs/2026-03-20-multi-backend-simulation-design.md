@@ -26,7 +26,11 @@ from .domain import MLP
 class SimulationBackend(ABC):
     """Abstract interface for MLP forward pass backends."""
 
-    name: str  # e.g. "numpy", "pytorch", "numba", "scipy", "jax"
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Backend identifier, e.g. 'numpy', 'pytorch', 'numba'."""
+        ...
 
     @classmethod
     @abstractmethod
@@ -36,11 +40,8 @@ class SimulationBackend(ABC):
 
     @classmethod
     def install_hint(cls) -> str:
-        """Pip install command to enable this backend."""
+        """Pip install command to enable this backend. Empty for always-available backends."""
         return ""
-
-    @abstractmethod
-    def relu(self, x: NDArray[np.float32]) -> NDArray[np.float32]: ...
 
     @abstractmethod
     def run_mlp(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]: ...
@@ -52,7 +53,11 @@ class SimulationBackend(ABC):
     def output_stats(self, mlp: MLP, n_samples: int) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]: ...
 ```
 
-All backends accept and return NumPy arrays. Internal conversions (to torch tensors, jax arrays, etc.) are hidden. `is_available()` is a classmethod so the registry can check without instantiation.
+Design notes:
+- **`name` is an abstract property** so subclasses must define it; pyright catches missing implementations.
+- **`relu` is not part of the ABC.** It is only used internally within `run_mlp`/`run_mlp_all_layers`. Each backend implements relu in its own way internally. The reference `relu` remains exported from `simulation.py` and `__init__.py` for participants.
+- **`chunk_size` is not part of the `output_stats` signature.** Each backend manages chunking internally using `_pick_chunk_size(width)`. This is an implementation detail, not a public contract.
+- All backends accept and return NumPy arrays. Internal conversions (to torch tensors, jax arrays, etc.) are hidden. `is_available()` is a classmethod so the registry can check without instantiation.
 
 ### Backend Registry
 
@@ -90,6 +95,20 @@ All backends implement chunked `output_stats` with online accumulation to cap me
 
 The existing `simulation.py` stays untouched as the readable reference oracle. `simulation_fast.py` is removed — its logic moves into `simulation_pytorch.py`.
 
+### Backend Lifecycle & State
+
+Backends are **lightweight, stateless instances** — `__init__` takes no parameters and does no heavy work. The registry's `get_backend()` creates a fresh instance each call; callers may cache the instance if desired. Internal caches (e.g., PyTorch weight tensor cache) are **module-level**, not instance-level, since they benefit all callers and are keyed on `id(mlp)` with weakref cleanup.
+
+### RNG Strategy
+
+Each backend uses its own RNG for `output_stats` random input generation:
+- **NumPy/SciPy:** `np.random.randn` (legacy global RNG)
+- **PyTorch:** `torch.randn`
+- **Numba:** `np.random.randn` (pre-generated, passed into JIT)
+- **JAX:** `jax.random.normal` with a key derived from system entropy per call
+
+Results from `output_stats` are **non-deterministic** across backends and across calls. Statistical equivalence (not bitwise equality) is the correctness contract. This matches the existing behavior where `simulation.py` and `simulation_fast.py` already produce different random streams.
+
 ### Integration — scoring.py, dataset.py, __init__.py
 
 `scoring.py` and `dataset.py` change from:
@@ -102,12 +121,17 @@ To:
 from .simulation_backends import get_backend
 ```
 
-The backend is instantiated at call sites:
+The backend is instantiated once per top-level function and passed down:
 ```python
-backend = get_backend()
-backend.run_mlp(mlp, inputs)
-backend.output_stats(mlp, n_samples)
+def evaluate_estimator(...):
+    backend = get_backend()
+    # baseline_time, output_stats, etc. all use this instance
+    ...
+    backend.run_mlp(mlp, inputs)
+    backend.output_stats(mlp, n_samples)
 ```
+
+Functions like `baseline_time` and `make_contest` receive the backend as a parameter rather than calling `get_backend()` themselves, so one evaluation run uses a single backend consistently.
 
 `__init__.py` continues to export from `simulation.py` (the reference NumPy implementation) for the participant-facing API. Participants always get the readable reference. Backend selection only affects internal scoring/dataset computation.
 
@@ -121,7 +145,7 @@ nestim profile-simulation [--preset {quick,standard,exhaustive}] [--backends num
 
 **Flags:**
 - `--preset` (default: `standard`) — Controls the parameter sweep grid.
-- `--backends` — Comma-separated list to restrict which backends to profile. Default: all available.
+- `--backends` — Comma-separated list to restrict which backends to profile. Default: all available. Unknown names cause an immediate error listing valid options.
 - `--output` — Path to save JSON results. If omitted, only prints terminal table.
 
 **Presets:**
@@ -137,7 +161,7 @@ nestim profile-simulation [--preset {quick,standard,exhaustive}] [--backends num
 1. Discover available backends (or filter by `--backends`).
 2. Print skipped backends with install hints.
 3. **Pre-flight correctness check** — For each available backend, run `run_mlp` and `output_stats` on a small fixed MLP (width=8, depth=4, 1000 samples) and compare against NumPy reference. Exact match for `run_mlp` (rtol=1e-5), statistical match for `output_stats` (atol=0.05). Failed backends marked "FAIL" and excluded from timing.
-4. **Timing sweep** — For each (backend x operation x parameter combo), run 3 iterations, report median wall time.
+4. **Timing sweep** — For each (backend x operation x parameter combo), run 1 warmup iteration (untimed, critical for JIT backends like Numba and JAX), then 3 timed iterations, report median wall time. GC is disabled during timed iterations.
 5. **Terminal output** — Rich table with columns: Backend, Operation, Width, Depth, N_Samples, Median Time, Speedup vs NumPy, Status.
 6. **JSON output** (if `--output`) — Full results including hardware info (platform, cpu, cpu_count), backend versions, per-run timings, and correctness status.
 
@@ -182,6 +206,8 @@ Install: `uv sync --group all-backends` or `uv sync --group pytorch` etc.
 - `profile-simulation` CLI runs without error on `--preset quick`.
 - JSON output structure validated when `--output` is provided.
 - Unavailable backends show "SKIPPED" status.
+
+**Unchanged:** `test_simulation.py` stays as-is — it tests the reference `simulation.py` directly, independent of the backend system.
 
 **Removed:** `test_simulation_fast.py` — its coverage moves into parametrized backend tests.
 
