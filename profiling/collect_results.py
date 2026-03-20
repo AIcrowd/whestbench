@@ -155,7 +155,7 @@ def main():
     # Extract git info from run ID if it matches auto-generated pattern
     git_commit = ""
     git_dirty = args.run_id.endswith("-dirty")
-    clean_id = args.run_id.removesuffix("-dirty")
+    clean_id = args.run_id[:-6] if args.run_id.endswith("-dirty") else args.run_id
     match = re.match(r"\d{4}-\d{2}-\d{2}-\d{6}-([a-f0-9]{7})$", clean_id)
     if match:
         git_commit = match.group(1)
