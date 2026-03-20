@@ -1,29 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-import { randomCircuit } from "./circuit";
 import ActivationRibbon from "./components/ActivationRibbon";
-import CircuitGraphJoint from "./components/CircuitGraphJoint";
-import CircuitHeatmap from "./components/CircuitHeatmap";
 import CoeffHistograms from "./components/CoeffHistograms";
 import Controls from "./components/Controls";
-import ErrorByGateType from "./components/ErrorByGateType";
 import ErrorHeatmap from "./components/ErrorHeatmap";
 import EstimatorComparison from "./components/EstimatorComparison";
 import EstimatorRunner from "./components/EstimatorRunner";
-import GateStats from "./components/GateStats";
-import NarrativeCard, { Ewire } from "./components/NarrativeCard";
+import NarrativeCard, { Eneuron } from "./components/NarrativeCard";
+import NetworkGraph from "./components/NetworkGraph";
+import NetworkHeatmap from "./components/NetworkHeatmap";
 import PerfOverlay from "./components/PerfOverlay";
-
+import SignalHeatmap from "./components/SignalHeatmap";
 import StdHeatmap from "./components/StdHeatmap";
 import StepIndicator from "./components/StepIndicator";
-import WireStats from "./components/WireStats";
 
 import { perfEnd, perfStart } from "./perf";
 import { useMLPWorker } from "./useWorker";
 
 const DEFAULT_PARAMS = { width: 8, depth: 6, seed: 42 };
 const TOUR_PARAMS = { width: 8, depth: 6, seed: 42 };
-const GRAPH_MODE_THRESHOLD = 4096;
+const GRAPH_MODE_MAX_WIDTH = 8;
 
 function formatTime(ms) {
   if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`;
@@ -37,13 +33,13 @@ export default function App() {
 
   // ── Step state (tour) ──
   const [step, setStep] = useState(() => {
-    const saved = localStorage.getItem("circuit-explorer-tour-step");
+    const saved = localStorage.getItem("network-explorer-tour-step");
     return saved === "done" ? 6 : 1;
   });
 
   const isTour = step < 6;
 
-  // ── Circuit params ──
+  // ── MLP params ──
   const [params, setParams] = useState(DEFAULT_PARAMS);
   const effectiveParams = isTour ? TOUR_PARAMS : params;
 
@@ -51,71 +47,51 @@ export default function App() {
   const [estimatorResults, setEstimatorResults] = useState({});
 
   // ── Tour auto-run state ──
-  const [tourGroundTruth, setTourGroundTruth] = useState(null);
-  const [tourGroundTruthTime, setTourGroundTruthTime] = useState(null);
+  const [tourMeans, setTourMeans] = useState(null);
+  const [tourMeansTime, setTourMeansTime] = useState(null);
   const [tourSampling, setTourSampling] = useState(null);
   const [tourMeanProp, setTourMeanProp] = useState(null);
   const [tourBudget, setTourBudget] = useState(1000);
   const autoRunDone = useRef({ gt: false, sampling: false, meanprop: false });
 
-  // ── Circuit ──
-  // Tour circuit is tiny (8×6=48 gates) — always synchronous
-  const tourCircuit = useMemo(
-    () => randomCircuit(TOUR_PARAMS.width, TOUR_PARAMS.depth, TOUR_PARAMS.seed),
-    []
-  );
-
-  const totalGates = effectiveParams.width * effectiveParams.depth;
-  const useGraphMode = totalGates <= GRAPH_MODE_THRESHOLD;
-
-  // Small circuits: synchronous via useMemo (instant, no useEffect needed)
-  // Large circuits: null initially, filled async from worker
-  const syncCircuit = useMemo(() => {
-    if (isTour) return null;
-    if (totalGates > GRAPH_MODE_THRESHOLD) return null;
-    perfStart('circuit-gen');
-    const c = randomCircuit(effectiveParams.width, effectiveParams.depth, effectiveParams.seed);
-    perfEnd('circuit-gen');
-    return c;
-  }, [effectiveParams.width, effectiveParams.depth, effectiveParams.seed, isTour, totalGates]);
-
-  // Async worker circuit for large sizes only
-  const [workerCircuit, setWorkerCircuit] = useState(null);
-  const [circuitLoading, setCircuitLoading] = useState(false);
-  const circuitGenIdRef = useRef(0);
+  // ── MLP: always generated via worker ──
+  const [mlp, setMlp] = useState(null);
+  const [mlpLoading, setMlpLoading] = useState(false);
+  const mlpGenIdRef = useRef(0);
   const { run: workerRun } = worker;
 
   useEffect(() => {
-    if (isTour || totalGates <= GRAPH_MODE_THRESHOLD) {
-      setWorkerCircuit(null);
-      setCircuitLoading(false);
-      return;
-    }
     const { width, depth, seed } = effectiveParams;
-    const genId = ++circuitGenIdRef.current;
-    setCircuitLoading(true);
-    workerRun('randomCircuit', { width, depth, seed })
-      .then(({ circuit: c }) => {
-        if (genId === circuitGenIdRef.current) {
-          setWorkerCircuit(c);
-          setCircuitLoading(false);
+    const genId = ++mlpGenIdRef.current;
+    setMlpLoading(true);
+    perfStart('mlp-gen');
+    workerRun('sampleMLP', { width, depth, seed })
+      .then(({ mlp: m }) => {
+        perfEnd('mlp-gen');
+        if (genId === mlpGenIdRef.current) {
+          setMlp(m);
+          setMlpLoading(false);
         }
+      })
+      .catch((err) => {
+        console.error("MLP generation failed:", err);
+        setMlpLoading(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveParams.width, effectiveParams.depth, effectiveParams.seed, isTour, workerRun]);
+  }, [effectiveParams.width, effectiveParams.depth, effectiveParams.seed, workerRun]);
 
-  // Effective circuit: tour → tourCircuit, small explore → syncCircuit, large → workerCircuit
-  const displayCircuit = isTour ? tourCircuit : (syncCircuit || workerCircuit);
-
-  // Clear estimator results when circuit changes
-  const prevCircuitRef = useRef(displayCircuit);
+  // Clear estimator results when MLP changes
+  const prevMlpRef = useRef(mlp);
   useEffect(() => {
-    if (prevCircuitRef.current !== displayCircuit && !isTour) {
+    if (prevMlpRef.current !== mlp && !isTour) {
       setEstimatorResults({});
       setActiveLayer(undefined);
     }
-    prevCircuitRef.current = displayCircuit;
-  }, [displayCircuit, isTour]);
+    prevMlpRef.current = mlp;
+  }, [mlp, isTour]);
+
+  // Tour MLP — synchronously reuse main mlp when in tour
+  const tourMlp = useMemo(() => mlp, [mlp]);
 
   // Escape key clears activeLayer
   useEffect(() => {
@@ -129,55 +105,56 @@ export default function App() {
   // ── Tour auto-run effects (via worker) ──
   // Step 3: auto-run ground truth
   useEffect(() => {
-    if (step === 3 && !autoRunDone.current.gt) {
+    if (step === 3 && tourMlp && !autoRunDone.current.gt) {
       autoRunDone.current.gt = true;
-      worker.run('empiricalMean', { circuit: tourCircuit, trials: 10000, seed: 99 })
-        .then(({ estimates, time }) => {
-          setTourGroundTruth(estimates);
-          setTourGroundTruthTime(time);
+      worker.run('outputStats', { mlp: tourMlp, nSamples: 10000, seed: 99 })
+        .then(({ means, time }) => {
+          setTourMeans(means);
+          setTourMeansTime(time);
         });
     }
-  }, [step, tourCircuit, worker]);
+  }, [step, tourMlp, worker]);
 
   // Step 4: auto-run sampling
   useEffect(() => {
-    if (step >= 4 && !autoRunDone.current.sampling) {
+    if (step >= 4 && tourMlp && !autoRunDone.current.sampling) {
       autoRunDone.current.sampling = true;
-      worker.run('empiricalMean', { circuit: tourCircuit, trials: tourBudget, seed: 77 })
+      worker.run('sampling', { mlp: tourMlp, budget: tourBudget, seed: 77 })
         .then(({ estimates }) => {
           setTourSampling(estimates);
         });
     }
-  }, [step, tourCircuit, tourBudget, worker]);
+  }, [step, tourMlp, tourBudget, worker]);
 
   const handleTourBudgetChange = useCallback(
     (newBudget) => {
+      if (!tourMlp) return;
       setTourBudget(newBudget);
-      worker.run('empiricalMean', { circuit: tourCircuit, trials: newBudget, seed: 77 })
+      worker.run('sampling', { mlp: tourMlp, budget: newBudget, seed: 77 })
         .then(({ estimates }) => {
           setTourSampling(estimates);
         });
     },
-    [tourCircuit, worker]
+    [tourMlp, worker]
   );
 
   // Step 5: auto-run mean propagation
   useEffect(() => {
-    if (step >= 5 && !autoRunDone.current.meanprop) {
+    if (step >= 5 && tourMlp && !autoRunDone.current.meanprop) {
       autoRunDone.current.meanprop = true;
-      worker.run('meanPropagation', { circuit: tourCircuit })
+      worker.run('meanPropagation', { mlp: tourMlp })
         .then(({ estimates }) => {
           setTourMeanProp(estimates);
         });
     }
-  }, [step, tourCircuit, worker]);
+  }, [step, tourMlp, worker]);
 
   // ── Step navigation ──
   const nextStep = useCallback(() => {
     setStep((s) => {
       const next = Math.min(6, s + 1);
       if (next === 6) {
-        localStorage.setItem("circuit-explorer-tour-step", "done");
+        localStorage.setItem("network-explorer-tour-step", "done");
       }
       return next;
     });
@@ -190,15 +167,15 @@ export default function App() {
   const handleSkipTour = useCallback(
     (action) => {
       if (action === "restart") {
-        localStorage.removeItem("circuit-explorer-tour-step");
+        localStorage.removeItem("network-explorer-tour-step");
         autoRunDone.current = { gt: false, sampling: false, meanprop: false };
-        setTourGroundTruth(null);
-        setTourGroundTruthTime(null);
+        setTourMeans(null);
+        setTourMeansTime(null);
         setTourSampling(null);
         setTourMeanProp(null);
         setStep(1);
       } else {
-        localStorage.setItem("circuit-explorer-tour-step", "done");
+        localStorage.setItem("network-explorer-tour-step", "done");
         setStep(6);
       }
     },
@@ -219,22 +196,23 @@ export default function App() {
 
   // Tour display data
   const tourDisplayMeans =
-    step >= 3 ? tourGroundTruth || tourSampling || tourMeanProp : null;
+    step >= 3 ? tourMeans || tourSampling || tourMeanProp : null;
 
   // Explore mode display data
   const exploreDisplayMeans = groundTruth || samplingEst || meanPropEst || covPropEst;
   const hasAnyExploreEstimate = !!(groundTruth || samplingEst || meanPropEst || covPropEst);
 
-
+  // Graph mode: use NetworkGraph for small networks, NetworkHeatmap for larger ones
+  const useGraphMode = effectiveParams.width <= GRAPH_MODE_MAX_WIDTH;
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>
-          <img src="/logo.png" alt="Circuit Explorer" className="header-logo" /> Circuit Explorer
+          <img src="/logo.png" alt="Network Explorer" className="header-logo" /> Network Explorer
         </h1>
         <p className="subtitle">
-          Interactive visualization of Boolean circuits for the{" "}
+          Interactive visualization of MLPs for the{" "}
           <em>Mechanistic Estimation</em> challenge
         </p>
       </header>
@@ -250,7 +228,7 @@ export default function App() {
           >
             <Controls params={isTour ? TOUR_PARAMS : params} onParamsChange={setParams} />
             {isTour && (
-              <p className="locked-hint">🔒 Unlocks in Explore mode</p>
+              <p className="locked-hint">Unlocks in Explore mode</p>
             )}
           </div>
 
@@ -283,11 +261,13 @@ export default function App() {
           <div
             className={isTour ? "estimator-runner--locked" : ""}
           >
-            <EstimatorRunner
-              circuit={displayCircuit}
-              onResult={handleEstimatorResult}
-              worker={worker}
-            />
+            {mlp && (
+              <EstimatorRunner
+                mlp={mlp}
+                onResult={handleEstimatorResult}
+                worker={worker}
+              />
+            )}
           </div>
         </aside>
 
@@ -295,14 +275,13 @@ export default function App() {
           {/* ── Narrative Card ── */}
           {step === 3 ? (
             <NarrativeCard step={3} onNext={nextStep} onBack={prevStep}>
-              {tourGroundTruthTime ? (
+              {tourMeansTime ? (
                 <>
-                  ✅ We sampled <strong>10,000 random inputs</strong> and
-                  averaged each wire. The circuit is now colored by{" "}
-                  <Ewire />.
+                  We sampled <strong>10,000 random inputs</strong> and averaged
+                  each neuron. The network is now colored by <Eneuron />.
                   Accurate, but took{" "}
-                  <strong>{formatTime(tourGroundTruthTime)}</strong>. Now
-                  imagine <strong>1,000 wires × 256 layers</strong>…
+                  <strong>{formatTime(tourMeansTime)}</strong>. Now imagine{" "}
+                  <strong>1,000 neurons × 256 layers</strong>…
                 </>
               ) : (
                 <>Computing ground truth…</>
@@ -316,42 +295,51 @@ export default function App() {
             />
           )}
 
-          {/* ── Circuit visualization ── */}
-          {circuitLoading && (
+          {/* ── MLP visualization ── */}
+          {mlpLoading && (
             <div className="panel" style={{ textAlign: 'center', padding: '60px 20px', color: '#9CA3AF' }}>
-              <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                Generating {effectiveParams.width}×{effectiveParams.depth} circuit…
+                Generating {effectiveParams.width}×{effectiveParams.depth} network…
               </div>
             </div>
           )}
-          {isTour ? (
-            <CircuitGraphJoint
-              circuit={tourCircuit}
-              means={tourDisplayMeans}
-              activeLayer={activeLayer}
-              pulseOutputs={step === 2}
-            />
-          ) : !circuitLoading && displayCircuit && useGraphMode ? (
-            <CircuitGraphJoint
-              circuit={displayCircuit}
-              means={exploreDisplayMeans}
-              activeLayer={activeLayer}
-            />
-          ) : !circuitLoading && displayCircuit ? (
-            <CircuitHeatmap
-              circuit={displayCircuit}
-              means={exploreDisplayMeans}
-              activeLayer={activeLayer}
-              onLayerClick={setActiveLayer}
-            />
-          ) : null}
+          {!mlpLoading && mlp && (
+            isTour ? (
+              useGraphMode ? (
+                <NetworkGraph
+                  mlp={tourMlp}
+                  means={tourDisplayMeans}
+                  activeLayer={activeLayer}
+                />
+              ) : (
+                <NetworkHeatmap
+                  mlp={tourMlp}
+                  means={tourDisplayMeans}
+                  activeLayer={activeLayer}
+                  onLayerClick={setActiveLayer}
+                />
+              )
+            ) : useGraphMode ? (
+              <NetworkGraph
+                mlp={mlp}
+                means={exploreDisplayMeans}
+                activeLayer={activeLayer}
+              />
+            ) : (
+              <NetworkHeatmap
+                mlp={mlp}
+                means={exploreDisplayMeans}
+                activeLayer={activeLayer}
+                onLayerClick={setActiveLayer}
+              />
+            )
+          )}
 
           {/* ── Tour: MSE Comparison (steps 4-5) ── */}
-          {isTour && step >= 4 && tourGroundTruth && (
+          {isTour && step >= 4 && tourMeans && (
             <div className="panel-reveal">
               <EstimatorComparison
-                groundTruth={tourGroundTruth}
+                groundTruth={tourMeans}
                 samplingEstimates={tourSampling}
                 meanPropEstimates={step >= 5 ? tourMeanProp : null}
                 depth={TOUR_PARAMS.depth}
@@ -362,31 +350,32 @@ export default function App() {
           {/* ── Explore mode: all panels ── */}
           {!isTour && (
             <>
-
-
               {hasAnyExploreEstimate && (
                 <>
-                  {/* Row 1: Output Variance (per wire) | E[wire] Distribution (across wires) */}
-                  {groundTruthStats?.stds && (
-                    <div className="panels-row panel-reveal">
-                      <ActivationRibbon
-                        means={groundTruth}
-                        stds={groundTruthStats.stds}
-                        mins={groundTruthStats.mins}
-                        maxs={groundTruthStats.maxs}
-                        depth={params.depth}
-                        width={params.width}
-                      />
-                      <WireStats
+                  {/* Signal heatmap */}
+                  {exploreDisplayMeans && (
+                    <div className="panel-reveal">
+                      <SignalHeatmap
                         means={exploreDisplayMeans}
                         width={params.width}
                         depth={params.depth}
-                        activeLayer={activeLayer}
                       />
                     </div>
                   )}
 
-                  {/* Row 2: Estimation Error (full width) */}
+                  {/* Output variance ribbon */}
+                  {groundTruthStats?.stds && (
+                    <div className="panel-reveal">
+                      <ActivationRibbon
+                        means={groundTruth}
+                        stds={groundTruthStats.stds}
+                        depth={params.depth}
+                        width={params.width}
+                      />
+                    </div>
+                  )}
+
+                  {/* Estimation Error (full width) */}
                   {groundTruth && (samplingEst || meanPropEst) && (
                     <div className="panel-reveal">
                       <EstimatorComparison
@@ -400,32 +389,13 @@ export default function App() {
                     </div>
                   )}
 
-                  {/* Row 2b: Gate Structure & Error by Gate Type */}
-                  {displayCircuit && (
-                    <div className="panels-row panel-reveal">
-                      <GateStats
-                        circuit={displayCircuit}
-                        activeLayer={activeLayer}
-                      />
-                      <ErrorByGateType
-                        circuit={displayCircuit}
-                        groundTruth={groundTruth}
-                        samplingEstimates={samplingEst}
-                        meanPropEstimates={meanPropEst}
-                        covPropEstimates={covPropEst}
-                        activeLayer={activeLayer}
-                      />
-                    </div>
-                  )}
-
-                  {/* Row 3: Signal Variability (σ) | Estimation Error */}
+                  {/* Signal Variability (σ) | Error heatmap */}
                   <div className="panels-row panel-reveal">
                     {groundTruthStats?.stds && (
                       <StdHeatmap
                         stds={groundTruthStats.stds}
                         width={params.width}
                         depth={params.depth}
-                        gates={displayCircuit?.gates}
                       />
                     )}
                     <ErrorHeatmap
@@ -435,15 +405,13 @@ export default function App() {
                       samplingEstimates={samplingEst}
                       width={params.width}
                       depth={params.depth}
-                      gates={displayCircuit?.gates}
                     />
                   </div>
 
-
-                  {/* Row 4: Coefficient Distributions (full width) */}
-                  {displayCircuit && (
+                  {/* Weight Distributions */}
+                  {mlp && (
                     <div className="panel-reveal">
-                      <CoeffHistograms circuit={displayCircuit} columns={2} />
+                      <CoeffHistograms mlp={mlp} />
                     </div>
                   )}
                 </>
@@ -454,26 +422,22 @@ export default function App() {
                   <div className="empty-state-inner">
                     <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="empty-state-motif">
                       <rect x="8" y="8" width="48" height="48" rx="12" className="motif-bg" strokeWidth="1.5" />
-                      
                       <path d="M 8 32 h 48 M 32 8 v 48" className="motif-wire-dash" strokeWidth="1.5" />
                       <path d="M 20 20 v 24 M 44 20 v 24 M 20 20 h 24 M 20 44 h 24" className="motif-wire" strokeWidth="1.5" />
-
                       <path d="M 20 32 L 32 20 L 44 32 L 32 44 Z" fill="var(--white)" />
                       <path d="M 20 32 L 32 20 L 44 32 L 32 44 Z" className="motif-link" strokeWidth="1.5" strokeLinejoin="round" />
                       <path d="M 32 20 L 32 44 M 20 32 L 44 32" className="motif-wire" strokeWidth="1.5" />
-
                       <circle cx="32" cy="20" r="4.5" className="motif-node motif-node-mean" strokeWidth="2" />
                       <circle cx="20" cy="32" r="4.5" className="motif-node motif-node-cov" strokeWidth="2" />
                       <circle cx="44" cy="32" r="4.5" className="motif-node motif-node-samp" strokeWidth="2" />
                       <circle cx="32" cy="44" r="4.5" className="motif-node motif-node-gt" strokeWidth="2" />
-                      
                       <circle cx="32" cy="32" r="3" className="motif-node-center" />
                     </svg>
                     <h3>Ready to Explore</h3>
                     <p>
-                      This circuit has{" "}
-                      <strong>{params.width}</strong> wires and{" "}
-                      <strong>{params.depth}</strong> layers of random gates.
+                      This network has{" "}
+                      <strong>{params.width}</strong> neurons wide and{" "}
+                      <strong>{params.depth}</strong> layers.
                     </p>
                     <p className="empty-hint">
                       Use the <strong>Run Estimators</strong> panel on the left. Start with <strong>Ground Truth</strong> to establish a baseline, then try the other estimators to compare accuracy and speed.
@@ -508,8 +472,7 @@ export default function App() {
           >
             ARC
           </a>{" "}
-          × AIcrowd Mechanistic Estimation Challenge •{" "}
-          <code>tools/circuit-explorer</code>
+          x AIcrowd Mechanistic Estimation Challenge
         </p>
       </footer>
 
