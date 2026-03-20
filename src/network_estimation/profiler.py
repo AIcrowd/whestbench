@@ -7,6 +7,7 @@ import gc
 import json
 import platform
 import time
+import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -152,18 +153,22 @@ def _time_run_mlp(
 ) -> float:
     """Time a single run_mlp call."""
     inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
-    t0 = time.perf_counter()
-    backend.run_mlp(mlp, inputs)
-    return time.perf_counter() - t0
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        t0 = time.perf_counter()
+        backend.run_mlp(mlp, inputs)
+        return time.perf_counter() - t0
 
 
 def _time_output_stats(
     backend: SimulationBackend, mlp: MLP, n_samples: int
 ) -> float:
     """Time a single output_stats call."""
-    t0 = time.perf_counter()
-    backend.output_stats(mlp, n_samples)
-    return time.perf_counter() - t0
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        t0 = time.perf_counter()
+        backend.output_stats(mlp, n_samples)
+        return time.perf_counter() - t0
 
 
 def run_timing_sweep(
