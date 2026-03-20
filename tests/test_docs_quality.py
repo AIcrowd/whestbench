@@ -23,7 +23,7 @@ def _normalize_h2_heading(line):
 
 def _participant_markdown_paths(repo_root):
     # type: (Path) -> List[Path]
-    paths = [repo_root / "README.md", repo_root / "tools/circuit-explorer/README.md"]  # type: List[Path]
+    paths = [repo_root / "README.md", repo_root / "tools/network-explorer/README.md"]  # type: List[Path]
     docs_root = repo_root / "docs"
     for path in sorted(docs_root.rglob("*.md")):
         rel = path.relative_to(repo_root).as_posix()

@@ -86,14 +86,14 @@ def check_node_version(minimum: int = _MIN_NODE_MAJOR) -> None:
 
 def find_explorer_dir(start: Path | None = None) -> Path:
     """Walk up from *start* (default: this file's directory) to find the repo root,
-    then return tools/circuit-explorer/.
+    then return tools/network-explorer/.
 
     The repo root is identified by the presence of pyproject.toml.
     """
     current = start or Path(__file__).resolve().parent
     while True:
         if (current / "pyproject.toml").is_file():
-            explorer = current / "tools" / "circuit-explorer"
+            explorer = current / "tools" / "network-explorer"
             if explorer.is_dir() and (explorer / "package.json").is_file():
                 return explorer
             raise ExplorerNotFoundError()

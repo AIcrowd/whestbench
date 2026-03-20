@@ -24,7 +24,7 @@ Your score combines prediction accuracy with compute efficiency: can you match s
 ### 🧠 Why this challenge matters
 
 <div align="center">
-  <img src="assets/circuit-explorer-visualization.svg" alt="Network Explorer Visualization" width="100%">
+  <img src="assets/network-explorer-visualization.svg" alt="Network Explorer Visualization" width="100%">
 </div>
 
 The natural way to estimate a network's expected output is brute force: sample many random inputs, propagate them, average the results. Sampling is the ground truth — with enough samples it converges to the exact answer. But it's inefficient: the error only shrinks as 1/√k with k samples, and it learns nothing from the network's structure.
