@@ -115,10 +115,10 @@ Start at: [Documentation Index](docs/index.md)
 ### 🛠 How-To
 
 - [Write an Estimator](docs/how-to/write-an-estimator.md)
-- [Inspect and Traverse MLP Structure](docs/how-to/inspect-circuit-structure.md)
+- [Inspect and Traverse MLP Structure](docs/how-to/inspect-mlp-structure.md)
 - [Validate, Run, and Package](docs/how-to/validate-run-package.md)
 - [Use Evaluation Datasets](docs/how-to/use-evaluation-datasets.md)
-- [Use Network Explorer](docs/how-to/use-circuit-explorer.md)
+- [Use Network Explorer](docs/how-to/use-network-explorer.md)
 
 ### 📖 Reference
 

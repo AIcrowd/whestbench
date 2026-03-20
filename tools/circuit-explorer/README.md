@@ -42,4 +42,4 @@ cestim run --estimator <path> --runner subprocess
 ## Participant docs
 
 - [Documentation Index](../../docs/index.md)
-- [Use Circuit Explorer](../../docs/how-to/use-circuit-explorer.md)
+- [Use Circuit Explorer](../../docs/how-to/use-network-explorer.md)

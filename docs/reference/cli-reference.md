@@ -137,5 +137,5 @@ On SSH/headless environments, browser auto-open is skipped automatically.
 ## ➡️ Next step
 
 - [Score Report Fields](./score-report-fields.md)
-- [Inspect and Traverse MLP Structure](../how-to/inspect-circuit-structure.md)
+- [Inspect and Traverse MLP Structure](../how-to/inspect-mlp-structure.md)
 - [Validate, Run, and Package](../how-to/validate-run-package.md)

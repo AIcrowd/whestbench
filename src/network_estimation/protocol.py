@@ -14,6 +14,8 @@ class ScoreRequest:
     n_mlps: int
     n_samples: int
     estimator_budget: int
+    width: int
+    depth: int
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize this request dataclass to a plain dictionary."""
@@ -27,6 +29,8 @@ class ScoreRequest:
             n_mlps=int(payload["n_mlps"]),
             n_samples=int(payload["n_samples"]),
             estimator_budget=int(payload["estimator_budget"]),
+            width=int(payload["width"]),
+            depth=int(payload["depth"]),
         )
 
 
