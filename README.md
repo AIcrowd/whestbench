@@ -147,14 +147,14 @@ Recommended reading order:
 3. [`covariance_propagation.py`](examples/estimators/covariance_propagation.py)
 4. [`combined_estimator.py`](examples/estimators/combined_estimator.py)
 
-Try them out (adjust `--n-mlps` and `--n-samples` to control evaluation size):
+Try them out (adjust `--n-mlps` to control evaluation size):
 
 ```bash
-# Quick smoke run (10 networks, 500 samples — fast)
-nestim run --estimator examples/estimators/mean_propagation.py --n-mlps 10 --n-samples 500
+# Quick smoke run (10 networks — fast)
+nestim run --estimator examples/estimators/mean_propagation.py --n-mlps 10
 
 # Full evaluation against the combined estimator
-nestim run --estimator examples/estimators/combined_estimator.py --n-mlps 100 --n-samples 10000
+nestim run --estimator examples/estimators/combined_estimator.py --n-mlps 100
 
 # Compare estimators on the same dataset for fair scoring
 nestim create-dataset --n-mlps 100 --n-samples 10000 -o eval.npz
