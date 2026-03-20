@@ -31,11 +31,11 @@ describe('normalCdf', () => {
   });
 
   it('normalCdf(-6) ≈ 0', () => {
-    expect(normalCdf(-6)).toBeCloseTo(0, 6);
+    expect(normalCdf(-6)).toBeCloseTo(0, 8);
   });
 
   it('normalCdf(6) ≈ 1', () => {
-    expect(normalCdf(6)).toBeCloseTo(1, 6);
+    expect(normalCdf(6)).toBeCloseTo(1, 8);
   });
 });
 
