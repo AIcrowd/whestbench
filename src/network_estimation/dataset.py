@@ -14,7 +14,7 @@ from numpy.typing import NDArray
 from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
-from .simulation import output_stats
+from .simulation_fast import output_stats
 
 SCHEMA_VERSION = "2.0"
 

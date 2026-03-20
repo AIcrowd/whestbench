@@ -87,7 +87,7 @@ def test_find_explorer_dir_finds_tools_dir(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "pyproject.toml").write_text("[project]\nname = 'test'\n")
-    explorer = repo / "tools" / "circuit-explorer"
+    explorer = repo / "tools" / "network-explorer"
     explorer.mkdir(parents=True)
     (explorer / "package.json").write_text("{}")
 
@@ -173,7 +173,7 @@ def test_is_headless_false_on_linux_with_wayland(monkeypatch):
 
 def _make_fake_explorer(tmp_path, *, with_node_modules: bool = True):
     """Create a fake explorer directory and return it."""
-    explorer = tmp_path / "circuit-explorer"
+    explorer = tmp_path / "network-explorer"
     explorer.mkdir()
     (explorer / "package.json").write_text("{}")
     if with_node_modules:
