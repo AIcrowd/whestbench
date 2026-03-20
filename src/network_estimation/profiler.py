@@ -342,6 +342,7 @@ def run_profile(
     preset_name: str = "standard",
     backend_filter: Optional[List[str]] = None,
     output_path: Optional[str] = None,
+    show_progress: bool = False,
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     """Main profiling entry point.
 
@@ -381,19 +382,68 @@ def run_profile(
     for name, cls in available.items():
         backend_instances[name] = cls()
 
+    # Set up progress display
+    progress_ctx: Any = None
+    if show_progress:
+        try:
+            from rich.progress import (
+                BarColumn,
+                MofNCompleteColumn,
+                Progress,
+                SpinnerColumn,
+                TextColumn,
+                TimeElapsedColumn,
+            )
+            progress_ctx = Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(bar_width=None),
+                MofNCompleteColumn(),
+                TimeElapsedColumn(),
+            )
+        except ImportError:
+            pass
+
     # Pre-flight correctness check
     correctness_results: List[CorrectnessResult] = []
     passed_backends: Dict[str, SimulationBackend] = {}
+
+    if progress_ctx is not None:
+        correctness_task = progress_ctx.add_task(
+            "Correctness checks", total=len(backend_instances)
+        )
+        progress_ctx.start()
+
     for name, backend in backend_instances.items():
         cr = correctness_check(backend)
         correctness_results.append(cr)
         if cr.passed:
             passed_backends[name] = backend
+        if progress_ctx is not None:
+            progress_ctx.advance(correctness_task)
 
     # Timing sweep (only on backends that passed correctness)
     timing_results: List[TimingResult] = []
+    timing_task = None
     if passed_backends:
-        timing_results, _ = run_timing_sweep(passed_backends, preset)
+        n_combos = (
+            len(preset.widths)
+            * len(preset.depths)
+            * len(preset.n_samples_list)
+            * 2  # run_mlp + output_stats
+            * len(passed_backends)
+        )
+        if progress_ctx is not None:
+            timing_task = progress_ctx.add_task("Timing sweep", total=n_combos)
+            callback = lambda: progress_ctx.advance(timing_task)
+        else:
+            callback = None
+        timing_results, _ = run_timing_sweep(
+            passed_backends, preset, progress_callback=callback
+        )
+
+    if progress_ctx is not None:
+        progress_ctx.stop()
 
     # Format output
     terminal_output = format_terminal_table(
