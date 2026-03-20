@@ -21,10 +21,10 @@ sampleMLP(width, depth, seed)
 // Returns: { width, depth, weights: Float32Array[] }
 // Weights are He-initialized: scale = sqrt(2 / width)
 
-// Simulation
+// Simulation (row-vector convention: inputs are rows, matching Python's x @ W)
 forwardPass(mlp, inputs)
-// inputs: Float32Array(n × width), Gaussian N(0,1)
-// Returns: per-layer activations Float32Array(depth × width) for each input
+// inputs: Float32Array of shape (n, width), row-major. Gaussian N(0,1).
+// Returns: Array of depth Float32Arrays, each shape (n, width) — one per layer's post-ReLU activations
 
 sampleInputs(n, width, seed)
 // Returns: Float32Array(n × width), Gaussian N(0,1) via Box-Muller
@@ -39,7 +39,7 @@ outputStats(mlp, nSamples)
 - Keep the existing seedable PRNG (xoshiro128**) for reproducibility
 - Add Box-Muller transform for Gaussian sampling from the uniform PRNG
 - Weight generation: `W[i][j] ~ N(0, sqrt(2/width))` per layer
-- Forward pass: `x = relu(W^T @ x)` per layer, where `relu(z) = max(0, z)`
+- Forward pass (row-vector convention, matching Python): `x = relu(x @ W)` per layer, where `relu(z) = max(0, z)`. Inputs `x` have shape `(n, width)`, weights `W` have shape `(width, width)`.
 - Chunked `outputStats`: process samples in chunks to keep memory O(chunk_size × width) not O(nSamples × width × depth)
 
 ### Worker
@@ -52,22 +52,34 @@ Replace bilinear gate math with ReLU moment propagation.
 
 ### Mean Propagation
 
-Propagate E[x] per neuron assuming independence (E[xy] ≈ E[x]·E[y]).
+Propagate both E[x] (mean) and Var[x] (diagonal variance) per neuron, assuming independence (E[xy] ≈ E[x]·E[y]).
 
-For pre-activation `z = Σ w_i · x_i` with mean `μ` and std `σ`:
-- `α = μ / σ`
-- `E[ReLU(z)] = μ · Φ(α) + σ · φ(α)`
+Per layer, for each neuron `j`:
+1. **Pre-activation moments:** `μ_j = Σ_i w_ij · mean_i`, `var_j = Σ_i w_ij² · var_i`
+2. **Numerical floor:** `var_j = max(var_j, 1e-12)` to avoid division by zero
+3. **ReLU moments:** with `σ_j = sqrt(var_j)` and `α_j = μ_j / σ_j`:
+   - `mean_j' = μ_j · Φ(α_j) + σ_j · φ(α_j)`
+   - `var_j' = (μ_j² + var_j) · Φ(α_j) + μ_j · σ_j · φ(α_j) - mean_j'²`
 
 Where `Φ` is the standard normal CDF and `φ` is the standard normal PDF.
 
+**Initial layer:** `mean = 0` (Gaussian inputs), `var = 1` for all neurons.
+
 ### Covariance Propagation
 
-Track full covariance matrix per layer in addition to means.
+Track full covariance matrix and mean vector per layer.
 
-- Pre-activation covariance: `Cov[z_a, z_b] = Σ_ij w_ai · w_bj · Cov[x_i, x_j]`
-- Use `E[x_f · x_s] = m_f · m_s + C_fs` to propagate through ReLU
+Per layer:
+1. **Pre-activation mean:** `μ = W^T @ mean` (same as mean propagation)
+2. **Pre-activation covariance:** `Cov_pre = W^T @ Cov @ W` (matrix form of `Cov[z_a, z_b] = Σ_ij w_ai · w_bj · Cov[x_i, x_j]`)
+3. **Diagonal variances:** `var_j = max(Cov_pre[j,j], 1e-12)`, then `σ_j = sqrt(var_j)`, `α_j = μ_j / σ_j`
+4. **Post-ReLU means:** `mean_j' = μ_j · Φ(α_j) + σ_j · φ(α_j)` (same formula as mean propagation)
+5. **Post-ReLU covariance (approximate):** `Cov'[a,b] = gain_a · gain_b · Cov_pre[a,b]` where `gain_j = Φ(α_j)`. Then subtract to get centered covariance: `Cov'[a,b] -= mean_a' · mean_b'` (only off-diagonal; diagonal = variance from step 4's extended formula).
+
+**Initial layer:** `mean = 0`, `Cov = I` (identity, since inputs are i.i.d. N(0,1)).
+
 - Storage: flat row-major `Float32Array(n²)` per layer (same pattern as current code)
-- Runtime: O(depth × width²)
+- Runtime: O(depth × width²) due to matrix multiplications
 
 ### Sampling
 
