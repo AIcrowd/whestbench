@@ -52,6 +52,7 @@ from __future__ import annotations
 
 import gc
 import json
+import os
 import platform
 import time
 import warnings
@@ -155,16 +156,18 @@ class TimingResult:
     breakdown: Optional[PrimitiveBreakdown] = None
 
 
-def _collect_hardware_info() -> Dict[str, Any]:
+def _collect_hardware_info(max_threads: Optional[int] = None) -> Dict[str, Any]:
     """Collect hardware info for the profiling report."""
-    import os
-    return {
+    info: Dict[str, Any] = {
         "platform": platform.platform(),
         "processor": platform.processor(),
         "cpu_count": os.cpu_count(),
         "python_version": platform.python_version(),
         "machine": platform.machine(),
     }
+    if max_threads is not None:
+        info["max_threads"] = max_threads
+    return info
 
 
 def _collect_backend_versions(backend_names: List[str]) -> Dict[str, str]:
@@ -514,6 +517,7 @@ def format_json_output(
     timing_results: List[TimingResult],
     skipped_backends: Dict[str, str],
     backend_names: Optional[List[str]] = None,
+    max_threads: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Format profiling results as a JSON-serializable dictionary.
 
@@ -528,7 +532,7 @@ def format_json_output(
     Use ``--output results.json`` on the CLI to write this automatically.
     """
     return {
-        "hardware": _collect_hardware_info(),
+        "hardware": _collect_hardware_info(max_threads=max_threads),
         "backend_versions": _collect_backend_versions(backend_names or []),
         "skipped_backends": skipped_backends,
         "correctness": [
@@ -557,6 +561,7 @@ def run_profile(
     backend_filter: Optional[List[str]] = None,
     output_path: Optional[str] = None,
     show_progress: bool = False,
+    max_threads: Optional[int] = None,
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     """Run the complete profiling pipeline and return formatted results.
 
@@ -575,6 +580,9 @@ def run_profile(
             includes hardware info and library versions for reproducibility.
         show_progress: When ``True``, display a Rich progress bar in the
             terminal during correctness checks and timing sweeps.
+        max_threads: If set, cap all backends to at most this many CPU
+            threads.  Affects BLAS (OpenBLAS/MKL), Numba, PyTorch, and
+            JAX/XLA thread pools.
 
     Returns:
         A tuple of ``(terminal_output, json_data)`` where *terminal_output*
@@ -596,6 +604,10 @@ def run_profile(
         )
         print(terminal_output)
     """
+    if max_threads is not None:
+        from .concurrency import apply_thread_limit
+        apply_thread_limit(max_threads)
+
     # Suppress float32 overflow warnings from deep random-weight networks
     warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*encountered in matmul.*")
 
@@ -718,6 +730,7 @@ def run_profile(
         json_data = format_json_output(
             correctness_results, timing_results, skipped,
             backend_names=list(backend_instances.keys()),
+            max_threads=max_threads,
         )
         with open(output_path, "w") as f:
             json.dump(json_data, f, indent=2)
