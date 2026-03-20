@@ -8,7 +8,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import HeatmapTooltip from "./HeatmapTooltip";
 import InfoTip from "./InfoTip";
-import { classifyGate } from "./gateShapes";
 
 function stdToRGB(std, maxStd) {
   const t = Math.min(1, std / Math.max(0.01, maxStd));
@@ -21,7 +20,7 @@ function stdToRGB(std, maxStd) {
   }
 }
 
-export default function StdHeatmap({ stds, width: n, depth: d, gates }) {
+export default function StdHeatmap({ stds, width: n, depth: d }) {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const [dims, setDims] = useState({ width: 0, height: 0 });
@@ -104,14 +103,14 @@ export default function StdHeatmap({ stds, width: n, depth: d, gates }) {
         <InfoTip>
           <span className="tip-title">Signal Variability</span>
           <p className="tip-desc">
-            Per-wire standard deviation <span className="tip-highlight">σ</span> across random inputs. Each cell is one wire at one layer.
+            Per-neuron standard deviation <span className="tip-highlight">σ</span> across random inputs. Each cell is one neuron at one layer.
           </p>
           <div className="tip-sep" />
-          <div className="tip-kv"><span className="tip-kv-key">Bright coral</span><span className="tip-kv-val">High σ — output varies a lot with inputs</span></div>
+          <div className="tip-kv"><span className="tip-kv-key">Bright coral</span><span className="tip-kv-val">High σ — activation varies a lot with inputs</span></div>
           <div className="tip-kv"><span className="tip-kv-key">Dark</span><span className="tip-kv-val">Low σ — nearly constant regardless of input</span></div>
           <div className="tip-sep" />
           <p className="tip-desc">
-            High-variability wires are harder to estimate from few samples.
+            High-variability neurons are harder to estimate from few samples.
           </p>
         </InfoTip>
       </h2>
@@ -127,13 +126,12 @@ export default function StdHeatmap({ stds, width: n, depth: d, gates }) {
             getColor={getColor}
             valueLabel="σ"
             showZoom={n * d > 4096}
-            getGateInfo={gates ? (layer, wire) => classifyGate(gates[layer], wire) : null}
           />
         )}
       </div>
       <div className="heatmap-axes">
         <span className="axis-label-x">Layer →</span>
-        <span className="axis-label-y">Wire ↓</span>
+        <span className="axis-label-y">Neuron ↓</span>
       </div>
       <div className="heatmap-legend">
         <span className="legend-label">Low σ</span>

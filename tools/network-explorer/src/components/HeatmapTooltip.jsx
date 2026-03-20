@@ -19,7 +19,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { GATE_TYPE_FONT } from "./gateShapes";
+
+const GATE_TYPE_FONT = "'IBM Plex Mono', monospace";
 
 const ZOOM_RADIUS = 5;        // cells around cursor to show
 const ZOOM_CELL_PX = 14;     // base px per cell in magnifier
@@ -218,7 +219,7 @@ export default function HeatmapTooltip({
           style={{ left: tooltipLeft, top: tooltipTop }}
         >
           <div className="canvas-tip-header">
-            Wire <span className="layer-num">{hovered.wire}</span>
+            Neuron <span className="layer-num">{hovered.wire}</span>
             {" · "}
             Layer <span className="layer-num">{hovered.layer}</span>
           </div>
