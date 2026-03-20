@@ -1,4 +1,4 @@
-"""Cython backend — compiled matmul+ReLU with numpy Accelerate BLAS."""
+"""Cython backend — compiled loop dispatch with buffer reuse."""
 
 from __future__ import annotations
 from typing import List, Tuple
@@ -38,19 +38,22 @@ class CythonBackend(SimulationBackend):
     def run_mlp_profiled(
         self, mlp: MLP, inputs: NDArray[np.float32]
     ) -> Tuple[NDArray[np.float32], PrimitiveBreakdown]:
+        """Profile using the same primitives as the Cython kernel: np.matmul + np.maximum."""
         import time
 
         breakdown = PrimitiveBreakdown()
         t_start = time.perf_counter()
-        x = np.array(inputs, dtype=np.float32, copy=True)
+        x = np.ascontiguousarray(inputs, dtype=np.float32)
+        out = np.empty_like(x)
         for w in mlp.weights:
             t0 = time.perf_counter()
-            x = x @ w
+            np.matmul(x, w, out=out)
             t1 = time.perf_counter()
-            np.maximum(x, np.float32(0.0), out=x)
+            np.maximum(out, 0.0, out=out)
             t2 = time.perf_counter()
             breakdown.matmul.append(t1 - t0)
             breakdown.relu.append(t2 - t1)
+            x, out = out, x
         breakdown.total = time.perf_counter() - t_start
         breakdown.overhead = breakdown.total - breakdown.total_matmul - breakdown.total_relu
         return x, breakdown

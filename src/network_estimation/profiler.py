@@ -63,6 +63,7 @@ import numpy as np
 
 from .domain import MLP
 from .generation import sample_mlp
+from .hardware import collect_hardware_fingerprint
 from .simulation import (
     output_stats as ref_output_stats,
     run_mlp as ref_run_mlp,
@@ -157,14 +158,13 @@ class TimingResult:
 
 
 def _collect_hardware_info(max_threads: Optional[int] = None) -> Dict[str, Any]:
-    """Collect hardware info for the profiling report."""
-    info: Dict[str, Any] = {
-        "platform": platform.platform(),
-        "processor": platform.processor(),
-        "cpu_count": os.cpu_count(),
-        "python_version": platform.python_version(),
-        "machine": platform.machine(),
-    }
+    """Collect hardware info for the profiling report.
+
+    Delegates to :func:`collect_hardware_fingerprint` for detailed CPU,
+    RAM, and platform info, then adds profiler-specific fields like
+    ``max_threads``.
+    """
+    info = collect_hardware_fingerprint()
     if max_threads is not None:
         info["max_threads"] = max_threads
     return info
@@ -405,6 +405,7 @@ def format_terminal_table(
     correctness_results: List[CorrectnessResult],
     timing_results: List[TimingResult],
     skipped_backends: Dict[str, str],
+    hardware_info: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Format profiling results as a Rich-rendered terminal table.
 
@@ -426,6 +427,28 @@ def format_terminal_table(
 
     buf = io.StringIO()
     console = Console(file=buf, force_terminal=True, width=140)
+
+    # Hardware summary
+    if hardware_info:
+        console.print("\n[bold]Hardware[/bold]")
+        _hw_label = {
+            "platform": "Platform",
+            "machine": "Architecture",
+            "cpu_brand": "CPU",
+            "cpu_count_physical": "Physical Cores",
+            "cpu_count_logical": "Logical Cores",
+            "ram_total_bytes": "RAM",
+            "python_version": "Python",
+            "numpy_version": "NumPy",
+            "max_threads": "Thread Limit",
+        }
+        for key, label in _hw_label.items():
+            val = hardware_info.get(key)
+            if val is None:
+                continue
+            if key == "ram_total_bytes":
+                val = f"{val / (1024**3):.1f} GB"
+            console.print(f"  {label}: {val}")
 
     # Skipped backends
     if skipped_backends:
@@ -517,7 +540,7 @@ def format_json_output(
     timing_results: List[TimingResult],
     skipped_backends: Dict[str, str],
     backend_names: Optional[List[str]] = None,
-    max_threads: Optional[int] = None,
+    hardware_info: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Format profiling results as a JSON-serializable dictionary.
 
@@ -532,7 +555,7 @@ def format_json_output(
     Use ``--output results.json`` on the CLI to write this automatically.
     """
     return {
-        "hardware": _collect_hardware_info(max_threads=max_threads),
+        "hardware": hardware_info or _collect_hardware_info(),
         "backend_versions": _collect_backend_versions(backend_names or []),
         "skipped_backends": skipped_backends,
         "correctness": [
@@ -607,6 +630,9 @@ def run_profile(
     if max_threads is not None:
         from .concurrency import apply_thread_limit
         apply_thread_limit(max_threads)
+
+    # Collect hardware info early (before timing, so it doesn't interfere)
+    hardware_info = _collect_hardware_info(max_threads=max_threads)
 
     # Suppress float32 overflow warnings from deep random-weight networks
     warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*encountered in matmul.*")
@@ -722,7 +748,8 @@ def run_profile(
 
     # Format output
     terminal_output = format_terminal_table(
-        correctness_results, timing_results, skipped
+        correctness_results, timing_results, skipped,
+        hardware_info=hardware_info,
     )
 
     json_data = None
@@ -730,7 +757,7 @@ def run_profile(
         json_data = format_json_output(
             correctness_results, timing_results, skipped,
             backend_names=list(backend_instances.keys()),
-            max_threads=max_threads,
+            hardware_info=hardware_info,
         )
         with open(output_path, "w") as f:
             json.dump(json_data, f, indent=2)

@@ -1,9 +1,8 @@
-"""SciPy backend for MLP forward pass.
+"""SciPy BLAS backend for MLP forward pass.
 
-Uses numpy matmul (backed by the system BLAS — Accelerate on macOS) for
-matrix multiplication and numpy's SIMD-optimized np.maximum for ReLU.
-SciPy is required as a dependency marker; the actual BLAS calls go through
-numpy's optimized path.
+Uses scipy.linalg.blas.sgemm for single-precision matrix multiplication,
+which links to the system BLAS (OpenBLAS / MKL / Accelerate) without
+requiring PyTorch or JAX.
 """
 
 from __future__ import annotations
@@ -17,7 +16,7 @@ from .domain import MLP
 from .simulation_backend import PrimitiveBreakdown, SimulationBackend
 
 try:
-    import scipy  # noqa: F401
+    from scipy.linalg.blas import sgemm as _sgemm
 
     _HAS_SCIPY = True
 except ImportError:
@@ -37,7 +36,7 @@ class SciPyBackend(SimulationBackend):
     @classmethod
     def is_available(cls) -> bool:
         try:
-            import scipy  # noqa: F401
+            from scipy.linalg.blas import sgemm  # noqa: F401
 
             return True
         except ImportError:
@@ -50,7 +49,7 @@ class SciPyBackend(SimulationBackend):
     def run_mlp(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
         x = np.ascontiguousarray(inputs, dtype=np.float32)
         for w in mlp.weights:
-            x = x @ w
+            x = _sgemm(1.0, x, w)
             np.maximum(x, 0.0, out=x)
         return x
 
@@ -64,7 +63,7 @@ class SciPyBackend(SimulationBackend):
         x = np.ascontiguousarray(inputs, dtype=np.float32)
         for w in mlp.weights:
             t0 = time.perf_counter()
-            x = x @ w
+            x = _sgemm(1.0, x, w)
             t1 = time.perf_counter()
             np.maximum(x, 0.0, out=x)
             t2 = time.perf_counter()
@@ -80,7 +79,7 @@ class SciPyBackend(SimulationBackend):
         x = np.ascontiguousarray(inputs, dtype=np.float32)
         layers: List[NDArray[np.float32]] = []
         for w in mlp.weights:
-            x = x @ w
+            x = _sgemm(1.0, x, w)
             np.maximum(x, 0.0, out=x)
             layers.append(x.copy())
         return layers
@@ -102,7 +101,7 @@ class SciPyBackend(SimulationBackend):
             x = np.random.randn(n, width).astype(np.float32)
 
             for layer_idx, w in enumerate(mlp.weights):
-                x = x @ w
+                x = _sgemm(1.0, x, w)
                 np.maximum(x, 0.0, out=x)
                 layer_sums[layer_idx] += x.sum(axis=0).astype(np.float64)
 

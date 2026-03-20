@@ -1,9 +1,10 @@
 # cython: language_level=3, boundscheck=False, wraparound=False, cdivision=True
 """Cython kernels for MLP forward pass.
 
-Uses numpy matmul (Accelerate BLAS on macOS) for matrix multiplication and
-numpy's SIMD-optimized np.maximum for ReLU activation. The Cython layer
-eliminates Python dispatch overhead in the loop and manages buffer reuse.
+Uses numpy matmul (backed by the system BLAS — Accelerate on macOS) for
+matrix multiplication and numpy's SIMD-optimized np.maximum for ReLU.
+The Cython layer provides compiled loop dispatch and buffer management
+with no Python interpreter overhead per layer iteration.
 """
 
 import numpy as np
@@ -12,23 +13,42 @@ cimport numpy as cnp
 cnp.import_array()
 
 
-def forward_pass(inputs_arr, list weights):
-    """Forward pass returning final-layer activations."""
-    x = np.array(inputs_arr, dtype=np.float32, copy=True)
+def forward_pass(float[:, :] inputs, list weights):
+    """Forward pass returning final-layer activations.
+
+    Uses alternating x/out buffers to avoid allocations in the inner loop.
+    """
+    cdef int n = inputs.shape[0]
+    cdef int width = inputs.shape[1]
+
+    x = np.array(inputs, dtype=np.float32, order='C', copy=True)
+    out = np.empty((n, width), dtype=np.float32, order='C')
+
     cdef int i
     cdef int n_layers = len(weights)
     for i in range(n_layers):
-        x = np.maximum(x @ weights[i], np.float32(0.0))
+        np.matmul(x, weights[i], out=out)
+        np.maximum(out, 0.0, out=out)
+        x, out = out, x
+
     return x
 
 
-def forward_pass_all_layers(inputs_arr, list weights):
+def forward_pass_all_layers(float[:, :] inputs, list weights):
     """Forward pass collecting activations after every layer."""
-    x = np.array(inputs_arr, dtype=np.float32, copy=True)
+    cdef int n = inputs.shape[0]
+    cdef int width = inputs.shape[1]
+
+    x = np.array(inputs, dtype=np.float32, order='C', copy=True)
+    out = np.empty((n, width), dtype=np.float32, order='C')
     layers = []
+
     cdef int i
     cdef int n_layers = len(weights)
     for i in range(n_layers):
-        x = np.maximum(x @ weights[i], np.float32(0.0))
-        layers.append(x.copy())
+        np.matmul(x, weights[i], out=out)
+        np.maximum(out, 0.0, out=out)
+        layers.append(out.copy())
+        x, out = out, x
+
     return layers
