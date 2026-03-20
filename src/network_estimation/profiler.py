@@ -674,10 +674,14 @@ def format_compact_output(
                 e.backend_name == "numpy" for e in entries
             ) else entries[0].backend_name
 
+            baseline_median = next(
+                e.median_time for e in entries if e.backend_name == baseline_name
+            )
+
             for rank, tr in enumerate(entries, 1):
                 speedup_str = ""
                 if tr.backend_name != baseline_name:
-                    sp = tr.speedup_vs_numpy
+                    sp = baseline_median / tr.median_time if tr.median_time > 0 else float("inf")
                     if sp > 1.0:
                         speedup_str = f"  [green]({sp:.2f}x)[/green]"
                     elif sp < 1.0:
@@ -781,6 +785,7 @@ def format_compact_output(
     console.print(table)
 
     # Footer
+    console.print("  [blue]█[/blue] Matmul  [green]█[/green] ReLU  [dim]█[/dim] Overhead", highlight=False)
     console.print()
     console.print(
         "[dim italic]Use --verbose for full timing tables with raw times "
