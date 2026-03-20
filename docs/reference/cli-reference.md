@@ -15,6 +15,7 @@ Participant workflow commands:
 - `nestim create-dataset`
 - `nestim package`
 - `nestim visualizer`
+- `nestim profile-simulation`
 
 ## `nestim smoke-test`
 
@@ -133,6 +134,42 @@ Key options:
 - `--debug` — show full npm/Vite output on errors
 
 On SSH/headless environments, browser auto-open is skipped automatically.
+
+## `nestim profile-simulation`
+
+Benchmark simulation backends head-to-head. Runs a correctness check followed by a timing sweep across a grid of network sizes and sample counts, reporting speedup relative to the NumPy reference.
+
+```bash
+nestim profile-simulation [--preset quick|standard|exhaustive]
+                          [--backends <comma-separated>]
+                          [--output <path>]
+                          [--debug]
+```
+
+Key options:
+
+- `--preset <name>` (default: `standard`) — parameter sweep size:
+  - `quick` — 1 width, 2 depths, 2 sample counts. Finishes in seconds.
+  - `standard` — 2 widths, 5 depths, 3 sample counts. A few minutes.
+  - `exhaustive` — 3 widths, 5 depths, 5 sample counts (up to 16.7 M samples). Thorough but slow.
+- `--backends <list>` — comma-separated list of backends to profile (default: all installed). Valid names: `numpy`, `pytorch`, `numba`, `jax`, `scipy`, `cython`.
+- `--output <path>` — save a JSON report with hardware info, library versions, correctness results, and raw timing data.
+- `--debug` — show full tracebacks on errors.
+
+The profiler automatically skips backends whose dependencies are not installed and prints `pip install` hints for them. Only backends that pass the pre-flight correctness check are included in the timing sweep.
+
+Example workflows:
+
+```bash
+# Quick smoke test — just NumPy and PyTorch
+nestim profile-simulation --preset quick --backends numpy,pytorch
+
+# Full benchmark with JSON export
+nestim profile-simulation --preset exhaustive --output profile_results.json
+
+# Check which backends are available (quick correctness-only pass)
+nestim profile-simulation --preset quick
+```
 
 ## ➡️ Next step
 
