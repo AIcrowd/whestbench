@@ -18,17 +18,13 @@ from .simulation_backend import SimulationBackend
 
 try:
     import torch
-
-    _HAS_TORCH = True
 except ImportError:
-    torch = None  # type: ignore[assignment]
-    _HAS_TORCH = False
+    raise ImportError("PyTorch is not installed")
 
 # --- Thread control ---
-if _HAS_TORCH:
-    _MAX_THREADS = 4
-    _n_threads = min(os.cpu_count() or _MAX_THREADS, _MAX_THREADS)
-    torch.set_num_threads(_n_threads)
+_MAX_THREADS = 4
+_n_threads = min(os.cpu_count() or _MAX_THREADS, _MAX_THREADS)
+torch.set_num_threads(_n_threads)
 
 # --- Module-level weight cache ---
 _weight_cache: Dict[int, list] = {}
