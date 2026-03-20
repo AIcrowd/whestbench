@@ -1,132 +1,70 @@
-import itertools
-import time as _time
+from __future__ import annotations
 
 import numpy as np
 import pytest
 
-import circuit_estimation.scoring as scoring
-from circuit_estimation.scoring import (
-    ContestParams,
-    profile_fn,
-    sampling_baseline_time,
-    score_estimator,
+from network_estimation.scoring import (
+    ContestSpec,
+    evaluate_estimator,
+    make_contest,
+    validate_predictions,
 )
-from tests.helpers import make_circuit, make_layer
+from network_estimation.estimators import MeanPropagationEstimator
+from network_estimation.sdk import BaseEstimator
+from network_estimation.domain import MLP
 
 
-def _constant_circuit(n: int, d: int, value: float = 1.0):
-    layers = []
-    for _ in range(d):
-        layers.append(
-            make_layer(
-                first=[0] * n,
-                second=[1] * n,
-                first_coeff=[0.0] * n,
-                second_coeff=[0.0] * n,
-                const=[value] * n,
-                product_coeff=[0.0] * n,
-            )
-        )
-    return make_circuit(n, layers)
+def test_validate_predictions_accepts_correct_shape() -> None:
+    arr = np.ones((3, 4), dtype=np.float32)
+    result = validate_predictions(arr, depth=3, width=4)
+    np.testing.assert_array_equal(result, arr)
 
 
-def test_profile_fn_reports_elapsed_time(monkeypatch: pytest.MonkeyPatch) -> None:
-    time_values = iter([10.0, 10.1, 10.3, 10.6])
-
-    class _FakeTime:
-        @staticmethod
-        def time() -> float:
-            return next(time_values)
-
-    monkeypatch.setattr(_time, "time", _FakeTime.time)
-
-    values = list(profile_fn(lambda: iter(["a", "b", "c"])))
-
-    assert [v for _, v in values] == ["a", "b", "c"]
-    np.testing.assert_allclose([t for t, _ in values], [0.1, 0.3, 0.6])
+def test_validate_predictions_rejects_wrong_shape() -> None:
+    arr = np.ones((2, 4), dtype=np.float32)
+    with pytest.raises(ValueError, match="shape"):
+        validate_predictions(arr, depth=3, width=4)
 
 
-def test_sampling_baseline_time_returns_depth_entries() -> None:
-    result = sampling_baseline_time(n_samples=8, width=4, depth=3)
-
-    assert len(result) == 3
-    assert all(time_value >= 0.0 for time_value in result)
-
-
-def test_score_estimator_applies_timeout_zeroing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        scoring, "random_circuit", lambda n, d: _constant_circuit(n=n, d=d, value=1.0)
-    )
-    monkeypatch.setattr(
-        scoring, "sampling_baseline_time", lambda n_samples, width, depth: [1.0] * depth
-    )
-    monkeypatch.setattr(scoring, "_rss_bytes", lambda: 0)
-    monkeypatch.setattr(scoring, "_peak_rss_bytes", lambda: 0)
-
-    wall_times = iter([0.0, 0.0, 1.2, 0.0, 1.2, 2.5])
-    cpu_times = iter([0.0, 0.0, 0.0, 0.0])
-    monkeypatch.setattr(scoring.time, "time", lambda: next(wall_times))
-    monkeypatch.setattr(scoring.time, "process_time", lambda: next(cpu_times))
-
-    params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
-
-    def estimator(_circuit, _budget):
-        yield np.array([0.0, 0.0], dtype=np.float32)
-
-    score = score_estimator(estimator, n_circuits=2, n_samples=4, contest_params=params)
-
-    assert score == pytest.approx(1.2)
+def test_validate_predictions_rejects_non_finite() -> None:
+    arr = np.ones((3, 4), dtype=np.float32)
+    arr[0, 0] = np.nan
+    with pytest.raises(ValueError, match="finite"):
+        validate_predictions(arr, depth=3, width=4)
 
 
-def test_score_estimator_applies_timeout_zeroing_by_depth(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        scoring, "random_circuit", lambda n, d: _constant_circuit(n=n, d=d, value=1.0)
-    )
-    monkeypatch.setattr(
-        scoring, "sampling_baseline_time", lambda n_samples, width, depth: [1.0, 2.0]
-    )
-    monkeypatch.setattr(scoring, "_rss_bytes", lambda: 0)
-    monkeypatch.setattr(scoring, "_peak_rss_bytes", lambda: 0)
-
-    # run_start_wall, circuit start, depth0 elapsed, depth1 elapsed, run_duration-end
-    wall_times = iter([0.0, 0.0, 1.5, 2.0, 2.5])
-    cpu_times = iter([0.0, 0.0])
-    monkeypatch.setattr(scoring.time, "time", lambda: next(wall_times))
-    monkeypatch.setattr(scoring.time, "process_time", lambda: next(cpu_times))
-
-    params = ContestParams(width=2, max_depth=2, budgets=[10], time_tolerance=0.1)
-
-    def estimator(_circuit, _budget):
-        yield np.array([1.0, 1.0], dtype=np.float32)
-        yield np.array([1.0, 1.0], dtype=np.float32)
-
-    score = score_estimator(estimator, n_circuits=1, n_samples=4, contest_params=params)
-
-    # Depth 0 times out and is zeroed; depth 1 remains valid.
-    # adjusted_mse_by_depth = [1.0 * 1.5, 0.0 * 0.9] -> mean = 0.75.
-    assert score == pytest.approx(0.75)
+def test_make_contest_produces_correct_data() -> None:
+    spec = ContestSpec(width=4, depth=2, n_mlps=3, estimator_budget=100, ground_truth_budget=200)
+    data = make_contest(spec)
+    assert len(data.mlps) == 3
+    assert len(data.all_layer_targets) == 3
+    assert len(data.final_targets) == 3
+    assert len(data.avg_variances) == 3
+    for mlp in data.mlps:
+        assert mlp.width == 4
+        assert mlp.depth == 2
 
 
-def test_score_estimator_applies_minimum_time_floor(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        scoring, "random_circuit", lambda n, d: _constant_circuit(n=n, d=d, value=1.0)
-    )
-    monkeypatch.setattr(
-        scoring, "sampling_baseline_time", lambda n_samples, width, depth: [1.0] * depth
-    )
-    monkeypatch.setattr(scoring, "_rss_bytes", lambda: 0)
-    monkeypatch.setattr(scoring, "_peak_rss_bytes", lambda: 0)
+def test_evaluate_estimator_returns_scores() -> None:
+    spec = ContestSpec(width=4, depth=2, n_mlps=2, estimator_budget=100, ground_truth_budget=200)
+    data = make_contest(spec)
+    estimator = MeanPropagationEstimator()
+    result = evaluate_estimator(estimator, data)
+    assert "primary_score" in result
+    assert "secondary_score" in result
+    assert "per_mlp" in result
+    assert isinstance(result["primary_score"], float)
+    assert isinstance(result["secondary_score"], float)
 
-    wall_times = iter([0.0, 0.0, 0.1, 0.0, 0.1, 0.0, 0.1, 1.0])
-    cpu_times = itertools.repeat(0.0)
-    monkeypatch.setattr(scoring.time, "time", lambda: next(wall_times))
-    monkeypatch.setattr(scoring.time, "process_time", lambda: next(cpu_times))
 
-    params = ContestParams(width=2, max_depth=1, budgets=[10], time_tolerance=0.1)
+def test_evaluate_estimator_handles_error_gracefully() -> None:
+    spec = ContestSpec(width=4, depth=2, n_mlps=1, estimator_budget=100, ground_truth_budget=200)
+    data = make_contest(spec)
 
-    def estimator(_circuit, _budget):
-        yield np.array([0.0, 0.0], dtype=np.float32)
+    class _BadEstimator(BaseEstimator):
+        def predict(self, mlp: MLP, budget: int) -> np.ndarray:
+            raise RuntimeError("intentional error")
 
-    score = score_estimator(estimator, n_circuits=3, n_samples=8, contest_params=params)
-
-    assert score == pytest.approx(0.9)
+    result = evaluate_estimator(_BadEstimator(), data)
+    assert "primary_score" in result
+    assert result["per_mlp"][0].get("error") is not None

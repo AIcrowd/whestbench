@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterator
 from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
 
-from .domain import Circuit
+from .domain import MLP
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class SetupContext:
     """Runtime context passed to ``BaseEstimator.setup``.
 
@@ -21,19 +21,22 @@ class SetupContext:
     """
 
     width: int
-    max_depth: int
-    budgets: tuple[int, ...]
-    time_tolerance: float
+    depth: int
+    estimator_budget: int
     api_version: str
-    scratch_dir: str | None = None
+    scratch_dir: Optional[str] = None
 
 
 class BaseEstimator(ABC):
-    """Streaming estimator contract for participant implementations."""
+    """Estimator contract for participant implementations.
+
+    Participants subclass this and implement ``predict`` to return
+    predicted means for all layers as a single ``(depth, width)`` array.
+    """
 
     @abstractmethod
-    def predict(self, circuit: Circuit, budget: int) -> Iterator[NDArray[np.float32]]:
-        """Yield one prediction vector per depth for ``circuit``."""
+    def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
+        """Return predicted means for all layers, shape ``(depth, width)``."""
         raise NotImplementedError
 
     def setup(self, context: SetupContext) -> None:

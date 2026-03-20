@@ -1,4 +1,4 @@
-"""Visualizer command: launch the circuit explorer dev server."""
+"""Visualizer command: launch the network explorer dev server."""
 
 from __future__ import annotations
 
@@ -39,11 +39,11 @@ class NodeVersionError(RuntimeError):
 
 
 class ExplorerNotFoundError(RuntimeError):
-    """Raised when the circuit explorer directory cannot be located."""
+    """Raised when the network explorer directory cannot be located."""
 
     def __init__(self) -> None:
         super().__init__(
-            "Circuit explorer not found. This command requires a source checkout "
+            "Network explorer not found. This command requires a source checkout "
             "of the repository. Clone the repo and install with `uv tool install -e .`"
         )
 
@@ -172,7 +172,7 @@ def _start_dev_server(
         if not browser_opened:
             browser_host = "localhost" if host == "0.0.0.0" else host
             url = f"http://{browser_host}:{port}"
-            console.print(f"\n[bold green]Circuit Explorer should be at:[/] [link={url}]{url}[/]\n")
+            console.print(f"\n[bold green]Network Explorer should be at:[/] [link={url}]{url}[/]\n")
             browser_opened = True
 
     timer = threading.Timer(30.0, _timeout_fallback)
@@ -188,7 +188,7 @@ def _start_dev_server(
                     browser_host = "localhost" if host == "0.0.0.0" else host
                     url = f"http://{browser_host}:{port}"
                     console.print(
-                        f"\n[bold green]Circuit Explorer running at:[/] [link={url}]{url}[/]\n"
+                        f"\n[bold green]Network Explorer running at:[/] [link={url}]{url}[/]\n"
                     )
                     if should_open:
                         _open_browser(host, port)

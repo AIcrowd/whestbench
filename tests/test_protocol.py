@@ -1,10 +1,15 @@
-from circuit_estimation.protocol import ScoreRequest, ScoreResponse
+from network_estimation.protocol import ScoreRequest, ScoreResponse
 
 
 def test_score_request_has_versioned_schema() -> None:
     # Schema version enables forward-compatible RPC evolution.
-    req = ScoreRequest(schema_version="1.0", n_circuits=2, n_samples=16, budget=100)
+    req = ScoreRequest(
+        schema_version="1.0", n_mlps=2, n_samples=16, estimator_budget=100,
+        width=256, depth=16,
+    )
     assert req.schema_version == "1.0"
+    assert req.width == 256
+    assert req.depth == 16
 
 
 def test_score_response_round_trip_dict() -> None:
