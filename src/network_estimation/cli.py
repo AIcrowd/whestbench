@@ -535,6 +535,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--backends-help", action="store_true", default=False,
         help="Print install instructions for all backends and exit.",
     )
+    profile_parser.add_argument(
+        "--log-progress", action="store_true", default=False,
+        help="Print one line per benchmark step (for non-TTY environments like containers).",
+    )
 
     return parser
 
@@ -920,6 +924,7 @@ def _main_participant(argv: "list[str]") -> int:
                 show_progress=not json_output,
                 max_threads=args.max_threads,
                 verbose=bool(args.verbose),
+                log_progress=bool(args.log_progress),
             )
             print(terminal_output)
             return 0
