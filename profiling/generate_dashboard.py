@@ -118,3 +118,72 @@ def fetch_cdn_libs(cache_dir=None):
                 f.write(source)
             libs[name] = source
     return libs
+
+
+def generate_html(data):
+    """Generate complete self-contained HTML dashboard."""
+    base_css = extract_base_css()
+
+    css_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard_styles.css")
+    with open(css_path) as f:
+        dashboard_css = f.read()
+
+    libs = fetch_cdn_libs()
+
+    js_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard_components.js")
+    with open(js_path) as f:
+        components_js = f.read()
+
+    data_json = json.dumps(data, default=str)
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>nestim Profiling Dashboard</title>
+<script>{libs['react']}</script>
+<script>{libs['react-dom']}</script>
+<script>{libs['recharts']}</script>
+<style>
+{base_css}
+{dashboard_css}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>window.__PROFILING_DATA__ = {data_json};</script>
+<script>
+{components_js}
+</script>
+</body>
+</html>"""
+
+
+def main(argv=None):
+    """Main entry point for dashboard generation."""
+    args = parse_args(argv)
+    input_path, output_path = resolve_paths(args)
+
+    if not os.path.exists(input_path):
+        print(f"Error: Input file not found: {input_path}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Loading data from {input_path}...")
+    raw_data = load_data(input_path)
+    data = normalize_data(raw_data)
+
+    config_count = len(data.get("configs", {}))
+    print(f"Generating dashboard for {config_count} config(s)...")
+
+    html = generate_html(data)
+
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+    with open(output_path, "w") as f:
+        f.write(html)
+    print(f"Dashboard written to {output_path}")
+    print(f"Open in browser: file://{os.path.abspath(output_path)}")
+
+
+if __name__ == "__main__":
+    main()
