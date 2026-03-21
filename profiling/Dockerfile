@@ -15,6 +15,13 @@ RUN curl -sL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/
 
 WORKDIR /app
 
+# Performance env vars for all CPU backends
+ENV JAX_PLATFORMS=cpu \
+    XLA_PYTHON_CLIENT_PREALLOCATE=false \
+    NUMBA_CACHE_DIR=/tmp/numba_cache \
+    OPENBLAS_NUM_THREADS=1 \
+    OMP_NUM_THREADS=1
+
 # Copy dependency files first for layer caching
 COPY pyproject.toml setup_cython.py ./
 COPY src/ src/
@@ -30,8 +37,8 @@ RUN pip install --no-cache-dir \
         "jax[cpu]>=0.4" \
         "cython>=3.0"
 
-# Build Cython extension (source already in src/ from earlier COPY)
-RUN python setup_cython.py build_ext --inplace
+# Build Cython extension with optimization flags
+RUN CFLAGS="-O3 -ffast-math" python setup_cython.py build_ext --inplace
 
 # Pre-warm JIT caches — actually call compiled functions with realistic shapes
 # so Numba/JAX compile and cache the generated code.
@@ -60,6 +67,33 @@ jb.run_mlp_matmul_only(mlp, inputs); \
 jb.sample_layer_statistics(mlp, 100); \
 print('JAX JIT warm-up complete') \
 " || echo 'WARN: JAX warm-up failed (non-fatal)'
+
+# Warm up SciPy and Cython backends (verify import + basic call)
+RUN python -c "\
+import numpy as np; \
+from network_estimation.generation import sample_mlp; \
+mlp = sample_mlp(64, 4, np.random.default_rng(42)); \
+inputs = np.random.randn(100, 64).astype(np.float32); \
+from network_estimation.simulation_scipy import SciPyBackend; \
+sb = SciPyBackend(); \
+sb.run_mlp(mlp, inputs); \
+sb.run_mlp_matmul_only(mlp, inputs); \
+sb.sample_layer_statistics(mlp, 100); \
+print('SciPy warm-up complete') \
+" || echo 'WARN: SciPy warm-up failed (non-fatal)'
+
+RUN python -c "\
+import numpy as np; \
+from network_estimation.generation import sample_mlp; \
+mlp = sample_mlp(64, 4, np.random.default_rng(42)); \
+inputs = np.random.randn(100, 64).astype(np.float32); \
+from network_estimation.simulation_cython import CythonBackend; \
+cb = CythonBackend(); \
+cb.run_mlp(mlp, inputs); \
+cb.run_mlp_matmul_only(mlp, inputs); \
+cb.sample_layer_statistics(mlp, 100); \
+print('Cython warm-up complete') \
+" || echo 'WARN: Cython warm-up failed (non-fatal)'
 
 # Copy entrypoint
 COPY profiling/entrypoint.sh /entrypoint.sh

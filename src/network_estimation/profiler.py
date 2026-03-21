@@ -1057,6 +1057,7 @@ def run_profile(
             backend_names=list(backend_instances.keys()),
             hardware_info=hardware_info,
         )
+        os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
         with open(output_path, "w") as f:
             json.dump(json_data, f, indent=2)
 
