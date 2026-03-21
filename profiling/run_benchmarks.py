@@ -39,6 +39,7 @@ def register_task_definition(
     backends: Optional[str],
     max_threads: Optional[int],
     verbose: bool = False,
+    timeout_minutes: Optional[int] = None,
 ) -> str:
     """Register a Fargate task definition for a given config. Returns task def ARN."""
     family = f"nestim-profiling-{config['name']}"
@@ -55,6 +56,8 @@ def register_task_definition(
         env_vars.append({"name": "MAX_THREADS", "value": str(max_threads)})
     if verbose:
         env_vars.append({"name": "VERBOSE", "value": "1"})
+    if timeout_minutes is not None:
+        env_vars.append({"name": "TIMEOUT_MINUTES", "value": str(timeout_minutes)})
 
     task_def = {
         "family": family,
@@ -309,7 +312,7 @@ def main():
         print(f"Registering + launching: {config['name']} ({config['label']})...")
         task_def_arn = register_task_definition(
             config, infra, args.preset, run_id, args.backends, args.max_threads,
-            verbose=args.verbose,
+            verbose=args.verbose, timeout_minutes=args.timeout,
         )
         task_arn = launch_task(task_def_arn, infra)
         task_arns[config["name"]] = task_arn
