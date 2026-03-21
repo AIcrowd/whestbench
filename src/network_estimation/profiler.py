@@ -269,11 +269,21 @@ def correctness_check(
         )
 
 
+def _random_float32(shape: tuple) -> np.ndarray:
+    """Generate standard-normal float32 array without a float64 intermediate.
+
+    ``np.random.randn(...).astype(np.float32)`` temporarily holds both
+    the float64 and float32 arrays in memory, doubling peak usage.
+    Using ``Generator.standard_normal`` with ``dtype`` avoids this.
+    """
+    return np.random.default_rng().standard_normal(shape, dtype=np.float32)
+
+
 def _time_run_mlp(
     backend: SimulationBackend, mlp: MLP, n_samples: int
 ) -> float:
     """Time a single run_mlp call."""
-    inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
+    inputs = _random_float32((n_samples, mlp.width))
     t0 = time.perf_counter()
     backend.run_mlp(mlp, inputs)
     return time.perf_counter() - t0
@@ -292,7 +302,7 @@ def _time_run_mlp_matmul_only(
     backend: SimulationBackend, mlp: MLP, n_samples: int
 ) -> float:
     """Time a single run_mlp_matmul_only call."""
-    inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
+    inputs = _random_float32((n_samples, mlp.width))
     t0 = time.perf_counter()
     backend.run_mlp_matmul_only(mlp, inputs)
     return time.perf_counter() - t0

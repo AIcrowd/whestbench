@@ -50,7 +50,7 @@ class NumPyBackend(SimulationBackend):
         n_processed = 0
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
-            x = np.random.randn(n, width).astype(np.float32)
+            x = np.random.default_rng().standard_normal((n, width), dtype=np.float32)
             for layer_idx, w in enumerate(mlp.weights):
                 x = np.maximum(x @ w, np.float32(0.0))
                 layer_sums[layer_idx] += x.sum(axis=0).astype(np.float64)
