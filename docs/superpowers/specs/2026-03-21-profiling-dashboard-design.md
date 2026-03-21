@@ -198,61 +198,26 @@ The generator avoids JSX and Babel entirely by using `React.createElement` calls
 5. **`CPUScalingChart`** — Recharts LineChart (hidden in single-config mode)
 6. **`DataTable`** — sortable/filterable raw data table
 
-### Design System (matching network-explorer)
+### Design System
 
-Follow the same design language as `tools/network-explorer/` for visual consistency.
+Reuse the CSS from `tools/network-explorer/src/App.css` directly. The generator extracts the `:root` CSS variables, the Google Fonts `@import`, global resets, and reusable class patterns (`.app-header`, table styles, panel styles) from the network-explorer CSS at generation time. This ensures the dashboard always stays in sync with the network-explorer's design.
 
-**Typography** (Google Fonts, inlined):
-- Body/UI: `Inter`, 13px base, weights 400/500/600
-- Headers: `Montserrat`, weight 600/700, letter-spacing -0.02em
-- Monospace (values, code): `IBM Plex Mono`, weights 400/500
+**What to extract from App.css:**
+- `:root` block (all CSS variables: colors, fonts, radii)
+- `@import url(...)` for Google Fonts
+- Global resets (`*`, `html, body`)
+- `body` styles (font-family, font-size, color, line-height)
+- `.app-header` styles (padding, border, flex layout)
+- `.app-header h1` styles (Montserrat, letter-spacing)
 
-**Color Palette:**
-- **Coral (primary accent)**: `#F0524D` (hover: `#EE403A`, pressed: `#D23934`, light: `#FEF2F1`)
-- **Page background**: `#FFFFFF`
-- **Card/Panel background**: `#FFFFFF` with `1px solid #D9DCDC` border
-- **Subtle background**: `#F8F9F9` (gray-50)
-- **Light background**: `#F1F3F5` (gray-100)
-- **Borders**: `#D9DCDC` (gray-200)
-- **Labels/disabled**: `#AAACAD` (gray-400)
-- **Secondary text**: `#5D5F60` (gray-600)
-- **Primary text**: `#292C2D` (gray-900)
-- **Success**: `#23B761`
-- **Warning**: `#FA9E33`
+**Dashboard-specific additions** (not in network-explorer):
+- Heatmap cell colors: linear interpolation using `--success` (faster) and `--coral` (slower), `--gray-100` (neutral 0.9–1.1)
+- Operation breakdown colors: `--chart-3` (MatMul), `--coral` (ReLU), `--gray-200` (Overhead)
+- Backend color mapping: numpy=`--chart-2`, pytorch=`#e65100`, jax=`--chart-3`, cython=`--success`, numba=`#6a1b9a`, scipy=`#00838f`
+- Modal overlay: `rgba(0, 0, 0, 0.3)` backdrop
+- Modal shadow: `0 8px 24px rgba(0, 0, 0, 0.12)`
 
-**Heatmap colors:**
-- **Faster (>1.0)**: linear interpolation from `#c8e6c9` (1.1x) to `#23B761` (2.5x+, clamped)
-- **Slower (<1.0)**: linear interpolation from `#FEF2F1` (0.9x) to `#F0524D` (0.3x, clamped)
-- **Neutral (0.9–1.1)**: `#F1F3F5` (gray-100), linear blend toward green/red at edges
-
-**Operation breakdown:**
-- **MatMul**: `#334155` (dark slate, matching network-explorer chart palette)
-- **ReLU**: `#F0524D` (coral)
-- **Overhead**: `#D9DCDC` (gray-200)
-
-**Backend colors (consistent throughout):**
-- numpy: `#94A3B8` (slate, matching chart-2)
-- pytorch: `#e65100`
-- jax: `#334155` (dark slate)
-- cython: `#23B761` (success green)
-- numba: `#6a1b9a`
-- scipy: `#00838f`
-
-**Shared patterns:**
-- Border radius: 8px (standard), 20px (pills/badges)
-- Shadows: `0 2px 6px rgba(0,0,0,0.08)` (cards), `0 8px 24px rgba(0,0,0,0.12)` (modals)
-- Section headers: 11px uppercase, letter-spacing 0.08em, gray-400
-- Table headers: 10px uppercase, gray-400, weight 600
-- Table rows: alternate gray-50 background on even rows
-- Hover: `translateY(-1px)` lift with enhanced shadow
-- Focus: `0 0 0 3px #FEF2F1` ring with coral border
-- Animations: 0.2s transitions, entrance animations with fade+slide (0.25s ease-out)
-
-**Modal styling:**
-- White background with gray-200 border, 8px radius
-- Overlay: `rgba(0, 0, 0, 0.3)` backdrop
-- Header: Montserrat 700, gray-900 text, coral accent badge
-- Filter dropdowns: gray-100 background, gray-200 border, coral focus ring
+**Implementation:** The Python generator reads `tools/network-explorer/src/App.css`, extracts the relevant blocks (everything before `/* ──────────── App Shell ──────────── */` plus selected class definitions), and inlines them into the dashboard HTML. Dashboard-specific styles are appended after.
 
 ## Data Flow
 
