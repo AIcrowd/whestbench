@@ -34,10 +34,12 @@ MULTI_CONFIG_DATA = {
             "timing": [
                 {"backend": "numpy", "operation": "run_mlp", "width": 256,
                  "depth": 4, "n_samples": 10000, "times": [0.05, 0.052, 0.051],
-                 "median_time": 0.051, "speedup_vs_numpy": 1.0},
+                 "median_time": 0.051, "speedup_vs_numpy": 1.0,
+                 "warmup_time": 0.055},
                 {"backend": "scipy", "operation": "run_mlp", "width": 256,
                  "depth": 4, "n_samples": 10000, "times": [0.03, 0.031, 0.032],
-                 "median_time": 0.031, "speedup_vs_numpy": 1.645},
+                 "median_time": 0.031, "speedup_vs_numpy": 1.645,
+                 "warmup_time": 0.28},
             ],
         },
         "empty-config": {
@@ -162,6 +164,9 @@ def test_generate_html_structure():
     assert "compute-small" in html
     assert "SpeedupHeatmap" in html or "App" in html
     assert "--coral" in html
+    assert "section-help" in html
+    assert "warmup_time" in html
+    assert "warmup-info" in html
 
 
 def test_generate_html_single_config():

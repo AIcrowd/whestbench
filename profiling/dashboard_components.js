@@ -31,9 +31,15 @@ function getSpeedupColor(s) {
 }
 
 function formatTime(s) {
-  if (s < 0.001) return (s * 1e6).toFixed(0) + 'µs';
-  if (s < 1) return (s * 1000).toFixed(1) + 'ms';
-  return s.toFixed(3) + 's';
+  if (s < 0.0001) return (s * 1e6).toPrecision(3) + 'µs';
+  if (s < 0.001) return (s * 1e6).toPrecision(4) + 'µs';
+  if (s < 1) return (s * 1000).toPrecision(4) + 'ms';
+  return s.toPrecision(4) + 's';
+}
+
+function formatNumber(v) {
+  if (v == null) return '—';
+  return Number(v).toPrecision(4);
 }
 
 function uniqueVals(timing, key) {
@@ -142,6 +148,7 @@ function SpeedupHeatmap(props) {
 
   return h('section', {className: 'heatmap-section'},
     h('div', {className: 'section-header'}, 'SPEEDUP VS NUMPY'),
+    h('div', {className: 'section-help'}, 'How much faster each backend is compared to NumPy for the selected operation and parameters. Values > 1.0 mean faster than NumPy. Click a cell for details.'),
     h('div', {className: 'heatmap-filters'},
       sel('Operation', 'operation', operations, f.operation),
       sel('Width', 'width', widths, f.width),
@@ -204,11 +211,6 @@ function CellDetailModal(props) {
   var cfg = data.configs[config];
   var entry = cfg.timing.find(function(t) {
     return t.backend === backend && t.operation === f.operation &&
-      t.width === f.width && t.depth === f.depth && t.n_samples === f.nSamples;
-  });
-
-  var profiled = cfg.timing.find(function(t) {
-    return t.backend === backend && t.operation === 'run_mlp_profiled' &&
       t.width === f.width && t.depth === f.depth && t.n_samples === f.nSamples;
   });
 
@@ -280,52 +282,45 @@ function CellDetailModal(props) {
               var cv = (std / mean * 100).toFixed(1);
               return h('div', {key: 'stats', className: 'timing-stats'},
                 'σ = ' + formatTime(std) + '  CV = ' + cv + '%');
-            })()
+            })(),
+            entry.warmup_time != null ? h('div', {key: 'warmup', className: 'warmup-info'},
+              h('span', {className: 'warmup-label'}, 'Warmup'),
+              h('span', {className: 'warmup-value'}, formatTime(entry.warmup_time)),
+              entry.median_time > 0 ? h('span', {className: 'warmup-ratio'},
+                (entry.warmup_time / entry.median_time).toFixed(1) + 'x vs hot run') : null
+            ) : null
           ] : h('div', {style: {color: '#9CA3AF'}}, 'No timing data')
         ),
         h('div', null,
-          profiled && profiled.breakdown ? [
+          entry && entry.breakdown ? (function() {
+            // Breakdown is computed by subtraction: matmul_total from run_mlp_matmul_only,
+            // relu_total = fused_total - matmul_total. No scaling needed.
+            var bd = entry.breakdown;
+            return [
             h('div', {key: 'label', className: 'section-header'}, 'OPERATION BREAKDOWN'),
             h('div', {key: 'bar', className: 'breakdown-bar'},
-              h('span', {style: {width: profiled.breakdown.matmul_pct + '%', background: '#334155'}},
-                profiled.breakdown.matmul_pct > 15 ? profiled.breakdown.matmul_pct.toFixed(0) + '%' : ''),
-              h('span', {style: {width: profiled.breakdown.relu_pct + '%', background: '#F0524D'}},
-                profiled.breakdown.relu_pct > 15 ? profiled.breakdown.relu_pct.toFixed(0) + '%' : ''),
-              h('span', {style: {width: profiled.breakdown.overhead_pct + '%', background: '#E5E7EB'}}, '')
+              h('span', {style: {width: bd.matmul_pct + '%', background: '#334155'}},
+                bd.matmul_pct > 15 ? bd.matmul_pct.toFixed(0) + '%' : ''),
+              h('span', {style: {width: bd.relu_pct + '%', background: '#F0524D'}},
+                bd.relu_pct > 15 ? bd.relu_pct.toFixed(0) + '%' : '')
             ),
             h('div', {key: 'legend', className: 'breakdown-legend'},
               h('div', {className: 'breakdown-row'},
                 h('span', null, h('span', {className: 'breakdown-swatch', style: {background: '#334155'}}), 'MatMul'),
-                h('span', null, h('span', {className: 'breakdown-value'}, formatTime(profiled.breakdown.total_matmul)),
-                  h('span', {className: 'breakdown-pct'}, profiled.breakdown.matmul_pct.toFixed(1) + '%'))
+                h('span', null, h('span', {className: 'breakdown-value'}, formatTime(bd.matmul_total)),
+                  h('span', {className: 'breakdown-pct'}, bd.matmul_pct.toFixed(1) + '%'))
               ),
               h('div', {className: 'breakdown-row'},
                 h('span', null, h('span', {className: 'breakdown-swatch', style: {background: '#F0524D'}}), 'ReLU'),
-                h('span', null, h('span', {className: 'breakdown-value'}, formatTime(profiled.breakdown.total_relu)),
-                  h('span', {className: 'breakdown-pct'}, profiled.breakdown.relu_pct.toFixed(1) + '%'))
-              ),
-              h('div', {className: 'breakdown-row'},
-                h('span', null, h('span', {className: 'breakdown-swatch', style: {background: '#E5E7EB'}}), 'Overhead'),
-                h('span', null, h('span', {className: 'breakdown-value'}, formatTime(profiled.breakdown.overhead)),
-                  h('span', {className: 'breakdown-pct'}, profiled.breakdown.overhead_pct.toFixed(1) + '%'))
+                h('span', null, h('span', {className: 'breakdown-value'}, formatTime(bd.relu_total)),
+                  h('span', {className: 'breakdown-pct'}, bd.relu_pct.toFixed(1) + '%'))
               )
             ),
-            profiled.breakdown.matmul_per_layer ? h('div', {key: 'spark'},
-              h('div', {className: 'section-header', style: {marginTop: '14px'}}, 'MATMUL PER LAYER'),
-              h('div', {className: 'sparkline'},
-                profiled.breakdown.matmul_per_layer.map(function(v, i) {
-                  var maxV = Math.max.apply(null, profiled.breakdown.matmul_per_layer);
-                  return h('div', {key: i, className: 'sparkline-bar',
-                    style: {height: (v / maxV * 100) + '%'}, title: 'Layer ' + (i+1) + ': ' + formatTime(v)});
-                })
-              ),
-              h('div', {className: 'sparkline-labels'},
-                h('span', null, '1'),
-                h('span', null, String(profiled.breakdown.matmul_per_layer.length))
-              )
-            ) : null
-          ] : h('div', {style: {color: '#9CA3AF', padding: '20px 0'}},
-            'No profiled data for this configuration')
+            h('div', {key: 'note', className: 'breakdown-note', style: {
+              fontSize: '11px', color: '#9CA3AF', marginTop: '6px', fontStyle: 'italic'}},
+              'ReLU time derived by subtraction (fused \u2212 matmul-only)')
+          ]; })() : h('div', {style: {color: '#9CA3AF', padding: '20px 0'}},
+            'No breakdown data for this configuration')
         )
       ),
       entry && npEntry ? h('div', {className: 'modal-footer'},
@@ -392,6 +387,7 @@ function CPUScalingChart(props) {
 
   return h('section', {className: 'scaling-section'},
     h('div', {className: 'section-header'}, 'CPU SCALING'),
+    h('div', {className: 'section-help'}, 'Wall-clock execution time (seconds) across different hardware configurations, sorted by CPU core count. Lower is faster.'),
     h('div', {className: 'heatmap-filters'},
       h('div', null,
         h('div', {className: 'filter-label'}, 'Config Family'),
@@ -408,7 +404,7 @@ function CPUScalingChart(props) {
         h(LC, {data: chartData, margin: {top: 5, right: 30, left: 20, bottom: 5}},
           h(XA, {dataKey: 'name', fontSize: 10}),
           h(YA, {fontSize: 10, label: {value: 'Time (s)', angle: -90, position: 'insideLeft'}}),
-          h(TT, null),
+          h(TT, {formatter: function(v, name) { return [formatTime(v), name]; }}),
           h(Lg, null),
           backendList.map(function(b) {
             return h(L, {key: b, type: 'monotone', dataKey: b,
@@ -477,6 +473,7 @@ function DataTable(props) {
 
   return h('section', {className: 'datatable-section'},
     h('div', {className: 'section-header'}, 'RAW DATA'),
+    h('div', {className: 'section-help'}, 'All timing measurements. Median Time is the median of hot runs (after warmup). Speedup is relative to NumPy (>1x = faster). Click a row for hardware details.'),
     h('table', {className: 'datatable'},
       h('thead', null,
         h('tr', null, cols.map(function(c) {
