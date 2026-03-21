@@ -5,7 +5,14 @@ import tempfile
 
 import pytest
 
-from profiling.generate_dashboard import load_data, normalize_data, parse_args, resolve_paths
+from profiling.generate_dashboard import (
+    extract_base_css,
+    fetch_cdn_libs,
+    load_data,
+    normalize_data,
+    parse_args,
+    resolve_paths,
+)
 
 MULTI_CONFIG_DATA = {
     "run_id": "2026-03-20-test",
@@ -119,3 +126,27 @@ def test_resolve_paths_input_default_output():
     input_path, output_path = resolve_paths(args)
     assert input_path == "output.json"
     assert output_path == "dashboard.html"
+
+
+def test_extract_base_css():
+    css = extract_base_css()
+    # Must contain CSS variables
+    assert "--coral:" in css
+    assert "--gray-900:" in css
+    assert "--font-sans:" in css
+    # Must contain Google Fonts import
+    assert "@import url(" in css
+    # Must contain .app-header styles
+    assert ".app-header {" in css or ".app-header{" in css
+    assert ".app-header h1" in css
+    # Must NOT contain component-specific class rules
+    assert ".sidebar {" not in css
+
+
+def test_fetch_cdn_libs_returns_dict():
+    libs = fetch_cdn_libs()
+    assert "react" in libs
+    assert "react-dom" in libs
+    assert "recharts" in libs
+    for name, source in libs.items():
+        assert len(source) > 1000, f"{name} source too small"
