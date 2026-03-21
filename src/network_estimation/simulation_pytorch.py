@@ -1,7 +1,7 @@
 """PyTorch CPU backend for MLP forward pass simulation.
 
 Uses PyTorch CPU BLAS (MKL/oneDNN) for matmul + fused ReLU, with weight
-tensor caching and chunked streaming for output_stats.
+tensor caching and chunked streaming for sample_layer_statistics.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .domain import MLP
-from .simulation_backend import PrimitiveBreakdown, SimulationBackend
+from .simulation_backend import SimulationBackend
 
 try:
     import torch
@@ -94,26 +94,11 @@ class PyTorchBackend(SimulationBackend):
         return x.numpy()
 
     @torch.no_grad()
-    def run_mlp_profiled(
-        self, mlp: MLP, inputs: NDArray[np.float32]
-    ) -> Tuple[NDArray[np.float32], PrimitiveBreakdown]:
-        import time
-
-        breakdown = PrimitiveBreakdown()
-        t_start = time.perf_counter()
+    def run_mlp_matmul_only(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
         x = torch.from_numpy(inputs)
         for w in _get_torch_weights(mlp):
-            t0 = time.perf_counter()
             x = x @ w
-            t1 = time.perf_counter()
-            x = torch.relu(x)
-            t2 = time.perf_counter()
-            breakdown.matmul.append(t1 - t0)
-            breakdown.relu.append(t2 - t1)
-        result = x.numpy()
-        breakdown.total = time.perf_counter() - t_start
-        breakdown.overhead = breakdown.total - breakdown.total_matmul - breakdown.total_relu
-        return result, breakdown
+        return x.numpy()
 
     @torch.no_grad()
     def run_mlp_all_layers(
@@ -136,7 +121,7 @@ class PyTorchBackend(SimulationBackend):
         return layers
 
     @torch.no_grad()
-    def output_stats(
+    def sample_layer_statistics(
         self,
         mlp: MLP,
         n_samples: int,

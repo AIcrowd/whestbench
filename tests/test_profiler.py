@@ -118,12 +118,12 @@ class TestFormatCompactOutput:
                 times=[0.0002], median_time=0.0002, speedup_vs_numpy=0.5,
             ),
             TimingResult(
-                backend_name="numpy", operation="output_stats",
+                backend_name="numpy", operation="sample_layer_statistics",
                 width=64, depth=4, n_samples=1000,
                 times=[0.0009], median_time=0.0009, speedup_vs_numpy=1.0,
             ),
             TimingResult(
-                backend_name="scipy", operation="output_stats",
+                backend_name="scipy", operation="sample_layer_statistics",
                 width=64, depth=4, n_samples=1000,
                 times=[0.0009], median_time=0.0009, speedup_vs_numpy=1.0,
             ),
@@ -186,7 +186,7 @@ class TestFormatCompactOutput:
                 times=[0.0001], median_time=0.0001, speedup_vs_numpy=1.0,
             ),
             TimingResult(
-                backend_name="numpy", operation="output_stats",
+                backend_name="numpy", operation="sample_layer_statistics",
                 width=64, depth=4, n_samples=1000,
                 times=[0.0009], median_time=0.0009, speedup_vs_numpy=1.0,
             ),
@@ -230,6 +230,30 @@ class TestRunProfileVerbose:
         assert "Leaderboard" in output
 
 
+class TestLogProgress:
+    def test_log_progress_prints_lines(self, capsys) -> None:
+        """Non-TTY mode should print one line per benchmark step."""
+        run_profile(
+            preset_name="super-quick",
+            backend_filter=["numpy"],
+            log_progress=True,
+        )
+        captured = capsys.readouterr()
+        assert "[correctness]" in captured.out
+        assert "[timing]" in captured.out
+        assert "numpy" in captured.out
+        assert "[done]" in captured.out
+
+    def test_log_progress_off_by_default(self, capsys) -> None:
+        """Default mode should not print log lines."""
+        run_profile(
+            preset_name="super-quick",
+            backend_filter=["numpy"],
+        )
+        captured = capsys.readouterr()
+        assert "[correctness]" not in captured.out
+
+
 class TestCLIFlags:
     def test_verbose_flag_accepted(self) -> None:
         from network_estimation.cli import _build_participant_parser
@@ -248,6 +272,18 @@ class TestCLIFlags:
         parser = _build_participant_parser()
         args = parser.parse_args(["profile-simulation", "--backends-help"])
         assert args.backends_help is True
+
+    def test_log_progress_flag_accepted(self) -> None:
+        from network_estimation.cli import _build_participant_parser
+        parser = _build_participant_parser()
+        args = parser.parse_args(["profile-simulation", "--log-progress"])
+        assert args.log_progress is True
+
+    def test_log_progress_flag_default_false(self) -> None:
+        from network_estimation.cli import _build_participant_parser
+        parser = _build_participant_parser()
+        args = parser.parse_args(["profile-simulation"])
+        assert args.log_progress is False
 
     def test_backends_help_prints_and_exits(self) -> None:
         from network_estimation.cli import _main_participant

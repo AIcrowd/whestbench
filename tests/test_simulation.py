@@ -3,7 +3,7 @@ import pytest
 
 from network_estimation.domain import MLP
 from network_estimation.simulation import (
-    output_stats,
+    sample_layer_statistics,
     relu,
     run_mlp,
     run_mlp_all_layers,
@@ -52,13 +52,13 @@ def test_run_mlp_final_matches_all_layers_last() -> None:
     np.testing.assert_array_equal(final, all_layers[-1])
 
 
-def test_output_stats_returns_correct_shapes() -> None:
+def test_sample_layer_statistics_returns_correct_shapes() -> None:
     width = 8
     depth = 2
     rng = np.random.default_rng(99)
     weights = [(rng.standard_normal((width, width)) * 0.1).astype(np.float32) for _ in range(depth)]
     mlp = MLP(width=width, depth=depth, weights=weights)
-    all_means, final_mean, avg_var = output_stats(mlp, n_samples=100)
+    all_means, final_mean, avg_var = sample_layer_statistics(mlp, n_samples=100)
     assert all_means.shape == (depth, width)
     assert final_mean.shape == (width,)
     assert isinstance(avg_var, float)

@@ -128,7 +128,7 @@ def test_critical_public_apis_have_docstrings():
         generation.sample_mlp,
         simulation.run_mlp,
         simulation.run_mlp_all_layers,
-        simulation.output_stats,
+        simulation.sample_layer_statistics,
         estimators.MeanPropagationEstimator.predict,
         estimators.CovariancePropagationEstimator.predict,
         estimators.CombinedEstimator.predict,
