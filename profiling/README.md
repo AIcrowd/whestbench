@@ -82,12 +82,12 @@ versions, or the Dockerfile itself requires a rebuild and push.
 python profiling/run_benchmarks.py
 ```
 
-Launches all 9 Fargate configs with `--preset exhaustive`. Shows a live status table.
+Launches all 5 Fargate configs with `--preset exhaustive`. Shows a live status table.
 
 ### Debug run
 
 ```bash
-python profiling/run_benchmarks.py --preset super-quick --configs compute-small
+python profiling/run_benchmarks.py --preset super-quick --configs compute-1vcpu
 ```
 
 Fast iteration: single small config, minimal profiling.
@@ -97,7 +97,7 @@ Fast iteration: single small config, minimal profiling.
 ```
 python profiling/run_benchmarks.py \
     --preset exhaustive              # super-quick|quick|standard|exhaustive
-    --configs compute-small,general-large  # filter to specific configs
+    --configs compute-1vcpu,compute-4vcpu  # filter to specific configs
     --run-id my-custom-run           # override auto-generated ID
     --backends numpy,pytorch         # only profile specific backends
     --max-threads 4                  # cap CPU threads
@@ -126,9 +126,15 @@ profiler, which prints one line per benchmark step to stdout:
 [correctness] pytorch ... PASS
 [timing] 1/270 numpy run_mlp w=64 d=4 n=1,000 (0s elapsed)
 [timing] 2/270 numpy run_mlp_matmul_only w=64 d=4 n=1,000 (1s elapsed)
+[warning] cython run_mlp w=256 d=128 n=16,700,000 skipped: MemoryError: ...
 ...
-[done] Timing sweep complete. 270 results.
+[done] Timing sweep complete. 268 results. (2 skipped due to errors)
 ```
+
+If a backend hits an error (e.g., OOM) on a specific combination, it logs
+a `[warning]` line and continues with the remaining combinations. Partial
+results are preserved and uploaded to S3. The JSON output includes an
+`error` field on skipped entries for diagnostics.
 
 These lines appear in CloudWatch under the log group `/ecs/nestim-profiling`
 with stream prefix `{run-id}/profiler/{task-id}`.
@@ -147,10 +153,10 @@ nestim profile-simulation --preset super-quick --log-progress
 
 Each Fargate task has two layers of timeout protection:
 
-1. **Container-level timeout** (`TIMEOUT_MINUTES` env var, default: 45 min) —
-   the entrypoint wraps the profiler command with `timeout`. If the profiler
-   hangs (e.g., due to JIT compilation deadlock), the process is killed and
-   the task exits with code 124.
+1. **Container-level timeout** (`TIMEOUT_MINUTES` env var, passed by
+   orchestrator) — the entrypoint wraps the profiler command with `timeout`.
+   If the profiler hangs, the process is killed and the task exits with
+   code 124 (timeout) or 137 (OOM/SIGKILL).
 
 2. **Orchestrator-level timeout** (`--timeout` flag, default: 60 min) —
    `run_benchmarks.py` monitors all tasks and calls `aws ecs stop-task` on
@@ -161,23 +167,26 @@ to allow clean error reporting.
 
 ## Thread Pinning
 
-In container environments, automatic CPU detection can return incorrect
-values (e.g., detecting the host's CPU count instead of the container's
-allocated vCPUs). This causes backends to spawn too many threads, leading
-to contention or deadlocks.
+In container environments, `nproc` often reports incorrect values (e.g.,
+always 1 in Fargate regardless of allocated vCPUs). This causes backends
+to run single-threaded even on multi-vCPU tasks.
 
-The entrypoint solves this by:
+The orchestrator solves this by deriving the thread count from Fargate CPU
+units (`cpu / 1024`) and passing it as the `MAX_THREADS` environment
+variable. The entrypoint then sets all threading environment variables
+before the profiler starts:
 
-1. Detecting available CPUs via `nproc` (which respects cgroup limits in
-   Fargate).
-2. Explicitly setting all threading environment variables before the
-   profiler starts:
-   - `OMP_NUM_THREADS`, `MKL_NUM_THREADS`, `OPENBLAS_NUM_THREADS`
-   - `NUMBA_NUM_THREADS`, `NUMEXPR_NUM_THREADS`, `VECLIB_MAXIMUM_THREADS`
-   - `XLA_FLAGS` (for JAX/XLA thread pool)
-3. Passing `--max-threads` to the profiler for runtime enforcement.
+- `OMP_NUM_THREADS`, `MKL_NUM_THREADS`, `OPENBLAS_NUM_THREADS`
+- `NUMBA_NUM_THREADS`, `NUMEXPR_NUM_THREADS`, `VECLIB_MAXIMUM_THREADS`
+- `--max-threads` passed to the profiler for runtime enforcement
 
-Override by setting `MAX_THREADS` in the task environment.
+The entrypoint banner shows the effective thread count and its source:
+```
+Threads:     4 (source: env, nproc=1)
+```
+
+Override by setting `MAX_THREADS` in the task environment or using
+`--max-threads` on the orchestrator.
 
 ## Collecting Results
 
@@ -201,26 +210,17 @@ python profiling/collect_results.py \
 
 ## Instance Matrix
 
-Defined in `profiling/instance_matrix.py`. Default configs:
-
-### Compute-Optimized (c-series)
-
-| Name | vCPUs | Memory |
-|------|-------|--------|
-| compute-small | 1 | 2 GB |
-| compute-medium | 2 | 4 GB |
-| compute-large | 4 | 8 GB |
-| compute-xlarge | 8 | 16 GB |
-| compute-2xlarge | 16 | 32 GB |
-
-### General-Purpose (m-series)
+Defined in `profiling/instance_matrix.py`. Each CPU tier gets the maximum
+Fargate memory allocation so that memory is never the bottleneck — we're
+measuring compute scaling, not memory pressure.
 
 | Name | vCPUs | Memory |
 |------|-------|--------|
-| general-small | 1 | 4 GB |
-| general-medium | 2 | 8 GB |
-| general-large | 4 | 16 GB |
-| general-xlarge | 8 | 32 GB |
+| compute-1vcpu | 1 | 8 GB |
+| compute-2vcpu | 2 | 16 GB |
+| compute-4vcpu | 4 | 30 GB |
+| compute-8vcpu | 8 | 60 GB |
+| compute-16vcpu | 16 | 120 GB |
 
 To add a custom config, edit `INSTANCE_MATRIX` in `instance_matrix.py`.
 
@@ -242,8 +242,8 @@ bash profiling/build_and_push.sh
 ### Tasks timing out (exit code 124)
 
 **Possible causes:**
-- **Preset too heavy for config:** `exhaustive` on `compute-small` (1 vCPU)
-  can take over an hour. Use `--preset standard` or increase `TIMEOUT_MINUTES`.
+- **Preset too heavy for config:** `exhaustive` on `compute-1vcpu` (1 vCPU)
+  can take several hours. Use `--preset standard` or increase `--timeout`.
 - **JIT compilation overhead:** If the Docker image wasn't rebuilt after code
   changes, JIT functions compile at runtime (adding 10-30s per backend).
   Rebuild the image.
@@ -297,13 +297,14 @@ Ensure `_cython_kernels.pyx` is present in `src/network_estimation/`.
 
 ## Cost Estimates
 
-Rough per-run costs for the default 9-config matrix with `exhaustive` preset:
+Rough per-run costs for the default 5-config matrix with `exhaustive` preset:
 
-- **Fargate compute:** ~$2-5 per full run (depends on task duration)
+- **Fargate compute:** ~$5-15 per full run (max-memory configs are more
+  expensive; the 16 vCPU / 120 GB task dominates cost)
 - **S3 storage:** negligible (~$0.001 per run)
 - **ECR storage:** ~$0.10/month for the image
 - **CloudWatch:** ~$0.50/GB ingested
 
-Total: **~$3-6 per full matrix run**
+Total: **~$6-16 per full matrix run**
 
-Use `--preset super-quick --configs compute-small` for near-free debug runs.
+Use `--preset super-quick --configs compute-1vcpu` for near-free debug runs.
