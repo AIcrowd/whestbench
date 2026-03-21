@@ -28,7 +28,8 @@ export OPENBLAS_NUM_THREADS="$MAX_THREADS"
 export NUMBA_NUM_THREADS="$MAX_THREADS"
 export NUMEXPR_NUM_THREADS="$MAX_THREADS"
 export VECLIB_MAXIMUM_THREADS="$MAX_THREADS"
-export XLA_FLAGS="--xla_cpu_multi_thread_eigen=true --xla_intra_op_parallelism_threads=$MAX_THREADS"
+# Note: XLA_FLAGS thread options removed — they cause fatal crashes in newer JAX.
+# Thread counts are controlled via OMP/MKL/OPENBLAS env vars above.
 
 # Build the nestim command
 CMD=(nestim profile-simulation --preset "$PRESET" --output "$OUTPUT_FILE" --log-progress)
