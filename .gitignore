@@ -233,3 +233,4 @@ node_modules/
 profiling/results/*
 !profiling/results/.gitkeep
 profiling/.infra-config.json
+profiling/.lib-cache/
