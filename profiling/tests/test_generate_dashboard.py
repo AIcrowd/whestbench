@@ -8,6 +8,7 @@ import pytest
 from profiling.generate_dashboard import (
     extract_base_css,
     fetch_cdn_libs,
+    generate_html,
     load_data,
     normalize_data,
     parse_args,
@@ -150,3 +151,41 @@ def test_fetch_cdn_libs_returns_dict():
     assert "recharts" in libs
     for name, source in libs.items():
         assert len(source) > 1000, f"{name} source too small"
+
+
+def test_generate_html_structure():
+    html = generate_html(MULTI_CONFIG_DATA)
+    assert "<!DOCTYPE html>" in html
+    assert "nestim Profiling Dashboard" in html
+    assert "window.__PROFILING_DATA__" in html
+    assert "compute-small" in html
+    assert "SpeedupHeatmap" in html or "App" in html
+    assert "--coral" in html
+
+
+def test_generate_html_single_config():
+    normalized = normalize_data(SINGLE_CONFIG_DATA)
+    html = generate_html(normalized)
+    assert "<!DOCTYPE html>" in html
+    assert "window.__PROFILING_DATA__" in html
+
+
+def test_end_to_end_generates_file():
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as fin:
+        json.dump(MULTI_CONFIG_DATA, fin)
+        input_path = fin.name
+
+    output_path = input_path.replace(".json", ".html")
+    try:
+        from profiling.generate_dashboard import main
+        main(["--input", input_path, "--output", output_path])
+        assert os.path.exists(output_path)
+        with open(output_path) as f:
+            html = f.read()
+        assert len(html) > 10000
+        assert "compute-small" in html
+        assert "<!DOCTYPE html>" in html
+    finally:
+        os.unlink(input_path)
+        if os.path.exists(output_path):
+            os.unlink(output_path)
