@@ -144,7 +144,7 @@ class NumbaBackend(SimulationBackend):
 
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
-            x = np.random.randn(n, width).astype(np.float32)
+            x = np.random.default_rng().standard_normal((n, width), dtype=np.float32)
 
             # Compute stats inline per-layer to avoid materializing all layers
             for layer_idx in range(depth):

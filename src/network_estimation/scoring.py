@@ -90,7 +90,7 @@ def baseline_time(mlp: MLP, n_samples: int, backend: "SimulationBackend | None" 
     if backend is None:
         from .simulation_backends import get_backend
         backend = get_backend()
-    inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
+    inputs = np.random.default_rng().standard_normal((n_samples, mlp.width), dtype=np.float32)
     t0 = time.perf_counter()
     backend.run_mlp(mlp, inputs)
     return time.perf_counter() - t0
