@@ -52,8 +52,11 @@ def register_task_definition(
     ]
     if backends:
         env_vars.append({"name": "BACKENDS", "value": backends})
-    if max_threads is not None:
-        env_vars.append({"name": "MAX_THREADS", "value": str(max_threads)})
+    # Derive thread count from Fargate CPU units (1024 = 1 vCPU) unless
+    # explicitly overridden.  nproc inside Fargate containers often
+    # reports 1 regardless of allocation, so we must pass this explicitly.
+    effective_threads = max_threads if max_threads is not None else config["cpu"] // 1024
+    env_vars.append({"name": "MAX_THREADS", "value": str(effective_threads)})
     if verbose:
         env_vars.append({"name": "VERBOSE", "value": "1"})
     if timeout_minutes is not None:
