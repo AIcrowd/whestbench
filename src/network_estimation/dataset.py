@@ -75,7 +75,7 @@ def create_dataset(
     final_means_list: List[NDArray[np.float32]] = []
     avg_variances: List[float] = []
     for i, mlp in enumerate(mlps):
-        all_means, final_mean, avg_var = backend.output_stats(mlp, n_samples)
+        all_means, final_mean, avg_var = backend.sample_layer_statistics(mlp, n_samples)
         all_means_list.append(all_means)
         final_means_list.append(final_mean)
         avg_variances.append(avg_var)
