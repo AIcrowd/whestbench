@@ -15,17 +15,14 @@ from typing import Dict, List, Optional, Any
 Config = Dict[str, Any]
 
 INSTANCE_MATRIX: List[Config] = [
-    # Compute-optimized (c-series equivalents) — low memory-to-CPU ratio
-    {"name": "compute-small",   "cpu": 1024,  "memory": 2048,  "label": "1 vCPU / 2 GB"},
-    {"name": "compute-medium",  "cpu": 2048,  "memory": 4096,  "label": "2 vCPU / 4 GB"},
-    {"name": "compute-large",   "cpu": 4096,  "memory": 8192,  "label": "4 vCPU / 8 GB"},
-    {"name": "compute-xlarge",  "cpu": 8192,  "memory": 16384, "label": "8 vCPU / 16 GB"},
-    {"name": "compute-2xlarge", "cpu": 16384, "memory": 32768, "label": "16 vCPU / 32 GB"},
-    # General-purpose (m-series equivalents) — higher memory-to-CPU ratio
-    {"name": "general-small",   "cpu": 1024,  "memory": 4096,  "label": "1 vCPU / 4 GB"},
-    {"name": "general-medium",  "cpu": 2048,  "memory": 8192,  "label": "2 vCPU / 8 GB"},
-    {"name": "general-large",   "cpu": 4096,  "memory": 16384, "label": "4 vCPU / 16 GB"},
-    {"name": "general-xlarge",  "cpu": 8192,  "memory": 32768, "label": "8 vCPU / 32 GB"},
+    # Each CPU tier gets max Fargate memory so memory is never the bottleneck.
+    # We're measuring compute scaling, not memory pressure.
+    # Fargate max memory per tier: 1vCPU→8GB, 2→16GB, 4→30GB, 8→60GB, 16→120GB.
+    {"name": "compute-1vcpu",   "cpu": 1024,  "memory": 8192,   "label": "1 vCPU / 8 GB"},
+    {"name": "compute-2vcpu",   "cpu": 2048,  "memory": 16384,  "label": "2 vCPU / 16 GB"},
+    {"name": "compute-4vcpu",   "cpu": 4096,  "memory": 30720,  "label": "4 vCPU / 30 GB"},
+    {"name": "compute-8vcpu",   "cpu": 8192,  "memory": 61440,  "label": "8 vCPU / 60 GB"},
+    {"name": "compute-16vcpu",  "cpu": 16384, "memory": 122880, "label": "16 vCPU / 120 GB"},
 ]
 
 
