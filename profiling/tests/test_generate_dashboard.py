@@ -148,6 +148,7 @@ def test_fetch_cdn_libs_returns_dict():
     libs = fetch_cdn_libs()
     assert "react" in libs
     assert "react-dom" in libs
+    assert "prop-types" in libs
     assert "recharts" in libs
     for name, source in libs.items():
         assert len(source) > 1000, f"{name} source too small"

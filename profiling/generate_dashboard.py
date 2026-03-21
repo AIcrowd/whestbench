@@ -9,6 +9,7 @@ import urllib.request
 CDN_LIBS = {
     "react": "https://unpkg.com/react@18/umd/react.production.min.js",
     "react-dom": "https://unpkg.com/react-dom@18/umd/react-dom.production.min.js",
+    "prop-types": "https://unpkg.com/prop-types@15/prop-types.min.js",
     "recharts": "https://unpkg.com/recharts@2/umd/Recharts.js",
 }
 
@@ -144,6 +145,7 @@ def generate_html(data):
 <title>nestim Profiling Dashboard</title>
 <script>{libs['react']}</script>
 <script>{libs['react-dom']}</script>
+<script>{libs['prop-types']}</script>
 <script>{libs['recharts']}</script>
 <style>
 {base_css}
