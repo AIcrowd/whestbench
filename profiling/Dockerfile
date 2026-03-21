@@ -33,9 +33,33 @@ RUN pip install --no-cache-dir \
 # Build Cython extension (source already in src/ from earlier COPY)
 RUN python setup_cython.py build_ext --inplace
 
-# Pre-warm JIT caches to avoid cold-start overhead during profiling
-RUN python -c "from network_estimation.simulation_numba import NumbaBackend; NumbaBackend()" 2>/dev/null || true
-RUN python -c "import jax; jax.numpy.ones(1)" 2>/dev/null || true
+# Pre-warm JIT caches — actually call compiled functions with realistic shapes
+# so Numba/JAX compile and cache the generated code.
+RUN python -c "\
+import numpy as np; \
+from network_estimation.generation import sample_mlp; \
+mlp = sample_mlp(64, 4, np.random.default_rng(42)); \
+inputs = np.random.randn(100, 64).astype(np.float32); \
+from network_estimation.simulation_numba import NumbaBackend; \
+nb = NumbaBackend(); \
+nb.run_mlp(mlp, inputs); \
+nb.run_mlp_matmul_only(mlp, inputs); \
+nb.sample_layer_statistics(mlp, 100); \
+print('Numba JIT warm-up complete') \
+" || echo 'WARN: Numba warm-up failed (non-fatal)'
+
+RUN python -c "\
+import numpy as np; \
+from network_estimation.generation import sample_mlp; \
+mlp = sample_mlp(64, 4, np.random.default_rng(42)); \
+inputs = np.random.randn(100, 64).astype(np.float32); \
+from network_estimation.simulation_jax import JAXBackend; \
+jb = JAXBackend(); \
+jb.run_mlp(mlp, inputs); \
+jb.run_mlp_matmul_only(mlp, inputs); \
+jb.sample_layer_statistics(mlp, 100); \
+print('JAX JIT warm-up complete') \
+" || echo 'WARN: JAX warm-up failed (non-fatal)'
 
 # Copy entrypoint
 COPY profiling/entrypoint.sh /entrypoint.sh

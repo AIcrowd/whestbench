@@ -63,9 +63,16 @@ Prompts for confirmation. Deletes all resources including S3 contents.
 bash profiling/build_and_push.sh
 ```
 
-Rebuild after any code changes to `src/` or backend dependencies. The image includes
-all 6 CPU backends (NumPy, SciPy, PyTorch CPU, Numba, JAX CPU, Cython) with pre-warmed
-JIT caches.
+Rebuild after any code changes to `src/` or backend dependencies.
+
+The image includes all 6 CPU backends (NumPy, SciPy, PyTorch CPU, Numba,
+JAX CPU, Cython). During the build, JIT-compiled functions (Numba `@njit`
+and JAX `@jax.jit`) are invoked with representative tensor shapes so the
+compiled code is cached in the image layer. This eliminates cold-start JIT
+compilation overhead that can take 10-30 seconds per backend at runtime.
+
+**When to rebuild:** Any change to files in `src/`, backend dependency
+versions, or the Dockerfile itself requires a rebuild and push.
 
 ## Running Benchmarks
 
@@ -105,6 +112,72 @@ Auto-generated format: `YYYY-MM-DD-HHMMSS-<git-hash>[-dirty]`
 Example: `2026-03-20-143000-bc385ad`
 
 The git hash ties results to a specific code version.
+
+## Container Logging
+
+Fargate containers run without a TTY, so the default Rich progress bar
+(which uses in-place terminal rendering) produces no output in CloudWatch.
+
+The container entrypoint automatically passes `--log-progress` to the
+profiler, which prints one line per benchmark step to stdout:
+
+```
+[correctness] numpy ... PASS
+[correctness] pytorch ... PASS
+[timing] 1/270 numpy run_mlp w=64 d=4 n=1,000 (0s elapsed)
+[timing] 2/270 numpy run_mlp_matmul_only w=64 d=4 n=1,000 (1s elapsed)
+...
+[done] Timing sweep complete. 270 results.
+```
+
+These lines appear in CloudWatch under the log group `/ecs/nestim-profiling`
+with stream prefix `{run-id}/profiler/{task-id}`.
+
+To tail logs in real time:
+```bash
+aws logs tail /ecs/nestim-profiling --follow --since 1h
+```
+
+For local testing, pass `--log-progress` directly:
+```bash
+nestim profile-simulation --preset super-quick --log-progress
+```
+
+## Timeouts
+
+Each Fargate task has two layers of timeout protection:
+
+1. **Container-level timeout** (`TIMEOUT_MINUTES` env var, default: 45 min) —
+   the entrypoint wraps the profiler command with `timeout`. If the profiler
+   hangs (e.g., due to JIT compilation deadlock), the process is killed and
+   the task exits with code 124.
+
+2. **Orchestrator-level timeout** (`--timeout` flag, default: 60 min) —
+   `run_benchmarks.py` monitors all tasks and calls `aws ecs stop-task` on
+   any that exceed this limit.
+
+The container timeout should always be shorter than the orchestrator timeout
+to allow clean error reporting.
+
+## Thread Pinning
+
+In container environments, automatic CPU detection can return incorrect
+values (e.g., detecting the host's CPU count instead of the container's
+allocated vCPUs). This causes backends to spawn too many threads, leading
+to contention or deadlocks.
+
+The entrypoint solves this by:
+
+1. Detecting available CPUs via `nproc` (which respects cgroup limits in
+   Fargate).
+2. Explicitly setting all threading environment variables before the
+   profiler starts:
+   - `OMP_NUM_THREADS`, `MKL_NUM_THREADS`, `OPENBLAS_NUM_THREADS`
+   - `NUMBA_NUM_THREADS`, `NUMEXPR_NUM_THREADS`, `VECLIB_MAXIMUM_THREADS`
+   - `XLA_FLAGS` (for JAX/XLA thread pool)
+3. Passing `--max-threads` to the profiler for runtime enforcement.
+
+Override by setting `MAX_THREADS` in the task environment.
 
 ## Collecting Results
 
@@ -152,6 +225,44 @@ Defined in `profiling/instance_matrix.py`. Default configs:
 To add a custom config, edit `INSTANCE_MATRIX` in `instance_matrix.py`.
 
 ## Troubleshooting
+
+### Tasks stuck with no log output
+
+**Symptom:** Tasks show `RUNNING` for a long time but CloudWatch only has
+the startup banner.
+
+**Cause:** Before the `--log-progress` fix, the Rich progress bar produced
+no output in non-TTY containers. Rebuild the Docker image with the latest
+code:
+
+```bash
+bash profiling/build_and_push.sh
+```
+
+### Tasks timing out (exit code 124)
+
+**Possible causes:**
+- **Preset too heavy for config:** `exhaustive` on `compute-small` (1 vCPU)
+  can take over an hour. Use `--preset standard` or increase `TIMEOUT_MINUTES`.
+- **JIT compilation overhead:** If the Docker image wasn't rebuilt after code
+  changes, JIT functions compile at runtime (adding 10-30s per backend).
+  Rebuild the image.
+- **Backend deadlock:** Rare, but possible with Numba's `parallel=True` if
+  thread counts are misconfigured. The thread pinning in the entrypoint
+  should prevent this.
+
+### JIT compilation hangs in container
+
+**Symptom:** Container hangs during the first few benchmark steps.
+
+**Fix:** Rebuild the Docker image. The build now pre-compiles all Numba and
+JAX JIT functions with representative tensor shapes. Old images that only
+ran `NumbaBackend()` / `jax.numpy.ones(1)` did not actually trigger
+compilation.
+
+```bash
+bash profiling/build_and_push.sh
+```
 
 ### "No default subnets found"
 

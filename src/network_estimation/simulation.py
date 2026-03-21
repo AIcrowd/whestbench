@@ -55,20 +55,37 @@ def run_mlp_all_layers(
     return layers
 
 
-def output_stats(
+def sample_layer_statistics(
     mlp: MLP, n_samples: int
 ) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
-    """Compute per-layer means and average variance of the final layer.
+    """Estimate per-layer activation statistics via Monte Carlo sampling.
+
+    Feeds ``n_samples`` random Gaussian inputs through the MLP and computes
+    empirical statistics of the activations at each layer.  This is the
+    reference (pure-NumPy) implementation — accelerated backends provide
+    equivalent methods with chunked streaming for lower memory usage.
+
+    The returned values are used in two places:
+
+    * **Scoring** (``scoring.py``): ``final_mean`` and ``avg_variance``
+      normalise the ``sampling_mse`` metric so that networks with
+      naturally high variance are not unfairly penalised.
+    * **Dataset generation** (``dataset.py``): ``all_layer_means`` captures
+      the ground-truth activation profile that estimators try to predict.
 
     Args:
-        mlp: MLP to evaluate.
-        n_samples: Number of random Gaussian N(0,1) input vectors.
+        mlp: The MLP network to evaluate.
+        n_samples: How many i.i.d. N(0, 1) input vectors to draw.  Larger
+            values give more precise estimates at the cost of compute time.
 
     Returns:
-        all_layer_means: shape ``(depth, width)`` — mean activations per layer.
-        final_mean: shape ``(width,)`` — mean activations at the final layer.
-        avg_variance: scalar — average per-neuron variance at the final layer,
-            used for ``sampling_mse`` normalization.
+        all_layer_means: ``(depth, width)`` float32 array — the mean
+            activation of every neuron at every layer, averaged over all
+            samples.
+        final_mean: ``(width,)`` float32 array — the mean activation at
+            the last layer (equivalent to ``all_layer_means[-1]``).
+        avg_variance: Scalar — the mean per-neuron variance at the final
+            layer, used as a normalisation baseline for ``sampling_mse``.
     """
     inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
     layer_outputs = run_mlp_all_layers(mlp, inputs)

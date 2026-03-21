@@ -27,6 +27,12 @@ class NumPyBackend(SimulationBackend):
             x = np.maximum(x @ w, np.float32(0.0))
         return x
 
+    def run_mlp_matmul_only(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
+        x = inputs
+        for w in mlp.weights:
+            x = x @ w
+        return x
+
     def run_mlp_all_layers(self, mlp: MLP, inputs: NDArray[np.float32]) -> List[NDArray[np.float32]]:
         x = inputs
         layers: List[NDArray[np.float32]] = []
@@ -35,7 +41,7 @@ class NumPyBackend(SimulationBackend):
             layers.append(x)
         return layers
 
-    def output_stats(self, mlp: MLP, n_samples: int) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
+    def sample_layer_statistics(self, mlp: MLP, n_samples: int) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
         width = mlp.width
         depth = mlp.depth
         chunk_size = _pick_chunk_size(width)

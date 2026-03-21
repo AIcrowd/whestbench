@@ -3,7 +3,7 @@
 from .domain import MLP
 from .generation import sample_mlp
 from .sdk import BaseEstimator, SetupContext
-from .simulation import output_stats, relu, run_mlp, run_mlp_all_layers
+from .simulation import sample_layer_statistics, relu, run_mlp, run_mlp_all_layers
 
 __all__ = [
     "BaseEstimator",
@@ -13,5 +13,5 @@ __all__ = [
     "relu",
     "run_mlp",
     "run_mlp_all_layers",
-    "output_stats",
+    "sample_layer_statistics",
 ]

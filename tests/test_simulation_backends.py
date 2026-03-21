@@ -8,7 +8,7 @@ import pytest
 from network_estimation.domain import MLP
 from network_estimation.generation import sample_mlp
 from network_estimation.simulation import (
-    output_stats as ref_output_stats,
+    sample_layer_statistics as ref_sample_layer_statistics,
     run_mlp as ref_run_mlp,
     run_mlp_all_layers as ref_run_mlp_all_layers,
 )
@@ -56,10 +56,10 @@ class TestBackendContract:
             assert layer.shape == (16, 8)
 
     @pytest.mark.parametrize("backend_name", _available_backend_names())
-    def test_output_stats_returns_correct_shapes(self, backend_name: str) -> None:
+    def test_sample_layer_statistics_returns_correct_shapes(self, backend_name: str) -> None:
         backend = get_backend(backend_name)
         mlp = _make_mlp()
-        means, final_mean, avg_var = backend.output_stats(mlp, 1000)
+        means, final_mean, avg_var = backend.sample_layer_statistics(mlp, 1000)
         assert means.dtype == np.float32
         assert means.shape == (4, 8)
         assert final_mean.dtype == np.float32
@@ -93,9 +93,9 @@ class TestStatisticalEquivalence:
     @pytest.mark.parametrize("backend_name", _available_backend_names())
     def test_means_close_to_reference(self, backend_name: str) -> None:
         mlp = _make_mlp(width=64, depth=4, seed=55)
-        ref_means, ref_final, ref_var = ref_output_stats(mlp, n_samples=50000)
+        ref_means, ref_final, ref_var = ref_sample_layer_statistics(mlp, n_samples=50000)
         backend = get_backend(backend_name)
-        fast_means, fast_final, fast_var = backend.output_stats(mlp, n_samples=50000)
+        fast_means, fast_final, fast_var = backend.sample_layer_statistics(mlp, n_samples=50000)
         np.testing.assert_allclose(fast_means, ref_means, atol=0.05)
         np.testing.assert_allclose(fast_final, ref_final, atol=0.05)
         assert abs(fast_var - ref_var) < max(0.1 * abs(ref_var), 0.01)
