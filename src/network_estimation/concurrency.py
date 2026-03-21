@@ -60,11 +60,10 @@ def apply_thread_limit(n: Optional[int] = None) -> Optional[int]:
     for var in _THREAD_ENV_VARS:
         os.environ[var] = s
 
-    # JAX/XLA uses a flag-style variable.
-    os.environ["XLA_FLAGS"] = (
-        f"--xla_cpu_multi_thread_eigen=true "
-        f"--xla_intra_op_parallelism_threads={n}"
-    )
+    # JAX/XLA: only set flags known to be valid in current XLA versions.
+    # Note: --xla_intra_op_parallelism_threads was removed in newer XLA
+    # and causes a fatal abort if set.
+    os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=true"
 
     # If PyTorch is already loaded, apply the runtime cap too.
     try:
