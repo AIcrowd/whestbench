@@ -70,7 +70,7 @@ def make_contest(spec: ContestSpec) -> ContestData:
 
     for _ in range(spec.n_mlps):
         mlp = sample_mlp(spec.width, spec.depth)
-        all_means, final_mean, avg_var = backend.output_stats(mlp, spec.ground_truth_budget)
+        all_means, final_mean, avg_var = backend.sample_layer_statistics(mlp, spec.ground_truth_budget)
         mlps.append(mlp)
         all_layer_targets.append(all_means)
         final_targets.append(final_mean)

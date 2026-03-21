@@ -3,7 +3,7 @@
 
 Benchmarks every available simulation backend (numpy, pytorch, numba, jax,
 scipy, cython) head-to-head on the two core operations — ``run_mlp`` and
-``output_stats`` — across a configurable grid of network sizes and sample
+``sample_layer_statistics`` — across a configurable grid of network sizes and sample
 counts.
 
 Workflow
@@ -66,7 +66,7 @@ from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
 from .simulation import (
-    output_stats as ref_output_stats,
+    sample_layer_statistics as ref_sample_layer_statistics,
     run_mlp as ref_run_mlp,
 )
 from .simulation_backend import PrimitiveBreakdown, SimulationBackend
@@ -79,7 +79,7 @@ class PresetConfig:
 
     Each preset defines a cross-product of network shapes and sample counts.
     Every (width, depth, n_samples) triple is evaluated for both ``run_mlp``
-    and ``output_stats``.
+    and ``sample_layer_statistics``.
 
     Attributes:
         widths: Hidden-layer widths to benchmark (e.g. ``[64, 256]``).
@@ -154,7 +154,7 @@ class TimingResult:
 
     Attributes:
         backend_name: Identifier of the backend.
-        operation: ``"run_mlp"`` or ``"output_stats"``.
+        operation: ``"run_mlp"`` or ``"sample_layer_statistics"``.
         width: Hidden-layer width of the network used.
         depth: Depth (number of layers) of the network used.
         n_samples: Number of random input samples.
@@ -172,6 +172,7 @@ class TimingResult:
     times: List[float]
     median_time: float
     speedup_vs_numpy: float
+    warmup_time: Optional[float] = None
     breakdown: Optional[PrimitiveBreakdown] = None
 
 
@@ -230,7 +231,7 @@ def correctness_check(
     """Pre-flight correctness check against the NumPy reference implementation.
 
     Validates both ``run_mlp`` (exact match, rtol=1e-5, atol=1e-6) and
-    ``output_stats`` (statistical match, atol=0.15 for means, relative
+    ``sample_layer_statistics`` (statistical match, atol=0.15 for means, relative
     tolerance for variance).  A backend that fails this check is excluded
     from subsequent timing sweeps.
 
@@ -250,9 +251,9 @@ def correctness_check(
         result = backend.run_mlp(mlp, inputs)
         np.testing.assert_allclose(result, ref, rtol=1e-5, atol=1e-6)
 
-        # Statistical match for output_stats
-        ref_means, ref_final, ref_var = ref_output_stats(mlp, 1000)
-        fast_means, fast_final, fast_var = backend.output_stats(mlp, 1000)
+        # Statistical match for sample_layer_statistics
+        ref_means, ref_final, ref_var = ref_sample_layer_statistics(mlp, 1000)
+        fast_means, fast_final, fast_var = backend.sample_layer_statistics(mlp, 1000)
         np.testing.assert_allclose(fast_means, ref_means, atol=0.15)
         np.testing.assert_allclose(fast_final, ref_final, atol=0.15)
         # Variance can differ more with only 1000 samples
@@ -277,24 +278,23 @@ def _time_run_mlp(
     return time.perf_counter() - t0
 
 
-def _time_output_stats(
+def _time_sample_layer_statistics(
     backend: SimulationBackend, mlp: MLP, n_samples: int
 ) -> float:
-    """Time a single output_stats call."""
+    """Time a single sample_layer_statistics call."""
     t0 = time.perf_counter()
-    backend.output_stats(mlp, n_samples)
+    backend.sample_layer_statistics(mlp, n_samples)
     return time.perf_counter() - t0
 
 
-def _time_run_mlp_profiled(
+def _time_run_mlp_matmul_only(
     backend: SimulationBackend, mlp: MLP, n_samples: int
-) -> Tuple[float, PrimitiveBreakdown]:
-    """Time a single run_mlp_profiled call, returning both total time and breakdown."""
+) -> float:
+    """Time a single run_mlp_matmul_only call."""
     inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
     t0 = time.perf_counter()
-    _, breakdown = backend.run_mlp_profiled(mlp, inputs)
-    total = time.perf_counter() - t0
-    return total, breakdown
+    backend.run_mlp_matmul_only(mlp, inputs)
+    return time.perf_counter() - t0
 
 
 def run_timing_sweep(
@@ -329,10 +329,12 @@ def run_timing_sweep(
     results: List[TimingResult] = []
     numpy_baselines: Dict[str, List[float]] = {}
 
-    # Collect numpy baselines first
-    numpy_backend = backends.get("numpy")
-
-    operations = ["run_mlp", "output_stats", "run_mlp_profiled"]
+    operations = ["run_mlp", "run_mlp_matmul_only", "sample_layer_statistics"]
+    time_fns = {
+        "run_mlp": _time_run_mlp,
+        "run_mlp_matmul_only": _time_run_mlp_matmul_only,
+        "sample_layer_statistics": _time_sample_layer_statistics,
+    }
 
     for width in preset.widths:
         for depth in preset.depths:
@@ -340,48 +342,26 @@ def run_timing_sweep(
             for n_samples in preset.n_samples_list:
                 for op in operations:
                     key = f"{op}:{width}:{depth}:{n_samples}"
+                    time_fn = time_fns[op]
 
                     for backend_name, backend in backends.items():
-                        if op == "run_mlp_profiled":
-                            # Warmup
-                            _time_run_mlp_profiled(backend, mlp, min(n_samples, 1000))
+                        # Timed warmup (critical for JIT backends)
+                        warmup_t0 = time.perf_counter()
+                        time_fn(backend, mlp, min(n_samples, 1000))
+                        warmup_time = time.perf_counter() - warmup_t0
 
-                            gc_was_enabled = gc.isenabled()
-                            gc.disable()
-                            times = []
-                            breakdowns: List[PrimitiveBreakdown] = []
-                            try:
-                                for _ in range(n_iterations):
-                                    t, bd = _time_run_mlp_profiled(backend, mlp, n_samples)
-                                    times.append(t)
-                                    breakdowns.append(bd)
-                            finally:
-                                if gc_was_enabled:
-                                    gc.enable()
+                        gc_was_enabled = gc.isenabled()
+                        gc.disable()
+                        times = []
+                        try:
+                            for _ in range(n_iterations):
+                                t = time_fn(backend, mlp, n_samples)
+                                times.append(t)
+                        finally:
+                            if gc_was_enabled:
+                                gc.enable()
 
-                            # Pick the breakdown from the median-time iteration
-                            median_t = float(np.median(times))
-                            median_idx = int(np.argmin([abs(t - median_t) for t in times]))
-                            median_breakdown = breakdowns[median_idx]
-                        else:
-                            time_fn = _time_run_mlp if op == "run_mlp" else _time_output_stats
-
-                            # Warmup (untimed, critical for JIT backends)
-                            time_fn(backend, mlp, min(n_samples, 1000))
-
-                            gc_was_enabled = gc.isenabled()
-                            gc.disable()
-                            times = []
-                            try:
-                                for _ in range(n_iterations):
-                                    t = time_fn(backend, mlp, n_samples)
-                                    times.append(t)
-                            finally:
-                                if gc_was_enabled:
-                                    gc.enable()
-
-                            median_t = float(np.median(times))
-                            median_breakdown = None
+                        median_t = float(np.median(times))
 
                         # Store numpy baselines
                         if backend_name == "numpy":
@@ -404,7 +384,7 @@ def run_timing_sweep(
                             times=times,
                             median_time=median_t,
                             speedup_vs_numpy=speedup,
-                            breakdown=median_breakdown,
+                            warmup_time=warmup_time,
                         ))
 
                         if progress_callback:
@@ -415,6 +395,25 @@ def run_timing_sweep(
                                 depth=depth,
                                 n_samples=n_samples,
                             )
+
+    # Post-process: compute PrimitiveBreakdown by subtraction
+    # matmul_time = run_mlp_matmul_only, relu_time = run_mlp - matmul_only
+    matmul_only_lookup: Dict[Tuple[str, int, int, int], float] = {}
+    for tr in results:
+        if tr.operation == "run_mlp_matmul_only":
+            matmul_only_lookup[(tr.backend_name, tr.width, tr.depth, tr.n_samples)] = tr.median_time
+
+    for tr in results:
+        if tr.operation == "run_mlp":
+            key = (tr.backend_name, tr.width, tr.depth, tr.n_samples)
+            matmul_t = matmul_only_lookup.get(key)
+            if matmul_t is not None:
+                relu_t = max(0.0, tr.median_time - matmul_t)
+                tr.breakdown = PrimitiveBreakdown(
+                    matmul_total=matmul_t,
+                    relu_total=relu_t,
+                    fused_total=tr.median_time,
+                )
 
     return results, numpy_baselines
 
@@ -483,8 +482,8 @@ def format_verbose_output(
     # Build a set of passed backend names for status lookup
     passed_names = {cr.backend_name for cr in correctness_results if cr.passed}
 
-    # Timing table (run_mlp + output_stats only)
-    non_profiled = [tr for tr in timing_results if tr.operation != "run_mlp_profiled"]
+    # Timing table (run_mlp + sample_layer_statistics only, hide matmul_only internal op)
+    non_profiled = [tr for tr in timing_results if tr.operation in ("run_mlp", "sample_layer_statistics")]
     if non_profiled:
         table = Table(title="\nTiming Results", show_lines=True)
         table.add_column("Backend", style="cyan")
@@ -518,34 +517,32 @@ def format_verbose_output(
 
         console.print(table)
 
-    # Primitive breakdown table (run_mlp_profiled results)
-    profiled = [tr for tr in timing_results if tr.breakdown is not None]
-    if profiled:
-        bd_table = Table(title="\nPrimitive Breakdown (run_mlp_profiled)", show_lines=True)
+    # Matmul vs ReLU breakdown (derived by subtraction: fused - matmul_only)
+    with_breakdown = [tr for tr in timing_results if tr.breakdown is not None]
+    if with_breakdown:
+        bd_table = Table(title="\nMatmul vs ReLU Breakdown (by subtraction)", show_lines=True)
         bd_table.add_column("Backend", style="cyan")
         bd_table.add_column("Width", justify="right")
         bd_table.add_column("Depth", justify="right")
         bd_table.add_column("N_Samples", justify="right")
-        bd_table.add_column("Total (s)", justify="right")
+        bd_table.add_column("Fused (s)", justify="right")
         bd_table.add_column("Matmul (s)", justify="right")
         bd_table.add_column("Matmul %", justify="right")
         bd_table.add_column("ReLU (s)", justify="right")
         bd_table.add_column("ReLU %", justify="right")
-        bd_table.add_column("Overhead %", justify="right")
 
-        for tr in profiled:
+        for tr in with_breakdown:
             bd = tr.breakdown
             bd_table.add_row(
                 tr.backend_name,
                 str(tr.width),
                 str(tr.depth),
                 f"{tr.n_samples:,}",
-                f"{bd.total:.4f}",
-                f"{bd.total_matmul:.4f}",
+                f"{bd.fused_total:.4f}",
+                f"{bd.matmul_total:.4f}",
                 f"[bold]{bd.matmul_pct:.1f}%[/bold]",
-                f"{bd.total_relu:.6f}",
+                f"{bd.relu_total:.6f}",
                 f"{bd.relu_pct:.1f}%",
-                f"{bd.overhead_pct:.1f}%",
             )
 
         console.print(bd_table)
@@ -701,22 +698,21 @@ def format_compact_output(
     table.add_column("Backend", style="cyan")
     table.add_column("Dims")
     table.add_column("run_mlp", justify="right")
-    table.add_column("output_stats", justify="right")
+    table.add_column("sample_layer_statistics", justify="right")
     table.add_column("Matmul", justify="right")
     table.add_column("ReLU", justify="right")
-    table.add_column("Ovhd", justify="right")
     table.add_column("", justify="center")  # status checkmark
 
     # Build lookup for breakdown data: (backend, dims) -> PrimitiveBreakdown
     breakdown_lookup: Dict[Tuple[str, Tuple[int, int, int]], Any] = {}
     for tr in timing_results:
-        if tr.operation == "run_mlp_profiled" and tr.breakdown is not None:
+        if tr.operation == "run_mlp" and tr.breakdown is not None:
             breakdown_lookup[(tr.backend_name, _dim_key(tr))] = tr.breakdown
 
     # Build lookup for timing: (backend, dims, operation) -> median_time
     time_lookup: Dict[Tuple[str, Tuple[int, int, int], str], float] = {}
     for tr in passed_timing:
-        if tr.operation in ("run_mlp", "output_stats"):
+        if tr.operation in ("run_mlp", "sample_layer_statistics"):
             time_lookup[(tr.backend_name, _dim_key(tr), tr.operation)] = tr.median_time
 
     # Collect all dim groups present in timing
@@ -746,7 +742,7 @@ def format_compact_output(
 
         for bname, _ in backend_times:
             run_mlp_t = time_lookup.get((bname, dim_key, "run_mlp"))
-            out_stats_t = time_lookup.get((bname, dim_key, "output_stats"))
+            out_stats_t = time_lookup.get((bname, dim_key, "sample_layer_statistics"))
             bd = breakdown_lookup.get((bname, dim_key))
 
             run_mlp_str = f"{run_mlp_t:.4f}s" if run_mlp_t is not None else "\u2014"
@@ -763,11 +759,9 @@ def format_compact_output(
             if bd is not None:
                 matmul_str = _bar(bd.matmul_pct, "blue")
                 relu_str = _bar(bd.relu_pct, "green")
-                ovhd_str = _bar(bd.overhead_pct, "dim")
             else:
                 matmul_str = "\u2014"
                 relu_str = "\u2014"
-                ovhd_str = "\u2014"
 
             status = "\u2713" if bname in passed_names else "\u2717"
 
@@ -778,18 +772,16 @@ def format_compact_output(
                 out_stats_str,
                 matmul_str,
                 relu_str,
-                ovhd_str,
                 status,
             )
 
     console.print(table)
 
     # Footer
-    console.print("  [blue]█[/blue] Matmul  [green]█[/green] ReLU  [dim]█[/dim] Overhead", highlight=False)
+    console.print("  [blue]\u2588[/blue] Matmul  [green]\u2588[/green] ReLU (by subtraction)", highlight=False)
     console.print()
     console.print(
-        "[dim italic]Use --verbose for full timing tables with raw times "
-        "and per-layer breakdowns[/dim italic]"
+        "[dim italic]Use --verbose for full timing tables with raw times[/dim italic]"
     )
 
     return buf.getvalue()
@@ -832,6 +824,7 @@ def format_json_output(
                 "times": tr.times,
                 "median_time": tr.median_time,
                 "speedup_vs_numpy": tr.speedup_vs_numpy,
+                **({"warmup_time": tr.warmup_time} if tr.warmup_time is not None else {}),
                 **({"breakdown": tr.breakdown.to_dict()} if tr.breakdown else {}),
             }
             for tr in timing_results
@@ -846,6 +839,7 @@ def run_profile(
     show_progress: bool = False,
     max_threads: Optional[int] = None,
     verbose: bool = False,
+    log_progress: bool = False,
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     """Run the complete profiling pipeline and return formatted results.
 
@@ -867,6 +861,9 @@ def run_profile(
         max_threads: If set, cap all backends to at most this many CPU
             threads.  Affects BLAS (OpenBLAS/MKL), Numba, PyTorch, and
             JAX/XLA thread pools.
+        log_progress: When ``True``, print one line per benchmark step to
+            stdout.  Designed for non-TTY environments (e.g. containers)
+            where the Rich progress bar is invisible.
 
     Returns:
         A tuple of ``(terminal_output, json_data)`` where *terminal_output*
@@ -923,8 +920,9 @@ def run_profile(
         backend_instances[name] = cls()
 
     # Set up progress display
+    use_rich_progress = show_progress and not log_progress
     progress_ctx: Any = None
-    if show_progress:
+    if use_rich_progress:
         try:
             from rich.progress import (
                 BarColumn,
@@ -965,10 +963,14 @@ def run_profile(
                 correctness_task,
                 description=f"Correctness check [cyan]{name:<8}[/]",
             )
+        if log_progress:
+            print(f"[correctness] {name} ...", end=" ", flush=True)
         cr = correctness_check(backend)
         correctness_results.append(cr)
         if cr.passed:
             passed_backends[name] = backend
+        if log_progress:
+            print("PASS" if cr.passed else f"FAIL: {cr.error}", flush=True)
         if progress_ctx is not None:
             progress_ctx.advance(correctness_task)
 
@@ -980,13 +982,39 @@ def run_profile(
             len(preset.widths)
             * len(preset.depths)
             * len(preset.n_samples_list)
-            * 3  # run_mlp + output_stats + run_mlp_profiled
+            * 3  # run_mlp + run_mlp_matmul_only + sample_layer_statistics
             * len(passed_backends)
         )
+
+        callback: Any = None
+
+        if log_progress:
+            _log_counter = [0]
+            _log_start = [time.time()]
+
+            def _log_callback(
+                backend_name: str = "",
+                operation: str = "",
+                width: int = 0,
+                depth: int = 0,
+                n_samples: int = 0,
+            ) -> None:
+                _log_counter[0] += 1
+                elapsed = time.time() - _log_start[0]
+                print(
+                    f"[timing] {_log_counter[0]}/{n_combos} "
+                    f"{backend_name} {operation} "
+                    f"w={width} d={depth} n={n_samples:,} "
+                    f"({elapsed:.0f}s elapsed)",
+                    flush=True,
+                )
+
+            callback = _log_callback
+
         if progress_ctx is not None:
             timing_task = progress_ctx.add_task("Timing sweep", total=n_combos)
 
-            def callback(
+            def _rich_callback(
                 backend_name: str = "",
                 operation: str = "",
                 width: int = 0,
@@ -998,14 +1026,18 @@ def run_profile(
                     f"w={width:<4} d={depth:<4} n={n_samples:>11,}"
                 )
                 progress_ctx.update(timing_task, advance=1, description=desc)
-        else:
-            callback = None
+
+            callback = _rich_callback
+
         timing_results, _ = run_timing_sweep(
             passed_backends, preset, progress_callback=callback
         )
 
     if progress_ctx is not None:
         progress_ctx.stop()
+
+    if log_progress:
+        print(f"[done] Timing sweep complete. {len(timing_results)} results.", flush=True)
 
     # Format output
     terminal_output = format_compact_output(

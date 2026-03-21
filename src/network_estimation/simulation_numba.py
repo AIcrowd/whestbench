@@ -13,7 +13,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from .domain import MLP
-from .simulation_backend import PrimitiveBreakdown, SimulationBackend
+from .simulation_backend import SimulationBackend
 
 try:
     from numba import njit, prange
@@ -52,6 +52,16 @@ if _HAS_NUMBA:
         for k in range(len(weights_tuple)):
             x = x @ weights_tuple[k]
             _relu_inplace(x)
+        return x
+
+    @njit(cache=True)
+    def _forward_pass_matmul_only(
+        inputs: np.ndarray, weights_tuple: tuple  # type: ignore[type-arg]
+    ) -> np.ndarray:  # type: ignore[type-arg]
+        """Forward pass with matmul only (no ReLU)."""
+        x = inputs.copy()
+        for k in range(len(weights_tuple)):
+            x = x @ weights_tuple[k]
         return x
 
     @njit(cache=True)
@@ -102,25 +112,11 @@ class NumbaBackend(SimulationBackend):
         weights_tuple = tuple(mlp.weights)
         return _forward_pass(inputs.astype(np.float32, copy=False), weights_tuple)
 
-    def run_mlp_profiled(
+    def run_mlp_matmul_only(
         self, mlp: MLP, inputs: NDArray[np.float32]
-    ) -> Tuple[NDArray[np.float32], PrimitiveBreakdown]:
-        import time
-
-        breakdown = PrimitiveBreakdown()
-        t_start = time.perf_counter()
-        x = inputs.astype(np.float32, copy=False).copy()
-        for w in mlp.weights:
-            t0 = time.perf_counter()
-            x = x @ w  # uses numpy matmul (numba can't be timed per-op inside @njit)
-            t1 = time.perf_counter()
-            _relu_inplace(x)  # JIT-compiled parallel relu
-            t2 = time.perf_counter()
-            breakdown.matmul.append(t1 - t0)
-            breakdown.relu.append(t2 - t1)
-        breakdown.total = time.perf_counter() - t_start
-        breakdown.overhead = breakdown.total - breakdown.total_matmul - breakdown.total_relu
-        return x, breakdown
+    ) -> NDArray[np.float32]:
+        weights_tuple = tuple(mlp.weights)
+        return _forward_pass_matmul_only(inputs.astype(np.float32, copy=False), weights_tuple)
 
     def run_mlp_all_layers(
         self, mlp: MLP, inputs: NDArray[np.float32]
@@ -134,7 +130,7 @@ class NumbaBackend(SimulationBackend):
 
     # -- output statistics (chunked streaming) ------------------------------
 
-    def output_stats(
+    def sample_layer_statistics(
         self, mlp: MLP, n_samples: int
     ) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
         width = mlp.width

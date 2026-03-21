@@ -3,7 +3,7 @@ import pytest
 
 from network_estimation.estimators import CovariancePropagationEstimator, MeanPropagationEstimator
 from network_estimation.generation import sample_mlp
-from network_estimation.simulation import output_stats
+from network_estimation.simulation import sample_layer_statistics
 
 pytestmark = pytest.mark.exhaustive
 
