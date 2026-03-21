@@ -89,9 +89,9 @@ Exactly one of `--run-id` or `--input` is required.
 ## Dashboard Layout
 
 ### Header Bar
-- Dark background (`#1a1a2e`)
-- Left: "nestim Profiling Dashboard" title
-- Right: Run metadata — run ID, git commit (with dirty badge if applicable), timestamp
+- White background with bottom border (`#D9DCDC`), matching network-explorer header style
+- Left: "nestim Profiling Dashboard" in Montserrat 700, gray-900
+- Right: Run metadata — run ID, git commit (with coral "dirty" badge if applicable), timestamp in gray-600
 - Run selector is out of scope for v1 (each HTML file contains one run's data)
 
 ### Section 1: Speedup Heatmap
@@ -115,11 +115,11 @@ The primary visualization. A table with:
 **Single-config mode**: Only one row. Still useful for comparing backends.
 
 ### Section 2: Cell Detail Modal
-Opens when clicking a heatmap cell. Dark themed modal (`#1a1a2e`) with:
+Opens when clicking a heatmap cell. White modal with gray-200 border, 8px radius, overlay backdrop:
 
-**Header**: Backend name + speedup badge (green "Nx faster" / red "Nx slower") + close button
+**Header**: Backend name (Montserrat 700) + speedup badge (success green "Nx faster" / coral "Nx slower") + close button
 
-**Filter row**: Dropdowns to change config, width, depth, n_samples without closing the modal. Changing these updates all content below.
+**Filter row**: Gray-50 background row with dropdowns to change config, width, depth, n_samples without closing. Dropdowns use gray-100 background, gray-200 border, coral focus ring.
 
 **Left column — Timing**:
 - Large median time display (e.g., "0.2051s")
@@ -128,7 +128,7 @@ Opens when clicking a heatmap cell. Dark themed modal (`#1a1a2e`) with:
 - Standard deviation and coefficient of variation
 
 **Right column — Operation Breakdown** (from `run_mlp_profiled` data):
-- Stacked horizontal bar: MatMul (blue `#1565c0`) | ReLU (orange `#ff9800`) | Overhead (grey)
+- Stacked horizontal bar: MatMul (dark slate `#334155`) | ReLU (coral `#F0524D`) | Overhead (gray-200)
 - Legend with absolute time and percentage for each
 - Per-layer sparkline bar chart showing MatMul time per layer (layer 1 to layer N)
 
@@ -198,28 +198,61 @@ The generator avoids JSX and Babel entirely by using `React.createElement` calls
 5. **`CPUScalingChart`** — Recharts LineChart (hidden in single-config mode)
 6. **`DataTable`** — sortable/filterable raw data table
 
-### Color Scheme
+### Design System (matching network-explorer)
 
-- **Page background**: `#0d1117` (dark)
-- **Card background**: `#1a1a2e`
-- **Borders**: `#2a2a4e`
-- **Text primary**: `#e0e0e0`
-- **Text secondary**: `#888`
-- **Labels**: `#666`
-- **Heatmap green** (faster): linear interpolation from `#c8e6c9` (1.1x) to `#2e7d32` (2.5x+, clamped)
-- **Heatmap red** (slower): linear interpolation from `#ffe0b2` (0.9x) to `#c62828` (0.3x, clamped)
-- **Heatmap neutral**: `#e0e0e0` for values in range 0.9–1.1 (linear blend toward green/red at edges)
-- **MatMul**: `#1565c0`
-- **ReLU**: `#ff9800`
-- **Overhead**: `#666`
+Follow the same design language as `tools/network-explorer/` for visual consistency.
 
-### Backend colors (consistent throughout):
-- numpy: `#78909c`
+**Typography** (Google Fonts, inlined):
+- Body/UI: `Inter`, 13px base, weights 400/500/600
+- Headers: `Montserrat`, weight 600/700, letter-spacing -0.02em
+- Monospace (values, code): `IBM Plex Mono`, weights 400/500
+
+**Color Palette:**
+- **Coral (primary accent)**: `#F0524D` (hover: `#EE403A`, pressed: `#D23934`, light: `#FEF2F1`)
+- **Page background**: `#FFFFFF`
+- **Card/Panel background**: `#FFFFFF` with `1px solid #D9DCDC` border
+- **Subtle background**: `#F8F9F9` (gray-50)
+- **Light background**: `#F1F3F5` (gray-100)
+- **Borders**: `#D9DCDC` (gray-200)
+- **Labels/disabled**: `#AAACAD` (gray-400)
+- **Secondary text**: `#5D5F60` (gray-600)
+- **Primary text**: `#292C2D` (gray-900)
+- **Success**: `#23B761`
+- **Warning**: `#FA9E33`
+
+**Heatmap colors:**
+- **Faster (>1.0)**: linear interpolation from `#c8e6c9` (1.1x) to `#23B761` (2.5x+, clamped)
+- **Slower (<1.0)**: linear interpolation from `#FEF2F1` (0.9x) to `#F0524D` (0.3x, clamped)
+- **Neutral (0.9–1.1)**: `#F1F3F5` (gray-100), linear blend toward green/red at edges
+
+**Operation breakdown:**
+- **MatMul**: `#334155` (dark slate, matching network-explorer chart palette)
+- **ReLU**: `#F0524D` (coral)
+- **Overhead**: `#D9DCDC` (gray-200)
+
+**Backend colors (consistent throughout):**
+- numpy: `#94A3B8` (slate, matching chart-2)
 - pytorch: `#e65100`
-- jax: `#1565c0`
-- cython: `#2e7d32`
+- jax: `#334155` (dark slate)
+- cython: `#23B761` (success green)
 - numba: `#6a1b9a`
 - scipy: `#00838f`
+
+**Shared patterns:**
+- Border radius: 8px (standard), 20px (pills/badges)
+- Shadows: `0 2px 6px rgba(0,0,0,0.08)` (cards), `0 8px 24px rgba(0,0,0,0.12)` (modals)
+- Section headers: 11px uppercase, letter-spacing 0.08em, gray-400
+- Table headers: 10px uppercase, gray-400, weight 600
+- Table rows: alternate gray-50 background on even rows
+- Hover: `translateY(-1px)` lift with enhanced shadow
+- Focus: `0 0 0 3px #FEF2F1` ring with coral border
+- Animations: 0.2s transitions, entrance animations with fade+slide (0.25s ease-out)
+
+**Modal styling:**
+- White background with gray-200 border, 8px radius
+- Overlay: `rgba(0, 0, 0, 0.3)` backdrop
+- Header: Montserrat 700, gray-900 text, coral accent badge
+- Filter dropdowns: gray-100 background, gray-200 border, coral focus ring
 
 ## Data Flow
 
