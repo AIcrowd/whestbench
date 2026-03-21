@@ -15,12 +15,16 @@ TIMEOUT_MINUTES="${TIMEOUT_MINUTES:-45}"
 OUTPUT_FILE="/tmp/results.json"
 S3_KEY="s3://${S3_BUCKET}/${RUN_ID}/${CONFIG_NAME}.json"
 
-# --- Pin thread counts to available CPUs ---
-# Fargate exposes the correct CPU count via nproc.
-# Set all threading env vars explicitly to avoid backend auto-detection issues.
-CPUS=$(nproc 2>/dev/null || echo 1)
-if [[ -z "${MAX_THREADS:-}" ]]; then
-    MAX_THREADS="$CPUS"
+# --- Pin thread counts ---
+# nproc inside Fargate often reports 1 regardless of allocation.
+# The orchestrator passes MAX_THREADS derived from Fargate CPU units.
+# Fall back to nproc only if MAX_THREADS is not set.
+CPUS_DETECTED=$(nproc 2>/dev/null || echo 1)
+if [[ -n "${MAX_THREADS:-}" ]]; then
+    THREADS_SOURCE="env"
+else
+    MAX_THREADS="$CPUS_DETECTED"
+    THREADS_SOURCE="nproc"
 fi
 export OMP_NUM_THREADS="$MAX_THREADS"
 export MKL_NUM_THREADS="$MAX_THREADS"
@@ -50,8 +54,7 @@ echo "Config:      $CONFIG_NAME"
 echo "Preset:      $PRESET"
 echo "S3 target:   $S3_KEY"
 echo "Backends:    ${BACKENDS:-all}"
-echo "Max threads: $MAX_THREADS"
-echo "CPUs avail:  $CPUS"
+echo "Threads:     $MAX_THREADS (source: $THREADS_SOURCE, nproc=$CPUS_DETECTED)"
 echo "Timeout:     ${TIMEOUT_MINUTES}m"
 echo "==========================="
 echo ""
