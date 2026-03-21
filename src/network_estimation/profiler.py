@@ -279,14 +279,24 @@ def _random_float32(shape: tuple) -> np.ndarray:
     return np.random.default_rng().standard_normal(shape, dtype=np.float32)
 
 
+# Maximum rows per chunk for timed forward passes.  Keeps peak memory
+# under ~2 GB per chunk (500K × 256 × 4 bytes ≈ 512 MB input + output).
+_TIMING_CHUNK = 500_000
+
+
 def _time_run_mlp(
     backend: SimulationBackend, mlp: MLP, n_samples: int
 ) -> float:
-    """Time a single run_mlp call."""
-    inputs = _random_float32((n_samples, mlp.width))
-    t0 = time.perf_counter()
-    backend.run_mlp(mlp, inputs)
-    return time.perf_counter() - t0
+    """Time run_mlp over n_samples, chunked to bound memory."""
+    total = 0.0
+    for start in range(0, n_samples, _TIMING_CHUNK):
+        n = min(_TIMING_CHUNK, n_samples - start)
+        inputs = _random_float32((n, mlp.width))
+        t0 = time.perf_counter()
+        backend.run_mlp(mlp, inputs)
+        total += time.perf_counter() - t0
+        del inputs
+    return total
 
 
 def _time_sample_layer_statistics(
@@ -301,11 +311,16 @@ def _time_sample_layer_statistics(
 def _time_run_mlp_matmul_only(
     backend: SimulationBackend, mlp: MLP, n_samples: int
 ) -> float:
-    """Time a single run_mlp_matmul_only call."""
-    inputs = _random_float32((n_samples, mlp.width))
-    t0 = time.perf_counter()
-    backend.run_mlp_matmul_only(mlp, inputs)
-    return time.perf_counter() - t0
+    """Time run_mlp_matmul_only over n_samples, chunked to bound memory."""
+    total = 0.0
+    for start in range(0, n_samples, _TIMING_CHUNK):
+        n = min(_TIMING_CHUNK, n_samples - start)
+        inputs = _random_float32((n, mlp.width))
+        t0 = time.perf_counter()
+        backend.run_mlp_matmul_only(mlp, inputs)
+        total += time.perf_counter() - t0
+        del inputs
+    return total
 
 
 def run_timing_sweep(
