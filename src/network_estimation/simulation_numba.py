@@ -1,8 +1,8 @@
 """Numba JIT-compiled simulation backend for MLP forward passes.
 
-Uses @njit with parallel=True for element-wise ReLU and cache=True
-for persistent compilation. Falls back gracefully when numba is not
-installed.
+Uses @njit with cache=True for persistent compilation. ReLU uses
+np.maximum which Numba compiles to efficient SIMD code. Falls back
+gracefully when numba is not installed.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from .domain import MLP
 from .simulation_backend import SimulationBackend
 
 try:
-    from numba import njit, prange
+    from numba import njit
 
     _HAS_NUMBA = True
 except (ImportError, OSError, SystemError):
@@ -33,14 +33,10 @@ def _pick_chunk_size(width: int) -> int:
 # ---------------------------------------------------------------------------
 if _HAS_NUMBA:
 
-    @njit(cache=True, parallel=True)
+    @njit(cache=True)
     def _relu_inplace(x: np.ndarray) -> np.ndarray:  # type: ignore[type-arg]
         """Element-wise ReLU, modifying *x* in place."""
-        rows, cols = x.shape
-        for i in prange(rows):
-            for j in range(cols):
-                if x[i, j] < 0.0:
-                    x[i, j] = 0.0
+        np.maximum(x, np.float32(0.0), x)
         return x
 
     @njit(cache=True)
@@ -84,6 +80,35 @@ if _HAS_NUMBA:
             _relu_inplace(x)
             all_layers[k] = x
         return all_layers
+
+    @njit(cache=True)
+    def _forward_pass_layer_stats(
+        inputs: np.ndarray, weights_tuple: tuple  # type: ignore[type-arg]
+    ) -> tuple:  # type: ignore[type-arg]
+        """Forward pass that accumulates per-layer sums and final sum-of-squares.
+
+        Returns (layer_sums_f64, final_sum_sq_f64).
+        """
+        n_layers = len(weights_tuple)
+        rows, cols = inputs.shape
+        layer_sums = np.zeros((n_layers, cols), dtype=np.float64)
+        x = inputs.copy()
+        for k in range(n_layers):
+            x = x @ weights_tuple[k]
+            _relu_inplace(x)
+            for j in range(cols):
+                s = 0.0
+                for i in range(rows):
+                    s += x[i, j]
+                layer_sums[k, j] = s
+        # Final layer sum of squares
+        final_sum_sq = np.zeros(cols, dtype=np.float64)
+        for j in range(cols):
+            s = 0.0
+            for i in range(rows):
+                s += float(x[i, j]) * float(x[i, j])
+            final_sum_sq[j] = s
+        return layer_sums, final_sum_sq
 
 
 # ---------------------------------------------------------------------------
@@ -145,14 +170,9 @@ class NumbaBackend(SimulationBackend):
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
             x = np.random.default_rng().standard_normal((n, width), dtype=np.float32)
-
-            # Compute stats inline per-layer to avoid materializing all layers
-            for layer_idx in range(depth):
-                x = x @ weights_tuple[layer_idx]
-                _relu_inplace(x)
-                layer_sums[layer_idx] += x.sum(axis=0).astype(np.float64)
-
-            final_sum_sq += (x.astype(np.float64) ** 2).sum(axis=0)
+            chunk_sums, chunk_sq = _forward_pass_layer_stats(x, weights_tuple)
+            layer_sums += chunk_sums
+            final_sum_sq += chunk_sq
             n_processed += n
 
         layer_means = (layer_sums / n_processed).astype(np.float32)
