@@ -273,8 +273,8 @@ def main():
         help="Thread cap (passed to nestim --max-threads)",
     )
     parser.add_argument(
-        "--timeout", type=int, default=60,
-        help="Timeout in minutes for all tasks (default: 60)",
+        "--timeout", type=int, default=480,
+        help="Timeout in minutes for all tasks (default: 480 = 8 hours)",
     )
     parser.add_argument(
         "--verbose", action="store_true",

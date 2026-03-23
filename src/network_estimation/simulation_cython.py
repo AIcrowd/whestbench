@@ -55,7 +55,7 @@ class CythonBackend(SimulationBackend):
         n_processed = 0
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
-            x = np.random.randn(n, width).astype(np.float32)
+            x = np.random.default_rng().standard_normal((n, width), dtype=np.float32)
             layers = _cython_kernels.forward_pass_all_layers(x, mlp.weights)
             for layer_idx, layer_out in enumerate(layers):
                 layer_sums[layer_idx] += layer_out.sum(axis=0).astype(np.float64)

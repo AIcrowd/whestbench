@@ -61,10 +61,12 @@ echo ""
 
 # Run the profiler with a timeout
 TIMEOUT_SECS=$((TIMEOUT_MINUTES * 60))
-if ! timeout "$TIMEOUT_SECS" "${CMD[@]}"; then
-    exit_code=$?
+timeout "$TIMEOUT_SECS" "${CMD[@]}" && exit_code=0 || exit_code=$?
+if [[ $exit_code -ne 0 ]]; then
     if [[ $exit_code -eq 124 ]]; then
         echo "ERROR: Profiler timed out after ${TIMEOUT_MINUTES} minutes" >&2
+    elif [[ $exit_code -eq 137 ]]; then
+        echo "ERROR: Profiler was killed (OOM or SIGKILL), exit code $exit_code" >&2
     else
         echo "ERROR: Profiler exited with code $exit_code" >&2
     fi

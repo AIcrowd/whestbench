@@ -36,10 +36,9 @@ _THREAD_ENV_VARS = (
 def apply_thread_limit(n: Optional[int] = None) -> Optional[int]:
     """Cap CPU parallelism for all numerical backends.
 
-    Must be called **before** backend modules are imported so that
-    libraries pick up the environment variables at initialisation time.
-    If a library (e.g. PyTorch) is already imported, the runtime knob
-    is set as well.
+    Sets environment variables for libraries not yet imported, and uses
+    runtime APIs (PyTorch ``set_num_threads``, ``threadpoolctl`` for
+    BLAS) to apply the limit to libraries already loaded.
 
     Args:
         n: Maximum number of threads.  When ``None``, the value of
@@ -69,6 +68,15 @@ def apply_thread_limit(n: Optional[int] = None) -> Optional[int]:
     try:
         import torch
         torch.set_num_threads(n)
+    except ImportError:
+        pass
+
+    # Use threadpoolctl to set BLAS thread count via the C API.
+    # This works even after numpy/OpenBLAS has been imported, unlike
+    # environment variables which are only read at library load time.
+    try:
+        from threadpoolctl import threadpool_limits
+        threadpool_limits(limits=n, user_api="blas")
     except ImportError:
         pass
 

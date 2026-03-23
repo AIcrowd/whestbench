@@ -2,6 +2,7 @@
 /* Dashboard-specific styles — appended after network-explorer base CSS */
 
 .dashboard { min-height: 100vh; background: var(--gray-50); }
+.dashboard > section + section { border-top: 1px solid var(--gray-200); }
 
 /* Heatmap */
 .heatmap-section { padding: 20px 28px; }
@@ -197,6 +198,52 @@
   border-bottom: 1px solid var(--gray-100);
 }
 .datatable tr:nth-child(even) { background: var(--gray-50); }
+
+/* Summary cards */
+.summary-section {
+  padding: 20px 28px 0; display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;
+}
+.summary-card {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-radius: var(--radius); padding: 14px 16px;
+}
+.summary-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--gray-400); font-weight: 600; margin-bottom: 4px;
+}
+.summary-value {
+  font-family: var(--font-accent); font-weight: 700;
+  font-size: 22px; color: var(--gray-900); line-height: 1.2;
+}
+.summary-detail {
+  font-size: 11px; color: var(--gray-400); margin-top: 2px;
+}
+
+/* Backend source code */
+.source-section { padding: 20px 28px; }
+.source-tabs {
+  display: flex; gap: 0; border-bottom: 1px solid var(--gray-200);
+  margin-bottom: 0;
+}
+.source-tab {
+  padding: 8px 16px; border: none; background: none;
+  font-size: 12px; font-weight: 500; color: var(--gray-400);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  font-family: var(--font-sans); transition: all 0.15s;
+}
+.source-tab:hover { color: var(--gray-900); }
+.source-tab.active { color: var(--gray-900); font-weight: 600; }
+.source-code {
+  background: var(--white); border: 1px solid var(--gray-200);
+  border-top: none; border-radius: 0 0 var(--radius) var(--radius);
+  overflow-x: auto; max-height: 600px; overflow-y: auto;
+}
+.source-code pre {
+  margin: 0; padding: 16px; font-size: 12px; line-height: 1.5;
+  font-family: var(--font-mono);
+}
+.source-code pre code { background: none !important; padding: 0 !important; }
 
 /* Section help text */
 .section-help {

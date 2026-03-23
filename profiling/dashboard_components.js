@@ -13,6 +13,18 @@ var BACKEND_COLORS = {
 };
 var BACKEND_ORDER = ['numpy', 'pytorch', 'jax', 'cython', 'numba', 'scipy'];
 
+function getThreadCount(hw) {
+  // Prefer max_threads (pinned thread count) over cpu_count_logical (OS-reported,
+  // which on Fargate reports more cores than actually allocated).
+  return hw.max_threads || hw.cpu_count_logical || '?';
+}
+
+function getThreadLabel(hw) {
+  var threads = getThreadCount(hw);
+  var ramGB = Math.round((hw.ram_total_bytes || 0) / 1073741824);
+  return '(' + threads + 'T / ' + ramGB + 'G)';
+}
+
 function getSpeedupColor(s) {
   if (s == null) return 'transparent';
   if (s >= 0.9 && s <= 1.1) return '#F8F9F9';
@@ -54,6 +66,94 @@ function getUnique(data, key) {
   return uniqueVals(all, key);
 }
 
+function SummaryCards(props) {
+  var data = props.data;
+  var configs = Object.keys(data.configs);
+
+  // Compute summary stats across all configs for run_mlp at largest n_samples
+  var allTiming = [];
+  configs.forEach(function(c) { allTiming = allTiming.concat(data.configs[c].timing); });
+  var maxN = Math.max.apply(null, allTiming.map(function(t) { return t.n_samples; }));
+  var maxW = Math.max.apply(null, allTiming.map(function(t) { return t.width; }));
+  var maxD = Math.max.apply(null, allTiming.map(function(t) { return t.depth; }));
+
+  // Find fastest backend for run_mlp at largest params
+  var bestBackend = null; var bestSpeedup = 0; var totalMeasurements = allTiming.length;
+  var errorCount = allTiming.filter(function(t) { return t.error; }).length;
+  allTiming.forEach(function(t) {
+    if (t.operation === 'run_mlp' && t.n_samples === maxN && t.width === maxW && t.depth === maxD) {
+      if (t.speedup_vs_numpy > bestSpeedup) {
+        bestSpeedup = t.speedup_vs_numpy;
+        bestBackend = t.backend;
+      }
+    }
+  });
+
+  // Count unique backends
+  var backendSet = {};
+  allTiming.forEach(function(t) { backendSet[t.backend] = true; });
+  var backendCount = Object.keys(backendSet).length;
+
+  var cards = [
+    {label: 'Configs', value: configs.length, detail: configs.length > 1 ? 'hardware configurations' : 'hardware configuration'},
+    {label: 'Backends', value: backendCount, detail: Object.keys(backendSet).join(', ')},
+    {label: 'Measurements', value: totalMeasurements, detail: errorCount > 0 ? errorCount + ' errors' : 'all successful'},
+    {label: 'Fastest (run_mlp)', value: bestBackend || '—',
+      detail: bestBackend ? bestSpeedup.toFixed(1) + 'x vs numpy at w=' + maxW + ' d=' + maxD + ' n=' + maxN.toLocaleString() : 'no data'},
+  ];
+
+  return h('section', {className: 'summary-section'},
+    cards.map(function(card) {
+      return h('div', {key: card.label, className: 'summary-card'},
+        h('div', {className: 'summary-label'}, card.label),
+        h('div', {className: 'summary-value'}, card.value),
+        h('div', {className: 'summary-detail'}, card.detail)
+      );
+    })
+  );
+}
+
+function BackendSourceCode() {
+  var sources = window.__BACKEND_SOURCES__ || {};
+  var backends = BACKEND_ORDER.filter(function(b) { return sources[b]; });
+  var active = useState(backends[0] || 'numpy');
+  var activeTab = active[0]; var setActiveTab = active[1];
+  var highlighted = useState(false);
+  var setHighlighted = highlighted[1];
+
+  useEffect(function() {
+    if (typeof hljs !== 'undefined') {
+      // Slight delay to ensure DOM is ready
+      setTimeout(function() {
+        document.querySelectorAll('.source-code pre code').forEach(function(block) {
+          hljs.highlightElement(block);
+        });
+        setHighlighted(true);
+      }, 50);
+    }
+  }, [activeTab]);
+
+  if (backends.length === 0) return null;
+
+  return h('section', {className: 'source-section'},
+    h('div', {className: 'section-header'}, 'BACKEND SOURCE CODE'),
+    h('div', {className: 'section-help'}, 'Complete implementation of each simulator backend. The core run_mlp method is the primary benchmark target.'),
+    h('div', {className: 'source-tabs'},
+      backends.map(function(b) {
+        return h('button', {key: b,
+          className: 'source-tab' + (b === activeTab ? ' active' : ''),
+          style: {borderBottomColor: b === activeTab ? (BACKEND_COLORS[b] || '#666') : 'transparent'},
+          onClick: function() { setActiveTab(b); }},
+          b
+        );
+      })
+    ),
+    h('div', {className: 'source-code', key: activeTab},
+      h('pre', null, h('code', {className: 'language-python'}, sources[activeTab] || ''))
+    )
+  );
+}
+
 function App() {
   var data = window.__PROFILING_DATA__;
   var operations = getUnique(data, 'operation');
@@ -81,9 +181,11 @@ function App() {
 
   return h('div', {className: 'dashboard'},
     h(Header, {data: data}),
+    h(SummaryCards, {data: data}),
     h(SpeedupHeatmap, {data: data, filters: filters, onFilterChange: onFilterChange,
       onCellClick: function(m) { onFilterChange('modal', m); }}),
     isMulti ? h(CPUScalingChart, {data: data, filters: filters, onFilterChange: onFilterChange}) : null,
+    h(BackendSourceCode, null),
     h(DataTable, {data: data}),
     filters.modal ? h(CellDetailModal, {data: data, config: filters.modal.config,
       backend: filters.modal.backend, filters: filters, onFilterChange: onFilterChange,
@@ -162,7 +264,6 @@ function SpeedupHeatmap(props) {
       )),
       h('tbody', null, configs.map(function(config) {
         var hw = data.configs[config].hardware;
-        var ramGB = Math.round((hw.ram_total_bytes || 0) / 1073741824);
         var cells = backends.map(function(b) { return getCell(config, b); });
         var bestIdx = -1; var bestVal = -Infinity;
         cells.forEach(function(c, i) {
@@ -171,7 +272,7 @@ function SpeedupHeatmap(props) {
 
         return h('tr', {key: config},
           h('td', null, config, ' ', h('span', {className: 'config-hw'},
-            '(' + (hw.cpu_count_logical || '?') + 'c / ' + ramGB + 'G)')),
+            getThreadLabel(hw))),
           cells.map(function(c, i) {
             if (c.type === 'skipped') return h('td', {key: backends[i],
               style: {color: '#9CA3AF', fontStyle: 'italic'}, title: c.reason}, 'skip');
@@ -355,8 +456,8 @@ function CPUScalingChart(props) {
   var family = fs[0]; var setFamily = fs[1];
 
   var sorted = configs.slice().sort(function(a, b) {
-    return (data.configs[a].hardware.cpu_count_logical || 0) -
-           (data.configs[b].hardware.cpu_count_logical || 0);
+    return (getThreadCount(data.configs[a].hardware) || 0) -
+           (getThreadCount(data.configs[b].hardware) || 0);
   }).filter(function(c) {
     if (family === 'all') return true;
     return c.indexOf(family) === 0;
@@ -375,7 +476,7 @@ function CPUScalingChart(props) {
 
   var chartData = sorted.map(function(c) {
     var hw = data.configs[c].hardware;
-    var point = {name: c + ' (' + hw.cpu_count_logical + 'c)'};
+    var point = {name: c + ' (' + getThreadCount(hw) + 'T)'};
     data.configs[c].timing.forEach(function(t) {
       if (t.operation === f.operation && t.width === f.width &&
           t.depth === f.depth && t.n_samples === f.nSamples) {
@@ -514,7 +615,7 @@ function DataTable(props) {
           isExp ? h('tr', {key: rowKey + '-detail'},
             h('td', {colSpan: 8, style: {background: 'var(--gray-50)', fontSize: '10px',
               fontFamily: 'var(--font-mono)', padding: '8px 12px'}},
-              'CPU: ' + (r.hardware.cpu_count_logical || '?') +
+              'Threads: ' + getThreadCount(r.hardware) +
               ' | RAM: ' + Math.round((r.hardware.ram_total_bytes || 0) / 1073741824) + 'GB' +
               ' | Platform: ' + (r.hardware.platform || '?') +
               (r.backend_versions ? ' | Versions: ' + JSON.stringify(r.backend_versions) : '')
