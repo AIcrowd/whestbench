@@ -87,7 +87,7 @@ def sample_layer_statistics(
         avg_variance: Scalar — the mean per-neuron variance at the final
             layer, used as a normalisation baseline for ``sampling_mse``.
     """
-    inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
+    inputs = np.random.default_rng().standard_normal((n_samples, mlp.width), dtype=np.float32)
     layer_outputs = run_mlp_all_layers(mlp, inputs)
     all_layer_means = np.stack(
         [np.mean(out, axis=0) for out in layer_outputs]

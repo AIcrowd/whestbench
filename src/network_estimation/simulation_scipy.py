@@ -84,7 +84,7 @@ class SciPyBackend(SimulationBackend):
         n_processed = 0
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
-            x = np.random.randn(n, width).astype(np.float32)
+            x = np.random.default_rng().standard_normal((n, width), dtype=np.float32)
 
             for layer_idx, w in enumerate(mlp.weights):
                 x = _sgemm(1.0, x, w)

@@ -33,15 +33,14 @@ CLI usage
 Presets
 -------
 ``super-quick``
-    One width (64), one depth (4), 1 000 samples — sub-second, for testing
-    the debug loop.
+    One width (256), one depth (4), 10 000 samples — sub-second sanity check.
 ``quick``
     One width (256), two depths, two sample counts — finishes in seconds.
 ``standard`` *(default)*
-    Two widths, five depths, three sample counts — a few minutes.
+    Two widths, three depths, two sample counts — under a minute.
 ``exhaustive``
-    Three widths, five depths, five sample counts (up to 16.7 M) — thorough
-    but slow.
+    Two widths, three depths, three sample counts (up to 1 M) — thorough,
+    finishes in minutes.
 
 See Also
 --------
@@ -94,24 +93,24 @@ class PresetConfig:
 
 PRESETS: Dict[str, PresetConfig] = {
     "super-quick": PresetConfig(
-        widths=[64],
+        widths=[256],
         depths=[4],
-        n_samples_list=[1_000],
+        n_samples_list=[10_000],
     ),
     "quick": PresetConfig(
         widths=[256],
-        depths=[4, 32],
+        depths=[4, 128],
         n_samples_list=[10_000, 100_000],
     ),
     "standard": PresetConfig(
         widths=[64, 256],
-        depths=[4, 16, 32, 64, 128],
-        n_samples_list=[10_000, 100_000, 1_000_000],
+        depths=[4, 32, 128],
+        n_samples_list=[10_000, 100_000],
     ),
     "exhaustive": PresetConfig(
-        widths=[64, 128, 256],
-        depths=[4, 16, 32, 64, 128],
-        n_samples_list=[10_000, 100_000, 500_000, 1_000_000, 16_700_000],
+        widths=[64, 256],
+        depths=[4, 32, 128],
+        n_samples_list=[10_000, 100_000, 1_000_000],
     ),
 }
 
@@ -174,6 +173,7 @@ class TimingResult:
     speedup_vs_numpy: float
     warmup_time: Optional[float] = None
     breakdown: Optional[PrimitiveBreakdown] = None
+    error: str = ""
 
 
 def _collect_hardware_info(max_threads: Optional[int] = None) -> Dict[str, Any]:
@@ -268,14 +268,34 @@ def correctness_check(
         )
 
 
+def _random_float32(shape: tuple) -> np.ndarray:
+    """Generate standard-normal float32 array without a float64 intermediate.
+
+    ``np.random.randn(...).astype(np.float32)`` temporarily holds both
+    the float64 and float32 arrays in memory, doubling peak usage.
+    Using ``Generator.standard_normal`` with ``dtype`` avoids this.
+    """
+    return np.random.default_rng().standard_normal(shape, dtype=np.float32)
+
+
+# Maximum rows per chunk for timed forward passes.  Keeps peak memory
+# under ~2 GB per chunk (500K × 256 × 4 bytes ≈ 512 MB input + output).
+_TIMING_CHUNK = 500_000
+
+
 def _time_run_mlp(
     backend: SimulationBackend, mlp: MLP, n_samples: int
 ) -> float:
-    """Time a single run_mlp call."""
-    inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
-    t0 = time.perf_counter()
-    backend.run_mlp(mlp, inputs)
-    return time.perf_counter() - t0
+    """Time run_mlp over n_samples, chunked to bound memory."""
+    total = 0.0
+    for start in range(0, n_samples, _TIMING_CHUNK):
+        n = min(_TIMING_CHUNK, n_samples - start)
+        inputs = _random_float32((n, mlp.width))
+        t0 = time.perf_counter()
+        backend.run_mlp(mlp, inputs)
+        total += time.perf_counter() - t0
+        del inputs
+    return total
 
 
 def _time_sample_layer_statistics(
@@ -290,11 +310,16 @@ def _time_sample_layer_statistics(
 def _time_run_mlp_matmul_only(
     backend: SimulationBackend, mlp: MLP, n_samples: int
 ) -> float:
-    """Time a single run_mlp_matmul_only call."""
-    inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
-    t0 = time.perf_counter()
-    backend.run_mlp_matmul_only(mlp, inputs)
-    return time.perf_counter() - t0
+    """Time run_mlp_matmul_only over n_samples, chunked to bound memory."""
+    total = 0.0
+    for start in range(0, n_samples, _TIMING_CHUNK):
+        n = min(_TIMING_CHUNK, n_samples - start)
+        inputs = _random_float32((n, mlp.width))
+        t0 = time.perf_counter()
+        backend.run_mlp_matmul_only(mlp, inputs)
+        total += time.perf_counter() - t0
+        del inputs
+    return total
 
 
 def run_timing_sweep(
@@ -345,47 +370,69 @@ def run_timing_sweep(
                     time_fn = time_fns[op]
 
                     for backend_name, backend in backends.items():
-                        # Timed warmup (critical for JIT backends)
-                        warmup_t0 = time.perf_counter()
-                        time_fn(backend, mlp, min(n_samples, 1000))
-                        warmup_time = time.perf_counter() - warmup_t0
-
-                        gc_was_enabled = gc.isenabled()
-                        gc.disable()
-                        times = []
                         try:
-                            for _ in range(n_iterations):
-                                t = time_fn(backend, mlp, n_samples)
-                                times.append(t)
-                        finally:
-                            if gc_was_enabled:
-                                gc.enable()
+                            # Timed warmup (critical for JIT backends)
+                            warmup_t0 = time.perf_counter()
+                            time_fn(backend, mlp, min(n_samples, 1000))
+                            warmup_time = time.perf_counter() - warmup_t0
 
-                        median_t = float(np.median(times))
+                            gc_was_enabled = gc.isenabled()
+                            gc.disable()
+                            times = []
+                            try:
+                                for _ in range(n_iterations):
+                                    t = time_fn(backend, mlp, n_samples)
+                                    times.append(t)
+                            finally:
+                                if gc_was_enabled:
+                                    gc.enable()
 
-                        # Store numpy baselines
-                        if backend_name == "numpy":
-                            numpy_baselines[key] = times
+                            median_t = float(np.median(times))
 
-                        # Compute speedup vs numpy
-                        numpy_times = numpy_baselines.get(key)
-                        if numpy_times is not None:
-                            numpy_median = float(np.median(numpy_times))
-                            speedup = numpy_median / median_t if median_t > 0 else float("inf")
-                        else:
-                            speedup = 1.0
+                            # Store numpy baselines
+                            if backend_name == "numpy":
+                                numpy_baselines[key] = times
 
-                        results.append(TimingResult(
-                            backend_name=backend_name,
-                            operation=op,
-                            width=width,
-                            depth=depth,
-                            n_samples=n_samples,
-                            times=times,
-                            median_time=median_t,
-                            speedup_vs_numpy=speedup,
-                            warmup_time=warmup_time,
-                        ))
+                            # Compute speedup vs numpy
+                            numpy_times = numpy_baselines.get(key)
+                            if numpy_times is not None:
+                                numpy_median = float(np.median(numpy_times))
+                                speedup = numpy_median / median_t if median_t > 0 else float("inf")
+                            else:
+                                speedup = 1.0
+
+                            results.append(TimingResult(
+                                backend_name=backend_name,
+                                operation=op,
+                                width=width,
+                                depth=depth,
+                                n_samples=n_samples,
+                                times=times,
+                                median_time=median_t,
+                                speedup_vs_numpy=speedup,
+                                warmup_time=warmup_time,
+                            ))
+
+                        except (MemoryError, Exception) as exc:
+                            # Log and skip — partial results are better than none.
+                            err_msg = f"{type(exc).__name__}: {exc}"
+                            print(
+                                f"[warning] {backend_name} {op} "
+                                f"w={width} d={depth} n={n_samples:,} "
+                                f"skipped: {err_msg}",
+                                flush=True,
+                            )
+                            results.append(TimingResult(
+                                backend_name=backend_name,
+                                operation=op,
+                                width=width,
+                                depth=depth,
+                                n_samples=n_samples,
+                                times=[],
+                                median_time=-1.0,
+                                speedup_vs_numpy=0.0,
+                                error=err_msg,
+                            ))
 
                         if progress_callback:
                             progress_callback(
@@ -400,11 +447,11 @@ def run_timing_sweep(
     # matmul_time = run_mlp_matmul_only, relu_time = run_mlp - matmul_only
     matmul_only_lookup: Dict[Tuple[str, int, int, int], float] = {}
     for tr in results:
-        if tr.operation == "run_mlp_matmul_only":
+        if tr.operation == "run_mlp_matmul_only" and not tr.error:
             matmul_only_lookup[(tr.backend_name, tr.width, tr.depth, tr.n_samples)] = tr.median_time
 
     for tr in results:
-        if tr.operation == "run_mlp":
+        if tr.operation == "run_mlp" and not tr.error:
             key = (tr.backend_name, tr.width, tr.depth, tr.n_samples)
             matmul_t = matmul_only_lookup.get(key)
             if matmul_t is not None:
@@ -441,6 +488,9 @@ def format_verbose_output(
     from rich.console import Console
     from rich.table import Table
     import io
+
+    # Filter out errored timing entries for display
+    timing_results = [tr for tr in timing_results if not tr.error]
 
     buf = io.StringIO()
     console = Console(file=buf, force_terminal=True, width=140)
@@ -580,6 +630,9 @@ def format_compact_output(
     term_width = shutil.get_terminal_size((120, 24)).columns
     buf = io.StringIO()
     console = Console(file=buf, force_terminal=True, width=term_width)
+
+    # Filter out errored timing entries (e.g. OOM) for display purposes
+    timing_results = [tr for tr in timing_results if not tr.error]
 
     passed_names = {cr.backend_name for cr in correctness_results if cr.passed}
     all_failed = len(passed_names) == 0
@@ -826,6 +879,7 @@ def format_json_output(
                 "speedup_vs_numpy": tr.speedup_vs_numpy,
                 **({"warmup_time": tr.warmup_time} if tr.warmup_time is not None else {}),
                 **({"breakdown": tr.breakdown.to_dict()} if tr.breakdown else {}),
+                **({"error": tr.error} if tr.error else {}),
             }
             for tr in timing_results
         ],
@@ -1037,7 +1091,10 @@ def run_profile(
         progress_ctx.stop()
 
     if log_progress:
-        print(f"[done] Timing sweep complete. {len(timing_results)} results.", flush=True)
+        n_errors = sum(1 for tr in timing_results if tr.error)
+        n_ok = len(timing_results) - n_errors
+        err_msg = f" ({n_errors} skipped due to errors)" if n_errors else ""
+        print(f"[done] Timing sweep complete. {n_ok} results.{err_msg}", flush=True)
 
     # Format output
     terminal_output = format_compact_output(
