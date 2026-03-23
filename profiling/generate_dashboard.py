@@ -121,6 +121,27 @@ def fetch_cdn_libs(cache_dir=None):
     return libs
 
 
+def extract_backend_sources():
+    """Read simulator backend source files and return a dict of {name: source_code}."""
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sim_dir = os.path.join(repo_root, "src", "network_estimation")
+    backends = {
+        "numpy": "simulation_numpy.py",
+        "scipy": "simulation_scipy.py",
+        "numba": "simulation_numba.py",
+        "cython": "simulation_cython.py",
+        "jax": "simulation_jax.py",
+        "pytorch": "simulation_pytorch.py",
+    }
+    sources = {}
+    for name, filename in backends.items():
+        path = os.path.join(sim_dir, filename)
+        if os.path.exists(path):
+            with open(path) as f:
+                sources[name] = f.read()
+    return sources
+
+
 def generate_html(data):
     """Generate complete self-contained HTML dashboard."""
     base_css = extract_base_css()
@@ -136,6 +157,8 @@ def generate_html(data):
         components_js = f.read()
 
     data_json = json.dumps(data, default=str)
+    backend_sources = extract_backend_sources()
+    sources_json = json.dumps(backend_sources)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -147,6 +170,9 @@ def generate_html(data):
 <script>{libs['react-dom']}</script>
 <script>{libs['prop-types']}</script>
 <script>{libs['recharts']}</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
 <style>
 {base_css}
 {dashboard_css}
@@ -155,6 +181,7 @@ def generate_html(data):
 <body>
 <div id="root"></div>
 <script>window.__PROFILING_DATA__ = {data_json};</script>
+<script>window.__BACKEND_SOURCES__ = {sources_json};</script>
 <script>
 {components_js}
 </script>
