@@ -33,15 +33,14 @@ CLI usage
 Presets
 -------
 ``super-quick``
-    One width (64), one depth (4), 1 000 samples — sub-second, for testing
-    the debug loop.
+    One width (256), one depth (4), 10 000 samples — sub-second sanity check.
 ``quick``
     One width (256), two depths, two sample counts — finishes in seconds.
 ``standard`` *(default)*
-    Two widths, five depths, three sample counts — a few minutes.
+    Two widths, three depths, two sample counts — under a minute.
 ``exhaustive``
-    Three widths, five depths, five sample counts (up to 16.7 M) — thorough
-    but slow.
+    Two widths, three depths, three sample counts (up to 1 M) — thorough,
+    finishes in minutes.
 
 See Also
 --------
@@ -94,24 +93,24 @@ class PresetConfig:
 
 PRESETS: Dict[str, PresetConfig] = {
     "super-quick": PresetConfig(
-        widths=[64],
+        widths=[256],
         depths=[4],
-        n_samples_list=[1_000],
+        n_samples_list=[10_000],
     ),
     "quick": PresetConfig(
         widths=[256],
-        depths=[4, 32],
+        depths=[4, 128],
         n_samples_list=[10_000, 100_000],
     ),
     "standard": PresetConfig(
         widths=[64, 256],
-        depths=[4, 16, 32, 64, 128],
-        n_samples_list=[10_000, 100_000, 1_000_000],
+        depths=[4, 32, 128],
+        n_samples_list=[10_000, 100_000],
     ),
     "exhaustive": PresetConfig(
-        widths=[64, 128, 256],
-        depths=[4, 16, 32, 64, 128],
-        n_samples_list=[10_000, 100_000, 500_000, 1_000_000, 16_700_000],
+        widths=[64, 256],
+        depths=[4, 32, 128],
+        n_samples_list=[10_000, 100_000, 1_000_000],
     ),
 }
 
