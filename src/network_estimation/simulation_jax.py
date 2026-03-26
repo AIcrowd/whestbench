@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 from typing import List, Tuple
 
 import numpy as np
@@ -25,6 +26,7 @@ def _pick_chunk_size(width: int) -> int:
     return max(1024, min(16384, 2**20 // width))
 
 
+
 if _HAS_JAX:
 
     @jax.jit
@@ -42,6 +44,25 @@ if _HAS_JAX:
         for w in weights:
             x = x @ w
         return x
+
+    @functools.partial(jax.jit, static_argnums=(2,))
+    def _jax_process_chunk(weights_stacked, key, chunk_size):
+        """JIT-compiled single-chunk forward pass with interleaved reduction.
+
+        The layer loop uses jax.lax.scan so XLA can fuse matmul+ReLU+sum
+        within each chunk.  The outer chunk loop stays in Python to avoid
+        XLA overhead when the number of chunks is large.
+        """
+        width = weights_stacked.shape[1]
+        x = jax.random.normal(key, shape=(chunk_size, width), dtype=jnp.float32)
+
+        def layer_step(x, w):
+            x = jnp.maximum(x @ w, 0.0)
+            return x, x.sum(axis=0)
+
+        x_final, chunk_layer_sums = jax.lax.scan(layer_step, x, weights_stacked)
+        final_sum_sq = (x_final * x_final).sum(axis=0)
+        return chunk_layer_sums, final_sum_sq
 
 
 class JAXBackend(SimulationBackend):
@@ -84,12 +105,11 @@ class JAXBackend(SimulationBackend):
         depth = mlp.depth
         chunk_size = _pick_chunk_size(width)
 
-        jax_weights = [jnp.array(w) for w in mlp.weights]
+        weights_stacked = jnp.stack([jnp.array(w) for w in mlp.weights])
 
         layer_sums = jnp.zeros((depth, width), dtype=jnp.float32)
         final_sum_sq = jnp.zeros(width, dtype=jnp.float32)
 
-        # Seed JAX PRNG from numpy RNG for reproducibility
         seed = int(np.random.default_rng().integers(0, 2**31))
         key = jax.random.PRNGKey(seed)
 
@@ -97,13 +117,9 @@ class JAXBackend(SimulationBackend):
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
             key, subkey = jax.random.split(key)
-            x = jax.random.normal(subkey, shape=(n, width), dtype=jnp.float32)
-
-            for layer_idx, w in enumerate(jax_weights):
-                x = jnp.maximum(x @ w, 0.0)
-                layer_sums = layer_sums.at[layer_idx].add(x.sum(axis=0))
-
-            final_sum_sq = final_sum_sq + (x * x).sum(axis=0)
+            cls, fsq = _jax_process_chunk(weights_stacked, subkey, n)
+            layer_sums = layer_sums + cls
+            final_sum_sq = final_sum_sq + fsq
             n_processed += n
 
         layer_means = np.asarray(layer_sums / n_processed, dtype=np.float32)
