@@ -15,11 +15,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /* ------------------------------------------------------------------ */
 /*  Layout constants                                                   */
 /* ------------------------------------------------------------------ */
-const NODE_R   = 16;       // neuron circle radius
-const COL_GAP  = 110;      // horizontal gap between columns
-const ROW_GAP  = 14;       // vertical gap between nodes
-const PAD_X    = 40;
-const PAD_Y    = 30;
+const NODE_R   = 20;       // neuron circle radius
+const COL_GAP  = 120;      // horizontal gap between columns
+const ROW_GAP  = 10;       // vertical gap between nodes
+const PAD_X    = 44;
+const PAD_Y    = 34;
 
 /* ------------------------------------------------------------------ */
 /*  Color helpers                                                      */
@@ -60,8 +60,10 @@ function weightColor(w) {
 }
 
 function weightWidth(w) {
-  return 0.5 + Math.min(4, Math.abs(w) * 4);
+  return 0.5 + Math.min(3, Math.abs(w) * 3);
 }
+
+const EDGE_OPACITY = 0.25;  // base edge opacity — keeps strong weights visible, reduces clutter
 
 // Pick a contrasting label color (white or dark) for a given fill
 function contrastLabel(fill) {
@@ -112,7 +114,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
         gridSize: 1,
         interactive: false,
         background: { color: "transparent" },
-        defaultConnector: { name: "straight" },
+        defaultConnector: { name: "smooth" },
         defaultRouter: { name: "normal" },
       });
     } else {
@@ -120,6 +122,18 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
     }
 
     const graph = graphRef.current;
+
+    // Add drop-shadow filter to SVG for node depth
+    const svgEl = paperRef.current.svg;
+    if (svgEl && !svgEl.querySelector("#node-shadow")) {
+      const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+      defs.innerHTML = `
+        <filter id="node-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.12" />
+        </filter>
+      `;
+      svgEl.insertBefore(defs, svgEl.firstChild);
+    }
 
     // Node IDs: nodeId(col, row) for quick lookup
     const nodeMap = {}; // key: `${col},${row}` → cell id
@@ -175,10 +189,11 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
               strokeWidth: strokeW,
               strokeDasharray: strokeDash,
               cursor: "pointer",
+              filter: "url(#node-shadow)",
             },
             label: {
               text: isInput ? `x${row}` : isOutput ? `y${row}` : `${row}`,
-              fontSize: 9,
+              fontSize: 10,
               fill: labelColor,
               fontFamily: "'IBM Plex Mono', monospace",
             },
@@ -204,7 +219,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
         for (let i = 0; i < width; i++) {
           // source neuron i
           const wVal = W[i * width + j];
-          if (Math.abs(wVal) < 0.01) continue; // skip near-zero weights for clarity
+          if (Math.abs(wVal) < 0.05) continue; // skip near-zero weights for clarity
 
           const srcId = nodeMap[`${srcCol},${i}`];
           const dstId = nodeMap[`${dstCol},${j}`];
@@ -218,7 +233,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
                 stroke: weightColor(wVal),
                 strokeWidth: weightWidth(wVal),
                 targetMarker: { type: "none" },
-                opacity: 0.65,
+                opacity: EDGE_OPACITY,
               },
             },
             z: -1, // behind nodes
@@ -258,7 +273,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
       if (!highlighted) {
         // Reset all
         if (cell.isLink()) {
-          cell.attr("line/opacity", 0.65);
+          cell.attr("line/opacity", EDGE_OPACITY);
           cell.attr("line/strokeWidth", weightWidth(cell.get("edgeKey")?.w ?? 0));
         } else {
           cell.attr("body/opacity", 1);
