@@ -63,6 +63,16 @@ function weightWidth(w) {
   return 0.5 + Math.min(4, Math.abs(w) * 4);
 }
 
+// Pick a contrasting label color (white or dark) for a given fill
+function contrastLabel(fill) {
+  if (!fill) return "#1E293B";
+  const m = fill.match(/(\d+)/g);
+  if (!m || m.length < 3) return "#1E293B";
+  const [r, g, b] = m.map(Number);
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+  return lum > 160 ? "#1E293B" : "#FFFFFF";
+}
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -143,7 +153,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
           strokeColor = isActive ? "#F0524D" : "#292C2D"; // --gray-900
           strokeW = isActive ? 3 : 3;
           strokeDash = "";
-          labelColor = "#fff";
+          labelColor = contrastLabel(fillColor);
         } else {
           // Hidden layers — solid circles colored by activation
           const layerIdx = col - 1;
@@ -152,7 +162,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
           strokeColor = isActive ? "#F0524D" : "#292C2D"; // --gray-900
           strokeW = isActive ? 2.5 : 1.5;
           strokeDash = "";
-          labelColor = "#fff";
+          labelColor = contrastLabel(fillColor);
         }
 
         const ellipse = new shapes.standard.Ellipse({
