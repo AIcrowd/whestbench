@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -185,13 +186,17 @@ def _start_dev_server(
                 print(line, end="")
                 if not browser_opened and "Local:" in line and "http" in line:
                     timer.cancel()
+                    # Parse actual URL from Vite output (port may differ if requested was busy)
+                    _m = re.search(r"(https?://\S+)", line)
                     browser_host = "localhost" if host == "0.0.0.0" else host
-                    url = f"http://{browser_host}:{port}"
+                    url = _m.group(1).rstrip("/") if _m else f"http://{browser_host}:{port}"
+                    _pm = re.search(r":(\d+)", url)
+                    actual_port = int(_pm.group(1)) if _pm else port
                     console.print(
                         f"\n[bold green]Network Explorer running at:[/] [link={url}]{url}[/]\n"
                     )
                     if should_open:
-                        _open_browser(host, port)
+                        _open_browser(host, actual_port)
                     browser_opened = True
         process.wait()
     finally:
