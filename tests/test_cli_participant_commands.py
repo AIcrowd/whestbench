@@ -251,7 +251,7 @@ def test_init_and_run_help_text_reference_examples_estimators_path() -> None:
 def test_main_uses_sys_argv_when_argv_is_none(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_run_default_report(*, profile: bool = False, detail: str = "raw") -> dict:
+    def fake_run_default_report(*, profile: bool = False, detail: str = "raw", progress=None) -> dict:
         return _sample_report()
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)

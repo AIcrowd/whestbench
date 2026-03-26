@@ -22,23 +22,23 @@ class NumPyBackend(SimulationBackend):
         return True
 
     def run_mlp(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
-        x = inputs
+        x = inputs.astype(np.float64)
         for w in mlp.weights:
-            x = np.maximum(x @ w, np.float32(0.0))
-        return x
+            x = np.maximum(x @ w.astype(np.float64), 0.0)
+        return x.astype(np.float32)
 
     def run_mlp_matmul_only(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
-        x = inputs
+        x = inputs.astype(np.float64)
         for w in mlp.weights:
-            x = x @ w
-        return x
+            x = x @ w.astype(np.float64)
+        return x.astype(np.float32)
 
     def run_mlp_all_layers(self, mlp: MLP, inputs: NDArray[np.float32]) -> List[NDArray[np.float32]]:
-        x = inputs
+        x = inputs.astype(np.float64)
         layers: List[NDArray[np.float32]] = []
         for w in mlp.weights:
-            x = np.maximum(x @ w, np.float32(0.0))
-            layers.append(x)
+            x = np.maximum(x @ w.astype(np.float64), 0.0)
+            layers.append(x.astype(np.float32))
         return layers
 
     def sample_layer_statistics(self, mlp: MLP, n_samples: int) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
@@ -50,11 +50,11 @@ class NumPyBackend(SimulationBackend):
         n_processed = 0
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
-            x = np.random.default_rng().standard_normal((n, width), dtype=np.float32)
+            x = np.random.default_rng().standard_normal((n, width)).astype(np.float64)
             for layer_idx, w in enumerate(mlp.weights):
-                x = np.maximum(x @ w, np.float32(0.0))
-                layer_sums[layer_idx] += x.sum(axis=0).astype(np.float64)
-            final_sum_sq += (x.astype(np.float64) ** 2).sum(axis=0)
+                x = np.maximum(x @ w.astype(np.float64), 0.0)
+                layer_sums[layer_idx] += x.sum(axis=0)
+            final_sum_sq += (x ** 2).sum(axis=0)
             n_processed += n
         layer_means = (layer_sums / n_processed).astype(np.float32)
         final_mean = layer_means[-1].copy()
