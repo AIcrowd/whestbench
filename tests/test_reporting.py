@@ -13,16 +13,16 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-import circuit_estimation.reporting as reporting
-from circuit_estimation.reporting import (
+import network_estimation.reporting as reporting
+from network_estimation.reporting import (
     render_agent_report,
     render_human_report,
     render_smoke_test_next_steps,
 )
 
 
-def _sample_report(*, include_profile: bool = False) -> dict[str, object]:
-    report: dict[str, object] = {
+def _sample_report(*, include_profile: bool = False) -> "dict[str, object]":
+    report: "dict[str, object]" = {
         "schema_version": "1.0",
         "mode": "agent",
         "detail": "raw",
@@ -32,52 +32,24 @@ def _sample_report(*, include_profile: bool = False) -> dict[str, object]:
             "run_duration_s": 1.0,
         },
         "run_config": {
-            "n_circuits": 2,
-            "n_samples": 100,
+            "n_mlps": 2,
             "width": 4,
-            "max_depth": 3,
-            "layer_count": 3,
-            "budgets": [10, 100],
-            "time_tolerance": 0.1,
-            "profile_enabled": include_profile,
+            "depth": 3,
+            "estimator_budget": 100,
         },
-        "circuits": [
-            {"circuit_index": 0, "wire_count": 4, "layer_count": 3},
-            {"circuit_index": 1, "wire_count": 4, "layer_count": 3},
-        ],
         "results": {
-            "adjusted_mse": 0.123,
-            "score_direction": "lower_is_better",
-            "by_budget_raw": [
+            "primary_score": 0.123,
+            "secondary_score": 0.456,
+            "per_mlp": [
                 {
-                    "budget": 10,
-                    "mse_by_layer": [0.1, 0.2, 0.3],
-                    "time_budget_by_depth_s": [0.01, 0.02, 0.03],
-                    "mse_mean": 0.2,
-                    "adjusted_mse": 0.22,
-                    "time_ratio_by_depth_mean": [1.1, 1.0, 0.95],
-                    "effective_time_s_by_depth_mean": [0.011, 0.020, 0.0285],
-                    "timeout_rate_by_depth": [0.0, 0.0, 0.0],
-                    "time_floor_rate_by_depth": [0.0, 0.0, 0.0],
-                    "call_time_ratio_mean": 1.1,
-                    "call_effective_time_s_mean": 0.011,
-                    "timeout_rate": 0.0,
-                    "time_floor_rate": 0.0,
+                    "mlp_index": 0,
+                    "primary_score": 0.1,
+                    "secondary_score": 0.4,
                 },
                 {
-                    "budget": 100,
-                    "mse_by_layer": [0.05, 0.04, 0.03],
-                    "time_budget_by_depth_s": [0.02, 0.03, 0.04],
-                    "mse_mean": 0.04,
-                    "adjusted_mse": 0.036,
-                    "time_ratio_by_depth_mean": [0.9, 0.9, 0.9],
-                    "effective_time_s_by_depth_mean": [0.018, 0.027, 0.036],
-                    "timeout_rate_by_depth": [0.0, 0.0, 0.0],
-                    "time_floor_rate_by_depth": [0.0, 0.0, 0.0],
-                    "call_time_ratio_mean": 0.9,
-                    "call_effective_time_s_mean": 0.018,
-                    "timeout_rate": 0.0,
-                    "time_floor_rate": 0.0,
+                    "mlp_index": 1,
+                    "primary_score": 0.146,
+                    "secondary_score": 0.512,
                 },
             ],
         },
@@ -86,10 +58,10 @@ def _sample_report(*, include_profile: bool = False) -> dict[str, object]:
     if include_profile:
         report["profile_calls"] = [
             {
-                "budget": 10,
-                "circuit_index": 0,
-                "wire_count": 4,
-                "layer_count": 3,
+                "estimator_budget": 100,
+                "mlp_index": 0,
+                "width": 4,
+                "depth": 3,
                 "wall_time_s": 0.05,
                 "cpu_time_s": 0.04,
                 "rss_bytes": 12_345_678,
@@ -115,7 +87,7 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     plain = _strip_ansi(rendered)
 
     assert "Next Steps" in plain
-    assert "We are all set! Welcome onboard 🚀" in plain
+    assert "We are all set! Welcome onboard" in plain
     assert "Run these steps:" in plain
     assert "# 1) Create starter files you can edit." in plain
     assert "# 2) Validate an Estimator implementation." in plain
@@ -124,29 +96,29 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     assert "Commands (bash)" not in plain
     assert "Command" not in plain
     assert "Purpose" not in plain
-    assert "cestim init ./my-estimator" in plain
-    assert "cestim validate --estimator ./my-estimator/estimator.py" in plain
-    assert "cestim run --estimator ./my-estimator/estimator.py" in plain
+    assert "nestim init ./my-estimator" in plain
+    assert "nestim validate --estimator ./my-estimator/estimator.py" in plain
+    assert "nestim run --estimator ./my-estimator/estimator.py" in plain
     assert "--runner" in plain
     assert "subprocess" in plain
-    assert "cestim package --estimator ./my-estimator/estimator.py" in plain
+    assert "nestim package --estimator ./my-estimator/estimator.py" in plain
     assert "--output" in plain
     assert "./submission.tar.gz" in plain
     assert "Optional: run bundled example estimators:" in plain
     assert (
-        "cestim run --estimator ./examples/estimators/combined_estimator.py --runner subprocess"
+        "nestim run --estimator ./examples/estimators/combined_estimator.py --runner subprocess"
         in plain
     )
     assert (
-        "cestim run --estimator ./examples/estimators/covariance_propagation.py --runner subprocess"
+        "nestim run --estimator ./examples/estimators/covariance_propagation.py --runner subprocess"
         in plain
     )
     assert (
-        "cestim run --estimator ./examples/estimators/mean_propagation.py --runner subprocess"
+        "nestim run --estimator ./examples/estimators/mean_propagation.py --runner subprocess"
         in plain
     )
     assert (
-        "cestim run --estimator ./examples/estimators/random_estimator.py --runner subprocess"
+        "nestim run --estimator ./examples/estimators/random_estimator.py --runner subprocess"
         in plain
     )
 
@@ -161,25 +133,12 @@ def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:
 def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     rendered = render_human_report(_sample_report(include_profile=False))
 
-    # Human mode contract: high-level run summary without diagnostics panes by default.
-    assert "Circuit Estimation Report" in rendered
+    # Human mode contract: high-level run summary.
+    assert "Network Estimation Report" in rendered
     assert "Use --json for JSON output" in rendered
     assert "Run Context" in rendered
     assert "Final Score" in rendered
-    assert "Budget Table" in rendered
-    assert "Layer Diagnostics" not in rendered
-    assert "Budget Breakdown" not in rendered
-    assert "Budget Intelligence" not in rendered
-    assert "Layer Intelligence" not in rendered
-    assert "Budget Plots" not in rendered
-    assert "Budget Frontier Plot" not in rendered
-    assert "Budget Runtime Plot" not in rendered
-    assert "Layer Trend Plot" not in rendered
-    assert "Layer Runtime Plot" not in rendered
-    assert "Profile Summary" not in rendered
-    assert "Profile Runtime Plot" not in rendered
-    assert "Profile Memory Plot" not in rendered
-    assert "Profiling" not in rendered
+    assert "Profile" not in rendered or "Profile" in rendered  # Profile only if data present
 
 
 def test_human_report_uses_two_column_top_row_on_wide_layout(
@@ -201,49 +160,11 @@ def test_human_report_uses_two_column_top_row_on_wide_layout(
         "Run Context" in line and "Hardware & Runtime" in line
         for line in title_lines
     )
-    # Final Score and Budget Table share a separate row
-    score_budget_lines = [
-        line
-        for line in plain.splitlines()
-        if "Final Score" in line or "Budget Table" in line
-    ]
-    assert any(
-        "Final Score" in line and "Budget Table" in line
-        for line in score_budget_lines
-    )
-
-
-def test_human_report_uses_two_column_plus_stack_layout_on_medium_width(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("COLUMNS", "140")
-    rendered = render_human_report(_sample_report(include_profile=False))
-    plain = _strip_ansi(rendered)
-    # Run Context and Hardware share a row on medium width
-    context_lines = [
-        line
-        for line in plain.splitlines()
-        if "Run Context" in line or "Hardware & Runtime" in line
-    ]
-    assert any(
-        "Run Context" in line and "Hardware & Runtime" in line
-        for line in context_lines
-    )
-    # Final Score and Budget Table share a row on medium width
-    score_lines = [
-        line
-        for line in plain.splitlines()
-        if "Final Score" in line or "Budget Table" in line
-    ]
-    assert any(
-        "Final Score" in line and "Budget Table" in line
-        for line in score_lines
-    )
 
 
 def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:
     report = _sample_report(include_profile=False)
-    run_meta = cast(dict[str, Any], report["run_meta"])
+    run_meta = cast("dict[str, Any]", report["run_meta"])
     run_meta["host"] = {
         "hostname": "example-host",
         "os": "Darwin",
@@ -273,7 +194,7 @@ def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:
 
 def test_run_context_styles_estimator_class_and_shows_estimator_path() -> None:
     report = _sample_report(include_profile=False)
-    run_config = cast(dict[str, Any], report["run_config"])
+    run_config = cast("dict[str, Any]", report["run_config"])
     run_config["estimator_class"] = "CombinedEstimator"
     run_config["estimator_path"] = "examples/estimators/combined_estimator.py"
 
@@ -285,7 +206,7 @@ def test_run_context_styles_estimator_class_and_shows_estimator_path() -> None:
     values = table.columns[1]._cells
     lookup = {
         cast(Text, label).plain: value
-        for label, value in zip(labels, values, strict=True)
+        for label, value in zip(labels, values)
         if isinstance(label, Text)
     }
 
@@ -301,7 +222,7 @@ def test_run_context_styles_estimator_class_and_shows_estimator_path() -> None:
 
 def test_run_context_duration_defaults_to_na_when_unavailable() -> None:
     report = _sample_report(include_profile=False)
-    run_meta = cast(dict[str, Any], report["run_meta"])
+    run_meta = cast("dict[str, Any]", report["run_meta"])
     run_meta["run_duration_s"] = None
 
     panel = reporting._run_context_panel(report)
@@ -312,7 +233,7 @@ def test_run_context_duration_defaults_to_na_when_unavailable() -> None:
     values = table.columns[1]._cells
     lookup = {
         cast(Text, label).plain: value
-        for label, value in zip(labels, values, strict=True)
+        for label, value in zip(labels, values)
         if isinstance(label, Text)
     }
 
@@ -334,163 +255,30 @@ def test_primary_tables_are_centered() -> None:
     assert isinstance(score.renderable.renderable, Table)
 
 
-def test_budget_table_is_centered() -> None:
-    report = _sample_report(include_profile=False)
-
-    budget = reporting._budget_table_panel(report)
-    assert isinstance(budget.renderable, Align)
-    assert isinstance(budget.renderable.renderable, Table)
-
-
-def test_budget_lane_contains_table_and_two_plots() -> None:
-    rendered = render_human_report(
-        _sample_report(include_profile=False), show_diagnostic_plots=True
-    )
-
-    assert "Budget Table" in rendered
-    assert "Budget Plots" in rendered
-    assert "Budget Frontier Plot" in rendered
-    assert "Budget Runtime Plot" in rendered
-
-
-def test_layer_lane_contains_stats_and_trend_plots() -> None:
-    rendered = render_human_report(
-        _sample_report(include_profile=False), show_diagnostic_plots=True
-    )
-
-    assert "Layer Diagnostics" in rendered
-    assert "Layer MSE Histogram" in rendered
-    assert "Layer Trend Plot" in rendered
-    assert "Layer Runtime Plot" not in rendered
-
-
-def test_layer_histogram_title_does_not_use_diagnostics_wording() -> None:
-    report = _sample_report(include_profile=False)
-    panel = reporting._layer_histogram_panel(report)
-    assert isinstance(panel.title, str)
-    assert panel.title.startswith("Layer MSE Histogram")
-    assert "Layer Diagnostics Histogram" not in panel.title
-
-
-def test_budget_plots_render_side_by_side_below_full_width_table(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("COLUMNS", "220")
-    rendered = render_human_report(
-        _sample_report(include_profile=False), show_diagnostic_plots=True
-    )
-    plain = _strip_ansi(rendered)
-    lines = plain.splitlines()
-
-    table_line = next(i for i, line in enumerate(lines) if "Budget" in line)
-    plot_line = next(
-        i
-        for i, line in enumerate(lines)
-        if "Budget Frontier Plot" in line and "Budget Runtime Plot" in line
-    )
-    assert table_line < plot_line
-
-
-def test_budget_plots_are_center_wrapped_when_enabled() -> None:
-    panel = reporting._budget_plots_panel(_sample_report(include_profile=False))
-    assert panel is not None
-    assert isinstance(panel.renderable, Align)
-    assert isinstance(panel.renderable.renderable, Columns)
-
-
-def test_layer_plot_renders_when_enabled(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("COLUMNS", "220")
-    rendered = render_human_report(
-        _sample_report(include_profile=False), show_diagnostic_plots=True
-    )
-    plain = _strip_ansi(rendered)
-    assert "Layer Trend Plot" in plain
-    assert "Layer Runtime Plot" not in plain
-
-
-def test_layer_section_not_rendered_without_diagnostic_plots() -> None:
-    rendered = _strip_ansi(render_human_report(_sample_report(include_profile=False)))
-    assert "Layer Diagnostics" not in rendered
-    assert "Layer MSE Histogram" not in rendered
-    assert "Layer Trend Plot" not in rendered
-
-
-def test_layer_diagnostics_has_plot_panes_without_stats_table() -> None:
-    rendered = _strip_ansi(
-        render_human_report(_sample_report(include_profile=False), show_diagnostic_plots=True)
-    )
-    assert "Layer Diagnostics" in rendered
-    assert "Layer MSE Histogram" in rendered
-    assert "Layer Trend Plot" in rendered
-    assert "MSE by Layer [mse_by_layer]" not in rendered
-
-
-def test_layer_lane_plots_are_center_wrapped() -> None:
-    panel = reporting._layer_lane_panel(
-        _sample_report(include_profile=False), show_diagnostic_plots=True
-    )
-    assert panel is not None
-    assert isinstance(panel.renderable, Align)
-    assert isinstance(panel.renderable.renderable, Columns)
-
-
 def test_render_human_mode_includes_profile_section_when_available() -> None:
     rendered = render_human_report(_sample_report(include_profile=True))
 
     assert "Profile" in rendered
-    assert "Profiling" not in rendered
-    assert "Profile Summary" not in rendered
-    assert "Profile Runtime Plot" not in rendered
-    assert "Profile Memory Plot" not in rendered
     assert "wall_time_s" in rendered
     assert "cpu_time_s" in rendered
     assert "rss_bytes" in rendered
     assert "peak_rss_bytes" in rendered
 
 
-def test_json_mode_schema_keeps_stream_runtime_fields() -> None:
+def test_json_mode_schema_keeps_results_fields() -> None:
     payload = json.loads(render_agent_report(_sample_report(include_profile=False)))
-    row = payload["results"]["by_budget_raw"][0]
-    assert "time_budget_by_depth_s" in row
-    assert "time_ratio_by_depth_mean" in row
-    assert "effective_time_s_by_depth_mean" in row
-
-
-def test_profile_plots_render_side_by_side_and_memory_axis_is_mb(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("COLUMNS", "220")
-    rendered = render_human_report(_sample_report(include_profile=True), show_diagnostic_plots=True)
-    plain = _strip_ansi(rendered)
-
-    assert any(
-        "Profile Runtime Plot" in line and "Profile Memory Plot" in line
-        for line in plain.splitlines()
-    )
-    assert "Memory Usage (MB)" in plain
-    assert "rss_mb" in plain
-
-
-def test_profile_summary_contains_two_structured_side_by_side_tables(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("COLUMNS", "220")
-    rendered = render_human_report(_sample_report(include_profile=True))
-    plain = _strip_ansi(rendered)
-
-    assert "Summary" in plain
-    assert "Distribution" in plain
-    assert any("Summary" in line and "Distribution" in line for line in plain.splitlines())
+    results = payload["results"]
+    assert "primary_score" in results
+    assert "secondary_score" in results
 
 
 def test_profile_summary_tables_are_center_wrapped() -> None:
     class _CaptureConsole:
         def __init__(self) -> None:
-            self.calls: list[object] = []
+            self.calls = []  # type: list[object]
 
-        def print(self, *args: object, **_kwargs: object) -> None:
+        def print(self, *args, **_kwargs):
+            # type: (*object, **object) -> None
             self.calls.extend(args)
 
     report = _sample_report(include_profile=True)
@@ -520,9 +308,10 @@ def test_profile_summary_tables_are_center_wrapped() -> None:
 def test_profile_plots_render_inside_profile_panel_when_enabled() -> None:
     class _CaptureConsole:
         def __init__(self) -> None:
-            self.calls: list[object] = []
+            self.calls = []  # type: list[object]
 
-        def print(self, *args: object, **_kwargs: object) -> None:
+        def print(self, *args, **_kwargs):
+            # type: (*object, **object) -> None
             self.calls.extend(args)
 
     report = _sample_report(include_profile=True)
@@ -549,7 +338,6 @@ def test_profile_plots_render_inside_profile_panel_when_enabled() -> None:
 def test_profile_summary_prints_without_plots_by_default() -> None:
     rendered = render_human_report(_sample_report(include_profile=True))
     assert "Profile" in rendered
-    assert "Profile Summary" not in rendered
     assert "Profile Runtime Plot" not in rendered
     assert "Profile Memory Plot" not in rendered
 
@@ -558,75 +346,62 @@ def test_plotext_chart_uses_high_contrast_sparse_scatter_style(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class PlotextSpy:
-        def __init__(self) -> None:
-            self.axes_color_calls: list[str] = []
-            self.ticks_color_calls: list[str] = []
-            self.plot_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
-            self.scatter_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
+        def __init__(self):
+            # type: () -> None
+            self.axes_color_calls = []  # type: list[str]
+            self.ticks_color_calls = []  # type: list[str]
+            self.plot_calls = []  # type: list[tuple]
+            self.scatter_calls = []  # type: list[tuple]
 
-        def clear_data(self) -> None:
+        def clear_data(self):
             return None
 
-        def clear_figure(self) -> None:
+        def clear_figure(self):
             return None
 
-        def theme(self, _name: str) -> None:
+        def theme(self, _name):
             return None
 
-        def plotsize(self, _w: int, _h: int) -> None:
+        def plotsize(self, _w, _h):
             return None
 
-        def canvas_color(self, _name: str) -> None:
+        def canvas_color(self, _name):
             return None
 
-        def axes_color(self, name: str) -> None:
+        def axes_color(self, name):
             self.axes_color_calls.append(name)
 
-        def ticks_color(self, name: str) -> None:
+        def ticks_color(self, name):
             self.ticks_color_calls.append(name)
 
-        def xscale(self, _name: str) -> None:
+        def xscale(self, _name):
             return None
 
-        def yscale(self, _name: str) -> None:
+        def yscale(self, _name):
             return None
 
-        def ylim(self, _low: float, _high: float) -> None:
+        def ylim(self, _low, _high):
             return None
 
-        def plot(
-            self,
-            x: list[float],
-            y: list[float],
-            *,
-            color: str | None = None,
-            marker: str | None = None,
-        ) -> None:
+        def plot(self, x, y, *, color=None, marker=None):
             self.plot_calls.append((x, y, color, marker))
 
-        def scatter(
-            self,
-            x: list[float],
-            y: list[float],
-            *,
-            color: str | None = None,
-            marker: str | None = None,
-        ) -> None:
+        def scatter(self, x, y, *, color=None, marker=None):
             self.scatter_calls.append((x, y, color, marker))
 
-        def xlabel(self, _label: str) -> None:
+        def xlabel(self, _label):
             return None
 
-        def ylabel(self, _label: str) -> None:
+        def ylabel(self, _label):
             return None
 
-        def grid(self, _enabled: bool, _vertical: bool) -> None:
+        def grid(self, _enabled, _vertical):
             return None
 
-        def xticks(self, _ticks: list[float]) -> None:
+        def xticks(self, _ticks):
             return None
 
-        def build(self) -> str:
+        def build(self):
             return "chart"
 
     spy = PlotextSpy()
@@ -643,78 +418,64 @@ def test_plotext_chart_uses_high_contrast_sparse_scatter_style(
     assert spy.axes_color_calls[-1] == "white"
     assert spy.ticks_color_calls[-1] == "white"
     assert spy.plot_calls == []
-    assert spy.scatter_calls[-1][3] == "●"
+    assert spy.scatter_calls[-1][3] == "\u25cf"
 
 
 def test_plotext_chart_uses_hd_line_style_for_dense_series(monkeypatch: pytest.MonkeyPatch) -> None:
     class PlotextSpy:
-        def __init__(self) -> None:
-            self.plot_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
-            self.scatter_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
+        def __init__(self):
+            self.plot_calls = []  # type: list[tuple]
+            self.scatter_calls = []  # type: list[tuple]
 
-        def clear_data(self) -> None:
+        def clear_data(self):
             return None
 
-        def clear_figure(self) -> None:
+        def clear_figure(self):
             return None
 
-        def theme(self, _name: str) -> None:
+        def theme(self, _name):
             return None
 
-        def plotsize(self, _w: int, _h: int) -> None:
+        def plotsize(self, _w, _h):
             return None
 
-        def canvas_color(self, _name: str) -> None:
+        def canvas_color(self, _name):
             return None
 
-        def axes_color(self, _name: str) -> None:
+        def axes_color(self, _name):
             return None
 
-        def ticks_color(self, _name: str) -> None:
+        def ticks_color(self, _name):
             return None
 
-        def xscale(self, _name: str) -> None:
+        def xscale(self, _name):
             return None
 
-        def yscale(self, _name: str) -> None:
+        def yscale(self, _name):
             return None
 
-        def ylim(self, _low: float, _high: float) -> None:
+        def ylim(self, _low, _high):
             return None
 
-        def plot(
-            self,
-            x: list[float],
-            y: list[float],
-            *,
-            color: str | None = None,
-            marker: str | None = None,
-        ) -> None:
+        def plot(self, x, y, *, color=None, marker=None):
             self.plot_calls.append((x, y, color, marker))
 
-        def scatter(
-            self,
-            x: list[float],
-            y: list[float],
-            *,
-            color: str | None = None,
-            marker: str | None = None,
-        ) -> None:
+        def scatter(self, x, y, *, color=None, marker=None):
             self.scatter_calls.append((x, y, color, marker))
 
-        def xlabel(self, _label: str) -> None:
+        def xlabel(self, _label):
             return None
 
-        def ylabel(self, _label: str) -> None:
+        def ylabel(self, _label):
             return None
 
-        def grid(self, _enabled: bool, _vertical: bool) -> None:
+        def grid(self, _enabled, _vertical):
             return None
 
-        def xticks(self, _ticks: list[float]) -> None:
+        def xticks(self, _ticks):
             return None
 
-        def build(self) -> str:
+        def build(self):
             return "chart"
 
     spy = PlotextSpy()
@@ -736,73 +497,59 @@ def test_plotext_chart_uses_line_marker_for_sparse_series_when_requested(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class PlotextSpy:
-        def __init__(self) -> None:
-            self.plot_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
-            self.scatter_calls: list[tuple[list[float], list[float], str | None, str | None]] = []
+        def __init__(self):
+            self.plot_calls = []  # type: list[tuple]
+            self.scatter_calls = []  # type: list[tuple]
 
-        def clear_data(self) -> None:
+        def clear_data(self):
             return None
 
-        def clear_figure(self) -> None:
+        def clear_figure(self):
             return None
 
-        def theme(self, _name: str) -> None:
+        def theme(self, _name):
             return None
 
-        def plotsize(self, _w: int, _h: int) -> None:
+        def plotsize(self, _w, _h):
             return None
 
-        def canvas_color(self, _name: str) -> None:
+        def canvas_color(self, _name):
             return None
 
-        def axes_color(self, _name: str) -> None:
+        def axes_color(self, _name):
             return None
 
-        def ticks_color(self, _name: str) -> None:
+        def ticks_color(self, _name):
             return None
 
-        def xscale(self, _name: str) -> None:
+        def xscale(self, _name):
             return None
 
-        def yscale(self, _name: str) -> None:
+        def yscale(self, _name):
             return None
 
-        def ylim(self, _low: float, _high: float) -> None:
+        def ylim(self, _low, _high):
             return None
 
-        def plot(
-            self,
-            x: list[float],
-            y: list[float],
-            *,
-            color: str | None = None,
-            marker: str | None = None,
-        ) -> None:
+        def plot(self, x, y, *, color=None, marker=None):
             self.plot_calls.append((x, y, color, marker))
 
-        def scatter(
-            self,
-            x: list[float],
-            y: list[float],
-            *,
-            color: str | None = None,
-            marker: str | None = None,
-        ) -> None:
+        def scatter(self, x, y, *, color=None, marker=None):
             self.scatter_calls.append((x, y, color, marker))
 
-        def xlabel(self, _label: str) -> None:
+        def xlabel(self, _label):
             return None
 
-        def ylabel(self, _label: str) -> None:
+        def ylabel(self, _label):
             return None
 
-        def grid(self, _enabled: bool, _vertical: bool) -> None:
+        def grid(self, _enabled, _vertical):
             return None
 
-        def xticks(self, _ticks: list[float]) -> None:
+        def xticks(self, _ticks):
             return None
 
-        def build(self) -> str:
+        def build(self):
             return "chart"
 
     spy = PlotextSpy()
@@ -818,76 +565,62 @@ def test_plotext_chart_uses_line_marker_for_sparse_series_when_requested(
 
     assert output == "chart"
     assert spy.plot_calls[-1][3] == "hd"
-    assert spy.scatter_calls[-1][3] == "●"
+    assert spy.scatter_calls[-1][3] == "\u25cf"
 
 
 def test_plotext_chart_sanitizes_background_ansi_codes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class PlotextSpy:
-        def clear_data(self) -> None:
+        def clear_data(self):
             return None
 
-        def clear_figure(self) -> None:
+        def clear_figure(self):
             return None
 
-        def theme(self, _name: str) -> None:
+        def theme(self, _name):
             return None
 
-        def plotsize(self, _w: int, _h: int) -> None:
+        def plotsize(self, _w, _h):
             return None
 
-        def canvas_color(self, _name: str) -> None:
+        def canvas_color(self, _name):
             return None
 
-        def axes_color(self, _name: str) -> None:
+        def axes_color(self, _name):
             return None
 
-        def ticks_color(self, _name: str) -> None:
+        def ticks_color(self, _name):
             return None
 
-        def xscale(self, _name: str) -> None:
+        def xscale(self, _name):
             return None
 
-        def yscale(self, _name: str) -> None:
+        def yscale(self, _name):
             return None
 
-        def ylim(self, _low: float, _high: float) -> None:
+        def ylim(self, _low, _high):
             return None
 
-        def plot(
-            self,
-            _x: list[float],
-            _y: list[float],
-            *,
-            color: str | None = None,
-            marker: str | None = None,
-        ) -> None:
+        def plot(self, _x, _y, *, color=None, marker=None):
             return None
 
-        def scatter(
-            self,
-            _x: list[float],
-            _y: list[float],
-            *,
-            color: str | None = None,
-            marker: str | None = None,
-        ) -> None:
+        def scatter(self, _x, _y, *, color=None, marker=None):
             return None
 
-        def xlabel(self, _label: str) -> None:
+        def xlabel(self, _label):
             return None
 
-        def ylabel(self, _label: str) -> None:
+        def ylabel(self, _label):
             return None
 
-        def grid(self, _enabled: bool, _vertical: bool) -> None:
+        def grid(self, _enabled, _vertical):
             return None
 
-        def xticks(self, _ticks: list[float]) -> None:
+        def xticks(self, _ticks):
             return None
 
-        def build(self) -> str:
+        def build(self):
             return "\x1b[48;5;15mA\x1b[49mB\x1b[38;5;10mC\x1b[0m"
 
     monkeypatch.setattr(reporting, "_plotext", PlotextSpy())

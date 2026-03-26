@@ -6,7 +6,7 @@ Use this page when you need exact estimator I/O requirements.
 
 ## Required interface
 
-`predict(self, circuit: Circuit, budget: int) -> Iterator[NDArray[np.float32]]`
+`predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]`
 
 Optional lifecycle hooks:
 
@@ -17,10 +17,9 @@ Optional lifecycle hooks:
 
 | Field | Type | Description |
 |---|---|---|
-| `width` | `int` | Wire count for generated circuits |
-| `max_depth` | `int` | Number of layers per circuit |
-| `budgets` | `tuple[int, ...]` | Sampling budgets used during evaluation |
-| `time_tolerance` | `float` | Relative slack for timeout/floor semantics |
+| `width` | `int` | Neuron count for generated MLPs |
+| `depth` | `int` | Number of layers per MLP |
+| `estimator_budget` | `int` | Sampling budget for the estimator |
 | `api_version` | `str` | Contract version string |
 | `scratch_dir` | `str \| None` | Optional writable directory for caching |
 
@@ -28,31 +27,24 @@ Optional lifecycle hooks:
 
 | Object | Field | Meaning |
 |---|---|---|
-| `Circuit` | `n` | Number of wires per layer |
-| `Circuit` | `d` | Number of transition layers |
-| `Circuit` | `gates` | Ordered `Layer` list of length `d` |
-| `Circuit` | `to_vectorized()` | Packed depth-major tensors for fast traversal |
-| `Layer` | `first`, `second` | Parent wire indices per output wire |
-| `Layer` | `first_coeff`, `second_coeff`, `const`, `product_coeff` | Per-wire gate coefficients |
+| `MLP` | `width` | Number of neurons per layer |
+| `MLP` | `depth` | Number of weight matrices (layers) |
+| `MLP` | `weights` | Ordered weight matrices, each `(width, width)` |
 
-For traversal examples, see [Inspect and Traverse Circuit Structure](../how-to/inspect-circuit-structure.md).
+For traversal examples, see [Inspect and Traverse MLP Structure](../how-to/inspect-mlp-structure.md).
 
 ## Output requirements per `predict` call
 
 | Requirement | Rule |
 |---|---|
-| Row count | Emit exactly `circuit.d` rows |
-| Row shape | Each row is 1D with shape `(circuit.n,)` |
+| Shape | Return a 2D array with shape `(mlp.depth, mlp.width)` |
 | Numeric validity | Every value is finite |
-| Emission style | Stream rows incrementally with `yield` |
-
-Returning one final `(depth, width)` tensor is invalid.
 
 ## Failure semantics
 
-When validation fails (wrong row shape, too few rows, non-finite values, non-iterable output), the affected prediction is treated as a **zero-filled row**. The scoring loop continues and produces a valid report — errors are reflected as increased MSE rather than hard failures.
+When validation fails (wrong shape, non-finite values), the affected prediction is treated as a **zero-filled row**. The scoring loop continues and produces a valid report -- errors are reflected as increased MSE rather than hard failures.
 
-## ➡️ Next step
+## Next step
 
 - [Write an Estimator](../how-to/write-an-estimator.md)
 - [Common Participant Errors](../troubleshooting/common-participant-errors.md)

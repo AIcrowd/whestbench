@@ -228,3 +228,21 @@ internal codex config/
 .roo/
 .windsurf/
 internal docs/sanitization/public-sync-state.local.env
+
+# Cloud profiling infrastructure
+profiling/results/*
+!profiling/results/.gitkeep
+profiling/.infra-config.json
+profiling/.lib-cache/
+
+.superpowers
+
+# Local debug/profiling output
+local-*.html
+local-*.json
+
+# Generated Cython C files
+src/network_estimation/_cython_kernels.c
+
+# Agent-generated plans
+docs/superpowers/

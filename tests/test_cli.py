@@ -5,12 +5,12 @@ from typing import Any
 
 import pytest
 
-import circuit_estimation.cli as cli
-from circuit_estimation.runner import RunnerError, RunnerErrorDetail
+import network_estimation.cli as cli
+from network_estimation.runner import RunnerError, RunnerErrorDetail
 
 
-def _sample_report(*, profile_enabled: bool, detail: str) -> dict[str, Any]:
-    report: dict[str, Any] = {
+def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
+    report: dict = {
         "schema_version": "1.0",
         "mode": "human",
         "detail": detail,
@@ -20,30 +20,23 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict[str, Any]:
             "run_duration_s": 1.0,
         },
         "run_config": {
-            "n_circuits": 1,
-            "n_samples": 10,
+            "n_mlps": 1,
             "width": 4,
-            "max_depth": 3,
-            "layer_count": 3,
-            "budgets": [10],
-            "time_tolerance": 0.1,
+            "depth": 3,
+            "estimator_budget": 40000,
             "profile_enabled": profile_enabled,
         },
-        "circuits": [{"circuit_index": 0, "wire_count": 4, "layer_count": 3}],
         "results": {
-            "adjusted_mse": 0.42,
-            "score_direction": "lower_is_better",
-            "by_budget_raw": [],
+            "primary_score": 0.42,
+            "secondary_score": 0.55,
+            "per_mlp": [],
         },
         "notes": [],
     }
     if profile_enabled:
         report["profile_calls"] = [
             {
-                "budget": 10,
-                "circuit_index": 0,
-                "wire_count": 4,
-                "layer_count": 3,
+                "mlp_index": 0,
                 "wall_time_s": 0.01,
                 "cpu_time_s": 0.01,
                 "rss_bytes": 123,
@@ -56,15 +49,15 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict[str, Any]:
 def test_smoke_test_renders_human_report_by_default(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    observed: dict[str, Any] = {}
-    render_observed: dict[str, Any] = {}
+    observed: dict = {}
+    render_observed: dict = {}
 
-    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
-        observed["profile"] = kwargs.get("profile")
-        observed["detail"] = kwargs.get("detail")
-        return _sample_report(profile_enabled=False, detail=str(kwargs.get("detail", "raw")))
+    def fake_run_default_report(*, profile: bool = False, detail: str = "raw") -> dict:
+        observed["profile"] = profile
+        observed["detail"] = detail
+        return _sample_report(profile_enabled=False, detail=detail)
 
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
     monkeypatch.setattr(
         cli,
         "render_agent_report",
@@ -91,18 +84,18 @@ def test_smoke_test_renders_human_report_by_default(
 def test_smoke_test_show_diagnostic_plots_flag_is_forwarded(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    observed: dict[str, Any] = {}
-    render_observed: dict[str, Any] = {}
+    observed: dict = {}
+    render_observed: dict = {}
 
-    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
-        observed["profile"] = kwargs.get("profile")
-        observed["detail"] = kwargs.get("detail")
-        return _sample_report(profile_enabled=False, detail=str(kwargs.get("detail", "raw")))
+    def fake_run_default_report(*, profile: bool = False, detail: str = "raw") -> dict:
+        observed["profile"] = profile
+        observed["detail"] = detail
+        return _sample_report(profile_enabled=False, detail=detail)
 
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
 
     def fake_render_human_report(
-        _report: dict[str, Any], *, show_diagnostic_plots: bool = False
+        _report: dict, *, show_diagnostic_plots: bool = False
     ) -> str:
         render_observed["show_diagnostic_plots"] = show_diagnostic_plots
         return "human\n"
@@ -126,16 +119,14 @@ def test_smoke_test_show_diagnostic_plots_flag_is_forwarded(
 def test_smoke_test_profile_and_detail_flags_are_forwarded(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    observed: dict[str, Any] = {}
+    observed: dict = {}
 
-    monkeypatch.setattr(
-        cli,
-        "score_estimator_report",
-        lambda *_args, **kwargs: (
-            observed.update({"profile": kwargs.get("profile"), "detail": kwargs.get("detail")})
-            or _sample_report(profile_enabled=True, detail=str(kwargs.get("detail", "raw")))
-        ),
-    )
+    def fake_run_default_report(*, profile: bool = False, detail: str = "raw") -> dict:
+        observed["profile"] = profile
+        observed["detail"] = detail
+        return _sample_report(profile_enabled=True, detail=detail)
+
+    monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
     monkeypatch.setattr(
         cli,
         "render_human_report",
@@ -154,13 +145,10 @@ def test_smoke_test_profile_and_detail_flags_are_forwarded(
 def test_smoke_test_prints_next_steps(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(
-        cli,
-        "score_estimator_report",
-        lambda *_args, **kwargs: _sample_report(
-            profile_enabled=False, detail=str(kwargs["detail"])
-        ),
-    )
+    def fake_run_default_report(*, profile: bool = False, detail: str = "raw") -> dict:
+        return _sample_report(profile_enabled=False, detail=detail)
+
+    monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
     monkeypatch.setattr(
         cli,
         "render_human_report",
@@ -172,20 +160,20 @@ def test_smoke_test_prints_next_steps(
 
     assert exit_code == 0
     assert "Next Steps" in captured.out
-    assert "cestim" in captured.out
+    assert "nestim" in captured.out
     assert "init" in captured.out
     assert "./my-estimator" in captured.out
     assert "run" in captured.out
     assert "--estimator" in captured.out
 
 
-def test_smoke_test_human_mode_surfaces_stream_contract_errors_readably(
+def test_smoke_test_human_mode_surfaces_validation_errors_readably(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_score_estimator_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
-        raise ValueError("Estimator emitted more than max_depth rows.")
+    def fake_run_default_report(*, profile: bool = False, detail: str = "raw") -> dict:
+        raise ValueError("Predictions must have shape (2, 4), got (1, 4).")
 
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
     monkeypatch.setattr(
         cli,
         "render_human_report",
@@ -196,8 +184,8 @@ def test_smoke_test_human_mode_surfaces_stream_contract_errors_readably(
     captured = capsys.readouterr()
 
     assert exit_code == 1
-    assert "Error [smoke-test:ESTIMATOR_STREAM_TOO_MANY_ROWS]" in captured.out
-    assert "Estimator emitted more than max_depth rows." in captured.out
+    assert "Error [smoke-test:ESTIMATOR_BAD_SHAPE]" in captured.out
+    assert "Predictions must have shape" in captured.out
     assert "Use --debug to include a traceback." in captured.out
     assert "Traceback" not in captured.out
     assert captured.err == ""
@@ -206,10 +194,10 @@ def test_smoke_test_human_mode_surfaces_stream_contract_errors_readably(
 def test_smoke_test_debug_includes_traceback_field(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_score_estimator_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+    def fake_run_default_report(*, profile: bool = False, detail: str = "raw") -> dict:
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
 
     exit_code = cli.main(["smoke-test", "--debug"])
     captured = capsys.readouterr()
@@ -222,7 +210,7 @@ def test_smoke_test_debug_includes_traceback_field(
 def test_run_subprocess_error_includes_inprocess_debug_hint(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fail_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+    def fail_run(*_args: Any, **_kwargs: Any) -> dict:
         raise RunnerError(
             "setup",
             RunnerErrorDetail(code="SETUP_ERROR", message="runner failed"),
@@ -234,7 +222,7 @@ def test_run_subprocess_error_includes_inprocess_debug_hint(
         lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
         raising=False,
     )
-    monkeypatch.setattr(cli, "score_estimator_report", fail_report)
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fail_run)
 
     exit_code = cli.main(["run", "--estimator", "estimator.py"])
     captured = capsys.readouterr()
@@ -248,7 +236,7 @@ def test_run_subprocess_error_includes_inprocess_debug_hint(
 def test_run_inprocess_error_omits_inprocess_debug_hint(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fail_report(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+    def fail_run(*_args: Any, **_kwargs: Any) -> dict:
         raise RunnerError(
             "setup",
             RunnerErrorDetail(code="SETUP_ERROR", message="runner failed"),
@@ -260,7 +248,7 @@ def test_run_inprocess_error_omits_inprocess_debug_hint(
         lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
         raising=False,
     )
-    monkeypatch.setattr(cli, "score_estimator_report", fail_report)
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fail_run)
 
     exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
     captured = capsys.readouterr()
@@ -274,7 +262,7 @@ def test_run_inprocess_error_omits_inprocess_debug_hint(
 def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    observed: dict[str, Any] = {}
+    observed: dict = {}
 
     monkeypatch.setattr(
         cli,
@@ -285,23 +273,23 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     monkeypatch.setattr(cli, "rich_tqdm", object(), raising=False)
 
     @contextmanager
-    def fake_live_session(pre_report: dict[str, Any], total: int, n_circuits: int, n_budgets: int):
+    def fake_live_session(pre_report: dict, total: int, n_mlps: int):
         observed["initial_finished"] = pre_report["run_meta"]["run_finished_at_utc"]
         observed["initial_duration"] = pre_report["run_meta"]["run_duration_s"]
         observed["total"] = total
 
         class Session:
-            def on_progress(self, event: dict[str, int]) -> None:
+            def on_progress(self, event: dict) -> None:
                 observed["progress_event"] = event
 
-            def update_run_meta(self, run_meta: dict[str, Any]) -> None:
+            def update_run_meta(self, run_meta: dict) -> None:
                 observed["final_meta"] = run_meta
 
         yield Session()
 
     monkeypatch.setattr(cli, "_live_top_pane_session", fake_live_session, raising=False)
 
-    def fake_score_estimator_report(*_args: Any, **kwargs: Any) -> dict[str, Any]:
+    def fake_run_estimator_with_runner(*_args: Any, **kwargs: Any) -> dict:
         progress_cb = kwargs.get("progress")
         assert callable(progress_cb)
         progress_cb({"completed": 1})
@@ -312,7 +300,7 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
         run_meta["run_duration_s"] = 3.0
         return report
 
-    monkeypatch.setattr(cli, "score_estimator_report", fake_score_estimator_report)
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run_estimator_with_runner)
     monkeypatch.setattr(
         cli, "render_human_results", lambda _report, *, show_diagnostic_plots=False: "results\n"
     )
@@ -324,7 +312,7 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     assert "results" in captured.out
     assert observed["initial_finished"] == "n/a"
     assert observed["initial_duration"] is None
-    assert observed["total"] == 4 * 10
+    assert observed["total"] == 10
     assert observed["progress_event"] == {"completed": 1}
     assert observed["final_meta"]["run_finished_at_utc"] == "2026-03-01T00:00:03+00:00"
     assert observed["final_meta"]["run_duration_s"] == 3.0

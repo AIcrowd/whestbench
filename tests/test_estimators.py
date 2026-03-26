@@ -1,167 +1,67 @@
 import numpy as np
 
-from circuit_estimation.estimators import (
+from network_estimation.estimators import (
     BaseEstimator,
     CombinedEstimator,
     CovariancePropagationEstimator,
     MeanPropagationEstimator,
 )
-from circuit_estimation.generation import random_circuit
-from tests.helpers import exhaustive_means, make_circuit, make_layer
+from network_estimation.generation import sample_mlp
 
 
-def test_mean_propagation_exact_for_linear_circuit() -> None:
-    layer1 = make_layer(
-        first=[0, 1, 2],
-        second=[1, 2, 0],
-        first_coeff=[1.0, -1.0, 0.5],
-        second_coeff=[0.5, 0.25, -0.5],
-        const=[0.0, 0.0, 0.0],
-        product_coeff=[0.0, 0.0, 0.0],
-    )
-    layer2 = make_layer(
-        first=[2, 0, 1],
-        second=[1, 2, 0],
-        first_coeff=[1.0, 0.5, -1.0],
-        second_coeff=[0.0, -0.5, 0.25],
-        const=[0.0, 0.0, 0.0],
-        product_coeff=[0.0, 0.0, 0.0],
-    )
-    circuit = make_circuit(3, [layer1, layer2])
-
+def test_mean_propagation_returns_correct_shape() -> None:
+    mlp = sample_mlp(width=4, depth=3, rng=np.random.default_rng(42))
     estimator = MeanPropagationEstimator()
-    predicted = np.array(list(estimator.predict(circuit, budget=10)), dtype=np.float32)
-    expected = exhaustive_means(circuit)
+    predicted = estimator.predict(mlp, budget=10)
 
-    assert predicted.shape == (len(expected), circuit.n)
-    for pred, exact in zip(predicted, expected, strict=True):
-        np.testing.assert_allclose(pred, exact, atol=1e-6)
+    assert predicted.shape == (mlp.depth, mlp.width)
+    assert predicted.dtype == np.float32
 
 
-def test_one_v_two_covariance_matches_manual_formula() -> None:
-    a = np.array([0, 2], dtype=np.int32)
-    b = np.array([1, 0], dtype=np.int32)
-    c = np.array([2, 1], dtype=np.int32)
-    x_mean = np.array([0.1, -0.3, 0.4], dtype=np.float32)
-    x_cov = np.array(
-        [
-            [0.2, -0.1, 0.05],
-            [-0.1, 0.5, 0.2],
-            [0.05, 0.2, 0.8],
-        ],
-        dtype=np.float32,
-    )
-
-    observed = CovariancePropagationEstimator._one_v_two_covariance(a, b, c, x_cov, x_mean)
-
-    expected = np.zeros((len(a), len(b)), dtype=np.float32)
-    for i in range(len(a)):
-        for j in range(len(b)):
-            expected[i, j] = x_mean[b[j]] * x_cov[a[i], c[j]] + x_mean[c[j]] * x_cov[a[i], b[j]]
-    np.testing.assert_allclose(observed, expected)
-
-
-def test_two_v_two_covariance_matches_manual_formula() -> None:
-    a = np.array([0, 1], dtype=np.int32)
-    b = np.array([2, 0], dtype=np.int32)
-    c = np.array([1, 2], dtype=np.int32)
-    d = np.array([0, 1], dtype=np.int32)
-    mean = np.array([0.2, -0.1, 0.3], dtype=np.float32)
-    cov = np.array(
-        [
-            [0.5, 0.1, -0.2],
-            [0.1, 0.4, 0.05],
-            [-0.2, 0.05, 0.7],
-        ],
-        dtype=np.float32,
-    )
-
-    observed = CovariancePropagationEstimator._two_v_two_covariance(a, b, c, d, cov, mean)
-
-    expected = np.zeros((len(a), len(c)), dtype=np.float32)
-    for i in range(len(a)):
-        for j in range(len(c)):
-            mu_a = mean[a[i]]
-            mu_b = mean[b[i]]
-            mu_c = mean[c[j]]
-            mu_d = mean[d[j]]
-            expected[i, j] = (
-                (mu_a * mu_c) * cov[b[i], d[j]]
-                + (mu_a * mu_d) * cov[b[i], c[j]]
-                + (mu_b * mu_c) * cov[a[i], d[j]]
-                + (mu_b * mu_d) * cov[a[i], c[j]]
-            )
-    np.testing.assert_allclose(observed, expected)
-
-
-def test_clip_limits_mean_and_covariance() -> None:
-    mean = np.array([2.0, -2.0, 0.5], dtype=np.float32)
-    cov = np.array(
-        [
-            [5.0, 4.0, -4.0],
-            [4.0, 5.0, 4.0],
-            [-4.0, 4.0, 5.0],
-        ],
-        dtype=np.float32,
-    )
-
-    CovariancePropagationEstimator._clip_moments(mean, cov)
-
-    assert np.all(mean <= 1.0)
-    assert np.all(mean >= -1.0)
-    np.testing.assert_allclose(np.diag(cov), 1.0 - mean * mean)
-
-    std = np.sqrt(np.clip(1.0 - mean * mean, 0.0, None))
-    limit = np.outer(std, std)
-    assert np.all(cov <= limit + 1e-6)
-    assert np.all(cov >= -limit - 1e-6)
-
-
-def test_covariance_propagation_depth_one_matches_exhaustive_mean() -> None:
-    rng = np.random.default_rng(11)
-    circuit = random_circuit(n=4, d=1, rng=rng)
-
+def test_covariance_propagation_returns_correct_shape() -> None:
+    mlp = sample_mlp(width=4, depth=3, rng=np.random.default_rng(42))
     estimator = CovariancePropagationEstimator()
-    predicted = np.array(list(estimator.predict(circuit, budget=1000)), dtype=np.float32)
-    expected = exhaustive_means(circuit)
+    predicted = estimator.predict(mlp, budget=1000)
 
-    assert predicted.shape == (1, circuit.n)
-    np.testing.assert_allclose(predicted[0], expected[0], atol=1e-5)
+    assert predicted.shape == (mlp.depth, mlp.width)
+    assert predicted.dtype == np.float32
+
+
+def test_mean_propagation_produces_finite_values() -> None:
+    mlp = sample_mlp(width=8, depth=4, rng=np.random.default_rng(7))
+    estimator = MeanPropagationEstimator()
+    predicted = estimator.predict(mlp, budget=10)
+
+    assert np.all(np.isfinite(predicted))
+
+
+def test_covariance_propagation_produces_finite_values() -> None:
+    mlp = sample_mlp(width=8, depth=4, rng=np.random.default_rng(7))
+    estimator = CovariancePropagationEstimator()
+    predicted = estimator.predict(mlp, budget=1000)
+
+    assert np.all(np.isfinite(predicted))
 
 
 def test_combined_estimator_switches_mode() -> None:
-    calls: list[str] = []
+    calls = []  # type: list[str]
 
     class _Mean(BaseEstimator):
-        def predict(self, circuit, budget):
-            _ = circuit
-            calls.append(f"mean:{budget}")
-            yield np.array([0.0], dtype=np.float32)
+        def predict(self, mlp, budget):
+            calls.append("mean:{}".format(budget))
+            return np.zeros((mlp.depth, mlp.width), dtype=np.float32)
 
     class _Cov(BaseEstimator):
-        def predict(self, circuit, budget):
-            _ = circuit
-            calls.append(f"cov:{budget}")
-            yield np.array([1.0], dtype=np.float32)
+        def predict(self, mlp, budget):
+            calls.append("cov:{}".format(budget))
+            return np.ones((mlp.depth, mlp.width), dtype=np.float32)
 
     estimator = CombinedEstimator(mean_estimator=_Mean(), covariance_estimator=_Cov())
-    circuit = make_circuit(
-        2,
-        [
-            make_layer(
-                first=[0, 0],
-                second=[1, 1],
-                first_coeff=[0.0, 0.0],
-                second_coeff=[0.0, 0.0],
-                const=[1.0, 1.0],
-                product_coeff=[0.0, 0.0],
-            )
-        ],
-    )
+    mlp = sample_mlp(width=4, depth=2, rng=np.random.default_rng(0))
 
-    low_budget = np.array(list(estimator.predict(circuit, budget=10)), dtype=np.float32)
-    high_budget = np.array(list(estimator.predict(circuit, budget=1000)), dtype=np.float32)
+    low_budget = estimator.predict(mlp, budget=10)
+    high_budget = estimator.predict(mlp, budget=1000)
 
-    np.testing.assert_allclose(low_budget, np.array([[0.0]], dtype=np.float32))
-    np.testing.assert_allclose(high_budget, np.array([[1.0]], dtype=np.float32))
+    np.testing.assert_allclose(low_budget, np.zeros((2, 4), dtype=np.float32))
+    np.testing.assert_allclose(high_budget, np.ones((2, 4), dtype=np.float32))
     assert calls == ["mean:10", "cov:1000"]

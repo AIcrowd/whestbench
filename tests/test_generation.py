@@ -1,37 +1,48 @@
 import numpy as np
+import pytest
 
-from circuit_estimation.generation import random_circuit, random_gates
-
-
-def test_random_gates_disallow_duplicate_inputs() -> None:
-    # The generator contract forbids same-wire fan-in for a single gate.
-    layer = random_gates(64, np.random.default_rng(123))
-    assert np.all(layer.first != layer.second)
+from network_estimation.generation import sample_mlp
 
 
-def test_random_circuit_is_reproducible_with_seeded_rng() -> None:
-    # Seeded RNG must reproduce full layer structure for debugging and leaderboard replay.
-    circuit_a = random_circuit(8, 3, np.random.default_rng(7))
-    circuit_b = random_circuit(8, 3, np.random.default_rng(7))
-
-    for layer_a, layer_b in zip(circuit_a.gates, circuit_b.gates):
-        np.testing.assert_array_equal(layer_a.first, layer_b.first)
-        np.testing.assert_array_equal(layer_a.second, layer_b.second)
-        np.testing.assert_allclose(layer_a.const, layer_b.const)
-        np.testing.assert_allclose(layer_a.first_coeff, layer_b.first_coeff)
-        np.testing.assert_allclose(layer_a.second_coeff, layer_b.second_coeff)
-        np.testing.assert_allclose(layer_a.product_coeff, layer_b.product_coeff)
+def test_sample_mlp_returns_valid_mlp() -> None:
+    mlp = sample_mlp(width=8, depth=4)
+    mlp.validate()
+    assert mlp.width == 8
+    assert mlp.depth == 4
+    assert len(mlp.weights) == 4
 
 
-def test_random_gate_polynomials_map_binary_inputs_to_binary_outputs() -> None:
-    # Every sampled gate should map {-1,+1}^2 back into {-1,+1}.
-    layer = random_gates(128, np.random.default_rng(7))
-    for x in (-1.0, 1.0):
-        for y in (-1.0, 1.0):
-            out = (
-                layer.const
-                + layer.first_coeff * x
-                + layer.second_coeff * y
-                + layer.product_coeff * x * y
-            )
-            np.testing.assert_allclose(np.abs(out), 1.0, atol=1e-5)
+def test_sample_mlp_weight_shapes() -> None:
+    mlp = sample_mlp(width=16, depth=3)
+    for w in mlp.weights:
+        assert w.shape == (16, 16)
+        assert w.dtype == np.float32
+
+
+def test_sample_mlp_he_init_scale() -> None:
+    """Verify weights have approximately correct He-init variance."""
+    rng = np.random.default_rng(42)
+    width = 256
+    mlp = sample_mlp(width=width, depth=10, rng=rng)
+    expected_var = 2.0 / width
+    actual_var = np.var(np.concatenate([w.flatten() for w in mlp.weights]))
+    assert abs(actual_var - expected_var) < 0.01 * expected_var
+
+
+def test_sample_mlp_reproducible_with_rng() -> None:
+    rng1 = np.random.default_rng(123)
+    rng2 = np.random.default_rng(123)
+    mlp1 = sample_mlp(width=8, depth=2, rng=rng1)
+    mlp2 = sample_mlp(width=8, depth=2, rng=rng2)
+    for w1, w2 in zip(mlp1.weights, mlp2.weights):
+        np.testing.assert_array_equal(w1, w2)
+
+
+def test_sample_mlp_rejects_invalid_width() -> None:
+    with pytest.raises(ValueError, match="width"):
+        sample_mlp(width=0, depth=1)
+
+
+def test_sample_mlp_rejects_invalid_depth() -> None:
+    with pytest.raises(ValueError, match="depth"):
+        sample_mlp(width=4, depth=0)

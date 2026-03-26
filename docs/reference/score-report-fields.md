@@ -2,7 +2,7 @@
 
 ## When to use this page
 
-Use this page to interpret `cestim run` output fields.
+Use this page to interpret `nestim run` output fields.
 
 ## Top-level fields
 
@@ -10,7 +10,6 @@ Typical report sections include:
 
 - `schema_version`
 - `mode`
-- `detail`
 - `run_meta`
 - `run_config`
 - `run_config.dataset` (present when `--dataset` is used)
@@ -20,59 +19,51 @@ Typical report sections include:
 
 Inside `results`:
 
-- `adjusted_mse`: leaderboard metric (lower is better)
-- `by_budget_raw`: per-budget diagnostics
-
-Inside each `by_budget_raw` entry:
-
-### Scalar aggregates
-
 | Field | Description |
 |---|---|
-| `budget` | Sampling trial count for this evaluation level |
-| `mse_mean` | Mean of `mse_by_layer` across all depths |
-| `adjusted_mse` | MSE adjusted by relative compute usage — the per-budget score |
-| `call_time_ratio_mean` | Your runtime / sampling baseline runtime (averaged across depths and circuits) |
-| `call_effective_time_s_mean` | Your effective runtime in seconds (averaged, floored if faster than baseline) |
-| `timeout_rate` | Average fraction of circuits timed out across depths |
-| `time_floor_rate` | Average fraction of circuits floored across depths |
+| `primary_score` | Leaderboard metric — final-layer MSE normalized by sampling MSE, averaged across MLPs. Lower is better. |
+| `secondary_score` | All-layer MSE normalized by sampling MSE, averaged across MLPs. Lower is better. |
+| `per_mlp` | Array of per-MLP detail records (see below) |
 
-### Per-depth arrays (length `d`)
+### Per-MLP fields
 
-| Field | Description |
-|---|---|
-| `mse_by_layer` | Per-depth MSE array — your main diagnostic for where estimation breaks down |
-| `time_budget_by_depth_s` | Sampling baseline runtime per depth |
-| `time_ratio_by_depth_mean` | Per-depth time ratio (your cumulative runtime / sampling baseline at each depth), averaged across circuits |
-| `effective_time_s_by_depth_mean` | Per-depth effective runtime (floored if faster than baseline), averaged across circuits |
-| `timeout_rate_by_depth` | Per-depth fraction of circuits where your estimator exceeded the time limit |
-| `time_floor_rate_by_depth` | Per-depth fraction of circuits where your estimator was faster than the baseline floor |
+Each entry in `per_mlp`:
 
-## ✅ Interpretation guide
+| Field | Type | Description |
+|---|---|---|
+| `mlp_index` | `int` | Index of the MLP in the evaluation set |
+| `time_budget_s` | `float` | Sampling baseline wall time for this MLP (seconds) |
+| `time_spent_s` | `float` | Your estimator's wall time for this MLP (seconds) |
+| `fraction_spent` | `float` | `max(time_spent / time_budget, 0.5)` — clamped time ratio |
+| `final_mse` | `float` | MSE of your final-layer predictions vs ground truth |
+| `all_layer_mse` | `float` | MSE of your all-layer predictions vs ground truth |
+| `primary_score` | `float` | `final_mse / sampling_mse` for this MLP |
+| `secondary_score` | `float` | `all_layer_mse / sampling_mse` for this MLP |
 
-- `mse_by_layer` is your most actionable diagnostic — look for depths where error spikes.
-- `mse_mean` reflects prediction quality before runtime adjustment.
-- `adjusted_mse` reflects quality under runtime-aware scoring.
-- `adjusted_mse` is the average `adjusted_mse` across budgets.
-- `time_ratio_by_depth_mean` reveals which depths are slow relative to sampling.
-- `timeout_rate_by_depth` shows where your estimator is timing out per depth.
+If the estimator raised an error, the entry also includes:
+
+| Field | Type | Description |
+|---|---|---|
+| `error` | `str` | Error message from the failed prediction |
+
+## Interpretation guide
+
+- `final_mse` is your most actionable diagnostic — it directly drives `primary_score`.
+- `fraction_spent` reveals compute behavior: values near 0.5 mean you're much faster than sampling; values > 1.0 mean timeout (predictions zeroed).
+- `primary_score` reflects accuracy under time-aware scoring. Compare it with `final_mse` to diagnose whether runtime or accuracy is the bottleneck.
 
 ## Dataset traceability fields
 
-When using `cestim run --dataset`, the report includes `run_config.dataset`:
+When using `nestim run --dataset`, the report includes `run_config.dataset`:
 
 | Field | Description |
 |---|---|
 | `path` | Absolute path to the dataset file |
 | `sha256` | SHA-256 hash of the file for integrity |
 | `seed` | RNG seed used to generate the dataset |
-| `n_circuits` | Number of circuits in the dataset |
-| `n_samples` | Samples per circuit used for ground truth |
-| `baselines_recomputed` | `true` if baselines were recomputed due to hardware mismatch |
+| `n_mlps` | Number of MLPs in the dataset |
 
-See [Use Evaluation Datasets](../how-to/use-evaluation-datasets.md) for usage.
-
-## ➡️ Next step
+## Next step
 
 - [Scoring Model](../concepts/scoring-model.md)
 - [CLI Reference](./cli-reference.md)
