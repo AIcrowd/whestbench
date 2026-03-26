@@ -54,7 +54,7 @@ from .runner import (
     RunnerError,
     SubprocessRunner,
 )
-from .scoring import ContestSpec, evaluate_estimator, make_contest, validate_predictions
+from .scoring import ContestData, ContestSpec, evaluate_estimator, make_contest, validate_predictions
 from .sdk import BaseEstimator, SetupContext
 
 _DEFAULT_ESTIMATOR = CombinedEstimator()
@@ -102,15 +102,48 @@ def run_default_score(profile: bool = False) -> "Any":
     return score
 
 
-def run_default_report(*, profile: bool = False, detail: str = "raw") -> Dict[str, Any]:
+def _smoke_test_contest_spec() -> ContestSpec:
+    """Lightweight spec for the smoke test — just checks plumbing, not accuracy."""
+    return ContestSpec(
+        width=100,
+        depth=16,
+        n_mlps=3,
+        estimator_budget=100 * 100 * 4,
+        ground_truth_budget=100 * 100 * 4,
+    )
+
+
+def run_default_report(
+    *,
+    profile: bool = False,
+    detail: str = "raw",
+    progress: Optional[ProgressCallback] = None,
+) -> Dict[str, Any]:
     """Run the built-in smoke-test scenario and return report payload."""
-    spec = _default_contest_spec()
-    data = make_contest(spec)
+    import time as _time
+
+    spec = _smoke_test_contest_spec()
+    if progress is not None:
+        data = _make_contest_with_progress(
+            spec, lambda i: progress({"phase": "ground_truth", "completed": i, "total": spec.n_mlps})
+        )
+    else:
+        data = make_contest(spec)
+    t0 = _time.time()
     result = evaluate_estimator(_DEFAULT_ESTIMATOR, data)
+    elapsed = _time.time() - t0
+    if progress is not None:
+        progress({"phase": "scoring", "completed": spec.n_mlps, "total": spec.n_mlps})
     return {
         "schema_version": "1.0",
         "mode": "human",
         "results": result,
+        "run_meta": {
+            "run_started_at_utc": datetime.now(timezone.utc).isoformat(),
+            "run_finished_at_utc": datetime.now(timezone.utc).isoformat(),
+            "run_duration_s": elapsed,
+            "host": _host_metadata(),
+        },
         "run_config": {
             "width": spec.width,
             "depth": spec.depth,
@@ -118,6 +151,34 @@ def run_default_report(*, profile: bool = False, detail: str = "raw") -> Dict[st
             "estimator_budget": spec.estimator_budget,
         },
     }
+
+
+def _make_contest_with_progress(
+    spec: ContestSpec, on_mlp_done: Callable[[int], None]
+) -> "ContestData":
+    """Like ``make_contest`` but fires *on_mlp_done(i)* after each MLP."""
+    from .generation import sample_mlp
+    from .simulation_backends import get_backend
+
+    backend = get_backend()
+    mlps, all_layer_targets, final_targets, avg_variances = [], [], [], []
+    for i in range(spec.n_mlps):
+        mlp = sample_mlp(spec.width, spec.depth)
+        all_means, final_mean, avg_var = backend.sample_layer_statistics(
+            mlp, spec.ground_truth_budget
+        )
+        mlps.append(mlp)
+        all_layer_targets.append(all_means)
+        final_targets.append(final_mean)
+        avg_variances.append(avg_var)
+        on_mlp_done(i + 1)
+    return ContestData(
+        spec=spec,
+        mlps=mlps,
+        all_layer_targets=all_layer_targets,
+        final_targets=final_targets,
+        avg_variances=avg_variances,
+    )
 
 
 def _render_plain_text_report(report: Dict[str, Any]) -> str:
@@ -627,7 +688,46 @@ def _main_participant(argv: "list[str]") -> int:
 
     try:
         if command == "smoke-test":
-            report = run_default_report(profile=bool(args.profile), detail=str(args.detail))
+            # Set up Rich progress bar for immediate user feedback.
+            try:
+                from rich.progress import (
+                    BarColumn,
+                    MofNCompleteColumn,
+                    Progress,
+                    SpinnerColumn,
+                    TextColumn,
+                    TimeElapsedColumn,
+                )
+
+                spec = _smoke_test_contest_spec()
+                progress_bar = Progress(
+                    SpinnerColumn(),
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(bar_width=None),
+                    MofNCompleteColumn(),
+                    TimeElapsedColumn(),
+                )
+                gt_task = progress_bar.add_task("Computing ground truth", total=spec.n_mlps)
+                score_task = progress_bar.add_task("Scoring estimator", total=spec.n_mlps, visible=False)
+
+                def _on_smoke_progress(event: Dict[str, Any]) -> None:
+                    phase = str(event.get("phase", ""))
+                    completed = int(event.get("completed", 0))
+                    if phase == "ground_truth":
+                        progress_bar.update(gt_task, completed=completed)
+                    elif phase == "scoring":
+                        progress_bar.update(score_task, visible=True)
+                        progress_bar.update(score_task, completed=completed)
+
+                with progress_bar:
+                    report = run_default_report(
+                        profile=bool(args.profile),
+                        detail=str(args.detail),
+                        progress=_on_smoke_progress,
+                    )
+            except ImportError:
+                report = run_default_report(profile=bool(args.profile), detail=str(args.detail))
+
             report["mode"] = "human"
             try:
                 output = render_human_report(
