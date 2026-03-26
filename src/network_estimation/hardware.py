@@ -72,30 +72,6 @@ def _ram_total_fallback() -> int | None:
     return None
 
 
-def _cpu_brand_from_procinfo() -> str | None:
-    """Read CPU model name from /proc/cpuinfo (Linux only)."""
-    try:
-        with open("/proc/cpuinfo") as f:
-            for line in f:
-                if line.startswith("model name"):
-                    return line.split(":", 1)[1].strip()
-    except Exception:
-        pass
-    return None
-
-
-def _cpu_flags_from_procinfo() -> list[str] | None:
-    """Read CPU feature flags from /proc/cpuinfo (Linux only)."""
-    try:
-        with open("/proc/cpuinfo") as f:
-            for line in f:
-                if line.startswith("flags"):
-                    return sorted(set(line.split(":", 1)[1].split()))
-    except Exception:
-        pass
-    return None
-
-
 def collect_hardware_fingerprint() -> dict[str, Any]:
     """Collect a hardware fingerprint dict for the current machine.
 
@@ -104,10 +80,6 @@ def collect_hardware_fingerprint() -> dict[str, Any]:
     with OS-native fallbacks (sysctl on macOS, /proc on Linux) to
     ensure fields are populated on all major platforms.
     """
-    cpu_brand = platform.processor() or None
-    if not cpu_brand or cpu_brand == "unknown":
-        cpu_brand = _cpu_brand_from_procinfo() or "unknown"
-
     fp: dict[str, Any] = {
         "hostname": socket.gethostname(),
         "os": platform.system(),
@@ -115,8 +87,7 @@ def collect_hardware_fingerprint() -> dict[str, Any]:
         "platform": platform.platform(),
         "machine": platform.machine(),
         "python_version": platform.python_version(),
-        "cpu_brand": cpu_brand,
-        "cpu_flags": _cpu_flags_from_procinfo(),
+        "cpu_brand": platform.processor() or "unknown",
         "cpu_count_logical": os.cpu_count() or 1,
         "cpu_count_physical": None,
         "ram_total_bytes": None,
@@ -140,14 +111,6 @@ def collect_hardware_fingerprint() -> dict[str, Any]:
         fp["cpu_count_physical"] = _physical_core_count_fallback()
     if fp["ram_total_bytes"] is None:
         fp["ram_total_bytes"] = _ram_total_fallback()
-
-    # BLAS library info via threadpoolctl
-    try:
-        from threadpoolctl import threadpool_info
-        fp["blas_info"] = threadpool_info()
-    except ImportError:
-        pass
-
     return fp
 
 

@@ -27,7 +27,7 @@ def _participant_markdown_paths(repo_root):
     docs_root = repo_root / "docs"
     for path in sorted(docs_root.rglob("*.md")):
         rel = path.relative_to(repo_root).as_posix()
-        if rel.startswith("docs/plans/"):
+        if rel.startswith("internal plans/"):
             continue
         paths.append(path)
     # Dedupe while preserving order.
@@ -214,12 +214,12 @@ def test_participant_docs_do_not_reference_sanitized_internal_paths():
     # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     banned = [
-        ".aicrowd/",
-        "docs/context/",
-        "docs/plans/",
-        "challenge-context.md",
-        "worktrees-and-cli.md",
-        "style_guide.md",
+        "internal docs/",
+        "internal context docs/",
+        "internal plans/",
+        "internal context document",
+        "internal CLI note",
+        "internal style note",
         "internal docs",
         "internal plans",
         "internal context docs",

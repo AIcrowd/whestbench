@@ -221,13 +221,13 @@ node_modules/
 # Local git worktrees
 .worktrees/
 
-.agent/
-.codex/
+internal agent config/
+internal codex config/
 .claude/
 .cursor/
 .roo/
 .windsurf/
-.aicrowd/sanitization/public-sync-state.local.env
+internal docs/sanitization/public-sync-state.local.env
 
 # Cloud profiling infrastructure
 profiling/results/*
