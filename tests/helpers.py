@@ -1,38 +1,25 @@
 from __future__ import annotations
 
-from itertools import product
-from typing import Iterable, List
+from typing import List, Optional
 
 import numpy as np
 from numpy.typing import NDArray
 
-from circuit_estimation.domain import Circuit, Layer
-from circuit_estimation.simulation import run_batched
+from network_estimation.domain import MLP
+from network_estimation.generation import sample_mlp
+from network_estimation.simulation import run_mlp_all_layers
 
 
-def make_layer(
-    first: Iterable[int],
-    second: Iterable[int],
-    first_coeff: Iterable[float],
-    second_coeff: Iterable[float],
-    const: Iterable[float],
-    product_coeff: Iterable[float],
-) -> Layer:
-    return Layer(
-        first=np.array(list(first), dtype=np.int32),
-        second=np.array(list(second), dtype=np.int32),
-        first_coeff=np.array(list(first_coeff), dtype=np.float32),
-        second_coeff=np.array(list(second_coeff), dtype=np.float32),
-        const=np.array(list(const), dtype=np.float32),
-        product_coeff=np.array(list(product_coeff), dtype=np.float32),
-    )
+def make_mlp(width: int, depth: int, seed: int = 42) -> MLP:
+    """Create a small MLP for testing with a fixed seed."""
+    return sample_mlp(width=width, depth=depth, rng=np.random.default_rng(seed))
 
 
-def make_circuit(n: int, layers: List[Layer]) -> Circuit:
-    return Circuit(n=n, d=len(layers), gates=layers)
+def exhaustive_means(mlp: MLP, n_samples: int = 10000) -> NDArray[np.float32]:
+    """Compute empirical per-layer means via brute-force sampling.
 
-
-def exhaustive_means(circuit: Circuit) -> List[NDArray[np.float32]]:
-    inputs = np.array(list(product([-1.0, 1.0], repeat=circuit.n)), dtype=np.float16)
-    layer_outputs = list(run_batched(circuit, inputs))
-    return [layer.astype(np.float32).mean(axis=0) for layer in layer_outputs]
+    Returns shape ``(depth, width)``.
+    """
+    inputs = np.random.randn(n_samples, mlp.width).astype(np.float32)
+    layer_outputs = run_mlp_all_layers(mlp, inputs)
+    return np.stack([out.mean(axis=0) for out in layer_outputs]).astype(np.float32)

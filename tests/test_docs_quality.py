@@ -1,23 +1,29 @@
+from __future__ import annotations
+
 import importlib
 from pathlib import Path
+from typing import List, Optional, Set
 
 
-def _doc_len(doc: str | None) -> int:
+def _doc_len(doc):
+    # type: (Optional[str]) -> int
     return len((doc or "").strip())
 
 
-def _normalize_h2_heading(line: str) -> str:
+def _normalize_h2_heading(line):
+    # type: (str) -> str
     if not line.startswith("## "):
         return line
     heading = line[3:].strip()
     first_token, sep, rest = heading.partition(" ")
     if sep and not first_token.isascii():
         heading = rest.strip()
-    return f"## {heading}"
+    return "## {}".format(heading)
 
 
-def _participant_markdown_paths(repo_root: Path) -> list[Path]:
-    paths = [repo_root / "README.md", repo_root / "tools/circuit-explorer/README.md"]
+def _participant_markdown_paths(repo_root):
+    # type: (Path) -> List[Path]
+    paths = [repo_root / "README.md", repo_root / "tools/network-explorer/README.md"]  # type: List[Path]
     docs_root = repo_root / "docs"
     for path in sorted(docs_root.rglob("*.md")):
         rel = path.relative_to(repo_root).as_posix()
@@ -25,8 +31,8 @@ def _participant_markdown_paths(repo_root: Path) -> list[Path]:
             continue
         paths.append(path)
     # Dedupe while preserving order.
-    deduped: list[Path] = []
-    seen: set[Path] = set()
+    deduped = []  # type: List[Path]
+    seen = set()  # type: Set[Path]
     for path in paths:
         if path not in seen:
             deduped.append(path)
@@ -34,7 +40,8 @@ def _participant_markdown_paths(repo_root: Path) -> list[Path]:
     return deduped
 
 
-def test_docs_taxonomy_directories_exist() -> None:
+def test_docs_taxonomy_directories_exist():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     required = [
         "docs/getting-started",
@@ -47,7 +54,8 @@ def test_docs_taxonomy_directories_exist() -> None:
         assert (repo_root / rel).is_dir(), rel
 
 
-def test_docs_index_exists_and_links_taxonomy() -> None:
+def test_docs_index_exists_and_links_taxonomy():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "docs/index.md").read_text(encoding="utf-8").lower()
 
@@ -67,7 +75,8 @@ def test_docs_index_exists_and_links_taxonomy() -> None:
         assert token in text
 
 
-def test_readme_is_front_door_with_expected_sections() -> None:
+def test_readme_is_front_door_with_expected_sections():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8")
     headings = {
@@ -84,24 +93,26 @@ def test_readme_is_front_door_with_expected_sections() -> None:
         assert heading in headings
 
 
-def test_core_modules_have_descriptive_module_docstrings() -> None:
+def test_core_modules_have_descriptive_module_docstrings():
+    # type: () -> None
     modules = [
-        "circuit_estimation.domain",
-        "circuit_estimation.generation",
-        "circuit_estimation.simulation",
-        "circuit_estimation.estimators",
-        "circuit_estimation.scoring",
-        "circuit_estimation.reporting",
-        "circuit_estimation.cli",
-        "circuit_estimation.protocol",
+        "network_estimation.domain",
+        "network_estimation.generation",
+        "network_estimation.simulation",
+        "network_estimation.estimators",
+        "network_estimation.scoring",
+        "network_estimation.reporting",
+        "network_estimation.cli",
+        "network_estimation.protocol",
     ]
     for name in modules:
         module = importlib.import_module(name)
         assert _doc_len(module.__doc__) >= 40, name
 
 
-def test_critical_public_apis_have_docstrings() -> None:
-    from circuit_estimation import (
+def test_critical_public_apis_have_docstrings():
+    # type: () -> None
+    from network_estimation import (
         cli,
         domain,
         estimators,
@@ -113,20 +124,16 @@ def test_critical_public_apis_have_docstrings() -> None:
     )
 
     required = [
-        domain.Layer.identity,
-        domain.Layer.validate,
-        domain.Circuit.validate,
-        generation.random_gates,
-        generation.random_circuit,
-        simulation.run_batched,
-        simulation.run_on_random,
-        simulation.empirical_mean,
+        domain.MLP.validate,
+        generation.sample_mlp,
+        simulation.run_mlp,
+        simulation.run_mlp_all_layers,
+        simulation.sample_layer_statistics,
         estimators.MeanPropagationEstimator.predict,
         estimators.CovariancePropagationEstimator.predict,
         estimators.CombinedEstimator.predict,
-        scoring.ContestParams.validate,
-        scoring.score_estimator_report,
-        scoring.score_estimator,
+        scoring.ContestSpec.validate,
+        scoring.evaluate_estimator,
         reporting.render_agent_report,
         reporting.render_human_report,
         cli.run_default_report,
@@ -138,12 +145,12 @@ def test_critical_public_apis_have_docstrings() -> None:
         assert _doc_len(getattr(obj, "__doc__", None)) >= 30, repr(obj)
 
 
-def test_estimators_module_has_tutorial_walkthrough_markers() -> None:
+def test_estimators_module_has_tutorial_walkthrough_markers():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
-    text = (repo_root / "src/circuit_estimation/estimators.py").read_text(encoding="utf-8")
+    text = (repo_root / "src/network_estimation/estimators.py").read_text(encoding="utf-8")
     required_phrases = [
         "first-moment propagation",
-        "pairwise moment closure",
         "covariance",
         "budget",
     ]
@@ -152,7 +159,8 @@ def test_estimators_module_has_tutorial_walkthrough_markers() -> None:
         assert phrase in lowered
 
 
-def test_docs_do_not_reference_predict_batch_contract() -> None:
+def test_docs_do_not_reference_predict_batch_contract():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     paths = [
         repo_root / "README.md",
@@ -164,7 +172,8 @@ def test_docs_do_not_reference_predict_batch_contract() -> None:
         assert "predict_batch" not in text, str(path)
 
 
-def test_readme_links_primary_docs_pages() -> None:
+def test_readme_links_primary_docs_pages():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
     required_links = [
@@ -183,23 +192,26 @@ def test_readme_links_primary_docs_pages() -> None:
         assert link in text
 
 
-def test_readme_documents_cestim_install_and_usage() -> None:
+def test_readme_documents_nestim_install_and_usage():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
     assert "uv tool install -e ." in text
-    assert "cestim smoke-test" in text
-    assert "uv run --with-editable . cestim" in text
-    assert "uv run cestim --" not in text
+    assert "nestim smoke-test" in text
+    assert "uv run --with-editable . nestim" in text
+    assert "uv run nestim --" not in text
 
 
-def test_participant_docs_do_not_use_mermaid_blocks() -> None:
+def test_participant_docs_do_not_use_mermaid_blocks():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     for path in _participant_markdown_paths(repo_root):
         text = path.read_text(encoding="utf-8").lower()
         assert "```mermaid" not in text, str(path)
 
 
-def test_participant_docs_do_not_reference_sanitized_internal_paths() -> None:
+def test_participant_docs_do_not_reference_sanitized_internal_paths():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     banned = [
         "internal docs/",
@@ -215,15 +227,17 @@ def test_participant_docs_do_not_reference_sanitized_internal_paths() -> None:
     for path in _participant_markdown_paths(repo_root):
         text = path.read_text(encoding="utf-8").lower()
         for token in banned:
-            assert token not in text, f"{path}: {token}"
+            assert token not in text, "{}: {}".format(path, token)
 
 
-def test_legacy_guides_directory_is_removed() -> None:
+def test_legacy_guides_directory_is_removed():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     assert not (repo_root / "docs/guides").exists()
 
 
-def test_examples_estimators_folder_contains_starter_classes() -> None:
+def test_examples_estimators_folder_contains_starter_classes():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     examples_dir = repo_root / "examples/estimators"
     assert (examples_dir / "random_estimator.py").exists()
@@ -232,7 +246,8 @@ def test_examples_estimators_folder_contains_starter_classes() -> None:
     assert (examples_dir / "combined_estimator.py").exists()
 
 
-def test_onboarding_docs_recommend_random_estimator_first() -> None:
+def test_onboarding_docs_recommend_random_estimator_first():
+    # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
     how_to = (repo_root / "docs/how-to/write-an-estimator.md").read_text(encoding="utf-8")
