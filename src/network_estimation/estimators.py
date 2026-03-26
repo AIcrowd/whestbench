@@ -67,12 +67,17 @@ class MeanPropagationEstimator(BaseEstimator):
 class CovariancePropagationEstimator(BaseEstimator):
     """Full covariance propagation estimator for ReLU MLPs."""
 
+    # Covariance diagonal values above this trigger rescaling to avoid overflow.
+    _COV_RESCALE_THRESHOLD = 1e100
+
     def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
         """Predict per-layer output means via full covariance propagation through ReLU layers."""
         _ = budget
         width = mlp.width
         mu = np.zeros(width, dtype=np.float64)
         cov = np.eye(width, dtype=np.float64)
+        # Cumulative log-scale factor from rescaling (shared for mu and cov).
+        log_scale = 0.0
 
         rows = []
         for w in mlp.weights:
@@ -82,11 +87,13 @@ class CovariancePropagationEstimator(BaseEstimator):
             var_pre = np.maximum(np.diag(cov_pre), 1e-12)
             sigma_pre = np.sqrt(var_pre)
 
+            # alpha is scale-invariant (mu and sigma scale together),
+            # so rescaling does not affect Phi/phi values.
             alpha = mu_pre / sigma_pre
             phi_alpha = norm.pdf(alpha)
             Phi_alpha = norm.cdf(alpha)
 
-            # Post-ReLU means
+            # Post-ReLU means (in current scale)
             mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
 
             # Post-ReLU diagonal variance
@@ -98,7 +105,16 @@ class CovariancePropagationEstimator(BaseEstimator):
             cov = np.outer(gain, gain) * cov_pre
             np.fill_diagonal(cov, var_post)
 
-            rows.append(mu.astype(np.float32))
+            # Record the mean in original (unscaled) coordinates.
+            rows.append((mu * np.exp(log_scale)).astype(np.float32))
+
+            # Rescale to prevent overflow in subsequent layers.
+            max_var = np.max(np.diag(cov))
+            if max_var > self._COV_RESCALE_THRESHOLD:
+                s = np.sqrt(max_var)
+                mu /= s
+                cov /= s * s
+                log_scale += np.log(s)
 
         return np.stack(rows, axis=0)
 
