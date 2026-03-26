@@ -13,14 +13,6 @@ var BACKEND_COLORS = {
 };
 var BACKEND_ORDER = ['numpy', 'pytorch', 'jax', 'cython', 'numba', 'scipy'];
 
-function sortedConfigKeys(configs) {
-  return Object.keys(configs).sort(function(a, b) {
-    var na = parseInt((a.match(/(\d+)vcpu/) || [0, 0])[1]) || 0;
-    var nb = parseInt((b.match(/(\d+)vcpu/) || [0, 0])[1]) || 0;
-    return na - nb;
-  });
-}
-
 function getThreadCount(hw) {
   // Prefer max_threads (pinned thread count) over cpu_count_logical (OS-reported,
   // which on Fargate reports more cores than actually allocated).
@@ -76,22 +68,20 @@ function getUnique(data, key) {
 
 function SummaryCards(props) {
   var data = props.data;
-  var configs = sortedConfigKeys(data.configs);
+  var configs = Object.keys(data.configs);
 
-  // Compute summary stats across all configs at largest n_samples
+  // Compute summary stats across all configs for run_mlp at largest n_samples
   var allTiming = [];
   configs.forEach(function(c) { allTiming = allTiming.concat(data.configs[c].timing); });
   var maxN = Math.max.apply(null, allTiming.map(function(t) { return t.n_samples; }));
   var maxW = Math.max.apply(null, allTiming.map(function(t) { return t.width; }));
   var maxD = Math.max.apply(null, allTiming.map(function(t) { return t.depth; }));
 
-  // Find fastest backend for sample_layer_statistics (or run_mlp fallback) at largest params
-  var summaryOp = allTiming.some(function(t) { return t.operation === 'sample_layer_statistics'; })
-    ? 'sample_layer_statistics' : 'run_mlp';
+  // Find fastest backend for run_mlp at largest params
   var bestBackend = null; var bestSpeedup = 0; var totalMeasurements = allTiming.length;
   var errorCount = allTiming.filter(function(t) { return t.error; }).length;
   allTiming.forEach(function(t) {
-    if (t.operation === summaryOp && t.n_samples === maxN && t.width === maxW && t.depth === maxD) {
+    if (t.operation === 'run_mlp' && t.n_samples === maxN && t.width === maxW && t.depth === maxD) {
       if (t.speedup_vs_numpy > bestSpeedup) {
         bestSpeedup = t.speedup_vs_numpy;
         bestBackend = t.backend;
@@ -108,7 +98,7 @@ function SummaryCards(props) {
     {label: 'Configs', value: configs.length, detail: configs.length > 1 ? 'hardware configurations' : 'hardware configuration'},
     {label: 'Backends', value: backendCount, detail: Object.keys(backendSet).join(', ')},
     {label: 'Measurements', value: totalMeasurements, detail: errorCount > 0 ? errorCount + ' errors' : 'all successful'},
-    {label: 'Fastest (' + summaryOp.replace('sample_layer_', '') + ')', value: bestBackend || '—',
+    {label: 'Fastest (run_mlp)', value: bestBackend || '—',
       detail: bestBackend ? bestSpeedup.toFixed(1) + 'x vs numpy at w=' + maxW + ' d=' + maxD + ' n=' + maxN.toLocaleString() : 'no data'},
   ];
 
@@ -170,10 +160,10 @@ function App() {
   var widths = getUnique(data, 'width');
   var depths = getUnique(data, 'depth');
   var nSamples = getUnique(data, 'n_samples');
-  var isMulti = sortedConfigKeys(data.configs).length > 1;
+  var isMulti = Object.keys(data.configs).length > 1;
 
   var s = useState({
-    operation: operations.indexOf('sample_layer_statistics') !== -1 ? 'sample_layer_statistics' : (operations[0] || 'run_mlp'),
+    operation: operations[0] || 'run_mlp',
     width: widths[widths.length - 1] || 256,
     depth: depths[depths.length - 1] || 4,
     nSamples: nSamples[nSamples.length - 1] || 10000,
@@ -222,7 +212,7 @@ function Header(props) {
 
 function SpeedupHeatmap(props) {
   var data = props.data, f = props.filters;
-  var configs = sortedConfigKeys(data.configs);
+  var configs = Object.keys(data.configs);
   var backends = BACKEND_ORDER.filter(function(b) {
     return configs.some(function(c) {
       return data.configs[c].timing.some(function(t) { return t.backend === b; }) ||
@@ -331,7 +321,7 @@ function CellDetailModal(props) {
   });
 
   var speedup = entry ? entry.speedup_vs_numpy : null;
-  var configs = sortedConfigKeys(data.configs);
+  var configs = Object.keys(data.configs);
   var widths = getUnique(data, 'width');
   var depths = getUnique(data, 'depth');
   var nSamples = getUnique(data, 'n_samples');
@@ -455,7 +445,7 @@ function CellDetailModal(props) {
 
 function CPUScalingChart(props) {
   var data = props.data, f = props.filters;
-  var configs = sortedConfigKeys(data.configs);
+  var configs = Object.keys(data.configs);
   if (configs.length <= 1) return null;
 
   var LC = Recharts.LineChart, L = Recharts.Line, XA = Recharts.XAxis,
@@ -533,7 +523,7 @@ function DataTable(props) {
   var state = st[0]; var setState = st[1];
 
   var rows = [];
-  sortedConfigKeys(data.configs).forEach(function(config) {
+  Object.keys(data.configs).forEach(function(config) {
     var cfg = data.configs[config];
     cfg.timing.forEach(function(t) {
       rows.push({config: config, backend: t.backend, operation: t.operation,

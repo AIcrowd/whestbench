@@ -34,8 +34,6 @@ export NUMEXPR_NUM_THREADS="$MAX_THREADS"
 export VECLIB_MAXIMUM_THREADS="$MAX_THREADS"
 # Note: XLA_FLAGS thread options removed — they cause fatal crashes in newer JAX.
 # Thread counts are controlled via OMP/MKL/OPENBLAS env vars above.
-# Primary BLAS is MKL (via conda numpy + pip torch), but we set OPENBLAS too
-# in case any dependency pulls it in.
 
 # Build the nestim command
 CMD=(nestim profile-simulation --preset "$PRESET" --output "$OUTPUT_FILE" --log-progress)
