@@ -516,6 +516,13 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--dataset", default=None, help="Path to pre-created dataset .npz file."
     )
+    run_parser.add_argument(
+        "--n-samples",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Ground truth samples per MLP (default: width*width*256). Lower values speed up generation at the cost of noisier scores.",
+    )
     run_parser.add_argument("--debug", action="store_true")
     run_parser.add_argument(
         "--max-threads",
@@ -876,12 +883,16 @@ def _main_participant(argv: "list[str]") -> int:
             runner = InProcessRunner() if args.runner == "inprocess" else SubprocessRunner()
             contest_spec = _default_contest_spec()
             n_mlps = int(args.n_mlps)
+            gt_budget = (
+                int(args.n_samples) if args.n_samples is not None
+                else contest_spec.ground_truth_budget
+            )
             contest_spec = ContestSpec(
                 width=contest_spec.width,
                 depth=contest_spec.depth,
                 n_mlps=n_mlps,
                 estimator_budget=contest_spec.estimator_budget,
-                ground_truth_budget=contest_spec.ground_truth_budget,
+                ground_truth_budget=gt_budget,
             )
             entrypoint = EstimatorEntrypoint(
                 file_path=Path(args.estimator).resolve(),
