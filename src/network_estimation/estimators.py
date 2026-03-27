@@ -82,8 +82,18 @@ class CovariancePropagationEstimator(BaseEstimator):
         rows = []
         for w in mlp.weights:
             W = w.astype(np.float64)
-            mu_pre = W.T @ mu
-            cov_pre = W.T @ cov @ W
+
+            # Rescale *before* the matmul to prevent overflow in deep networks.
+            max_var = np.max(np.diag(cov))
+            if max_var > self._COV_RESCALE_THRESHOLD:
+                s = np.sqrt(max_var)
+                mu /= s
+                cov /= s * s
+                log_scale += np.log(s)
+
+            with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+                mu_pre = W.T @ mu
+                cov_pre = W.T @ cov @ W
             var_pre = np.maximum(np.diag(cov_pre), 1e-12)
             sigma_pre = np.sqrt(var_pre)
 
@@ -107,14 +117,6 @@ class CovariancePropagationEstimator(BaseEstimator):
 
             # Record the mean in original (unscaled) coordinates.
             rows.append((mu * np.exp(log_scale)).astype(np.float32))
-
-            # Rescale to prevent overflow in subsequent layers.
-            max_var = np.max(np.diag(cov))
-            if max_var > self._COV_RESCALE_THRESHOLD:
-                s = np.sqrt(max_var)
-                mu /= s
-                cov /= s * s
-                log_scale += np.log(s)
 
         return np.stack(rows, axis=0)
 

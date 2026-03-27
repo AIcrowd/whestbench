@@ -24,20 +24,23 @@ class NumPyBackend(SimulationBackend):
     def run_mlp(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
         x = inputs.astype(np.float64)
         for w in mlp.weights:
-            x = np.maximum(x @ w.astype(np.float64), 0.0)
+            with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+                x = np.maximum(x @ w.astype(np.float64), 0.0)
         return x.astype(np.float32)
 
     def run_mlp_matmul_only(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
         x = inputs.astype(np.float64)
         for w in mlp.weights:
-            x = x @ w.astype(np.float64)
+            with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+                x = x @ w.astype(np.float64)
         return x.astype(np.float32)
 
     def run_mlp_all_layers(self, mlp: MLP, inputs: NDArray[np.float32]) -> List[NDArray[np.float32]]:
         x = inputs.astype(np.float64)
         layers: List[NDArray[np.float32]] = []
         for w in mlp.weights:
-            x = np.maximum(x @ w.astype(np.float64), 0.0)
+            with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+                x = np.maximum(x @ w.astype(np.float64), 0.0)
             layers.append(x.astype(np.float32))
         return layers
 
@@ -52,7 +55,8 @@ class NumPyBackend(SimulationBackend):
             n = min(chunk_size, n_samples - start)
             x = np.random.default_rng().standard_normal((n, width)).astype(np.float64)
             for layer_idx, w in enumerate(mlp.weights):
-                x = np.maximum(x @ w.astype(np.float64), 0.0)
+                with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+                    x = np.maximum(x @ w.astype(np.float64), 0.0)
                 layer_sums[layer_idx] += x.sum(axis=0)
             final_sum_sq += (x ** 2).sum(axis=0)
             n_processed += n
