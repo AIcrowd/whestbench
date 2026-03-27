@@ -228,6 +228,35 @@ class SubprocessRunner:
             )
         self._started = True
 
+    def baseline_time(self, mlp: MLP, n_samples: int) -> float:
+        """Run forward pass in the subprocess and return wall time.
+
+        Measures from the parent side so the returned time includes the same
+        serialisation/IPC overhead the estimator's predict call faces.
+        """
+        import time as _time
+
+        if not self._started or self._process is None or self._limits is None:
+            raise RunnerError(
+                "baseline",
+                RunnerErrorDetail(code="RUNNER_NOT_STARTED", message="Runner must be started."),
+            )
+        t0 = _time.perf_counter()
+        self._send_request(
+            {"command": "baseline", "mlp": _mlp_to_payload(mlp), "n_samples": n_samples}
+        )
+        response = self._read_response(timeout_s=self._limits.predict_timeout_s)
+        elapsed = _time.perf_counter() - t0
+        if response.get("status") != "ok":
+            raise RunnerError(
+                "baseline",
+                RunnerErrorDetail(
+                    code="BASELINE_ERROR",
+                    message=str(response.get("error_message", "unknown error")),
+                ),
+            )
+        return elapsed
+
     def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
         if not self._started or self._process is None or self._limits is None:
             raise RunnerError(

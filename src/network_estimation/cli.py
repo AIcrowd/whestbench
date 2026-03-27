@@ -640,6 +640,12 @@ class _RunnerEstimator(BaseEstimator):
     def predict(self, mlp: "Any", budget: int) -> "NDArray[np.float32]":
         return self._runner.predict(mlp, budget)
 
+    def baseline_time(self, mlp: "Any", n_samples: int) -> float:
+        """Measure forward-pass time through the runner (includes IPC overhead)."""
+        if hasattr(self._runner, "baseline_time"):
+            return self._runner.baseline_time(mlp, n_samples)
+        return -1.0  # signal: use default in-process baseline
+
 
 def _run_estimator_with_runner(
     runner: "Any",
