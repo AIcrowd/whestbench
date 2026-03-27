@@ -128,7 +128,9 @@ def evaluate_estimator(
 
     for i, mlp in enumerate(data.mlps):
         runner_bt = _runner_baseline(mlp, spec.estimator_budget) if _runner_baseline else -1.0
-        time_budget = runner_bt if runner_bt >= 0 else baseline_time(mlp, spec.estimator_budget, backend)
+        time_budget = (
+            runner_bt if runner_bt >= 0 else baseline_time(mlp, spec.estimator_budget, backend)
+        )
         time_budget = max(time_budget, 1e-9)
 
         t0 = time.perf_counter()

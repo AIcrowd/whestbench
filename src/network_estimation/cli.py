@@ -688,9 +688,11 @@ def _run_estimator_with_runner(
         results = evaluate_estimator(
             _RunnerEstimator(runner),
             data,
-            on_mlp_scored=lambda i: progress({"phase": "scoring", "completed": i, "total": n_mlps})
-            if progress is not None
-            else None,
+            on_mlp_scored=lambda i: (
+                progress({"phase": "scoring", "completed": i, "total": n_mlps})
+                if progress is not None
+                else None
+            ),
         )
     finally:
         runner.close()
@@ -890,7 +892,8 @@ def _main_participant(argv: "list[str]") -> int:
             contest_spec = _default_contest_spec()
             n_mlps = int(args.n_mlps)
             gt_budget = (
-                int(args.n_samples) if args.n_samples is not None
+                int(args.n_samples)
+                if args.n_samples is not None
                 else contest_spec.ground_truth_budget
             )
             contest_spec = ContestSpec(
