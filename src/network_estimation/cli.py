@@ -652,7 +652,13 @@ def _run_estimator_with_runner(
     import time as _time
 
     spec = contest_spec
-    data = make_contest(spec)
+    if progress is not None:
+        data = _make_contest_with_progress(
+            spec,
+            lambda i: progress({"phase": "generating", "completed": i, "total": spec.n_mlps}),
+        )
+    else:
+        data = make_contest(spec)
 
     context = SetupContext(
         width=spec.width,
@@ -666,13 +672,15 @@ def _run_estimator_with_runner(
     runner.start(entrypoint, context, limits)
 
     try:
-        results = evaluate_estimator(_RunnerEstimator(runner), data)
+        results = evaluate_estimator(
+            _RunnerEstimator(runner),
+            data,
+            on_mlp_scored=lambda i: progress({"phase": "scoring", "completed": i, "total": n_mlps})
+            if progress is not None
+            else None,
+        )
     finally:
         runner.close()
-
-    # Fire progress callback for completion if provided
-    if progress is not None:
-        progress({"phase": "scoring", "completed": n_mlps, "total": n_mlps})
 
     elapsed = _time.time() - t0
     return {
