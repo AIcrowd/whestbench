@@ -68,7 +68,8 @@ class PyTorchBackend(SimulationBackend):
     @classmethod
     def is_available(cls) -> bool:
         try:
-            import torch as _torch  # noqa: F811
+            import torch as _torch  # noqa: F811, F401
+
             return True
         except ImportError:
             return False
@@ -168,7 +169,5 @@ class PyTorchBackend(SimulationBackend):
         layer_means = (layer_sums / n_processed).numpy().astype(np.float32)
         final_mean = layer_means[-1].copy()
         final_mean_t = torch.from_numpy(final_mean)
-        avg_variance = float(
-            (final_sum_sq / n_processed - final_mean_t * final_mean_t).mean()
-        )
+        avg_variance = float((final_sum_sq / n_processed - final_mean_t * final_mean_t).mean())
         return layer_means, final_mean, avg_variance

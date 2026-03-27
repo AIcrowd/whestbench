@@ -1,4 +1,5 @@
 """Tests for dashboard generation."""
+
 import json
 import os
 import tempfile
@@ -22,29 +23,50 @@ MULTI_CONFIG_DATA = {
     "collected_at": "2026-03-20T21:00:00+00:00",
     "configs": {
         "compute-small": {
-            "hardware": {"cpu_count_logical": 2, "ram_total_bytes": 2147483648,
-                         "hostname": "ip-test", "platform": "Linux"},
+            "hardware": {
+                "cpu_count_logical": 2,
+                "ram_total_bytes": 2147483648,
+                "hostname": "ip-test",
+                "platform": "Linux",
+            },
             "backend_versions": {"numpy": "1.24.0", "scipy": "1.10.0"},
             "skipped_backends": {"numba": "No numba installed"},
             "correctness": [
                 {"backend": "numpy", "passed": True, "error": ""},
-                {"backend": "scipy", "passed": False,
-                 "error": "max_diff=0.5 exceeds threshold"},
+                {"backend": "scipy", "passed": False, "error": "max_diff=0.5 exceeds threshold"},
             ],
             "timing": [
-                {"backend": "numpy", "operation": "run_mlp", "width": 256,
-                 "depth": 4, "n_samples": 10000, "times": [0.05, 0.052, 0.051],
-                 "median_time": 0.051, "speedup_vs_numpy": 1.0,
-                 "warmup_time": 0.055},
-                {"backend": "scipy", "operation": "run_mlp", "width": 256,
-                 "depth": 4, "n_samples": 10000, "times": [0.03, 0.031, 0.032],
-                 "median_time": 0.031, "speedup_vs_numpy": 1.645,
-                 "warmup_time": 0.28},
+                {
+                    "backend": "numpy",
+                    "operation": "run_mlp",
+                    "width": 256,
+                    "depth": 4,
+                    "n_samples": 10000,
+                    "times": [0.05, 0.052, 0.051],
+                    "median_time": 0.051,
+                    "speedup_vs_numpy": 1.0,
+                    "warmup_time": 0.055,
+                },
+                {
+                    "backend": "scipy",
+                    "operation": "run_mlp",
+                    "width": 256,
+                    "depth": 4,
+                    "n_samples": 10000,
+                    "times": [0.03, 0.031, 0.032],
+                    "median_time": 0.031,
+                    "speedup_vs_numpy": 1.645,
+                    "warmup_time": 0.28,
+                },
             ],
         },
         "empty-config": {
-            "hardware": {"cpu_count_logical": 1, "ram_total_bytes": 1073741824,
-                         "hostname": "ip-empty", "platform": "Linux"},
+            "hardware": {
+                "cpu_count_logical": 1,
+                "ram_total_bytes": 1073741824,
+                "hostname": "ip-empty",
+                "platform": "Linux",
+            },
             "backend_versions": {"numpy": "1.24.0"},
             "skipped_backends": {},
             "correctness": [],
@@ -54,15 +76,26 @@ MULTI_CONFIG_DATA = {
 }
 
 SINGLE_CONFIG_DATA = {
-    "hardware": {"cpu_count_logical": 8, "ram_total_bytes": 17179869184,
-                 "hostname": "my-macbook", "platform": "Darwin"},
+    "hardware": {
+        "cpu_count_logical": 8,
+        "ram_total_bytes": 17179869184,
+        "hostname": "my-macbook",
+        "platform": "Darwin",
+    },
     "backend_versions": {"numpy": "1.24.0"},
     "skipped_backends": {},
     "correctness": [{"backend": "numpy", "passed": True, "error": ""}],
     "timing": [
-        {"backend": "numpy", "operation": "run_mlp", "width": 256,
-         "depth": 4, "n_samples": 10000, "times": [0.05, 0.052],
-         "median_time": 0.051, "speedup_vs_numpy": 1.0},
+        {
+            "backend": "numpy",
+            "operation": "run_mlp",
+            "width": 256,
+            "depth": 4,
+            "n_samples": 10000,
+            "times": [0.05, 0.052],
+            "median_time": 0.051,
+            "speedup_vs_numpy": 1.0,
+        },
     ],
 }
 
@@ -184,6 +217,7 @@ def test_end_to_end_generates_file():
     output_path = input_path.replace(".json", ".html")
     try:
         from profiling.generate_dashboard import main
+
         main(["--input", input_path, "--output", output_path])
         assert os.path.exists(output_path)
         with open(output_path) as f:

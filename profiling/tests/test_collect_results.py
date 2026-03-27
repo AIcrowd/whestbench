@@ -1,10 +1,9 @@
 """Tests for result collection and aggregation."""
 
 import csv
-import json
 import io
-from profiling.collect_results import build_combined_json, build_summary_csv
 
+from profiling.collect_results import build_combined_json, build_summary_csv
 
 SAMPLE_RESULT = {
     "hardware": {"platform": "Linux", "cpu_count_logical": 2},

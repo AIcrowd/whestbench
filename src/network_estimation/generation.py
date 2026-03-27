@@ -14,9 +14,7 @@ import numpy as np
 from .domain import MLP
 
 
-def sample_mlp(
-    width: int, depth: int, rng: Optional[np.random.Generator] = None
-) -> MLP:
+def sample_mlp(width: int, depth: int, rng: Optional[np.random.Generator] = None) -> MLP:
     """Sample a random MLP with He-initialized weight matrices.
 
     Each weight matrix has shape ``(width, width)`` with entries drawn from
@@ -37,8 +35,7 @@ def sample_mlp(
     rng = rng or np.random.default_rng()
     scale = np.sqrt(2.0 / width)
     weights = [
-        (rng.standard_normal((width, width)) * scale).astype(np.float32)
-        for _ in range(depth)
+        (rng.standard_normal((width, width)) * scale).astype(np.float32) for _ in range(depth)
     ]
     mlp = MLP(width=width, depth=depth, weights=weights)
     mlp.validate()

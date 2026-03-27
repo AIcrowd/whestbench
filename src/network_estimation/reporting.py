@@ -53,9 +53,7 @@ def render_human_context_panels(report: "dict[str, Any]") -> str:
     return buffer.getvalue()
 
 
-def render_human_results(
-    report: "dict[str, Any]", *, show_diagnostic_plots: bool = False
-) -> str:
+def render_human_results(report: "dict[str, Any]", *, show_diagnostic_plots: bool = False) -> str:
     """Render post-run sections for append-only human flows."""
     buffer = io.StringIO()
     console = _new_console(buffer)
@@ -154,7 +152,10 @@ def _smoke_next_step_lines() -> "list[Text]":
         ("Run local evaluation with isolation.", "bold bright_yellow"),
         ("Build submission artifacts for AIcrowd.", "bold bright_magenta"),
     ]
-    return [Text(f"# {idx}) {purpose}", style=style) for idx, (purpose, style) in enumerate(purposes, start=1)]
+    return [
+        Text(f"# {idx}) {purpose}", style=style)
+        for idx, (purpose, style) in enumerate(purposes, start=1)
+    ]
 
 
 def _smoke_optional_example_commands() -> "list[str]":
@@ -257,19 +258,19 @@ def _run_context_panel(report: "dict[str, Any]") -> Panel:
 
     rows.extend(
         [
-        (
-            "Started [run_started_at_utc]",
-            _human_utc(str(run_meta.get("run_started_at_utc", "n/a"))),
-        ),
-        (
-            "Finished [run_finished_at_utc]",
-            _human_utc(str(run_meta.get("run_finished_at_utc", "n/a"))),
-        ),
-        ("Duration(s) [run_duration_s]", _fmt_duration(run_meta.get("run_duration_s"))),
-        ("MLPs [n_mlps]", str(run_config.get("n_mlps", "n/a"))),
-        ("Width [width]", str(run_config.get("width", "n/a"))),
-        ("Depth [depth]", str(run_config.get("depth", "n/a"))),
-        ("Estimator Budget [estimator_budget]", str(run_config.get("estimator_budget", "n/a"))),
+            (
+                "Started [run_started_at_utc]",
+                _human_utc(str(run_meta.get("run_started_at_utc", "n/a"))),
+            ),
+            (
+                "Finished [run_finished_at_utc]",
+                _human_utc(str(run_meta.get("run_finished_at_utc", "n/a"))),
+            ),
+            ("Duration(s) [run_duration_s]", _fmt_duration(run_meta.get("run_duration_s"))),
+            ("MLPs [n_mlps]", str(run_config.get("n_mlps", "n/a"))),
+            ("Width [width]", str(run_config.get("width", "n/a"))),
+            ("Depth [depth]", str(run_config.get("depth", "n/a"))),
+            ("Estimator Budget [estimator_budget]", str(run_config.get("estimator_budget", "n/a"))),
         ]
     )
     for key, value in rows:
@@ -282,7 +283,7 @@ def _fmt_bytes(value: Optional[int]) -> str:
     """Format byte count as human-readable string (e.g. '32.0 GB')."""
     if value is None:
         return "n/a"
-    gb = value / (1024 ** 3)
+    gb = value / (1024**3)
     return f"{gb:.1f} GB"
 
 
@@ -293,6 +294,7 @@ def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
     table = Table(box=box.SIMPLE_HEAVY, show_header=False)
     table.add_column("field")
     table.add_column("value")
+
     def _s(val: object) -> str:
         """Stringify a metadata value, treating None as 'n/a'."""
         return "n/a" if val is None else str(val)
@@ -333,7 +335,11 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
 
     per_mlp = results.get("per_mlp", [])
     if isinstance(per_mlp, list) and per_mlp:
-        mlp_primaries = [_as_float(entry.get("primary_score", 0.0)) for entry in per_mlp if isinstance(entry, dict)]
+        mlp_primaries = [
+            _as_float(entry.get("primary_score", 0.0))
+            for entry in per_mlp
+            if isinstance(entry, dict)
+        ]
         if mlp_primaries:
             summary.add_row(
                 _label_with_code("Best MLP Score", "best_mlp_score", "bold green"),
@@ -700,7 +706,7 @@ def _left_ellipsis(value: str, max_chars: int) -> str:
             # Fit as much of the directory as possible before the basename
             dir_budget = max_chars - len(basename) - 3  # 3 for "..."
             return "..." + value[sep_idx - dir_budget : sep_idx] + basename
-    return "..." + value[-(max_chars - 3):]
+    return "..." + value[-(max_chars - 3) :]
 
 
 def _context_key_style(key: str) -> str:

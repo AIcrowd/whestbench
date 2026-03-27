@@ -3,15 +3,15 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from network_estimation.domain import MLP
+from network_estimation.estimators import MeanPropagationEstimator
 from network_estimation.scoring import (
     ContestSpec,
     evaluate_estimator,
     make_contest,
     validate_predictions,
 )
-from network_estimation.estimators import MeanPropagationEstimator
 from network_estimation.sdk import BaseEstimator
-from network_estimation.domain import MLP
 
 
 def test_validate_predictions_accepts_correct_shape() -> None:

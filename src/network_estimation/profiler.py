@@ -52,7 +52,6 @@ from __future__ import annotations
 import gc
 import json
 import os
-import platform
 import shutil
 import time
 import warnings
@@ -65,8 +64,10 @@ from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
 from .simulation import (
-    sample_layer_statistics as ref_sample_layer_statistics,
     run_mlp as ref_run_mlp,
+)
+from .simulation import (
+    sample_layer_statistics as ref_sample_layer_statistics,
 )
 from .simulation_backend import PrimitiveBreakdown, SimulationBackend
 from .simulation_backends import ALL_BACKEND_NAMES, INSTALL_HINTS, get_available_backends
@@ -195,30 +196,35 @@ def _collect_backend_versions(backend_names: List[str]) -> Dict[str, str]:
     versions["numpy"] = np.__version__
     try:
         import scipy
+
         versions["scipy"] = scipy.__version__
     except ImportError:
         pass
     if "pytorch" in backend_names:
         try:
             import torch
+
             versions["pytorch"] = torch.__version__
         except ImportError:
             pass
     if "numba" in backend_names:
         try:
             import numba
+
             versions["numba"] = numba.__version__
         except ImportError:
             pass
     if "jax" in backend_names:
         try:
             import jax
+
             versions["jax"] = jax.__version__
         except ImportError:
             pass
     if "cython" in backend_names:
         try:
             import Cython
+
             versions["cython"] = Cython.__version__
         except ImportError:
             pass
@@ -263,9 +269,7 @@ def correctness_check(
         return CorrectnessResult(backend_name=backend.name, passed=True)
 
     except Exception as e:
-        return CorrectnessResult(
-            backend_name=backend.name, passed=False, error=str(e)
-        )
+        return CorrectnessResult(backend_name=backend.name, passed=False, error=str(e))
 
 
 def _random_float32(shape: tuple) -> np.ndarray:
@@ -283,9 +287,7 @@ def _random_float32(shape: tuple) -> np.ndarray:
 _TIMING_CHUNK = 500_000
 
 
-def _time_run_mlp(
-    backend: SimulationBackend, mlp: MLP, n_samples: int
-) -> float:
+def _time_run_mlp(backend: SimulationBackend, mlp: MLP, n_samples: int) -> float:
     """Time run_mlp over n_samples, chunked to bound memory."""
     total = 0.0
     for start in range(0, n_samples, _TIMING_CHUNK):
@@ -298,18 +300,14 @@ def _time_run_mlp(
     return total
 
 
-def _time_sample_layer_statistics(
-    backend: SimulationBackend, mlp: MLP, n_samples: int
-) -> float:
+def _time_sample_layer_statistics(backend: SimulationBackend, mlp: MLP, n_samples: int) -> float:
     """Time a single sample_layer_statistics call."""
     t0 = time.perf_counter()
     backend.sample_layer_statistics(mlp, n_samples)
     return time.perf_counter() - t0
 
 
-def _time_run_mlp_matmul_only(
-    backend: SimulationBackend, mlp: MLP, n_samples: int
-) -> float:
+def _time_run_mlp_matmul_only(backend: SimulationBackend, mlp: MLP, n_samples: int) -> float:
     """Time run_mlp_matmul_only over n_samples, chunked to bound memory."""
     total = 0.0
     for start in range(0, n_samples, _TIMING_CHUNK):
@@ -401,17 +399,19 @@ def run_timing_sweep(
                             else:
                                 speedup = 1.0
 
-                            results.append(TimingResult(
-                                backend_name=backend_name,
-                                operation=op,
-                                width=width,
-                                depth=depth,
-                                n_samples=n_samples,
-                                times=times,
-                                median_time=median_t,
-                                speedup_vs_numpy=speedup,
-                                warmup_time=warmup_time,
-                            ))
+                            results.append(
+                                TimingResult(
+                                    backend_name=backend_name,
+                                    operation=op,
+                                    width=width,
+                                    depth=depth,
+                                    n_samples=n_samples,
+                                    times=times,
+                                    median_time=median_t,
+                                    speedup_vs_numpy=speedup,
+                                    warmup_time=warmup_time,
+                                )
+                            )
 
                         except (MemoryError, Exception) as exc:
                             # Log and skip — partial results are better than none.
@@ -422,17 +422,19 @@ def run_timing_sweep(
                                 f"skipped: {err_msg}",
                                 flush=True,
                             )
-                            results.append(TimingResult(
-                                backend_name=backend_name,
-                                operation=op,
-                                width=width,
-                                depth=depth,
-                                n_samples=n_samples,
-                                times=[],
-                                median_time=-1.0,
-                                speedup_vs_numpy=0.0,
-                                error=err_msg,
-                            ))
+                            results.append(
+                                TimingResult(
+                                    backend_name=backend_name,
+                                    operation=op,
+                                    width=width,
+                                    depth=depth,
+                                    n_samples=n_samples,
+                                    times=[],
+                                    median_time=-1.0,
+                                    speedup_vs_numpy=0.0,
+                                    error=err_msg,
+                                )
+                            )
 
                         if progress_callback:
                             progress_callback(
@@ -485,9 +487,10 @@ def format_verbose_output(
         A string containing ANSI-styled output suitable for printing to a
         terminal.
     """
+    import io
+
     from rich.console import Console
     from rich.table import Table
-    import io
 
     # Filter out errored timing entries for display
     timing_results = [tr for tr in timing_results if not tr.error]
@@ -533,7 +536,9 @@ def format_verbose_output(
     passed_names = {cr.backend_name for cr in correctness_results if cr.passed}
 
     # Timing table (run_mlp + sample_layer_statistics only, hide matmul_only internal op)
-    non_profiled = [tr for tr in timing_results if tr.operation in ("run_mlp", "sample_layer_statistics")]
+    non_profiled = [
+        tr for tr in timing_results if tr.operation in ("run_mlp", "sample_layer_statistics")
+    ]
     if non_profiled:
         table = Table(title="\nTiming Results", show_lines=True)
         table.add_column("Backend", style="cyan")
@@ -622,10 +627,11 @@ def format_compact_output(
         A string containing ANSI-styled output suitable for printing to a
         terminal.
     """
+    import io
     from collections import defaultdict
+
     from rich.console import Console
     from rich.table import Table
-    import io
 
     term_width = shutil.get_terminal_size((120, 24)).columns
     buf = io.StringIO()
@@ -675,9 +681,7 @@ def format_compact_output(
 
     # Line 3 — Correctness
     if all_failed:
-        console.print(
-            "No backends passed correctness checks. Use --verbose for error details."
-        )
+        console.print("No backends passed correctness checks. Use --verbose for error details.")
         return buf.getvalue()
 
     corr_parts: List[str] = []
@@ -685,9 +689,7 @@ def format_compact_output(
         if cr.passed:
             corr_parts.append(f"{cr.backend_name} \u2713")
         else:
-            corr_parts.append(
-                f"\u26a0 FAIL: {cr.backend_name} (use --verbose for details)"
-            )
+            corr_parts.append(f"\u26a0 FAIL: {cr.backend_name} (use --verbose for details)")
     console.print("Correctness: " + "  ".join(corr_parts))
 
     # --- Helpers for grouping ---
@@ -720,9 +722,11 @@ def format_compact_output(
                 console.print(f"  [bold]{_dim_label(*dim_key)}[/bold]")
 
             # Determine baseline backend (numpy if present, else fastest)
-            baseline_name = "numpy" if any(
-                e.backend_name == "numpy" for e in entries
-            ) else entries[0].backend_name
+            baseline_name = (
+                "numpy"
+                if any(e.backend_name == "numpy" for e in entries)
+                else entries[0].backend_name
+            )
 
             baseline_median = next(
                 e.median_time for e in entries if e.backend_name == baseline_name
@@ -831,11 +835,11 @@ def format_compact_output(
     console.print(table)
 
     # Footer
-    console.print("  [blue]\u2588[/blue] Matmul  [green]\u2588[/green] ReLU (by subtraction)", highlight=False)
-    console.print()
     console.print(
-        "[dim italic]Use --verbose for full timing tables with raw times[/dim italic]"
+        "  [blue]\u2588[/blue] Matmul  [green]\u2588[/green] ReLU (by subtraction)", highlight=False
     )
+    console.print()
+    console.print("[dim italic]Use --verbose for full timing tables with raw times[/dim italic]")
 
     return buf.getvalue()
 
@@ -941,6 +945,7 @@ def run_profile(
     """
     if max_threads is not None:
         from .concurrency import apply_thread_limit
+
         apply_thread_limit(max_threads)
 
     # Collect hardware info early (before timing, so it doesn't interfere)
@@ -1006,9 +1011,7 @@ def run_profile(
     passed_backends: Dict[str, SimulationBackend] = {}
 
     if progress_ctx is not None:
-        correctness_task = progress_ctx.add_task(
-            "Correctness checks", total=len(backend_instances)
-        )
+        correctness_task = progress_ctx.add_task("Correctness checks", total=len(backend_instances))
         progress_ctx.start()
 
     for name, backend in backend_instances.items():
@@ -1083,9 +1086,7 @@ def run_profile(
 
             callback = _rich_callback
 
-        timing_results, _ = run_timing_sweep(
-            passed_backends, preset, progress_callback=callback
-        )
+        timing_results, _ = run_timing_sweep(passed_backends, preset, progress_callback=callback)
 
     if progress_ctx is not None:
         progress_ctx.stop()
@@ -1098,19 +1099,25 @@ def run_profile(
 
     # Format output
     terminal_output = format_compact_output(
-        correctness_results, timing_results, skipped,
+        correctness_results,
+        timing_results,
+        skipped,
         hardware_info=hardware_info,
     )
     if verbose:
         terminal_output += "\n" + format_verbose_output(
-            correctness_results, timing_results, skipped,
+            correctness_results,
+            timing_results,
+            skipped,
             hardware_info=hardware_info,
         )
 
     json_data = None
     if output_path:
         json_data = format_json_output(
-            correctness_results, timing_results, skipped,
+            correctness_results,
+            timing_results,
+            skipped,
             backend_names=list(backend_instances.keys()),
             hardware_info=hardware_info,
         )

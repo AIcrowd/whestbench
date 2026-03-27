@@ -28,13 +28,15 @@ self.onmessage = function ({ data }) {
         break;
       }
       case 'outputStats': {
-        const { means, variances } = outputStats(params.mlp, params.nSamples, params.seed);
+        const onProgress1 = (p) => self.postMessage({ id, progress: p });
+        const { means, variances } = outputStats(params.mlp, params.nSamples, params.seed, onProgress1);
         payload = { means, variances };
         break;
       }
       case 'sampling': {
         // Monte Carlo sampling: run outputStats and return means as estimates
-        const { means } = outputStats(params.mlp, params.budget, params.seed);
+        const onProgress2 = (p) => self.postMessage({ id, progress: p });
+        const { means } = outputStats(params.mlp, params.budget, params.seed, onProgress2);
         payload = { estimates: means };
         break;
       }

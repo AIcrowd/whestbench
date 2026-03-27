@@ -78,11 +78,12 @@ function contrastLabel(fill) {
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
-export default function NetworkGraph({ mlp, means, activeLayer }) {
+export default function NetworkGraph({ mlp, means, activeLayer, onNodeSelect }) {
   const containerRef = useRef(null);
   const paperRef = useRef(null);
   const graphRef = useRef(null);
   const [highlighted, setHighlighted] = useState(null); // { col, row }
+  const [zoomPct, setZoomPct] = useState(100);
 
   const { width, depth, weights } = mlp;
   // Total columns: 1 input + depth hidden
@@ -116,6 +117,8 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
         background: { color: "transparent" },
         defaultConnector: { name: "smooth" },
         defaultRouter: { name: "normal" },
+        defaultConnectionPoint: { name: "anchor" },
+        sorting: "sorting-exact",
       });
     } else {
       paperRef.current.setDimensions(totalW, totalH);
@@ -137,6 +140,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
 
     // Node IDs: nodeId(col, row) for quick lookup
     const nodeMap = {}; // key: `${col},${row}` → cell id
+    const allCells = []; // batch all cells for a single resetCells() call
 
     /* ---- Create neuron nodes ---- */
     for (let col = 0; col < numCols; col++) {
@@ -200,7 +204,8 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
           },
         });
         ellipse.set("nodeKey", { col, row });
-        graph.addCell(ellipse);
+        ellipse.set("z", 10);
+        allCells.push(ellipse);
         nodeMap[`${col},${row}`] = ellipse.id;
       }
     }
@@ -232,6 +237,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
               line: {
                 stroke: weightColor(wVal),
                 strokeWidth: weightWidth(wVal),
+                strokeLinecap: "round",
                 targetMarker: { type: "none" },
                 opacity: EDGE_OPACITY,
               },
@@ -239,10 +245,19 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
             z: -1, // behind nodes
           });
           link.set("edgeKey", { l, i, j, w: wVal });
-          graph.addCell(link);
+          allCells.push(link);
         }
       }
     }
+
+    /* ---- Batch-add all cells (single render pass) ---- */
+    graph.resetCells(allCells);
+
+    /* ---- Fit network to viewport ---- */
+    const paper = paperRef.current;
+    paper.scaleContentToFit({ padding: 20, maxScale: 1 });
+    const scale = paper.scale().sx;
+    setZoomPct(Math.round(scale * 100));
 
     /* ---- Click handler ---- */
     paperRef.current.off("element:pointerclick");
@@ -308,6 +323,70 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
     graph.getElements().forEach((el) => el.toFront());
   }, [highlighted]);
 
+  /* ---- Notify parent of node selection ---- */
+  useEffect(() => {
+    if (onNodeSelect) onNodeSelect(highlighted);
+  }, [highlighted, onNodeSelect]);
+
+  /* ---- Zoom (mousewheel) ---- */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const paper = paperRef.current;
+      if (!paper) return;
+      const f = e.deltaY > 0 ? 0.92 : 1.08;
+      const sx = paper.scale().sx;
+      const ns = Math.max(0.15, Math.min(4, sx * f));
+      paper.scale(ns, ns);
+      setZoomPct(Math.round(ns * 100));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  /* ---- Pan (drag on blank area) ---- */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let panning = false;
+    let startX = 0, startY = 0, origTx = 0, origTy = 0;
+
+    const onDown = (e) => {
+      if (e.target.closest(".joint-element") || e.target.closest(".joint-link")) return;
+      panning = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const paper = paperRef.current;
+      if (paper) {
+        const t = paper.translate();
+        origTx = t.tx;
+        origTy = t.ty;
+      }
+      el.style.cursor = "grabbing";
+    };
+    const onMove = (e) => {
+      if (!panning) return;
+      const paper = paperRef.current;
+      if (!paper) return;
+      paper.translate(origTx + (e.clientX - startX), origTy + (e.clientY - startY));
+    };
+    const onUp = () => {
+      panning = false;
+      el.style.cursor = "";
+    };
+    el.addEventListener("mousedown", onDown);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      el.removeEventListener("mousedown", onDown);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
   return (
     <div className="panel" style={{ overflowX: "auto" }}>
       <h2>
@@ -315,6 +394,11 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
         <span className="mode-badge">
           width={width} · depth={depth}
         </span>
+        {zoomPct !== 100 && (
+          <span className="mode-badge" style={{ marginLeft: 6 }}>
+            {zoomPct}%
+          </span>
+        )}
       </h2>
       <div style={{ position: "relative", overflowX: "auto" }}>
         <div ref={containerRef} style={{ display: "inline-block" }} />
@@ -330,6 +414,7 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
           <span style={{ border: "3px solid #292C2D", borderRadius: "50%", display: "inline-block", width: 10, height: 10, verticalAlign: "middle", background: "#F7A09D" }} /> output
         </span>
         <span style={{ color: "#F0524D", marginLeft: 6 }}>● high activation</span>
+        <span style={{ color: "#9CA3AF", marginLeft: 16, fontSize: 11 }}>Scroll to zoom · Drag to pan</span>
       </div>
       {highlighted && (
         <p style={{ fontSize: 11, color: "#9CA3AF", margin: "4px 0 0" }}>

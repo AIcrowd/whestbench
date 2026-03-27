@@ -44,7 +44,7 @@ class MeanPropagationEstimator(BaseEstimator):
         for w in mlp.weights:
             W = w.astype(np.float64)
             mu_pre = W.T @ mu
-            var_pre = (W ** 2).T @ var
+            var_pre = (W**2).T @ var
             var_pre = np.maximum(var_pre, 1e-12)
             sigma_pre = np.sqrt(var_pre)
 
@@ -56,8 +56,8 @@ class MeanPropagationEstimator(BaseEstimator):
             mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
 
             # Var[ReLU(z)]
-            ez2 = (mu_pre ** 2 + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
-            var = np.maximum(ez2 - mu ** 2, 0.0)
+            ez2 = (mu_pre**2 + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
+            var = np.maximum(ez2 - mu**2, 0.0)
 
             rows.append(mu.astype(np.float32))
 
@@ -107,8 +107,8 @@ class CovariancePropagationEstimator(BaseEstimator):
             mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
 
             # Post-ReLU diagonal variance
-            ez2 = (mu_pre ** 2 + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
-            var_post = np.maximum(ez2 - mu ** 2, 0.0)
+            ez2 = (mu_pre**2 + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
+            var_post = np.maximum(ez2 - mu**2, 0.0)
 
             # Approximate post-ReLU covariance
             gain = np.where(sigma_pre > 1e-12, Phi_alpha, 0.0)

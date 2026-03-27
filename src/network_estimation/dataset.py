@@ -21,6 +21,7 @@ SCHEMA_VERSION = "2.0"
 
 def dataset_file_hash(path: "Path | str") -> str:
     import hashlib
+
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
@@ -66,9 +67,7 @@ def create_dataset(
             progress({"phase": "generating", "completed": i + 1, "total": n_mlps})
 
     # Pack weight matrices: shape (n_mlps, depth, width, width)
-    weights_array = np.stack(
-        [np.stack(mlp.weights) for mlp in mlps]
-    ).astype(np.float32)
+    weights_array = np.stack([np.stack(mlp.weights) for mlp in mlps]).astype(np.float32)
 
     # Compute ground truth
     all_means_list: List[NDArray[np.float32]] = []

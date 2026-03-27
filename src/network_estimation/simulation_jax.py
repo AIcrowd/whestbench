@@ -108,7 +108,5 @@ class JAXBackend(SimulationBackend):
 
         layer_means = np.asarray(layer_sums / n_processed, dtype=np.float32)
         final_mean = layer_means[-1].copy()
-        avg_variance = float(
-            jnp.mean(final_sum_sq / n_processed - jnp.array(final_mean) ** 2)
-        )
+        avg_variance = float(jnp.mean(final_sum_sq / n_processed - jnp.array(final_mean) ** 2))
         return layer_means, final_mean, avg_variance

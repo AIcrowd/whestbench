@@ -10,7 +10,7 @@ import warnings
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, Literal, Optional, cast, overload
+from typing import Any, Callable, Dict, Iterator, Literal, Optional, overload
 
 import numpy as np
 from numpy.typing import NDArray
@@ -54,7 +54,13 @@ from .runner import (
     RunnerError,
     SubprocessRunner,
 )
-from .scoring import ContestData, ContestSpec, evaluate_estimator, make_contest, validate_predictions
+from .scoring import (
+    ContestData,
+    ContestSpec,
+    evaluate_estimator,
+    make_contest,
+    validate_predictions,
+)
 from .sdk import BaseEstimator, SetupContext
 
 _DEFAULT_ESTIMATOR = CombinedEstimator()
@@ -125,7 +131,8 @@ def run_default_report(
     spec = _smoke_test_contest_spec()
     if progress is not None:
         data = _make_contest_with_progress(
-            spec, lambda i: progress({"phase": "ground_truth", "completed": i, "total": spec.n_mlps})
+            spec,
+            lambda i: progress({"phase": "ground_truth", "completed": i, "total": spec.n_mlps}),
         )
     else:
         data = make_contest(spec)
@@ -263,9 +270,7 @@ def _print_human_header_and_hints() -> None:
 
 
 class _LiveTopPaneSession:
-    def __init__(
-        self, pre_report: Dict[str, Any], total: int, n_mlps: int
-    ) -> None:
+    def __init__(self, pre_report: Dict[str, Any], total: int, n_mlps: int) -> None:
         self._pre_report = pre_report
         self._progress = Progress(
             SpinnerColumn(),
@@ -467,7 +472,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     smoke_test_parser.add_argument("--show-diagnostic-plots", action="store_true")
     smoke_test_parser.add_argument("--debug", action="store_true")
     smoke_test_parser.add_argument(
-        "--max-threads", type=int, default=None, metavar="N",
+        "--max-threads",
+        type=int,
+        default=None,
+        metavar="N",
         help="Limit all backends to at most N CPU threads.",
     )
 
@@ -510,7 +518,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument("--debug", action="store_true")
     run_parser.add_argument(
-        "--max-threads", type=int, default=None, metavar="N",
+        "--max-threads",
+        type=int,
+        default=None,
+        metavar="N",
         help="Limit all backends to at most N CPU threads.",
     )
 
@@ -529,7 +540,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     create_ds_parser.add_argument("--debug", action="store_true")
     create_ds_parser.add_argument(
-        "--max-threads", type=int, default=None, metavar="N",
+        "--max-threads",
+        type=int,
+        default=None,
+        metavar="N",
         help="Limit all backends to at most N CPU threads.",
     )
 
@@ -589,15 +603,21 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Limit all backends to at most N CPU threads.",
     )
     profile_parser.add_argument(
-        "--verbose", action="store_true", default=False,
+        "--verbose",
+        action="store_true",
+        default=False,
         help="Show full timing tables with all columns and raw data.",
     )
     profile_parser.add_argument(
-        "--backends-help", action="store_true", default=False,
+        "--backends-help",
+        action="store_true",
+        default=False,
         help="Print install instructions for all backends and exit.",
     )
     profile_parser.add_argument(
-        "--log-progress", action="store_true", default=False,
+        "--log-progress",
+        action="store_true",
+        default=False,
         help="Print one line per benchmark step (for non-TTY environments like containers).",
     )
 
@@ -683,6 +703,7 @@ def _main_participant(argv: "list[str]") -> int:
     max_threads = getattr(args, "max_threads", None)
     if max_threads is not None:
         from .concurrency import apply_thread_limit
+
         apply_thread_limit(max_threads)
     debug = bool(getattr(args, "debug", False))
 
@@ -708,7 +729,9 @@ def _main_participant(argv: "list[str]") -> int:
                     TimeElapsedColumn(),
                 )
                 gt_task = progress_bar.add_task("Computing ground truth", total=spec.n_mlps)
-                score_task = progress_bar.add_task("Scoring estimator", total=spec.n_mlps, visible=False)
+                score_task = progress_bar.add_task(
+                    "Scoring estimator", total=spec.n_mlps, visible=False
+                )
 
                 def _on_smoke_progress(event: Dict[str, Any]) -> None:
                     phase = str(event.get("phase", ""))
@@ -796,9 +819,7 @@ def _main_participant(argv: "list[str]") -> int:
                         TimeElapsedColumn(),
                     )
                     gen_task = progress_bar.add_task("Generating MLPs", total=n_mlps_ds)
-                    sample_task = progress_bar.add_task(
-                        "Sampling ground truth", total=n_mlps_ds
-                    )
+                    sample_task = progress_bar.add_task("Sampling ground truth", total=n_mlps_ds)
 
                     def _on_ds_progress(event: Dict[str, Any]) -> None:
                         phase = str(event.get("phase", ""))
@@ -922,17 +943,13 @@ def _main_participant(argv: "list[str]") -> int:
                         estimator_path=args.estimator,
                     )
 
-                    with _progress_callback(
-                        total_units, n_mlps
-                    ) as progress_cb:
+                    with _progress_callback(total_units, n_mlps) as progress_cb:
                         score_kwargs["progress"] = progress_cb
                         report = _run_estimator_with_runner(runner, **score_kwargs)
                 else:
                     _print_human_header_and_hints()
 
-                    with _live_top_pane_session(
-                        pre_report, total_units, n_mlps
-                    ) as live_session:
+                    with _live_top_pane_session(pre_report, total_units, n_mlps) as live_session:
                         score_kwargs["progress"] = live_session.on_progress
                         report = _run_estimator_with_runner(runner, **score_kwargs)
                         run_meta = report.get("run_meta")
@@ -997,7 +1014,11 @@ def _main_participant(argv: "list[str]") -> int:
 
         if command == "profile-simulation":
             from .profiler import run_profile
-            from .simulation_backends import ALL_BACKEND_NAMES, INSTALL_HINTS, get_available_backends
+            from .simulation_backends import (
+                ALL_BACKEND_NAMES,
+                INSTALL_HINTS,
+                get_available_backends,
+            )
 
             # Handle --backends-help early exit
             if getattr(args, "backends_help", False):

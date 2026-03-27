@@ -32,7 +32,9 @@ def _noop_progress(*_args: Any, **_kwargs: Any):
 
 
 def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch, capsys) -> None:
-    def fake_run_default_report(*, profile: bool = False, detail: str = "raw", progress=None) -> dict:
+    def fake_run_default_report(
+        *, profile: bool = False, detail: str = "raw", progress=None
+    ) -> dict:
         return _sample_report()
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)

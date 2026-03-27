@@ -1,7 +1,5 @@
 import numpy as np
-import pytest
 
-from network_estimation.domain import MLP
 from network_estimation.estimators import (
     CombinedEstimator,
     CovariancePropagationEstimator,

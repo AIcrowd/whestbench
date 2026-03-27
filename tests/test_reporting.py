@@ -127,7 +127,12 @@ def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:
     lines = reporting._smoke_next_step_lines()
     styles = [str(line.style) for line in lines]
     assert len(lines) == 4
-    assert styles == ["bold bright_cyan", "bold bright_green", "bold bright_yellow", "bold bright_magenta"]
+    assert styles == [
+        "bold bright_cyan",
+        "bold bright_green",
+        "bold bright_yellow",
+        "bold bright_magenta",
+    ]
 
 
 def test_render_human_mode_includes_expected_sections_without_profile() -> None:
@@ -148,18 +153,13 @@ def test_human_report_uses_two_column_top_row_on_wide_layout(
     rendered = render_human_report(_sample_report(include_profile=False))
     plain = _strip_ansi(rendered)
     title_lines = [
-        line
-        for line in plain.splitlines()
-        if "Run Context" in line or "Hardware & Runtime" in line
+        line for line in plain.splitlines() if "Run Context" in line or "Hardware & Runtime" in line
     ]
 
     assert "Run Context" in rendered
     assert "Hardware & Runtime" in rendered
     # Run Context and Hardware & Runtime share the same row
-    assert any(
-        "Run Context" in line and "Hardware & Runtime" in line
-        for line in title_lines
-    )
+    assert any("Run Context" in line and "Hardware & Runtime" in line for line in title_lines)
 
 
 def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:

@@ -29,7 +29,7 @@ def test_check_node_available_passes_when_both_found():
 
 
 def test_check_node_available_raises_when_node_missing():
-    def fake_which(name: str) -> "Optional[str]":
+    def fake_which(name: str) -> "str | None":
         return None if name == "node" else "/usr/bin/npm"
 
     with patch("shutil.which", side_effect=fake_which):
@@ -38,7 +38,7 @@ def test_check_node_available_raises_when_node_missing():
 
 
 def test_check_node_available_raises_when_npm_missing():
-    def fake_which(name: str) -> "Optional[str]":
+    def fake_which(name: str) -> "str | None":
         return "/usr/bin/node" if name == "node" else None
 
     with patch("shutil.which", side_effect=fake_which):

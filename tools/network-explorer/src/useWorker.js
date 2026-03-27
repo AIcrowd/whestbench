@@ -18,8 +18,13 @@ export function useMLPWorker() {
       { type: 'module' }
     );
     worker.onmessage = (e) => {
-      const { id, result, error } = e.data;
+      const { id, result, error, progress } = e.data;
       if (callbackRef.current?.id === id) {
+        if (progress !== undefined) {
+          // Intermediate progress update
+          if (callbackRef.current.onProgress) callbackRef.current.onProgress(progress);
+          return;
+        }
         if (error) callbackRef.current.reject(new Error(error));
         else callbackRef.current.resolve(result);
         callbackRef.current = null;
@@ -30,10 +35,10 @@ export function useMLPWorker() {
     return () => worker.terminate();
   }, []);
 
-  const run = useCallback((type, params) => {
+  const run = useCallback((type, params, onProgress) => {
     return new Promise((resolve, reject) => {
       const id = ++idRef.current;
-      callbackRef.current = { id, resolve, reject };
+      callbackRef.current = { id, resolve, reject, onProgress };
       setIsRunning(true);
       workerRef.current.postMessage({ id, type, params });
     });

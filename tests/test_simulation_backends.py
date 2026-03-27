@@ -8,9 +8,13 @@ import pytest
 from network_estimation.domain import MLP
 from network_estimation.generation import sample_mlp
 from network_estimation.simulation import (
-    sample_layer_statistics as ref_sample_layer_statistics,
     run_mlp as ref_run_mlp,
+)
+from network_estimation.simulation import (
     run_mlp_all_layers as ref_run_mlp_all_layers,
+)
+from network_estimation.simulation import (
+    sample_layer_statistics as ref_sample_layer_statistics,
 )
 from network_estimation.simulation_backends import get_available_backends, get_backend
 
@@ -112,6 +116,7 @@ class TestRegistry:
 
     def test_get_backend_default_is_numpy(self) -> None:
         import os
+
         old = os.environ.pop("NESTIM_BACKEND", None)
         try:
             backend = get_backend()
@@ -122,6 +127,7 @@ class TestRegistry:
 
     def test_get_backend_env_var(self) -> None:
         import os
+
         old = os.environ.get("NESTIM_BACKEND")
         os.environ["NESTIM_BACKEND"] = "numpy"
         try:

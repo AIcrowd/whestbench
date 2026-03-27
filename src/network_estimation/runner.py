@@ -9,13 +9,14 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Protocol, Tuple
+from typing import Any, Dict, List, Literal, Optional, Protocol
 
 import numpy as np
 from numpy.typing import NDArray
 
 from .domain import MLP
 from .loader import load_estimator_from_path
+from .scoring import validate_predictions
 from .sdk import BaseEstimator, SetupContext
 
 try:
@@ -72,7 +73,10 @@ class RunnerError(RuntimeError):
 
 class EstimatorRunner(Protocol):
     def start(
-        self, entrypoint: EstimatorEntrypoint, context: SetupContext, limits: ResourceLimits,
+        self,
+        entrypoint: EstimatorEntrypoint,
+        context: SetupContext,
+        limits: ResourceLimits,
     ) -> None: ...
 
     def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]: ...
@@ -88,19 +92,6 @@ def _mlp_to_payload(mlp: MLP) -> Dict[str, Any]:
     }
 
 
-def validate_predictions(
-    predictions: object, *, depth: int, width: int,
-) -> NDArray[np.float32]:
-    arr = np.asarray(predictions, dtype=np.float32)
-    if arr.shape != (depth, width):
-        raise ValueError(
-            f"Predictions must have shape ({depth}, {width}), got {arr.shape}."
-        )
-    if not np.all(np.isfinite(arr)):
-        raise ValueError("Predictions must contain only finite values.")
-    return arr
-
-
 class InProcessRunner:
     def __init__(self) -> None:
         self._estimator: Optional[BaseEstimator] = None
@@ -109,7 +100,10 @@ class InProcessRunner:
         self._started = False
 
     def start(
-        self, entrypoint: EstimatorEntrypoint, context: SetupContext, limits: ResourceLimits,
+        self,
+        entrypoint: EstimatorEntrypoint,
+        context: SetupContext,
+        limits: ResourceLimits,
     ) -> None:
         self.close()
         self._limits = limits
@@ -123,7 +117,8 @@ class InProcessRunner:
             estimator.setup(context)
         except Exception as exc:
             raise RunnerError(
-                "setup", RunnerErrorDetail(code="SETUP_ERROR", message=str(exc)),
+                "setup",
+                RunnerErrorDetail(code="SETUP_ERROR", message=str(exc)),
             ) from exc
         setup_elapsed = time.time() - start_wall
         if setup_elapsed > limits.setup_timeout_s:
@@ -172,30 +167,39 @@ class SubprocessRunner:
         self._started = False
 
     def start(
-        self, entrypoint: EstimatorEntrypoint, context: SetupContext, limits: ResourceLimits,
+        self,
+        entrypoint: EstimatorEntrypoint,
+        context: SetupContext,
+        limits: ResourceLimits,
     ) -> None:
         self.close()
         self._limits = limits
         self._context = context
         self._process = subprocess.Popen(
             self._worker_command,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, bufsize=1, env=self._worker_env(),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            env=self._worker_env(),
         )
-        self._send_request({
-            "command": "start",
-            "entrypoint": {
-                "file_path": str(entrypoint.file_path),
-                "class_name": entrypoint.class_name,
-            },
-            "context": {
-                "width": context.width,
-                "depth": context.depth,
-                "estimator_budget": context.estimator_budget,
-                "api_version": context.api_version,
-                "scratch_dir": context.scratch_dir,
-            },
-        })
+        self._send_request(
+            {
+                "command": "start",
+                "entrypoint": {
+                    "file_path": str(entrypoint.file_path),
+                    "class_name": entrypoint.class_name,
+                },
+                "context": {
+                    "width": context.width,
+                    "depth": context.depth,
+                    "estimator_budget": context.estimator_budget,
+                    "api_version": context.api_version,
+                    "scratch_dir": context.scratch_dir,
+                },
+            }
+        )
         try:
             response = self._read_response(timeout_s=limits.setup_timeout_s)
         except TimeoutError as exc:
@@ -211,7 +215,8 @@ class SubprocessRunner:
                 msg = f"{msg} stderr: {stderr_tail}"
             self._terminate_process()
             raise RunnerError(
-                "setup", RunnerErrorDetail(code="SETUP_PROTOCOL_ERROR", message=msg),
+                "setup",
+                RunnerErrorDetail(code="SETUP_PROTOCOL_ERROR", message=msg),
             ) from exc
         if response.get("status") != "ok":
             raise RunnerError(
@@ -229,11 +234,13 @@ class SubprocessRunner:
                 "predict",
                 RunnerErrorDetail(code="RUNNER_NOT_STARTED", message="Runner must be started."),
             )
-        self._send_request({
-            "command": "predict",
-            "budget": int(budget),
-            "mlp": _mlp_to_payload(mlp),
-        })
+        self._send_request(
+            {
+                "command": "predict",
+                "budget": int(budget),
+                "mlp": _mlp_to_payload(mlp),
+            }
+        )
         try:
             response = self._read_response(timeout_s=self._limits.predict_timeout_s)
         except TimeoutError:
@@ -300,6 +307,7 @@ class SubprocessRunner:
                 RunnerErrorDetail(code="WORKER_IO_ERROR", message="Worker stdout unavailable."),
             )
         import threading
+
         result: List[str] = []
 
         def _read() -> None:

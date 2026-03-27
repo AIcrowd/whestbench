@@ -9,9 +9,17 @@ from network_estimation.hardware import (
 def test_collect_hardware_fingerprint_returns_required_keys():
     fp = collect_hardware_fingerprint()
     required = {
-        "hostname", "os", "os_release", "platform", "machine",
-        "python_version", "cpu_brand", "cpu_count_logical",
-        "cpu_count_physical", "ram_total_bytes", "ram_available_bytes",
+        "hostname",
+        "os",
+        "os_release",
+        "platform",
+        "machine",
+        "python_version",
+        "cpu_brand",
+        "cpu_count_logical",
+        "cpu_count_physical",
+        "ram_total_bytes",
+        "ram_available_bytes",
         "numpy_version",
     }
     assert required <= set(fp.keys())

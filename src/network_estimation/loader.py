@@ -76,10 +76,7 @@ def _resolve_estimator_class(
 ) -> Type[BaseEstimator]:
     if class_name is not None:
         explicit_candidate = getattr(module, class_name, None)
-        if (
-            not _is_estimator_subclass(explicit_candidate)
-            or explicit_candidate is BaseEstimator
-        ):
+        if not _is_estimator_subclass(explicit_candidate) or explicit_candidate is BaseEstimator:
             raise ValueError(
                 f"Estimator class '{class_name}' was not found as a BaseEstimator subclass in {module_path}."
             )

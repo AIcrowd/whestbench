@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 from numpy.typing import NDArray
@@ -39,15 +39,6 @@ class ContestSpec:
             raise ValueError("ground_truth_budget must be positive.")
 
 
-default_spec = ContestSpec(
-    width=256,
-    depth=16,
-    n_mlps=10,
-    estimator_budget=256 * 256 * 4,
-    ground_truth_budget=256 * 256 * 256,
-)
-
-
 @dataclass
 class ContestData:
     """Precomputed contest data for scoring."""
@@ -70,7 +61,9 @@ def make_contest(spec: ContestSpec) -> ContestData:
 
     for _ in range(spec.n_mlps):
         mlp = sample_mlp(spec.width, spec.depth)
-        all_means, final_mean, avg_var = backend.sample_layer_statistics(mlp, spec.ground_truth_budget)
+        all_means, final_mean, avg_var = backend.sample_layer_statistics(
+            mlp, spec.ground_truth_budget
+        )
         mlps.append(mlp)
         all_layer_targets.append(all_means)
         final_targets.append(final_mean)
@@ -85,10 +78,11 @@ def make_contest(spec: ContestSpec) -> ContestData:
     )
 
 
-def baseline_time(mlp: MLP, n_samples: int, backend: "SimulationBackend | None" = None) -> float:
+def baseline_time(mlp: MLP, n_samples: int, backend: "SimulationBackend | None" = None) -> float:  # noqa: F821
     """Measure wall time for a single forward pass with ``n_samples`` inputs."""
     if backend is None:
         from .simulation_backends import get_backend
+
         backend = get_backend()
     inputs = np.random.default_rng().standard_normal((n_samples, mlp.width), dtype=np.float32)
     t0 = time.perf_counter()
@@ -102,9 +96,7 @@ def validate_predictions(
     """Validate estimator prediction array shape and finiteness."""
     arr = np.asarray(predictions, dtype=np.float32)
     if arr.shape != (depth, width):
-        raise ValueError(
-            f"Predictions must have shape ({depth}, {width}), got {arr.shape}."
-        )
+        raise ValueError(f"Predictions must have shape ({depth}, {width}), got {arr.shape}.")
     if not np.all(np.isfinite(arr)):
         raise ValueError("Predictions must contain only finite values.")
     return arr
@@ -128,9 +120,7 @@ def evaluate_estimator(
         t0 = time.perf_counter()
         try:
             raw_predictions = estimator.predict(mlp, spec.estimator_budget)
-            predictions = validate_predictions(
-                raw_predictions, depth=spec.depth, width=spec.width
-            )
+            predictions = validate_predictions(raw_predictions, depth=spec.depth, width=spec.width)
         except Exception as exc:
             predictions = np.zeros((spec.depth, spec.width), dtype=np.float32)
             per_mlp.append({"mlp_index": i, "error": str(exc)})
@@ -165,16 +155,18 @@ def evaluate_estimator(
         secondary_scores.append(secondary)
 
         if not per_mlp or per_mlp[-1].get("mlp_index") != i:
-            per_mlp.append({
-                "mlp_index": i,
-                "time_budget_s": time_budget,
-                "time_spent_s": time_spent,
-                "fraction_spent": fraction_spent,
-                "final_mse": final_mse,
-                "all_layer_mse": all_mse,
-                "primary_score": primary,
-                "secondary_score": secondary,
-            })
+            per_mlp.append(
+                {
+                    "mlp_index": i,
+                    "time_budget_s": time_budget,
+                    "time_spent_s": time_spent,
+                    "fraction_spent": fraction_spent,
+                    "final_mse": final_mse,
+                    "all_layer_mse": all_mse,
+                    "primary_score": primary,
+                    "secondary_score": secondary,
+                }
+            )
 
     return {
         "primary_score": float(np.mean(primary_scores)),

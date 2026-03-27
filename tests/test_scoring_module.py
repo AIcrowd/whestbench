@@ -3,7 +3,6 @@ import pytest
 
 from network_estimation.domain import MLP
 from network_estimation.scoring import (
-    ContestData,
     ContestSpec,
     baseline_time,
     evaluate_estimator,
@@ -18,7 +17,9 @@ def test_contest_spec_validates() -> None:
 
 def test_contest_spec_rejects_zero_width() -> None:
     with pytest.raises(ValueError, match="width"):
-        ContestSpec(width=0, depth=2, n_mlps=2, estimator_budget=100, ground_truth_budget=1000).validate()
+        ContestSpec(
+            width=0, depth=2, n_mlps=2, estimator_budget=100, ground_truth_budget=1000
+        ).validate()
 
 
 def test_make_contest_produces_valid_data() -> None:
@@ -65,12 +66,14 @@ def test_evaluate_estimator_with_zeros_estimator() -> None:
 
 def test_validate_predictions_rejects_wrong_shape() -> None:
     from network_estimation.scoring import validate_predictions
+
     with pytest.raises(ValueError, match="shape"):
         validate_predictions(np.zeros((3, 4), dtype=np.float32), depth=2, width=4)
 
 
 def test_validate_predictions_rejects_nonfinite() -> None:
     from network_estimation.scoring import validate_predictions
+
     arr = np.zeros((2, 4), dtype=np.float32)
     arr[0, 0] = np.inf
     with pytest.raises(ValueError, match="finite"):

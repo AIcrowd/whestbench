@@ -52,6 +52,5 @@ class MLP:
         for i, w in enumerate(self.weights):
             if w.shape != (self.width, self.width):
                 raise ValueError(
-                    f"Weight matrix {i} has shape {w.shape}, "
-                    f"expected ({self.width}, {self.width})."
+                    f"Weight matrix {i} has shape {w.shape}, expected ({self.width}, {self.width})."
                 )
