@@ -114,8 +114,21 @@ def evaluate_estimator(
     primary_scores: List[float] = []
     secondary_scores: List[float] = []
 
+    # Warmup call so subprocess startup / import overhead doesn't penalise
+    # the first timed prediction.
+    if data.mlps:
+        try:
+            estimator.predict(data.mlps[0], spec.estimator_budget)
+        except Exception:
+            pass
+
+    # If the estimator wraps a subprocess runner, measure baseline through
+    # the same IPC channel so serialisation overhead is included in both.
+    _runner_baseline = getattr(estimator, "baseline_time", None)
+
     for i, mlp in enumerate(data.mlps):
-        time_budget = baseline_time(mlp, spec.estimator_budget, backend)
+        runner_bt = _runner_baseline(mlp, spec.estimator_budget) if _runner_baseline else -1.0
+        time_budget = runner_bt if runner_bt >= 0 else baseline_time(mlp, spec.estimator_budget, backend)
         time_budget = max(time_budget, 1e-9)
 
         t0 = time.perf_counter()

@@ -30,6 +30,27 @@ def _write_response(payload: dict) -> None:
     sys.stdout.flush()
 
 
+def _handle_baseline(request: dict) -> None:
+    """Run a forward pass and return wall time (measures same IPC path as predict)."""
+    import time as _time
+
+    from .simulation_backends import get_backend
+
+    try:
+        mlp = _payload_to_mlp(request["mlp"])
+        n_samples = int(request["n_samples"])
+    except Exception as exc:
+        _write_response({"status": "error", "error_message": str(exc)})
+        return
+
+    backend = get_backend()
+    inputs = np.random.default_rng().standard_normal((n_samples, mlp.width), dtype=np.float32)
+    t0 = _time.perf_counter()
+    backend.run_mlp(mlp, inputs)
+    elapsed = _time.perf_counter() - t0
+    _write_response({"status": "ok", "elapsed": elapsed})
+
+
 def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
     try:
         mlp = _payload_to_mlp(request["mlp"])
@@ -93,6 +114,8 @@ def main() -> int:
                 _write_response({"status": "ok"})
             except Exception as exc:
                 _write_response({"status": "runtime_error", "error_message": str(exc)})
+        elif command == "baseline":
+            _handle_baseline(request)
         elif command == "predict":
             if estimator is None:
                 _write_response({"status": "error", "error_message": "Estimator not initialized."})
