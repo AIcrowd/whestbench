@@ -150,11 +150,11 @@ Recommended reading order:
 Try them out (adjust `--n-mlps` to control evaluation size):
 
 ```bash
-# Quick smoke run (10 networks — fast)
-nestim run --estimator examples/estimators/mean_propagation.py --n-mlps 10
+# Quick iteration (fewer samples = faster ground truth, noisier scores)
+nestim run --estimator examples/estimators/mean_propagation.py --n-mlps 3 --n-samples 40000
 
-# Full evaluation against the combined estimator
-nestim run --estimator examples/estimators/combined_estimator.py --n-mlps 100
+# Full evaluation (default 2.56M samples/MLP — accurate but slower, ~1 min)
+nestim run --estimator examples/estimators/mean_propagation.py --n-mlps 10
 
 # Compare estimators on the same dataset for fair scoring
 nestim create-dataset --n-mlps 100 --n-samples 10000 -o eval.npz
