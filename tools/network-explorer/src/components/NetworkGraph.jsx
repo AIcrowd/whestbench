@@ -295,9 +295,17 @@ export default function NetworkGraph({ mlp, means, activeLayer }) {
       } else {
         const nk = cell.get("nodeKey");
         if (!nk) return;
-        cell.attr("body/opacity", nk.col === col && nk.row === row ? 1 : 0.3);
+        // Keep selected node and its direct neighbors fully opaque
+        // so edges don't show through semi-transparent node fills
+        const isSelected = nk.col === col && nk.row === row;
+        const isNeighbor = nk.col === col - 1 || nk.col === col + 1;
+        cell.attr("body/opacity", isSelected || isNeighbor ? 1 : 0.3);
       }
     });
+
+    // Re-assert node-on-top ordering after attr changes
+    // (JointJS attr mutations can disturb SVG DOM order)
+    graph.getElements().forEach((el) => el.toFront());
   }, [highlighted]);
 
   return (

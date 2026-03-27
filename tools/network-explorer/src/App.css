@@ -1969,6 +1969,36 @@ body {
   margin: 4px 12px;
 }
 
+/* ---- Heatmap connection tooltip ---- */
+
+.heatmap-connection-tooltip {
+  min-width: 200px;
+  max-width: 380px;
+}
+
+.heatmap-tip-section {
+  /* no extra styles needed, just a grouping container */
+}
+
+.heatmap-tip-section-label {
+  padding: 4px 12px 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--gray-600);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.heatmap-tip-legend {
+  display: flex;
+  gap: 8px;
+  padding: 4px 12px 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--gray-400);
+}
+
 /* ============================================
    Performance Overlay (dev only)
    ============================================ */
