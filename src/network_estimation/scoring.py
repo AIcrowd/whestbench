@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 from numpy.typing import NDArray
@@ -105,6 +105,7 @@ def validate_predictions(
 def evaluate_estimator(
     estimator: BaseEstimator,
     data: ContestData,
+    on_mlp_scored: Optional[Callable[[int], None]] = None,
 ) -> Dict[str, Any]:
     """Score an estimator against precomputed contest data."""
     spec = data.spec
@@ -167,6 +168,9 @@ def evaluate_estimator(
                     "secondary_score": secondary,
                 }
             )
+
+        if on_mlp_scored is not None:
+            on_mlp_scored(i + 1)
 
     return {
         "primary_score": float(np.mean(primary_scores)),
