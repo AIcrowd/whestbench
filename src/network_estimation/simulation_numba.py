@@ -41,7 +41,8 @@ if _HAS_NUMBA:
 
     @njit(cache=True)
     def _forward_pass(
-        inputs: np.ndarray, weights_tuple: tuple  # type: ignore[type-arg]
+        inputs: np.ndarray,
+        weights_tuple: tuple,  # type: ignore[type-arg]
     ) -> np.ndarray:  # type: ignore[type-arg]
         """Forward pass returning only the final-layer activations."""
         x = inputs.copy()
@@ -52,7 +53,8 @@ if _HAS_NUMBA:
 
     @njit(cache=True)
     def _forward_pass_matmul_only(
-        inputs: np.ndarray, weights_tuple: tuple  # type: ignore[type-arg]
+        inputs: np.ndarray,
+        weights_tuple: tuple,  # type: ignore[type-arg]
     ) -> np.ndarray:  # type: ignore[type-arg]
         """Forward pass with matmul only (no ReLU)."""
         x = inputs.copy()
@@ -62,7 +64,8 @@ if _HAS_NUMBA:
 
     @njit(cache=True)
     def _forward_pass_all_layers(
-        inputs: np.ndarray, weights_tuple: tuple  # type: ignore[type-arg]
+        inputs: np.ndarray,
+        weights_tuple: tuple,  # type: ignore[type-arg]
     ) -> tuple:  # type: ignore[type-arg]
         """Forward pass collecting activations after every layer.
 
@@ -83,7 +86,8 @@ if _HAS_NUMBA:
 
     @njit(cache=True)
     def _forward_pass_layer_stats(
-        inputs: np.ndarray, weights_tuple: tuple  # type: ignore[type-arg]
+        inputs: np.ndarray,
+        weights_tuple: tuple,  # type: ignore[type-arg]
     ) -> tuple:  # type: ignore[type-arg]
         """Forward pass that accumulates per-layer sums and final sum-of-squares.
 
@@ -131,15 +135,11 @@ class NumbaBackend(SimulationBackend):
 
     # -- forward pass -------------------------------------------------------
 
-    def run_mlp(
-        self, mlp: MLP, inputs: NDArray[np.float32]
-    ) -> NDArray[np.float32]:
+    def run_mlp(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
         weights_tuple = tuple(mlp.weights)
         return _forward_pass(inputs.astype(np.float32, copy=False), weights_tuple)
 
-    def run_mlp_matmul_only(
-        self, mlp: MLP, inputs: NDArray[np.float32]
-    ) -> NDArray[np.float32]:
+    def run_mlp_matmul_only(self, mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
         weights_tuple = tuple(mlp.weights)
         return _forward_pass_matmul_only(inputs.astype(np.float32, copy=False), weights_tuple)
 
@@ -147,9 +147,7 @@ class NumbaBackend(SimulationBackend):
         self, mlp: MLP, inputs: NDArray[np.float32]
     ) -> List[NDArray[np.float32]]:
         weights_tuple = tuple(mlp.weights)
-        stacked = _forward_pass_all_layers(
-            inputs.astype(np.float32, copy=False), weights_tuple
-        )
+        stacked = _forward_pass_all_layers(inputs.astype(np.float32, copy=False), weights_tuple)
         # stacked is (n_layers, samples, width) ndarray; split into list
         return [stacked[k] for k in range(stacked.shape[0])]
 

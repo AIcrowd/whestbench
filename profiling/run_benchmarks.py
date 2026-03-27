@@ -88,8 +88,9 @@ def register_task_definition(
         ],
     }
 
-    import tempfile
     import os
+    import tempfile
+
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump(task_def, f)
         tmp_path = f.name
@@ -109,9 +110,14 @@ def launch_task(
 ) -> str:
     """Launch a Fargate task. Returns task ARN."""
     subnets_result = aws_cli(
-        ["ec2", "describe-subnets",
-         "--filters", "Name=default-for-az,Values=true",
-         "--query", "Subnets[].SubnetId"],
+        [
+            "ec2",
+            "describe-subnets",
+            "--filters",
+            "Name=default-for-az,Values=true",
+            "--query",
+            "Subnets[].SubnetId",
+        ],
         infra["region"],
     )
     subnets = subnets_result if isinstance(subnets_result, list) else []
@@ -126,11 +132,18 @@ def launch_task(
     }
 
     result = aws_cli(
-        ["ecs", "run-task",
-         "--cluster", infra["cluster_name"],
-         "--task-definition", task_def_arn,
-         "--launch-type", "FARGATE",
-         "--network-configuration", json.dumps(network_config)],
+        [
+            "ecs",
+            "run-task",
+            "--cluster",
+            infra["cluster_name"],
+            "--task-definition",
+            task_def_arn,
+            "--launch-type",
+            "FARGATE",
+            "--network-configuration",
+            json.dumps(network_config),
+        ],
         infra["region"],
     )
 
@@ -164,8 +177,17 @@ def monitor_tasks(
             for name, arn in task_arns.items():
                 if name not in final_statuses:
                     subprocess.run(
-                        ["aws", "ecs", "stop-task", "--cluster", cluster,
-                         "--task", arn, "--region", region],
+                        [
+                            "aws",
+                            "ecs",
+                            "stop-task",
+                            "--cluster",
+                            cluster,
+                            "--task",
+                            arn,
+                            "--region",
+                            region,
+                        ],
                         capture_output=True,
                     )
                     final_statuses[name] = "TIMEOUT"
@@ -177,8 +199,7 @@ def monitor_tasks(
 
         arn_list = list(pending_arns.values())
         result = aws_cli(
-            ["ecs", "describe-tasks", "--cluster", cluster,
-             "--tasks"] + arn_list,
+            ["ecs", "describe-tasks", "--cluster", cluster, "--tasks"] + arn_list,
             region,
         )
 
@@ -195,8 +216,7 @@ def monitor_tasks(
                 marker = " ✓" if status == "STOPPED_OK" else " ✗"
             else:
                 task_info = next(
-                    (t for t in result.get("tasks", [])
-                     if arn_to_name.get(t["taskArn"]) == name),
+                    (t for t in result.get("tasks", []) if arn_to_name.get(t["taskArn"]) == name),
                     None,
                 )
                 if task_info:
@@ -252,7 +272,8 @@ def main():
         description="Run nestim profiler across Fargate instance configs.",
     )
     parser.add_argument(
-        "--preset", default="exhaustive",
+        "--preset",
+        default="exhaustive",
         choices=["super-quick", "quick", "standard", "exhaustive"],
         help="Profiler preset (default: exhaustive)",
     )
@@ -269,19 +290,24 @@ def main():
         help="Comma-separated backend filter (passed to nestim)",
     )
     parser.add_argument(
-        "--max-threads", type=int,
+        "--max-threads",
+        type=int,
         help="Thread cap (passed to nestim --max-threads)",
     )
     parser.add_argument(
-        "--timeout", type=int, default=480,
+        "--timeout",
+        type=int,
+        default=480,
         help="Timeout in minutes for all tasks (default: 480 = 8 hours)",
     )
     parser.add_argument(
-        "--verbose", action="store_true",
+        "--verbose",
+        action="store_true",
         help="Pass --verbose to nestim profiler (more detailed output in logs)",
     )
     parser.add_argument(
-        "--dry-run", action="store_true",
+        "--dry-run",
+        action="store_true",
         help="Show what would be launched without launching",
     )
 
@@ -314,8 +340,14 @@ def main():
     for i, config in enumerate(configs):
         print(f"Registering + launching: {config['name']} ({config['label']})...")
         task_def_arn = register_task_definition(
-            config, infra, args.preset, run_id, args.backends, args.max_threads,
-            verbose=args.verbose, timeout_minutes=args.timeout,
+            config,
+            infra,
+            args.preset,
+            run_id,
+            args.backends,
+            args.max_threads,
+            verbose=args.verbose,
+            timeout_minutes=args.timeout,
         )
         task_arn = launch_task(task_def_arn, infra)
         task_arns[config["name"]] = task_arn
@@ -343,14 +375,23 @@ def main():
             if status != "STOPPED_OK":
                 print(f"\n[{name}]:")
                 subprocess.run(
-                    ["aws", "logs", "tail", infra["log_group"],
-                     "--log-stream-name-prefix", f"{run_id}",
-                     "--since", "2h", "--region", infra["region"]],
+                    [
+                        "aws",
+                        "logs",
+                        "tail",
+                        infra["log_group"],
+                        "--log-stream-name-prefix",
+                        f"{run_id}",
+                        "--since",
+                        "2h",
+                        "--region",
+                        infra["region"],
+                    ],
                     timeout=10,
                 )
                 print()
 
-    print(f"\nCollect results with:")
+    print("\nCollect results with:")
     print(f"  python profiling/collect_results.py --run-id {run_id}")
 
 

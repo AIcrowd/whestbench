@@ -1,12 +1,11 @@
 import numpy as np
-import pytest
 
 from network_estimation.domain import MLP
 from network_estimation.simulation import (
-    sample_layer_statistics,
     relu,
     run_mlp,
     run_mlp_all_layers,
+    sample_layer_statistics,
 )
 
 

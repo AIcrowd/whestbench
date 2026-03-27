@@ -16,6 +16,7 @@ The ``--max-threads`` CLI flag (available on ``profile-simulation``,
 ``run``, ``create-dataset``, and ``smoke-test``) calls this function
 early, before any backend module is imported.
 """
+
 from __future__ import annotations
 
 import os
@@ -67,6 +68,7 @@ def apply_thread_limit(n: Optional[int] = None) -> Optional[int]:
     # If PyTorch is already loaded, apply the runtime cap too.
     try:
         import torch
+
         torch.set_num_threads(n)
     except ImportError:
         pass
@@ -76,6 +78,7 @@ def apply_thread_limit(n: Optional[int] = None) -> Optional[int]:
     # environment variables which are only read at library load time.
     try:
         from threadpoolctl import threadpool_limits
+
         threadpool_limits(limits=n, user_api="blas")
     except ImportError:
         pass

@@ -130,7 +130,7 @@ export function forwardPass(mlp, inputs) {
  *   Both are shape (depth × width), layer-major, row-major within a layer:
  *   index = layer * width + neuron
  */
-export function outputStats(mlp, nSamples, seed = 0) {
+export function outputStats(mlp, nSamples, seed = 0, onProgress = null) {
   const { width, depth } = mlp;
   const chunkSize = Math.min(nSamples, 512);
 
@@ -170,6 +170,7 @@ export function outputStats(mlp, nSamples, seed = 0) {
 
     samplesSoFar += thisChunk;
     totalSamples += thisChunk;
+    if (onProgress) onProgress(samplesSoFar / nSamples);
   }
 
   // Compute final means and variances from accumulators

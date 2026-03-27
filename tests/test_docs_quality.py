@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import importlib
 from pathlib import Path
-from typing import List, Optional, Set
 
 
 def _doc_len(doc):

@@ -1,10 +1,10 @@
 """Generate self-contained HTML profiling dashboard."""
+
 import argparse
 import json
 import os
 import sys
 import urllib.request
-
 
 CDN_LIBS = {
     "react": "https://unpkg.com/react@18/umd/react.production.min.js",
@@ -86,12 +86,12 @@ def extract_base_css():
                 brace_count -= 1
                 if brace_count == 0:
                     blocks_found += 1
-                    header_section = full_css[header_start:pos + 1]
-                    next_chunk = full_css[pos + 1:pos + 50].strip()
+                    header_section = full_css[header_start : pos + 1]
+                    next_chunk = full_css[pos + 1 : pos + 50].strip()
                     if next_chunk.startswith(".app-header h1"):
                         header_start_h1 = full_css.find(".app-header h1", pos)
                         pos2 = full_css.find("}", header_start_h1)
-                        header_section = full_css[header_start:pos2 + 1]
+                        header_section = full_css[header_start : pos2 + 1]
                     break
             pos += 1
         base += "\n" + header_section
@@ -166,10 +166,10 @@ def generate_html(data):
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>nestim Profiling Dashboard</title>
-<script>{libs['react']}</script>
-<script>{libs['react-dom']}</script>
-<script>{libs['prop-types']}</script>
-<script>{libs['recharts']}</script>
+<script>{libs["react"]}</script>
+<script>{libs["react-dom"]}</script>
+<script>{libs["prop-types"]}</script>
+<script>{libs["recharts"]}</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>

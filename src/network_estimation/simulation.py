@@ -35,9 +35,7 @@ def run_mlp(mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
     return x
 
 
-def run_mlp_all_layers(
-    mlp: MLP, inputs: NDArray[np.float32]
-) -> List[NDArray[np.float32]]:
+def run_mlp_all_layers(mlp: MLP, inputs: NDArray[np.float32]) -> List[NDArray[np.float32]]:
     """Forward pass returning activations after each layer.
 
     Args:
@@ -89,9 +87,7 @@ def sample_layer_statistics(
     """
     inputs = np.random.default_rng().standard_normal((n_samples, mlp.width), dtype=np.float32)
     layer_outputs = run_mlp_all_layers(mlp, inputs)
-    all_layer_means = np.stack(
-        [np.mean(out, axis=0) for out in layer_outputs]
-    ).astype(np.float32)
+    all_layer_means = np.stack([np.mean(out, axis=0) for out in layer_outputs]).astype(np.float32)
     final_outputs = layer_outputs[-1]
     final_mean = np.mean(final_outputs, axis=0).astype(np.float32)
     avg_variance = float(np.mean(np.var(final_outputs, axis=0)))

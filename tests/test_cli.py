@@ -52,7 +52,9 @@ def test_smoke_test_renders_human_report_by_default(
     observed: dict = {}
     render_observed: dict = {}
 
-    def fake_run_default_report(*, profile: bool = False, detail: str = "raw", progress: Any = None) -> dict:
+    def fake_run_default_report(
+        *, profile: bool = False, detail: str = "raw", progress: Any = None
+    ) -> dict:
         observed["profile"] = profile
         observed["detail"] = detail
         return _sample_report(profile_enabled=False, detail=detail)
@@ -87,16 +89,16 @@ def test_smoke_test_show_diagnostic_plots_flag_is_forwarded(
     observed: dict = {}
     render_observed: dict = {}
 
-    def fake_run_default_report(*, profile: bool = False, detail: str = "raw", progress: Any = None) -> dict:
+    def fake_run_default_report(
+        *, profile: bool = False, detail: str = "raw", progress: Any = None
+    ) -> dict:
         observed["profile"] = profile
         observed["detail"] = detail
         return _sample_report(profile_enabled=False, detail=detail)
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
 
-    def fake_render_human_report(
-        _report: dict, *, show_diagnostic_plots: bool = False
-    ) -> str:
+    def fake_render_human_report(_report: dict, *, show_diagnostic_plots: bool = False) -> str:
         render_observed["show_diagnostic_plots"] = show_diagnostic_plots
         return "human\n"
 
@@ -121,7 +123,9 @@ def test_smoke_test_profile_and_detail_flags_are_forwarded(
 ) -> None:
     observed: dict = {}
 
-    def fake_run_default_report(*, profile: bool = False, detail: str = "raw", progress: Any = None) -> dict:
+    def fake_run_default_report(
+        *, profile: bool = False, detail: str = "raw", progress: Any = None
+    ) -> dict:
         observed["profile"] = profile
         observed["detail"] = detail
         return _sample_report(profile_enabled=True, detail=detail)
@@ -145,7 +149,9 @@ def test_smoke_test_profile_and_detail_flags_are_forwarded(
 def test_smoke_test_prints_next_steps(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_run_default_report(*, profile: bool = False, detail: str = "raw", progress: Any = None) -> dict:
+    def fake_run_default_report(
+        *, profile: bool = False, detail: str = "raw", progress: Any = None
+    ) -> dict:
         return _sample_report(profile_enabled=False, detail=detail)
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
@@ -170,7 +176,9 @@ def test_smoke_test_prints_next_steps(
 def test_smoke_test_human_mode_surfaces_validation_errors_readably(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_run_default_report(*, profile: bool = False, detail: str = "raw", progress: Any = None) -> dict:
+    def fake_run_default_report(
+        *, profile: bool = False, detail: str = "raw", progress: Any = None
+    ) -> dict:
         raise ValueError("Predictions must have shape (2, 4), got (1, 4).")
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
@@ -194,7 +202,9 @@ def test_smoke_test_human_mode_surfaces_validation_errors_readably(
 def test_smoke_test_debug_includes_traceback_field(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_run_default_report(*, profile: bool = False, detail: str = "raw", progress: Any = None) -> dict:
+    def fake_run_default_report(
+        *, profile: bool = False, detail: str = "raw", progress: Any = None
+    ) -> dict:
         raise RuntimeError("boom")
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)

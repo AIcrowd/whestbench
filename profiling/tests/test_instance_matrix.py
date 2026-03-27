@@ -22,9 +22,7 @@ def test_cpu_memory_are_valid_fargate_combos():
     valid_cpu = {256, 512, 1024, 2048, 4096, 8192, 16384}
     for config in INSTANCE_MATRIX:
         assert config["cpu"] in valid_cpu, f"Invalid CPU {config['cpu']} for {config['name']}"
-        assert config["memory"] >= config["cpu"], (
-            f"Memory must be >= CPU for {config['name']}"
-        )
+        assert config["memory"] >= config["cpu"], f"Memory must be >= CPU for {config['name']}"
 
 
 def test_get_configs_returns_all_by_default():

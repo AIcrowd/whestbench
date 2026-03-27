@@ -16,6 +16,7 @@ def test_setup_context_fields() -> None:
 
 def test_base_estimator_requires_predict() -> None:
     """Subclass must implement predict."""
+
     class IncompleteEstimator(BaseEstimator):
         pass
 
@@ -25,6 +26,7 @@ def test_base_estimator_requires_predict() -> None:
 
 def test_base_estimator_default_setup_teardown() -> None:
     """setup and teardown should be callable without error."""
+
     class MinimalEstimator(BaseEstimator):
         def predict(self, mlp: MLP, budget: int) -> np.ndarray:
             return np.zeros((mlp.depth, mlp.width), dtype=np.float32)

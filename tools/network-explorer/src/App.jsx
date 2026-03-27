@@ -54,6 +54,7 @@ export default function App() {
   const effectiveParams = isTour ? TOUR_PARAMS : params;
 
   const [activeLayer, setActiveLayer] = useState(undefined);
+  const [selectedNode, setSelectedNode] = useState(null);
   const [estimatorResults, setEstimatorResults] = useState({});
 
   // ── Tour auto-run state ──
@@ -334,12 +335,14 @@ export default function App() {
                 mlp={mlp}
                 means={exploreDisplayMeans}
                 activeLayer={activeLayer}
+                onNodeSelect={setSelectedNode}
               />
             ) : (
               <NetworkHeatmap
                 mlp={mlp}
                 means={exploreDisplayMeans}
                 activeLayer={activeLayer}
+                onNodeSelect={setSelectedNode}
                 onLayerClick={setActiveLayer}
               />
             )
@@ -427,7 +430,7 @@ export default function App() {
                 </>
               )}
 
-              {!hasAnyExploreEstimate && (
+              {!hasAnyExploreEstimate && !selectedNode && (
                 <div className="empty-state">
                   <div className="empty-state-inner">
                     <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="empty-state-motif">
@@ -455,6 +458,79 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              {selectedNode && mlp && (() => {
+                const { col, row } = selectedNode;
+                const { width, depth, weights } = mlp;
+                const numCols = depth + 1;
+                const isInput = col === 0;
+                const isOutput = col === numCols - 1;
+                const layerLabel = isInput ? "input" : isOutput ? "output" : `hidden ${col - 1}`;
+                const neuronLabel = isInput ? `x${row}` : isOutput ? `y${row}` : `${row}`;
+
+                // Incoming weights: weights[col-1][i * width + row] for each source neuron i
+                const incoming = col > 0 ? Array.from({ length: width }, (_, i) => weights[col - 1][i * width + row]) : null;
+                // Outgoing weights: weights[col][row * width + j] for each dest neuron j
+                const outgoing = col < numCols - 1 ? Array.from({ length: width }, (_, j) => weights[col][row * width + j]) : null;
+                // Activation
+                const activation = col > 0 && exploreDisplayMeans ? exploreDisplayMeans[col - 1]?.[row] : null;
+
+                const WeightBar = ({ value }) => {
+                  const absW = Math.min(1, Math.abs(value) * 2);
+                  const color = value > 0 ? "#F0524D" : "#334155";
+                  return (
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}>
+                      <div style={{ width: 60, height: 6, background: "#E5E7EB", borderRadius: 3, overflow: "hidden" }}>
+                        <div style={{ width: `${absW * 100}%`, height: "100%", background: color, borderRadius: 3 }} />
+                      </div>
+                      <span style={{ color: "#6B7280", minWidth: 52, textAlign: "right" }}>{value.toFixed(4)}</span>
+                    </div>
+                  );
+                };
+
+                return (
+                  <div className="empty-state" style={{ textAlign: "left" }}>
+                    <div className="empty-state-inner" style={{ maxWidth: 520 }}>
+                      <h3 style={{ marginBottom: 8 }}>
+                        Neuron <strong>{neuronLabel}</strong>
+                        <span className="mode-badge" style={{ marginLeft: 8 }}>{layerLabel} layer</span>
+                      </h3>
+                      {activation !== null && activation !== undefined && (
+                        <p style={{ fontSize: 12, color: "#6B7280", margin: "0 0 12px" }}>
+                          Mean activation: <strong style={{ color: "#292C2D" }}>{activation.toFixed(4)}</strong>
+                        </p>
+                      )}
+                      <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
+                        {incoming && (
+                          <div>
+                            <p style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", margin: "0 0 6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Incoming weights</p>
+                            {incoming.map((w, i) => (
+                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                                <span style={{ fontSize: 10, color: "#9CA3AF", width: 16, textAlign: "right" }}>{col === 1 ? `x${i}` : i}</span>
+                                <WeightBar value={w} />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {outgoing && (
+                          <div>
+                            <p style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF", margin: "0 0 6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Outgoing weights</p>
+                            {outgoing.map((w, j) => (
+                              <div key={j} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                                <span style={{ fontSize: 10, color: "#9CA3AF", width: 16, textAlign: "right" }}>{col === numCols - 2 ? `y${j}` : j}</span>
+                                <WeightBar value={w} />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <p style={{ fontSize: 11, color: "#9CA3AF", margin: "10px 0 0" }}>
+                        Click blank space to return to network overview.
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
         </main>

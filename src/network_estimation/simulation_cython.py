@@ -1,14 +1,18 @@
 """Cython backend — compiled loop dispatch with buffer reuse."""
 
 from __future__ import annotations
+
 from typing import List, Tuple
+
 import numpy as np
 from numpy.typing import NDArray
+
 from .domain import MLP
 from .simulation_backend import SimulationBackend
 
 try:
     from . import _cython_kernels
+
     _HAS_CYTHON_EXT = True
 except ImportError:
     _HAS_CYTHON_EXT = False
@@ -42,11 +46,15 @@ class CythonBackend(SimulationBackend):
             x = x @ w
         return x
 
-    def run_mlp_all_layers(self, mlp: MLP, inputs: NDArray[np.float32]) -> List[NDArray[np.float32]]:
+    def run_mlp_all_layers(
+        self, mlp: MLP, inputs: NDArray[np.float32]
+    ) -> List[NDArray[np.float32]]:
         layers = _cython_kernels.forward_pass_all_layers(inputs, mlp.weights)
         return [np.asarray(layer, dtype=np.float32) for layer in layers]
 
-    def sample_layer_statistics(self, mlp: MLP, n_samples: int) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
+    def sample_layer_statistics(
+        self, mlp: MLP, n_samples: int
+    ) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
         width = mlp.width
         depth = mlp.depth
         chunk_size = _pick_chunk_size(width)
@@ -64,5 +72,7 @@ class CythonBackend(SimulationBackend):
             n_processed += n
         layer_means = (layer_sums / n_processed).astype(np.float32)
         final_mean = layer_means[-1].copy()
-        avg_variance = float(np.mean(final_sum_sq / n_processed - final_mean.astype(np.float64) ** 2))
+        avg_variance = float(
+            np.mean(final_sum_sq / n_processed - final_mean.astype(np.float64) ** 2)
+        )
         return layer_means, final_mean, avg_variance

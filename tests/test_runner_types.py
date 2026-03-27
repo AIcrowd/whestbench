@@ -1,7 +1,6 @@
 import pytest
 
 from network_estimation.runner import (
-    EstimatorEntrypoint,
     ResourceLimits,
     RunnerError,
     RunnerErrorDetail,

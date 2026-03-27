@@ -22,12 +22,16 @@ def _physical_core_count_fallback() -> int | None:
     try:
         if system == "Darwin":
             out = subprocess.check_output(
-                ["sysctl", "-n", "hw.physicalcpu"], text=True, timeout=5,
+                ["sysctl", "-n", "hw.physicalcpu"],
+                text=True,
+                timeout=5,
             )
             return int(out.strip())
         if system == "Linux":
             out = subprocess.check_output(
-                ["nproc", "--all"], text=True, timeout=5,
+                ["nproc", "--all"],
+                text=True,
+                timeout=5,
             )
             # nproc --all gives logical; parse /sys for physical
             try:
@@ -37,9 +41,7 @@ def _physical_core_count_fallback() -> int | None:
                     pass
                 import glob
 
-                for path in glob.glob(
-                    "/sys/devices/system/cpu/cpu[0-9]*/topology/core_id"
-                ):
+                for path in glob.glob("/sys/devices/system/cpu/cpu[0-9]*/topology/core_id"):
                     with open(path) as f:
                         cores.add(f.read().strip())
                 if cores:
@@ -58,7 +60,9 @@ def _ram_total_fallback() -> int | None:
     try:
         if system == "Darwin":
             out = subprocess.check_output(
-                ["sysctl", "-n", "hw.memsize"], text=True, timeout=5,
+                ["sysctl", "-n", "hw.memsize"],
+                text=True,
+                timeout=5,
             )
             return int(out.strip())
         if system == "Linux":

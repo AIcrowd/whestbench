@@ -74,7 +74,9 @@ def test_run_command_renders_human_report_in_non_agent_mode(
         lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
         raising=False,
     )
-    monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_args, **_kwargs: _sample_report())
+    monkeypatch.setattr(
+        cli, "_run_estimator_with_runner", lambda *_args, **_kwargs: _sample_report()
+    )
     monkeypatch.setattr(cli, "_print_human_startup", lambda *_a, **_k: None, raising=False)
     monkeypatch.setattr(cli, "_progress_callback", _noop_progress, raising=False)
     monkeypatch.setattr(
@@ -170,7 +172,9 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
 def test_run_command_json_mode_skips_human_startup_and_progress(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_args, **_kwargs: _sample_report())
+    monkeypatch.setattr(
+        cli, "_run_estimator_with_runner", lambda *_args, **_kwargs: _sample_report()
+    )
     monkeypatch.setattr(
         cli,
         "_print_human_startup",
@@ -251,7 +255,9 @@ def test_init_and_run_help_text_reference_examples_estimators_path() -> None:
 def test_main_uses_sys_argv_when_argv_is_none(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_run_default_report(*, profile: bool = False, detail: str = "raw", progress=None) -> dict:
+    def fake_run_default_report(
+        *, profile: bool = False, detail: str = "raw", progress=None
+    ) -> dict:
         return _sample_report()
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)

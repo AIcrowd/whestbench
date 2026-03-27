@@ -11,7 +11,9 @@ def _git_short_hash() -> str:
     """Return first 7 chars of HEAD commit hash."""
     result = subprocess.run(
         ["git", "rev-parse", "--short=7", "HEAD"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return result.stdout.strip()
 
@@ -20,7 +22,9 @@ def _git_full_hash() -> str:
     """Return full HEAD commit hash."""
     result = subprocess.run(
         ["git", "rev-parse", "HEAD"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return result.stdout.strip()
 
@@ -29,7 +33,9 @@ def _git_is_dirty() -> bool:
     """Return True if the working tree has uncommitted changes."""
     result = subprocess.run(
         ["git", "status", "--porcelain"],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return bool(result.stdout.strip())
 
@@ -80,8 +86,6 @@ def load_infra_config(config_path: Optional[str] = None) -> Dict[str, Any]:
         config_path = str(Path(__file__).parent / ".infra-config.json")
     path = Path(config_path)
     if not path.exists():
-        raise FileNotFoundError(
-            f"{config_path} not found. Run setup_infra.sh first."
-        )
+        raise FileNotFoundError(f"{config_path} not found. Run setup_infra.sh first.")
     with open(path) as f:
         return json.load(f)

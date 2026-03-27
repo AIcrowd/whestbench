@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -15,9 +15,7 @@ from .sdk import BaseEstimator, SetupContext
 
 
 def _payload_to_mlp(payload: dict) -> MLP:
-    weights = [
-        np.asarray(w, dtype=np.float32) for w in payload["weights"]
-    ]
+    weights = [np.asarray(w, dtype=np.float32) for w in payload["weights"]]
     mlp = MLP(
         width=int(payload["width"]),
         depth=int(payload["depth"]),
@@ -44,10 +42,12 @@ def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
         predictions = estimator.predict(mlp, budget)
         arr = np.asarray(predictions, dtype=np.float32)
         if arr.shape != (mlp.depth, mlp.width):
-            _write_response({
-                "status": "error",
-                "error_message": f"Predictions shape {arr.shape} != ({mlp.depth}, {mlp.width})",
-            })
+            _write_response(
+                {
+                    "status": "error",
+                    "error_message": f"Predictions shape {arr.shape} != ({mlp.depth}, {mlp.width})",
+                }
+            )
             return
         if not np.all(np.isfinite(arr)):
             _write_response({"status": "error", "error_message": "Non-finite predictions."})

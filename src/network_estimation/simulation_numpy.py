@@ -1,9 +1,12 @@
 """NumPy backend — reference implementation wrapping simulation.py logic."""
 
 from __future__ import annotations
+
 from typing import List, Tuple
+
 import numpy as np
 from numpy.typing import NDArray
+
 from .domain import MLP
 from .simulation_backend import SimulationBackend
 
@@ -35,7 +38,9 @@ class NumPyBackend(SimulationBackend):
                 x = x @ w.astype(np.float64)
         return x.astype(np.float32)
 
-    def run_mlp_all_layers(self, mlp: MLP, inputs: NDArray[np.float32]) -> List[NDArray[np.float32]]:
+    def run_mlp_all_layers(
+        self, mlp: MLP, inputs: NDArray[np.float32]
+    ) -> List[NDArray[np.float32]]:
         x = inputs.astype(np.float64)
         layers: List[NDArray[np.float32]] = []
         for w in mlp.weights:
@@ -44,7 +49,9 @@ class NumPyBackend(SimulationBackend):
             layers.append(x.astype(np.float32))
         return layers
 
-    def sample_layer_statistics(self, mlp: MLP, n_samples: int) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
+    def sample_layer_statistics(
+        self, mlp: MLP, n_samples: int
+    ) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
         width = mlp.width
         depth = mlp.depth
         chunk_size = _pick_chunk_size(width)
@@ -58,9 +65,11 @@ class NumPyBackend(SimulationBackend):
                 with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
                     x = np.maximum(x @ w.astype(np.float64), 0.0)
                 layer_sums[layer_idx] += x.sum(axis=0)
-            final_sum_sq += (x ** 2).sum(axis=0)
+            final_sum_sq += (x**2).sum(axis=0)
             n_processed += n
         layer_means = (layer_sums / n_processed).astype(np.float32)
         final_mean = layer_means[-1].copy()
-        avg_variance = float(np.mean(final_sum_sq / n_processed - final_mean.astype(np.float64) ** 2))
+        avg_variance = float(
+            np.mean(final_sum_sq / n_processed - final_mean.astype(np.float64) ** 2)
+        )
         return layer_means, final_mean, avg_variance

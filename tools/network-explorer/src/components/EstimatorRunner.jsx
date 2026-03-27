@@ -54,7 +54,7 @@ export default function EstimatorRunner({ mlp, onResult, worker }) {
     setProgress(0);
     try {
       perfStart("estimator-groundTruth");
-      const result = await worker.run("outputStats", { mlp, nSamples: 10000, seed: 7777 });
+      const result = await worker.run("outputStats", { mlp, nSamples: 10000, seed: 7777 }, setProgress);
       perfEnd("estimator-groundTruth");
       setProgress(1);
       const { depth, width } = mlp;
@@ -88,7 +88,7 @@ export default function EstimatorRunner({ mlp, onResult, worker }) {
     setProgress(0);
     try {
       perfStart("estimator-sampling");
-      const result = await worker.run("sampling", { mlp, budget, seed: 1234 });
+      const result = await worker.run("sampling", { mlp, budget, seed: 1234 }, setProgress);
       perfEnd("estimator-sampling");
       setProgress(1);
       const enriched = {

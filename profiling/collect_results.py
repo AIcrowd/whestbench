@@ -16,9 +16,9 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from profiling.instance_matrix import INSTANCE_MATRIX, get_configs
+from profiling.instance_matrix import INSTANCE_MATRIX
 from profiling.run_helpers import load_infra_config
 
 
@@ -47,27 +47,40 @@ def build_summary_csv(config_results: Dict[str, Any]) -> str:
     config_lookup = {c["name"]: c for c in INSTANCE_MATRIX}
 
     output = io.StringIO()
-    writer = csv.DictWriter(output, fieldnames=[
-        "config_name", "cpu", "memory", "backend", "operation",
-        "width", "depth", "n_samples", "median_time", "speedup_vs_numpy",
-    ])
+    writer = csv.DictWriter(
+        output,
+        fieldnames=[
+            "config_name",
+            "cpu",
+            "memory",
+            "backend",
+            "operation",
+            "width",
+            "depth",
+            "n_samples",
+            "median_time",
+            "speedup_vs_numpy",
+        ],
+    )
     writer.writeheader()
 
     for config_name, result in sorted(config_results.items()):
         config_meta = config_lookup.get(config_name, {})
         for timing in result.get("timing", []):
-            writer.writerow({
-                "config_name": config_name,
-                "cpu": config_meta.get("cpu", ""),
-                "memory": config_meta.get("memory", ""),
-                "backend": timing.get("backend", ""),
-                "operation": timing.get("operation", ""),
-                "width": timing.get("width", ""),
-                "depth": timing.get("depth", ""),
-                "n_samples": timing.get("n_samples", ""),
-                "median_time": timing.get("median_time", ""),
-                "speedup_vs_numpy": timing.get("speedup_vs_numpy", ""),
-            })
+            writer.writerow(
+                {
+                    "config_name": config_name,
+                    "cpu": config_meta.get("cpu", ""),
+                    "memory": config_meta.get("memory", ""),
+                    "backend": timing.get("backend", ""),
+                    "operation": timing.get("operation", ""),
+                    "width": timing.get("width", ""),
+                    "depth": timing.get("depth", ""),
+                    "n_samples": timing.get("n_samples", ""),
+                    "median_time": timing.get("median_time", ""),
+                    "speedup_vs_numpy": timing.get("speedup_vs_numpy", ""),
+                }
+            )
 
     return output.getvalue()
 
@@ -75,11 +88,23 @@ def build_summary_csv(config_results: Dict[str, Any]) -> str:
 def s3_list_objects(bucket: str, prefix: str, region: str) -> List[str]:
     """List S3 object keys under a prefix."""
     result = subprocess.run(
-        ["aws", "s3api", "list-objects-v2",
-         "--bucket", bucket, "--prefix", prefix,
-         "--query", "Contents[].Key", "--output", "json",
-         "--region", region],
-        capture_output=True, text=True,
+        [
+            "aws",
+            "s3api",
+            "list-objects-v2",
+            "--bucket",
+            bucket,
+            "--prefix",
+            prefix,
+            "--query",
+            "Contents[].Key",
+            "--output",
+            "json",
+            "--region",
+            region,
+        ],
+        capture_output=True,
+        text=True,
     )
     if result.returncode != 0:
         return []
@@ -91,7 +116,8 @@ def s3_download(bucket: str, key: str, dest: str, region: str) -> bool:
     """Download a single S3 object. Returns True on success."""
     result = subprocess.run(
         ["aws", "s3", "cp", f"s3://{bucket}/{key}", dest, "--region", region],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     return result.returncode == 0
 
@@ -101,15 +127,18 @@ def main():
         description="Collect and aggregate profiling results from S3.",
     )
     parser.add_argument(
-        "--run-id", required=True,
+        "--run-id",
+        required=True,
         help="Run ID to collect results for",
     )
     parser.add_argument(
-        "--output", default="profiling/results",
+        "--output",
+        default="profiling/results",
         help="Output directory (default: profiling/results/)",
     )
     parser.add_argument(
-        "--format", default="json,csv",
+        "--format",
+        default="json,csv",
         help="Output formats: json, csv, or both (default: json,csv)",
     )
 
@@ -184,10 +213,7 @@ def main():
     for config_name in sorted(config_results):
         result = config_results[config_name]
         backends = {t["backend"] for t in result.get("timing", [])}
-        run_mlp_times = [
-            t for t in result.get("timing", [])
-            if t.get("operation") == "run_mlp"
-        ]
+        run_mlp_times = [t for t in result.get("timing", []) if t.get("operation") == "run_mlp"]
         if run_mlp_times:
             fastest = min(run_mlp_times, key=lambda t: t["median_time"])
             fastest_name = fastest["backend"]

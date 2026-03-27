@@ -1,8 +1,10 @@
 """Backend registry for simulation backends."""
 
 from __future__ import annotations
+
 import os
 from typing import Dict, Optional, Type
+
 from .simulation_backend import SimulationBackend
 from .simulation_numpy import NumPyBackend
 
@@ -11,26 +13,31 @@ def _lazy_backends() -> Dict[str, Type[SimulationBackend]]:
     backends: Dict[str, Type[SimulationBackend]] = {"numpy": NumPyBackend}
     try:
         from .simulation_pytorch import PyTorchBackend
+
         backends["pytorch"] = PyTorchBackend
     except Exception:
         pass
     try:
         from .simulation_numba import NumbaBackend
+
         backends["numba"] = NumbaBackend
     except Exception:
         pass
     try:
         from .simulation_scipy import SciPyBackend
+
         backends["scipy"] = SciPyBackend
     except Exception:
         pass
     try:
         from .simulation_jax import JAXBackend
+
         backends["jax"] = JAXBackend
     except Exception:
         pass
     try:
         from .simulation_cython import CythonBackend
+
         backends["cython"] = CythonBackend
     except Exception:
         pass
@@ -62,5 +69,7 @@ def get_backend(name: Optional[str] = None) -> SimulationBackend:
     cls = backends.get(name)
     if cls is None or not cls.is_available():
         hint = INSTALL_HINTS.get(name, "")
-        raise RuntimeError(f"Backend {name!r} is not available." + (f" Install: {hint}" if hint else ""))
+        raise RuntimeError(
+            f"Backend {name!r} is not available." + (f" Install: {hint}" if hint else "")
+        )
     return cls()
