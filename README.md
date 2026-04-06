@@ -106,38 +106,30 @@ Start at: [Documentation Index](docs/index.md)
 
 - [Install and CLI Quickstart](docs/getting-started/install-and-cli-quickstart.md)
 - [First Local Run](docs/getting-started/first-local-run.md)
-- [From Problem to Code](docs/getting-started/from-problem-to-code.md) — complete walkthrough to a scored estimator
 
 ### 💡 Concepts
 
 - [Problem Setup](docs/concepts/problem-setup.md)
 - [Scoring Model](docs/concepts/scoring-model.md)
-- [How Ground Truth Is Generated](docs/concepts/ground-truth.md)
 
 ### 🛠 How-To
 
 - [Write an Estimator](docs/how-to/write-an-estimator.md)
-- [Algorithm Ideas](docs/how-to/algorithm-ideas.md) — survey of estimation strategies
-- [Manage Your FLOP Budget](docs/how-to/manage-flop-budget.md)
 - [Inspect and Traverse MLP Structure](docs/how-to/inspect-mlp-structure.md)
 - [Validate, Run, and Package](docs/how-to/validate-run-package.md)
 - [Use Evaluation Datasets](docs/how-to/use-evaluation-datasets.md)
 - [Use Network Explorer](docs/how-to/use-network-explorer.md)
 - [Profile Simulation Backends](docs/how-to/profile-simulation-backends.md) — profile mechestim FLOP usage and analytical correctness
-- [Performance Tips](docs/how-to/performance-tips.md)
-- [Debugging Checklist](docs/how-to/debugging-checklist.md)
 
 ### 📖 Reference
 
 - [Estimator Contract](docs/reference/estimator-contract.md)
 - [CLI Reference](docs/reference/cli-reference.md)
 - [Score Report Fields](docs/reference/score-report-fields.md)
-- [Code Patterns](docs/reference/code-patterns.md)
 
 ### 🔧 Troubleshooting
 
 - [Common Participant Errors](docs/troubleshooting/common-participant-errors.md)
-- [FAQ](docs/troubleshooting/faq.md)
 
 ## 🧪 Example Estimators
 
