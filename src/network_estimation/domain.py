@@ -13,10 +13,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-import numpy as np
-from numpy.typing import NDArray
+import mechestim as me
 
-Weights = List[NDArray[np.float32]]
+Weights = List[me.ndarray]
 
 
 @dataclass(frozen=True)
@@ -50,7 +49,8 @@ class MLP:
                 f"got {len(self.weights)} weight matrices."
             )
         for i, w in enumerate(self.weights):
-            if w.shape != (self.width, self.width):
+            shape = tuple(w.shape) if hasattr(w, "shape") else ()
+            if shape != (self.width, self.width):
                 raise ValueError(
-                    f"Weight matrix {i} has shape {w.shape}, expected ({self.width}, {self.width})."
+                    f"Weight matrix {i} has shape {shape}, expected ({self.width}, {self.width})."
                 )
