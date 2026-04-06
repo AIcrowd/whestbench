@@ -114,12 +114,10 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
         in plain
     )
     assert (
-        "nestim run --estimator ./examples/estimators/mean_propagation.py --runner server"
-        in plain
+        "nestim run --estimator ./examples/estimators/mean_propagation.py --runner server" in plain
     )
     assert (
-        "nestim run --estimator ./examples/estimators/random_estimator.py --runner server"
-        in plain
+        "nestim run --estimator ./examples/estimators/random_estimator.py --runner server" in plain
     )
 
 

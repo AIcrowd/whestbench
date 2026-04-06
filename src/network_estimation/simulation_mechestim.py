@@ -30,9 +30,7 @@ class MechestimBackend(SimulationBackend):
             x = me.maximum(me.matmul(x, w), 0.0)
         return x
 
-    def run_mlp_all_layers(
-        self, mlp: MLP, inputs: me.ndarray
-    ) -> List[me.ndarray]:
+    def run_mlp_all_layers(self, mlp: MLP, inputs: me.ndarray) -> List[me.ndarray]:
         x = inputs
         layers: List[me.ndarray] = []
         for w in mlp.weights:
@@ -54,9 +52,7 @@ class MechestimBackend(SimulationBackend):
 
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
-            x = me.array(
-                np.random.default_rng().standard_normal((n, width)).astype(np.float32)
-            )
+            x = me.array(np.random.default_rng().standard_normal((n, width)).astype(np.float32))
             for layer_idx, w in enumerate(mlp.weights):
                 x = me.maximum(me.matmul(x, w), 0.0)
                 # Extract to numpy for accumulation (not scored — this is ground truth)

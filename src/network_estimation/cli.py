@@ -508,7 +508,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Path to estimator.py (see examples/estimators/ for starter files).",
     )
     run_parser.add_argument("--class", dest="class_name")
-    run_parser.add_argument("--runner", choices=("local", "server", "inprocess", "subprocess"), default="server")
+    run_parser.add_argument(
+        "--runner", choices=("local", "server", "inprocess", "subprocess"), default="server"
+    )
     run_parser.add_argument("--n-mlps", type=int, default=10)
     run_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
     run_parser.add_argument("--profile", action="store_true")
@@ -897,17 +899,11 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "run":
-            runner = (
-                LocalRunner()
-                if args.runner in ("local", "inprocess")
-                else SubprocessRunner()
-            )
+            runner = LocalRunner() if args.runner in ("local", "inprocess") else SubprocessRunner()
             contest_spec = _default_contest_spec()
             n_mlps = int(args.n_mlps)
             flop_budget = (
-                int(args.flop_budget)
-                if args.flop_budget is not None
-                else contest_spec.flop_budget
+                int(args.flop_budget) if args.flop_budget is not None else contest_spec.flop_budget
             )
             gt_samples = (
                 int(args.n_samples)

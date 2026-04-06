@@ -16,7 +16,9 @@ from network_estimation.sdk import BaseEstimator
 
 def test_contest_spec_has_flop_budget() -> None:
     spec = ContestSpec(
-        width=4, depth=2, n_mlps=1,
+        width=4,
+        depth=2,
+        n_mlps=1,
         flop_budget=1_000_000,
         ground_truth_samples=200,
     )
@@ -45,7 +47,9 @@ def test_validate_predictions_rejects_non_finite() -> None:
 
 def test_make_contest_produces_correct_data() -> None:
     spec = ContestSpec(
-        width=4, depth=2, n_mlps=3,
+        width=4,
+        depth=2,
+        n_mlps=3,
         flop_budget=1_000_000,
         ground_truth_samples=200,
     )
@@ -58,7 +62,9 @@ def test_make_contest_produces_correct_data() -> None:
 
 def test_evaluate_estimator_returns_mse_scores() -> None:
     spec = ContestSpec(
-        width=4, depth=2, n_mlps=2,
+        width=4,
+        depth=2,
+        n_mlps=2,
         flop_budget=100_000_000,
         ground_truth_samples=200,
     )
@@ -80,7 +86,9 @@ def test_evaluate_estimator_returns_mse_scores() -> None:
 
 def test_evaluate_estimator_handles_error_gracefully() -> None:
     spec = ContestSpec(
-        width=4, depth=2, n_mlps=1,
+        width=4,
+        depth=2,
+        n_mlps=1,
         flop_budget=100_000_000,
         ground_truth_samples=200,
     )
