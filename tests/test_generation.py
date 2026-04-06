@@ -1,3 +1,4 @@
+import mechestim as me
 import numpy as np
 import pytest
 
@@ -15,7 +16,8 @@ def test_sample_mlp_returns_valid_mlp() -> None:
 def test_sample_mlp_weight_shapes() -> None:
     mlp = sample_mlp(width=16, depth=3)
     for w in mlp.weights:
-        assert w.shape == (16, 16)
+        assert hasattr(w, "shape")
+        assert tuple(w.shape) == (16, 16)
         assert w.dtype == np.float32
 
 
@@ -25,7 +27,7 @@ def test_sample_mlp_he_init_scale() -> None:
     width = 256
     mlp = sample_mlp(width=width, depth=10, rng=rng)
     expected_var = 2.0 / width
-    actual_var = np.var(np.concatenate([w.flatten() for w in mlp.weights]))
+    actual_var = np.var(np.concatenate([np.array(w).flatten() for w in mlp.weights]))
     assert abs(actual_var - expected_var) < 0.01 * expected_var
 
 
@@ -35,7 +37,7 @@ def test_sample_mlp_reproducible_with_rng() -> None:
     mlp1 = sample_mlp(width=8, depth=2, rng=rng1)
     mlp2 = sample_mlp(width=8, depth=2, rng=rng2)
     for w1, w2 in zip(mlp1.weights, mlp2.weights):
-        np.testing.assert_array_equal(w1, w2)
+        np.testing.assert_array_equal(np.array(w1), np.array(w2))
 
 
 def test_sample_mlp_rejects_invalid_width() -> None:
