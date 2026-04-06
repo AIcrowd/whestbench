@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from network_estimation.domain import MLP
 from network_estimation.scoring import (
     ContestSpec,
     evaluate_estimator,
