@@ -13,8 +13,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, Literal, Optional, overload
 
 import mechestim as me
-import numpy as np
-from numpy.typing import NDArray
 from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
@@ -178,8 +176,8 @@ def _make_contest_with_progress(
                 mlp, spec.ground_truth_samples
             )
         mlps.append(mlp)
-        all_layer_targets.append(np.asarray(all_means, dtype=np.float32))
-        final_targets.append(np.asarray(final_mean, dtype=np.float32))
+        all_layer_targets.append(me.asarray(all_means, dtype=me.float32))
+        final_targets.append(me.asarray(final_mean, dtype=me.float32))
         avg_variances.append(avg_var)
         on_mlp_done(i + 1)
     return ContestData(
@@ -649,7 +647,7 @@ class _RunnerEstimator(BaseEstimator):
     def __init__(self, runner: "Any") -> None:
         self._runner = runner
 
-    def predict(self, mlp: "Any", budget: int) -> "NDArray[np.float32]":
+    def predict(self, mlp: "Any", budget: int) -> me.ndarray:
         return self._runner.predict(mlp, budget)
 
 

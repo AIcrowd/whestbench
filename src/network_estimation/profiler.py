@@ -59,7 +59,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 import mechestim as me
-import numpy as np
+import numpy as np  # needed for np.__version__ and np.asarray in correctness checks
 
 from .domain import MLP
 from .generation import sample_mlp
@@ -249,21 +249,21 @@ def correctness_check(
         details.
     """
     try:
-        mlp = sample_mlp(8, 4, np.random.default_rng(42))
-        inputs_np = np.random.default_rng(123).standard_normal((64, 8)).astype(np.float32)
+        mlp = sample_mlp(8, 4, me.random.default_rng(42))
+        inputs_np = me.random.default_rng(123).standard_normal((64, 8)).astype(me.float32)
         inputs = me.array(inputs_np)
 
         with me.BudgetContext(flop_budget=int(1e15)):
             # Exact match for run_mlp
             ref = ref_run_mlp(mlp, inputs_np)
             result = backend.run_mlp(mlp, inputs)
-            np.testing.assert_allclose(np.asarray(result), np.asarray(ref), rtol=1e-5, atol=1e-6)
+            me.testing.assert_allclose(me.asarray(result), me.asarray(ref), rtol=1e-5, atol=1e-6)
 
             # Statistical match for sample_layer_statistics
             ref_means, ref_final, ref_var = ref_sample_layer_statistics(mlp, 1000)
             fast_means, fast_final, fast_var = backend.sample_layer_statistics(mlp, 1000)
-            np.testing.assert_allclose(np.asarray(fast_means), np.asarray(ref_means), atol=0.15)
-            np.testing.assert_allclose(np.asarray(fast_final), np.asarray(ref_final), atol=0.15)
+            me.testing.assert_allclose(me.asarray(fast_means), me.asarray(ref_means), atol=0.15)
+            me.testing.assert_allclose(me.asarray(fast_final), me.asarray(ref_final), atol=0.15)
             # Variance can differ more with only 1000 samples
             if abs(ref_var) > 1e-6:
                 assert abs(fast_var - ref_var) < max(0.5 * abs(ref_var), 0.1)
@@ -274,14 +274,14 @@ def correctness_check(
         return CorrectnessResult(backend_name=backend.name, passed=False, error=str(e))
 
 
-def _random_float32(shape: tuple) -> np.ndarray:
+def _random_float32(shape: tuple) -> me.ndarray:
     """Generate standard-normal float32 array without a float64 intermediate.
 
     ``np.random.randn(...).astype(np.float32)`` temporarily holds both
     the float64 and float32 arrays in memory, doubling peak usage.
     Using ``Generator.standard_normal`` with ``dtype`` avoids this.
     """
-    return np.random.default_rng().standard_normal(shape, dtype=np.float32)
+    return me.random.default_rng().standard_normal(shape, dtype=me.float32)
 
 
 # Maximum rows per chunk for timed forward passes.  Keeps peak memory
@@ -351,7 +351,7 @@ def run_timing_sweep(
 
     for width in preset.widths:
         for depth in preset.depths:
-            mlp = sample_mlp(width, depth, np.random.default_rng(42))
+            mlp = sample_mlp(width, depth, me.random.default_rng(42))
             for n_samples in preset.n_samples_list:
                 for op in operations:
                     key = f"{op}:{width}:{depth}:{n_samples}"
@@ -375,7 +375,7 @@ def run_timing_sweep(
                                 if gc_was_enabled:
                                     gc.enable()
 
-                            median_t = float(np.median(times))
+                            median_t = float(me.median(me.asarray(times)))
 
                             # Store numpy baselines
                             if backend_name == "numpy":
@@ -384,7 +384,7 @@ def run_timing_sweep(
                             # Compute speedup vs numpy
                             numpy_times = numpy_baselines.get(key)
                             if numpy_times is not None:
-                                numpy_median = float(np.median(numpy_times))
+                                numpy_median = float(me.median(me.asarray(numpy_times)))
                                 speedup = numpy_median / median_t if median_t > 0 else float("inf")
                             else:
                                 speedup = 1.0

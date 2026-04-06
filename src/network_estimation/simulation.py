@@ -8,18 +8,17 @@ from __future__ import annotations
 
 from typing import List, Tuple
 
-import numpy as np
-from numpy.typing import NDArray
+import mechestim as me
 
 from .domain import MLP
 
 
-def relu(x: NDArray[np.float32]) -> NDArray[np.float32]:
+def relu(x: me.ndarray) -> me.ndarray:
     """Element-wise ReLU activation."""
-    return np.maximum(x, np.float32(0.0))
+    return me.maximum(x, me.float32(0.0))
 
 
-def run_mlp(mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
+def run_mlp(mlp: MLP, inputs: me.ndarray) -> me.ndarray:
     """Forward pass returning final-layer activations.
 
     Args:
@@ -35,7 +34,7 @@ def run_mlp(mlp: MLP, inputs: NDArray[np.float32]) -> NDArray[np.float32]:
     return x
 
 
-def run_mlp_all_layers(mlp: MLP, inputs: NDArray[np.float32]) -> List[NDArray[np.float32]]:
+def run_mlp_all_layers(mlp: MLP, inputs: me.ndarray) -> List[me.ndarray]:
     """Forward pass returning activations after each layer.
 
     Args:
@@ -46,16 +45,14 @@ def run_mlp_all_layers(mlp: MLP, inputs: NDArray[np.float32]) -> List[NDArray[np
         List of ``depth`` arrays, each shape ``(samples, mlp.width)``.
     """
     x = inputs
-    layers: List[NDArray[np.float32]] = []
+    layers: List[me.ndarray] = []
     for w in mlp.weights:
         x = relu(x @ w)
         layers.append(x)
     return layers
 
 
-def sample_layer_statistics(
-    mlp: MLP, n_samples: int
-) -> Tuple[NDArray[np.float32], NDArray[np.float32], float]:
+def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[me.ndarray, me.ndarray, float]:
     """Estimate per-layer activation statistics via Monte Carlo sampling.
 
     Feeds ``n_samples`` random Gaussian inputs through the MLP and computes
@@ -85,10 +82,10 @@ def sample_layer_statistics(
         avg_variance: Scalar — the mean per-neuron variance at the final
             layer, used as a normalisation baseline for ``sampling_mse``.
     """
-    inputs = np.random.default_rng().standard_normal((n_samples, mlp.width), dtype=np.float32)
+    inputs = me.random.default_rng().standard_normal((n_samples, mlp.width), dtype=me.float32)
     layer_outputs = run_mlp_all_layers(mlp, inputs)
-    all_layer_means = np.stack([np.mean(out, axis=0) for out in layer_outputs]).astype(np.float32)
+    all_layer_means = me.stack([me.mean(out, axis=0) for out in layer_outputs]).astype(me.float32)
     final_outputs = layer_outputs[-1]
-    final_mean = np.mean(final_outputs, axis=0).astype(np.float32)
-    avg_variance = float(np.mean(np.var(final_outputs, axis=0)))
+    final_mean = me.mean(final_outputs, axis=0).astype(me.float32)
+    avg_variance = float(me.mean(me.var(final_outputs, axis=0)))
     return all_layer_means, final_mean, avg_variance

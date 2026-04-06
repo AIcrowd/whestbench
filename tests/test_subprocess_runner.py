@@ -1,4 +1,4 @@
-import numpy as np
+import mechestim as me
 import pytest
 
 from network_estimation.generation import sample_mlp
@@ -12,7 +12,7 @@ from network_estimation.sdk import SetupContext
 
 @pytest.fixture
 def small_mlp():
-    return sample_mlp(width=8, depth=2, rng=np.random.default_rng(42))
+    return sample_mlp(width=8, depth=2, rng=me.random.default_rng(42))
 
 
 def test_subprocess_runner_predict(small_mlp, tmp_path) -> None:

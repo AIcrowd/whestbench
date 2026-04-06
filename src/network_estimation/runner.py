@@ -12,8 +12,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Protocol
 
 import mechestim as me
-import numpy as np
-from numpy.typing import NDArray
 
 from .domain import MLP
 from .loader import load_estimator_from_path
@@ -83,7 +81,7 @@ class EstimatorRunner(Protocol):
         limits: ResourceLimits,
     ) -> None: ...
 
-    def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]: ...
+    def predict(self, mlp: MLP, budget: int) -> me.ndarray: ...
 
     def close(self) -> None: ...
 
@@ -135,7 +133,7 @@ class LocalRunner:
             )
         self._started = True
 
-    def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
+    def predict(self, mlp: MLP, budget: int) -> me.ndarray:
         if not self._started or self._estimator is None:
             raise RunnerError(
                 "predict",
@@ -243,7 +241,7 @@ class SubprocessRunner:
             )
         self._started = True
 
-    def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
+    def predict(self, mlp: MLP, budget: int) -> me.ndarray:
         if not self._started or self._process is None or self._limits is None:
             raise RunnerError(
                 "predict",
@@ -282,7 +280,7 @@ class SubprocessRunner:
                 "predict",
                 RunnerErrorDetail(code="PREDICT_NO_DATA", message="No predictions in response."),
             )
-        return np.asarray(predictions_data, dtype=np.float32)
+        return me.asarray(predictions_data, dtype=me.float32)
 
     def close(self) -> None:
         if self._process is None:
