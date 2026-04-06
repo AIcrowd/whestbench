@@ -27,7 +27,7 @@ def _sample_report() -> dict:
             "n_mlps": 1,
             "width": 4,
             "depth": 3,
-            "estimator_budget": 40000,
+            "flop_budget": 40000,
             "profile_enabled": False,
         },
         "results": {

@@ -7,7 +7,7 @@ def test_score_request_has_versioned_schema() -> None:
         schema_version="1.0",
         n_mlps=2,
         n_samples=16,
-        estimator_budget=100,
+        flop_budget=100,
         width=256,
         depth=16,
     )

@@ -16,7 +16,7 @@ def _sample_report() -> dict:
             "n_mlps": 2,
             "width": 4,
             "depth": 3,
-            "estimator_budget": 40000,
+            "flop_budget": 40000,
         },
         "results": {
             "primary_score": 0.42,
