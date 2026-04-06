@@ -6,53 +6,17 @@ import os
 from typing import Dict, Optional, Type
 
 from .simulation_backend import SimulationBackend
-from .simulation_numpy import NumPyBackend
+from .simulation_mechestim import MechestimBackend
 
 
 def _lazy_backends() -> Dict[str, Type[SimulationBackend]]:
-    backends: Dict[str, Type[SimulationBackend]] = {"numpy": NumPyBackend}
-    try:
-        from .simulation_pytorch import PyTorchBackend
-
-        backends["pytorch"] = PyTorchBackend
-    except Exception:
-        pass
-    try:
-        from .simulation_numba import NumbaBackend
-
-        backends["numba"] = NumbaBackend
-    except Exception:
-        pass
-    try:
-        from .simulation_scipy import SciPyBackend
-
-        backends["scipy"] = SciPyBackend
-    except Exception:
-        pass
-    try:
-        from .simulation_jax import JAXBackend
-
-        backends["jax"] = JAXBackend
-    except Exception:
-        pass
-    try:
-        from .simulation_cython import CythonBackend
-
-        backends["cython"] = CythonBackend
-    except Exception:
-        pass
-    return backends
+    return {"mechestim": MechestimBackend}
 
 
-ALL_BACKEND_NAMES = ("numpy", "pytorch", "numba", "scipy", "jax", "cython")
+ALL_BACKEND_NAMES = ("mechestim",)
 
 INSTALL_HINTS: Dict[str, str] = {
-    "numpy": "",
-    "pytorch": "pip install torch>=2.0",
-    "numba": "pip install numba>=0.58",
-    "scipy": "pip install scipy",
-    "jax": "pip install 'jax[cpu]>=0.4'",
-    "cython": "pip install cython>=3.0 && python setup_cython.py build_ext --inplace",
+    "mechestim": "pip install git+https://github.com/AIcrowd/mechestim.git",
 }
 
 
@@ -62,7 +26,7 @@ def get_available_backends() -> Dict[str, Type[SimulationBackend]]:
 
 def get_backend(name: Optional[str] = None) -> SimulationBackend:
     if name is None:
-        name = os.environ.get("NESTIM_BACKEND", "numpy")
+        name = os.environ.get("NESTIM_BACKEND", "mechestim")
     if name not in ALL_BACKEND_NAMES:
         raise ValueError(f"Unknown backend: {name!r}. Valid backends: {list(ALL_BACKEND_NAMES)}")
     backends = _lazy_backends()
