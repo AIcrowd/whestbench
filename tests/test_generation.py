@@ -1,4 +1,3 @@
-import mechestim as me
 import numpy as np
 import pytest
 

@@ -8,15 +8,6 @@ import pytest
 
 from network_estimation.domain import MLP
 from network_estimation.generation import sample_mlp
-from network_estimation.simulation import (
-    run_mlp as ref_run_mlp,
-)
-from network_estimation.simulation import (
-    run_mlp_all_layers as ref_run_mlp_all_layers,
-)
-from network_estimation.simulation import (
-    sample_layer_statistics as ref_sample_layer_statistics,
-)
 from network_estimation.simulation_backends import get_available_backends, get_backend
 
 
