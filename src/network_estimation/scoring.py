@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
 import mechestim as me
-import numpy as np
 
 from .domain import MLP
 from .generation import sample_mlp
@@ -47,8 +46,8 @@ class ContestData:
 
     spec: ContestSpec
     mlps: List[MLP]
-    all_layer_targets: List[np.ndarray]
-    final_targets: List[np.ndarray]
+    all_layer_targets: List[me.ndarray]
+    final_targets: List[me.ndarray]
     avg_variances: List[float]
 
 
@@ -57,8 +56,8 @@ def make_contest(spec: ContestSpec) -> ContestData:
     spec.validate()
     backend = get_backend()
     mlps: List[MLP] = []
-    all_layer_targets: List[np.ndarray] = []
-    final_targets: List[np.ndarray] = []
+    all_layer_targets: List[me.ndarray] = []
+    final_targets: List[me.ndarray] = []
     avg_variances: List[float] = []
 
     for _ in range(spec.n_mlps):
@@ -67,9 +66,9 @@ def make_contest(spec: ContestSpec) -> ContestData:
             all_means, final_mean, avg_var = backend.sample_layer_statistics(
                 mlp, spec.ground_truth_samples
             )
-        # Convert to numpy for ground truth storage
-        all_layer_targets.append(np.asarray(all_means, dtype=np.float32))
-        final_targets.append(np.asarray(final_mean, dtype=np.float32))
+        # Convert to mechestim arrays for ground truth storage
+        all_layer_targets.append(me.asarray(all_means, dtype=me.float32))
+        final_targets.append(me.asarray(final_mean, dtype=me.float32))
         mlps.append(mlp)
         avg_variances.append(avg_var)
 
@@ -87,8 +86,8 @@ def validate_predictions(predictions: me.ndarray, *, depth: int, width: int) -> 
     shape = tuple(predictions.shape) if hasattr(predictions, "shape") else ()
     if shape != (depth, width):
         raise ValueError(f"Predictions must have shape ({depth}, {width}), got {shape}.")
-    pred_np = np.asarray(predictions, dtype=np.float32)
-    if not np.all(np.isfinite(pred_np)):
+    pred_np = me.asarray(predictions, dtype=me.float32)
+    if not me.all(me.isfinite(pred_np)):
         raise ValueError("Predictions must contain only finite values.")
     return predictions
 
@@ -139,17 +138,17 @@ def evaluate_estimator(
                 on_mlp_scored(i + 1)
             continue
 
-        # Convert predictions to numpy for MSE computation
-        pred_np = np.asarray(predictions, dtype=np.float32)
+        # Convert predictions for MSE computation
+        pred_np = me.asarray(predictions, dtype=me.float32)
 
         # Primary score: final layer MSE
         final_pred = pred_np[-1]
         final_target = data.final_targets[i]
-        final_mse = float(np.mean((final_pred - final_target) ** 2))
+        final_mse = float(me.mean((final_pred - final_target) ** 2))
 
         # Secondary score: all layers MSE
         all_target = data.all_layer_targets[i]
-        all_mse = float(np.mean((pred_np - all_target) ** 2))
+        all_mse = float(me.mean((pred_np - all_target) ** 2))
 
         primary_scores.append(final_mse)
         secondary_scores.append(all_mse)
@@ -168,7 +167,11 @@ def evaluate_estimator(
             on_mlp_scored(i + 1)
 
     return {
-        "primary_score": float(np.mean(primary_scores)) if primary_scores else float("inf"),
-        "secondary_score": float(np.mean(secondary_scores)) if secondary_scores else float("inf"),
+        "primary_score": float(me.mean(me.asarray(primary_scores)))
+        if primary_scores
+        else float("inf"),
+        "secondary_score": float(me.mean(me.asarray(secondary_scores)))
+        if secondary_scores
+        else float("inf"),
         "per_mlp": per_mlp,
     }

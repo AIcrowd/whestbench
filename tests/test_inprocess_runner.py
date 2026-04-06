@@ -1,4 +1,4 @@
-import numpy as np
+import mechestim as me
 import pytest
 
 from network_estimation.generation import sample_mlp
@@ -13,7 +13,7 @@ from network_estimation.sdk import SetupContext
 
 @pytest.fixture
 def small_mlp():
-    return sample_mlp(width=8, depth=2, rng=np.random.default_rng(42))
+    return sample_mlp(width=8, depth=2, rng=me.random.default_rng(42))
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def test_inprocess_runner_predict_returns_array(small_mlp, limits, tmp_path) -> 
     runner.start(entry, ctx, limits)
     result = runner.predict(small_mlp, budget=100)
     assert result.shape == (2, 8)
-    assert result.dtype == np.float32
+    assert result.dtype == me.float32
     runner.close()
 
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import mechestim as me
-import numpy as np
 import pytest
 
 from network_estimation.domain import MLP
@@ -12,7 +11,7 @@ from network_estimation.simulation_backends import get_available_backends, get_b
 
 
 def _make_mlp(width: int = 8, depth: int = 4, seed: int = 42) -> MLP:
-    rng = np.random.default_rng(seed)
+    rng = me.random.default_rng(seed)
     return sample_mlp(width, depth, rng)
 
 
@@ -35,16 +34,16 @@ class TestBackendContract:
     def test_run_mlp_returns_correct_shape_and_nonnegative(self, backend_name: str) -> None:
         backend = get_backend(backend_name)
         mlp = _make_mlp()
-        inputs = me.array(np.random.default_rng(0).standard_normal((16, 8)).astype(np.float32))
+        inputs = me.array(me.random.default_rng(0).standard_normal((16, 8)).astype(me.float32))
         result = backend.run_mlp(mlp, inputs)
         assert result.shape == (16, 8)
-        assert np.all(np.asarray(result) >= 0.0), "ReLU outputs must be non-negative"
+        assert me.all(me.asarray(result) >= 0.0), "ReLU outputs must be non-negative"
 
     @pytest.mark.parametrize("backend_name", _available_backend_names())
     def test_run_mlp_all_layers_returns_correct_shapes(self, backend_name: str) -> None:
         backend = get_backend(backend_name)
         mlp = _make_mlp()
-        inputs = me.array(np.random.default_rng(0).standard_normal((16, 8)).astype(np.float32))
+        inputs = me.array(me.random.default_rng(0).standard_normal((16, 8)).astype(me.float32))
         layers = backend.run_mlp_all_layers(mlp, inputs)
         assert len(layers) == 4
         for layer in layers:

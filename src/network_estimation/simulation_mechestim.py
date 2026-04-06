@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import List, Tuple
 
 import mechestim as me
-import numpy as np
+import numpy as np  # needed for internal accumulators (not FLOP-counted)
 
 from .domain import MLP
 from .simulation_backend import SimulationBackend
@@ -52,7 +52,7 @@ class MechestimBackend(SimulationBackend):
 
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
-            x = me.array(np.random.default_rng().standard_normal((n, width)).astype(np.float32))
+            x = me.array(me.random.default_rng().standard_normal((n, width)).astype(me.float32))
             for layer_idx, w in enumerate(mlp.weights):
                 x = me.maximum(me.matmul(x, w), 0.0)
                 # Extract to numpy for accumulation (not scored — this is ground truth)

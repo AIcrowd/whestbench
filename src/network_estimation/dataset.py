@@ -9,8 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import mechestim as me
-import numpy as np
-from numpy.typing import NDArray
+import numpy as np  # needed for np.savez, np.load (file I/O)
 
 from .domain import MLP
 from .generation import sample_mlp
@@ -34,8 +33,8 @@ def dataset_file_hash(path: "Path | str") -> str:
 class DatasetBundle:
     metadata: Dict[str, Any]
     mlps: List[MLP]
-    all_layer_means: NDArray[np.float32]
-    final_means: NDArray[np.float32]
+    all_layer_means: me.ndarray
+    final_means: me.ndarray
     avg_variances: List[float]
 
     @property
@@ -57,8 +56,8 @@ def create_dataset(
     """Generate MLPs, compute ground truth, and save to .npz."""
     output_path = Path(output_path)
     if seed is None:
-        seed = int(np.random.SeedSequence().entropy)  # type: ignore[arg-type]
-    rng = np.random.default_rng(seed)
+        seed = int(me.random.SeedSequence().entropy)  # type: ignore[arg-type]
+    rng = me.random.default_rng(seed)
     backend = get_backend()
 
     mlps: List[MLP] = []
@@ -71,14 +70,14 @@ def create_dataset(
     weights_array = np.stack([np.stack(mlp.weights) for mlp in mlps]).astype(np.float32)
 
     # Compute ground truth
-    all_means_list: List[NDArray[np.float32]] = []
-    final_means_list: List[NDArray[np.float32]] = []
+    all_means_list: List[me.ndarray] = []
+    final_means_list: List[me.ndarray] = []
     avg_variances: List[float] = []
     for i, mlp in enumerate(mlps):
         with me.BudgetContext(flop_budget=int(1e15)):
             all_means, final_mean, avg_var = backend.sample_layer_statistics(mlp, n_samples)
-        all_means_list.append(np.asarray(all_means, dtype=np.float32))
-        final_means_list.append(np.asarray(final_mean, dtype=np.float32))
+        all_means_list.append(me.asarray(all_means, dtype=me.float32))
+        final_means_list.append(me.asarray(final_mean, dtype=me.float32))
         avg_variances.append(avg_var)
         if progress is not None:
             progress({"phase": "sampling", "completed": i + 1, "total": n_mlps})

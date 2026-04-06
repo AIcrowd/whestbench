@@ -5,12 +5,11 @@ from __future__ import annotations
 from typing import Optional
 
 import mechestim as me
-import numpy as np
 
 from .domain import MLP
 
 
-def sample_mlp(width: int, depth: int, rng: Optional[np.random.Generator] = None) -> MLP:
+def sample_mlp(width: int, depth: int, rng: Optional[me.random.Generator] = None) -> MLP:
     """Sample a random MLP with He-initialized weight matrices.
 
     Each weight matrix has shape ``(width, width)`` with entries drawn from
@@ -23,10 +22,10 @@ def sample_mlp(width: int, depth: int, rng: Optional[np.random.Generator] = None
         raise ValueError("width must be positive.")
     if depth <= 0:
         raise ValueError("depth must be positive.")
-    rng = rng or np.random.default_rng()
-    scale = float(np.sqrt(2.0 / width))
+    rng = rng or me.random.default_rng()
+    scale = float(me.sqrt(2.0 / width))
     weights = [
-        me.array((rng.standard_normal((width, width)) * scale).astype(np.float32))
+        me.array((rng.standard_normal((width, width)) * scale).astype(me.float32))
         for _ in range(depth)
     ]
     mlp = MLP(width=width, depth=depth, weights=weights)

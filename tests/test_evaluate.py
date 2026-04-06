@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import mechestim as me
-import numpy as np
 import pytest
 
 from network_estimation.domain import MLP
@@ -38,8 +37,8 @@ def test_validate_predictions_rejects_wrong_shape() -> None:
 
 
 def test_validate_predictions_rejects_non_finite() -> None:
-    arr = np.ones((3, 4), dtype=np.float32)
-    arr[0, 0] = np.nan
+    arr = me.ones((3, 4), dtype=me.float32)
+    arr[0, 0] = float("nan")
     arr = me.array(arr)
     with pytest.raises(ValueError, match="finite"):
         validate_predictions(arr, depth=3, width=4)
