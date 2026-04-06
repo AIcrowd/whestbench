@@ -36,7 +36,7 @@ Open [http://localhost:5173](http://localhost:5173).
 Official local score behavior is defined by:
 
 ```bash
-nestim run --estimator <path> --runner subprocess
+nestim run --estimator <path> --runner server
 ```
 
 ## Participant docs

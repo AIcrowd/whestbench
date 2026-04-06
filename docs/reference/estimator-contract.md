@@ -6,7 +6,7 @@ Use this page when you need exact estimator I/O requirements.
 
 ## Required interface
 
-`predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]`
+`predict(self, mlp: MLP, budget: int) -> me.ndarray`
 
 Optional lifecycle hooks:
 
@@ -19,7 +19,7 @@ Optional lifecycle hooks:
 |---|---|---|
 | `width` | `int` | Neuron count for generated MLPs |
 | `depth` | `int` | Number of layers per MLP |
-| `estimator_budget` | `int` | Sampling budget for the estimator |
+| `flop_budget` | `int` | FLOP cap for the estimator |
 | `api_version` | `str` | Contract version string |
 | `scratch_dir` | `str \| None` | Optional writable directory for caching |
 
@@ -39,6 +39,10 @@ For traversal examples, see [Inspect and Traverse MLP Structure](../how-to/inspe
 |---|---|
 | Shape | Return a 2D array with shape `(mlp.depth, mlp.width)` |
 | Numeric validity | Every value is finite |
+
+## FLOP tracking
+
+Your estimator must use mechestim primitives (`import mechestim as me`) for all numerical computation. mechestim tracks FLOP usage analytically. If the total FLOPs across your entire `predict` call exceed `flop_budget`, all predictions for that MLP are replaced with zero vectors and your MSE for that MLP is computed against zeros.
 
 ## Failure semantics
 

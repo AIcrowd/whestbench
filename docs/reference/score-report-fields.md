@@ -21,8 +21,8 @@ Inside `results`:
 
 | Field | Description |
 |---|---|
-| `primary_score` | Leaderboard metric — final-layer MSE normalized by sampling MSE, averaged across MLPs. Lower is better. |
-| `secondary_score` | All-layer MSE normalized by sampling MSE, averaged across MLPs. Lower is better. |
+| `primary_score` | Leaderboard metric — final-layer MSE averaged across MLPs. Lower is better. |
+| `secondary_score` | All-layer MSE averaged across MLPs. Lower is better. |
 | `per_mlp` | Array of per-MLP detail records (see below) |
 
 ### Per-MLP fields
@@ -32,13 +32,10 @@ Each entry in `per_mlp`:
 | Field | Type | Description |
 |---|---|---|
 | `mlp_index` | `int` | Index of the MLP in the evaluation set |
-| `time_budget_s` | `float` | Sampling baseline wall time for this MLP (seconds) |
-| `time_spent_s` | `float` | Your estimator's wall time for this MLP (seconds) |
-| `fraction_spent` | `float` | `max(time_spent / time_budget, 0.5)` — clamped time ratio |
+| `flops_used` | `int` | Total FLOPs used by your estimator for this MLP |
+| `budget_exhausted` | `bool` | Whether the estimator exceeded the FLOP budget (predictions zeroed if true) |
 | `final_mse` | `float` | MSE of your final-layer predictions vs ground truth |
 | `all_layer_mse` | `float` | MSE of your all-layer predictions vs ground truth |
-| `primary_score` | `float` | `final_mse / sampling_mse` for this MLP |
-| `secondary_score` | `float` | `all_layer_mse / sampling_mse` for this MLP |
 
 If the estimator raised an error, the entry also includes:
 
@@ -49,8 +46,9 @@ If the estimator raised an error, the entry also includes:
 ## Interpretation guide
 
 - `final_mse` is your most actionable diagnostic — it directly drives `primary_score`.
-- `fraction_spent` reveals compute behavior: values near 0.5 mean you're much faster than sampling; values > 1.0 mean timeout (predictions zeroed).
-- `primary_score` reflects accuracy under time-aware scoring. Compare it with `final_mse` to diagnose whether runtime or accuracy is the bottleneck.
+- `budget_exhausted` is the first thing to check if your score is unexpectedly high — exceeded budget means your predictions were zeroed.
+- `flops_used` vs `flop_budget` shows how much headroom you have. If you are consistently near the cap, consider lighter methods.
+- `primary_score` is raw MSE — compare across runs to see whether estimator changes are helping.
 
 ## Dataset traceability fields
 

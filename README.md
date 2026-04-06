@@ -19,7 +19,7 @@ You are given:
 
 Your estimator must return one vector per layer, each with shape `(width,)`, estimating expected neuron values after that layer.
 
-Your score combines prediction accuracy with compute efficiency: can you match sampling's accuracy while using less time? See [Scoring Model](docs/concepts/scoring-model.md) for details. Lower score is better.
+Your score is pure MSE under a FLOP budget constraint: predictions that exceed the FLOP cap are zeroed, and you are ranked by MSE otherwise. See [Scoring Model](docs/concepts/scoring-model.md) for details. Lower score is better.
 
 ### 🧠 Why this challenge matters
 
@@ -36,7 +36,7 @@ The natural way to estimate a network's expected output is brute force: sample m
 
 This challenge instantiates that question in random MLPs, where evaluation is explicit, reproducible, and compute-aware.
 
-> **Your practical goal:** beat sampling. Build an estimator that reaches the same accuracy as brute-force sampling but in less compute time. Your score directly measures how efficiently you estimate relative to the sampling baseline.
+> **Your practical goal:** beat sampling. Build an estimator that reaches the same accuracy as brute-force sampling but within a fixed FLOP budget. Your score is the MSE of your predictions under that budget — lower is better.
 
 ## 🚀 5-Minute Quickstart
 
@@ -75,7 +75,7 @@ nestim run --estimator ./my-estimator/estimator.py
 nestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz
 ```
 
-`nestim run` uses `--runner subprocess` by default.
+`nestim run` uses `--runner server` by default.
 
 For faster repeated evaluations, pre-create a dataset and reuse it:
 
@@ -89,7 +89,7 @@ Quick debug sequence when `run` fails:
 ```bash
 nestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
 nestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --debug
-nestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --runner inprocess --debug
+nestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --runner local --debug
 ```
 
 For local editable invocation without global install:
@@ -119,7 +119,7 @@ Start at: [Documentation Index](docs/index.md)
 - [Validate, Run, and Package](docs/how-to/validate-run-package.md)
 - [Use Evaluation Datasets](docs/how-to/use-evaluation-datasets.md)
 - [Use Network Explorer](docs/how-to/use-network-explorer.md)
-- [Profile Simulation Backends](docs/how-to/profile-simulation-backends.md) — benchmark numpy, pytorch, numba, jax, scipy, and cython head-to-head
+- [Profile Simulation Backends](docs/how-to/profile-simulation-backends.md) — profile mechestim FLOP usage and analytical correctness
 
 ### 📖 Reference
 
@@ -150,14 +150,14 @@ Recommended reading order:
 Try them out (adjust `--n-mlps` to control evaluation size):
 
 ```bash
-# Quick iteration (fewer samples = faster ground truth, noisier scores)
-nestim run --estimator examples/estimators/mean_propagation.py --n-mlps 3 --n-samples 40000
+# Quick iteration (fewer MLPs = faster evaluation)
+nestim run --estimator examples/estimators/mean_propagation.py --n-mlps 3
 
-# Full evaluation (default 2.56M samples/MLP — accurate but slower, ~1 min)
+# Full evaluation (default settings)
 nestim run --estimator examples/estimators/mean_propagation.py --n-mlps 10
 
 # Compare estimators on the same dataset for fair scoring
-nestim create-dataset --n-mlps 100 --n-samples 10000 -o eval.npz
+nestim create-dataset --n-mlps 100 -o eval.npz
 nestim run --estimator examples/estimators/mean_propagation.py --dataset eval.npz
 nestim run --estimator examples/estimators/covariance_propagation.py --dataset eval.npz
 nestim run --estimator examples/estimators/combined_estimator.py --dataset eval.npz
