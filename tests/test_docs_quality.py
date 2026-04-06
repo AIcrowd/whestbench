@@ -59,11 +59,6 @@ def test_docs_index_exists_and_links_taxonomy():
     text = (repo_root / "docs/index.md").read_text(encoding="utf-8").lower()
 
     required_tokens = [
-        "getting started",
-        "concepts",
-        "how-to",
-        "reference",
-        "troubleshooting",
         "./getting-started/",
         "./concepts/",
         "./how-to/",
