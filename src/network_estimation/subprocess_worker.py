@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+import mechestim as me
 import numpy as np
 
 from .domain import MLP
@@ -15,7 +16,7 @@ from .sdk import BaseEstimator, SetupContext
 
 
 def _payload_to_mlp(payload: dict) -> MLP:
-    weights = [np.asarray(w, dtype=np.float32) for w in payload["weights"]]
+    weights = [me.array(np.asarray(w, dtype=np.float32)) for w in payload["weights"]]
     mlp = MLP(
         width=int(payload["width"]),
         depth=int(payload["depth"]),
@@ -28,27 +29,6 @@ def _payload_to_mlp(payload: dict) -> MLP:
 def _write_response(payload: dict) -> None:
     sys.stdout.write(json.dumps(payload) + "\n")
     sys.stdout.flush()
-
-
-def _handle_baseline(request: dict) -> None:
-    """Run a forward pass and return wall time (measures same IPC path as predict)."""
-    import time as _time
-
-    from .simulation_backends import get_backend
-
-    try:
-        mlp = _payload_to_mlp(request["mlp"])
-        n_samples = int(request["n_samples"])
-    except Exception as exc:
-        _write_response({"status": "error", "error_message": str(exc)})
-        return
-
-    backend = get_backend()
-    inputs = np.random.default_rng().standard_normal((n_samples, mlp.width), dtype=np.float32)
-    t0 = _time.perf_counter()
-    backend.run_mlp(mlp, inputs)
-    elapsed = _time.perf_counter() - t0
-    _write_response({"status": "ok", "elapsed": elapsed})
 
 
 def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
@@ -102,7 +82,7 @@ def main() -> int:
                 context = SetupContext(
                     width=int(ctx_payload["width"]),
                     depth=int(ctx_payload["depth"]),
-                    estimator_budget=int(ctx_payload["estimator_budget"]),
+                    flop_budget=int(ctx_payload["flop_budget"]),
                     api_version=str(ctx_payload["api_version"]),
                     scratch_dir=(
                         str(ctx_payload["scratch_dir"])
@@ -114,8 +94,6 @@ def main() -> int:
                 _write_response({"status": "ok"})
             except Exception as exc:
                 _write_response({"status": "runtime_error", "error_message": str(exc)})
-        elif command == "baseline":
-            _handle_baseline(request)
         elif command == "predict":
             if estimator is None:
                 _write_response({"status": "error", "error_message": "Estimator not initialized."})

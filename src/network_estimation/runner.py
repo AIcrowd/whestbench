@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Protocol
 
+import mechestim as me
 import numpy as np
 from numpy.typing import NDArray
 
@@ -43,6 +44,7 @@ class ResourceLimits:
     setup_timeout_s: float
     predict_timeout_s: float
     memory_limit_mb: int
+    flop_budget: int
     cpu_time_limit_s: Optional[float] = None
 
     def __post_init__(self) -> None:
@@ -52,6 +54,8 @@ class ResourceLimits:
             raise ValueError("predict_timeout_s must be positive.")
         if self.memory_limit_mb <= 0:
             raise ValueError("memory_limit_mb must be positive.")
+        if self.flop_budget <= 0:
+            raise ValueError("flop_budget must be positive.")
         if self.cpu_time_limit_s is not None and self.cpu_time_limit_s <= 0:
             raise ValueError("cpu_time_limit_s must be positive when provided.")
 
@@ -92,7 +96,7 @@ def _mlp_to_payload(mlp: MLP) -> Dict[str, Any]:
     }
 
 
-class InProcessRunner:
+class LocalRunner:
     def __init__(self) -> None:
         self._estimator: Optional[BaseEstimator] = None
         self._limits: Optional[ResourceLimits] = None
@@ -140,8 +144,15 @@ class InProcessRunner:
                     message="Runner must be started before calling predict.",
                 ),
             )
-        raw = self._estimator.predict(mlp, budget)
-        return validate_predictions(raw, depth=mlp.depth, width=mlp.width)
+        try:
+            with me.BudgetContext(flop_budget=budget):
+                raw = self._estimator.predict(mlp, budget)
+                return validate_predictions(raw, depth=mlp.depth, width=mlp.width)
+        except me.BudgetExhaustedError as exc:
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(code="BUDGET_EXHAUSTED", message=str(exc)),
+            ) from exc
 
     def close(self) -> None:
         if self._estimator is not None:
@@ -152,6 +163,10 @@ class InProcessRunner:
         self._limits = None
         self._context = None
         self._started = False
+
+
+# Backward-compatible alias
+InProcessRunner = LocalRunner
 
 
 class SubprocessRunner:
@@ -194,7 +209,7 @@ class SubprocessRunner:
                 "context": {
                     "width": context.width,
                     "depth": context.depth,
-                    "estimator_budget": context.estimator_budget,
+                    "flop_budget": context.flop_budget,
                     "api_version": context.api_version,
                     "scratch_dir": context.scratch_dir,
                 },
@@ -227,35 +242,6 @@ class SubprocessRunner:
                 ),
             )
         self._started = True
-
-    def baseline_time(self, mlp: MLP, n_samples: int) -> float:
-        """Run forward pass in the subprocess and return wall time.
-
-        Measures from the parent side so the returned time includes the same
-        serialisation/IPC overhead the estimator's predict call faces.
-        """
-        import time as _time
-
-        if not self._started or self._process is None or self._limits is None:
-            raise RunnerError(
-                "baseline",
-                RunnerErrorDetail(code="RUNNER_NOT_STARTED", message="Runner must be started."),
-            )
-        t0 = _time.perf_counter()
-        self._send_request(
-            {"command": "baseline", "mlp": _mlp_to_payload(mlp), "n_samples": n_samples}
-        )
-        response = self._read_response(timeout_s=self._limits.predict_timeout_s)
-        elapsed = _time.perf_counter() - t0
-        if response.get("status") != "ok":
-            raise RunnerError(
-                "baseline",
-                RunnerErrorDetail(
-                    code="BASELINE_ERROR",
-                    message=str(response.get("error_message", "unknown error")),
-                ),
-            )
-        return elapsed
 
     def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:
         if not self._started or self._process is None or self._limits is None:
