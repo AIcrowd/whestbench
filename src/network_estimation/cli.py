@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, Literal, Optional, overload
 
+import mechestim as me
 import numpy as np
 from numpy.typing import NDArray
 from rich.console import Console, Group
@@ -50,6 +51,7 @@ from .reporting import (
 from .runner import (
     EstimatorEntrypoint,
     InProcessRunner,
+    LocalRunner,
     ResourceLimits,
     RunnerError,
     SubprocessRunner,
@@ -72,8 +74,8 @@ def _default_contest_spec() -> ContestSpec:
         width=100,
         depth=16,
         n_mlps=10,
-        estimator_budget=100 * 100 * 4,
-        ground_truth_budget=100 * 100 * 256,
+        flop_budget=100_000_000,
+        ground_truth_samples=100 * 100 * 256,
     )
 
 
@@ -115,8 +117,8 @@ def _smoke_test_contest_spec() -> ContestSpec:
         width=100,
         depth=16,
         n_mlps=3,
-        estimator_budget=100 * 100 * 4,
-        ground_truth_budget=100 * 100 * 4,
+        flop_budget=10_000_000,
+        ground_truth_samples=100 * 100 * 4,
     )
 
 
@@ -156,7 +158,7 @@ def run_default_report(
             "width": spec.width,
             "depth": spec.depth,
             "n_mlps": spec.n_mlps,
-            "estimator_budget": spec.estimator_budget,
+            "flop_budget": spec.flop_budget,
         },
     }
 
@@ -172,12 +174,13 @@ def _make_contest_with_progress(
     mlps, all_layer_targets, final_targets, avg_variances = [], [], [], []
     for i in range(spec.n_mlps):
         mlp = sample_mlp(spec.width, spec.depth)
-        all_means, final_mean, avg_var = backend.sample_layer_statistics(
-            mlp, spec.ground_truth_budget
-        )
+        with me.BudgetContext(flop_budget=int(1e15)):
+            all_means, final_mean, avg_var = backend.sample_layer_statistics(
+                mlp, spec.ground_truth_samples
+            )
         mlps.append(mlp)
-        all_layer_targets.append(all_means)
-        final_targets.append(final_mean)
+        all_layer_targets.append(np.asarray(all_means, dtype=np.float32))
+        final_targets.append(np.asarray(final_mean, dtype=np.float32))
         avg_variances.append(avg_var)
         on_mlp_done(i + 1)
     return ContestData(
@@ -202,7 +205,7 @@ def _render_plain_text_report(report: Dict[str, Any]) -> str:
         f"MLPs: {run_config.get('n_mlps', 'n/a')}",
         f"Width: {run_config.get('width', 'n/a')}",
         f"Depth: {run_config.get('depth', 'n/a')}",
-        f"Estimator Budget: {run_config.get('estimator_budget', 'n/a')}",
+        f"FLOP Budget: {run_config.get('flop_budget', 'n/a')}",
     ]
     return "\n".join(lines) + "\n"
 
@@ -242,7 +245,7 @@ def _pre_run_report(
             "n_mlps": int(n_mlps),
             "width": int(contest_spec.width),
             "depth": int(contest_spec.depth),
-            "estimator_budget": int(contest_spec.estimator_budget),
+            "flop_budget": int(contest_spec.flop_budget),
             "profile_enabled": bool(profile),
             "estimator_class": estimator_class,
             "estimator_path": estimator_path,
@@ -436,7 +439,7 @@ def validate_submission_entrypoint(
     class_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     estimator, metadata = load_estimator_from_path(estimator_path, class_name=class_name)
-    context = SetupContext(width=4, depth=2, estimator_budget=100, api_version="1.0")
+    context = SetupContext(width=4, depth=2, flop_budget=100, api_version="1.0")
     mlp = sample_mlp(width=4, depth=2)
     try:
         estimator.setup(context)
@@ -506,7 +509,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Path to estimator.py (see examples/estimators/ for starter files).",
     )
     run_parser.add_argument("--class", dest="class_name")
-    run_parser.add_argument("--runner", choices=("inprocess", "subprocess"), default="subprocess")
+    run_parser.add_argument("--runner", choices=("local", "server", "inprocess", "subprocess"), default="server")
     run_parser.add_argument("--n-mlps", type=int, default=10)
     run_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
     run_parser.add_argument("--profile", action="store_true")
@@ -516,6 +519,13 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument(
         "--dataset", default=None, help="Path to pre-created dataset .npz file."
+    )
+    run_parser.add_argument(
+        "--flop-budget",
+        type=int,
+        default=None,
+        metavar="N",
+        help="FLOP budget for estimator predict calls (default: 100_000_000).",
     )
     run_parser.add_argument(
         "--n-samples",
@@ -540,7 +550,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     create_ds_parser.add_argument("--n-samples", type=int, default=10000)
     create_ds_parser.add_argument("--width", type=int, default=None)
     create_ds_parser.add_argument("--depth", type=int, default=None)
-    create_ds_parser.add_argument("--estimator-budget", type=int, default=None)
+    create_ds_parser.add_argument("--flop-budget", type=int, default=None)
     create_ds_parser.add_argument("--seed", type=int, default=None)
     create_ds_parser.add_argument("-o", "--output", default="eval_dataset.npz")
     create_ds_parser.add_argument(
@@ -641,12 +651,6 @@ class _RunnerEstimator(BaseEstimator):
     def predict(self, mlp: "Any", budget: int) -> "NDArray[np.float32]":
         return self._runner.predict(mlp, budget)
 
-    def baseline_time(self, mlp: "Any", n_samples: int) -> float:
-        """Measure forward-pass time through the runner (includes IPC overhead)."""
-        if hasattr(self._runner, "baseline_time"):
-            return self._runner.baseline_time(mlp, n_samples)
-        return -1.0  # signal: use default in-process baseline
-
 
 def _run_estimator_with_runner(
     runner: "Any",
@@ -677,10 +681,15 @@ def _run_estimator_with_runner(
     context = SetupContext(
         width=spec.width,
         depth=spec.depth,
-        estimator_budget=spec.estimator_budget,
+        flop_budget=spec.flop_budget,
         api_version="1.0",
     )
-    limits = _default_resource_limits()
+    limits = ResourceLimits(
+        setup_timeout_s=spec.setup_timeout_s,
+        predict_timeout_s=spec.predict_timeout_s,
+        memory_limit_mb=spec.memory_limit_mb,
+        flop_budget=spec.flop_budget,
+    )
 
     t0 = _time.time()
     runner.start(entrypoint, context, limits)
@@ -713,7 +722,7 @@ def _run_estimator_with_runner(
             "n_mlps": n_mlps,
             "width": spec.width,
             "depth": spec.depth,
-            "estimator_budget": spec.estimator_budget,
+            "flop_budget": spec.flop_budget,
         },
     }
 
@@ -821,7 +830,7 @@ def _main_participant(argv: "list[str]") -> int:
             contest = _default_contest_spec()
             ds_width = args.width or contest.width
             ds_depth = args.depth or contest.depth
-            ds_estimator_budget = args.estimator_budget or contest.estimator_budget
+            ds_flop_budget = args.flop_budget or contest.flop_budget
             n_mlps_ds = int(args.n_mlps)
 
             if not json_output:
@@ -859,7 +868,7 @@ def _main_participant(argv: "list[str]") -> int:
                             n_samples=int(args.n_samples),
                             width=ds_width,
                             depth=ds_depth,
-                            estimator_budget=ds_estimator_budget,
+                            flop_budget=ds_flop_budget,
                             seed=getattr(args, "seed", None),
                             output_path=Path(args.output),
                             progress=_on_ds_progress,
@@ -870,7 +879,7 @@ def _main_participant(argv: "list[str]") -> int:
                         n_samples=int(args.n_samples),
                         width=ds_width,
                         depth=ds_depth,
-                        estimator_budget=ds_estimator_budget,
+                        flop_budget=ds_flop_budget,
                         seed=getattr(args, "seed", None),
                         output_path=Path(args.output),
                     )
@@ -881,7 +890,7 @@ def _main_participant(argv: "list[str]") -> int:
                     n_samples=int(args.n_samples),
                     width=ds_width,
                     depth=ds_depth,
-                    estimator_budget=ds_estimator_budget,
+                    flop_budget=ds_flop_budget,
                     seed=getattr(args, "seed", None),
                     output_path=Path(args.output),
                 )
@@ -889,20 +898,29 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "run":
-            runner = InProcessRunner() if args.runner == "inprocess" else SubprocessRunner()
+            runner = (
+                LocalRunner()
+                if args.runner in ("local", "inprocess")
+                else SubprocessRunner()
+            )
             contest_spec = _default_contest_spec()
             n_mlps = int(args.n_mlps)
-            gt_budget = (
+            flop_budget = (
+                int(args.flop_budget)
+                if args.flop_budget is not None
+                else contest_spec.flop_budget
+            )
+            gt_samples = (
                 int(args.n_samples)
                 if args.n_samples is not None
-                else contest_spec.ground_truth_budget
+                else contest_spec.ground_truth_samples
             )
             contest_spec = ContestSpec(
                 width=contest_spec.width,
                 depth=contest_spec.depth,
                 n_mlps=n_mlps,
-                estimator_budget=contest_spec.estimator_budget,
-                ground_truth_budget=gt_budget,
+                flop_budget=flop_budget,
+                ground_truth_samples=gt_samples,
             )
             entrypoint = EstimatorEntrypoint(
                 file_path=Path(args.estimator).resolve(),
@@ -921,8 +939,8 @@ def _main_participant(argv: "list[str]") -> int:
                     width=ds_meta["width"],
                     depth=ds_meta["depth"],
                     n_mlps=bundle.n_mlps,
-                    estimator_budget=ds_meta.get("estimator_budget", contest_spec.estimator_budget),
-                    ground_truth_budget=contest_spec.ground_truth_budget,
+                    flop_budget=ds_meta.get("flop_budget", contest_spec.flop_budget),
+                    ground_truth_samples=contest_spec.ground_truth_samples,
                 )
                 n_mlps = bundle.n_mlps
 
@@ -1088,7 +1106,7 @@ def _main_participant(argv: "list[str]") -> int:
             json_output=json_output,
             debug=debug,
             show_inprocess_hint=(
-                command == "run" and getattr(args, "runner", None) == "subprocess"
+                command == "run" and getattr(args, "runner", None) in ("subprocess", "server")
             ),
         )
         return 1
@@ -1117,7 +1135,7 @@ def _print_error(
     elif not debug:
         print("Use --debug to include a traceback.")
     if show_inprocess_hint:
-        print("Tip: For estimator-level tracebacks, rerun with --runner inprocess --debug.")
+        print("Tip: For estimator-level tracebacks, rerun with --runner local --debug.")
 
 
 def _error_payload(

@@ -13,7 +13,7 @@ class ScoreRequest:
     schema_version: str
     n_mlps: int
     n_samples: int
-    estimator_budget: int
+    flop_budget: int
     width: int
     depth: int
 
@@ -28,7 +28,7 @@ class ScoreRequest:
             schema_version=str(payload["schema_version"]),
             n_mlps=int(payload["n_mlps"]),
             n_samples=int(payload["n_samples"]),
-            estimator_budget=int(payload["estimator_budget"]),
+            flop_budget=int(payload["flop_budget"]),
             width=int(payload["width"]),
             depth=int(payload["depth"]),
         )
