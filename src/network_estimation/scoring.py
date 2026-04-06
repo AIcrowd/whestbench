@@ -1,13 +1,12 @@
-"""Scoring loop and baseline timing for MLP estimation contests."""
+"""Scoring loop and FLOP budget enforcement for MLP estimation contests."""
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
+import mechestim as me
 import numpy as np
-from numpy.typing import NDArray
 
 from .domain import MLP
 from .generation import sample_mlp
@@ -22,21 +21,23 @@ class ContestSpec:
     width: int
     depth: int
     n_mlps: int
-    estimator_budget: int
-    ground_truth_budget: int
+    flop_budget: int
+    ground_truth_samples: int
+    setup_timeout_s: float = 5.0
+    predict_timeout_s: float = 30.0
+    memory_limit_mb: int = 4096
 
     def validate(self) -> None:
-        """Validate contest specification parameters are all positive."""
         if self.width <= 0:
             raise ValueError("width must be positive.")
         if self.depth <= 0:
             raise ValueError("depth must be positive.")
         if self.n_mlps <= 0:
             raise ValueError("n_mlps must be positive.")
-        if self.estimator_budget <= 0:
-            raise ValueError("estimator_budget must be positive.")
-        if self.ground_truth_budget <= 0:
-            raise ValueError("ground_truth_budget must be positive.")
+        if self.flop_budget <= 0:
+            raise ValueError("flop_budget must be positive.")
+        if self.ground_truth_samples <= 0:
+            raise ValueError("ground_truth_samples must be positive.")
 
 
 @dataclass
@@ -45,8 +46,8 @@ class ContestData:
 
     spec: ContestSpec
     mlps: List[MLP]
-    all_layer_targets: List[NDArray[np.float32]]
-    final_targets: List[NDArray[np.float32]]
+    all_layer_targets: List[np.ndarray]
+    final_targets: List[np.ndarray]
     avg_variances: List[float]
 
 
@@ -55,18 +56,20 @@ def make_contest(spec: ContestSpec) -> ContestData:
     spec.validate()
     backend = get_backend()
     mlps: List[MLP] = []
-    all_layer_targets: List[NDArray[np.float32]] = []
-    final_targets: List[NDArray[np.float32]] = []
+    all_layer_targets: List[np.ndarray] = []
+    final_targets: List[np.ndarray] = []
     avg_variances: List[float] = []
 
     for _ in range(spec.n_mlps):
         mlp = sample_mlp(spec.width, spec.depth)
-        all_means, final_mean, avg_var = backend.sample_layer_statistics(
-            mlp, spec.ground_truth_budget
-        )
+        with me.BudgetContext(flop_budget=int(1e15)):
+            all_means, final_mean, avg_var = backend.sample_layer_statistics(
+                mlp, spec.ground_truth_samples
+            )
+        # Convert to numpy for ground truth storage
+        all_layer_targets.append(np.asarray(all_means, dtype=np.float32))
+        final_targets.append(np.asarray(final_mean, dtype=np.float32))
         mlps.append(mlp)
-        all_layer_targets.append(all_means)
-        final_targets.append(final_mean)
         avg_variances.append(avg_var)
 
     return ContestData(
@@ -78,28 +81,17 @@ def make_contest(spec: ContestSpec) -> ContestData:
     )
 
 
-def baseline_time(mlp: MLP, n_samples: int, backend: "SimulationBackend | None" = None) -> float:  # noqa: F821
-    """Measure wall time for a single forward pass with ``n_samples`` inputs."""
-    if backend is None:
-        from .simulation_backends import get_backend
-
-        backend = get_backend()
-    inputs = np.random.default_rng().standard_normal((n_samples, mlp.width), dtype=np.float32)
-    t0 = time.perf_counter()
-    backend.run_mlp(mlp, inputs)
-    return time.perf_counter() - t0
-
-
 def validate_predictions(
-    predictions: NDArray[np.float32], *, depth: int, width: int
-) -> NDArray[np.float32]:
+    predictions: me.ndarray, *, depth: int, width: int
+) -> me.ndarray:
     """Validate estimator prediction array shape and finiteness."""
-    arr = np.asarray(predictions, dtype=np.float32)
-    if arr.shape != (depth, width):
-        raise ValueError(f"Predictions must have shape ({depth}, {width}), got {arr.shape}.")
-    if not np.all(np.isfinite(arr)):
+    shape = tuple(predictions.shape) if hasattr(predictions, "shape") else ()
+    if shape != (depth, width):
+        raise ValueError(f"Predictions must have shape ({depth}, {width}), got {shape}.")
+    pred_np = np.asarray(predictions, dtype=np.float32)
+    if not np.all(np.isfinite(pred_np)):
         raise ValueError("Predictions must contain only finite values.")
-    return arr
+    return predictions
 
 
 def evaluate_estimator(
@@ -107,88 +99,73 @@ def evaluate_estimator(
     data: ContestData,
     on_mlp_scored: Optional[Callable[[int], None]] = None,
 ) -> Dict[str, Any]:
-    """Score an estimator against precomputed contest data."""
+    """Score an estimator against precomputed contest data.
+
+    Each MLP prediction runs under a BudgetContext. If the budget is
+    exhausted, predictions are zeroed. Score = pure MSE (lower is better).
+    """
     spec = data.spec
-    backend = get_backend()
     per_mlp: List[Dict[str, Any]] = []
     primary_scores: List[float] = []
     secondary_scores: List[float] = []
 
-    # Warmup call so subprocess startup / import overhead doesn't penalise
-    # the first timed prediction.
-    if data.mlps:
-        try:
-            estimator.predict(data.mlps[0], spec.estimator_budget)
-        except Exception:
-            pass
-
-    # If the estimator wraps a subprocess runner, measure baseline through
-    # the same IPC channel so serialisation overhead is included in both.
-    _runner_baseline = getattr(estimator, "baseline_time", None)
-
     for i, mlp in enumerate(data.mlps):
-        runner_bt = _runner_baseline(mlp, spec.estimator_budget) if _runner_baseline else -1.0
-        time_budget = (
-            runner_bt if runner_bt >= 0 else baseline_time(mlp, spec.estimator_budget, backend)
-        )
-        time_budget = max(time_budget, 1e-9)
+        flops_used = 0
+        budget_exhausted = False
 
-        t0 = time.perf_counter()
         try:
-            raw_predictions = estimator.predict(mlp, spec.estimator_budget)
-            predictions = validate_predictions(raw_predictions, depth=spec.depth, width=spec.width)
+            with me.BudgetContext(flop_budget=spec.flop_budget) as budget:
+                raw_predictions = estimator.predict(mlp, spec.flop_budget)
+                predictions = validate_predictions(
+                    raw_predictions, depth=spec.depth, width=spec.width
+                )
+                flops_used = budget.flops_used
+        except me.BudgetExhaustedError:
+            predictions = me.zeros((spec.depth, spec.width))
+            budget_exhausted = True
+            flops_used = spec.flop_budget
         except Exception as exc:
-            predictions = np.zeros((spec.depth, spec.width), dtype=np.float32)
-            per_mlp.append({"mlp_index": i, "error": str(exc)})
-            time_spent = time_budget
-        else:
-            time_spent = time.perf_counter() - t0
+            predictions = me.zeros((spec.depth, spec.width))
+            per_mlp.append({
+                "mlp_index": i,
+                "error": str(exc),
+                "flops_used": 0,
+                "budget_exhausted": False,
+            })
+            primary_scores.append(float("inf"))
+            secondary_scores.append(float("inf"))
+            if on_mlp_scored is not None:
+                on_mlp_scored(i + 1)
+            continue
 
-        # Time check: over budget -> zeros
-        if time_spent > time_budget:
-            predictions = np.zeros((spec.depth, spec.width), dtype=np.float32)
+        # Convert predictions to numpy for MSE computation
+        pred_np = np.asarray(predictions, dtype=np.float32)
 
-        # Time credit: floor at 50%
-        fraction_spent = max(time_spent / time_budget, 0.5)
-
-        # Normalization
-        avg_var = data.avg_variances[i]
-        sampling_mse = avg_var / (spec.estimator_budget * fraction_spent)
-        sampling_mse = max(sampling_mse, 1e-30)
-
-        # Primary score: final layer
-        final_pred = predictions[-1]
+        # Primary score: final layer MSE
+        final_pred = pred_np[-1]
         final_target = data.final_targets[i]
         final_mse = float(np.mean((final_pred - final_target) ** 2))
-        primary = final_mse / sampling_mse
 
-        # Secondary score: all layers
+        # Secondary score: all layers MSE
         all_target = data.all_layer_targets[i]
-        all_mse = float(np.mean((predictions - all_target) ** 2))
-        secondary = all_mse / sampling_mse
+        all_mse = float(np.mean((pred_np - all_target) ** 2))
 
-        primary_scores.append(primary)
-        secondary_scores.append(secondary)
+        primary_scores.append(final_mse)
+        secondary_scores.append(all_mse)
 
-        if not per_mlp or per_mlp[-1].get("mlp_index") != i:
-            per_mlp.append(
-                {
-                    "mlp_index": i,
-                    "time_budget_s": time_budget,
-                    "time_spent_s": time_spent,
-                    "fraction_spent": fraction_spent,
-                    "final_mse": final_mse,
-                    "all_layer_mse": all_mse,
-                    "primary_score": primary,
-                    "secondary_score": secondary,
-                }
-            )
+        per_mlp.append({
+            "mlp_index": i,
+            "final_mse": final_mse,
+            "all_layer_mse": all_mse,
+            "flops_used": flops_used,
+            "budget_exhausted": budget_exhausted,
+        })
 
         if on_mlp_scored is not None:
             on_mlp_scored(i + 1)
 
     return {
-        "primary_score": float(np.mean(primary_scores)),
-        "secondary_score": float(np.mean(secondary_scores)),
+        "primary_score": float(np.mean(primary_scores)) if primary_scores else float("inf"),
+        "secondary_score": float(np.mean(secondary_scores)) if secondary_scores else float("inf"),
         "per_mlp": per_mlp,
     }
