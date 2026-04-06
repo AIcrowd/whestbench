@@ -4,26 +4,25 @@ import pytest
 from network_estimation.domain import MLP
 from network_estimation.scoring import (
     ContestSpec,
-    baseline_time,
     evaluate_estimator,
     make_contest,
 )
 
 
 def test_contest_spec_validates() -> None:
-    spec = ContestSpec(width=8, depth=2, n_mlps=2, estimator_budget=100, ground_truth_budget=1000)
+    spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=1000)
     spec.validate()
 
 
 def test_contest_spec_rejects_zero_width() -> None:
     with pytest.raises(ValueError, match="width"):
         ContestSpec(
-            width=0, depth=2, n_mlps=2, estimator_budget=100, ground_truth_budget=1000
+            width=0, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=1000
         ).validate()
 
 
 def test_make_contest_produces_valid_data() -> None:
-    spec = ContestSpec(width=8, depth=2, n_mlps=3, estimator_budget=64, ground_truth_budget=200)
+    spec = ContestSpec(width=8, depth=2, n_mlps=3, flop_budget=1_000_000, ground_truth_samples=200)
     data = make_contest(spec)
     assert len(data.mlps) == 3
     assert len(data.all_layer_targets) == 3
@@ -37,15 +36,6 @@ def test_make_contest_produces_valid_data() -> None:
         assert var >= 0.0
 
 
-def test_baseline_time_returns_positive() -> None:
-    width = 8
-    depth = 2
-    weights = [np.eye(width, dtype=np.float32) for _ in range(depth)]
-    mlp = MLP(width=width, depth=depth, weights=weights)
-    t = baseline_time(mlp, n_samples=50)
-    assert t > 0.0
-
-
 def test_evaluate_estimator_with_zeros_estimator() -> None:
     """An estimator that always returns zeros should produce a finite score."""
     from network_estimation.sdk import BaseEstimator
@@ -54,7 +44,7 @@ def test_evaluate_estimator_with_zeros_estimator() -> None:
         def predict(self, mlp, budget):
             return np.zeros((mlp.depth, mlp.width), dtype=np.float32)
 
-    spec = ContestSpec(width=8, depth=2, n_mlps=2, estimator_budget=64, ground_truth_budget=200)
+    spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=100_000_000, ground_truth_samples=200)
     data = make_contest(spec)
     result = evaluate_estimator(ZerosEstimator(), data)
     assert isinstance(result, dict)
@@ -80,15 +70,15 @@ def test_validate_predictions_rejects_nonfinite() -> None:
         validate_predictions(arr, depth=2, width=4)
 
 
-def test_fraction_spent_floors_at_half() -> None:
-    """Verify that very fast estimators get fraction_spent = 0.5, not less."""
+def test_evaluate_estimator_records_flops_used() -> None:
+    """Each per-mlp record should include flops_used."""
     from network_estimation.sdk import BaseEstimator
 
-    class InstantEstimator(BaseEstimator):
+    class ZerosEstimator(BaseEstimator):
         def predict(self, mlp, budget):
             return np.zeros((mlp.depth, mlp.width), dtype=np.float32)
 
-    spec = ContestSpec(width=8, depth=2, n_mlps=1, estimator_budget=64, ground_truth_budget=200)
+    spec = ContestSpec(width=8, depth=2, n_mlps=1, flop_budget=100_000_000, ground_truth_samples=200)
     data = make_contest(spec)
-    result = evaluate_estimator(InstantEstimator(), data)
-    assert result["per_mlp"][0]["fraction_spent"] >= 0.5
+    result = evaluate_estimator(ZerosEstimator(), data)
+    assert "flops_used" in result["per_mlp"][0]
