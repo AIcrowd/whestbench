@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import mechestim as me
 import numpy as np
 from numpy.typing import NDArray
 
@@ -48,7 +49,7 @@ def create_dataset(
     n_samples: int,
     width: int,
     depth: int,
-    estimator_budget: int,
+    flop_budget: int,
     seed: Optional[int] = None,
     output_path: "Path | str",
     progress: Optional[Any] = None,
@@ -74,9 +75,10 @@ def create_dataset(
     final_means_list: List[NDArray[np.float32]] = []
     avg_variances: List[float] = []
     for i, mlp in enumerate(mlps):
-        all_means, final_mean, avg_var = backend.sample_layer_statistics(mlp, n_samples)
-        all_means_list.append(all_means)
-        final_means_list.append(final_mean)
+        with me.BudgetContext(flop_budget=int(1e15)):
+            all_means, final_mean, avg_var = backend.sample_layer_statistics(mlp, n_samples)
+        all_means_list.append(np.asarray(all_means, dtype=np.float32))
+        final_means_list.append(np.asarray(final_mean, dtype=np.float32))
         avg_variances.append(avg_var)
         if progress is not None:
             progress({"phase": "sampling", "completed": i + 1, "total": n_mlps})
@@ -92,7 +94,7 @@ def create_dataset(
         "n_samples": n_samples,
         "width": width,
         "depth": depth,
-        "estimator_budget": estimator_budget,
+        "flop_budget": flop_budget,
         "hardware": collect_hardware_fingerprint(),
     }
 
@@ -126,7 +128,7 @@ def load_dataset(path: "Path | str") -> DatasetBundle:
 
     mlps: List[MLP] = []
     for i in range(n_mlps):
-        layer_weights = [weights_array[i, j] for j in range(depth)]
+        layer_weights = [me.array(weights_array[i, j]) for j in range(depth)]
         mlp = MLP(width=width, depth=depth, weights=layer_weights)
         mlp.validate()
         mlps.append(mlp)
