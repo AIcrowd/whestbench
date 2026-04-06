@@ -1,3 +1,4 @@
+import mechestim as me
 import numpy as np
 import pytest
 
@@ -23,7 +24,9 @@ def test_example_estimator_returns_correct_shape(small_mlp, estimator_module) ->
 
     mod = importlib.import_module(estimator_module)
     est = mod.Estimator()
-    result = est.predict(small_mlp, budget=100)
-    assert result.shape == (small_mlp.depth, small_mlp.width)
-    assert result.dtype == np.float32
-    assert np.all(np.isfinite(result))
+    with me.BudgetContext(flop_budget=int(1e12)):
+        result = est.predict(small_mlp, budget=100)
+    result_np = np.asarray(result)
+    assert result_np.shape == (small_mlp.depth, small_mlp.width)
+    assert np.issubdtype(result_np.dtype, np.floating)
+    assert np.all(np.isfinite(result_np))
