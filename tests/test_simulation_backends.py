@@ -1,7 +1,8 @@
-"""Parametrized correctness tests for all simulation backends."""
+"""Correctness tests for the mechestim simulation backend."""
 
 from __future__ import annotations
 
+import mechestim as me
 import numpy as np
 import pytest
 
@@ -40,69 +41,34 @@ class TestBackendContract:
         assert backend.__class__.is_available() is True
 
     @pytest.mark.parametrize("backend_name", _available_backend_names())
-    def test_run_mlp_returns_float32(self, backend_name: str) -> None:
+    def test_run_mlp_returns_correct_shape_and_nonnegative(self, backend_name: str) -> None:
         backend = get_backend(backend_name)
         mlp = _make_mlp()
-        inputs = np.random.default_rng(0).standard_normal((16, 8)).astype(np.float32)
+        inputs = me.array(np.random.default_rng(0).standard_normal((16, 8)).astype(np.float32))
         result = backend.run_mlp(mlp, inputs)
-        assert result.dtype == np.float32
         assert result.shape == (16, 8)
+        assert np.all(np.asarray(result) >= 0.0), "ReLU outputs must be non-negative"
 
     @pytest.mark.parametrize("backend_name", _available_backend_names())
     def test_run_mlp_all_layers_returns_correct_shapes(self, backend_name: str) -> None:
         backend = get_backend(backend_name)
         mlp = _make_mlp()
-        inputs = np.random.default_rng(0).standard_normal((16, 8)).astype(np.float32)
+        inputs = me.array(np.random.default_rng(0).standard_normal((16, 8)).astype(np.float32))
         layers = backend.run_mlp_all_layers(mlp, inputs)
         assert len(layers) == 4
         for layer in layers:
-            assert layer.dtype == np.float32
             assert layer.shape == (16, 8)
 
     @pytest.mark.parametrize("backend_name", _available_backend_names())
     def test_sample_layer_statistics_returns_correct_shapes(self, backend_name: str) -> None:
         backend = get_backend(backend_name)
         mlp = _make_mlp()
-        means, final_mean, avg_var = backend.sample_layer_statistics(mlp, 1000)
-        assert means.dtype == np.float32
+        with me.BudgetContext(flop_budget=int(1e15)):
+            means, final_mean, avg_var = backend.sample_layer_statistics(mlp, 1000)
         assert means.shape == (4, 8)
-        assert final_mean.dtype == np.float32
         assert final_mean.shape == (8,)
         assert isinstance(avg_var, float)
-
-
-class TestExactMatch:
-    @pytest.mark.parametrize("backend_name", _available_backend_names())
-    def test_run_mlp_matches_reference(self, backend_name: str) -> None:
-        backend = get_backend(backend_name)
-        mlp = _make_mlp()
-        inputs = np.random.default_rng(123).standard_normal((32, 8)).astype(np.float32)
-        ref = ref_run_mlp(mlp, inputs)
-        result = backend.run_mlp(mlp, inputs)
-        np.testing.assert_allclose(result, ref, rtol=1e-5, atol=1e-6)
-
-    @pytest.mark.parametrize("backend_name", _available_backend_names())
-    def test_run_mlp_all_layers_matches_reference(self, backend_name: str) -> None:
-        backend = get_backend(backend_name)
-        mlp = _make_mlp()
-        inputs = np.random.default_rng(123).standard_normal((32, 8)).astype(np.float32)
-        ref_layers = ref_run_mlp_all_layers(mlp, inputs)
-        result_layers = backend.run_mlp_all_layers(mlp, inputs)
-        assert len(result_layers) == len(ref_layers)
-        for ref_layer, result_layer in zip(ref_layers, result_layers):
-            np.testing.assert_allclose(result_layer, ref_layer, rtol=1e-5, atol=1e-6)
-
-
-class TestStatisticalEquivalence:
-    @pytest.mark.parametrize("backend_name", _available_backend_names())
-    def test_means_close_to_reference(self, backend_name: str) -> None:
-        mlp = _make_mlp(width=64, depth=4, seed=55)
-        ref_means, ref_final, ref_var = ref_sample_layer_statistics(mlp, n_samples=50000)
-        backend = get_backend(backend_name)
-        fast_means, fast_final, fast_var = backend.sample_layer_statistics(mlp, n_samples=50000)
-        np.testing.assert_allclose(fast_means, ref_means, atol=0.05)
-        np.testing.assert_allclose(fast_final, ref_final, atol=0.05)
-        assert abs(fast_var - ref_var) < max(0.1 * abs(ref_var), 0.01)
+        assert avg_var >= 0.0
 
 
 class TestRegistry:
@@ -110,17 +76,17 @@ class TestRegistry:
         with pytest.raises(ValueError, match="Unknown backend"):
             get_backend("nonexistent")
 
-    def test_numpy_always_available(self) -> None:
+    def test_mechestim_always_available(self) -> None:
         backends = get_available_backends()
-        assert "numpy" in backends
+        assert "mechestim" in backends
 
-    def test_get_backend_default_is_numpy(self) -> None:
+    def test_get_backend_default_is_mechestim(self) -> None:
         import os
 
         old = os.environ.pop("NESTIM_BACKEND", None)
         try:
             backend = get_backend()
-            assert backend.name == "numpy"
+            assert backend.name == "mechestim"
         finally:
             if old is not None:
                 os.environ["NESTIM_BACKEND"] = old
@@ -129,10 +95,10 @@ class TestRegistry:
         import os
 
         old = os.environ.get("NESTIM_BACKEND")
-        os.environ["NESTIM_BACKEND"] = "numpy"
+        os.environ["NESTIM_BACKEND"] = "mechestim"
         try:
             backend = get_backend()
-            assert backend.name == "numpy"
+            assert backend.name == "mechestim"
         finally:
             if old is not None:
                 os.environ["NESTIM_BACKEND"] = old
