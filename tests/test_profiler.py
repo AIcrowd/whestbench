@@ -253,9 +253,7 @@ class TestRunProfileVerbose:
             n_samples_list=[1_000],
         )
         try:
-            output, _ = run_profile(
-                preset_name="_ci", backend_filter=["mechestim"], verbose=False
-            )
+            output, _ = run_profile(preset_name="_ci", backend_filter=["mechestim"], verbose=False)
         finally:
             del PRESETS["_ci"]
         assert "Detail" in output

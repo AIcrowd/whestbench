@@ -27,9 +27,7 @@ class SimulationBackend(ABC):
     def run_mlp(self, mlp: MLP, inputs: me.ndarray) -> me.ndarray: ...
 
     @abstractmethod
-    def run_mlp_all_layers(
-        self, mlp: MLP, inputs: me.ndarray
-    ) -> List[me.ndarray]: ...
+    def run_mlp_all_layers(self, mlp: MLP, inputs: me.ndarray) -> List[me.ndarray]: ...
 
     @abstractmethod
     def sample_layer_statistics(

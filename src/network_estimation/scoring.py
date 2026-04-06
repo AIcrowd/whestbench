@@ -82,9 +82,7 @@ def make_contest(spec: ContestSpec) -> ContestData:
     )
 
 
-def validate_predictions(
-    predictions: me.ndarray, *, depth: int, width: int
-) -> me.ndarray:
+def validate_predictions(predictions: me.ndarray, *, depth: int, width: int) -> me.ndarray:
     """Validate estimator prediction array shape and finiteness."""
     shape = tuple(predictions.shape) if hasattr(predictions, "shape") else ()
     if shape != (depth, width):
@@ -127,12 +125,14 @@ def evaluate_estimator(
             flops_used = spec.flop_budget
         except Exception as exc:
             predictions = me.zeros((spec.depth, spec.width))
-            per_mlp.append({
-                "mlp_index": i,
-                "error": str(exc),
-                "flops_used": 0,
-                "budget_exhausted": False,
-            })
+            per_mlp.append(
+                {
+                    "mlp_index": i,
+                    "error": str(exc),
+                    "flops_used": 0,
+                    "budget_exhausted": False,
+                }
+            )
             primary_scores.append(float("inf"))
             secondary_scores.append(float("inf"))
             if on_mlp_scored is not None:
@@ -154,13 +154,15 @@ def evaluate_estimator(
         primary_scores.append(final_mse)
         secondary_scores.append(all_mse)
 
-        per_mlp.append({
-            "mlp_index": i,
-            "final_mse": final_mse,
-            "all_layer_mse": all_mse,
-            "flops_used": flops_used,
-            "budget_exhausted": budget_exhausted,
-        })
+        per_mlp.append(
+            {
+                "mlp_index": i,
+                "final_mse": final_mse,
+                "all_layer_mse": all_mse,
+                "flops_used": flops_used,
+                "budget_exhausted": budget_exhausted,
+            }
+        )
 
         if on_mlp_scored is not None:
             on_mlp_scored(i + 1)

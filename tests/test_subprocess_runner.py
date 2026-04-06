@@ -28,7 +28,9 @@ def test_subprocess_runner_predict(small_mlp, tmp_path) -> None:
     runner = SubprocessRunner()
     entry = EstimatorEntrypoint(file_path=est_file)
     ctx = SetupContext(width=8, depth=2, flop_budget=100, api_version="1.0")
-    limits = ResourceLimits(setup_timeout_s=10.0, predict_timeout_s=10.0, memory_limit_mb=4096, flop_budget=100_000_000)
+    limits = ResourceLimits(
+        setup_timeout_s=10.0, predict_timeout_s=10.0, memory_limit_mb=4096, flop_budget=100_000_000
+    )
     runner.start(entry, ctx, limits)
     result = runner.predict(small_mlp, budget=100)
     assert result.shape == (2, 8)

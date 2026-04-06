@@ -257,19 +257,13 @@ def correctness_check(
             # Exact match for run_mlp
             ref = ref_run_mlp(mlp, inputs_np)
             result = backend.run_mlp(mlp, inputs)
-            np.testing.assert_allclose(
-                np.asarray(result), np.asarray(ref), rtol=1e-5, atol=1e-6
-            )
+            np.testing.assert_allclose(np.asarray(result), np.asarray(ref), rtol=1e-5, atol=1e-6)
 
             # Statistical match for sample_layer_statistics
             ref_means, ref_final, ref_var = ref_sample_layer_statistics(mlp, 1000)
             fast_means, fast_final, fast_var = backend.sample_layer_statistics(mlp, 1000)
-            np.testing.assert_allclose(
-                np.asarray(fast_means), np.asarray(ref_means), atol=0.15
-            )
-            np.testing.assert_allclose(
-                np.asarray(fast_final), np.asarray(ref_final), atol=0.15
-            )
+            np.testing.assert_allclose(np.asarray(fast_means), np.asarray(ref_means), atol=0.15)
+            np.testing.assert_allclose(np.asarray(fast_final), np.asarray(ref_final), atol=0.15)
             # Variance can differ more with only 1000 samples
             if abs(ref_var) > 1e-6:
                 assert abs(fast_var - ref_var) < max(0.5 * abs(ref_var), 0.1)

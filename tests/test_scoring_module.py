@@ -43,7 +43,9 @@ def test_evaluate_estimator_with_zeros_estimator() -> None:
         def predict(self, mlp, budget):
             return np.zeros((mlp.depth, mlp.width), dtype=np.float32)
 
-    spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=100_000_000, ground_truth_samples=200)
+    spec = ContestSpec(
+        width=8, depth=2, n_mlps=2, flop_budget=100_000_000, ground_truth_samples=200
+    )
     data = make_contest(spec)
     result = evaluate_estimator(ZerosEstimator(), data)
     assert isinstance(result, dict)
@@ -77,7 +79,9 @@ def test_evaluate_estimator_records_flops_used() -> None:
         def predict(self, mlp, budget):
             return np.zeros((mlp.depth, mlp.width), dtype=np.float32)
 
-    spec = ContestSpec(width=8, depth=2, n_mlps=1, flop_budget=100_000_000, ground_truth_samples=200)
+    spec = ContestSpec(
+        width=8, depth=2, n_mlps=1, flop_budget=100_000_000, ground_truth_samples=200
+    )
     data = make_contest(spec)
     result = evaluate_estimator(ZerosEstimator(), data)
     assert "flops_used" in result["per_mlp"][0]
