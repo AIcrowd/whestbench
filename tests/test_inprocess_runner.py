@@ -4,7 +4,7 @@ import pytest
 from network_estimation.generation import sample_mlp
 from network_estimation.runner import (
     EstimatorEntrypoint,
-    InProcessRunner,
+    LocalRunner,
     ResourceLimits,
     RunnerError,
 )
@@ -18,7 +18,9 @@ def small_mlp():
 
 @pytest.fixture
 def limits():
-    return ResourceLimits(setup_timeout_s=5.0, predict_timeout_s=30.0, memory_limit_mb=4096)
+    return ResourceLimits(
+        setup_timeout_s=5.0, predict_timeout_s=30.0, memory_limit_mb=4096, flop_budget=1_000_000
+    )
 
 
 def test_inprocess_runner_predict_returns_array(small_mlp, limits, tmp_path) -> None:
@@ -31,9 +33,9 @@ def test_inprocess_runner_predict_returns_array(small_mlp, limits, tmp_path) -> 
         "    def predict(self, mlp, budget):\n"
         "        return np.zeros((mlp.depth, mlp.width), dtype=np.float32)\n"
     )
-    runner = InProcessRunner()
+    runner = LocalRunner()
     entry = EstimatorEntrypoint(file_path=est_file)
-    ctx = SetupContext(width=8, depth=2, estimator_budget=100, api_version="1.0")
+    ctx = SetupContext(width=8, depth=2, flop_budget=100, api_version="1.0")
     runner.start(entry, ctx, limits)
     result = runner.predict(small_mlp, budget=100)
     assert result.shape == (2, 8)
@@ -42,6 +44,6 @@ def test_inprocess_runner_predict_returns_array(small_mlp, limits, tmp_path) -> 
 
 
 def test_inprocess_runner_predict_before_start_raises(small_mlp) -> None:
-    runner = InProcessRunner()
+    runner = LocalRunner()
     with pytest.raises(RunnerError):
         runner.predict(small_mlp, budget=100)

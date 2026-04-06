@@ -82,6 +82,7 @@ def _default_resource_limits() -> ResourceLimits:
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
         memory_limit_mb=4096,
+        flop_budget=100_000_000,
         cpu_time_limit_s=None,
     )
 
