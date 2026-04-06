@@ -541,7 +541,7 @@ export default function App() {
           <p style={{ marginBottom: 4 }}>
             Ready to compete? →{" "}
             <a
-              href="https://wwwinternal docs.com/"
+              href="https://www.aicrowd.com/"
               target="_blank"
               rel="noopener noreferrer"
             >
