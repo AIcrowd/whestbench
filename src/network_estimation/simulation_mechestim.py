@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import List, Tuple
 
 import mechestim as me
-import numpy as np  # needed for internal accumulators (not FLOP-counted)
 
 from .domain import MLP
 from .simulation_backend import SimulationBackend
@@ -45,9 +44,8 @@ class MechestimBackend(SimulationBackend):
         depth = mlp.depth
         chunk_size = _pick_chunk_size(width)
 
-        # Accumulators — use numpy internally for sums, wrap at the end.
-        layer_sums = np.zeros((depth, width), dtype=np.float64)
-        final_sum_sq = np.zeros(width, dtype=np.float64)
+        layer_sums = me.zeros((depth, width), dtype=me.float64)
+        final_sum_sq = me.zeros(width, dtype=me.float64)
         n_processed = 0
 
         for start in range(0, n_samples, chunk_size):
@@ -55,18 +53,15 @@ class MechestimBackend(SimulationBackend):
             x = me.array(me.random.default_rng().standard_normal((n, width)).astype(me.float32))
             for layer_idx, w in enumerate(mlp.weights):
                 x = me.maximum(me.matmul(x, w), 0.0)
-                # Extract to numpy for accumulation (not scored — this is ground truth)
-                x_np = np.asarray(x, dtype=np.float64)
-                layer_sums[layer_idx] += x_np.sum(axis=0)
-            x_np = np.asarray(x, dtype=np.float64)
-            final_sum_sq += (x_np**2).sum(axis=0)
+                x_f64 = me.asarray(x, dtype=me.float64)
+                layer_sums[layer_idx] += me.sum(x_f64, axis=0)
+            x_f64 = me.asarray(x, dtype=me.float64)
+            final_sum_sq += me.sum(x_f64**2, axis=0)
             n_processed += n
 
-        layer_means_np = (layer_sums / n_processed).astype(np.float32)
-        final_mean_np = layer_means_np[-1].copy()
+        layer_means = me.asarray(layer_sums / n_processed, dtype=me.float32)
+        final_mean = layer_means[-1].copy()
         avg_variance = float(
-            np.mean(final_sum_sq / n_processed - final_mean_np.astype(np.float64) ** 2)
+            me.mean(final_sum_sq / n_processed - me.asarray(final_mean, dtype=me.float64) ** 2)
         )
-        layer_means = me.array(layer_means_np)
-        final_mean = me.array(final_mean_np)
         return layer_means, final_mean, avg_variance
