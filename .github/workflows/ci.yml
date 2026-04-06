@@ -20,7 +20,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: uv sync --group dev --group all-backends
+        run: uv sync --group dev
 
       - name: Lint
         run: uv run ruff check .
@@ -46,7 +46,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: uv sync --group dev --group all-backends
+        run: uv sync --group dev
 
       - name: Test
         run: uv run pytest -m "not exhaustive" -x -q
@@ -66,7 +66,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: uv sync --group dev --group all-backends
+        run: uv sync --group dev
 
       - name: Exhaustive tests
         run: uv run pytest -m exhaustive -x -q
