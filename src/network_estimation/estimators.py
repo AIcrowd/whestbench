@@ -1,7 +1,7 @@
 """Reference estimators for MLP mean prediction using mechestim.
 
 This module provides tutorial estimator classes that predict per-layer
-output means using analytical moment propagation through ReLU networks.
+output means using analytical first-moment propagation through ReLU networks.
 
 For a ReLU unit z = max(0, w^T x), if x ~ N(mu, Sigma):
     E[z] = mu_pre * Phi(mu_pre/sigma_pre) + sigma_pre * phi(mu_pre/sigma_pre)
@@ -48,6 +48,7 @@ class MeanPropagationEstimator(BaseEstimator):
     """
 
     def predict(self, mlp: MLP, budget: int) -> me.ndarray:
+        """Predict per-layer output means via first-moment propagation through ReLU layers."""
         _ = budget
         width = mlp.width
         mu = me.zeros(width)
@@ -85,6 +86,7 @@ class CovariancePropagationEstimator(BaseEstimator):
     _COV_RESCALE_THRESHOLD = 1e100
 
     def predict(self, mlp: MLP, budget: int) -> me.ndarray:
+        """Predict per-layer means via full covariance propagation through ReLU layers."""
         _ = budget
         width = mlp.width
         mu = me.zeros(width)
@@ -156,6 +158,7 @@ class CombinedEstimator(BaseEstimator):
         self._covariance_estimator = covariance_estimator or CovariancePropagationEstimator()
 
     def predict(self, mlp: MLP, budget: int) -> me.ndarray:
+        """Route to covariance or mean propagation based on available FLOP budget."""
         if budget >= self._COVARIANCE_FLOP_MULTIPLIER * mlp.width * mlp.width:
             return self._covariance_estimator.predict(mlp, budget)
         return self._mean_estimator.predict(mlp, budget)

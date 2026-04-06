@@ -28,6 +28,7 @@ class ContestSpec:
     memory_limit_mb: int = 4096
 
     def validate(self) -> None:
+        """Validate that all contest specification fields are positive and consistent."""
         if self.width <= 0:
             raise ValueError("width must be positive.")
         if self.depth <= 0:

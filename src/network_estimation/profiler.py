@@ -58,6 +58,7 @@ import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+import mechestim as me
 import numpy as np
 
 from .domain import MLP
@@ -69,7 +70,7 @@ from .simulation import (
 from .simulation import (
     sample_layer_statistics as ref_sample_layer_statistics,
 )
-from .simulation_backend import PrimitiveBreakdown, SimulationBackend
+from .simulation_backend import SimulationBackend
 from .simulation_backends import ALL_BACKEND_NAMES, INSTALL_HINTS, get_available_backends
 
 
@@ -173,7 +174,6 @@ class TimingResult:
     median_time: float
     speedup_vs_numpy: float
     warmup_time: Optional[float] = None
-    breakdown: Optional[PrimitiveBreakdown] = None
     error: str = ""
 
 
@@ -250,21 +250,29 @@ def correctness_check(
     """
     try:
         mlp = sample_mlp(8, 4, np.random.default_rng(42))
-        inputs = np.random.default_rng(123).standard_normal((64, 8)).astype(np.float32)
+        inputs_np = np.random.default_rng(123).standard_normal((64, 8)).astype(np.float32)
+        inputs = me.array(inputs_np)
 
-        # Exact match for run_mlp
-        ref = ref_run_mlp(mlp, inputs)
-        result = backend.run_mlp(mlp, inputs)
-        np.testing.assert_allclose(result, ref, rtol=1e-5, atol=1e-6)
+        with me.BudgetContext(flop_budget=int(1e15)):
+            # Exact match for run_mlp
+            ref = ref_run_mlp(mlp, inputs_np)
+            result = backend.run_mlp(mlp, inputs)
+            np.testing.assert_allclose(
+                np.asarray(result), np.asarray(ref), rtol=1e-5, atol=1e-6
+            )
 
-        # Statistical match for sample_layer_statistics
-        ref_means, ref_final, ref_var = ref_sample_layer_statistics(mlp, 1000)
-        fast_means, fast_final, fast_var = backend.sample_layer_statistics(mlp, 1000)
-        np.testing.assert_allclose(fast_means, ref_means, atol=0.15)
-        np.testing.assert_allclose(fast_final, ref_final, atol=0.15)
-        # Variance can differ more with only 1000 samples
-        if abs(ref_var) > 1e-6:
-            assert abs(fast_var - ref_var) < max(0.5 * abs(ref_var), 0.1)
+            # Statistical match for sample_layer_statistics
+            ref_means, ref_final, ref_var = ref_sample_layer_statistics(mlp, 1000)
+            fast_means, fast_final, fast_var = backend.sample_layer_statistics(mlp, 1000)
+            np.testing.assert_allclose(
+                np.asarray(fast_means), np.asarray(ref_means), atol=0.15
+            )
+            np.testing.assert_allclose(
+                np.asarray(fast_final), np.asarray(ref_final), atol=0.15
+            )
+            # Variance can differ more with only 1000 samples
+            if abs(ref_var) > 1e-6:
+                assert abs(fast_var - ref_var) < max(0.5 * abs(ref_var), 0.1)
 
         return CorrectnessResult(backend_name=backend.name, passed=True)
 
@@ -292,9 +300,10 @@ def _time_run_mlp(backend: SimulationBackend, mlp: MLP, n_samples: int) -> float
     total = 0.0
     for start in range(0, n_samples, _TIMING_CHUNK):
         n = min(_TIMING_CHUNK, n_samples - start)
-        inputs = _random_float32((n, mlp.width))
+        inputs = me.array(_random_float32((n, mlp.width)))
         t0 = time.perf_counter()
-        backend.run_mlp(mlp, inputs)
+        with me.BudgetContext(flop_budget=int(1e15)):
+            backend.run_mlp(mlp, inputs)
         total += time.perf_counter() - t0
         del inputs
     return total
@@ -303,21 +312,9 @@ def _time_run_mlp(backend: SimulationBackend, mlp: MLP, n_samples: int) -> float
 def _time_sample_layer_statistics(backend: SimulationBackend, mlp: MLP, n_samples: int) -> float:
     """Time a single sample_layer_statistics call."""
     t0 = time.perf_counter()
-    backend.sample_layer_statistics(mlp, n_samples)
+    with me.BudgetContext(flop_budget=int(1e15)):
+        backend.sample_layer_statistics(mlp, n_samples)
     return time.perf_counter() - t0
-
-
-def _time_run_mlp_matmul_only(backend: SimulationBackend, mlp: MLP, n_samples: int) -> float:
-    """Time run_mlp_matmul_only over n_samples, chunked to bound memory."""
-    total = 0.0
-    for start in range(0, n_samples, _TIMING_CHUNK):
-        n = min(_TIMING_CHUNK, n_samples - start)
-        inputs = _random_float32((n, mlp.width))
-        t0 = time.perf_counter()
-        backend.run_mlp_matmul_only(mlp, inputs)
-        total += time.perf_counter() - t0
-        del inputs
-    return total
 
 
 def run_timing_sweep(
@@ -352,10 +349,9 @@ def run_timing_sweep(
     results: List[TimingResult] = []
     numpy_baselines: Dict[str, List[float]] = {}
 
-    operations = ["run_mlp", "run_mlp_matmul_only", "sample_layer_statistics"]
+    operations = ["run_mlp", "sample_layer_statistics"]
     time_fns = {
         "run_mlp": _time_run_mlp,
-        "run_mlp_matmul_only": _time_run_mlp_matmul_only,
         "sample_layer_statistics": _time_sample_layer_statistics,
     }
 
@@ -445,25 +441,6 @@ def run_timing_sweep(
                                 n_samples=n_samples,
                             )
 
-    # Post-process: compute PrimitiveBreakdown by subtraction
-    # matmul_time = run_mlp_matmul_only, relu_time = run_mlp - matmul_only
-    matmul_only_lookup: Dict[Tuple[str, int, int, int], float] = {}
-    for tr in results:
-        if tr.operation == "run_mlp_matmul_only" and not tr.error:
-            matmul_only_lookup[(tr.backend_name, tr.width, tr.depth, tr.n_samples)] = tr.median_time
-
-    for tr in results:
-        if tr.operation == "run_mlp" and not tr.error:
-            key = (tr.backend_name, tr.width, tr.depth, tr.n_samples)
-            matmul_t = matmul_only_lookup.get(key)
-            if matmul_t is not None:
-                relu_t = max(0.0, tr.median_time - matmul_t)
-                tr.breakdown = PrimitiveBreakdown(
-                    matmul_total=matmul_t,
-                    relu_total=relu_t,
-                    fused_total=tr.median_time,
-                )
-
     return results, numpy_baselines
 
 
@@ -535,7 +512,7 @@ def format_verbose_output(
     # Build a set of passed backend names for status lookup
     passed_names = {cr.backend_name for cr in correctness_results if cr.passed}
 
-    # Timing table (run_mlp + sample_layer_statistics only, hide matmul_only internal op)
+    # Timing table (run_mlp + sample_layer_statistics)
     non_profiled = [
         tr for tr in timing_results if tr.operation in ("run_mlp", "sample_layer_statistics")
     ]
@@ -571,36 +548,6 @@ def format_verbose_output(
             )
 
         console.print(table)
-
-    # Matmul vs ReLU breakdown (derived by subtraction: fused - matmul_only)
-    with_breakdown = [tr for tr in timing_results if tr.breakdown is not None]
-    if with_breakdown:
-        bd_table = Table(title="\nMatmul vs ReLU Breakdown (by subtraction)", show_lines=True)
-        bd_table.add_column("Backend", style="cyan")
-        bd_table.add_column("Width", justify="right")
-        bd_table.add_column("Depth", justify="right")
-        bd_table.add_column("N_Samples", justify="right")
-        bd_table.add_column("Fused (s)", justify="right")
-        bd_table.add_column("Matmul (s)", justify="right")
-        bd_table.add_column("Matmul %", justify="right")
-        bd_table.add_column("ReLU (s)", justify="right")
-        bd_table.add_column("ReLU %", justify="right")
-
-        for tr in with_breakdown:
-            bd = tr.breakdown
-            bd_table.add_row(
-                tr.backend_name,
-                str(tr.width),
-                str(tr.depth),
-                f"{tr.n_samples:,}",
-                f"{bd.fused_total:.4f}",
-                f"{bd.matmul_total:.4f}",
-                f"[bold]{bd.matmul_pct:.1f}%[/bold]",
-                f"{bd.relu_total:.6f}",
-                f"{bd.relu_pct:.1f}%",
-            )
-
-        console.print(bd_table)
 
     return buf.getvalue()
 
@@ -756,15 +703,7 @@ def format_compact_output(
     table.add_column("Dims")
     table.add_column("run_mlp", justify="right")
     table.add_column("sample_layer_statistics", justify="right")
-    table.add_column("Matmul", justify="right")
-    table.add_column("ReLU", justify="right")
     table.add_column("", justify="center")  # status checkmark
-
-    # Build lookup for breakdown data: (backend, dims) -> PrimitiveBreakdown
-    breakdown_lookup: Dict[Tuple[str, Tuple[int, int, int]], Any] = {}
-    for tr in timing_results:
-        if tr.operation == "run_mlp" and tr.breakdown is not None:
-            breakdown_lookup[(tr.backend_name, _dim_key(tr))] = tr.breakdown
 
     # Build lookup for timing: (backend, dims, operation) -> median_time
     time_lookup: Dict[Tuple[str, Tuple[int, int, int], str], float] = {}
@@ -800,25 +739,9 @@ def format_compact_output(
         for bname, _ in backend_times:
             run_mlp_t = time_lookup.get((bname, dim_key, "run_mlp"))
             out_stats_t = time_lookup.get((bname, dim_key, "sample_layer_statistics"))
-            bd = breakdown_lookup.get((bname, dim_key))
 
             run_mlp_str = f"{run_mlp_t:.4f}s" if run_mlp_t is not None else "\u2014"
             out_stats_str = f"{out_stats_t:.4f}s" if out_stats_t is not None else "\u2014"
-
-            def _bar(pct: float, color: str) -> str:
-                n_blocks = int(pct / 20)
-                n_blocks = min(n_blocks, 5)
-                bar = "\u2588" * n_blocks
-                if bar:
-                    return f"[{color}]{bar}[/{color}] {pct:.0f}%"
-                return f"{pct:.0f}%"
-
-            if bd is not None:
-                matmul_str = _bar(bd.matmul_pct, "blue")
-                relu_str = _bar(bd.relu_pct, "green")
-            else:
-                matmul_str = "\u2014"
-                relu_str = "\u2014"
 
             status = "\u2713" if bname in passed_names else "\u2717"
 
@@ -827,17 +750,12 @@ def format_compact_output(
                 format_dims(dim_key[0], dim_key[1], dim_key[2]),
                 run_mlp_str,
                 out_stats_str,
-                matmul_str,
-                relu_str,
                 status,
             )
 
     console.print(table)
 
     # Footer
-    console.print(
-        "  [blue]\u2588[/blue] Matmul  [green]\u2588[/green] ReLU (by subtraction)", highlight=False
-    )
     console.print()
     console.print("[dim italic]Use --verbose for full timing tables with raw times[/dim italic]")
 
@@ -882,7 +800,6 @@ def format_json_output(
                 "median_time": tr.median_time,
                 "speedup_vs_numpy": tr.speedup_vs_numpy,
                 **({"warmup_time": tr.warmup_time} if tr.warmup_time is not None else {}),
-                **({"breakdown": tr.breakdown.to_dict()} if tr.breakdown else {}),
                 **({"error": tr.error} if tr.error else {}),
             }
             for tr in timing_results
@@ -1039,7 +956,7 @@ def run_profile(
             len(preset.widths)
             * len(preset.depths)
             * len(preset.n_samples_list)
-            * 3  # run_mlp + run_mlp_matmul_only + sample_layer_statistics
+            * 2  # run_mlp + sample_layer_statistics
             * len(passed_backends)
         )
 

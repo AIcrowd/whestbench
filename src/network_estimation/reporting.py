@@ -140,7 +140,7 @@ def _smoke_next_step_commands() -> "list[str]":
     return [
         "nestim init ./my-estimator",
         "nestim validate --estimator ./my-estimator/estimator.py",
-        "nestim run --estimator ./my-estimator/estimator.py --runner subprocess",
+        "nestim run --estimator ./my-estimator/estimator.py --runner server",
         "nestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
     ]
 
@@ -160,10 +160,10 @@ def _smoke_next_step_lines() -> "list[Text]":
 
 def _smoke_optional_example_commands() -> "list[str]":
     return [
-        "nestim run --estimator ./examples/estimators/combined_estimator.py --runner subprocess",
-        "nestim run --estimator ./examples/estimators/covariance_propagation.py --runner subprocess",
-        "nestim run --estimator ./examples/estimators/mean_propagation.py --runner subprocess",
-        "nestim run --estimator ./examples/estimators/random_estimator.py --runner subprocess",
+        "nestim run --estimator ./examples/estimators/combined_estimator.py --runner server",
+        "nestim run --estimator ./examples/estimators/covariance_propagation.py --runner server",
+        "nestim run --estimator ./examples/estimators/mean_propagation.py --runner server",
+        "nestim run --estimator ./examples/estimators/random_estimator.py --runner server",
     ]
 
 
@@ -270,7 +270,7 @@ def _run_context_panel(report: "dict[str, Any]") -> Panel:
             ("MLPs [n_mlps]", str(run_config.get("n_mlps", "n/a"))),
             ("Width [width]", str(run_config.get("width", "n/a"))),
             ("Depth [depth]", str(run_config.get("depth", "n/a"))),
-            ("Estimator Budget [estimator_budget]", str(run_config.get("estimator_budget", "n/a"))),
+            ("FLOP Budget [flop_budget]", str(run_config.get("flop_budget", "n/a"))),
         ]
     )
     for key, value in rows:
@@ -353,7 +353,7 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     return Panel(
         Align.center(summary),
         title="Final Score",
-        subtitle="lower score is better; final score is primary score mean",
+        subtitle="lower MSE is better; primary score = mean final-layer MSE",
         subtitle_align="left",
         border_style="bright_cyan",
     )
@@ -718,7 +718,7 @@ def _context_key_style(key: str) -> str:
         return "bold bright_blue"
     if key in {"n_mlps", "width", "depth"}:
         return "bold bright_magenta"
-    if key == "estimator_budget":
+    if key == "flop_budget":
         return "bold bright_yellow"
     if key.endswith("_s"):
         return "bold bright_green"
