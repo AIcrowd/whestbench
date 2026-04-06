@@ -4,37 +4,43 @@
 
 Pick the path that matches what you need right now.
 
-## 🚀 I want my first valid run
+## I want my first valid run
 
 - [Install and CLI Quickstart](./getting-started/install-and-cli-quickstart.md)
 - [First Local Run](./getting-started/first-local-run.md)
+- [From Problem to Code](./getting-started/from-problem-to-code.md) — complete walkthrough to a scored estimator
 
-## 🛠 My command failed
+## Something broke
 
 - [Common Participant Errors](./troubleshooting/common-participant-errors.md)
-- [CLI Reference](./reference/cli-reference.md)
-- [Estimator Contract](./reference/estimator-contract.md)
+- [Debugging Checklist](./how-to/debugging-checklist.md)
+- [FAQ](./troubleshooting/faq.md)
 
-## 📈 I want to improve score
+## I want to improve my score
 
 - [Write an Estimator](./how-to/write-an-estimator.md)
+- [Algorithm Ideas](./how-to/algorithm-ideas.md) — survey of estimation strategies
 - [Manage Your FLOP Budget](./how-to/manage-flop-budget.md)
+- [Performance Tips](./how-to/performance-tips.md)
+- [Code Patterns](./reference/code-patterns.md) — mechestim cheat sheet
 - [Inspect and Traverse MLP Structure](./how-to/inspect-mlp-structure.md)
-- [Validate, Run, and Package](./how-to/validate-run-package.md)
 - [Use Network Explorer](./how-to/use-network-explorer.md)
+
+## I want the research framing
+
+- [Problem Setup](./concepts/problem-setup.md) — MLPs, ReLU, He initialization, why depth is hard
+- [Scoring Model](./concepts/scoring-model.md) — pure MSE under FLOP budget
+- [How Ground Truth Is Generated](./concepts/ground-truth.md) — sampling process, error bounds
+
+## Reference
+
+- [Estimator Contract](./reference/estimator-contract.md)
+- [CLI Reference](./reference/cli-reference.md)
+- [Score Report Fields](./reference/score-report-fields.md)
+- [Code Patterns](./reference/code-patterns.md)
+
+## Standard workflow
+
+- [Validate, Run, and Package](./how-to/validate-run-package.md)
 - [Use Evaluation Datasets](./how-to/use-evaluation-datasets.md)
 - [Profile Simulation](./how-to/profile-simulation-backends.md)
-- [Score Report Fields](./reference/score-report-fields.md)
-
-## 🧠 I want the research framing
-
-- [Problem Setup](./concepts/problem-setup.md) — what MLPs are, the layer equation, why depth makes estimation hard, and what mechanistic estimation means
-- [Scoring Model](./concepts/scoring-model.md) — how your score compares you to sampling, budget-adaptivity, and runtime rules
-
-## Full Taxonomy
-
-- Getting Started: [Install and CLI Quickstart](./getting-started/install-and-cli-quickstart.md), [First Local Run](./getting-started/first-local-run.md)
-- Concepts: [Problem Setup](./concepts/problem-setup.md), [Scoring Model](./concepts/scoring-model.md)
-- How-To: [Write an Estimator](./how-to/write-an-estimator.md), [Manage Your FLOP Budget](./how-to/manage-flop-budget.md), [Inspect and Traverse MLP Structure](./how-to/inspect-mlp-structure.md), [Validate, Run, and Package](./how-to/validate-run-package.md), [Use Network Explorer](./how-to/use-network-explorer.md), [Use Evaluation Datasets](./how-to/use-evaluation-datasets.md), [Profile Simulation](./how-to/profile-simulation-backends.md)
-- Reference: [Estimator Contract](./reference/estimator-contract.md), [CLI Reference](./reference/cli-reference.md), [Score Report Fields](./reference/score-report-fields.md)
-- Troubleshooting: [Common Participant Errors](./troubleshooting/common-participant-errors.md)
