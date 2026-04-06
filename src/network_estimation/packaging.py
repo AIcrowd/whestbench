@@ -53,7 +53,7 @@ def build_manifest(
     ]
     return {
         "schema_version": "1.0",
-        "api_version": "1.0",
+        "api_version": "2.0",
         "entrypoint": {"module": "estimator", "class": class_name},
         "python": {
             "min_version": f"{platform.python_version_tuple()[0]}.{platform.python_version_tuple()[1]}"
