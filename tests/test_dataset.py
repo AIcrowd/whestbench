@@ -7,7 +7,7 @@ def test_create_and_load_roundtrip(tmp_path) -> None:
         n_samples=50,
         width=8,
         depth=2,
-        estimator_budget=32,
+        flop_budget=32,
         seed=42,
         output_path=tmp_path / "test.npz",
     )
