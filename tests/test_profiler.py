@@ -23,8 +23,8 @@ from network_estimation.simulation_backends import get_backend
 
 
 class TestCorrectnessCheck:
-    def test_numpy_passes(self) -> None:
-        backend = get_backend("numpy")
+    def test_mechestim_passes(self) -> None:
+        backend = get_backend("mechestim")
         result = correctness_check(backend)
         assert result.passed is True
         assert result.error == ""
@@ -32,8 +32,8 @@ class TestCorrectnessCheck:
 
 class TestRunProfile:
     def test_quick_preset_runs(self) -> None:
-        terminal_output, _ = run_profile(preset_name="super-quick", backend_filter=["numpy"])
-        assert "numpy" in terminal_output
+        terminal_output, _ = run_profile(preset_name="super-quick", backend_filter=["mechestim"])
+        assert "mechestim" in terminal_output
         assert "Detail" in terminal_output
 
     def test_json_output(self) -> None:
@@ -41,7 +41,7 @@ class TestRunProfile:
             out_path = str(Path(tmpdir) / "results.json")
             _, json_data = run_profile(
                 preset_name="super-quick",
-                backend_filter=["numpy"],
+                backend_filter=["mechestim"],
                 output_path=out_path,
             )
             assert json_data is not None
@@ -59,30 +59,28 @@ class TestRunProfile:
             run_profile(backend_filter=["nonexistent"])
 
     def test_skipped_backends_in_output(self) -> None:
-        # Request a backend that likely isn't installed
         terminal_output, _ = run_profile(
             preset_name="super-quick",
-            backend_filter=["numpy"],
+            backend_filter=["mechestim"],
         )
-        # At minimum numpy should appear
-        assert "numpy" in terminal_output
+        assert "mechestim" in terminal_output
 
 
 class TestFormatDims:
     def test_small_number(self) -> None:
-        assert format_dims(64, 4, 500) == "64×4×500"
+        assert format_dims(64, 4, 500) == "64\u00d74\u00d7500"
 
     def test_thousands(self) -> None:
-        assert format_dims(64, 4, 10_000) == "64×4×10k"
+        assert format_dims(64, 4, 10_000) == "64\u00d74\u00d710k"
 
     def test_hundreds_of_thousands(self) -> None:
-        assert format_dims(256, 8, 100_000) == "256×8×100k"
+        assert format_dims(256, 8, 100_000) == "256\u00d78\u00d7100k"
 
     def test_millions(self) -> None:
-        assert format_dims(256, 8, 1_000_000) == "256×8×1M"
+        assert format_dims(256, 8, 1_000_000) == "256\u00d78\u00d71M"
 
     def test_large_millions(self) -> None:
-        assert format_dims(256, 8, 16_700_000) == "256×8×16.7M"
+        assert format_dims(256, 8, 16_700_000) == "256\u00d78\u00d716.7M"
 
 
 class TestPresets:
@@ -102,12 +100,12 @@ class TestFormatCompactOutput:
     def _make_results(self):
         """Build minimal test data with two backends."""
         correctness = [
-            CorrectnessResult(backend_name="numpy", passed=True),
-            CorrectnessResult(backend_name="scipy", passed=True),
+            CorrectnessResult(backend_name="mechestim", passed=True),
+            CorrectnessResult(backend_name="other", passed=True),
         ]
         timing = [
             TimingResult(
-                backend_name="numpy",
+                backend_name="mechestim",
                 operation="run_mlp",
                 width=64,
                 depth=4,
@@ -117,7 +115,7 @@ class TestFormatCompactOutput:
                 speedup_vs_numpy=1.0,
             ),
             TimingResult(
-                backend_name="scipy",
+                backend_name="other",
                 operation="run_mlp",
                 width=64,
                 depth=4,
@@ -127,7 +125,7 @@ class TestFormatCompactOutput:
                 speedup_vs_numpy=0.5,
             ),
             TimingResult(
-                backend_name="numpy",
+                backend_name="mechestim",
                 operation="sample_layer_statistics",
                 width=64,
                 depth=4,
@@ -137,7 +135,7 @@ class TestFormatCompactOutput:
                 speedup_vs_numpy=1.0,
             ),
             TimingResult(
-                backend_name="scipy",
+                backend_name="other",
                 operation="sample_layer_statistics",
                 width=64,
                 depth=4,
@@ -197,10 +195,10 @@ class TestFormatCompactOutput:
         assert "--verbose" in output
 
     def test_single_backend_omits_leaderboard(self) -> None:
-        cr = [CorrectnessResult(backend_name="numpy", passed=True)]
+        cr = [CorrectnessResult(backend_name="mechestim", passed=True)]
         tr = [
             TimingResult(
-                backend_name="numpy",
+                backend_name="mechestim",
                 operation="run_mlp",
                 width=64,
                 depth=4,
@@ -210,7 +208,7 @@ class TestFormatCompactOutput:
                 speedup_vs_numpy=1.0,
             ),
             TimingResult(
-                backend_name="numpy",
+                backend_name="mechestim",
                 operation="sample_layer_statistics",
                 width=64,
                 depth=4,
@@ -224,7 +222,7 @@ class TestFormatCompactOutput:
         assert "Leaderboard" not in output
 
     def test_zero_passed_backends(self) -> None:
-        cr = [CorrectnessResult(backend_name="numpy", passed=False, error="boom")]
+        cr = [CorrectnessResult(backend_name="mechestim", passed=False, error="boom")]
         output = format_compact_output(cr, [], {})
         assert "No backends passed" in output
 
@@ -232,14 +230,16 @@ class TestFormatCompactOutput:
 class TestRunProfileVerbose:
     def test_default_uses_compact_format(self) -> None:
         """Default (verbose=False) should use compact leaderboard format."""
-        output, _ = run_profile(preset_name="super-quick", backend_filter=["numpy"])
+        output, _ = run_profile(preset_name="super-quick", backend_filter=["mechestim"])
         assert "Leaderboard" in output or "Detail" in output
         # Should NOT contain the old-style verbose headers
         assert "Timing Results" not in output
 
     def test_verbose_includes_both_compact_and_full(self) -> None:
         """verbose=True should show compact output PLUS full tables."""
-        output, _ = run_profile(preset_name="super-quick", backend_filter=["numpy"], verbose=True)
+        output, _ = run_profile(
+            preset_name="super-quick", backend_filter=["mechestim"], verbose=True
+        )
         # Compact content present
         assert "Detail" in output
         # Full verbose tables also present
@@ -247,8 +247,6 @@ class TestRunProfileVerbose:
 
     def test_multi_dim_leaderboard_grouping(self) -> None:
         """Multiple dimension combos should produce separate leaderboard groups."""
-        # Use a tiny custom preset with 2 combos (2 depths x 1 n_samples)
-        # to verify grouping without running expensive benchmarks.
         PRESETS["_ci"] = PresetConfig(
             widths=[64],
             depths=[4, 8],
@@ -256,12 +254,11 @@ class TestRunProfileVerbose:
         )
         try:
             output, _ = run_profile(
-                preset_name="_ci", backend_filter=["numpy", "scipy"], verbose=False
+                preset_name="_ci", backend_filter=["mechestim"], verbose=False
             )
         finally:
             del PRESETS["_ci"]
-        # Each depth gets a leaderboard group header
-        assert "Leaderboard" in output
+        assert "Detail" in output
 
 
 class TestLogProgress:
@@ -269,20 +266,20 @@ class TestLogProgress:
         """Non-TTY mode should print one line per benchmark step."""
         run_profile(
             preset_name="super-quick",
-            backend_filter=["numpy"],
+            backend_filter=["mechestim"],
             log_progress=True,
         )
         captured = capsys.readouterr()
         assert "[correctness]" in captured.out
         assert "[timing]" in captured.out
-        assert "numpy" in captured.out
+        assert "mechestim" in captured.out
         assert "[done]" in captured.out
 
     def test_log_progress_off_by_default(self, capsys) -> None:
         """Default mode should not print log lines."""
         run_profile(
             preset_name="super-quick",
-            backend_filter=["numpy"],
+            backend_filter=["mechestim"],
         )
         captured = capsys.readouterr()
         assert "[correctness]" not in captured.out

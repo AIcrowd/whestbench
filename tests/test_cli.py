@@ -23,7 +23,7 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
             "n_mlps": 1,
             "width": 4,
             "depth": 3,
-            "estimator_budget": 40000,
+            "flop_budget": 40000,
             "profile_enabled": profile_enabled,
         },
         "results": {
@@ -240,7 +240,7 @@ def test_run_subprocess_error_includes_inprocess_debug_hint(
     assert exit_code == 1
     assert "Error [setup:SETUP_ERROR]: runner failed" in captured.out
     assert "Use --debug to include a traceback." in captured.out
-    assert "rerun with --runner inprocess --debug" in captured.out
+    assert "rerun with --runner local --debug" in captured.out
 
 
 def test_run_inprocess_error_omits_inprocess_debug_hint(
@@ -266,7 +266,7 @@ def test_run_inprocess_error_omits_inprocess_debug_hint(
     assert exit_code == 1
     assert "Error [setup:SETUP_ERROR]: runner failed" in captured.out
     assert "Use --debug to include a traceback." in captured.out
-    assert "rerun with --runner inprocess --debug" not in captured.out
+    assert "rerun with --runner local --debug" not in captured.out
 
 
 def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(

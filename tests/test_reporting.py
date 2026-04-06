@@ -35,7 +35,7 @@ def _sample_report(*, include_profile: bool = False) -> "dict[str, object]":
             "n_mlps": 2,
             "width": 4,
             "depth": 3,
-            "estimator_budget": 100,
+            "flop_budget": 100,
         },
         "results": {
             "primary_score": 0.123,
@@ -58,7 +58,7 @@ def _sample_report(*, include_profile: bool = False) -> "dict[str, object]":
     if include_profile:
         report["profile_calls"] = [
             {
-                "estimator_budget": 100,
+                "flop_budget": 100,
                 "mlp_index": 0,
                 "width": 4,
                 "depth": 3,
@@ -100,25 +100,25 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     assert "nestim validate --estimator ./my-estimator/estimator.py" in plain
     assert "nestim run --estimator ./my-estimator/estimator.py" in plain
     assert "--runner" in plain
-    assert "subprocess" in plain
+    assert "server" in plain
     assert "nestim package --estimator ./my-estimator/estimator.py" in plain
     assert "--output" in plain
     assert "./submission.tar.gz" in plain
     assert "Optional: run bundled example estimators:" in plain
     assert (
-        "nestim run --estimator ./examples/estimators/combined_estimator.py --runner subprocess"
+        "nestim run --estimator ./examples/estimators/combined_estimator.py --runner server"
         in plain
     )
     assert (
-        "nestim run --estimator ./examples/estimators/covariance_propagation.py --runner subprocess"
+        "nestim run --estimator ./examples/estimators/covariance_propagation.py --runner server"
         in plain
     )
     assert (
-        "nestim run --estimator ./examples/estimators/mean_propagation.py --runner subprocess"
+        "nestim run --estimator ./examples/estimators/mean_propagation.py --runner server"
         in plain
     )
     assert (
-        "nestim run --estimator ./examples/estimators/random_estimator.py --runner subprocess"
+        "nestim run --estimator ./examples/estimators/random_estimator.py --runner server"
         in plain
     )
 
