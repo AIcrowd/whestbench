@@ -2,6 +2,32 @@
 
 Quick reference for mechestim operations. All examples assume `import mechestim as me`.
 
+## Operators are tracked
+
+Python arithmetic operators (`+`, `-`, `*`, `/`, `@`) on `me.ndarray` values are
+FLOP-tracked — you do not need to use the verbose `me.add`, `me.multiply`, etc. forms.
+
+```python
+import mechestim as me
+
+a = me.ones(4)
+b = me.ones(4)
+
+# These are all equivalent and all tracked:
+c = a + b           # tracked: same as me.add(a, b)
+d = a * b           # tracked: same as me.multiply(a, b)
+e = a / b           # tracked: same as me.divide(a, b)
+
+W = me.eye(4)
+v = me.ones(4)
+f = W @ v           # tracked: same as me.matmul(W, v)
+g = W.T @ v         # tracked: transpose is free, matmul is tracked
+h = W.T @ W @ v     # tracked: two matmuls, chained with @
+```
+
+Use operators whenever they improve readability. The verbose `me.*` forms are still
+available but are no longer required for tracking purposes.
+
 ## Operation costs
 
 | What you want | Code | FLOP cost | Notes |
@@ -39,10 +65,7 @@ import mechestim as me
 
 def norm_pdf(x):
     """phi(x) = exp(-x^2/2) / sqrt(2*pi)"""
-    return me.multiply(
-        me.exp(me.multiply(-0.5, me.multiply(x, x))),
-        1.0 / float(me.sqrt(2.0 * me.pi)),
-    )
+    return me.exp(-0.5 * x * x) / me.sqrt(2.0 * me.pi)
 ```
 
 ### Standard normal CDF
@@ -62,11 +85,8 @@ def norm_cdf(x):
 ```python
 import mechestim as me
 
-alpha = me.divide(mu_pre, sigma_pre)
-E_relu = me.add(
-    me.multiply(mu_pre, norm_cdf(alpha)),
-    me.multiply(sigma_pre, norm_pdf(alpha)),
-)
+alpha = mu_pre / sigma_pre
+E_relu = mu_pre * norm_cdf(alpha) + sigma_pre * norm_pdf(alpha)
 ```
 
 ### Per-neuron variance propagation (diagonal)
@@ -75,7 +95,7 @@ E_relu = me.add(
 import mechestim as me
 
 # var_pre[i] = sum_j W[j,i]^2 * var[j]
-var_pre = me.matmul(me.transpose(me.multiply(w, w)), var)
+var_pre = (w * w).T @ var
 ```
 
 ## Next step
