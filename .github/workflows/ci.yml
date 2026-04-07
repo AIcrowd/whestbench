@@ -19,8 +19,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: uv sync --group dev
+      - name: Install dependencies (with latest mechestim)
+        run: uv sync --group dev --upgrade-package mechestim --upgrade-package mechestim-server
 
       - name: Lint
         run: uv run ruff check .
@@ -45,8 +45,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: uv sync --group dev
+      - name: Install dependencies (with latest mechestim)
+        run: uv sync --group dev --upgrade-package mechestim --upgrade-package mechestim-server
 
       - name: Test
         run: uv run pytest -m "not exhaustive" -x -q
@@ -65,8 +65,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: uv sync --group dev
+      - name: Install dependencies (with latest mechestim)
+        run: uv sync --group dev --upgrade-package mechestim --upgrade-package mechestim-server
 
       - name: Exhaustive tests
         run: uv run pytest -m exhaustive -x -q
