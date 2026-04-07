@@ -144,7 +144,7 @@ wheels = [
 [[package]]
 name = "mechestim"
 version = "0.2.0"
-source = { git = "https://github.com/AIcrowd/mechestim.git#8a772600e802cc943176ab4407f204cbd3cb243b" }
+source = { git = "https://github.com/AIcrowd/mechestim.git#b9cf8e83e7c80387e3888c8f2c11604b51bce883" }
 dependencies = [
     { name = "numpy" },
 ]
@@ -152,7 +152,7 @@ dependencies = [
 [[package]]
 name = "mechestim-server"
 version = "0.1.0"
-source = { git = "https://github.com/AIcrowd/mechestim.git?subdirectory=mechestim-server#8a772600e802cc943176ab4407f204cbd3cb243b" }
+source = { git = "https://github.com/AIcrowd/mechestim.git?subdirectory=mechestim-server#b9cf8e83e7c80387e3888c8f2c11604b51bce883" }
 dependencies = [
     { name = "mechestim" },
     { name = "msgpack" },
