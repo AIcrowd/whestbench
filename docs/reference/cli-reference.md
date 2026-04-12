@@ -8,48 +8,48 @@ Use this page for exact command syntax and key flags.
 
 Participant workflow commands:
 
-- `nestim smoke-test`
-- `nestim init`
-- `nestim validate`
-- `nestim run`
-- `nestim create-dataset`
-- `nestim package`
-- `nestim visualizer`
-- `nestim profile-simulation`
+- `whest smoke-test`
+- `whest init`
+- `whest validate`
+- `whest run`
+- `whest create-dataset`
+- `whest package`
+- `whest visualizer`
+- `whest profile-simulation`
 
-## `nestim smoke-test`
+## `whest smoke-test`
 
 Run a built-in `CombinedEstimator` dashboard check and print next-step participant commands.
 
 ```bash
-nestim smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--debug]
+whest smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--debug]
 ```
 
-## `nestim init`
+## `whest init`
 
 Create starter files in a target directory.
 
 ```bash
-nestim init [path] [--json] [--debug]
+whest init [path] [--json] [--debug]
 ```
 
-## `nestim validate`
+## `whest validate`
 
 Validate estimator loading and output contract.
 
 ```bash
-nestim validate --estimator <path> [--class <name>] [--json] [--debug]
+whest validate --estimator <path> [--class <name>] [--json] [--debug]
 ```
 
-## `nestim run`
+## `whest run`
 
 Run local scoring with participant estimator.
 
 ```bash
-nestim run --estimator <path> [options]
+whest run --estimator <path> [options]
 ```
 
-Default behavior: `nestim run --estimator <path>` is equivalent to `--runner server`.
+Default behavior: `whest run --estimator <path>` is equivalent to `--runner server`.
 
 Key options:
 
@@ -66,9 +66,9 @@ Key options:
 Recommended debug sequence:
 
 ```bash
-nestim run --estimator ./path/to/estimator.py
-nestim run --estimator ./path/to/estimator.py --debug
-nestim run --estimator ./path/to/estimator.py --runner local --debug
+whest run --estimator ./path/to/estimator.py
+whest run --estimator ./path/to/estimator.py --debug
+whest run --estimator ./path/to/estimator.py --runner local --debug
 ```
 
 Runner mode tradeoff:
@@ -76,12 +76,12 @@ Runner mode tradeoff:
 - `server` (default): realistic isolation -- your estimator runs against the mechestim server.
 - `local`: in-process execution with better traceback fidelity while debugging.
 
-## `nestim create-dataset`
+## `whest create-dataset`
 
 Pre-create an evaluation dataset for reuse across runs.
 
 ```bash
-nestim create-dataset [options] -o <output-path>
+whest create-dataset [options] -o <output-path>
 ```
 
 Key options:
@@ -96,12 +96,12 @@ Key options:
 
 See [Use Evaluation Datasets](../how-to/use-evaluation-datasets.md) for usage patterns.
 
-## `nestim package`
+## `whest package`
 
 Build a submission artifact.
 
 ```bash
-nestim package --estimator <path> [options]
+whest package --estimator <path> [options]
 ```
 
 Key options:
@@ -114,12 +114,12 @@ Key options:
 - `--json`
 - `--debug`
 
-## `nestim visualizer`
+## `whest visualizer`
 
-Launch the interactive Network Explorer in a browser.
+Launch the interactive WhestBench Explorer in a browser.
 
 ```bash
-nestim visualizer [--host HOST] [--port PORT] [--no-open] [--debug]
+whest visualizer [--host HOST] [--port PORT] [--no-open] [--debug]
 ```
 
 Checks for Node.js (>= 18), installs dependencies if needed, starts the Vite dev server, and auto-opens the browser.
@@ -133,12 +133,12 @@ Key options:
 
 On SSH/headless environments, browser auto-open is skipped automatically.
 
-## `nestim profile-simulation`
+## `whest profile-simulation`
 
 Profile mechestim FLOP accounting and analytical correctness across a grid of network sizes and FLOP budgets.
 
 ```bash
-nestim profile-simulation [--preset super-quick|quick|standard|exhaustive]
+whest profile-simulation [--preset super-quick|quick|standard|exhaustive]
                           [--output <path>]
                           [--verbose]
                           [--debug]
@@ -159,10 +159,10 @@ Example workflows:
 
 ```bash
 # Quick correctness check
-nestim profile-simulation --preset quick
+whest profile-simulation --preset quick
 
 # Full profile with JSON export
-nestim profile-simulation --preset exhaustive --output profile_results.json
+whest profile-simulation --preset exhaustive --output profile_results.json
 ```
 
 ## ➡️ Next step

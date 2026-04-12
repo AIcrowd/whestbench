@@ -21,14 +21,14 @@ ACCOUNT_ID=$(python3 -c "import json; print(json.load(open('${CONFIG_FILE}'))['a
 IMAGE_TAG="latest"
 FULL_URI="${ECR_REPO_URI}:${IMAGE_TAG}"
 
-echo "=== Building nestim Profiler Image ==="
+echo "=== Building whest Profiler Image ==="
 echo "Repo root:  ${REPO_ROOT}"
 echo "ECR target: ${FULL_URI}"
 echo ""
 
 # Build from repo root so Dockerfile can access src/, pyproject.toml, etc.
 echo "Building Docker image..."
-docker build --platform linux/amd64 -f "${SCRIPT_DIR}/Dockerfile" -t "nestim-profiler:${IMAGE_TAG}" "${REPO_ROOT}"
+docker build --platform linux/amd64 -f "${SCRIPT_DIR}/Dockerfile" -t "whest-profiler:${IMAGE_TAG}" "${REPO_ROOT}"
 echo ""
 
 # Authenticate to ECR
@@ -39,7 +39,7 @@ echo ""
 
 # Tag and push
 echo "Pushing image..."
-docker tag "nestim-profiler:${IMAGE_TAG}" "$FULL_URI"
+docker tag "whest-profiler:${IMAGE_TAG}" "$FULL_URI"
 docker push "$FULL_URI"
 echo ""
 

@@ -60,7 +60,7 @@ function buildNetworkSVGBlob() {
   return new Blob([svgString], { type: 'image/svg+xml' });
 }
 
-const SVG_FILENAME = 'network-explorer-visualization.svg';
+const SVG_FILENAME = 'whestbench-explorer-visualization.svg';
 
 /**
  * Download the network SVG. Uses the File System Access API (showSaveFilePicker)

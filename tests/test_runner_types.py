@@ -1,6 +1,6 @@
 import pytest
 
-from network_estimation.runner import (
+from whestbench.runner import (
     ResourceLimits,
     RunnerError,
     RunnerErrorDetail,

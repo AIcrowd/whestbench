@@ -42,7 +42,7 @@ def register_task_definition(
     timeout_minutes: Optional[int] = None,
 ) -> str:
     """Register a Fargate task definition for a given config. Returns task def ARN."""
-    family = f"nestim-profiling-{config['name']}"
+    family = f"whest-profiling-{config['name']}"
 
     env_vars = [
         {"name": "RUN_ID", "value": run_id},
@@ -269,7 +269,7 @@ def print_dry_run(configs, preset, run_id, backends, max_threads, infra):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run nestim profiler across Fargate instance configs.",
+        description="Run whest profiler across Fargate instance configs.",
     )
     parser.add_argument(
         "--preset",
@@ -287,12 +287,12 @@ def main():
     )
     parser.add_argument(
         "--backends",
-        help="Comma-separated backend filter (passed to nestim)",
+        help="Comma-separated backend filter (passed to whest)",
     )
     parser.add_argument(
         "--max-threads",
         type=int,
-        help="Thread cap (passed to nestim --max-threads)",
+        help="Thread cap (passed to whest --max-threads)",
     )
     parser.add_argument(
         "--timeout",
@@ -303,7 +303,7 @@ def main():
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Pass --verbose to nestim profiler (more detailed output in logs)",
+        help="Pass --verbose to whest profiler (more detailed output in logs)",
     )
     parser.add_argument(
         "--dry-run",

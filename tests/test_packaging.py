@@ -7,7 +7,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Dict
 
-from network_estimation.packaging import package_submission
+from whestbench.packaging import package_submission
 
 
 def _write_estimator_module(tmp_path: Path, class_name: str = "Estimator") -> Path:
@@ -17,7 +17,7 @@ def _write_estimator_module(tmp_path: Path, class_name: str = "Estimator") -> Pa
             f"""
             import numpy as np
             from numpy.typing import NDArray
-            from network_estimation import BaseEstimator, MLP
+            from whestbench import BaseEstimator, MLP
 
             class {class_name}(BaseEstimator):
                 def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:

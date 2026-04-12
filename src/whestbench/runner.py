@@ -172,7 +172,7 @@ class SubprocessRunner:
         self._worker_command = (
             worker_command
             if worker_command is not None
-            else [sys.executable, "-m", "network_estimation.subprocess_worker"]
+            else [sys.executable, "-m", "whestbench.subprocess_worker"]
         )
         self._process: Optional[subprocess.Popen] = None
         self._limits: Optional[ResourceLimits] = None

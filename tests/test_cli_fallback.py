@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Any
 
-import network_estimation.cli as cli
+import whestbench.cli as cli
 
 
 def _sample_report() -> dict:
@@ -53,7 +53,7 @@ def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
 
     assert exit_code == 0
     assert "Rich dashboard unavailable (rich boom)" in captured.err
-    assert "Network Estimation Report (Plain Text)" in captured.out
+    assert "WhestBench Report (Plain Text)" in captured.out
     assert "Primary Score: 0.42" in captured.out
 
 
@@ -90,7 +90,7 @@ def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
 
     assert exit_code == 0
     assert "Rich dashboard unavailable (render failed)" in captured.err
-    assert "Network Estimation Report (Plain Text)" in captured.out
+    assert "WhestBench Report (Plain Text)" in captured.out
 
 
 def test_error_code_mapping_for_validation_messages() -> None:

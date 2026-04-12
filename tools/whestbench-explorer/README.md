@@ -1,16 +1,16 @@
-<img src="../../assets/logo/logo.png" alt="Network Estimation Challenge logo" style="height: 80px;">
+<img src="../../assets/logo/logo.png" alt="ARC Whitebox Estimation Challenge logo" style="height: 80px;">
 
-# Network Explorer
+# WhestBench Explorer
 
 Interactive React app for visualizing small random MLPs and estimator behavior.
 
-> Network Explorer is optional.
+> WhestBench Explorer is optional.
 > It is an educational and debugging aid, not the submission interface.
 
 ## Quick Start
 
 ```bash
-cd tools/network-explorer
+cd tools/whestbench-explorer
 npm install
 npm run dev
 ```
@@ -36,10 +36,10 @@ Open [http://localhost:5173](http://localhost:5173).
 Official local score behavior is defined by:
 
 ```bash
-nestim run --estimator <path> --runner server
+whest run --estimator <path> --runner server
 ```
 
 ## Participant docs
 
 - [Documentation Index](../../docs/index.md)
-- [Use Network Explorer](../../docs/how-to/use-network-explorer.md)
+- [Use WhestBench Explorer](../../docs/how-to/use-whestbench-explorer.md)

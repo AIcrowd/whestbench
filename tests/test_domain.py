@@ -1,7 +1,7 @@
 import mechestim as me
 import pytest
 
-from network_estimation.domain import MLP
+from whestbench.domain import MLP
 
 
 def test_mlp_validate_accepts_valid_mlp() -> None:

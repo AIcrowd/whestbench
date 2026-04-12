@@ -13,8 +13,8 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-import network_estimation.reporting as reporting
-from network_estimation.reporting import (
+import whestbench.reporting as reporting
+from whestbench.reporting import (
     render_agent_report,
     render_human_report,
     render_smoke_test_next_steps,
@@ -96,28 +96,28 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     assert "Commands (bash)" not in plain
     assert "Command" not in plain
     assert "Purpose" not in plain
-    assert "nestim init ./my-estimator" in plain
-    assert "nestim validate --estimator ./my-estimator/estimator.py" in plain
-    assert "nestim run --estimator ./my-estimator/estimator.py" in plain
+    assert "whest init ./my-estimator" in plain
+    assert "whest validate --estimator ./my-estimator/estimator.py" in plain
+    assert "whest run --estimator ./my-estimator/estimator.py" in plain
     assert "--runner" in plain
     assert "server" in plain
-    assert "nestim package --estimator ./my-estimator/estimator.py" in plain
+    assert "whest package --estimator ./my-estimator/estimator.py" in plain
     assert "--output" in plain
     assert "./submission.tar.gz" in plain
     assert "Optional: run bundled example estimators:" in plain
     assert (
-        "nestim run --estimator ./examples/estimators/combined_estimator.py --runner server"
+        "whest run --estimator ./examples/estimators/combined_estimator.py --runner server"
         in plain
     )
     assert (
-        "nestim run --estimator ./examples/estimators/covariance_propagation.py --runner server"
+        "whest run --estimator ./examples/estimators/covariance_propagation.py --runner server"
         in plain
     )
     assert (
-        "nestim run --estimator ./examples/estimators/mean_propagation.py --runner server" in plain
+        "whest run --estimator ./examples/estimators/mean_propagation.py --runner server" in plain
     )
     assert (
-        "nestim run --estimator ./examples/estimators/random_estimator.py --runner server" in plain
+        "whest run --estimator ./examples/estimators/random_estimator.py --runner server" in plain
     )
 
 
@@ -137,7 +137,7 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
     rendered = render_human_report(_sample_report(include_profile=False))
 
     # Human mode contract: high-level run summary.
-    assert "Network Estimation Report" in rendered
+    assert "WhestBench Report" in rendered
     assert "Use --json for JSON output" in rendered
     assert "Run Context" in rendered
     assert "Final Score" in rendered

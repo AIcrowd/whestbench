@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from network_estimation.hardware import (
+from whestbench.hardware import (
     collect_hardware_fingerprint,
     hardware_matches,
 )

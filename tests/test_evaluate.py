@@ -3,14 +3,14 @@ from __future__ import annotations
 import mechestim as me
 import pytest
 
-from network_estimation.domain import MLP
-from network_estimation.scoring import (
+from whestbench.domain import MLP
+from whestbench.scoring import (
     ContestSpec,
     evaluate_estimator,
     make_contest,
     validate_predictions,
 )
-from network_estimation.sdk import BaseEstimator
+from whestbench.sdk import BaseEstimator
 
 
 def test_contest_spec_has_flop_budget() -> None:

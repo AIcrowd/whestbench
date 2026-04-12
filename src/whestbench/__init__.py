@@ -1,4 +1,4 @@
-"""Core package for network estimation starter-kit runtime."""
+"""Core package for WhestBench starter-kit runtime."""
 
 from .domain import MLP
 from .generation import sample_mlp

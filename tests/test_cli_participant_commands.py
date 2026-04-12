@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-import network_estimation.cli as cli
+import whestbench.cli as cli
 
 
 def _sample_report() -> dict:
@@ -204,8 +204,8 @@ def test_package_command_writes_manifest_with_entrypoint_and_hashes(
         dedent(
             """
             import numpy as np
-            from network_estimation import BaseEstimator
-            from network_estimation.domain import MLP
+            from whestbench import BaseEstimator
+            from whestbench.domain import MLP
 
             class Estimator(BaseEstimator):
                 def predict(self, mlp: MLP, budget: int):
@@ -266,7 +266,7 @@ def test_main_uses_sys_argv_when_argv_is_none(
         "render_human_report",
         lambda _report, *, show_diagnostic_plots=False: "human report\n",
     )
-    monkeypatch.setattr(cli.sys, "argv", ["nestim", "smoke-test"])
+    monkeypatch.setattr(cli.sys, "argv", ["whest", "smoke-test"])
 
     exit_code = cli.main(None)
     captured = capsys.readouterr()

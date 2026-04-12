@@ -1,7 +1,7 @@
 import mechestim as me
 import pytest
 
-from network_estimation.scoring import (
+from whestbench.scoring import (
     ContestSpec,
     evaluate_estimator,
     make_contest,
@@ -37,7 +37,7 @@ def test_make_contest_produces_valid_data() -> None:
 
 def test_evaluate_estimator_with_zeros_estimator() -> None:
     """An estimator that always returns zeros should produce a finite score."""
-    from network_estimation.sdk import BaseEstimator
+    from whestbench.sdk import BaseEstimator
 
     class ZerosEstimator(BaseEstimator):
         def predict(self, mlp, budget):
@@ -56,14 +56,14 @@ def test_evaluate_estimator_with_zeros_estimator() -> None:
 
 
 def test_validate_predictions_rejects_wrong_shape() -> None:
-    from network_estimation.scoring import validate_predictions
+    from whestbench.scoring import validate_predictions
 
     with pytest.raises(ValueError, match="shape"):
         validate_predictions(me.zeros((3, 4), dtype=me.float32), depth=2, width=4)
 
 
 def test_validate_predictions_rejects_nonfinite() -> None:
-    from network_estimation.scoring import validate_predictions
+    from whestbench.scoring import validate_predictions
 
     arr = me.zeros((2, 4), dtype=me.float32)
     arr[0, 0] = float("inf")
@@ -73,7 +73,7 @@ def test_validate_predictions_rejects_nonfinite() -> None:
 
 def test_evaluate_estimator_records_flops_used() -> None:
     """Each per-mlp record should include flops_used."""
-    from network_estimation.sdk import BaseEstimator
+    from whestbench.sdk import BaseEstimator
 
     class ZerosEstimator(BaseEstimator):
         def predict(self, mlp, budget):

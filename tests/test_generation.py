@@ -1,7 +1,7 @@
 import mechestim as me
 import pytest
 
-from network_estimation.generation import sample_mlp
+from whestbench.generation import sample_mlp
 
 
 def test_sample_mlp_returns_valid_mlp() -> None:

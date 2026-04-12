@@ -195,7 +195,7 @@ def _render_plain_text_report(report: Dict[str, Any]) -> str:
     run_config = report.get("run_config", {})
     run_meta = report.get("run_meta", {})
     lines = [
-        "Network Estimation Report (Plain Text)",
+        "WhestBench Report (Plain Text)",
         f"Primary Score: {results.get('primary_score', 'n/a')}",
         f"Secondary Score: {results.get('secondary_score', 'n/a')}",
         f"Duration(s): {run_meta.get('run_duration_s', 'n/a')}",
@@ -455,7 +455,7 @@ def validate_submission_entrypoint(
 def _build_participant_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Participant-first network-estimation CLI. Starter examples live in "
+            "Participant-first WhestBench CLI. Starter examples live in "
             "examples/estimators/."
         )
     )
@@ -578,7 +578,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     visualizer_parser = subparsers.add_parser(
         "visualizer",
-        help="Launch the interactive Network Explorer in a browser.",
+        help="Launch the interactive WhestBench Explorer in a browser.",
     )
     visualizer_parser.add_argument(
         "--host", default="localhost", help="Bind address (default: localhost)."
@@ -972,8 +972,8 @@ def _main_participant(argv: "list[str]") -> int:
                 _dataset_tip = (
                     "\n[bold bright_yellow]Tip:[/] Ground truth is recomputed on every run. "
                     "Consider creating and reusing a dataset:\n"
-                    "   [cyan]nestim create-dataset[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]-o[/] [yellow]my_dataset.npz[/]\n"
-                    "   [cyan]nestim run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]my_dataset.npz[/]\n"
+                    "   [cyan]whest create-dataset[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]-o[/] [yellow]my_dataset.npz[/]\n"
+                    "   [cyan]whest run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]my_dataset.npz[/]\n"
                 )
                 _tip_console = Console(highlight=False)
                 if rich_tqdm is None:

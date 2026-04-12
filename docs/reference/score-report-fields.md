@@ -2,7 +2,7 @@
 
 ## When to use this page
 
-Use this page to interpret `nestim run` output fields.
+Use this page to interpret `whest run` output fields.
 
 ## Top-level fields
 
@@ -52,7 +52,7 @@ If the estimator raised an error, the entry also includes:
 
 ## Dataset traceability fields
 
-When using `nestim run --dataset`, the report includes `run_config.dataset`:
+When using `whest run --dataset`, the report includes `run_config.dataset`:
 
 | Field | Description |
 |---|---|

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Container entrypoint for cloud profiling tasks.
-# Runs nestim profiler and uploads results to S3.
+# Runs whest profiler and uploads results to S3.
 #
 # Required env vars: RUN_ID, CONFIG_NAME, S3_BUCKET
 # Optional env vars: PRESET, BACKENDS, MAX_THREADS, VERBOSE, TIMEOUT_MINUTES
@@ -35,8 +35,8 @@ export VECLIB_MAXIMUM_THREADS="$MAX_THREADS"
 # Note: XLA_FLAGS thread options removed — they cause fatal crashes in newer JAX.
 # Thread counts are controlled via OMP/MKL/OPENBLAS env vars above.
 
-# Build the nestim command
-CMD=(nestim profile-simulation --preset "$PRESET" --output "$OUTPUT_FILE" --log-progress)
+# Build the whest command
+CMD=(whest profile-simulation --preset "$PRESET" --output "$OUTPUT_FILE" --log-progress)
 
 if [[ -n "${BACKENDS:-}" ]]; then
     CMD+=(--backends "$BACKENDS")

@@ -1,8 +1,8 @@
 import mechestim as me
 import pytest
 
-from network_estimation.domain import MLP
-from network_estimation.sdk import BaseEstimator, SetupContext
+from whestbench.domain import MLP
+from whestbench.sdk import BaseEstimator, SetupContext
 
 
 def test_setup_context_fields() -> None:

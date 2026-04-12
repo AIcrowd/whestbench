@@ -44,10 +44,10 @@ RUN CFLAGS="-O3 -ffast-math" python setup_cython.py build_ext --inplace
 # so Numba/JAX compile and cache the generated code.
 RUN python -c "\
 import numpy as np; \
-from network_estimation.generation import sample_mlp; \
+from whestbench.generation import sample_mlp; \
 mlp = sample_mlp(64, 4, np.random.default_rng(42)); \
 inputs = np.random.randn(100, 64).astype(np.float32); \
-from network_estimation.simulation_numba import NumbaBackend; \
+from whestbench.simulation_numba import NumbaBackend; \
 nb = NumbaBackend(); \
 nb.run_mlp(mlp, inputs); \
 nb.run_mlp_matmul_only(mlp, inputs); \
@@ -57,10 +57,10 @@ print('Numba JIT warm-up complete') \
 
 RUN python -c "\
 import numpy as np; \
-from network_estimation.generation import sample_mlp; \
+from whestbench.generation import sample_mlp; \
 mlp = sample_mlp(64, 4, np.random.default_rng(42)); \
 inputs = np.random.randn(100, 64).astype(np.float32); \
-from network_estimation.simulation_jax import JAXBackend; \
+from whestbench.simulation_jax import JAXBackend; \
 jb = JAXBackend(); \
 jb.run_mlp(mlp, inputs); \
 jb.run_mlp_matmul_only(mlp, inputs); \
@@ -71,10 +71,10 @@ print('JAX JIT warm-up complete') \
 # Warm up SciPy and Cython backends (verify import + basic call)
 RUN python -c "\
 import numpy as np; \
-from network_estimation.generation import sample_mlp; \
+from whestbench.generation import sample_mlp; \
 mlp = sample_mlp(64, 4, np.random.default_rng(42)); \
 inputs = np.random.randn(100, 64).astype(np.float32); \
-from network_estimation.simulation_scipy import SciPyBackend; \
+from whestbench.simulation_scipy import SciPyBackend; \
 sb = SciPyBackend(); \
 sb.run_mlp(mlp, inputs); \
 sb.run_mlp_matmul_only(mlp, inputs); \
@@ -84,10 +84,10 @@ print('SciPy warm-up complete') \
 
 RUN python -c "\
 import numpy as np; \
-from network_estimation.generation import sample_mlp; \
+from whestbench.generation import sample_mlp; \
 mlp = sample_mlp(64, 4, np.random.default_rng(42)); \
 inputs = np.random.randn(100, 64).astype(np.float32); \
-from network_estimation.simulation_cython import CythonBackend; \
+from whestbench.simulation_cython import CythonBackend; \
 cb = CythonBackend(); \
 cb.run_mlp(mlp, inputs); \
 cb.run_mlp_matmul_only(mlp, inputs); \

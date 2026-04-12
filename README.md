@@ -1,10 +1,10 @@
 <div align="center">
-  <img src="assets/logo/logo.png" alt="Network Estimation Challenge logo" style="height: 120px;">
+  <img src="assets/logo/logo.png" alt="ARC Whitebox Estimation Challenge logo" style="height: 120px;">
   <br>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-green?logo=python&logoColor=white" alt="Python 3.10+"></a>
 </div>
 
-# Network Estimation Challenge
+# ARC Whitebox Estimation Challenge
 
 Can you predict a network's behavior by analyzing its structure, instead of just running it thousands of times?
 
@@ -24,7 +24,7 @@ Your score is pure MSE under a FLOP budget constraint: predictions that exceed t
 ### 🧠 Why this challenge matters
 
 <div align="center">
-  <img src="assets/network-explorer-visualization.svg" alt="Network Explorer Visualization" width="100%">
+  <img src="assets/whestbench-explorer-visualization.svg" alt="WhestBench Explorer Visualization" width="100%">
 </div>
 
 The natural way to estimate a network's expected output is brute force: sample many random inputs, propagate them, average the results. Sampling is the ground truth — with enough samples it converges to the exact answer. But it's inefficient: the error only shrinks as 1/√k with k samples, and it learns nothing from the network's structure.
@@ -49,53 +49,53 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 Clone the repository and install the CLI:
 
 ```bash
-git clone git@github.com:AIcrowd/network-estimation-challenge-internal.git
-cd network-estimation-challenge-internal
+git clone git@github.com:AIcrowd/whestbench.git
+cd whestbench
 uv tool install -e .
 ```
 
 Sanity-check CLI wiring:
 
 ```bash
-nestim smoke-test
+whest smoke-test
 ```
 
 Explore networks visually (requires Node.js):
 
 ```bash
-nestim visualizer
+whest visualizer
 ```
 
 Run your first full loop:
 
 ```bash
-nestim init ./my-estimator
-nestim validate --estimator ./my-estimator/estimator.py
-nestim run --estimator ./my-estimator/estimator.py
-nestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz
+whest init ./my-estimator
+whest validate --estimator ./my-estimator/estimator.py
+whest run --estimator ./my-estimator/estimator.py
+whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz
 ```
 
-`nestim run` uses `--runner server` by default.
+`whest run` uses `--runner server` by default.
 
 For faster repeated evaluations, pre-create a dataset and reuse it:
 
 ```bash
-nestim create-dataset -o my_dataset.npz
-nestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
+whest create-dataset -o my_dataset.npz
+whest run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
 ```
 
 Quick debug sequence when `run` fails:
 
 ```bash
-nestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
-nestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --debug
-nestim run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --runner local --debug
+whest run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz
+whest run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --debug
+whest run --estimator ./my-estimator/estimator.py --dataset my_dataset.npz --runner local --debug
 ```
 
 For local editable invocation without global install:
 
 ```bash
-uv run --with-editable . nestim smoke-test
+uv run --with-editable . whest smoke-test
 ```
 
 ## 📚 Documentation
@@ -122,7 +122,7 @@ Start at: [Documentation Index](docs/index.md)
 - [Inspect and Traverse MLP Structure](docs/how-to/inspect-mlp-structure.md)
 - [Validate, Run, and Package](docs/how-to/validate-run-package.md)
 - [Use Evaluation Datasets](docs/how-to/use-evaluation-datasets.md)
-- [Use Network Explorer](docs/how-to/use-network-explorer.md)
+- [Use WhestBench Explorer](docs/how-to/use-whestbench-explorer.md)
 - [Profile Simulation Backends](docs/how-to/profile-simulation-backends.md) — profile mechestim FLOP usage and analytical correctness
 - [Performance Tips](docs/how-to/performance-tips.md)
 - [Debugging Checklist](docs/how-to/debugging-checklist.md)
@@ -159,23 +159,23 @@ Try them out (adjust `--n-mlps` to control evaluation size):
 
 ```bash
 # Quick iteration (fewer MLPs = faster evaluation)
-nestim run --estimator examples/estimators/mean_propagation.py --n-mlps 3
+whest run --estimator examples/estimators/mean_propagation.py --n-mlps 3
 
 # Full evaluation (default settings)
-nestim run --estimator examples/estimators/mean_propagation.py --n-mlps 10
+whest run --estimator examples/estimators/mean_propagation.py --n-mlps 10
 
 # Compare estimators on the same dataset for fair scoring
-nestim create-dataset --n-mlps 100 -o eval.npz
-nestim run --estimator examples/estimators/mean_propagation.py --dataset eval.npz
-nestim run --estimator examples/estimators/covariance_propagation.py --dataset eval.npz
-nestim run --estimator examples/estimators/combined_estimator.py --dataset eval.npz
+whest create-dataset --n-mlps 100 -o eval.npz
+whest run --estimator examples/estimators/mean_propagation.py --dataset eval.npz
+whest run --estimator examples/estimators/covariance_propagation.py --dataset eval.npz
+whest run --estimator examples/estimators/combined_estimator.py --dataset eval.npz
 ```
 
 ## 📡 Current Platform Status
 
 This starter kit supports local development, validation, scoring, and packaging.
 
-Hosted submission/upload instructions are not part of this repository yet; until then, use local `nestim package` artifacts for iteration.
+Hosted submission/upload instructions are not part of this repository yet; until then, use local `whest package` artifacts for iteration.
 
 ## ✅ Verification Commands
 

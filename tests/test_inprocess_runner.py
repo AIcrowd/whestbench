@@ -1,14 +1,14 @@
 import mechestim as me
 import pytest
 
-from network_estimation.generation import sample_mlp
-from network_estimation.runner import (
+from whestbench.generation import sample_mlp
+from whestbench.runner import (
     EstimatorEntrypoint,
     LocalRunner,
     ResourceLimits,
     RunnerError,
 )
-from network_estimation.sdk import SetupContext
+from whestbench.sdk import SetupContext
 
 
 @pytest.fixture
@@ -27,8 +27,8 @@ def test_inprocess_runner_predict_returns_array(small_mlp, limits, tmp_path) -> 
     est_file = tmp_path / "est.py"
     est_file.write_text(
         "import numpy as np\n"
-        "from network_estimation.sdk import BaseEstimator\n"
-        "from network_estimation.domain import MLP\n"
+        "from whestbench.sdk import BaseEstimator\n"
+        "from whestbench.domain import MLP\n"
         "class Estimator(BaseEstimator):\n"
         "    def predict(self, mlp, budget):\n"
         "        return np.zeros((mlp.depth, mlp.width), dtype=np.float32)\n"

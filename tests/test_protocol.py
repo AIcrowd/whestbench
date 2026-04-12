@@ -1,4 +1,4 @@
-from network_estimation.protocol import ScoreRequest, ScoreResponse
+from whestbench.protocol import ScoreRequest, ScoreResponse
 
 
 def test_score_request_has_versioned_schema() -> None:

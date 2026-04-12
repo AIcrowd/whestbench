@@ -5,9 +5,9 @@ from __future__ import annotations
 import mechestim as me
 import pytest
 
-from network_estimation.domain import MLP
-from network_estimation.generation import sample_mlp
-from network_estimation.simulation_backends import get_available_backends, get_backend
+from whestbench.domain import MLP
+from whestbench.generation import sample_mlp
+from whestbench.simulation_backends import get_available_backends, get_backend
 
 
 def _make_mlp(width: int = 8, depth: int = 4, seed: int = 42) -> MLP:
@@ -73,24 +73,24 @@ class TestRegistry:
     def test_get_backend_default_is_mechestim(self) -> None:
         import os
 
-        old = os.environ.pop("NESTIM_BACKEND", None)
+        old = os.environ.pop("WHEST_BACKEND", None)
         try:
             backend = get_backend()
             assert backend.name == "mechestim"
         finally:
             if old is not None:
-                os.environ["NESTIM_BACKEND"] = old
+                os.environ["WHEST_BACKEND"] = old
 
     def test_get_backend_env_var(self) -> None:
         import os
 
-        old = os.environ.get("NESTIM_BACKEND")
-        os.environ["NESTIM_BACKEND"] = "mechestim"
+        old = os.environ.get("WHEST_BACKEND")
+        os.environ["WHEST_BACKEND"] = "mechestim"
         try:
             backend = get_backend()
             assert backend.name == "mechestim"
         finally:
             if old is not None:
-                os.environ["NESTIM_BACKEND"] = old
+                os.environ["WHEST_BACKEND"] = old
             else:
-                os.environ.pop("NESTIM_BACKEND", None)
+                os.environ.pop("WHEST_BACKEND", None)

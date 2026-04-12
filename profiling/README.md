@@ -1,6 +1,6 @@
 # Cloud Profiling Infrastructure
 
-Run `nestim profile-simulation` benchmarks across a matrix of AWS Fargate
+Run `whest profile-simulation` benchmarks across a matrix of AWS Fargate
 CPU/memory configurations, collect results to S3, and aggregate locally.
 
 ## Prerequisites
@@ -40,12 +40,12 @@ Creates these resources:
 
 | Resource | Name | Purpose |
 |----------|------|---------|
-| S3 bucket | `nestim-profiling-{account-id}` | Result storage |
-| ECR repository | `nestim-profiler` | Docker image registry |
-| ECS cluster | `nestim-profiling` | Fargate task execution |
-| IAM execution role | `nestim-profiler-execution` | ECR pull + CloudWatch |
-| IAM task role | `nestim-profiler-task` | S3 upload (scoped) |
-| CloudWatch log group | `/ecs/nestim-profiling` | Task logs |
+| S3 bucket | `whest-profiling-{account-id}` | Result storage |
+| ECR repository | `whest-profiler` | Docker image registry |
+| ECS cluster | `whest-profiling` | Fargate task execution |
+| IAM execution role | `whest-profiler-execution` | ECR pull + CloudWatch |
+| IAM task role | `whest-profiler-task` | S3 upload (scoped) |
+| CloudWatch log group | `/ecs/whest-profiling` | Task logs |
 
 Resource ARNs are written to `profiling/.infra-config.json` (gitignored).
 
@@ -102,7 +102,7 @@ python profiling/run_benchmarks.py \
     --backends numpy,pytorch         # only profile specific backends
     --max-threads 4                  # cap CPU threads
     --timeout 90                     # minutes before aborting (default: 60)
-    --verbose                        # pass --verbose to nestim profiler
+    --verbose                        # pass --verbose to whest profiler
     --dry-run                        # show plan without launching
 ```
 
@@ -136,17 +136,17 @@ a `[warning]` line and continues with the remaining combinations. Partial
 results are preserved and uploaded to S3. The JSON output includes an
 `error` field on skipped entries for diagnostics.
 
-These lines appear in CloudWatch under the log group `/ecs/nestim-profiling`
+These lines appear in CloudWatch under the log group `/ecs/whest-profiling`
 with stream prefix `{run-id}/profiler/{task-id}`.
 
 To tail logs in real time:
 ```bash
-aws logs tail /ecs/nestim-profiling --follow --since 1h
+aws logs tail /ecs/whest-profiling --follow --since 1h
 ```
 
 For local testing, pass `--log-progress` directly:
 ```bash
-nestim profile-simulation --preset super-quick --log-progress
+whest profile-simulation --preset super-quick --log-progress
 ```
 
 ## Timeouts
@@ -284,7 +284,7 @@ aws service-quotas get-service-quota \
 
 Check CloudWatch logs:
 ```bash
-aws logs tail /ecs/nestim-profiling --since 1h
+aws logs tail /ecs/whest-profiling --since 1h
 ```
 
 ### S3 upload fails in container
@@ -293,7 +293,7 @@ Ensure the task role has `s3:PutObject` permission and the bucket name matches.
 
 ### Docker build fails on Cython
 
-Ensure `_cython_kernels.pyx` is present in `src/network_estimation/`.
+Ensure `_cython_kernels.pyx` is present in `src/whestbench/`.
 
 ## Cost Estimates
 

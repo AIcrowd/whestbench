@@ -51,7 +51,7 @@ def _import_module_from_path(module_path: Path) -> ModuleType:
         raise FileNotFoundError(f"Estimator module file not found: {module_path}")
 
     module_hash = hashlib.sha1(str(module_path).encode("utf-8")).hexdigest()[:12]
-    module_name = f"_network_estimation_submission_{module_hash}"
+    module_name = f"_whestbench_submission_{module_hash}"
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Failed to import estimator module from path: {module_path}")

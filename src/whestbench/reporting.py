@@ -37,7 +37,7 @@ def render_human_header() -> str:
     console = _new_console(buffer)
     console.print(
         Panel(
-            Align.center(Text("Network Estimation Report", style="bold white")),
+            Align.center(Text("WhestBench Report", style="bold white")),
             expand=True,
             border_style="bright_cyan",
         )
@@ -69,7 +69,7 @@ def render_human_report(report: "dict[str, Any]", *, show_diagnostic_plots: bool
 
     console.print(
         Panel(
-            Align.center(Text("Network Estimation Report", style="bold white")),
+            Align.center(Text("WhestBench Report", style="bold white")),
             expand=True,
             border_style="bright_cyan",
         )
@@ -96,7 +96,7 @@ def _new_console(buffer: io.StringIO) -> Console:
 
 
 def render_smoke_test_next_steps() -> str:
-    """Render onboarding next-steps panel for ``nestim smoke-test``."""
+    """Render onboarding next-steps panel for ``whest smoke-test``."""
     buffer = io.StringIO()
     width = _dashboard_width()
     console = Console(
@@ -138,10 +138,10 @@ def render_smoke_test_next_steps() -> str:
 
 def _smoke_next_step_commands() -> "list[str]":
     return [
-        "nestim init ./my-estimator",
-        "nestim validate --estimator ./my-estimator/estimator.py",
-        "nestim run --estimator ./my-estimator/estimator.py --runner server",
-        "nestim package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
+        "whest init ./my-estimator",
+        "whest validate --estimator ./my-estimator/estimator.py",
+        "whest run --estimator ./my-estimator/estimator.py --runner server",
+        "whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
     ]
 
 
@@ -160,10 +160,10 @@ def _smoke_next_step_lines() -> "list[Text]":
 
 def _smoke_optional_example_commands() -> "list[str]":
     return [
-        "nestim run --estimator ./examples/estimators/combined_estimator.py --runner server",
-        "nestim run --estimator ./examples/estimators/covariance_propagation.py --runner server",
-        "nestim run --estimator ./examples/estimators/mean_propagation.py --runner server",
-        "nestim run --estimator ./examples/estimators/random_estimator.py --runner server",
+        "whest run --estimator ./examples/estimators/combined_estimator.py --runner server",
+        "whest run --estimator ./examples/estimators/covariance_propagation.py --runner server",
+        "whest run --estimator ./examples/estimators/mean_propagation.py --runner server",
+        "whest run --estimator ./examples/estimators/random_estimator.py --runner server",
     ]
 
 

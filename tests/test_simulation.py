@@ -1,14 +1,14 @@
 import mechestim as me
 
-from network_estimation.domain import MLP
-from network_estimation.generation import sample_mlp
-from network_estimation.simulation import (
+from whestbench.domain import MLP
+from whestbench.generation import sample_mlp
+from whestbench.simulation import (
     relu,
     run_mlp,
     run_mlp_all_layers,
     sample_layer_statistics,
 )
-from network_estimation.simulation_mechestim import MechestimBackend
+from whestbench.simulation_mechestim import MechestimBackend
 
 
 def _make_mlp(width: int = 8, depth: int = 2, seed: int = 42) -> MLP:

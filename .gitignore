@@ -215,7 +215,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Node (tools/circuit-explorer)
+# Node (tools/whestbench-explorer)
 node_modules/
 
 # Local git worktrees

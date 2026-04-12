@@ -2,7 +2,7 @@
  * estimators.js — ReLU moment-propagation estimators for MLP networks
  *
  * Ports estimators.py (MeanPropagationEstimator, CovariancePropagationEstimator)
- * to JavaScript for use in the network explorer.
+ * to JavaScript for use in WhestBench Explorer.
  *
  * Weight matrix convention: W[i * width + j] where i = input neuron, j = output neuron.
  * Forward pass: x_next = ReLU(x @ W)  (row-vector convention, matching mlp.js).
