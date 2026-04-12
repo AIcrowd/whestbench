@@ -1,4 +1,4 @@
-from network_estimation.dataset import create_dataset, load_dataset
+from whestbench.dataset import create_dataset, load_dataset
 
 
 def test_create_and_load_roundtrip(tmp_path) -> None:

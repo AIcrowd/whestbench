@@ -43,7 +43,7 @@ export default function App() {
 
   // ── Step state (tour) ──
   const [step, setStep] = useState(() => {
-    const saved = localStorage.getItem("network-explorer-tour-step");
+    const saved = localStorage.getItem("whestbench-explorer-tour-step");
     return saved === "done" ? 6 : 1;
   });
 
@@ -165,7 +165,7 @@ export default function App() {
     setStep((s) => {
       const next = Math.min(6, s + 1);
       if (next === 6) {
-        localStorage.setItem("network-explorer-tour-step", "done");
+        localStorage.setItem("whestbench-explorer-tour-step", "done");
       }
       return next;
     });
@@ -178,7 +178,7 @@ export default function App() {
   const handleSkipTour = useCallback(
     (action) => {
       if (action === "restart") {
-        localStorage.removeItem("network-explorer-tour-step");
+        localStorage.removeItem("whestbench-explorer-tour-step");
         autoRunDone.current = { gt: false, sampling: false, meanprop: false };
         setTourMeans(null);
         setTourMeansTime(null);
@@ -186,7 +186,7 @@ export default function App() {
         setTourMeanProp(null);
         setStep(1);
       } else {
-        localStorage.setItem("network-explorer-tour-step", "done");
+        localStorage.setItem("whestbench-explorer-tour-step", "done");
         setStep(6);
       }
     },
@@ -220,7 +220,7 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <h1>
-          <img src="/logo.png" alt="Network Explorer" className="header-logo" /> Network Explorer
+          <img src="/logo.png" alt="WhestBench Explorer" className="header-logo" /> WhestBench Explorer
         </h1>
         <p className="subtitle">
           Interactive visualization of MLPs for the{" "}

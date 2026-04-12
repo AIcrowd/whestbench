@@ -6,8 +6,8 @@ from setuptools import Extension, setup
 
 extensions = [
     Extension(
-        "network_estimation._cython_kernels",
-        ["src/network_estimation/_cython_kernels.pyx"],
+        "whestbench._cython_kernels",
+        ["src/whestbench/_cython_kernels.pyx"],
         include_dirs=[np.get_include()],
     ),
 ]

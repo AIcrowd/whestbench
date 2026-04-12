@@ -1,12 +1,12 @@
 import mechestim as me
 import pytest
 
-from network_estimation.estimators import (
+from whestbench.estimators import (
     CombinedEstimator,
     CovariancePropagationEstimator,
     MeanPropagationEstimator,
 )
-from network_estimation.generation import sample_mlp
+from whestbench.generation import sample_mlp
 
 
 @pytest.fixture

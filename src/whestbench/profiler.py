@@ -1,4 +1,4 @@
-# src/network_estimation/profiler.py
+# src/whestbench/profiler.py
 """Profiling engine for simulation backends.
 
 Benchmarks every available simulation backend (numpy, pytorch, numba, jax,
@@ -24,11 +24,11 @@ CLI usage
 ---------
 ::
 
-    nestim profile-simulation                        # standard sweep, all backends
-    nestim profile-simulation --preset quick          # fast smoke test
-    nestim profile-simulation --preset exhaustive     # full matrix
-    nestim profile-simulation --backends numpy,pytorch
-    nestim profile-simulation --output results.json   # save JSON report
+    whest profile-simulation                        # standard sweep, all backends
+    whest profile-simulation --preset quick          # fast smoke test
+    whest profile-simulation --preset exhaustive     # full matrix
+    whest profile-simulation --backends numpy,pytorch
+    whest profile-simulation --output results.json   # save JSON report
 
 Presets
 -------
@@ -44,7 +44,7 @@ Presets
 
 See Also
 --------
-``nestim profile-simulation --help`` for the full list of CLI flags.
+``whest profile-simulation --help`` for the full list of CLI flags.
 """
 
 from __future__ import annotations
@@ -812,7 +812,7 @@ def run_profile(
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     """Run the complete profiling pipeline and return formatted results.
 
-    This is the main entry point used by ``nestim profile-simulation``.
+    This is the main entry point used by ``whest profile-simulation``.
     It discovers backends, runs correctness checks, performs the timing
     sweep, and formats the output.
 

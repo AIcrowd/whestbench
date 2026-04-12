@@ -1,12 +1,12 @@
 import mechestim as me
 
-from network_estimation.estimators import (
+from whestbench.estimators import (
     BaseEstimator,
     CombinedEstimator,
     CovariancePropagationEstimator,
     MeanPropagationEstimator,
 )
-from network_estimation.generation import sample_mlp
+from whestbench.generation import sample_mlp
 
 
 def _make_small_mlp():

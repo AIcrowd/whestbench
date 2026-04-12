@@ -26,7 +26,7 @@ def get_available_backends() -> Dict[str, Type[SimulationBackend]]:
 
 def get_backend(name: Optional[str] = None) -> SimulationBackend:
     if name is None:
-        name = os.environ.get("NESTIM_BACKEND", "mechestim")
+        name = os.environ.get("WHEST_BACKEND", "mechestim")
     if name not in ALL_BACKEND_NAMES:
         raise ValueError(f"Unknown backend: {name!r}. Valid backends: {list(ALL_BACKEND_NAMES)}")
     backends = _lazy_backends()

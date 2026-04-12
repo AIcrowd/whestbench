@@ -1,4 +1,4 @@
-"""Visualizer command: launch the network explorer dev server."""
+"""Visualizer command: launch the WhestBench Explorer dev server."""
 
 from __future__ import annotations
 
@@ -40,11 +40,11 @@ class NodeVersionError(RuntimeError):
 
 
 class ExplorerNotFoundError(RuntimeError):
-    """Raised when the network explorer directory cannot be located."""
+    """Raised when the WhestBench Explorer directory cannot be located."""
 
     def __init__(self) -> None:
         super().__init__(
-            "Network explorer not found. This command requires a source checkout "
+            "WhestBench Explorer not found. This command requires a source checkout "
             "of the repository. Clone the repo and install with `uv tool install -e .`"
         )
 
@@ -87,14 +87,14 @@ def check_node_version(minimum: int = _MIN_NODE_MAJOR) -> None:
 
 def find_explorer_dir(start: Path | None = None) -> Path:
     """Walk up from *start* (default: this file's directory) to find the repo root,
-    then return tools/network-explorer/.
+    then return tools/whestbench-explorer/.
 
     The repo root is identified by the presence of pyproject.toml.
     """
     current = start or Path(__file__).resolve().parent
     while True:
         if (current / "pyproject.toml").is_file():
-            explorer = current / "tools" / "network-explorer"
+            explorer = current / "tools" / "whestbench-explorer"
             if explorer.is_dir() and (explorer / "package.json").is_file():
                 return explorer
             raise ExplorerNotFoundError()
@@ -173,7 +173,7 @@ def _start_dev_server(
         if not browser_opened:
             browser_host = "localhost" if host == "0.0.0.0" else host
             url = f"http://{browser_host}:{port}"
-            console.print(f"\n[bold green]Network Explorer should be at:[/] [link={url}]{url}[/]\n")
+            console.print(f"\n[bold green]WhestBench Explorer should be at:[/] [link={url}]{url}[/]\n")
             browser_opened = True
 
     timer = threading.Timer(30.0, _timeout_fallback)
@@ -193,7 +193,7 @@ def _start_dev_server(
                     _pm = re.search(r":(\d+)", url)
                     actual_port = int(_pm.group(1)) if _pm else port
                     console.print(
-                        f"\n[bold green]Network Explorer running at:[/] [link={url}]{url}[/]\n"
+                        f"\n[bold green]WhestBench Explorer running at:[/] [link={url}]{url}[/]\n"
                     )
                     if should_open:
                         _open_browser(host, actual_port)

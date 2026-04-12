@@ -1,4 +1,4 @@
-<img src="../assets/logo/logo.png" alt="Network Estimation Challenge logo" style="height: 80px;">
+<img src="../assets/logo/logo.png" alt="ARC Whitebox Estimation Challenge logo" style="height: 80px;">
 
 # Documentation Index
 
@@ -24,7 +24,7 @@ Pick the path that matches what you need right now.
 - [Performance Tips](./how-to/performance-tips.md)
 - [Code Patterns](./reference/code-patterns.md) — mechestim cheat sheet
 - [Inspect and Traverse MLP Structure](./how-to/inspect-mlp-structure.md)
-- [Use Network Explorer](./how-to/use-network-explorer.md)
+- [Use WhestBench Explorer](./how-to/use-whestbench-explorer.md)
 
 ## I want the research framing
 

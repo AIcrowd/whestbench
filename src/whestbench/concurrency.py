@@ -1,4 +1,4 @@
-# src/network_estimation/concurrency.py
+# src/whestbench/concurrency.py
 """CPU thread-limiting utilities.
 
 Provides a single function to cap the number of CPU threads used by all
@@ -8,7 +8,7 @@ The limit can be set in two ways (in priority order):
 
 1. **Programmatically** — call :func:`apply_thread_limit` before importing
    any backend.
-2. **Environment variable** — set ``NESTIM_MAX_THREADS`` before launching
+2. **Environment variable** — set ``WHEST_MAX_THREADS`` before launching
    the process.  This is picked up automatically by
    :func:`apply_thread_limit` when no explicit *n* is passed.
 
@@ -43,7 +43,7 @@ def apply_thread_limit(n: Optional[int] = None) -> Optional[int]:
 
     Args:
         n: Maximum number of threads.  When ``None``, the value of
-           ``NESTIM_MAX_THREADS`` is used.  If that is also unset,
+           ``WHEST_MAX_THREADS`` is used.  If that is also unset,
            this function is a no-op and returns ``None``.
 
     Returns:
@@ -51,7 +51,7 @@ def apply_thread_limit(n: Optional[int] = None) -> Optional[int]:
         limit was set.
     """
     if n is None:
-        env_val = os.environ.get("NESTIM_MAX_THREADS")
+        env_val = os.environ.get("WHEST_MAX_THREADS")
         if env_val is None:
             return None
         n = int(env_val)

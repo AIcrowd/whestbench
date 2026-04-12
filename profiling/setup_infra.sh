@@ -13,7 +13,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/.infra-config.json"
 REGION="${AWS_REGION:-us-east-1}"
 
-echo "=== nestim Cloud Profiling Infrastructure Setup ==="
+echo "=== whest Cloud Profiling Infrastructure Setup ==="
 echo "Region: ${REGION}"
 echo ""
 
@@ -22,12 +22,12 @@ ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 echo "Account: ${ACCOUNT_ID}"
 echo ""
 
-BUCKET_NAME="nestim-profiling-${ACCOUNT_ID}"
-ECR_REPO="nestim-profiler"
-CLUSTER_NAME="nestim-profiling"
-EXEC_ROLE_NAME="nestim-profiler-execution"
-TASK_ROLE_NAME="nestim-profiler-task"
-LOG_GROUP="/ecs/nestim-profiling"
+BUCKET_NAME="whest-profiling-${ACCOUNT_ID}"
+ECR_REPO="whest-profiler"
+CLUSTER_NAME="whest-profiling"
+EXEC_ROLE_NAME="whest-profiler-execution"
+TASK_ROLE_NAME="whest-profiler-task"
+LOG_GROUP="/ecs/whest-profiling"
 
 # --- S3 Bucket ---
 echo "Creating S3 bucket: ${BUCKET_NAME}..."
@@ -136,7 +136,7 @@ else
             }]
         }' --query "Role.Arn" --output text)
     aws iam put-role-policy --role-name "$TASK_ROLE_NAME" \
-        --policy-name "nestim-profiler-s3-upload" \
+        --policy-name "whest-profiler-s3-upload" \
         --policy-document "{
             \"Version\": \"2012-10-17\",
             \"Statement\": [{

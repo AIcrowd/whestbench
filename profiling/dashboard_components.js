@@ -196,7 +196,7 @@ function App() {
 function Header(props) {
   var d = props.data;
   return h('header', {className: 'app-header'},
-    h('h1', null, 'nestim Profiling Dashboard'),
+    h('h1', null, 'whest Profiling Dashboard'),
     h('div', {style: {display: 'flex', alignItems: 'center', gap: '12px',
       fontSize: '12px', color: '#6B7280'}},
       d.run_id ? h('span', null, d.run_id) : null,

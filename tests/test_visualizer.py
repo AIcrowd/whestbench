@@ -1,4 +1,4 @@
-"""Tests for network_estimation.visualizer."""
+"""Tests for whestbench.visualizer."""
 
 from __future__ import annotations
 
@@ -7,9 +7,9 @@ from unittest.mock import patch
 
 import pytest
 
-import network_estimation.visualizer as viz_mod
-from network_estimation import cli
-from network_estimation.visualizer import (
+import whestbench.visualizer as viz_mod
+from whestbench import cli
+from whestbench.visualizer import (
     ExplorerNotFoundError,
     NodeNotFoundError,
     NodeVersionError,
@@ -87,11 +87,11 @@ def test_find_explorer_dir_finds_tools_dir(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "pyproject.toml").write_text("[project]\nname = 'test'\n")
-    explorer = repo / "tools" / "network-explorer"
+    explorer = repo / "tools" / "whestbench-explorer"
     explorer.mkdir(parents=True)
     (explorer / "package.json").write_text("{}")
 
-    fake_module_dir = repo / "src" / "network_estimation"
+    fake_module_dir = repo / "src" / "whestbench"
     fake_module_dir.mkdir(parents=True)
 
     result = find_explorer_dir(start=fake_module_dir)
@@ -109,7 +109,7 @@ def test_find_explorer_dir_raises_when_no_tools_dir(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "pyproject.toml").write_text("[project]\nname = 'test'\n")
-    fake_module_dir = repo / "src" / "network_estimation"
+    fake_module_dir = repo / "src" / "whestbench"
     fake_module_dir.mkdir(parents=True)
     with pytest.raises(ExplorerNotFoundError):
         find_explorer_dir(start=fake_module_dir)
@@ -173,7 +173,7 @@ def test_is_headless_false_on_linux_with_wayland(monkeypatch):
 
 def _make_fake_explorer(tmp_path, *, with_node_modules: bool = True):
     """Create a fake explorer directory and return it."""
-    explorer = tmp_path / "network-explorer"
+    explorer = tmp_path / "whestbench-explorer"
     explorer.mkdir()
     (explorer / "package.json").write_text("{}")
     if with_node_modules:
@@ -321,7 +321,7 @@ def test_run_visualizer_returns_1_when_node_missing(monkeypatch):
 
 
 def test_cli_visualizer_dispatches_to_run_visualizer(monkeypatch):
-    """nestim visualizer should call run_visualizer with correct args."""
+    """whest visualizer should call run_visualizer with correct args."""
     captured: dict = {}
 
     def fake_run_visualizer(*, host, port, no_open, debug):

@@ -5,8 +5,8 @@ from typing import Any
 
 import pytest
 
-import network_estimation.cli as cli
-from network_estimation.runner import RunnerError, RunnerErrorDetail
+import whestbench.cli as cli
+from whestbench.runner import RunnerError, RunnerErrorDetail
 
 
 def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
@@ -166,7 +166,7 @@ def test_smoke_test_prints_next_steps(
 
     assert exit_code == 0
     assert "Next Steps" in captured.out
-    assert "nestim" in captured.out
+    assert "whest" in captured.out
     assert "init" in captured.out
     assert "./my-estimator" in captured.out
     assert "run" in captured.out

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from network_estimation.profiler import (
+from whestbench.profiler import (
     PRESETS,
     CorrectnessResult,
     PresetConfig,
@@ -19,7 +19,7 @@ from network_estimation.profiler import (
     format_dims,
     run_profile,
 )
-from network_estimation.simulation_backends import get_backend
+from whestbench.simulation_backends import get_backend
 
 
 class TestCorrectnessCheck:
@@ -285,35 +285,35 @@ class TestLogProgress:
 
 class TestCLIFlags:
     def test_verbose_flag_accepted(self) -> None:
-        from network_estimation.cli import _build_participant_parser
+        from whestbench.cli import _build_participant_parser
 
         parser = _build_participant_parser()
         args = parser.parse_args(["profile-simulation", "--preset", "super-quick", "--verbose"])
         assert args.verbose is True
 
     def test_verbose_flag_default_false(self) -> None:
-        from network_estimation.cli import _build_participant_parser
+        from whestbench.cli import _build_participant_parser
 
         parser = _build_participant_parser()
         args = parser.parse_args(["profile-simulation", "--preset", "super-quick"])
         assert args.verbose is False
 
     def test_backends_help_flag_accepted(self) -> None:
-        from network_estimation.cli import _build_participant_parser
+        from whestbench.cli import _build_participant_parser
 
         parser = _build_participant_parser()
         args = parser.parse_args(["profile-simulation", "--backends-help"])
         assert args.backends_help is True
 
     def test_log_progress_flag_accepted(self) -> None:
-        from network_estimation.cli import _build_participant_parser
+        from whestbench.cli import _build_participant_parser
 
         parser = _build_participant_parser()
         args = parser.parse_args(["profile-simulation", "--log-progress"])
         assert args.log_progress is True
 
     def test_log_progress_flag_default_false(self) -> None:
-        from network_estimation.cli import _build_participant_parser
+        from whestbench.cli import _build_participant_parser
 
         parser = _build_participant_parser()
         args = parser.parse_args(["profile-simulation"])
@@ -323,7 +323,7 @@ class TestCLIFlags:
         import contextlib
         import io
 
-        from network_estimation.cli import _main_participant
+        from whestbench.cli import _main_participant
 
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):

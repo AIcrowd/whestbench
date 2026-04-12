@@ -1,8 +1,8 @@
 import mechestim as me
 import pytest
 
-from network_estimation.estimators import CovariancePropagationEstimator, MeanPropagationEstimator
-from network_estimation.generation import sample_mlp
+from whestbench.estimators import CovariancePropagationEstimator, MeanPropagationEstimator
+from whestbench.generation import sample_mlp
 
 pytestmark = pytest.mark.exhaustive
 

@@ -58,9 +58,9 @@ def resolve_paths(args):
 
 
 def extract_base_css():
-    """Extract base CSS variables and resets from network-explorer App.css."""
+    """Extract base CSS variables and resets from whestbench-explorer App.css."""
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    css_path = os.path.join(repo_root, "tools", "network-explorer", "src", "App.css")
+    css_path = os.path.join(repo_root, "tools", "whestbench-explorer", "src", "App.css")
     with open(css_path) as f:
         full_css = f.read()
 
@@ -124,7 +124,7 @@ def fetch_cdn_libs(cache_dir=None):
 def extract_backend_sources():
     """Read simulator backend source files and return a dict of {name: source_code}."""
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    sim_dir = os.path.join(repo_root, "src", "network_estimation")
+    sim_dir = os.path.join(repo_root, "src", "whestbench")
     backends = {
         "numpy": "simulation_numpy.py",
         "scipy": "simulation_scipy.py",
@@ -165,7 +165,7 @@ def generate_html(data):
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>nestim Profiling Dashboard</title>
+<title>whest Profiling Dashboard</title>
 <script>{libs["react"]}</script>
 <script>{libs["react-dom"]}</script>
 <script>{libs["prop-types"]}</script>

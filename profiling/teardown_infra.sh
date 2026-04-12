@@ -22,7 +22,7 @@ TASK_ROLE=$(python3 -c "import json; d=json.load(open('${CONFIG_FILE}')); print(
 LOG_GROUP=$(python3 -c "import json; print(json.load(open('${CONFIG_FILE}'))['log_group'])")
 ECR_REPO=$(echo "$ECR_URI" | cut -d'/' -f2)
 
-echo "=== nestim Cloud Profiling Infrastructure Teardown ==="
+echo "=== whest Cloud Profiling Infrastructure Teardown ==="
 echo ""
 echo "This will DELETE the following resources in ${REGION}:"
 echo "  - S3 bucket:        ${BUCKET} (and all contents)"
@@ -43,7 +43,7 @@ echo ""
 
 # 1. Deregister all task definitions for this family prefix
 echo "Deregistering task definitions..."
-for family in $(aws ecs list-task-definition-families --family-prefix "nestim-profiling" \
+for family in $(aws ecs list-task-definition-families --family-prefix "whest-profiling" \
     --region "$REGION" --status ACTIVE --query "families[]" --output text 2>/dev/null); do
     for td in $(aws ecs list-task-definitions --family-prefix "$family" --region "$REGION" \
         --query "taskDefinitionArns[]" --output text 2>/dev/null); do
@@ -71,7 +71,7 @@ echo "  Done."
 
 echo "Deleting IAM role: ${TASK_ROLE}..."
 aws iam delete-role-policy --role-name "$TASK_ROLE" \
-    --policy-name "nestim-profiler-s3-upload" 2>/dev/null || true
+    --policy-name "whest-profiler-s3-upload" 2>/dev/null || true
 aws iam delete-role --role-name "$TASK_ROLE" 2>/dev/null || true
 echo "  Done."
 

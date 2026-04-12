@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import mechestim as me
 
-from network_estimation.domain import MLP
-from network_estimation.generation import sample_mlp
-from network_estimation.simulation import run_mlp_all_layers
+from whestbench.domain import MLP
+from whestbench.generation import sample_mlp
+from whestbench.simulation import run_mlp_all_layers
 
 
 def make_mlp(width: int, depth: int, seed: int = 42) -> MLP:

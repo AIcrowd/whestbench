@@ -1,5 +1,5 @@
 /* profiling/dashboard_styles.css */
-/* Dashboard-specific styles — appended after network-explorer base CSS */
+/* Dashboard-specific styles — appended after whestbench-explorer base CSS */
 
 .dashboard { min-height: 100vh; background: var(--gray-50); }
 .dashboard > section + section { border-top: 1px solid var(--gray-200); }

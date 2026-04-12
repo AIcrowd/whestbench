@@ -5,7 +5,7 @@ from textwrap import dedent
 
 import pytest
 
-from network_estimation.loader import load_estimator_from_path
+from whestbench.loader import load_estimator_from_path
 
 
 def _write_estimator_module(tmp_path: Path, source: str) -> Path:
@@ -19,7 +19,7 @@ def test_loader_prefers_default_estimator_class_name(tmp_path: Path) -> None:
         tmp_path,
         """
         import numpy as np
-        from network_estimation import BaseEstimator, MLP
+        from whestbench import BaseEstimator, MLP
 
         class Alternative(BaseEstimator):
             def predict(self, mlp: MLP, budget: int) -> np.ndarray:
@@ -42,7 +42,7 @@ def test_loader_allows_explicit_class_override(tmp_path: Path) -> None:
         tmp_path,
         """
         import numpy as np
-        from network_estimation import BaseEstimator, MLP
+        from whestbench import BaseEstimator, MLP
 
         class Estimator(BaseEstimator):
             def predict(self, mlp: MLP, budget: int) -> np.ndarray:
@@ -65,7 +65,7 @@ def test_loader_errors_on_ambiguous_multiple_classes(tmp_path: Path) -> None:
         tmp_path,
         """
         import numpy as np
-        from network_estimation import BaseEstimator, MLP
+        from whestbench import BaseEstimator, MLP
 
         class AlphaEstimator(BaseEstimator):
             def predict(self, mlp: MLP, budget: int) -> np.ndarray:
@@ -88,7 +88,7 @@ def test_loader_deduplicates_alias_bindings_for_single_estimator_class(
         tmp_path,
         """
         import numpy as np
-        from network_estimation import BaseEstimator, MLP
+        from whestbench import BaseEstimator, MLP
 
         class CustomEstimator(BaseEstimator):
             def predict(self, mlp: MLP, budget: int) -> np.ndarray:
@@ -109,7 +109,7 @@ def test_loader_registers_module_in_sys_modules(tmp_path: Path) -> None:
         tmp_path,
         """
         import numpy as np
-        from network_estimation import BaseEstimator, MLP
+        from whestbench import BaseEstimator, MLP
 
         class Estimator(BaseEstimator):
             def predict(self, mlp: MLP, budget: int) -> np.ndarray:
@@ -133,7 +133,7 @@ def test_loader_ignores_numpy_ndarray_generic_alias_in_module_globals(tmp_path: 
         """
         import numpy as np
         from numpy.typing import NDArray
-        from network_estimation import BaseEstimator, MLP
+        from whestbench import BaseEstimator, MLP
 
         class Estimator(BaseEstimator):
             def predict(self, mlp: MLP, budget: int) -> NDArray[np.float32]:

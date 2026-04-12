@@ -22,7 +22,7 @@ def _normalize_h2_heading(line):
 
 def _participant_markdown_paths(repo_root):
     # type: (Path) -> List[Path]
-    paths = [repo_root / "README.md", repo_root / "tools/network-explorer/README.md"]  # type: List[Path]
+    paths = [repo_root / "README.md", repo_root / "tools/whestbench-explorer/README.md"]  # type: List[Path]
     docs_root = repo_root / "docs"
     for path in sorted(docs_root.rglob("*.md")):
         rel = path.relative_to(repo_root).as_posix()
@@ -90,14 +90,14 @@ def test_readme_is_front_door_with_expected_sections():
 def test_core_modules_have_descriptive_module_docstrings():
     # type: () -> None
     modules = [
-        "network_estimation.domain",
-        "network_estimation.generation",
-        "network_estimation.simulation",
-        "network_estimation.estimators",
-        "network_estimation.scoring",
-        "network_estimation.reporting",
-        "network_estimation.cli",
-        "network_estimation.protocol",
+        "whestbench.domain",
+        "whestbench.generation",
+        "whestbench.simulation",
+        "whestbench.estimators",
+        "whestbench.scoring",
+        "whestbench.reporting",
+        "whestbench.cli",
+        "whestbench.protocol",
     ]
     for name in modules:
         module = importlib.import_module(name)
@@ -106,7 +106,7 @@ def test_core_modules_have_descriptive_module_docstrings():
 
 def test_critical_public_apis_have_docstrings():
     # type: () -> None
-    from network_estimation import (
+    from whestbench import (
         cli,
         domain,
         estimators,
@@ -142,7 +142,7 @@ def test_critical_public_apis_have_docstrings():
 def test_estimators_module_has_tutorial_walkthrough_markers():
     # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
-    text = (repo_root / "src/network_estimation/estimators.py").read_text(encoding="utf-8")
+    text = (repo_root / "src/whestbench/estimators.py").read_text(encoding="utf-8")
     required_phrases = [
         "first-moment propagation",
         "covariance",
@@ -186,14 +186,14 @@ def test_readme_links_primary_docs_pages():
         assert link in text
 
 
-def test_readme_documents_nestim_install_and_usage():
+def test_readme_documents_whest_install_and_usage():
     # type: () -> None
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
     assert "uv tool install -e ." in text
-    assert "nestim smoke-test" in text
-    assert "uv run --with-editable . nestim" in text
-    assert "uv run nestim --" not in text
+    assert "whest smoke-test" in text
+    assert "uv run --with-editable . whest" in text
+    assert "uv run whest --" not in text
 
 
 def test_participant_docs_do_not_use_mermaid_blocks():

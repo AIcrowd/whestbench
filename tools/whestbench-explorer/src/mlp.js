@@ -1,5 +1,5 @@
 /**
- * mlp.js — MLP data layer for the network explorer
+ * mlp.js — MLP data layer for WhestBench Explorer
  *
  * Exports:
  *   sampleMLP(width, depth, seed)   — sample a random He-initialized MLP
