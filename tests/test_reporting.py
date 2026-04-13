@@ -106,8 +106,7 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     assert "./submission.tar.gz" in plain
     assert "Optional: run bundled example estimators:" in plain
     assert (
-        "whest run --estimator ./examples/estimators/combined_estimator.py --runner server"
-        in plain
+        "whest run --estimator ./examples/estimators/combined_estimator.py --runner server" in plain
     )
     assert (
         "whest run --estimator ./examples/estimators/covariance_propagation.py --runner server"

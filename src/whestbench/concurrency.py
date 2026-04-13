@@ -1,8 +1,8 @@
 # src/whestbench/concurrency.py
-"""CPU thread-limiting utilities.
+"""CPU thread-limiting utilities for mechestim/BLAS.
 
-Provides a single function to cap the number of CPU threads used by all
-numerical backends (BLAS via OpenBLAS/MKL, Numba, PyTorch, JAX/XLA).
+Provides a single function to cap the number of CPU threads used by
+BLAS libraries (OpenBLAS, MKL, Accelerate) that underpin mechestim.
 
 The limit can be set in two ways (in priority order):
 
@@ -22,24 +22,20 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-# Environment variable names that control thread pools in common
-# numerical libraries.
+# Environment variable names that control BLAS thread pools.
 _THREAD_ENV_VARS = (
     "OMP_NUM_THREADS",
     "MKL_NUM_THREADS",
     "OPENBLAS_NUM_THREADS",
     "VECLIB_MAXIMUM_THREADS",
-    "NUMBA_NUM_THREADS",
-    "NUMEXPR_NUM_THREADS",
 )
 
 
 def apply_thread_limit(n: Optional[int] = None) -> Optional[int]:
-    """Cap CPU parallelism for all numerical backends.
+    """Cap CPU parallelism for BLAS backends.
 
     Sets environment variables for libraries not yet imported, and uses
-    runtime APIs (PyTorch ``set_num_threads``, ``threadpoolctl`` for
-    BLAS) to apply the limit to libraries already loaded.
+    ``threadpoolctl`` for BLAS to apply the limit to libraries already loaded.
 
     Args:
         n: Maximum number of threads.  When ``None``, the value of
@@ -59,19 +55,6 @@ def apply_thread_limit(n: Optional[int] = None) -> Optional[int]:
     s = str(n)
     for var in _THREAD_ENV_VARS:
         os.environ[var] = s
-
-    # JAX/XLA: only set flags known to be valid in current XLA versions.
-    # Note: --xla_intra_op_parallelism_threads was removed in newer XLA
-    # and causes a fatal abort if set.
-    os.environ["XLA_FLAGS"] = "--xla_cpu_multi_thread_eigen=true"
-
-    # If PyTorch is already loaded, apply the runtime cap too.
-    try:
-        import torch
-
-        torch.set_num_threads(n)
-    except ImportError:
-        pass
 
     # Use threadpoolctl to set BLAS thread count via the C API.
     # This works even after numpy/OpenBLAS has been imported, unlike

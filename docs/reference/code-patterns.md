@@ -70,10 +70,27 @@ def norm_pdf(x):
 
 ### Standard normal CDF
 
-mechestim wraps numpy — you can use scipy directly:
+Pure mechestim implementation using the Abramowitz & Stegun approximation (accurate to <7.5e-8):
 
 ```python
 import mechestim as me
+
+_P = 0.2316419
+_A1, _A2, _A3 = 0.319381530, -0.356563782, 1.781477937
+_A4, _A5 = -1.821255978, 1.330274429
+
+def norm_cdf(x):
+    t = 1.0 / (1.0 + _P * me.abs(x))
+    poly = ((((_A5 * t + _A4) * t + _A3) * t + _A2) * t + _A1) * t
+    pdf = me.exp(-0.5 * x * x) / me.sqrt(2.0 * me.pi)
+    cdf = 1.0 - pdf * poly
+    return me.where(x >= 0, cdf, 1.0 - cdf)
+```
+
+Alternatively, if you add `scipy` to your `requirements.txt`:
+
+```python
+# Optional: requires scipy as a user-provided dependency
 from scipy.special import ndtr
 
 def norm_cdf(x):
@@ -88,6 +105,8 @@ import mechestim as me
 alpha = mu_pre / sigma_pre
 E_relu = mu_pre * norm_cdf(alpha) + sigma_pre * norm_pdf(alpha)
 ```
+
+See [`examples/estimators/mean_propagation.py`](../../examples/estimators/mean_propagation.py) for a complete working estimator using these patterns.
 
 ### Per-neuron variance propagation (diagonal)
 

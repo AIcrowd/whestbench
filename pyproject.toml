@@ -13,7 +13,6 @@ dependencies = [
     "mechestim @ git+https://github.com/AIcrowd/mechestim.git",
     "plotext",
     "rich",
-    "scipy>=1.10",
     "threadpoolctl>=3.0",
     "tqdm",
 ]

@@ -52,13 +52,16 @@ def run_mlp_all_layers(mlp: MLP, inputs: me.ndarray) -> List[me.ndarray]:
     return layers
 
 
-def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[me.ndarray, me.ndarray, float]:
-    """Estimate per-layer activation statistics via Monte Carlo sampling.
+def _pick_chunk_size(width: int) -> int:
+    """Choose chunk size to keep peak memory bounded (~4 MB per chunk)."""
+    return max(1024, min(16384, 2**20 // width))
 
-    Feeds ``n_samples`` random Gaussian inputs through the MLP and computes
-    empirical statistics of the activations at each layer.  This is the
-    reference (pure-NumPy) implementation — accelerated backends provide
-    equivalent methods with chunked streaming for lower memory usage.
+
+def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[me.ndarray, me.ndarray, float]:
+    """Estimate per-layer activation statistics via chunked Monte Carlo sampling.
+
+    Feeds ``n_samples`` random Gaussian inputs through the MLP in memory-bounded
+    chunks and computes empirical statistics of the activations at each layer.
 
     The returned values are used in two places:
 
@@ -82,10 +85,28 @@ def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[me.ndarray, me.nd
         avg_variance: Scalar — the mean per-neuron variance at the final
             layer, used as a normalisation baseline for ``sampling_mse``.
     """
-    inputs = me.random.default_rng().standard_normal((n_samples, mlp.width), dtype=me.float32)
-    layer_outputs = run_mlp_all_layers(mlp, inputs)
-    all_layer_means = me.stack([me.mean(out, axis=0) for out in layer_outputs]).astype(me.float32)
-    final_outputs = layer_outputs[-1]
-    final_mean = me.mean(final_outputs, axis=0).astype(me.float32)
-    avg_variance = float(me.mean(me.var(final_outputs, axis=0)))
-    return all_layer_means, final_mean, avg_variance
+    width = mlp.width
+    depth = mlp.depth
+    chunk_size = _pick_chunk_size(width)
+
+    layer_sums = me.zeros((depth, width), dtype=me.float64)
+    final_sum_sq = me.zeros(width, dtype=me.float64)
+    n_processed = 0
+
+    for start in range(0, n_samples, chunk_size):
+        n = min(chunk_size, n_samples - start)
+        x = me.array(me.random.default_rng().standard_normal((n, width)).astype(me.float32))
+        for layer_idx, w in enumerate(mlp.weights):
+            x = me.maximum(me.matmul(x, w), 0.0)
+            x_f64 = me.asarray(x, dtype=me.float64)
+            layer_sums[layer_idx] += me.sum(x_f64, axis=0)
+        x_f64 = me.asarray(x, dtype=me.float64)
+        final_sum_sq += me.sum(x_f64**2, axis=0)
+        n_processed += n
+
+    layer_means = me.asarray(layer_sums / n_processed, dtype=me.float32)
+    final_mean = layer_means[-1].copy()
+    avg_variance = float(
+        me.mean(final_sum_sq / n_processed - me.asarray(final_mean, dtype=me.float64) ** 2)
+    )
+    return layer_means, final_mean, avg_variance

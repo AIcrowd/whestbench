@@ -15,10 +15,17 @@ from __future__ import annotations
 from typing import Optional
 
 import mechestim as me
-from scipy.special import ndtr  # type: ignore[import-untyped]
 
 from .domain import MLP
 from .sdk import BaseEstimator
+
+# Abramowitz & Stegun approximation constants (formula 26.2.17)
+_P = 0.2316419
+_A1 = 0.319381530
+_A2 = -0.356563782
+_A3 = 1.781477937
+_A4 = -1.821255978
+_A5 = 1.330274429
 
 
 def _norm_pdf(x: me.ndarray) -> me.ndarray:
@@ -27,13 +34,15 @@ def _norm_pdf(x: me.ndarray) -> me.ndarray:
 
 
 def _norm_cdf(x: me.ndarray) -> me.ndarray:
-    """Standard normal CDF via scipy's ndtr (fast C implementation).
+    """Standard normal CDF using the Abramowitz & Stegun approximation.
 
-    Since me.ndarray is numpy.ndarray, ndtr works directly.
-    The FLOP cost of CDF evaluation is negligible compared to
-    the matmuls that produce the inputs.
+    Uses only basic mechestim operations (exp, abs). Accurate to < 7.5e-8.
     """
-    return me.array(ndtr(me.asarray(x, dtype=me.float64)).astype(me.float32))
+    t = 1.0 / (1.0 + _P * me.abs(x))
+    poly = ((((_A5 * t + _A4) * t + _A3) * t + _A2) * t + _A1) * t
+    pdf = me.exp(-0.5 * x * x) / me.sqrt(2.0 * me.pi)
+    cdf = 1.0 - pdf * poly
+    return me.where(x >= 0, cdf, 1.0 - cdf)
 
 
 class MeanPropagationEstimator(BaseEstimator):

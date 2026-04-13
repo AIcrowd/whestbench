@@ -10,7 +10,7 @@ import mechestim as me
 from .domain import MLP
 from .generation import sample_mlp
 from .sdk import BaseEstimator
-from .simulation_backends import get_backend
+from .simulation import sample_layer_statistics
 
 
 @dataclass
@@ -54,7 +54,6 @@ class ContestData:
 def make_contest(spec: ContestSpec) -> ContestData:
     """Generate MLPs and compute ground truth for a contest run."""
     spec.validate()
-    backend = get_backend()
     mlps: List[MLP] = []
     all_layer_targets: List[me.ndarray] = []
     final_targets: List[me.ndarray] = []
@@ -63,9 +62,7 @@ def make_contest(spec: ContestSpec) -> ContestData:
     for _ in range(spec.n_mlps):
         mlp = sample_mlp(spec.width, spec.depth)
         with me.BudgetContext(flop_budget=int(1e15)):
-            all_means, final_mean, avg_var = backend.sample_layer_statistics(
-                mlp, spec.ground_truth_samples
-            )
+            all_means, final_mean, avg_var = sample_layer_statistics(mlp, spec.ground_truth_samples)
         # Convert to mechestim arrays for ground truth storage
         all_layer_targets.append(me.asarray(all_means, dtype=me.float32))
         final_targets.append(me.asarray(final_mean, dtype=me.float32))

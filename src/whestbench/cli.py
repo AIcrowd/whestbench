@@ -165,16 +165,13 @@ def _make_contest_with_progress(
 ) -> "ContestData":
     """Like ``make_contest`` but fires *on_mlp_done(i)* after each MLP."""
     from .generation import sample_mlp
-    from .simulation_backends import get_backend
+    from .simulation import sample_layer_statistics
 
-    backend = get_backend()
     mlps, all_layer_targets, final_targets, avg_variances = [], [], [], []
     for i in range(spec.n_mlps):
         mlp = sample_mlp(spec.width, spec.depth)
         with me.BudgetContext(flop_budget=int(1e15)):
-            all_means, final_mean, avg_var = backend.sample_layer_statistics(
-                mlp, spec.ground_truth_samples
-            )
+            all_means, final_mean, avg_var = sample_layer_statistics(mlp, spec.ground_truth_samples)
         mlps.append(mlp)
         all_layer_targets.append(me.asarray(all_means, dtype=me.float32))
         final_targets.append(me.asarray(final_mean, dtype=me.float32))
@@ -455,8 +452,7 @@ def validate_submission_entrypoint(
 def _build_participant_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Participant-first WhestBench CLI. Starter examples live in "
-            "examples/estimators/."
+            "Participant-first WhestBench CLI. Starter examples live in examples/estimators/."
         )
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -477,7 +473,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="Limit all backends to at most N CPU threads.",
+        help="Limit BLAS to at most N CPU threads.",
     )
 
     init_parser = subparsers.add_parser("init", help="Create starter estimator files.")
@@ -539,7 +535,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="Limit all backends to at most N CPU threads.",
+        help="Limit BLAS to at most N CPU threads.",
     )
 
     create_ds_parser = subparsers.add_parser(
@@ -561,7 +557,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="Limit all backends to at most N CPU threads.",
+        help="Limit BLAS to at most N CPU threads.",
     )
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
@@ -593,18 +589,13 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     profile_parser = subparsers.add_parser(
         "profile-simulation",
-        help="Benchmark simulation backends head-to-head.",
+        help="Benchmark mechestim simulation performance.",
     )
     profile_parser.add_argument(
         "--preset",
         choices=("super-quick", "quick", "standard", "exhaustive"),
         default="standard",
         help="Parameter sweep preset (default: standard).",
-    )
-    profile_parser.add_argument(
-        "--backends",
-        default=None,
-        help="Comma-separated list of backends to profile (default: all available).",
     )
     profile_parser.add_argument(
         "--output",
@@ -617,19 +608,13 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="Limit all backends to at most N CPU threads.",
+        help="Limit BLAS to at most N CPU threads.",
     )
     profile_parser.add_argument(
         "--verbose",
         action="store_true",
         default=False,
         help="Show full timing tables with all columns and raw data.",
-    )
-    profile_parser.add_argument(
-        "--backends-help",
-        action="store_true",
-        default=False,
-        help="Print install instructions for all backends and exit.",
     )
     profile_parser.add_argument(
         "--log-progress",
@@ -1054,33 +1039,9 @@ def _main_participant(argv: "list[str]") -> int:
 
         if command == "profile-simulation":
             from .profiler import run_profile
-            from .simulation_backends import (
-                ALL_BACKEND_NAMES,
-                INSTALL_HINTS,
-                get_available_backends,
-            )
 
-            # Handle --backends-help early exit
-            if getattr(args, "backends_help", False):
-                available = get_available_backends()
-                skipped = {
-                    name: INSTALL_HINTS.get(name, "")
-                    for name in ALL_BACKEND_NAMES
-                    if name not in available
-                }
-                if skipped:
-                    for name, hint in skipped.items():
-                        print(f"  {name}: {hint}")
-                else:
-                    print("All backends are installed.")
-                return 0
-
-            backend_filter = None
-            if args.backends:
-                backend_filter = [b.strip() for b in args.backends.split(",")]
             terminal_output, _ = run_profile(
                 preset_name=str(args.preset),
-                backend_filter=backend_filter,
                 output_path=args.output,
                 show_progress=not json_output,
                 max_threads=args.max_threads,

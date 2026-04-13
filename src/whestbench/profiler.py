@@ -1,22 +1,19 @@
 # src/whestbench/profiler.py
-"""Profiling engine for simulation backends.
+"""Profiling engine for mechestim simulation performance.
 
-Benchmarks every available simulation backend (numpy, pytorch, numba, jax,
-scipy, cython) head-to-head on the two core operations — ``run_mlp`` and
-``sample_layer_statistics`` — across a configurable grid of network sizes and sample
-counts.
+Benchmarks the two core operations — ``run_mlp`` and
+``sample_layer_statistics`` — across a configurable grid of network sizes
+and sample counts.
 
 Workflow
 --------
-1. **Discovery** — detect which backends are installed.
-2. **Correctness check** — each backend's outputs are compared to the NumPy
-   reference implementation before any timing is recorded.  Backends that
-   fail are excluded from the timing sweep.
-3. **Timing sweep** — for every (backend, operation, width, depth, n_samples)
+1. **Correctness check** — simulation outputs are validated for correct
+   shapes and value ranges before any timing is recorded.
+2. **Timing sweep** — for every (operation, width, depth, n_samples)
    combination the operation is timed ``n_iterations`` times (default 3).
    Garbage collection is disabled during measurement.  Results are expressed
-   as median wall-clock seconds and as a speedup factor relative to NumPy.
-4. **Output** — a Rich-formatted terminal table and, optionally, a
+   as median wall-clock seconds.
+3. **Output** — a Rich-formatted terminal table and, optionally, a
    machine-readable JSON file that includes hardware metadata and library
    versions for reproducibility.
 
@@ -24,10 +21,9 @@ CLI usage
 ---------
 ::
 
-    whest profile-simulation                        # standard sweep, all backends
+    whest profile-simulation                        # standard sweep
     whest profile-simulation --preset quick          # fast smoke test
     whest profile-simulation --preset exhaustive     # full matrix
-    whest profile-simulation --backends numpy,pytorch
     whest profile-simulation --output results.json   # save JSON report
 
 Presets
@@ -59,7 +55,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 import mechestim as me
-import numpy as np  # needed for np.__version__ and np.asarray in correctness checks
+import numpy as np  # needed for np.__version__ in version reporting
 
 from .domain import MLP
 from .generation import sample_mlp
@@ -70,8 +66,6 @@ from .simulation import (
 from .simulation import (
     sample_layer_statistics as ref_sample_layer_statistics,
 )
-from .simulation_backend import SimulationBackend
-from .simulation_backends import ALL_BACKEND_NAMES, INSTALL_HINTS, get_available_backends
 
 
 @dataclass
@@ -190,59 +184,16 @@ def _collect_hardware_info(max_threads: Optional[int] = None) -> Dict[str, Any]:
     return info
 
 
-def _collect_backend_versions(backend_names: List[str]) -> Dict[str, str]:
-    """Collect version strings for each backend's underlying library."""
-    versions: Dict[str, str] = {}
-    versions["numpy"] = np.__version__
-    try:
-        import scipy
-
-        versions["scipy"] = scipy.__version__
-    except ImportError:
-        pass
-    if "pytorch" in backend_names:
-        try:
-            import torch
-
-            versions["pytorch"] = torch.__version__
-        except ImportError:
-            pass
-    if "numba" in backend_names:
-        try:
-            import numba
-
-            versions["numba"] = numba.__version__
-        except ImportError:
-            pass
-    if "jax" in backend_names:
-        try:
-            import jax
-
-            versions["jax"] = jax.__version__
-        except ImportError:
-            pass
-    if "cython" in backend_names:
-        try:
-            import Cython
-
-            versions["cython"] = Cython.__version__
-        except ImportError:
-            pass
-    return versions
+def _collect_versions() -> Dict[str, str]:
+    """Collect version strings for mechestim and numpy."""
+    return {"mechestim": me.__version__, "numpy": np.__version__}
 
 
-def correctness_check(
-    backend: SimulationBackend,
-) -> CorrectnessResult:
-    """Pre-flight correctness check against the NumPy reference implementation.
+def correctness_check() -> CorrectnessResult:
+    """Pre-flight correctness check for the simulation module.
 
-    Validates both ``run_mlp`` (exact match, rtol=1e-5, atol=1e-6) and
-    ``sample_layer_statistics`` (statistical match, atol=0.15 for means, relative
-    tolerance for variance).  A backend that fails this check is excluded
-    from subsequent timing sweeps.
-
-    Args:
-        backend: The simulation backend instance to verify.
+    Validates both ``run_mlp`` (shape and non-negative outputs) and
+    ``sample_layer_statistics`` (correct shapes, non-negative variance).
 
     Returns:
         A :class:`CorrectnessResult` indicating pass/fail and any error
@@ -250,28 +201,24 @@ def correctness_check(
     """
     try:
         mlp = sample_mlp(8, 4, me.random.default_rng(42))
-        inputs_np = me.random.default_rng(123).standard_normal((64, 8)).astype(me.float32)
-        inputs = me.array(inputs_np)
+        inputs = me.random.default_rng(123).standard_normal((64, 8)).astype(me.float32)
 
         with me.BudgetContext(flop_budget=int(1e15)):
-            # Exact match for run_mlp
-            ref = ref_run_mlp(mlp, inputs_np)
-            result = backend.run_mlp(mlp, inputs)
-            me.testing.assert_allclose(me.asarray(result), me.asarray(ref), rtol=1e-5, atol=1e-6)
+            result = ref_run_mlp(mlp, inputs)
+            assert result.shape == (64, 8), f"Expected shape (64, 8), got {result.shape}"
+            assert me.all(me.asarray(result) >= 0.0), "ReLU outputs must be non-negative"
 
-            # Statistical match for sample_layer_statistics
-            ref_means, ref_final, ref_var = ref_sample_layer_statistics(mlp, 1000)
-            fast_means, fast_final, fast_var = backend.sample_layer_statistics(mlp, 1000)
-            me.testing.assert_allclose(me.asarray(fast_means), me.asarray(ref_means), atol=0.15)
-            me.testing.assert_allclose(me.asarray(fast_final), me.asarray(ref_final), atol=0.15)
-            # Variance can differ more with only 1000 samples
-            if abs(ref_var) > 1e-6:
-                assert abs(fast_var - ref_var) < max(0.5 * abs(ref_var), 0.1)
+            means, final_mean, avg_var = ref_sample_layer_statistics(mlp, 1000)
+            assert means.shape == (4, 8), f"Expected means shape (4, 8), got {means.shape}"
+            assert final_mean.shape == (8,), (
+                f"Expected final_mean shape (8,), got {final_mean.shape}"
+            )
+            assert avg_var >= 0.0, f"Expected non-negative variance, got {avg_var}"
 
-        return CorrectnessResult(backend_name=backend.name, passed=True)
+        return CorrectnessResult(backend_name="mechestim", passed=True)
 
     except Exception as e:
-        return CorrectnessResult(backend_name=backend.name, passed=False, error=str(e))
+        return CorrectnessResult(backend_name="mechestim", passed=False, error=str(e))
 
 
 def _random_float32(shape: tuple) -> me.ndarray:
@@ -289,7 +236,7 @@ def _random_float32(shape: tuple) -> me.ndarray:
 _TIMING_CHUNK = 500_000
 
 
-def _time_run_mlp(backend: SimulationBackend, mlp: MLP, n_samples: int) -> float:
+def _time_run_mlp(mlp: MLP, n_samples: int) -> float:
     """Time run_mlp over n_samples, chunked to bound memory."""
     total = 0.0
     for start in range(0, n_samples, _TIMING_CHUNK):
@@ -297,51 +244,44 @@ def _time_run_mlp(backend: SimulationBackend, mlp: MLP, n_samples: int) -> float
         inputs = me.array(_random_float32((n, mlp.width)))
         t0 = time.perf_counter()
         with me.BudgetContext(flop_budget=int(1e15)):
-            backend.run_mlp(mlp, inputs)
+            ref_run_mlp(mlp, inputs)
         total += time.perf_counter() - t0
         del inputs
     return total
 
 
-def _time_sample_layer_statistics(backend: SimulationBackend, mlp: MLP, n_samples: int) -> float:
+def _time_sample_layer_statistics(mlp: MLP, n_samples: int) -> float:
     """Time a single sample_layer_statistics call."""
     t0 = time.perf_counter()
     with me.BudgetContext(flop_budget=int(1e15)):
-        backend.sample_layer_statistics(mlp, n_samples)
+        ref_sample_layer_statistics(mlp, n_samples)
     return time.perf_counter() - t0
 
 
 def run_timing_sweep(
-    backends: Dict[str, SimulationBackend],
     preset: PresetConfig,
     n_iterations: int = 3,
     progress_callback: Optional[Any] = None,
-) -> Tuple[List[TimingResult], Dict[str, List[float]]]:
-    """Run the full timing sweep across all backends and parameter combinations.
+) -> List[TimingResult]:
+    """Run the full timing sweep across all parameter combinations.
 
     For each (width, depth, n_samples, operation) tuple the sweep:
 
-    1. Performs an untimed warmup call (critical for JIT backends like Numba
-       and JAX).
+    1. Performs an untimed warmup call.
     2. Disables garbage collection and records *n_iterations* timed calls.
-    3. Computes the median time and speedup relative to the NumPy baseline.
+    3. Computes the median time.
 
     Args:
-        backends: Mapping of backend name to instantiated backend.  Should
-            only contain backends that already passed the correctness check.
         preset: The parameter grid to iterate over.
         n_iterations: Number of timed repetitions per combination (default 3).
         progress_callback: Optional callable invoked after each measurement.
-            Receives keyword arguments ``backend_name``, ``operation``,
-            ``width``, ``depth``, and ``n_samples``.
+            Receives keyword arguments ``operation``, ``width``, ``depth``,
+            and ``n_samples``.
 
     Returns:
-        A tuple of ``(results, numpy_baselines)`` where *results* is a list
-        of :class:`TimingResult` objects and *numpy_baselines* maps
-        ``"op:width:depth:n_samples"`` keys to the raw NumPy timing lists.
+        A list of :class:`TimingResult` objects.
     """
     results: List[TimingResult] = []
-    numpy_baselines: Dict[str, List[float]] = {}
 
     operations = ["run_mlp", "sample_layer_statistics"]
     time_fns = {
@@ -354,88 +294,72 @@ def run_timing_sweep(
             mlp = sample_mlp(width, depth, me.random.default_rng(42))
             for n_samples in preset.n_samples_list:
                 for op in operations:
-                    key = f"{op}:{width}:{depth}:{n_samples}"
                     time_fn = time_fns[op]
 
-                    for backend_name, backend in backends.items():
+                    try:
+                        # Warmup
+                        warmup_t0 = time.perf_counter()
+                        time_fn(mlp, min(n_samples, 1000))
+                        warmup_time = time.perf_counter() - warmup_t0
+
+                        gc_was_enabled = gc.isenabled()
+                        gc.disable()
+                        times = []
                         try:
-                            # Timed warmup (critical for JIT backends)
-                            warmup_t0 = time.perf_counter()
-                            time_fn(backend, mlp, min(n_samples, 1000))
-                            warmup_time = time.perf_counter() - warmup_t0
+                            for _ in range(n_iterations):
+                                t = time_fn(mlp, n_samples)
+                                times.append(t)
+                        finally:
+                            if gc_was_enabled:
+                                gc.enable()
 
-                            gc_was_enabled = gc.isenabled()
-                            gc.disable()
-                            times = []
-                            try:
-                                for _ in range(n_iterations):
-                                    t = time_fn(backend, mlp, n_samples)
-                                    times.append(t)
-                            finally:
-                                if gc_was_enabled:
-                                    gc.enable()
+                        median_t = float(me.median(me.asarray(times)))
 
-                            median_t = float(me.median(me.asarray(times)))
-
-                            # Store numpy baselines
-                            if backend_name == "numpy":
-                                numpy_baselines[key] = times
-
-                            # Compute speedup vs numpy
-                            numpy_times = numpy_baselines.get(key)
-                            if numpy_times is not None:
-                                numpy_median = float(me.median(me.asarray(numpy_times)))
-                                speedup = numpy_median / median_t if median_t > 0 else float("inf")
-                            else:
-                                speedup = 1.0
-
-                            results.append(
-                                TimingResult(
-                                    backend_name=backend_name,
-                                    operation=op,
-                                    width=width,
-                                    depth=depth,
-                                    n_samples=n_samples,
-                                    times=times,
-                                    median_time=median_t,
-                                    speedup_vs_numpy=speedup,
-                                    warmup_time=warmup_time,
-                                )
-                            )
-
-                        except (MemoryError, Exception) as exc:
-                            # Log and skip — partial results are better than none.
-                            err_msg = f"{type(exc).__name__}: {exc}"
-                            print(
-                                f"[warning] {backend_name} {op} "
-                                f"w={width} d={depth} n={n_samples:,} "
-                                f"skipped: {err_msg}",
-                                flush=True,
-                            )
-                            results.append(
-                                TimingResult(
-                                    backend_name=backend_name,
-                                    operation=op,
-                                    width=width,
-                                    depth=depth,
-                                    n_samples=n_samples,
-                                    times=[],
-                                    median_time=-1.0,
-                                    speedup_vs_numpy=0.0,
-                                    error=err_msg,
-                                )
-                            )
-
-                        if progress_callback:
-                            progress_callback(
-                                backend_name=backend_name,
+                        results.append(
+                            TimingResult(
+                                backend_name="mechestim",
                                 operation=op,
                                 width=width,
                                 depth=depth,
                                 n_samples=n_samples,
+                                times=times,
+                                median_time=median_t,
+                                speedup_vs_numpy=1.0,
+                                warmup_time=warmup_time,
                             )
+                        )
 
-    return results, numpy_baselines
+                    except (MemoryError, Exception) as exc:
+                        err_msg = f"{type(exc).__name__}: {exc}"
+                        print(
+                            f"[warning] mechestim {op} "
+                            f"w={width} d={depth} n={n_samples:,} "
+                            f"skipped: {err_msg}",
+                            flush=True,
+                        )
+                        results.append(
+                            TimingResult(
+                                backend_name="mechestim",
+                                operation=op,
+                                width=width,
+                                depth=depth,
+                                n_samples=n_samples,
+                                times=[],
+                                median_time=-1.0,
+                                speedup_vs_numpy=0.0,
+                                error=err_msg,
+                            )
+                        )
+
+                    if progress_callback:
+                        progress_callback(
+                            operation=op,
+                            width=width,
+                            depth=depth,
+                            n_samples=n_samples,
+                        )
+
+    return results
 
 
 def format_verbose_output(
@@ -615,12 +539,7 @@ def format_compact_output(
         if parts:
             console.print(" \u00b7 ".join(parts), highlight=False)
 
-    # Line 2 — Skipped
-    if skipped_backends:
-        names = ", ".join(skipped_backends.keys())
-        console.print(f"Skipped: {names} (--backends-help for install info)")
-
-    # Line 3 — Correctness
+    # Line 2 — Correctness
     if all_failed:
         console.print("No backends passed correctness checks. Use --verbose for error details.")
         return buf.getvalue()
@@ -777,7 +696,7 @@ def format_json_output(
     """
     return {
         "hardware": hardware_info or _collect_hardware_info(),
-        "backend_versions": _collect_backend_versions(backend_names or []),
+        "backend_versions": _collect_versions(),
         "skipped_backends": skipped_backends,
         "correctness": [
             {"backend": cr.backend_name, "passed": cr.passed, "error": cr.error}
@@ -803,7 +722,6 @@ def format_json_output(
 
 def run_profile(
     preset_name: str = "standard",
-    backend_filter: Optional[List[str]] = None,
     output_path: Optional[str] = None,
     show_progress: bool = False,
     max_threads: Optional[int] = None,
@@ -813,23 +731,18 @@ def run_profile(
     """Run the complete profiling pipeline and return formatted results.
 
     This is the main entry point used by ``whest profile-simulation``.
-    It discovers backends, runs correctness checks, performs the timing
-    sweep, and formats the output.
+    It runs a correctness check, performs the timing sweep, and formats
+    the output.
 
     Args:
         preset_name: One of ``"quick"``, ``"standard"``, or ``"exhaustive"``.
             Controls the size of the parameter grid.  See module docstring
             for details.
-        backend_filter: If provided, only these backends are profiled.
-            Names must be from :data:`ALL_BACKEND_NAMES`; a ``ValueError``
-            is raised for unknown names.
         output_path: Optional file path to write a JSON report.  The file
             includes hardware info and library versions for reproducibility.
         show_progress: When ``True``, display a Rich progress bar in the
-            terminal during correctness checks and timing sweeps.
-        max_threads: If set, cap all backends to at most this many CPU
-            threads.  Affects BLAS (OpenBLAS/MKL), Numba, PyTorch, and
-            JAX/XLA thread pools.
+            terminal during timing sweeps.
+        max_threads: If set, cap BLAS to at most this many CPU threads.
         log_progress: When ``True``, print one line per benchmark step to
             stdout.  Designed for non-TTY environments (e.g. containers)
             where the Rich progress bar is invisible.
@@ -839,16 +752,10 @@ def run_profile(
         is a Rich-formatted string and *json_data* is the JSON dict (or
         ``None`` if *output_path* was not set).
 
-    Raises:
-        ValueError: If *backend_filter* contains an unrecognised backend
-            name.
-        KeyError: If *preset_name* is not a valid preset.
-
     Example::
 
         terminal_output, json_data = run_profile(
             preset_name="quick",
-            backend_filter=["numpy", "pytorch"],
             output_path="results.json",
             show_progress=True,
         )
@@ -866,28 +773,6 @@ def run_profile(
     warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*encountered in matmul.*")
 
     preset = PRESETS[preset_name]
-
-    # Discover backends
-    available = get_available_backends()
-    if backend_filter:
-        for name in backend_filter:
-            if name not in ALL_BACKEND_NAMES:
-                raise ValueError(
-                    f"Unknown backend: {name!r}. Valid backends: {list(ALL_BACKEND_NAMES)}"
-                )
-        available = {k: v for k, v in available.items() if k in backend_filter}
-
-    # Track skipped backends
-    skipped: Dict[str, str] = {}
-    all_names = list(backend_filter) if backend_filter else list(ALL_BACKEND_NAMES)
-    for name in all_names:
-        if name not in available:
-            skipped[name] = INSTALL_HINTS.get(name, "")
-
-    # Instantiate backends
-    backend_instances: Dict[str, SimulationBackend] = {}
-    for name, cls in available.items():
-        backend_instances[name] = cls()
 
     # Set up progress display
     use_rich_progress = show_progress and not log_progress
@@ -918,40 +803,33 @@ def run_profile(
             pass
 
     # Pre-flight correctness check
-    correctness_results: List[CorrectnessResult] = []
-    passed_backends: Dict[str, SimulationBackend] = {}
-
     if progress_ctx is not None:
-        correctness_task = progress_ctx.add_task("Correctness checks", total=len(backend_instances))
+        correctness_task = progress_ctx.add_task("Correctness checks", total=1)
         progress_ctx.start()
+        progress_ctx.update(
+            correctness_task,
+            description="Correctness check [cyan]mechestim[/]",
+        )
 
-    for name, backend in backend_instances.items():
-        if progress_ctx is not None:
-            progress_ctx.update(
-                correctness_task,
-                description=f"Correctness check [cyan]{name:<8}[/]",
-            )
-        if log_progress:
-            print(f"[correctness] {name} ...", end=" ", flush=True)
-        cr = correctness_check(backend)
-        correctness_results.append(cr)
-        if cr.passed:
-            passed_backends[name] = backend
-        if log_progress:
-            print("PASS" if cr.passed else f"FAIL: {cr.error}", flush=True)
-        if progress_ctx is not None:
-            progress_ctx.advance(correctness_task)
+    if log_progress:
+        print("[correctness] mechestim ...", end=" ", flush=True)
 
-    # Timing sweep (only on backends that passed correctness)
+    cr = correctness_check()
+    correctness_results = [cr]
+
+    if log_progress:
+        print("PASS" if cr.passed else f"FAIL: {cr.error}", flush=True)
+    if progress_ctx is not None:
+        progress_ctx.advance(correctness_task)
+
+    # Timing sweep (only if correctness passed)
     timing_results: List[TimingResult] = []
-    timing_task = None
-    if passed_backends:
+    if cr.passed:
         n_combos = (
             len(preset.widths)
             * len(preset.depths)
             * len(preset.n_samples_list)
             * 2  # run_mlp + sample_layer_statistics
-            * len(passed_backends)
         )
 
         callback: Any = None
@@ -961,7 +839,6 @@ def run_profile(
             _log_start = [time.time()]
 
             def _log_callback(
-                backend_name: str = "",
                 operation: str = "",
                 width: int = 0,
                 depth: int = 0,
@@ -971,7 +848,7 @@ def run_profile(
                 elapsed = time.time() - _log_start[0]
                 print(
                     f"[timing] {_log_counter[0]}/{n_combos} "
-                    f"{backend_name} {operation} "
+                    f"mechestim {operation} "
                     f"w={width} d={depth} n={n_samples:,} "
                     f"({elapsed:.0f}s elapsed)",
                     flush=True,
@@ -983,21 +860,20 @@ def run_profile(
             timing_task = progress_ctx.add_task("Timing sweep", total=n_combos)
 
             def _rich_callback(
-                backend_name: str = "",
                 operation: str = "",
                 width: int = 0,
                 depth: int = 0,
                 n_samples: int = 0,
             ) -> None:
                 desc = (
-                    f"[cyan]{backend_name:<8}[/] {operation:<18} "
+                    f"[cyan]mechestim[/] {operation:<18} "
                     f"w={width:<4} d={depth:<4} n={n_samples:>11,}"
                 )
                 progress_ctx.update(timing_task, advance=1, description=desc)
 
             callback = _rich_callback
 
-        timing_results, _ = run_timing_sweep(passed_backends, preset, progress_callback=callback)
+        timing_results = run_timing_sweep(preset, progress_callback=callback)
 
     if progress_ctx is not None:
         progress_ctx.stop()
@@ -1012,14 +888,14 @@ def run_profile(
     terminal_output = format_compact_output(
         correctness_results,
         timing_results,
-        skipped,
+        {},
         hardware_info=hardware_info,
     )
     if verbose:
         terminal_output += "\n" + format_verbose_output(
             correctness_results,
             timing_results,
-            skipped,
+            {},
             hardware_info=hardware_info,
         )
 
@@ -1028,8 +904,8 @@ def run_profile(
         json_data = format_json_output(
             correctness_results,
             timing_results,
-            skipped,
-            backend_names=list(backend_instances.keys()),
+            {},
+            backend_names=["mechestim"],
             hardware_info=hardware_info,
         )
         os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
