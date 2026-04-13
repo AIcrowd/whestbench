@@ -21,6 +21,7 @@ def test_collect_hardware_fingerprint_returns_required_keys():
         "ram_total_bytes",
         "ram_available_bytes",
         "numpy_version",
+        "mechestim_version",
     }
     assert required <= set(fp.keys())
     assert isinstance(fp["cpu_count_logical"], int)

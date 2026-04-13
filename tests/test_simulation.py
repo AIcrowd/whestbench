@@ -8,17 +8,11 @@ from whestbench.simulation import (
     run_mlp_all_layers,
     sample_layer_statistics,
 )
-from whestbench.simulation_mechestim import MechestimBackend
 
 
 def _make_mlp(width: int = 8, depth: int = 2, seed: int = 42) -> MLP:
     rng = me.random.default_rng(seed)
     return sample_mlp(width, depth, rng)
-
-
-# ---------------------------------------------------------------------------
-# Legacy simulation.py free-function tests
-# ---------------------------------------------------------------------------
 
 
 def test_relu_zeros_negatives() -> None:
@@ -77,45 +71,12 @@ def test_sample_layer_statistics_returns_correct_shapes() -> None:
     me.testing.assert_allclose(final_mean, all_means[-1], atol=1e-6)
 
 
-# ---------------------------------------------------------------------------
-# MechestimBackend tests
-# ---------------------------------------------------------------------------
-
-
-class TestMechestimBackend:
-    def test_name(self) -> None:
-        backend = MechestimBackend()
-        assert backend.name == "mechestim"
-
-    def test_is_available(self) -> None:
-        assert MechestimBackend.is_available() is True
-
-    def test_run_mlp_shape_and_nonnegative(self) -> None:
-        backend = MechestimBackend()
-        mlp = _make_mlp(width=8, depth=2)
-        rng = me.random.default_rng(0)
-        inputs = me.array(rng.standard_normal((16, 8)).astype(me.float32))
-        result = backend.run_mlp(mlp, inputs)
-        assert result.shape == (16, 8)
-        assert me.all(me.asarray(result) >= 0.0), "ReLU outputs must be non-negative"
-
-    def test_run_mlp_all_layers_returns_list_of_per_layer_outputs(self) -> None:
-        backend = MechestimBackend()
-        mlp = _make_mlp(width=8, depth=3)
-        rng = me.random.default_rng(1)
-        inputs = me.array(rng.standard_normal((10, 8)).astype(me.float32))
-        layers = backend.run_mlp_all_layers(mlp, inputs)
-        assert len(layers) == 3
-        for layer_out in layers:
-            assert layer_out.shape == (10, 8)
-            assert me.all(me.asarray(layer_out) >= 0.0), "Each layer output must be non-negative"
-
-    def test_sample_layer_statistics_shapes_and_nonneg_variance(self) -> None:
-        backend = MechestimBackend()
-        mlp = _make_mlp(width=8, depth=2)
-        with me.BudgetContext(flop_budget=int(1e15)):
-            layer_means, final_mean, avg_var = backend.sample_layer_statistics(mlp, n_samples=500)
-        assert layer_means.shape == (2, 8)
-        assert final_mean.shape == (8,)
-        assert isinstance(avg_var, float)
-        assert avg_var >= 0.0
+def test_sample_layer_statistics_handles_large_sample_count() -> None:
+    """Verify chunked sampling produces correct shapes with n_samples > chunk_size."""
+    mlp = _make_mlp(width=8, depth=2)
+    with me.BudgetContext(flop_budget=int(1e15)):
+        all_means, final_mean, avg_var = sample_layer_statistics(mlp, n_samples=3000)
+    assert all_means.shape == (2, 8)
+    assert final_mean.shape == (8,)
+    assert isinstance(avg_var, float)
+    assert avg_var >= 0.0

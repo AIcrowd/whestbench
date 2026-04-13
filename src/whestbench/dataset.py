@@ -14,7 +14,7 @@ import numpy as np  # needed for np.savez, np.load (file I/O)
 from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
-from .simulation_backends import get_backend
+from .simulation import sample_layer_statistics
 
 SCHEMA_VERSION = "2.0"
 
@@ -58,7 +58,6 @@ def create_dataset(
     if seed is None:
         seed = int(me.random.SeedSequence().entropy)  # type: ignore[arg-type]
     rng = me.random.default_rng(seed)
-    backend = get_backend()
 
     mlps: List[MLP] = []
     for i in range(n_mlps):
@@ -75,7 +74,7 @@ def create_dataset(
     avg_variances: List[float] = []
     for i, mlp in enumerate(mlps):
         with me.BudgetContext(flop_budget=int(1e15)):
-            all_means, final_mean, avg_var = backend.sample_layer_statistics(mlp, n_samples)
+            all_means, final_mean, avg_var = sample_layer_statistics(mlp, n_samples)
         all_means_list.append(me.asarray(all_means, dtype=me.float32))
         final_means_list.append(me.asarray(final_mean, dtype=me.float32))
         avg_variances.append(avg_var)

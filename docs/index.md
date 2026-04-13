@@ -38,9 +38,10 @@ Pick the path that matches what you need right now.
 - [CLI Reference](./reference/cli-reference.md)
 - [Score Report Fields](./reference/score-report-fields.md)
 - [Code Patterns](./reference/code-patterns.md)
+- [MechEstim Primer](./reference/mechestim-primer.md)
 
 ## Standard workflow
 
 - [Validate, Run, and Package](./how-to/validate-run-package.md)
 - [Use Evaluation Datasets](./how-to/use-evaluation-datasets.md)
-- [Profile Simulation](./how-to/profile-simulation-backends.md)
+- [Profile Simulation](./how-to/profile-simulation.md)

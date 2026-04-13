@@ -173,7 +173,9 @@ def _start_dev_server(
         if not browser_opened:
             browser_host = "localhost" if host == "0.0.0.0" else host
             url = f"http://{browser_host}:{port}"
-            console.print(f"\n[bold green]WhestBench Explorer should be at:[/] [link={url}]{url}[/]\n")
+            console.print(
+                f"\n[bold green]WhestBench Explorer should be at:[/] [link={url}]{url}[/]\n"
+            )
             browser_opened = True
 
     timer = threading.Timer(30.0, _timeout_fallback)

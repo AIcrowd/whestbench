@@ -7,7 +7,7 @@ import json
 import tempfile
 from pathlib import Path
 
-import pytest
+import mechestim as me
 
 from whestbench.profiler import (
     PRESETS,
@@ -19,20 +19,18 @@ from whestbench.profiler import (
     format_dims,
     run_profile,
 )
-from whestbench.simulation_backends import get_backend
 
 
 class TestCorrectnessCheck:
     def test_mechestim_passes(self) -> None:
-        backend = get_backend("mechestim")
-        result = correctness_check(backend)
+        result = correctness_check()
         assert result.passed is True
         assert result.error == ""
 
 
 class TestRunProfile:
     def test_quick_preset_runs(self) -> None:
-        terminal_output, _ = run_profile(preset_name="super-quick", backend_filter=["mechestim"])
+        terminal_output, _ = run_profile(preset_name="super-quick")
         assert "mechestim" in terminal_output
         assert "Detail" in terminal_output
 
@@ -41,7 +39,6 @@ class TestRunProfile:
             out_path = str(Path(tmpdir) / "results.json")
             _, json_data = run_profile(
                 preset_name="super-quick",
-                backend_filter=["mechestim"],
                 output_path=out_path,
             )
             assert json_data is not None
@@ -54,15 +51,8 @@ class TestRunProfile:
                 saved = json.load(f)
             assert saved["hardware"]["cpu_count_logical"] is not None
 
-    def test_unknown_backend_raises(self) -> None:
-        with pytest.raises(ValueError, match="Unknown backend"):
-            run_profile(backend_filter=["nonexistent"])
-
-    def test_skipped_backends_in_output(self) -> None:
-        terminal_output, _ = run_profile(
-            preset_name="super-quick",
-            backend_filter=["mechestim"],
-        )
+    def test_single_backend_in_output(self) -> None:
+        terminal_output, _ = run_profile(preset_name="super-quick")
         assert "mechestim" in terminal_output
 
 
@@ -98,10 +88,9 @@ class TestPresets:
 
 class TestFormatCompactOutput:
     def _make_results(self):
-        """Build minimal test data with two backends."""
+        """Build minimal test data with single mechestim backend."""
         correctness = [
             CorrectnessResult(backend_name="mechestim", passed=True),
-            CorrectnessResult(backend_name="other", passed=True),
         ]
         timing = [
             TimingResult(
@@ -115,16 +104,6 @@ class TestFormatCompactOutput:
                 speedup_vs_numpy=1.0,
             ),
             TimingResult(
-                backend_name="other",
-                operation="run_mlp",
-                width=64,
-                depth=4,
-                n_samples=1000,
-                times=[0.0002],
-                median_time=0.0002,
-                speedup_vs_numpy=0.5,
-            ),
-            TimingResult(
                 backend_name="mechestim",
                 operation="sample_layer_statistics",
                 width=64,
@@ -134,18 +113,8 @@ class TestFormatCompactOutput:
                 median_time=0.0009,
                 speedup_vs_numpy=1.0,
             ),
-            TimingResult(
-                backend_name="other",
-                operation="sample_layer_statistics",
-                width=64,
-                depth=4,
-                n_samples=1000,
-                times=[0.0009],
-                median_time=0.0009,
-                speedup_vs_numpy=1.0,
-            ),
         ]
-        skipped = {"pytorch": "pip install torch>=2.0"}
+        skipped: dict = {}
         hardware = {
             "platform": "macOS-26.3-arm64",
             "machine": "arm64",
@@ -154,6 +123,7 @@ class TestFormatCompactOutput:
             "ram_total_bytes": 64 * 1024**3,
             "python_version": "3.10.17",
             "numpy_version": "2.2.6",
+            "mechestim_version": me.__version__,
             "os": "Darwin",
         }
         return correctness, timing, skipped, hardware
@@ -165,24 +135,10 @@ class TestFormatCompactOutput:
         assert "16 cores" in output
         assert "64.0 GB" in output
 
-    def test_contains_skipped_one_liner(self) -> None:
-        cr, tr, sk, hw = self._make_results()
-        output = format_compact_output(cr, tr, sk, hardware_info=hw)
-        assert "Skipped:" in output
-        assert "pytorch" in output
-        assert "--backends-help" in output
-
     def test_no_skipped_line_when_none_skipped(self) -> None:
         cr, tr, _, hw = self._make_results()
         output = format_compact_output(cr, tr, {}, hardware_info=hw)
         assert "Skipped:" not in output
-
-    def test_contains_leaderboard(self) -> None:
-        cr, tr, sk, hw = self._make_results()
-        output = format_compact_output(cr, tr, sk, hardware_info=hw)
-        assert "#1" in output
-        assert "#2" in output
-        assert "Leaderboard" in output
 
     def test_contains_detail_table(self) -> None:
         cr, tr, sk, hw = self._make_results()
@@ -195,30 +151,8 @@ class TestFormatCompactOutput:
         assert "--verbose" in output
 
     def test_single_backend_omits_leaderboard(self) -> None:
-        cr = [CorrectnessResult(backend_name="mechestim", passed=True)]
-        tr = [
-            TimingResult(
-                backend_name="mechestim",
-                operation="run_mlp",
-                width=64,
-                depth=4,
-                n_samples=1000,
-                times=[0.0001],
-                median_time=0.0001,
-                speedup_vs_numpy=1.0,
-            ),
-            TimingResult(
-                backend_name="mechestim",
-                operation="sample_layer_statistics",
-                width=64,
-                depth=4,
-                n_samples=1000,
-                times=[0.0009],
-                median_time=0.0009,
-                speedup_vs_numpy=1.0,
-            ),
-        ]
-        output = format_compact_output(cr, tr, {})
+        cr, tr, sk, hw = self._make_results()
+        output = format_compact_output(cr, tr, sk, hardware_info=hw)
         assert "Leaderboard" not in output
 
     def test_zero_passed_backends(self) -> None:
@@ -230,16 +164,14 @@ class TestFormatCompactOutput:
 class TestRunProfileVerbose:
     def test_default_uses_compact_format(self) -> None:
         """Default (verbose=False) should use compact leaderboard format."""
-        output, _ = run_profile(preset_name="super-quick", backend_filter=["mechestim"])
+        output, _ = run_profile(preset_name="super-quick")
         assert "Leaderboard" in output or "Detail" in output
         # Should NOT contain the old-style verbose headers
         assert "Timing Results" not in output
 
     def test_verbose_includes_both_compact_and_full(self) -> None:
         """verbose=True should show compact output PLUS full tables."""
-        output, _ = run_profile(
-            preset_name="super-quick", backend_filter=["mechestim"], verbose=True
-        )
+        output, _ = run_profile(preset_name="super-quick", verbose=True)
         # Compact content present
         assert "Detail" in output
         # Full verbose tables also present
@@ -253,7 +185,7 @@ class TestRunProfileVerbose:
             n_samples_list=[1_000],
         )
         try:
-            output, _ = run_profile(preset_name="_ci", backend_filter=["mechestim"], verbose=False)
+            output, _ = run_profile(preset_name="_ci", verbose=False)
         finally:
             del PRESETS["_ci"]
         assert "Detail" in output
@@ -262,11 +194,7 @@ class TestRunProfileVerbose:
 class TestLogProgress:
     def test_log_progress_prints_lines(self, capsys) -> None:
         """Non-TTY mode should print one line per benchmark step."""
-        run_profile(
-            preset_name="super-quick",
-            backend_filter=["mechestim"],
-            log_progress=True,
-        )
+        run_profile(preset_name="super-quick", log_progress=True)
         captured = capsys.readouterr()
         assert "[correctness]" in captured.out
         assert "[timing]" in captured.out
@@ -275,10 +203,7 @@ class TestLogProgress:
 
     def test_log_progress_off_by_default(self, capsys) -> None:
         """Default mode should not print log lines."""
-        run_profile(
-            preset_name="super-quick",
-            backend_filter=["mechestim"],
-        )
+        run_profile(preset_name="super-quick")
         captured = capsys.readouterr()
         assert "[correctness]" not in captured.out
 
@@ -298,13 +223,6 @@ class TestCLIFlags:
         args = parser.parse_args(["profile-simulation", "--preset", "super-quick"])
         assert args.verbose is False
 
-    def test_backends_help_flag_accepted(self) -> None:
-        from whestbench.cli import _build_participant_parser
-
-        parser = _build_participant_parser()
-        args = parser.parse_args(["profile-simulation", "--backends-help"])
-        assert args.backends_help is True
-
     def test_log_progress_flag_accepted(self) -> None:
         from whestbench.cli import _build_participant_parser
 
@@ -318,16 +236,3 @@ class TestCLIFlags:
         parser = _build_participant_parser()
         args = parser.parse_args(["profile-simulation"])
         assert args.log_progress is False
-
-    def test_backends_help_prints_and_exits(self) -> None:
-        import contextlib
-        import io
-
-        from whestbench.cli import _main_participant
-
-        buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            rc = _main_participant(["profile-simulation", "--backends-help"])
-        assert rc == 0
-        output = buf.getvalue()
-        assert "install" in output.lower() or "All backends" in output
