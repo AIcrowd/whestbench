@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-import mechestim as me
+import whest as we
 
 from .domain import MLP
 from .loader import load_estimator_from_path
@@ -15,7 +15,7 @@ from .sdk import BaseEstimator, SetupContext
 
 
 def _payload_to_mlp(payload: dict) -> MLP:
-    weights = [me.array(me.asarray(w, dtype=me.float32)) for w in payload["weights"]]
+    weights = [we.array(we.asarray(w, dtype=we.float32)) for w in payload["weights"]]
     mlp = MLP(
         width=int(payload["width"]),
         depth=int(payload["depth"]),
@@ -40,7 +40,7 @@ def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
 
     try:
         predictions = estimator.predict(mlp, budget)
-        arr = me.asarray(predictions, dtype=me.float32)
+        arr = we.asarray(predictions, dtype=we.float32)
         if arr.shape != (mlp.depth, mlp.width):
             _write_response(
                 {
@@ -49,7 +49,7 @@ def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
                 }
             )
             return
-        if not me.all(me.isfinite(arr)):
+        if not we.all(we.isfinite(arr)):
             _write_response({"status": "error", "error_message": "Non-finite predictions."})
             return
         _write_response({"status": "ok", "predictions": arr.tolist()})

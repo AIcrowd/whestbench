@@ -7,7 +7,7 @@ import json
 import tempfile
 from pathlib import Path
 
-import mechestim as me
+import whest as we
 
 from whestbench.profiler import (
     PRESETS,
@@ -22,7 +22,7 @@ from whestbench.profiler import (
 
 
 class TestCorrectnessCheck:
-    def test_mechestim_passes(self) -> None:
+    def test_whest_passes(self) -> None:
         result = correctness_check()
         assert result.passed is True
         assert result.error == ""
@@ -31,7 +31,7 @@ class TestCorrectnessCheck:
 class TestRunProfile:
     def test_quick_preset_runs(self) -> None:
         terminal_output, _ = run_profile(preset_name="super-quick")
-        assert "mechestim" in terminal_output
+        assert "whest" in terminal_output
         assert "Detail" in terminal_output
 
     def test_json_output(self) -> None:
@@ -53,7 +53,7 @@ class TestRunProfile:
 
     def test_single_backend_in_output(self) -> None:
         terminal_output, _ = run_profile(preset_name="super-quick")
-        assert "mechestim" in terminal_output
+        assert "whest" in terminal_output
 
 
 class TestFormatDims:
@@ -88,13 +88,13 @@ class TestPresets:
 
 class TestFormatCompactOutput:
     def _make_results(self):
-        """Build minimal test data with single mechestim backend."""
+        """Build minimal test data with single whest backend."""
         correctness = [
-            CorrectnessResult(backend_name="mechestim", passed=True),
+            CorrectnessResult(backend_name="whest", passed=True),
         ]
         timing = [
             TimingResult(
-                backend_name="mechestim",
+                backend_name="whest",
                 operation="run_mlp",
                 width=64,
                 depth=4,
@@ -104,7 +104,7 @@ class TestFormatCompactOutput:
                 speedup_vs_numpy=1.0,
             ),
             TimingResult(
-                backend_name="mechestim",
+                backend_name="whest",
                 operation="sample_layer_statistics",
                 width=64,
                 depth=4,
@@ -123,7 +123,7 @@ class TestFormatCompactOutput:
             "ram_total_bytes": 64 * 1024**3,
             "python_version": "3.10.17",
             "numpy_version": "2.2.6",
-            "mechestim_version": me.__version__,
+            "whest_version": we.__version__,
             "os": "Darwin",
         }
         return correctness, timing, skipped, hardware
@@ -156,7 +156,7 @@ class TestFormatCompactOutput:
         assert "Leaderboard" not in output
 
     def test_zero_passed_backends(self) -> None:
-        cr = [CorrectnessResult(backend_name="mechestim", passed=False, error="boom")]
+        cr = [CorrectnessResult(backend_name="whest", passed=False, error="boom")]
         output = format_compact_output(cr, [], {})
         assert "No backends passed" in output
 
@@ -198,7 +198,7 @@ class TestLogProgress:
         captured = capsys.readouterr()
         assert "[correctness]" in captured.out
         assert "[timing]" in captured.out
-        assert "mechestim" in captured.out
+        assert "whest" in captured.out
         assert "[done]" in captured.out
 
     def test_log_progress_off_by_default(self, capsys) -> None:

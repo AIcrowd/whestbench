@@ -13,9 +13,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-import mechestim as me
+import whest as we
 
-Weights = List[me.ndarray]
+Weights = List[we.ndarray]
 
 
 @dataclass(frozen=True)

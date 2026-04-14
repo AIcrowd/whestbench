@@ -1,4 +1,4 @@
-import mechestim as me
+import whest as we
 import pytest
 
 from whestbench.generation import sample_mlp
@@ -6,7 +6,7 @@ from whestbench.generation import sample_mlp
 
 @pytest.fixture
 def small_mlp():
-    return sample_mlp(width=8, depth=3, rng=me.random.default_rng(42))
+    return sample_mlp(width=8, depth=3, rng=we.random.default_rng(42))
 
 
 @pytest.mark.parametrize(
@@ -23,9 +23,9 @@ def test_example_estimator_returns_correct_shape(small_mlp, estimator_module) ->
 
     mod = importlib.import_module(estimator_module)
     est = mod.Estimator()
-    with me.BudgetContext(flop_budget=int(1e12)):
+    with we.BudgetContext(flop_budget=int(1e12)):
         result = est.predict(small_mlp, budget=100)
-    result_np = me.asarray(result)
+    result_np = we.asarray(result)
     assert result_np.shape == (small_mlp.depth, small_mlp.width)
-    assert me.issubdtype(result_np.dtype, me.floating)
-    assert me.all(me.isfinite(result_np))
+    assert we.issubdtype(result_np.dtype, we.floating)
+    assert we.all(we.isfinite(result_np))

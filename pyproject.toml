@@ -10,7 +10,7 @@ name = "whestbench"
 version = "0.2.0"
 requires-python = ">=3.10"
 dependencies = [
-    "mechestim @ git+https://github.com/AIcrowd/mechestim.git",
+    "whest @ git+https://github.com/AIcrowd/whest.git",
     "plotext",
     "rich",
     "threadpoolctl>=3.0",
@@ -28,7 +28,7 @@ dev = [
     "ruff>=0.6.0",
 ]
 server = [
-    "mechestim-server @ git+https://github.com/AIcrowd/mechestim.git#subdirectory=mechestim-server",
+    "whest-server @ git+https://github.com/AIcrowd/whest.git#subdirectory=whest-server",
 ]
 
 [tool.ruff]

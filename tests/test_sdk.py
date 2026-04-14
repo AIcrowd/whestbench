@@ -1,4 +1,4 @@
-import mechestim as me
+import whest as we
 import pytest
 
 from whestbench.domain import MLP
@@ -28,8 +28,8 @@ def test_base_estimator_default_setup_teardown() -> None:
     """setup and teardown should be callable without error."""
 
     class MinimalEstimator(BaseEstimator):
-        def predict(self, mlp: MLP, budget: int) -> me.ndarray:
-            return me.zeros((mlp.depth, mlp.width))
+        def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+            return we.zeros((mlp.depth, mlp.width))
 
     est = MinimalEstimator()
     ctx = SetupContext(width=4, depth=2, flop_budget=100, api_version="1.0")

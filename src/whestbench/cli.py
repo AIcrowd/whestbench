@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, Literal, Optional, overload
 
-import mechestim as me
+import whest as we
 from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
@@ -170,11 +170,11 @@ def _make_contest_with_progress(
     mlps, all_layer_targets, final_targets, avg_variances = [], [], [], []
     for i in range(spec.n_mlps):
         mlp = sample_mlp(spec.width, spec.depth)
-        with me.BudgetContext(flop_budget=int(1e15)):
+        with we.BudgetContext(flop_budget=int(1e15)):
             all_means, final_mean, avg_var = sample_layer_statistics(mlp, spec.ground_truth_samples)
         mlps.append(mlp)
-        all_layer_targets.append(me.asarray(all_means, dtype=me.float32))
-        final_targets.append(me.asarray(final_mean, dtype=me.float32))
+        all_layer_targets.append(we.asarray(all_means, dtype=we.float32))
+        final_targets.append(we.asarray(final_mean, dtype=we.float32))
         avg_variances.append(avg_var)
         on_mlp_done(i + 1)
     return ContestData(
@@ -589,7 +589,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     profile_parser = subparsers.add_parser(
         "profile-simulation",
-        help="Benchmark mechestim simulation performance.",
+        help="Benchmark whest simulation performance.",
     )
     profile_parser.add_argument(
         "--preset",
@@ -632,7 +632,7 @@ class _RunnerEstimator(BaseEstimator):
     def __init__(self, runner: "Any") -> None:
         self._runner = runner
 
-    def predict(self, mlp: "Any", budget: int) -> me.ndarray:
+    def predict(self, mlp: "Any", budget: int) -> we.ndarray:
         return self._runner.predict(mlp, budget)
 
 

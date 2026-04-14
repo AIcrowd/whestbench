@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import mechestim as me
+import whest as we
 import numpy as np  # needed for np.savez, np.load (file I/O)
 
 from .domain import MLP
@@ -33,8 +33,8 @@ def dataset_file_hash(path: "Path | str") -> str:
 class DatasetBundle:
     metadata: Dict[str, Any]
     mlps: List[MLP]
-    all_layer_means: me.ndarray
-    final_means: me.ndarray
+    all_layer_means: we.ndarray
+    final_means: we.ndarray
     avg_variances: List[float]
 
     @property
@@ -56,8 +56,8 @@ def create_dataset(
     """Generate MLPs, compute ground truth, and save to .npz."""
     output_path = Path(output_path)
     if seed is None:
-        seed = int(me.random.SeedSequence().entropy)  # type: ignore[arg-type]
-    rng = me.random.default_rng(seed)
+        seed = int(we.random.SeedSequence().entropy)  # type: ignore[arg-type]
+    rng = we.random.default_rng(seed)
 
     mlps: List[MLP] = []
     for i in range(n_mlps):
@@ -69,14 +69,14 @@ def create_dataset(
     weights_array = np.stack([np.stack(mlp.weights) for mlp in mlps]).astype(np.float32)
 
     # Compute ground truth
-    all_means_list: List[me.ndarray] = []
-    final_means_list: List[me.ndarray] = []
+    all_means_list: List[we.ndarray] = []
+    final_means_list: List[we.ndarray] = []
     avg_variances: List[float] = []
     for i, mlp in enumerate(mlps):
-        with me.BudgetContext(flop_budget=int(1e15)):
+        with we.BudgetContext(flop_budget=int(1e15)):
             all_means, final_mean, avg_var = sample_layer_statistics(mlp, n_samples)
-        all_means_list.append(me.asarray(all_means, dtype=me.float32))
-        final_means_list.append(me.asarray(final_mean, dtype=me.float32))
+        all_means_list.append(we.asarray(all_means, dtype=we.float32))
+        final_means_list.append(we.asarray(final_mean, dtype=we.float32))
         avg_variances.append(avg_var)
         if progress is not None:
             progress({"phase": "sampling", "completed": i + 1, "total": n_mlps})
@@ -126,7 +126,7 @@ def load_dataset(path: "Path | str") -> DatasetBundle:
 
     mlps: List[MLP] = []
     for i in range(n_mlps):
-        layer_weights = [me.array(weights_array[i, j]) for j in range(depth)]
+        layer_weights = [we.array(weights_array[i, j]) for j in range(depth)]
         mlp = MLP(width=width, depth=depth, weights=layer_weights)
         mlp.validate()
         mlps.append(mlp)
