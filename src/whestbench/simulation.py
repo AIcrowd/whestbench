@@ -6,6 +6,7 @@ per-layer outputs/means used by score computation.
 
 from __future__ import annotations
 
+import warnings
 from typing import List, Tuple
 
 import whest as we
@@ -93,16 +94,21 @@ def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[we.ndarray, we.nd
     final_sum_sq = we.zeros(width, dtype=we.float64)
     n_processed = 0
 
-    for start in range(0, n_samples, chunk_size):
-        n = min(chunk_size, n_samples - start)
-        x = we.array(we.random.default_rng().standard_normal((n, width)).astype(we.float32))
-        for layer_idx, w in enumerate(mlp.weights):
-            x = we.maximum(we.matmul(x, w), 0.0)
+    # Suppress expected overflow/invalid warnings from deep-network matmuls.
+    # He-initialized weights can produce large pre-activation values at depth;
+    # ReLU clips them, so the warnings are benign.
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*matmul.*")
+        for start in range(0, n_samples, chunk_size):
+            n = min(chunk_size, n_samples - start)
+            x = we.array(we.random.default_rng().standard_normal((n, width)).astype(we.float32))
+            for layer_idx, w in enumerate(mlp.weights):
+                x = we.maximum(we.matmul(x, w), 0.0)
+                x_f64 = we.asarray(x, dtype=we.float64)
+                layer_sums[layer_idx] += we.sum(x_f64, axis=0)
             x_f64 = we.asarray(x, dtype=we.float64)
-            layer_sums[layer_idx] += we.sum(x_f64, axis=0)
-        x_f64 = we.asarray(x, dtype=we.float64)
-        final_sum_sq += we.sum(x_f64**2, axis=0)
-        n_processed += n
+            final_sum_sq += we.sum(x_f64**2, axis=0)
+            n_processed += n
 
     layer_means = we.asarray(layer_sums / n_processed, dtype=we.float32)
     final_mean = layer_means[-1].copy()

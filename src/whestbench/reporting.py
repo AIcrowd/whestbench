@@ -336,9 +336,7 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     per_mlp = results.get("per_mlp", [])
     if isinstance(per_mlp, list) and per_mlp:
         mlp_primaries = [
-            _as_float(entry.get("primary_score", 0.0))
-            for entry in per_mlp
-            if isinstance(entry, dict)
+            _as_float(entry.get("final_mse", 0.0)) for entry in per_mlp if isinstance(entry, dict)
         ]
         if mlp_primaries:
             summary.add_row(

@@ -143,13 +143,14 @@ class LocalRunner:
                 ),
             )
         try:
-            with we.BudgetContext(flop_budget=budget):
-                raw = self._estimator.predict(mlp, budget)
-                return validate_predictions(raw, depth=mlp.depth, width=mlp.width)
-        except we.BudgetExhaustedError as exc:
+            raw = self._estimator.predict(mlp, budget)
+            return validate_predictions(raw, depth=mlp.depth, width=mlp.width)
+        except we.BudgetExhaustedError:
+            raise
+        except Exception as exc:
             raise RunnerError(
                 "predict",
-                RunnerErrorDetail(code="BUDGET_EXHAUSTED", message=str(exc)),
+                RunnerErrorDetail(code="PREDICT_ERROR", message=str(exc)),
             ) from exc
 
     def close(self) -> None:
@@ -266,6 +267,8 @@ class SubprocessRunner:
         except RunnerError:
             raise
 
+        if response.get("status") == "budget_exhausted":
+            raise we.BudgetExhaustedError("subprocess_predict", flop_cost=0, flops_remaining=0)
         if response.get("status") == "error":
             raise RunnerError(
                 "predict",
@@ -280,7 +283,21 @@ class SubprocessRunner:
                 "predict",
                 RunnerErrorDetail(code="PREDICT_NO_DATA", message="No predictions in response."),
             )
-        return we.asarray(predictions_data, dtype=we.float32)
+        result = we.asarray(predictions_data, dtype=we.float32)
+        # Propagate subprocess FLOP count to the parent BudgetContext
+        flops_from_worker = response.get("flops_used", 0)
+        if flops_from_worker > 0:
+            from whest._budget import get_active_budget
+
+            active_ctx = get_active_budget()
+            if active_ctx is not None:
+                active_ctx.deduct(
+                    "subprocess_predict",
+                    flop_cost=flops_from_worker,
+                    subscripts=None,
+                    shapes=(),
+                )
+        return result
 
     def close(self) -> None:
         if self._process is None:

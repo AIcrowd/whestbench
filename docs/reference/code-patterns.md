@@ -58,6 +58,19 @@ available but are no longer required for tracking purposes.
 
 ## Common patterns
 
+### Standard normal PDF and CDF (built-in)
+
+whest provides built-in PDF and CDF functions that are FLOP-tracked:
+
+```python
+import whest as we
+
+phi = we.stats.norm.pdf(x)   # standard normal PDF
+Phi = we.stats.norm.cdf(x)   # standard normal CDF
+```
+
+These are the recommended approach — all example estimators use them. The manual implementations below are shown for reference.
+
 ### Standard normal PDF (for ReLU expectation)
 
 ```python

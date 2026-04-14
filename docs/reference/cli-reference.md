@@ -147,10 +147,10 @@ whest profile-simulation [--preset super-quick|quick|standard|exhaustive]
 Key options:
 
 - `--preset <name>` (default: `standard`) — parameter sweep size:
-  - `super-quick` — 1 width (64), 1 depth (4). Sub-second, for testing the debug loop.
-  - `quick` — 1 width, 2 depths. Finishes in seconds.
-  - `standard` — 2 widths, 5 depths. A few minutes.
-  - `exhaustive` — 3 widths, 5 depths. Thorough but slow.
+  - `super-quick` — 1 width (256), 1 depth (4), 10 000 samples. Sub-second, for testing the debug loop.
+  - `quick` — 1 width (256), 2 depths (4, 128), 2 sample counts (10 000, 100 000). Finishes in seconds.
+  - `standard` — 2 widths (64, 256), 3 depths (4, 32, 128), 2 sample counts (10 000, 100 000). Under a minute.
+  - `exhaustive` — 2 widths (64, 256), 3 depths (4, 32, 128), 3 sample counts (10 000, 100 000, 1 000 000). Thorough but slow.
 - `--output <path>` — save a JSON report with correctness results and FLOP accounting data.
 - `--debug` — show full tracebacks on errors.
 - `--verbose` — show full tables with all columns and raw data.
