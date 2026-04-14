@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
-import mechestim as me
+import whest as we
 
 from .domain import MLP
 
@@ -26,11 +26,11 @@ class BaseEstimator(ABC):
     """Estimator contract for participant implementations.
 
     Participants subclass this and implement ``predict`` to return
-    predicted means for all layers as a single ``(depth, width)`` mechestim array.
+    predicted means for all layers as a single ``(depth, width)`` whest array.
     """
 
     @abstractmethod
-    def predict(self, mlp: MLP, budget: int) -> me.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
         """Return predicted means for all layers, shape ``(depth, width)``."""
         raise NotImplementedError
 

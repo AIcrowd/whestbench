@@ -1,5 +1,5 @@
 # src/whestbench/profiler.py
-"""Profiling engine for mechestim simulation performance.
+"""Profiling engine for whest simulation performance.
 
 Benchmarks the two core operations — ``run_mlp`` and
 ``sample_layer_statistics`` — across a configurable grid of network sizes
@@ -54,7 +54,7 @@ import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-import mechestim as me
+import whest as we
 import numpy as np  # needed for np.__version__ in version reporting
 
 from .domain import MLP
@@ -185,8 +185,8 @@ def _collect_hardware_info(max_threads: Optional[int] = None) -> Dict[str, Any]:
 
 
 def _collect_versions() -> Dict[str, str]:
-    """Collect version strings for mechestim and numpy."""
-    return {"mechestim": me.__version__, "numpy": np.__version__}
+    """Collect version strings for whest and numpy."""
+    return {"whest": we.__version__, "numpy": np.__version__}
 
 
 def correctness_check() -> CorrectnessResult:
@@ -200,13 +200,13 @@ def correctness_check() -> CorrectnessResult:
         details.
     """
     try:
-        mlp = sample_mlp(8, 4, me.random.default_rng(42))
-        inputs = me.random.default_rng(123).standard_normal((64, 8)).astype(me.float32)
+        mlp = sample_mlp(8, 4, we.random.default_rng(42))
+        inputs = we.random.default_rng(123).standard_normal((64, 8)).astype(we.float32)
 
-        with me.BudgetContext(flop_budget=int(1e15)):
+        with we.BudgetContext(flop_budget=int(1e15)):
             result = ref_run_mlp(mlp, inputs)
             assert result.shape == (64, 8), f"Expected shape (64, 8), got {result.shape}"
-            assert me.all(me.asarray(result) >= 0.0), "ReLU outputs must be non-negative"
+            assert we.all(we.asarray(result) >= 0.0), "ReLU outputs must be non-negative"
 
             means, final_mean, avg_var = ref_sample_layer_statistics(mlp, 1000)
             assert means.shape == (4, 8), f"Expected means shape (4, 8), got {means.shape}"
@@ -215,20 +215,20 @@ def correctness_check() -> CorrectnessResult:
             )
             assert avg_var >= 0.0, f"Expected non-negative variance, got {avg_var}"
 
-        return CorrectnessResult(backend_name="mechestim", passed=True)
+        return CorrectnessResult(backend_name="whest", passed=True)
 
     except Exception as e:
-        return CorrectnessResult(backend_name="mechestim", passed=False, error=str(e))
+        return CorrectnessResult(backend_name="whest", passed=False, error=str(e))
 
 
-def _random_float32(shape: tuple) -> me.ndarray:
+def _random_float32(shape: tuple) -> we.ndarray:
     """Generate standard-normal float32 array without a float64 intermediate.
 
     ``np.random.randn(...).astype(np.float32)`` temporarily holds both
     the float64 and float32 arrays in memory, doubling peak usage.
     Using ``Generator.standard_normal`` with ``dtype`` avoids this.
     """
-    return me.random.default_rng().standard_normal(shape, dtype=me.float32)
+    return we.random.default_rng().standard_normal(shape, dtype=we.float32)
 
 
 # Maximum rows per chunk for timed forward passes.  Keeps peak memory
@@ -241,9 +241,9 @@ def _time_run_mlp(mlp: MLP, n_samples: int) -> float:
     total = 0.0
     for start in range(0, n_samples, _TIMING_CHUNK):
         n = min(_TIMING_CHUNK, n_samples - start)
-        inputs = me.array(_random_float32((n, mlp.width)))
+        inputs = we.array(_random_float32((n, mlp.width)))
         t0 = time.perf_counter()
-        with me.BudgetContext(flop_budget=int(1e15)):
+        with we.BudgetContext(flop_budget=int(1e15)):
             ref_run_mlp(mlp, inputs)
         total += time.perf_counter() - t0
         del inputs
@@ -253,7 +253,7 @@ def _time_run_mlp(mlp: MLP, n_samples: int) -> float:
 def _time_sample_layer_statistics(mlp: MLP, n_samples: int) -> float:
     """Time a single sample_layer_statistics call."""
     t0 = time.perf_counter()
-    with me.BudgetContext(flop_budget=int(1e15)):
+    with we.BudgetContext(flop_budget=int(1e15)):
         ref_sample_layer_statistics(mlp, n_samples)
     return time.perf_counter() - t0
 
@@ -291,7 +291,7 @@ def run_timing_sweep(
 
     for width in preset.widths:
         for depth in preset.depths:
-            mlp = sample_mlp(width, depth, me.random.default_rng(42))
+            mlp = sample_mlp(width, depth, we.random.default_rng(42))
             for n_samples in preset.n_samples_list:
                 for op in operations:
                     time_fn = time_fns[op]
@@ -313,11 +313,11 @@ def run_timing_sweep(
                             if gc_was_enabled:
                                 gc.enable()
 
-                        median_t = float(me.median(me.asarray(times)))
+                        median_t = float(we.median(we.asarray(times)))
 
                         results.append(
                             TimingResult(
-                                backend_name="mechestim",
+                                backend_name="whest",
                                 operation=op,
                                 width=width,
                                 depth=depth,
@@ -332,14 +332,14 @@ def run_timing_sweep(
                     except (MemoryError, Exception) as exc:
                         err_msg = f"{type(exc).__name__}: {exc}"
                         print(
-                            f"[warning] mechestim {op} "
+                            f"[warning] whest {op} "
                             f"w={width} d={depth} n={n_samples:,} "
                             f"skipped: {err_msg}",
                             flush=True,
                         )
                         results.append(
                             TimingResult(
-                                backend_name="mechestim",
+                                backend_name="whest",
                                 operation=op,
                                 width=width,
                                 depth=depth,
@@ -808,11 +808,11 @@ def run_profile(
         progress_ctx.start()
         progress_ctx.update(
             correctness_task,
-            description="Correctness check [cyan]mechestim[/]",
+            description="Correctness check [cyan]whest[/]",
         )
 
     if log_progress:
-        print("[correctness] mechestim ...", end=" ", flush=True)
+        print("[correctness] whest ...", end=" ", flush=True)
 
     cr = correctness_check()
     correctness_results = [cr]
@@ -848,7 +848,7 @@ def run_profile(
                 elapsed = time.time() - _log_start[0]
                 print(
                     f"[timing] {_log_counter[0]}/{n_combos} "
-                    f"mechestim {operation} "
+                    f"whest {operation} "
                     f"w={width} d={depth} n={n_samples:,} "
                     f"({elapsed:.0f}s elapsed)",
                     flush=True,
@@ -866,7 +866,7 @@ def run_profile(
                 n_samples: int = 0,
             ) -> None:
                 desc = (
-                    f"[cyan]mechestim[/] {operation:<18} "
+                    f"[cyan]whest[/] {operation:<18} "
                     f"w={width:<4} d={depth:<4} n={n_samples:>11,}"
                 )
                 progress_ctx.update(timing_task, advance=1, description=desc)
@@ -905,7 +905,7 @@ def run_profile(
             correctness_results,
             timing_results,
             {},
-            backend_names=["mechestim"],
+            backend_names=["whest"],
             hardware_info=hardware_info,
         )
         os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)

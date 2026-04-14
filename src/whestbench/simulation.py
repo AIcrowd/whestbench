@@ -8,17 +8,17 @@ from __future__ import annotations
 
 from typing import List, Tuple
 
-import mechestim as me
+import whest as we
 
 from .domain import MLP
 
 
-def relu(x: me.ndarray) -> me.ndarray:
+def relu(x: we.ndarray) -> we.ndarray:
     """Element-wise ReLU activation."""
-    return me.maximum(x, me.float32(0.0))
+    return we.maximum(x, we.float32(0.0))
 
 
-def run_mlp(mlp: MLP, inputs: me.ndarray) -> me.ndarray:
+def run_mlp(mlp: MLP, inputs: we.ndarray) -> we.ndarray:
     """Forward pass returning final-layer activations.
 
     Args:
@@ -34,7 +34,7 @@ def run_mlp(mlp: MLP, inputs: me.ndarray) -> me.ndarray:
     return x
 
 
-def run_mlp_all_layers(mlp: MLP, inputs: me.ndarray) -> List[me.ndarray]:
+def run_mlp_all_layers(mlp: MLP, inputs: we.ndarray) -> List[we.ndarray]:
     """Forward pass returning activations after each layer.
 
     Args:
@@ -45,7 +45,7 @@ def run_mlp_all_layers(mlp: MLP, inputs: me.ndarray) -> List[me.ndarray]:
         List of ``depth`` arrays, each shape ``(samples, mlp.width)``.
     """
     x = inputs
-    layers: List[me.ndarray] = []
+    layers: List[we.ndarray] = []
     for w in mlp.weights:
         x = relu(x @ w)
         layers.append(x)
@@ -57,7 +57,7 @@ def _pick_chunk_size(width: int) -> int:
     return max(1024, min(16384, 2**20 // width))
 
 
-def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[me.ndarray, me.ndarray, float]:
+def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[we.ndarray, we.ndarray, float]:
     """Estimate per-layer activation statistics via chunked Monte Carlo sampling.
 
     Feeds ``n_samples`` random Gaussian inputs through the MLP in memory-bounded
@@ -89,24 +89,24 @@ def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[me.ndarray, me.nd
     depth = mlp.depth
     chunk_size = _pick_chunk_size(width)
 
-    layer_sums = me.zeros((depth, width), dtype=me.float64)
-    final_sum_sq = me.zeros(width, dtype=me.float64)
+    layer_sums = we.zeros((depth, width), dtype=we.float64)
+    final_sum_sq = we.zeros(width, dtype=we.float64)
     n_processed = 0
 
     for start in range(0, n_samples, chunk_size):
         n = min(chunk_size, n_samples - start)
-        x = me.array(me.random.default_rng().standard_normal((n, width)).astype(me.float32))
+        x = we.array(we.random.default_rng().standard_normal((n, width)).astype(we.float32))
         for layer_idx, w in enumerate(mlp.weights):
-            x = me.maximum(me.matmul(x, w), 0.0)
-            x_f64 = me.asarray(x, dtype=me.float64)
-            layer_sums[layer_idx] += me.sum(x_f64, axis=0)
-        x_f64 = me.asarray(x, dtype=me.float64)
-        final_sum_sq += me.sum(x_f64**2, axis=0)
+            x = we.maximum(we.matmul(x, w), 0.0)
+            x_f64 = we.asarray(x, dtype=we.float64)
+            layer_sums[layer_idx] += we.sum(x_f64, axis=0)
+        x_f64 = we.asarray(x, dtype=we.float64)
+        final_sum_sq += we.sum(x_f64**2, axis=0)
         n_processed += n
 
-    layer_means = me.asarray(layer_sums / n_processed, dtype=me.float32)
+    layer_means = we.asarray(layer_sums / n_processed, dtype=we.float32)
     final_mean = layer_means[-1].copy()
     avg_variance = float(
-        me.mean(final_sum_sq / n_processed - me.asarray(final_mean, dtype=me.float64) ** 2)
+        we.mean(final_sum_sq / n_processed - we.asarray(final_mean, dtype=we.float64) ** 2)
     )
     return layer_means, final_mean, avg_variance

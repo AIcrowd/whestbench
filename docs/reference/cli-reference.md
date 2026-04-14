@@ -73,7 +73,7 @@ whest run --estimator ./path/to/estimator.py --runner local --debug
 
 Runner mode tradeoff:
 
-- `server` (default): realistic isolation -- your estimator runs against the mechestim server.
+- `server` (default): realistic isolation -- your estimator runs against the whest server.
 - `local`: in-process execution with better traceback fidelity while debugging.
 
 ## `whest create-dataset`
@@ -135,7 +135,7 @@ On SSH/headless environments, browser auto-open is skipped automatically.
 
 ## `whest profile-simulation`
 
-Profile mechestim FLOP accounting and analytical correctness across a grid of network sizes and FLOP budgets.
+Profile whest FLOP accounting and analytical correctness across a grid of network sizes and FLOP budgets.
 
 ```bash
 whest profile-simulation [--preset super-quick|quick|standard|exhaustive]

@@ -1,4 +1,4 @@
-import mechestim as me
+import whest as we
 import pytest
 
 from whestbench.generation import sample_mlp
@@ -12,7 +12,7 @@ from whestbench.sdk import SetupContext
 
 @pytest.fixture
 def small_mlp():
-    return sample_mlp(width=8, depth=2, rng=me.random.default_rng(42))
+    return sample_mlp(width=8, depth=2, rng=we.random.default_rng(42))
 
 
 def test_subprocess_runner_predict(small_mlp, tmp_path) -> None:

@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Protocol
 
-import mechestim as me
+import whest as we
 
 from .domain import MLP
 from .loader import load_estimator_from_path
@@ -81,7 +81,7 @@ class EstimatorRunner(Protocol):
         limits: ResourceLimits,
     ) -> None: ...
 
-    def predict(self, mlp: MLP, budget: int) -> me.ndarray: ...
+    def predict(self, mlp: MLP, budget: int) -> we.ndarray: ...
 
     def close(self) -> None: ...
 
@@ -133,7 +133,7 @@ class LocalRunner:
             )
         self._started = True
 
-    def predict(self, mlp: MLP, budget: int) -> me.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
         if not self._started or self._estimator is None:
             raise RunnerError(
                 "predict",
@@ -143,10 +143,10 @@ class LocalRunner:
                 ),
             )
         try:
-            with me.BudgetContext(flop_budget=budget):
+            with we.BudgetContext(flop_budget=budget):
                 raw = self._estimator.predict(mlp, budget)
                 return validate_predictions(raw, depth=mlp.depth, width=mlp.width)
-        except me.BudgetExhaustedError as exc:
+        except we.BudgetExhaustedError as exc:
             raise RunnerError(
                 "predict",
                 RunnerErrorDetail(code="BUDGET_EXHAUSTED", message=str(exc)),
@@ -241,7 +241,7 @@ class SubprocessRunner:
             )
         self._started = True
 
-    def predict(self, mlp: MLP, budget: int) -> me.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
         if not self._started or self._process is None or self._limits is None:
             raise RunnerError(
                 "predict",
@@ -280,7 +280,7 @@ class SubprocessRunner:
                 "predict",
                 RunnerErrorDetail(code="PREDICT_NO_DATA", message="No predictions in response."),
             )
-        return me.asarray(predictions_data, dtype=me.float32)
+        return we.asarray(predictions_data, dtype=we.float32)
 
     def close(self) -> None:
         if self._process is None:

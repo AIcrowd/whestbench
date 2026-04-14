@@ -1,4 +1,4 @@
-import mechestim as me
+import whest as we
 import pytest
 
 from whestbench.scoring import (
@@ -41,7 +41,7 @@ def test_evaluate_estimator_with_zeros_estimator() -> None:
 
     class ZerosEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            return me.zeros((mlp.depth, mlp.width), dtype=me.float32)
+            return we.zeros((mlp.depth, mlp.width), dtype=we.float32)
 
     spec = ContestSpec(
         width=8, depth=2, n_mlps=2, flop_budget=100_000_000, ground_truth_samples=200
@@ -51,21 +51,21 @@ def test_evaluate_estimator_with_zeros_estimator() -> None:
     assert isinstance(result, dict)
     assert "primary_score" in result
     assert "secondary_score" in result
-    assert me.isfinite(result["primary_score"])
-    assert me.isfinite(result["secondary_score"])
+    assert we.isfinite(result["primary_score"])
+    assert we.isfinite(result["secondary_score"])
 
 
 def test_validate_predictions_rejects_wrong_shape() -> None:
     from whestbench.scoring import validate_predictions
 
     with pytest.raises(ValueError, match="shape"):
-        validate_predictions(me.zeros((3, 4), dtype=me.float32), depth=2, width=4)
+        validate_predictions(we.zeros((3, 4), dtype=we.float32), depth=2, width=4)
 
 
 def test_validate_predictions_rejects_nonfinite() -> None:
     from whestbench.scoring import validate_predictions
 
-    arr = me.zeros((2, 4), dtype=me.float32)
+    arr = we.zeros((2, 4), dtype=we.float32)
     arr[0, 0] = float("inf")
     with pytest.raises(ValueError, match="finite"):
         validate_predictions(arr, depth=2, width=4)
@@ -77,7 +77,7 @@ def test_evaluate_estimator_records_flops_used() -> None:
 
     class ZerosEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            return me.zeros((mlp.depth, mlp.width), dtype=me.float32)
+            return we.zeros((mlp.depth, mlp.width), dtype=we.float32)
 
     spec = ContestSpec(
         width=8, depth=2, n_mlps=1, flop_budget=100_000_000, ground_truth_samples=200

@@ -8,7 +8,7 @@ import socket
 import subprocess
 from typing import Any
 
-import mechestim as me
+import whest as we
 import numpy as np
 
 try:
@@ -98,7 +98,7 @@ def collect_hardware_fingerprint() -> dict[str, Any]:
         "ram_total_bytes": None,
         "ram_available_bytes": None,
         "numpy_version": np.__version__,
-        "mechestim_version": me.__version__,
+        "whest_version": we.__version__,
     }
     if psutil is not None:
         try:
