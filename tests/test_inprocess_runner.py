@@ -1,5 +1,5 @@
-import whest as we
 import pytest
+import whest as we
 
 from whestbench.generation import sample_mlp
 from whestbench.runner import (

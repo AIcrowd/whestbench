@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import whest as we
 import pytest
+import whest as we
 
 from whestbench.domain import MLP
 from whestbench.scoring import (
