@@ -25,6 +25,8 @@ class ContestSpec:
     setup_timeout_s: float = 5.0
     predict_timeout_s: float = 30.0
     memory_limit_mb: int = 4096
+    wall_time_limit_s: Optional[float] = None
+    untracked_time_limit_s: Optional[float] = None
 
     def validate(self) -> None:
         """Validate that all contest specification fields are positive and consistent."""
@@ -38,6 +40,10 @@ class ContestSpec:
             raise ValueError("flop_budget must be positive.")
         if self.ground_truth_samples <= 0:
             raise ValueError("ground_truth_samples must be positive.")
+        if self.wall_time_limit_s is not None and self.wall_time_limit_s <= 0:
+            raise ValueError("wall_time_limit_s must be positive when provided.")
+        if self.untracked_time_limit_s is not None and self.untracked_time_limit_s <= 0:
+            raise ValueError("untracked_time_limit_s must be positive when provided.")
 
 
 @dataclass
@@ -96,8 +102,9 @@ def evaluate_estimator(
 ) -> Dict[str, Any]:
     """Score an estimator against precomputed contest data.
 
-    Each MLP prediction runs under a BudgetContext. If the budget is
-    exhausted, predictions are zeroed. Score = pure MSE (lower is better).
+    Each MLP prediction runs under a BudgetContext. If the FLOP budget,
+    wall-time limit, or untracked-time limit is exceeded, predictions are
+    zeroed and the violation is recorded. Score = pure MSE (lower is better).
     """
     spec = data.spec
     per_mlp: List[Dict[str, Any]] = []
@@ -107,9 +114,15 @@ def evaluate_estimator(
     for i, mlp in enumerate(data.mlps):
         flops_used = 0
         budget_exhausted = False
+        time_exhausted = False
+        untracked_time_exhausted = False
 
+        budget_ctx = we.BudgetContext(
+            flop_budget=spec.flop_budget,
+            wall_time_limit_s=spec.wall_time_limit_s,
+        )
         try:
-            with we.BudgetContext(flop_budget=spec.flop_budget) as budget:
+            with budget_ctx as budget:
                 raw_predictions = estimator.predict(mlp, spec.flop_budget)
                 predictions = validate_predictions(
                     raw_predictions, depth=spec.depth, width=spec.width
@@ -119,6 +132,9 @@ def evaluate_estimator(
             predictions = we.zeros((spec.depth, spec.width))
             budget_exhausted = True
             flops_used = spec.flop_budget
+        except we.TimeExhaustedError:
+            predictions = we.zeros((spec.depth, spec.width))
+            time_exhausted = True
         except Exception as exc:
             predictions = we.zeros((spec.depth, spec.width))
             per_mlp.append(
@@ -127,6 +143,11 @@ def evaluate_estimator(
                     "error": str(exc),
                     "flops_used": 0,
                     "budget_exhausted": False,
+                    "time_exhausted": False,
+                    "untracked_time_exhausted": False,
+                    "wall_time_s": 0.0,
+                    "tracked_time_s": 0.0,
+                    "untracked_time_s": 0.0,
                 }
             )
             primary_scores.append(float("inf"))
@@ -134,6 +155,21 @@ def evaluate_estimator(
             if on_mlp_scored is not None:
                 on_mlp_scored(i + 1)
             continue
+
+        # Read timing after BudgetContext.__exit__ so wall_time_s is populated
+        wall_time_s = budget_ctx.wall_time_s or 0.0
+        tracked_time_s = budget_ctx.total_tracked_time
+        untracked_time_s = budget_ctx.untracked_time or 0.0
+
+        # Post-predict check: untracked time limit
+        if (
+            not budget_exhausted
+            and not time_exhausted
+            and spec.untracked_time_limit_s is not None
+            and untracked_time_s > spec.untracked_time_limit_s
+        ):
+            predictions = we.zeros((spec.depth, spec.width))
+            untracked_time_exhausted = True
 
         # Convert predictions for MSE computation
         pred_np = we.asarray(predictions, dtype=we.float32)
@@ -157,6 +193,11 @@ def evaluate_estimator(
                 "all_layer_mse": all_mse,
                 "flops_used": flops_used,
                 "budget_exhausted": budget_exhausted,
+                "time_exhausted": time_exhausted,
+                "untracked_time_exhausted": untracked_time_exhausted,
+                "wall_time_s": wall_time_s,
+                "tracked_time_s": tracked_time_s,
+                "untracked_time_s": untracked_time_s,
             }
         )
 
