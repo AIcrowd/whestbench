@@ -105,8 +105,9 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
     observed: dict = {}
 
     @contextmanager
-    def fake_progress(total: int, n_mlps: int):
+    def fake_progress(total: int, n_mlps: int, gen_label: str = "Generating MLPs"):
         observed["total"] = total
+        observed["gen_label"] = gen_label
         observed["progress_opened"] = True
         yield lambda _event: None
         observed["progress_closed"] = True

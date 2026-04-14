@@ -268,7 +268,13 @@ def _print_human_header_and_hints() -> None:
 
 
 class _LiveTopPaneSession:
-    def __init__(self, pre_report: Dict[str, Any], total: int, n_mlps: int) -> None:
+    def __init__(
+        self,
+        pre_report: Dict[str, Any],
+        total: int,
+        n_mlps: int,
+        gen_label: str = "Generating MLPs",
+    ) -> None:
         self._pre_report = pre_report
         self._progress = Progress(
             SpinnerColumn(),
@@ -277,7 +283,7 @@ class _LiveTopPaneSession:
             MofNCompleteColumn(),
             TimeElapsedColumn(),
         )
-        self._gen_task_id = self._progress.add_task("Generating MLPs", total=n_mlps)
+        self._gen_task_id = self._progress.add_task(gen_label, total=n_mlps)
         self._scoring_task_id = self._progress.add_task("Scoring", total=total)
         self._live = Live(
             self._renderable(),
@@ -321,9 +327,12 @@ class _LiveTopPaneSession:
 
 @contextmanager
 def _live_top_pane_session(
-    pre_report: Dict[str, Any], total: int, n_mlps: int
+    pre_report: Dict[str, Any],
+    total: int,
+    n_mlps: int,
+    gen_label: str = "Generating MLPs",
 ) -> Iterator[_LiveTopPaneSession]:
-    session = _LiveTopPaneSession(pre_report, total, n_mlps)
+    session = _LiveTopPaneSession(pre_report, total, n_mlps, gen_label=gen_label)
     session.start()
     try:
         yield session
@@ -332,13 +341,15 @@ def _live_top_pane_session(
 
 
 @contextmanager
-def _progress_callback(total: int, n_mlps: int) -> Iterator[ProgressCallback]:
+def _progress_callback(
+    total: int, n_mlps: int, gen_label: str = "Generating MLPs"
+) -> Iterator[ProgressCallback]:
     if rich_tqdm is None:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", TqdmExperimentalWarning)
             gen_bar = classic_tqdm(
                 total=n_mlps,
-                desc="Generating MLPs",
+                desc=gen_label,
                 unit="mlp",
                 file=sys.stdout,
                 position=0,
@@ -382,7 +393,7 @@ def _progress_callback(total: int, n_mlps: int) -> Iterator[ProgressCallback]:
         MofNCompleteColumn(),
         TimeElapsedColumn(),
     )
-    gen_task_id = progress.add_task("Generating MLPs", total=n_mlps)
+    gen_task_id = progress.add_task(gen_label, total=n_mlps)
     scoring_task_id = progress.add_task("Scoring", total=total)
     live = Live(
         Panel(progress, title="[bold bright_yellow]Progress[/]", border_style="bright_yellow"),
@@ -961,6 +972,7 @@ def _main_participant(argv: "list[str]") -> int:
                     "   [cyan]whest run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]my_dataset.npz[/]\n"
                 )
                 _tip_console = Console(highlight=False)
+                gen_label = "Loading dataset" if dataset_path is not None else "Generating MLPs"
                 if rich_tqdm is None:
                     _print_human_startup(
                         pre_report,
@@ -968,13 +980,17 @@ def _main_participant(argv: "list[str]") -> int:
                         estimator_path=args.estimator,
                     )
 
-                    with _progress_callback(total_units, n_mlps) as progress_cb:
+                    with _progress_callback(
+                        total_units, n_mlps, gen_label=gen_label
+                    ) as progress_cb:
                         score_kwargs["progress"] = progress_cb
                         report = _run_estimator_with_runner(runner, **score_kwargs)
                 else:
                     _print_human_header_and_hints()
 
-                    with _live_top_pane_session(pre_report, total_units, n_mlps) as live_session:
+                    with _live_top_pane_session(
+                        pre_report, total_units, n_mlps, gen_label=gen_label
+                    ) as live_session:
                         score_kwargs["progress"] = live_session.on_progress
                         report = _run_estimator_with_runner(runner, **score_kwargs)
                         run_meta = report.get("run_meta")

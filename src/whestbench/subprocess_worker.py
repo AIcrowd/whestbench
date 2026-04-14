@@ -39,7 +39,9 @@ def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
         return
 
     try:
-        predictions = estimator.predict(mlp, budget)
+        with we.BudgetContext(flop_budget=budget) as ctx:
+            predictions = estimator.predict(mlp, budget)
+            flops_used = ctx.flops_used
         arr = we.asarray(predictions, dtype=we.float32)
         if arr.shape != (mlp.depth, mlp.width):
             _write_response(
@@ -52,7 +54,9 @@ def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
         if not we.all(we.isfinite(arr)):
             _write_response({"status": "error", "error_message": "Non-finite predictions."})
             return
-        _write_response({"status": "ok", "predictions": arr.tolist()})
+        _write_response({"status": "ok", "predictions": arr.tolist(), "flops_used": flops_used})
+    except we.BudgetExhaustedError:
+        _write_response({"status": "budget_exhausted", "error_message": "FLOP budget exceeded."})
     except Exception as exc:
         _write_response({"status": "error", "error_message": str(exc)})
 
