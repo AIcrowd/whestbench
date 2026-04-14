@@ -545,7 +545,7 @@ wheels = [
 [[package]]
 name = "whest"
 version = "0.2.0"
-source = { git = "https://github.com/AIcrowd/whest.git#a970bf81c22be1bfbda3ca0f672624587b9bac1f" }
+source = { git = "https://github.com/AIcrowd/whest.git#b5834743c0405dcf4326ec31552f7402878cb176" }
 dependencies = [
     { name = "numpy" },
 ]
@@ -553,7 +553,7 @@ dependencies = [
 [[package]]
 name = "whest-server"
 version = "0.1.0"
-source = { git = "https://github.com/AIcrowd/whest.git?subdirectory=whest-server#a970bf81c22be1bfbda3ca0f672624587b9bac1f" }
+source = { git = "https://github.com/AIcrowd/whest.git?subdirectory=whest-server#b5834743c0405dcf4326ec31552f7402878cb176" }
 dependencies = [
     { name = "msgpack" },
     { name = "numpy" },
