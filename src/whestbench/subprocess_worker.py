@@ -30,7 +30,9 @@ def _write_response(payload: dict) -> None:
     sys.stdout.flush()
 
 
-def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
+def _handle_predict(
+    estimator: BaseEstimator, request: dict, wall_time_limit_s: float | None = None
+) -> None:
     try:
         mlp = _payload_to_mlp(request["mlp"])
         budget = int(request["budget"])
@@ -38,8 +40,9 @@ def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
         _write_response({"status": "error", "error_message": str(exc)})
         return
 
+    budget_ctx = we.BudgetContext(flop_budget=budget, wall_time_limit_s=wall_time_limit_s)
     try:
-        with we.BudgetContext(flop_budget=budget) as ctx:
+        with budget_ctx as ctx:
             predictions = estimator.predict(mlp, budget)
             flops_used = ctx.flops_used
         arr = we.asarray(predictions, dtype=we.float32)
@@ -54,15 +57,29 @@ def _handle_predict(estimator: BaseEstimator, request: dict) -> None:
         if not we.all(we.isfinite(arr)):
             _write_response({"status": "error", "error_message": "Non-finite predictions."})
             return
-        _write_response({"status": "ok", "predictions": arr.tolist(), "flops_used": flops_used})
+        _write_response(
+            {
+                "status": "ok",
+                "predictions": arr.tolist(),
+                "flops_used": flops_used,
+                "wall_time_s": budget_ctx.wall_time_s or 0.0,
+                "tracked_time_s": budget_ctx.total_tracked_time,
+                "untracked_time_s": budget_ctx.untracked_time or 0.0,
+            }
+        )
     except we.BudgetExhaustedError:
         _write_response({"status": "budget_exhausted", "error_message": "FLOP budget exceeded."})
+    except we.TimeExhaustedError:
+        _write_response(
+            {"status": "time_exhausted", "error_message": "Wall-clock time limit exceeded."}
+        )
     except Exception as exc:
         _write_response({"status": "error", "error_message": str(exc)})
 
 
 def main() -> int:
     estimator: Optional[BaseEstimator] = None
+    wall_time_limit_s: Optional[float] = None
     for line in sys.stdin:
         raw = line.strip()
         if not raw:
@@ -78,6 +95,7 @@ def main() -> int:
             try:
                 entrypoint = request["entrypoint"]
                 ctx_payload = request["context"]
+                wall_time_limit_s = request.get("wall_time_limit_s")
                 estimator, _ = load_estimator_from_path(
                     Path(entrypoint["file_path"]),
                     class_name=entrypoint.get("class_name"),
@@ -101,7 +119,7 @@ def main() -> int:
             if estimator is None:
                 _write_response({"status": "error", "error_message": "Estimator not initialized."})
                 continue
-            _handle_predict(estimator, request)
+            _handle_predict(estimator, request, wall_time_limit_s=wall_time_limit_s)
         elif command == "close":
             if estimator is not None:
                 estimator.teardown()

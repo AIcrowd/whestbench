@@ -156,6 +156,8 @@ def run_default_report(
             "depth": spec.depth,
             "n_mlps": spec.n_mlps,
             "flop_budget": spec.flop_budget,
+            "wall_time_limit_s": spec.wall_time_limit_s,
+            "untracked_time_limit_s": spec.untracked_time_limit_s,
         },
     }
 
@@ -200,6 +202,8 @@ def _render_plain_text_report(report: Dict[str, Any]) -> str:
         f"Width: {run_config.get('width', 'n/a')}",
         f"Depth: {run_config.get('depth', 'n/a')}",
         f"FLOP Budget: {run_config.get('flop_budget', 'n/a')}",
+        f"Wall Time Limit: {run_config.get('wall_time_limit_s') or 'unlimited'}",
+        f"Untracked Time Limit: {run_config.get('untracked_time_limit_s') or 'unlimited'}",
     ]
     return "\n".join(lines) + "\n"
 
@@ -240,6 +244,8 @@ def _pre_run_report(
             "width": int(contest_spec.width),
             "depth": int(contest_spec.depth),
             "flop_budget": int(contest_spec.flop_budget),
+            "wall_time_limit_s": contest_spec.wall_time_limit_s,
+            "untracked_time_limit_s": contest_spec.untracked_time_limit_s,
             "profile_enabled": bool(profile),
             "estimator_class": estimator_class,
             "estimator_path": estimator_path,
@@ -542,6 +548,20 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument("--debug", action="store_true")
     run_parser.add_argument(
+        "--wall-time-limit",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help="Wall-clock time limit per predict call (default: unlimited).",
+    )
+    run_parser.add_argument(
+        "--untracked-time-limit",
+        type=float,
+        default=None,
+        metavar="SECONDS",
+        help="Time limit for non-whest operations per predict call (default: unlimited).",
+    )
+    run_parser.add_argument(
         "--max-threads",
         type=int,
         default=None,
@@ -684,6 +704,8 @@ def _run_estimator_with_runner(
         predict_timeout_s=spec.predict_timeout_s,
         memory_limit_mb=spec.memory_limit_mb,
         flop_budget=spec.flop_budget,
+        wall_time_limit_s=spec.wall_time_limit_s,
+        untracked_time_limit_s=spec.untracked_time_limit_s,
     )
 
     t0 = _time.time()
@@ -718,6 +740,8 @@ def _run_estimator_with_runner(
             "width": spec.width,
             "depth": spec.depth,
             "flop_budget": spec.flop_budget,
+            "wall_time_limit_s": spec.wall_time_limit_s,
+            "untracked_time_limit_s": spec.untracked_time_limit_s,
         },
     }
 
@@ -910,6 +934,8 @@ def _main_participant(argv: "list[str]") -> int:
                 n_mlps=n_mlps,
                 flop_budget=flop_budget,
                 ground_truth_samples=gt_samples,
+                wall_time_limit_s=getattr(args, "wall_time_limit", None),
+                untracked_time_limit_s=getattr(args, "untracked_time_limit", None),
             )
             entrypoint = EstimatorEntrypoint(
                 file_path=Path(args.estimator).resolve(),
@@ -930,6 +956,8 @@ def _main_participant(argv: "list[str]") -> int:
                     n_mlps=bundle.n_mlps,
                     flop_budget=ds_meta.get("flop_budget", contest_spec.flop_budget),
                     ground_truth_samples=contest_spec.ground_truth_samples,
+                    wall_time_limit_s=getattr(args, "wall_time_limit", None),
+                    untracked_time_limit_s=getattr(args, "untracked_time_limit", None),
                 )
                 n_mlps = bundle.n_mlps
 

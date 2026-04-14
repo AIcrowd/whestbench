@@ -44,6 +44,8 @@ class ResourceLimits:
     memory_limit_mb: int
     flop_budget: int
     cpu_time_limit_s: Optional[float] = None
+    wall_time_limit_s: Optional[float] = None
+    untracked_time_limit_s: Optional[float] = None
 
     def __post_init__(self) -> None:
         if self.setup_timeout_s <= 0:
@@ -56,6 +58,10 @@ class ResourceLimits:
             raise ValueError("flop_budget must be positive.")
         if self.cpu_time_limit_s is not None and self.cpu_time_limit_s <= 0:
             raise ValueError("cpu_time_limit_s must be positive when provided.")
+        if self.wall_time_limit_s is not None and self.wall_time_limit_s <= 0:
+            raise ValueError("wall_time_limit_s must be positive when provided.")
+        if self.untracked_time_limit_s is not None and self.untracked_time_limit_s <= 0:
+            raise ValueError("untracked_time_limit_s must be positive when provided.")
 
 
 @dataclass(frozen=True)
@@ -212,6 +218,7 @@ class SubprocessRunner:
                     "api_version": context.api_version,
                     "scratch_dir": context.scratch_dir,
                 },
+                "wall_time_limit_s": limits.wall_time_limit_s,
             }
         )
         try:
@@ -269,6 +276,8 @@ class SubprocessRunner:
 
         if response.get("status") == "budget_exhausted":
             raise we.BudgetExhaustedError("subprocess_predict", flop_cost=0, flops_remaining=0)
+        if response.get("status") == "time_exhausted":
+            raise we.TimeExhaustedError("subprocess_predict", elapsed_s=0.0, limit_s=0.0)
         if response.get("status") == "error":
             raise RunnerError(
                 "predict",
