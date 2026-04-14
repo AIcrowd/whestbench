@@ -8,8 +8,8 @@ import socket
 import subprocess
 from typing import Any
 
-import whest as we
 import numpy as np
+import whest as we
 
 try:
     import psutil  # pyright: ignore[reportMissingModuleSource]

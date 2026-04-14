@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import whest as we
 import numpy as np  # needed for np.savez, np.load (file I/O)
+import whest as we
 
 from .domain import MLP
 from .generation import sample_mlp

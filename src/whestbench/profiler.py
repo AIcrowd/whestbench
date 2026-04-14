@@ -54,8 +54,8 @@ import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-import whest as we
 import numpy as np  # needed for np.__version__ in version reporting
+import whest as we
 
 from .domain import MLP
 from .generation import sample_mlp
@@ -866,8 +866,7 @@ def run_profile(
                 n_samples: int = 0,
             ) -> None:
                 desc = (
-                    f"[cyan]whest[/] {operation:<18} "
-                    f"w={width:<4} d={depth:<4} n={n_samples:>11,}"
+                    f"[cyan]whest[/] {operation:<18} w={width:<4} d={depth:<4} n={n_samples:>11,}"
                 )
                 progress_ctx.update(timing_task, advance=1, description=desc)
 
