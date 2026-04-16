@@ -7,6 +7,7 @@ from whestbench.scoring import (
     ContestSpec,
     evaluate_estimator,
     make_contest,
+    make_contest_from_bundle,
 )
 
 
@@ -463,3 +464,86 @@ def test_evaluate_estimator_preserves_partial_breakdown_on_budget_exhaustion() -
     assert (
         mlp_result["breakdowns"]["estimator"]["by_namespace"]["estimator.phase"]["flops_used"] > 0
     )
+
+
+# --- make_contest_from_bundle ---------------------------------------------
+
+
+def _build_bundle_from_contest(n_mlps: int = 4, width: int = 8, depth: int = 2):
+    """Use make_contest to create MLPs/targets, wrap them in a DatasetBundle."""
+    import numpy as np
+
+    from whestbench.dataset import DatasetBundle
+
+    spec = ContestSpec(
+        width=width, depth=depth, n_mlps=n_mlps, flop_budget=1_000_000, ground_truth_samples=100
+    )
+    data = make_contest(spec)
+    all_layer_means = np.stack([np.asarray(t) for t in data.all_layer_targets]).astype(np.float32)
+    final_means = np.stack([np.asarray(t) for t in data.final_targets]).astype(np.float32)
+    return DatasetBundle(
+        metadata={"width": width, "depth": depth, "n_mlps": n_mlps},
+        mlps=list(data.mlps),
+        all_layer_means=all_layer_means,
+        final_means=final_means,
+        avg_variances=list(data.avg_variances),
+    )
+
+
+def test_make_contest_from_bundle_returns_full_bundle() -> None:
+    import numpy as np
+
+    bundle = _build_bundle_from_contest(n_mlps=3)
+    spec = ContestSpec(width=8, depth=2, n_mlps=3, flop_budget=1_000_000, ground_truth_samples=100)
+    data = make_contest_from_bundle(spec, bundle, n_mlps=3)
+
+    assert len(data.mlps) == 3
+    assert len(data.all_layer_targets) == 3
+    assert len(data.final_targets) == 3
+    assert len(data.avg_variances) == 3
+    assert data.sampling_budget_breakdown is None
+    # MLP identity preserved: bundle MLPs are passed through, not regenerated.
+    for bundled, picked in zip(bundle.mlps, data.mlps):
+        assert picked is bundled
+    # Targets equal bundle contents element-wise.
+    for i in range(3):
+        assert np.allclose(np.asarray(data.all_layer_targets[i]), bundle.all_layer_means[i])
+        assert np.allclose(np.asarray(data.final_targets[i]), bundle.final_means[i])
+
+
+def test_make_contest_from_bundle_subsets_first_n() -> None:
+    import numpy as np
+
+    bundle = _build_bundle_from_contest(n_mlps=5)
+    spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
+    data = make_contest_from_bundle(spec, bundle, n_mlps=2)
+
+    assert len(data.mlps) == 2
+    # First two, not some other slice.
+    assert data.mlps[0] is bundle.mlps[0]
+    assert data.mlps[1] is bundle.mlps[1]
+    assert np.allclose(np.asarray(data.final_targets[0]), bundle.final_means[0])
+    assert np.allclose(np.asarray(data.final_targets[1]), bundle.final_means[1])
+
+
+def test_make_contest_from_bundle_rejects_oversize() -> None:
+    bundle = _build_bundle_from_contest(n_mlps=2)
+    spec = ContestSpec(width=8, depth=2, n_mlps=5, flop_budget=1_000_000, ground_truth_samples=100)
+    with pytest.raises(ValueError, match="exceeds bundle size"):
+        make_contest_from_bundle(spec, bundle, n_mlps=5)
+
+
+def test_make_contest_from_bundle_rejects_non_positive() -> None:
+    bundle = _build_bundle_from_contest(n_mlps=2)
+    # spec.validate() rejects n_mlps<=0 before we even get there, so build a
+    # valid spec and call with n_mlps=0 directly.
+    spec = ContestSpec(width=8, depth=2, n_mlps=1, flop_budget=1_000_000, ground_truth_samples=100)
+    with pytest.raises(ValueError, match="n_mlps must be positive"):
+        make_contest_from_bundle(spec, bundle, n_mlps=0)
+
+
+def test_make_contest_from_bundle_rejects_spec_mismatch() -> None:
+    bundle = _build_bundle_from_contest(n_mlps=3)
+    spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
+    with pytest.raises(ValueError, match="spec.n_mlps"):
+        make_contest_from_bundle(spec, bundle, n_mlps=3)

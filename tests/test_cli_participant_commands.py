@@ -253,6 +253,206 @@ def test_init_and_run_help_text_reference_examples_estimators_path() -> None:
     assert "examples/estimators" in help_text
 
 
+# --- `whest run --dataset` + `--n-mlps` integration --------------------------
+
+
+def _write_fake_dataset(path: Path, n_mlps: int, width: int = 4, depth: int = 2) -> None:
+    """Write a .npz file that `load_dataset` accepts."""
+    import numpy as np
+
+    rng = np.random.default_rng(0)
+    weights = rng.standard_normal((n_mlps, depth, width, width)).astype(np.float32)
+    all_layer_means = rng.standard_normal((n_mlps, depth, width)).astype(np.float32)
+    final_means = rng.standard_normal((n_mlps, width)).astype(np.float32)
+    avg_variances = np.ones(n_mlps, dtype=np.float64)
+    metadata = {
+        "schema_version": "2.0",
+        "created_at_utc": "2026-04-17T00:00:00+00:00",
+        "seed": 0,
+        "n_mlps": n_mlps,
+        "n_samples": 100,
+        "width": width,
+        "depth": depth,
+        "flop_budget": 1_000_000,
+        "hardware": {},
+    }
+    np.savez(
+        path,
+        metadata=np.array(json.dumps(metadata)),
+        weights=weights,
+        all_layer_means=all_layer_means,
+        final_means=final_means,
+        avg_variances=avg_variances,
+    )
+
+
+def _patch_run_command_happy_path(monkeypatch: pytest.MonkeyPatch, captured_kwargs: dict) -> None:
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "rich_tqdm", None, raising=False)
+    monkeypatch.setattr(cli, "_print_human_startup", lambda *_a, **_k: None, raising=False)
+    monkeypatch.setattr(cli, "_progress_callback", _noop_progress, raising=False)
+    monkeypatch.setattr(
+        cli,
+        "render_human_results",
+        lambda _report, *, show_diagnostic_plots=False: "human report\n",
+        raising=False,
+    )
+
+    def fake_run_estimator_with_runner(*_args: Any, **kwargs: Any) -> dict:
+        captured_kwargs.update(kwargs)
+        return _sample_report()
+
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run_estimator_with_runner)
+
+
+def test_run_with_dataset_uses_bundle_mlps_and_ground_truth(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ds_path = tmp_path / "ds.npz"
+    _write_fake_dataset(ds_path, n_mlps=4)
+
+    observed: dict = {}
+    _patch_run_command_happy_path(monkeypatch, observed)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--dataset",
+            str(ds_path),
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    # No --n-mlps passed: should fall back to the dataset's full count.
+    assert observed["n_mlps"] == 4
+    assert observed["contest_data"] is not None
+    # ContestData carries 4 MLPs, all from the bundle (no regeneration).
+    assert len(observed["contest_data"].mlps) == 4
+    # sampling_budget_breakdown is None — ground truth was precomputed.
+    assert observed["contest_data"].sampling_budget_breakdown is None
+
+
+def test_run_with_dataset_honors_smaller_n_mlps(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ds_path = tmp_path / "ds.npz"
+    _write_fake_dataset(ds_path, n_mlps=5)
+
+    observed: dict = {}
+    _patch_run_command_happy_path(monkeypatch, observed)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--dataset",
+            str(ds_path),
+            "--n-mlps",
+            "2",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    assert "Warning" not in captured.err
+    assert observed["n_mlps"] == 2
+    assert len(observed["contest_data"].mlps) == 2
+    assert observed["contest_data"].spec.n_mlps == 2
+
+
+def test_run_with_dataset_clamps_and_warns_when_n_mlps_exceeds_dataset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ds_path = tmp_path / "ds.npz"
+    _write_fake_dataset(ds_path, n_mlps=3)
+
+    observed: dict = {}
+    _patch_run_command_happy_path(monkeypatch, observed)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--dataset",
+            str(ds_path),
+            "--n-mlps",
+            "10",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    assert "exceeds dataset size" in captured.err
+    assert "using 3" in captured.err
+    assert observed["n_mlps"] == 3
+    assert len(observed["contest_data"].mlps) == 3
+
+
+def test_run_without_dataset_defaults_n_mlps_to_ten(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    observed: dict = {}
+    _patch_run_command_happy_path(monkeypatch, observed)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    assert observed["n_mlps"] == 10
+    # Without a dataset, no contest_data is passed — runner builds it.
+    assert observed["contest_data"] is None
+    assert observed["contest_spec"].n_mlps == 10
+
+
+def test_run_without_dataset_honors_explicit_n_mlps(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    observed: dict = {}
+    _patch_run_command_happy_path(monkeypatch, observed)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--n-mlps",
+            "7",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    assert observed["n_mlps"] == 7
+    assert observed["contest_data"] is None
+    assert observed["contest_spec"].n_mlps == 7
+
+
 def test_main_uses_sys_argv_when_argv_is_none(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
