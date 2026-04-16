@@ -75,17 +75,13 @@ def _sample_report(
                     "flops_used": 50,
                     "calls": 2,
                     "tracked_time_s": 0.012,
-                    "operations": {
-                        "add": {"flop_cost": 50, "calls": 2, "duration": 0.012}
-                    },
+                    "operations": {"add": {"flop_cost": 50, "calls": 2, "duration": 0.012}},
                 },
                 "sampling.draw_weights": {
                     "flops_used": 30,
                     "calls": 2,
                     "tracked_time_s": 0.008,
-                    "operations": {
-                        "mul": {"flop_cost": 30, "calls": 2, "duration": 0.008}
-                    },
+                    "operations": {"mul": {"flop_cost": 30, "calls": 2, "duration": 0.008}},
                 },
             },
         }
@@ -102,17 +98,13 @@ def _sample_report(
                     "flops_used": 200,
                     "calls": 4,
                     "tracked_time_s": 0.02,
-                    "operations": {
-                        "add": {"flop_cost": 200, "calls": 4, "duration": 0.02}
-                    },
+                    "operations": {"add": {"flop_cost": 200, "calls": 4, "duration": 0.02}},
                 },
                 "estimator.estimator-client": {
                     "flops_used": 100,
                     "calls": 2,
                     "tracked_time_s": 0.01,
-                    "operations": {
-                        "mul": {"flop_cost": 100, "calls": 2, "duration": 0.01}
-                    },
+                    "operations": {"mul": {"flop_cost": 100, "calls": 2, "duration": 0.01}},
                 },
             },
         }

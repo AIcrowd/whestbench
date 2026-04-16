@@ -94,9 +94,7 @@ def test_subprocess_runner_stores_budget_breakdown(small_mlp, tmp_path) -> None:
     runner.close()
 
 
-def test_subprocess_runner_stores_budget_breakdown_for_unlabeled_ops(
-    small_mlp, tmp_path
-) -> None:
+def test_subprocess_runner_stores_budget_breakdown_for_unlabeled_ops(small_mlp, tmp_path) -> None:
     est_file = tmp_path / "est.py"
     est_file.write_text(
         "import whest as we\n"
