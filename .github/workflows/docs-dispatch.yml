@@ -1,0 +1,31 @@
+name: Docs Dispatch
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'docs-kit/**'
+      - 'docs/unified-docs-process.md'
+      - 'AGENTS.md'
+      - 'README.md'
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify whest-docs
+        env:
+          GH_TOKEN: ${{ secrets.AICROWD_DOCS_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/AIcrowd/whest-docs/dispatches \
+            --method POST \
+            --input - <<'EOF'
+          {
+            "event_type": "source-updated",
+            "client_payload": {
+              "source_repo": "AIcrowd/whestbench",
+              "source_ref": "${{ github.sha }}"
+            }
+          }
+          EOF
