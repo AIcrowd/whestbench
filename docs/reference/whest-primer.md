@@ -19,6 +19,18 @@ with we.BudgetContext(flop_budget=1_000_000) as ctx:
 
 You don't need to create `BudgetContext` yourself — the framework does it before calling your `predict()` method. The `budget` argument tells you how many FLOPs you have.
 
+`BudgetContext` also supports `wall_time_limit_s` when you want a cooperative
+wall-clock limit in addition to the FLOP cap:
+
+```python
+with we.BudgetContext(flop_budget=1_000_000, wall_time_limit_s=2.0) as ctx:
+    ...
+```
+
+The timer starts when the context is entered and is checked before and after
+each counted whest/NumPy call. If it is exceeded, whest raises
+`TimeExhaustedError`.
+
 ## Operation FLOP Costs
 
 | Category | Operations | Cost |
@@ -58,16 +70,36 @@ Random generation itself is free. FLOPs are counted when you operate on the arra
 
 ## Budget Inspection
 
-Use `we.budget_summary()` inside a `BudgetContext` to see current usage:
+Use `budget.summary()` for the current explicit context and
+`we.budget_summary()` for the accumulated session/global view:
 
 ```python
 with we.BudgetContext(flop_budget=10_000_000) as ctx:
     # ... your computations ...
-    print(we.budget_summary())  # shows FLOPs used so far
+    print(ctx.summary())        # current context only
+    print(we.budget_summary())  # process/session-wide summary
     print(ctx.flops_used)       # integer FLOP count
 ```
 
-This is useful during development to understand where your budget goes.
+Both summaries can also include timing data:
+
+- `wall_time_s`: total elapsed time in the context
+- `tracked_time_s`: time spent inside counted whest calls
+- `untracked_time_s`: everything else in the context
+
+This is useful during development to understand where both FLOPs and time go.
+
+## WhestBench-specific limits
+
+Whest itself only knows about `wall_time_limit_s` on `BudgetContext`.
+WhestBench adds two run-level knobs on top:
+
+- `--wall-time-limit`: passed through to the estimator's `BudgetContext`
+- `--untracked-time-limit`: enforced by WhestBench after `predict()` returns,
+  using the reported `untracked_time_s`
+
+So if you see `untracked_time_exhausted` in a report, that came from
+WhestBench scoring logic, not from a `BudgetContext` parameter.
 
 ## Common Gotchas
 
