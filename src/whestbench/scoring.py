@@ -300,9 +300,11 @@ def evaluate_estimator(
             wall_time_limit_s=spec.wall_time_limit_s,
         )
         try:
-            with budget_ctx as budget:
+            with budget_ctx:
                 raw_predictions = estimator.predict(mlp, spec.flop_budget)
-            stats = _predict_stats_to_dict(last_predict_stats() if callable(last_predict_stats) else None)
+            stats = _predict_stats_to_dict(
+                last_predict_stats() if callable(last_predict_stats) else None
+            )
             if stats is not None:
                 flops_used = int(stats.get("flops_used", budget_ctx.flops_used))
                 raw_breakdown = stats.get("budget_breakdown")
@@ -311,9 +313,7 @@ def evaluate_estimator(
             if raw_breakdown is None:
                 raw_breakdown = budget_ctx.summary_dict(by_namespace=True)
             normalized_breakdown = _normalize_estimator_budget_breakdown(raw_breakdown)
-            predictions = validate_predictions(
-                raw_predictions, depth=spec.depth, width=spec.width
-            )
+            predictions = validate_predictions(raw_predictions, depth=spec.depth, width=spec.width)
             if normalized_breakdown is not None:
                 normalized_breakdowns.append(normalized_breakdown)
         except we.BudgetExhaustedError:

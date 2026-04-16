@@ -332,9 +332,7 @@ def test_evaluate_estimator_prefers_runner_metadata_when_available() -> None:
                             "flops_used": 123,
                             "calls": 1,
                             "tracked_time_s": 0.3,
-                            "operations": {
-                                "add": {"flop_cost": 123, "calls": 1, "duration": 0.3}
-                            },
+                            "operations": {"add": {"flop_cost": 123, "calls": 1, "duration": 0.3}},
                         }
                     },
                 },
@@ -353,7 +351,10 @@ def test_evaluate_estimator_prefers_runner_metadata_when_available() -> None:
     result = evaluate_estimator(MetadataEstimator(), data)
     mlp_result = result["per_mlp"][0]
     assert mlp_result["flops_used"] == 123
-    assert mlp_result["breakdowns"]["estimator"]["by_namespace"]["estimator.phase"]["flops_used"] == 123
+    assert (
+        mlp_result["breakdowns"]["estimator"]["by_namespace"]["estimator.phase"]["flops_used"]
+        == 123
+    )
 
 
 def test_evaluate_estimator_synthesizes_estimator_client_for_empty_namespace_breakdown() -> None:
@@ -416,17 +417,13 @@ def test_evaluate_estimator_merges_colliding_normalized_namespaces() -> None:
                             "flops_used": 10,
                             "calls": 1,
                             "tracked_time_s": 0.01,
-                            "operations": {
-                                "add": {"flop_cost": 10, "calls": 1, "duration": 0.01}
-                            },
+                            "operations": {"add": {"flop_cost": 10, "calls": 1, "duration": 0.01}},
                         },
                         "estimator-client": {
                             "flops_used": 20,
                             "calls": 2,
                             "tracked_time_s": 0.02,
-                            "operations": {
-                                "mul": {"flop_cost": 20, "calls": 2, "duration": 0.02}
-                            },
+                            "operations": {"mul": {"flop_cost": 20, "calls": 2, "duration": 0.02}},
                         },
                     },
                 },
@@ -463,4 +460,6 @@ def test_evaluate_estimator_preserves_partial_breakdown_on_budget_exhaustion() -
     result = evaluate_estimator(ExhaustingEstimator(), data)
     mlp_result = result["per_mlp"][0]
     assert mlp_result["budget_exhausted"] is True
-    assert mlp_result["breakdowns"]["estimator"]["by_namespace"]["estimator.phase"]["flops_used"] > 0
+    assert (
+        mlp_result["breakdowns"]["estimator"]["by_namespace"]["estimator.phase"]["flops_used"] > 0
+    )
