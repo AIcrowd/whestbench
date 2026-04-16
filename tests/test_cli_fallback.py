@@ -22,6 +22,42 @@ def _sample_report() -> dict:
             "primary_score": 0.42,
             "secondary_score": 0.55,
             "per_mlp": [],
+            "breakdowns": {
+                "sampling": {
+                    "flop_budget": 100,
+                    "flops_used": 60,
+                    "flops_remaining": 40,
+                    "tracked_time_s": 0.015,
+                    "untracked_time_s": 0.005,
+                    "by_namespace": {
+                        "sampling.sample_layer_statistics": {
+                            "flops_used": 40,
+                            "tracked_time_s": 0.01,
+                        },
+                        "sampling.draw_weights": {
+                            "flops_used": 20,
+                            "tracked_time_s": 0.005,
+                        },
+                    },
+                },
+                "estimator": {
+                    "flop_budget": 100,
+                    "flops_used": 30,
+                    "flops_remaining": 70,
+                    "tracked_time_s": 0.01,
+                    "untracked_time_s": 0.002,
+                    "by_namespace": {
+                        "estimator.phase": {
+                            "flops_used": 18,
+                            "tracked_time_s": 0.006,
+                        },
+                        "estimator.estimator-client": {
+                            "flops_used": 12,
+                            "tracked_time_s": 0.004,
+                        },
+                    },
+                },
+            },
         },
     }
 
@@ -91,6 +127,23 @@ def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
     assert exit_code == 0
     assert "Rich dashboard unavailable (render failed)" in captured.err
     assert "WhestBench Report (Plain Text)" in captured.out
+
+
+def test_render_plain_text_report_includes_breakdown_sections_and_summary() -> None:
+    rendered = cli._render_plain_text_report(_sample_report())
+
+    assert "Sampling Budget Breakdown:" in rendered
+    assert "Estimator Budget Breakdown:" in rendered
+    assert rendered.index("Sampling Budget Breakdown:") < rendered.index(
+        "Estimator Budget Breakdown:"
+    )
+    assert "Total FLOPs: 60" in rendered
+    assert "Tracked Time: 0.015000s" in rendered
+    assert "Untracked Time: 0.005000s" in rendered
+    assert "sampling.sample_layer_statistics" in rendered
+    assert "sampling.draw_weights" in rendered
+    assert "estimator.phase" in rendered
+    assert "estimator.estimator-client" in rendered
 
 
 def test_error_code_mapping_for_validation_messages() -> None:

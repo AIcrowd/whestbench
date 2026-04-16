@@ -53,13 +53,7 @@ from .runner import (
     RunnerError,
     SubprocessRunner,
 )
-from .scoring import (
-    ContestData,
-    ContestSpec,
-    evaluate_estimator,
-    make_contest,
-    validate_predictions,
-)
+from .scoring import ContestSpec, evaluate_estimator, make_contest, validate_predictions
 from .sdk import BaseEstimator, SetupContext
 
 _DEFAULT_ESTIMATOR = CombinedEstimator()
@@ -130,9 +124,11 @@ def run_default_report(
 
     spec = _smoke_test_contest_spec()
     if progress is not None:
-        data = _make_contest_with_progress(
+        data = make_contest(
             spec,
-            lambda i: progress({"phase": "ground_truth", "completed": i, "total": spec.n_mlps}),
+            on_mlp_done=lambda i: progress(
+                {"phase": "ground_truth", "completed": i, "total": spec.n_mlps}
+            ),
         )
     else:
         data = make_contest(spec)
@@ -162,32 +158,6 @@ def run_default_report(
     }
 
 
-def _make_contest_with_progress(
-    spec: ContestSpec, on_mlp_done: Callable[[int], None]
-) -> "ContestData":
-    """Like ``make_contest`` but fires *on_mlp_done(i)* after each MLP."""
-    from .generation import sample_mlp
-    from .simulation import sample_layer_statistics
-
-    mlps, all_layer_targets, final_targets, avg_variances = [], [], [], []
-    for i in range(spec.n_mlps):
-        mlp = sample_mlp(spec.width, spec.depth)
-        with we.BudgetContext(flop_budget=int(1e15)):
-            all_means, final_mean, avg_var = sample_layer_statistics(mlp, spec.ground_truth_samples)
-        mlps.append(mlp)
-        all_layer_targets.append(we.asarray(all_means, dtype=we.float32))
-        final_targets.append(we.asarray(final_mean, dtype=we.float32))
-        avg_variances.append(avg_var)
-        on_mlp_done(i + 1)
-    return ContestData(
-        spec=spec,
-        mlps=mlps,
-        all_layer_targets=all_layer_targets,
-        final_targets=final_targets,
-        avg_variances=avg_variances,
-    )
-
-
 def _render_plain_text_report(report: Dict[str, Any]) -> str:
     """Render a minimal plain-text summary when Rich rendering is unavailable."""
     results = report.get("results", {})
@@ -205,6 +175,68 @@ def _render_plain_text_report(report: Dict[str, Any]) -> str:
         f"Wall Time Limit: {run_config.get('wall_time_limit_s') or 'unlimited'}",
         f"Untracked Time Limit: {run_config.get('untracked_time_limit_s') or 'unlimited'}",
     ]
+
+    def _as_float(value: Any) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    n_mlps = int(run_config.get("n_mlps", 0) or 0)
+    if n_mlps <= 0:
+        n_mlps = 1
+
+    breakdowns = results.get("breakdowns")
+    if isinstance(breakdowns, dict):
+        for breakdown_key, title in (
+            ("sampling", "Sampling Budget Breakdown"),
+            ("estimator", "Estimator Budget Breakdown"),
+        ):
+            breakdown = breakdowns.get(breakdown_key)
+            if not isinstance(breakdown, dict):
+                continue
+            by_namespace = breakdown.get("by_namespace")
+            if not isinstance(by_namespace, dict):
+                by_namespace = {}
+
+            total_flops = _as_float(breakdown.get("flops_used", 0.0))
+            if total_flops <= 0.0:
+                total_flops = sum(
+                    _as_float(bucket.get("flops_used", 0.0))
+                    for bucket in by_namespace.values()
+                    if isinstance(bucket, dict)
+                )
+
+            lines.extend(
+                [
+                    f"{title}:",
+                    f"  Total FLOPs: {int(total_flops):,}",
+                    f"  Tracked Time: {_as_float(breakdown.get('tracked_time_s', 0.0)):.6f}s",
+                    f"  Untracked Time: {_as_float(breakdown.get('untracked_time_s', 0.0)):.6f}s",
+                ]
+            )
+
+            for namespace, bucket in sorted(
+                (
+                    (namespace, bucket)
+                    for namespace, bucket in by_namespace.items()
+                    if isinstance(bucket, dict)
+                ),
+                key=lambda item: _as_float(item[1].get("flops_used", 0.0)),
+                reverse=True,
+            ):
+                namespace_label = (
+                    "(unlabeled)" if namespace in {None, "", "null", "None"} else str(namespace)
+                )
+                flops_used = _as_float(bucket.get("flops_used", 0.0))
+                percent = (flops_used / total_flops * 100.0) if total_flops > 0 else 0.0
+                mean_flops = flops_used / n_mlps if n_mlps > 0 else 0.0
+                tracked_time_s = _as_float(bucket.get("tracked_time_s", 0.0))
+                lines.append(
+                    "  "
+                    f"{namespace_label}: {int(flops_used):,} FLOPs ({percent:.1f}%), "
+                    f"mean {mean_flops:,.1f}/MLP, tracked {tracked_time_s:.6f}s"
+                )
     return "\n".join(lines) + "\n"
 
 
@@ -666,6 +698,23 @@ class _RunnerEstimator(BaseEstimator):
     def predict(self, mlp: "Any", budget: int) -> we.ndarray:
         return self._runner.predict(mlp, budget)
 
+    def last_predict_stats(self) -> Optional[Dict[str, Any]]:
+        getter = getattr(self._runner, "last_predict_stats", None)
+        if not callable(getter):
+            return None
+        stats = getter()
+        if stats is None:
+            return None
+        if isinstance(stats, dict):
+            return stats
+        return {
+            "flops_used": getattr(stats, "flops_used", None),
+            "wall_time_s": getattr(stats, "wall_time_s", None),
+            "tracked_time_s": getattr(stats, "tracked_time_s", None),
+            "untracked_time_s": getattr(stats, "untracked_time_s", None),
+            "budget_breakdown": getattr(stats, "budget_breakdown", None),
+        }
+
 
 def _run_estimator_with_runner(
     runner: "Any",
@@ -686,9 +735,11 @@ def _run_estimator_with_runner(
 
     spec = contest_spec
     if progress is not None:
-        data = _make_contest_with_progress(
+        data = make_contest(
             spec,
-            lambda i: progress({"phase": "generating", "completed": i, "total": spec.n_mlps}),
+            on_mlp_done=lambda i: progress(
+                {"phase": "generating", "completed": i, "total": spec.n_mlps}
+            ),
         )
     else:
         data = make_contest(spec)

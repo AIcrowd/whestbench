@@ -23,6 +23,7 @@ Inside `results`:
 |---|---|
 | `primary_score` | Leaderboard metric — final-layer MSE averaged across MLPs. Lower is better. |
 | `secondary_score` | All-layer MSE averaged across MLPs. Lower is better. |
+| `breakdowns` | Aggregate FLOP/time breakdowns keyed by section name. Includes `sampling` and `estimator`. |
 | `per_mlp` | Array of per-MLP detail records (see below) |
 
 ### Per-MLP fields
@@ -36,12 +37,29 @@ Each entry in `per_mlp`:
 | `budget_exhausted` | `bool` | Whether the estimator exceeded the FLOP budget (predictions zeroed if true) |
 | `final_mse` | `float` | MSE of your final-layer predictions vs ground truth |
 | `all_layer_mse` | `float` | MSE of your all-layer predictions vs ground truth |
+| `breakdowns` | `dict \| null` | Per-MLP breakdown container. Currently includes estimator-only data under `estimator`. Sampling is aggregate-only. |
 
 If the estimator raised an error, the entry also includes:
 
 | Field | Type | Description |
 |---|---|---|
 | `error` | `str` | Error message from the failed prediction |
+
+## Breakdown containers
+
+When namespace-aware whest data is available, WhestBench adds breakdown containers in
+these places:
+
+- `results.breakdowns.estimator` - aggregated estimator breakdown across all evaluated MLPs
+- `results.breakdowns.sampling` - aggregated sampling breakdown across all evaluated MLPs
+- `results.per_mlp[].breakdowns.estimator` - one normalized estimator breakdown per MLP
+
+Namespace normalization rules:
+
+- sampling work is namespaced under `sampling.*`
+- unlabeled estimator work becomes `estimator.estimator-client`
+- explicit estimator namespace `phase` becomes `estimator.phase`
+- nested estimator namespace `phase.subphase` becomes `estimator.phase.subphase`
 
 ## Interpretation guide
 

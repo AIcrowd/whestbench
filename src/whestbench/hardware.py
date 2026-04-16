@@ -6,10 +6,10 @@ import os
 import platform
 import socket
 import subprocess
+from importlib import metadata as importlib_metadata
 from typing import Any
 
 import numpy as np
-import whest as we
 
 try:
     import psutil  # pyright: ignore[reportMissingModuleSource]
@@ -85,6 +85,11 @@ def collect_hardware_fingerprint() -> dict[str, Any]:
     with OS-native fallbacks (sysctl on macOS, /proc on Linux) to
     ensure fields are populated on all major platforms.
     """
+    try:
+        whest_version = importlib_metadata.version("whest")
+    except importlib_metadata.PackageNotFoundError:
+        whest_version = "unknown"
+
     fp: dict[str, Any] = {
         "hostname": socket.gethostname(),
         "os": platform.system(),
@@ -98,7 +103,7 @@ def collect_hardware_fingerprint() -> dict[str, Any]:
         "ram_total_bytes": None,
         "ram_available_bytes": None,
         "numpy_version": np.__version__,
-        "whest_version": we.__version__,
+        "whest_version": whest_version,
     }
     if psutil is not None:
         try:

@@ -58,6 +58,7 @@ def render_human_results(report: "dict[str, Any]", *, show_diagnostic_plots: boo
     buffer = io.StringIO()
     console = _new_console(buffer)
     _render_score_row(console, report)
+    _render_breakdown_sections(console, report)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
 
@@ -80,6 +81,7 @@ def render_human_report(report: "dict[str, Any]", *, show_diagnostic_plots: bool
     console.print("[dim]Use --show-diagnostic-plots to include diagnostic plot panes.[/dim]")
     _render_top_row(console, report)
     _render_score_row(console, report)
+    _render_breakdown_sections(console, report)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
 
@@ -354,6 +356,100 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
         subtitle="lower MSE is better; primary score = mean final-layer MSE",
         subtitle_align="left",
         border_style="bright_cyan",
+    )
+
+
+def _render_breakdown_sections(console: Console, report: "dict[str, Any]") -> None:
+    for breakdown_key, title in (
+        ("sampling", "Sampling Budget Breakdown"),
+        ("estimator", "Estimator Budget Breakdown"),
+    ):
+        panel = _breakdown_panel(report, breakdown_key=breakdown_key, title=title)
+        if panel is not None:
+            console.print(panel)
+
+
+def _breakdown_panel(
+    report: "dict[str, Any]", *, breakdown_key: str, title: str
+) -> Optional[Panel]:
+    results = report.get("results", {})
+    if not isinstance(results, dict):
+        return None
+    breakdowns = results.get("breakdowns")
+    if not isinstance(breakdowns, dict):
+        return None
+    breakdown = breakdowns.get(breakdown_key)
+    if not isinstance(breakdown, dict):
+        return None
+    by_namespace = breakdown.get("by_namespace")
+    if not isinstance(by_namespace, dict):
+        by_namespace = {}
+
+    run_config = report.get("run_config", {})
+    n_mlps = int(run_config.get("n_mlps", 0) or 0) if isinstance(run_config, dict) else 0
+    if n_mlps <= 0:
+        n_mlps = 1
+
+    total_flops = _as_float(breakdown.get("flops_used", 0.0))
+    if total_flops <= 0.0:
+        total_flops = sum(
+            _as_float(bucket.get("flops_used", 0.0)) for bucket in by_namespace.values()
+        )
+
+    summary = Table(box=box.SIMPLE_HEAVY, show_header=False)
+    summary.add_column("field", style="bold bright_white")
+    summary.add_column("value")
+    summary.add_row(
+        _label_with_code("Total FLOPs", "flops_used", "bold bright_yellow"),
+        f"{int(total_flops):,}",
+    )
+    summary.add_row(
+        _label_with_code("Tracked Time", "tracked_time_s", "bold bright_green"),
+        f"{_as_float(breakdown.get('tracked_time_s', 0.0)):.6f}s",
+    )
+    summary.add_row(
+        _label_with_code("Untracked Time", "untracked_time_s", "bold bright_green"),
+        f"{_as_float(breakdown.get('untracked_time_s', 0.0)):.6f}s",
+    )
+
+    table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold bright_white")
+    table.add_column("namespace", style="bold bright_white", no_wrap=False)
+    table.add_column("total flops", justify="right")
+    table.add_column("% of section flops", justify="right")
+    table.add_column("mean flops / MLP", justify="right")
+    table.add_column("tracked time", justify="right")
+
+    for namespace, bucket in sorted(
+        by_namespace.items(),
+        key=lambda item: _as_float(item[1].get("flops_used", 0.0)),
+        reverse=True,
+    ):
+        namespace_label = (
+            "(unlabeled)" if namespace in {None, "", "null", "None"} else str(namespace)
+        )
+        flops_used = _as_float(bucket.get("flops_used", 0.0))
+        percent = (flops_used / total_flops * 100.0) if total_flops > 0.0 else 0.0
+        mean_flops = flops_used / n_mlps if n_mlps > 0 else 0.0
+        tracked_time_s = _as_float(bucket.get("tracked_time_s", 0.0))
+        table.add_row(
+            namespace_label,
+            f"{int(flops_used):,}",
+            f"{percent:.1f}%",
+            f"{mean_flops:,.1f}",
+            f"{tracked_time_s:.6f}s",
+        )
+
+    body = [Align.center(summary)]
+    if by_namespace:
+        body.append(Align.center(table))
+
+    border_style = "bright_magenta" if breakdown_key == "estimator" else "bright_yellow"
+    return Panel(
+        Group(*body),
+        title=title,
+        subtitle="aggregated across all evaluated MLPs",
+        subtitle_align="left",
+        border_style=border_style,
     )
 
 

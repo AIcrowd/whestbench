@@ -43,6 +43,27 @@ def test_inprocess_runner_predict_returns_array(small_mlp, limits, tmp_path) -> 
     runner.close()
 
 
+def test_inprocess_runner_predict_skips_validation(small_mlp, limits, tmp_path) -> None:
+    est_file = tmp_path / "est.py"
+    est_file.write_text(
+        "import numpy as np\n"
+        "from whestbench.sdk import BaseEstimator\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        arr = np.zeros((mlp.depth, mlp.width), dtype=np.float32)\n"
+        "        arr[0, 0] = np.inf\n"
+        "        return arr\n"
+    )
+    runner = LocalRunner()
+    entry = EstimatorEntrypoint(file_path=est_file)
+    ctx = SetupContext(width=8, depth=2, flop_budget=100, api_version="1.0")
+    runner.start(entry, ctx, limits)
+    result = runner.predict(small_mlp, budget=100)
+    assert result.shape == (2, 8)
+    assert float(result[0, 0]) == float("inf")
+    runner.close()
+
+
 def test_inprocess_runner_predict_before_start_raises(small_mlp) -> None:
     runner = LocalRunner()
     with pytest.raises(RunnerError):
