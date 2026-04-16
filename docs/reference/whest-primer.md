@@ -13,7 +13,7 @@ import whest as we
 
 with we.BudgetContext(flop_budget=1_000_000) as ctx:
     x = we.ones(100)
-    y = x @ we.eye(100)  # matmul: 2 * 100 * 100 * 100 = 2M FLOPs
+    y = x @ we.eye(100)  # matmul: 100 * 100 * 100 = 1M FLOPs
     # BudgetExhaustedError raised here if budget exceeded
 ```
 
@@ -26,9 +26,9 @@ You don't need to create `BudgetContext` yourself — the framework does it befo
 | **Free** (0 FLOPs) | `we.array`, `we.zeros`, `we.ones`, `we.eye`, `we.asarray`, `we.reshape`, `.T`, indexing, `we.stack`, `we.concatenate`, `.copy()`, `.astype()` | 0 |
 | **Pointwise** (1 FLOP/element) | `+`, `-`, `*`, `/`, `we.exp`, `we.sqrt`, `we.abs`, `we.maximum`, `we.where`, `we.log`, comparisons | N elements |
 | **Reductions** (input size) | `we.sum`, `we.mean`, `we.var`, `we.max`, `we.min`, `we.all`, `we.any` | N elements |
-| **Matmul** | `@`, `we.matmul` | 2 * M * N * K for (M,N) @ (N,K) |
+| **Matmul** | `@`, `we.matmul` | M * N * K for (M,N) @ (N,K) |
 
-**Key insight:** Matmul dominates. A single `(100, 100) @ (100, 100)` costs 2M FLOPs. A pointwise `exp` on 100 elements costs 100 FLOPs.
+**Key insight:** Matmul dominates. A single `(100, 100) @ (100, 100)` costs 1M FLOPs. A pointwise `exp` on 100 elements costs 100 FLOPs.
 
 ## Array Creation
 
