@@ -56,6 +56,8 @@ Key options:
 - `--class <name>`
 - `--runner local|server`
 - `--n-mlps <int>`
+- `--wall-time-limit <seconds>` — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`
+- `--untracked-time-limit <seconds>` — limit for non-whest time per `predict()` call, enforced by WhestBench after timing is reported
 - `--detail raw|full`
 - `--profile`
 - `--show-diagnostic-plots`
