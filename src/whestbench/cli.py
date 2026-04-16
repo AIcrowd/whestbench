@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import traceback
 import warnings
@@ -78,6 +79,28 @@ def _default_resource_limits() -> ResourceLimits:
         flop_budget=100_000_000,
         cpu_time_limit_s=None,
     )
+
+
+def _debugger_active() -> bool:
+    """Detect whether the user has opted into a debugger workflow.
+
+    Returns True if any of:
+    - ``sys.gettrace()`` returns a non-None trace function (e.g. running
+      under ``python -m pdb`` or an attached debugger).
+    - ``PYTHONBREAKPOINT`` is set to a non-empty, non-"0" value (CPython's
+      standard env var that controls ``breakpoint()``).
+    - ``WHESTBENCH_NO_RICH`` is set to a non-empty, non-"0" value
+      (project-specific escape hatch for CI / non-TTY logs).
+    """
+    if sys.gettrace() is not None:
+        return True
+    pb = os.environ.get("PYTHONBREAKPOINT", "").strip()
+    if pb and pb != "0":
+        return True
+    no_rich_env = os.environ.get("WHESTBENCH_NO_RICH", "").strip()
+    if no_rich_env and no_rich_env != "0":
+        return True
+    return False
 
 
 @overload
@@ -329,6 +352,7 @@ class _LiveTopPaneSession:
             refresh_per_second=8,
             transient=False,
         )
+        self._prev_breakpointhook: Optional[Callable[..., Any]] = None
 
     def _renderable(self) -> Group:
         context = build_human_context_renderable(self._pre_report)
@@ -356,10 +380,32 @@ class _LiveTopPaneSession:
         self._live.update(self._renderable())
 
     def start(self) -> None:
+        # Capture the current breakpointhook at start-time so we compose with
+        # any user-installed hook (e.g. IPython) rather than overwriting it.
+        # When breakpoint() fires from inside predict(), we stop Rich's Live
+        # overlay first so the debugger's prompt and input are visible.
+        self._prev_breakpointhook = sys.breakpointhook
+
+        def _bphook(*args: Any, **kwargs: Any) -> Any:
+            # Capture the prev hook locally before stop() nils the attribute,
+            # so we can still delegate to it after tearing down the overlay.
+            prev = self._prev_breakpointhook
+            self.stop()
+            if prev is None:
+                return None
+            return prev(*args, **kwargs)
+
+        sys.breakpointhook = _bphook
         self._live.start()
 
     def stop(self) -> None:
         self._live.stop()
+        # Restore the previous breakpointhook. The hook wrapper also restores
+        # on first fire; this branch covers the normal "Live ended without a
+        # breakpoint" path. Guard against double-stop with the None sentinel.
+        if self._prev_breakpointhook is not None:
+            sys.breakpointhook = self._prev_breakpointhook
+            self._prev_breakpointhook = None
         print()
 
 
@@ -518,6 +564,14 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     smoke_test_parser.add_argument("--show-diagnostic-plots", action="store_true")
     smoke_test_parser.add_argument("--debug", action="store_true")
     smoke_test_parser.add_argument(
+        "--no-rich",
+        action="store_true",
+        help=(
+            "Disable Rich live display and progress bars; use plain-text output. "
+            "Use when attaching a debugger (pdb/ipdb) or running in a non-TTY environment."
+        ),
+    )
+    smoke_test_parser.add_argument(
         "--max-threads",
         type=int,
         default=None,
@@ -599,6 +653,14 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="N",
         help="Limit BLAS to at most N CPU threads.",
+    )
+    run_parser.add_argument(
+        "--no-rich",
+        action="store_true",
+        help=(
+            "Disable Rich live display and progress bars; use plain-text output. "
+            "Use when attaching a debugger (pdb/ipdb) or running in a non-TTY environment."
+        ),
     )
 
     create_ds_parser = subparsers.add_parser(
@@ -810,8 +872,47 @@ def _main_participant(argv: "list[str]") -> int:
         apply_thread_limit(max_threads)
     debug = bool(getattr(args, "debug", False))
 
+    # Promote debugger detection to --no-rich so Live displays don't mask pdb
+    # prompts. Only affects subcommands that expose the flag (run, smoke-test);
+    # other subcommands silently ignore it via getattr defaults.
+    if (
+        hasattr(args, "no_rich")
+        and not bool(getattr(args, "no_rich", False))
+        and _debugger_active()
+    ):
+        args.no_rich = True
+        print(
+            "Debugger detected (sys.gettrace / PYTHONBREAKPOINT / WHESTBENCH_NO_RICH); "
+            "disabling Rich live display.",
+            file=sys.stderr,
+        )
+    no_rich = bool(getattr(args, "no_rich", False))
+
     try:
         if command == "smoke-test":
+            if no_rich:
+                # Plain-text path: no Rich Live, no progress bar. Emit
+                # single-line phase updates to stderr so a log-scraper still
+                # gets progress signal without terminal control sequences.
+                def _plain_smoke_progress(event: Dict[str, Any]) -> None:
+                    phase = str(event.get("phase", ""))
+                    completed = int(event.get("completed", 0))
+                    total = int(event.get("total", 0) or 0)
+                    if total:
+                        print(f"[smoke-test] {phase}: {completed}/{total}", file=sys.stderr)
+                    else:
+                        print(f"[smoke-test] {phase}: {completed}", file=sys.stderr)
+
+                report = run_default_report(
+                    profile=bool(args.profile),
+                    detail=str(args.detail),
+                    progress=_plain_smoke_progress,
+                )
+                report["mode"] = "human"
+                output = _render_plain_text_report(report)
+                print(output, end="" if output.endswith("\n") else "\n")
+                return 0
+
             # Set up Rich progress bar for immediate user feedback.
             try:
                 from rich.progress import (
@@ -1052,7 +1153,32 @@ def _main_participant(argv: "list[str]") -> int:
                 )
                 _tip_console = Console(highlight=False)
                 gen_label = "Loading dataset" if dataset_path is not None else "Generating MLPs"
-                if rich_tqdm is None:
+                if no_rich:
+                    # Plain-text path: skip every Rich Live/progress display so
+                    # breakpoints in predict() reach a clean terminal. Emit
+                    # single-line phase updates to stderr so logs still show
+                    # progress without terminal control sequences.
+                    print(f"[run] estimator_class={metadata.class_name}", file=sys.stderr)
+                    print(f"[run] estimator_path={args.estimator}", file=sys.stderr)
+                    print(f"[run] n_mlps={n_mlps} gen_label={gen_label}", file=sys.stderr)
+                    _plain_state = {"gen": -1, "scoring": -1}
+
+                    def _plain_run_progress(event: Dict[str, Any]) -> None:
+                        phase = str(event.get("phase", "scoring"))
+                        completed = int(event.get("completed", 0))
+                        total_value = event.get("total")
+                        total = int(total_value) if isinstance(total_value, int) else n_mlps
+                        # Only print when the completed count changes, to
+                        # avoid flooding stderr with duplicates.
+                        key = "gen" if phase == "generating" else "scoring"
+                        if completed == _plain_state.get(key):
+                            return
+                        _plain_state[key] = completed
+                        print(f"[run] {phase}: {completed}/{total}", file=sys.stderr)
+
+                    score_kwargs["progress"] = _plain_run_progress
+                    report = _run_estimator_with_runner(runner, **score_kwargs)
+                elif rich_tqdm is None:
                     _print_human_startup(
                         pre_report,
                         estimator_class=metadata.class_name,
@@ -1083,18 +1209,21 @@ def _main_participant(argv: "list[str]") -> int:
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
-                try:
-                    output = render_human_results(
-                        report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
-                    )
-                except Exception as exc:
-                    print(
-                        f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
-                        file=sys.stderr,
-                    )
+                if no_rich:
                     output = _render_plain_text_report(report)
+                else:
+                    try:
+                        output = render_human_results(
+                            report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
+                        )
+                    except Exception as exc:
+                        print(
+                            f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
+                            file=sys.stderr,
+                        )
+                        output = _render_plain_text_report(report)
             print(output, end="" if output.endswith("\n") else "\n")
-            if not json_output:
+            if not json_output and not no_rich:
                 _tip_console.print(
                     "[bold bright_yellow]Tip:[/] Use [green]--json[/] for JSON output when calling from automated agents or UIs."
                 )

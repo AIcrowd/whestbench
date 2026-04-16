@@ -6,7 +6,9 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Protocol
@@ -198,6 +200,8 @@ class SubprocessRunner:
         self._context: Optional[SetupContext] = None
         self._started = False
         self._last_predict_stats: Optional[PredictStats] = None
+        self._stderr_lines: deque[str] = deque(maxlen=200)
+        self._stderr_reader: Optional[threading.Thread] = None
 
     def start(
         self,
@@ -217,6 +221,12 @@ class SubprocessRunner:
             bufsize=1,
             env=self._worker_env(),
         )
+        self._stderr_reader = threading.Thread(
+            target=self._drain_stderr,
+            daemon=True,
+            name="SubprocessRunner-stderr",
+        )
+        self._stderr_reader.start()
         self._send_request(
             {
                 "command": "start",
@@ -330,11 +340,22 @@ class SubprocessRunner:
             except Exception:
                 pass
             self._terminate_process()
+        if self._stderr_reader is not None and self._stderr_reader.is_alive():
+            self._stderr_reader.join(timeout=0.1)
         self._process = None
         self._limits = None
         self._context = None
         self._started = False
         self._last_predict_stats = None
+
+    def _drain_stderr(self) -> None:
+        if self._process is None or self._process.stderr is None:
+            return
+        try:
+            for line in self._process.stderr:
+                self._stderr_lines.append(line.rstrip("\n"))
+        except Exception:
+            pass
 
     def _send_request(self, payload: Dict[str, Any]) -> None:
         if self._process is None or self._process.stdin is None:
@@ -357,7 +378,6 @@ class SubprocessRunner:
                 "predict",
                 RunnerErrorDetail(code="WORKER_IO_ERROR", message="Worker stdout unavailable."),
             )
-        import threading
 
         result: List[str] = []
 
@@ -394,6 +414,8 @@ class SubprocessRunner:
     def _read_stderr_tail(self) -> str:
         if self._process is None or self._process.stderr is None:
             return ""
+        if self._stderr_lines:
+            return self._stderr_lines[-1]
         if self._process.poll() is None:
             return ""
         stderr = self._process.stderr.read().strip()

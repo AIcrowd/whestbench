@@ -22,8 +22,10 @@ Participant workflow commands:
 Run a built-in `CombinedEstimator` dashboard check and print next-step participant commands.
 
 ```bash
-whest smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--debug]
+whest smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--no-rich] [--debug]
 ```
+
+- `--no-rich` — disable Rich live display and progress bars; print a plain-text report. Useful for non-TTY logs and for debugger sessions. Auto-enabled when `sys.gettrace()` is non-None, `PYTHONBREAKPOINT` is set, or `WHESTBENCH_NO_RICH=1`.
 
 ## `whest init`
 
@@ -63,6 +65,7 @@ Key options:
 - `--show-diagnostic-plots`
 - `--json`
 - `--dataset <path>` — use pre-created dataset `.npz` file
+- `--no-rich` — disable Rich live display and progress bars; print a plain-text report. Required when attaching `pdb.set_trace()` (the live display would otherwise mask the prompt). Auto-enabled when `sys.gettrace()` is non-None, `PYTHONBREAKPOINT` is set, or `WHESTBENCH_NO_RICH=1`. See [Debugging Checklist](../how-to/debugging-checklist.md#using-pdb--breakpoint-inside-your-estimator).
 - `--debug`
 
 Recommended debug sequence:
@@ -71,12 +74,13 @@ Recommended debug sequence:
 whest run --estimator ./path/to/estimator.py
 whest run --estimator ./path/to/estimator.py --debug
 whest run --estimator ./path/to/estimator.py --runner local --debug
+whest run --estimator ./path/to/estimator.py --runner local --no-rich   # for pdb.set_trace() / breakpoint()
 ```
 
 Runner mode tradeoff:
 
 - `server` (default): realistic isolation -- your estimator runs against the whest server.
-- `local`: in-process execution with better traceback fidelity while debugging.
+- `local`: in-process execution with better traceback fidelity while debugging. Required for interactive debuggers (`pdb`, `breakpoint()`).
 
 ## `whest create-dataset`
 
