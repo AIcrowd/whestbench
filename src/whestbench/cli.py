@@ -608,7 +608,16 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--runner", choices=("local", "server", "inprocess", "subprocess"), default="server"
     )
-    run_parser.add_argument("--n-mlps", type=int, default=10)
+    run_parser.add_argument(
+        "--n-mlps",
+        type=int,
+        default=None,
+        help=(
+            "Number of MLPs to evaluate. Default: 10 when --dataset is not "
+            "provided; otherwise the full dataset size. Clamped to the dataset "
+            "size when --dataset is set and --n-mlps exceeds it."
+        ),
+    )
     run_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
     run_parser.add_argument("--profile", action="store_true")
     run_parser.add_argument("--show-diagnostic-plots", action="store_true")
@@ -787,16 +796,25 @@ def _run_estimator_with_runner(
     profile: bool,
     detail: str,
     progress: Optional[ProgressCallback] = None,
+    contest_data: "Optional[Any]" = None,
 ) -> Dict[str, Any]:
     """Run estimator through a runner and score against contest data.
 
-    Builds contest data, starts the runner, wraps it as a BaseEstimator,
-    and delegates scoring to ``evaluate_estimator``.
+    Builds contest data (or accepts a pre-built ``ContestData`` via
+    ``contest_data`` when the caller already loaded a dataset), starts the
+    runner, wraps it as a BaseEstimator, and delegates scoring to
+    ``evaluate_estimator``.
     """
     import time as _time
 
     spec = contest_spec
-    if progress is not None:
+    if contest_data is not None:
+        data = contest_data
+        if progress is not None:
+            # Precomputed dataset: emit a single "generating" completion event
+            # so progress bars fill immediately rather than staying at zero.
+            progress({"phase": "generating", "completed": spec.n_mlps, "total": spec.n_mlps})
+    elif progress is not None:
         data = make_contest(
             spec,
             on_mlp_done=lambda i: progress(
@@ -1071,7 +1089,9 @@ def _main_participant(argv: "list[str]") -> int:
         if command == "run":
             runner = LocalRunner() if args.runner in ("local", "inprocess") else SubprocessRunner()
             contest_spec = _default_contest_spec()
-            n_mlps = int(args.n_mlps)
+            user_n_mlps: Optional[int] = int(args.n_mlps) if args.n_mlps is not None else None
+            if user_n_mlps is not None and user_n_mlps <= 0:
+                raise ValueError("--n-mlps must be positive.")
             flop_budget = (
                 int(args.flop_budget) if args.flop_budget is not None else contest_spec.flop_budget
             )
@@ -1080,38 +1100,57 @@ def _main_participant(argv: "list[str]") -> int:
                 if args.n_samples is not None
                 else contest_spec.ground_truth_samples
             )
-            contest_spec = ContestSpec(
-                width=contest_spec.width,
-                depth=contest_spec.depth,
-                n_mlps=n_mlps,
-                flop_budget=flop_budget,
-                ground_truth_samples=gt_samples,
-                wall_time_limit_s=getattr(args, "wall_time_limit", None),
-                untracked_time_limit_s=getattr(args, "untracked_time_limit", None),
-            )
             entrypoint = EstimatorEntrypoint(
                 file_path=Path(args.estimator).resolve(),
                 class_name=args.class_name,
             )
 
-            # --- Dataset loading ---
+            # --- Dataset loading & n_mlps resolution ---
             dataset_path: Optional[str] = getattr(args, "dataset", None)
+            contest_data = None
+            bundle = None
+            ds_meta: Dict[str, Any] = {}
 
             if dataset_path is not None:
                 from .dataset import dataset_file_hash, load_dataset
+                from .scoring import make_contest_from_bundle
 
                 bundle = load_dataset(dataset_path)
                 ds_meta = bundle.metadata
+
+                if user_n_mlps is None:
+                    n_mlps = bundle.n_mlps
+                elif user_n_mlps > bundle.n_mlps:
+                    print(
+                        f"Warning: --n-mlps={user_n_mlps} exceeds dataset size "
+                        f"({bundle.n_mlps}); using {bundle.n_mlps}.",
+                        file=sys.stderr,
+                    )
+                    n_mlps = bundle.n_mlps
+                else:
+                    n_mlps = user_n_mlps
+
                 contest_spec = ContestSpec(
                     width=ds_meta["width"],
                     depth=ds_meta["depth"],
-                    n_mlps=bundle.n_mlps,
-                    flop_budget=ds_meta.get("flop_budget", contest_spec.flop_budget),
-                    ground_truth_samples=contest_spec.ground_truth_samples,
+                    n_mlps=n_mlps,
+                    flop_budget=ds_meta.get("flop_budget", flop_budget),
+                    ground_truth_samples=gt_samples,
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
                     untracked_time_limit_s=getattr(args, "untracked_time_limit", None),
                 )
-                n_mlps = bundle.n_mlps
+                contest_data = make_contest_from_bundle(contest_spec, bundle, n_mlps)
+            else:
+                n_mlps = user_n_mlps if user_n_mlps is not None else 10
+                contest_spec = ContestSpec(
+                    width=contest_spec.width,
+                    depth=contest_spec.depth,
+                    n_mlps=n_mlps,
+                    flop_budget=flop_budget,
+                    ground_truth_samples=gt_samples,
+                    wall_time_limit_s=getattr(args, "wall_time_limit", None),
+                    untracked_time_limit_s=getattr(args, "untracked_time_limit", None),
+                )
 
             score_kwargs: Dict[str, Any] = {
                 "entrypoint": entrypoint,
@@ -1119,6 +1158,7 @@ def _main_participant(argv: "list[str]") -> int:
                 "n_mlps": n_mlps,
                 "profile": bool(args.profile),
                 "detail": str(args.detail),
+                "contest_data": contest_data,
             }
 
             if json_output:

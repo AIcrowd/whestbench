@@ -246,3 +246,5 @@ src/network_estimation/_cython_kernels.c
 
 # Agent-generated plans
 internal docs/
+
+.aicrowd/
