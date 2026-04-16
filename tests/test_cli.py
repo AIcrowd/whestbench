@@ -29,6 +29,30 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
         "results": {
             "primary_score": 0.42,
             "secondary_score": 0.55,
+            "breakdowns": {
+                "sampling": {
+                    "flops_used": 100.0,
+                    "tracked_time_s": 0.02,
+                    "untracked_time_s": 0.0,
+                    "by_namespace": {
+                        "sampling.sample_layer_statistics": {
+                            "flops_used": 100.0,
+                            "tracked_time_s": 0.02,
+                        }
+                    },
+                },
+                "estimator": {
+                    "flops_used": 40.0,
+                    "tracked_time_s": 0.01,
+                    "untracked_time_s": 0.0,
+                    "by_namespace": {
+                        "estimator.estimator-client": {
+                            "flops_used": 40.0,
+                            "tracked_time_s": 0.01,
+                        }
+                    },
+                },
+            },
             "per_mlp": [],
         },
         "notes": [],

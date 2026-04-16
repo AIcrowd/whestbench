@@ -17,11 +17,17 @@ import whestbench.reporting as reporting
 from whestbench.reporting import (
     render_agent_report,
     render_human_report,
+    render_human_results,
     render_smoke_test_next_steps,
 )
 
 
-def _sample_report(*, include_profile: bool = False) -> "dict[str, object]":
+def _sample_report(
+    *,
+    include_profile: bool = False,
+    include_sampling_breakdown: bool = False,
+    include_estimator_breakdown: bool = False,
+) -> "dict[str, object]":
     report: "dict[str, object]" = {
         "schema_version": "1.0",
         "mode": "agent",
@@ -55,6 +61,63 @@ def _sample_report(*, include_profile: bool = False) -> "dict[str, object]":
         },
         "notes": [],
     }
+    breakdowns: dict[str, object] = {}
+    if include_sampling_breakdown:
+        breakdowns["sampling"] = {
+            "flop_budget": 200,
+            "flops_used": 80,
+            "flops_remaining": 120,
+            "wall_time_s": 0.03,
+            "tracked_time_s": 0.02,
+            "untracked_time_s": 0.01,
+            "by_namespace": {
+                "sampling.sample_layer_statistics": {
+                    "flops_used": 50,
+                    "calls": 2,
+                    "tracked_time_s": 0.012,
+                    "operations": {
+                        "add": {"flop_cost": 50, "calls": 2, "duration": 0.012}
+                    },
+                },
+                "sampling.draw_weights": {
+                    "flops_used": 30,
+                    "calls": 2,
+                    "tracked_time_s": 0.008,
+                    "operations": {
+                        "mul": {"flop_cost": 30, "calls": 2, "duration": 0.008}
+                    },
+                },
+            },
+        }
+    if include_estimator_breakdown:
+        breakdowns["estimator"] = {
+            "flop_budget": 200,
+            "flops_used": 300,
+            "flops_remaining": 0,
+            "wall_time_s": 0.05,
+            "tracked_time_s": 0.03,
+            "untracked_time_s": 0.02,
+            "by_namespace": {
+                "estimator.phase": {
+                    "flops_used": 200,
+                    "calls": 4,
+                    "tracked_time_s": 0.02,
+                    "operations": {
+                        "add": {"flop_cost": 200, "calls": 4, "duration": 0.02}
+                    },
+                },
+                "estimator.estimator-client": {
+                    "flops_used": 100,
+                    "calls": 2,
+                    "tracked_time_s": 0.01,
+                    "operations": {
+                        "mul": {"flop_cost": 100, "calls": 2, "duration": 0.01}
+                    },
+                },
+            },
+        }
+    if breakdowns:
+        report["results"]["breakdowns"] = breakdowns
     if include_profile:
         report["profile_calls"] = [
             {
@@ -157,6 +220,51 @@ def test_human_report_uses_two_column_top_row_on_wide_layout(
     assert "Hardware & Runtime" in rendered
     # Run Context and Hardware & Runtime share the same row
     assert any("Run Context" in line and "Hardware & Runtime" in line for line in title_lines)
+
+
+def test_render_human_mode_includes_budget_breakdown_sections_when_present() -> None:
+    rendered = render_human_report(
+        _sample_report(
+            include_profile=False,
+            include_sampling_breakdown=True,
+            include_estimator_breakdown=True,
+        )
+    )
+    plain = _strip_ansi(rendered)
+
+    assert "Sampling Budget Breakdown" in plain
+    assert "Estimator Budget Breakdown" in plain
+    assert plain.index("Sampling Budget Breakdown") < plain.index("Estimator Budget Breakdown")
+    assert "Total FLOPs" in plain
+    assert "Tracked Time" in plain
+    assert "Untracked Time" in plain
+    assert "sampling.sample_layer_statistics" in plain
+    assert "sampling.draw_weights" in plain
+    assert "estimator.phase" in plain
+    assert "estimator.estimator-client" in plain
+
+
+def test_render_human_results_includes_budget_breakdown_sections_when_present() -> None:
+    rendered = render_human_results(
+        _sample_report(
+            include_profile=False,
+            include_sampling_breakdown=True,
+            include_estimator_breakdown=True,
+        )
+    )
+    plain = _strip_ansi(rendered)
+
+    assert "Sampling Budget Breakdown" in plain
+    assert "Estimator Budget Breakdown" in plain
+    assert plain.index("Sampling Budget Breakdown") < plain.index("Estimator Budget Breakdown")
+
+
+def test_render_human_mode_omits_budget_breakdown_sections_when_absent() -> None:
+    rendered = render_human_report(_sample_report(include_profile=False))
+    plain = _strip_ansi(rendered)
+
+    assert "Sampling Budget Breakdown" not in plain
+    assert "Estimator Budget Breakdown" not in plain
 
 
 def test_hardware_metadata_is_not_repeated_inside_run_context() -> None:

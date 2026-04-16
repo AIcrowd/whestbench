@@ -15,7 +15,6 @@ import whest as we
 
 from .domain import MLP
 from .loader import load_estimator_from_path
-from .scoring import validate_predictions
 from .sdk import BaseEstimator, SetupContext
 
 try:
@@ -79,6 +78,15 @@ class RunnerError(RuntimeError):
         self.detail = detail
 
 
+@dataclass(frozen=True)
+class PredictStats:
+    flops_used: int
+    wall_time_s: float
+    tracked_time_s: float
+    untracked_time_s: float
+    budget_breakdown: Optional[Dict[str, Any]] = None
+
+
 class EstimatorRunner(Protocol):
     def start(
         self,
@@ -106,6 +114,7 @@ class LocalRunner:
         self._limits: Optional[ResourceLimits] = None
         self._context: Optional[SetupContext] = None
         self._started = False
+        self._last_predict_stats: Optional[PredictStats] = None
 
     def start(
         self,
@@ -149,8 +158,7 @@ class LocalRunner:
                 ),
             )
         try:
-            raw = self._estimator.predict(mlp, budget)
-            return validate_predictions(raw, depth=mlp.depth, width=mlp.width)
+            return self._estimator.predict(mlp, budget)
         except we.BudgetExhaustedError:
             raise
         except Exception as exc:
@@ -158,6 +166,9 @@ class LocalRunner:
                 "predict",
                 RunnerErrorDetail(code="PREDICT_ERROR", message=str(exc)),
             ) from exc
+
+    def last_predict_stats(self) -> Optional[PredictStats]:
+        return self._last_predict_stats
 
     def close(self) -> None:
         if self._estimator is not None:
@@ -168,6 +179,7 @@ class LocalRunner:
         self._limits = None
         self._context = None
         self._started = False
+        self._last_predict_stats = None
 
 
 # Backward-compatible alias
@@ -185,6 +197,7 @@ class SubprocessRunner:
         self._limits: Optional[ResourceLimits] = None
         self._context: Optional[SetupContext] = None
         self._started = False
+        self._last_predict_stats: Optional[PredictStats] = None
 
     def start(
         self,
@@ -249,12 +262,16 @@ class SubprocessRunner:
             )
         self._started = True
 
+    def last_predict_stats(self) -> Optional[PredictStats]:
+        return self._last_predict_stats
+
     def predict(self, mlp: MLP, budget: int) -> we.ndarray:
         if not self._started or self._process is None or self._limits is None:
             raise RunnerError(
                 "predict",
                 RunnerErrorDetail(code="RUNNER_NOT_STARTED", message="Runner must be started."),
             )
+        self._last_predict_stats = None
         self._send_request(
             {
                 "command": "predict",
@@ -274,6 +291,13 @@ class SubprocessRunner:
         except RunnerError:
             raise
 
+        self._last_predict_stats = PredictStats(
+            flops_used=int(response.get("flops_used", 0)),
+            wall_time_s=float(response.get("wall_time_s", 0.0) or 0.0),
+            tracked_time_s=float(response.get("tracked_time_s", 0.0) or 0.0),
+            untracked_time_s=float(response.get("untracked_time_s", 0.0) or 0.0),
+            budget_breakdown=response.get("budget_breakdown"),
+        )
         if response.get("status") == "budget_exhausted":
             raise we.BudgetExhaustedError("subprocess_predict", flop_cost=0, flops_remaining=0)
         if response.get("status") == "time_exhausted":
@@ -293,19 +317,6 @@ class SubprocessRunner:
                 RunnerErrorDetail(code="PREDICT_NO_DATA", message="No predictions in response."),
             )
         result = we.asarray(predictions_data, dtype=we.float32)
-        # Propagate subprocess FLOP count to the parent BudgetContext
-        flops_from_worker = response.get("flops_used", 0)
-        if flops_from_worker > 0:
-            from whest._budget import get_active_budget
-
-            active_ctx = get_active_budget()
-            if active_ctx is not None:
-                active_ctx.deduct(
-                    "subprocess_predict",
-                    flop_cost=flops_from_worker,
-                    subscripts=None,
-                    shapes=(),
-                )
         return result
 
     def close(self) -> None:
@@ -323,6 +334,7 @@ class SubprocessRunner:
         self._limits = None
         self._context = None
         self._started = False
+        self._last_predict_stats = None
 
     def _send_request(self, payload: Dict[str, Any]) -> None:
         if self._process is None or self._process.stdin is None:

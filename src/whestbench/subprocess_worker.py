@@ -30,6 +30,18 @@ def _write_response(payload: dict) -> None:
     sys.stdout.flush()
 
 
+def _budget_payload(budget_ctx: we.BudgetContext) -> dict:
+    return {
+        "flop_budget": budget_ctx.flop_budget,
+        "flops_used": budget_ctx.flops_used,
+        "flops_remaining": budget_ctx.flops_remaining,
+        "wall_time_s": budget_ctx.wall_time_s or 0.0,
+        "tracked_time_s": budget_ctx.total_tracked_time,
+        "untracked_time_s": budget_ctx.untracked_time or 0.0,
+        "by_namespace": budget_ctx.summary_dict(by_namespace=True).get("by_namespace", {}),
+    }
+
+
 def _handle_predict(
     estimator: BaseEstimator, request: dict, wall_time_limit_s: float | None = None
 ) -> None:
@@ -65,13 +77,32 @@ def _handle_predict(
                 "wall_time_s": budget_ctx.wall_time_s or 0.0,
                 "tracked_time_s": budget_ctx.total_tracked_time,
                 "untracked_time_s": budget_ctx.untracked_time or 0.0,
+                "budget_breakdown": _budget_payload(budget_ctx),
             }
         )
     except we.BudgetExhaustedError:
-        _write_response({"status": "budget_exhausted", "error_message": "FLOP budget exceeded."})
+        _write_response(
+            {
+                "status": "budget_exhausted",
+                "error_message": "FLOP budget exceeded.",
+                "flops_used": budget_ctx.flops_used,
+                "wall_time_s": budget_ctx.wall_time_s or 0.0,
+                "tracked_time_s": budget_ctx.total_tracked_time,
+                "untracked_time_s": budget_ctx.untracked_time or 0.0,
+                "budget_breakdown": _budget_payload(budget_ctx),
+            }
+        )
     except we.TimeExhaustedError:
         _write_response(
-            {"status": "time_exhausted", "error_message": "Wall-clock time limit exceeded."}
+            {
+                "status": "time_exhausted",
+                "error_message": "Wall-clock time limit exceeded.",
+                "flops_used": budget_ctx.flops_used,
+                "wall_time_s": budget_ctx.wall_time_s or 0.0,
+                "tracked_time_s": budget_ctx.total_tracked_time,
+                "untracked_time_s": budget_ctx.untracked_time or 0.0,
+                "budget_breakdown": _budget_payload(budget_ctx),
+            }
         )
     except Exception as exc:
         _write_response({"status": "error", "error_message": str(exc)})
