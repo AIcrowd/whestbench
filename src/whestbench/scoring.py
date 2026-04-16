@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 import whest as we
 
@@ -11,6 +11,9 @@ from .domain import MLP
 from .generation import sample_mlp
 from .sdk import BaseEstimator
 from .simulation import sample_layer_statistics
+
+if TYPE_CHECKING:
+    from .dataset import DatasetBundle
 
 
 @dataclass
@@ -98,6 +101,46 @@ def make_contest(
         final_targets=final_targets,
         avg_variances=avg_variances,
         sampling_budget_breakdown=_aggregate_budget_breakdowns(sampling_breakdowns),
+    )
+
+
+def make_contest_from_bundle(
+    spec: ContestSpec,
+    bundle: "DatasetBundle",
+    n_mlps: int,
+) -> ContestData:
+    """Build ContestData from a precomputed dataset bundle.
+
+    Takes the first ``n_mlps`` entries from the bundle's MLPs and targets.
+    Ground truth is not recomputed; ``sampling_budget_breakdown`` is ``None``.
+
+    Raises ``ValueError`` if ``n_mlps`` is not in ``[1, bundle.n_mlps]`` or if
+    ``spec`` is inconsistent with the bundle's width/depth.
+    """
+    if n_mlps <= 0:
+        raise ValueError("n_mlps must be positive.")
+    if n_mlps > bundle.n_mlps:
+        raise ValueError(
+            f"n_mlps={n_mlps} exceeds bundle size {bundle.n_mlps}; clamp before calling."
+        )
+    spec.validate()
+    if spec.n_mlps != n_mlps:
+        raise ValueError(f"spec.n_mlps ({spec.n_mlps}) must equal n_mlps ({n_mlps}).")
+
+    mlps = list(bundle.mlps[:n_mlps])
+    all_layer_targets = [
+        we.asarray(bundle.all_layer_means[i], dtype=we.float32) for i in range(n_mlps)
+    ]
+    final_targets = [we.asarray(bundle.final_means[i], dtype=we.float32) for i in range(n_mlps)]
+    avg_variances = list(bundle.avg_variances[:n_mlps])
+
+    return ContestData(
+        spec=spec,
+        mlps=mlps,
+        all_layer_targets=all_layer_targets,
+        final_targets=final_targets,
+        avg_variances=avg_variances,
+        sampling_budget_breakdown=None,
     )
 
 
