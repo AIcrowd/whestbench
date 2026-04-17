@@ -303,6 +303,12 @@ def test_run_default_uses_local_runner(
         return _sample_report(profile_enabled=False, detail="raw")
 
     monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run_estimator_with_runner)
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
 
     exit_code = cli.main(["run", "--estimator", "estimator.py"])
 
@@ -320,6 +326,12 @@ def test_run_server_alias_is_subprocess(
         return _sample_report(profile_enabled=False, detail="raw")
 
     monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run_estimator_with_runner)
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
 
     exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "server"])
 
