@@ -39,6 +39,7 @@ from .hardware import collect_hardware_fingerprint
 from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
 from .reporting import (
+    _fmt_flops,
     build_human_context_renderable,
     render_agent_report,
     render_human_context_panels,
@@ -194,7 +195,7 @@ def _render_plain_text_report(report: Dict[str, Any], *, debug: bool = False) ->
         f"MLPs: {run_config.get('n_mlps', 'n/a')}",
         f"Width: {run_config.get('width', 'n/a')}",
         f"Depth: {run_config.get('depth', 'n/a')}",
-        f"FLOP Budget: {run_config.get('flop_budget', 'n/a')}",
+        f"FLOP Budget: {_fmt_flops(run_config.get('flop_budget'))}",
         f"Wall Time Limit: {run_config.get('wall_time_limit_s') or 'unlimited'}",
         f"Untracked Time Limit: {run_config.get('untracked_time_limit_s') or 'unlimited'}",
     ]
@@ -255,7 +256,7 @@ def _render_plain_text_report(report: Dict[str, Any], *, debug: bool = False) ->
             lines.extend(
                 [
                     f"{title}:",
-                    f"  Total FLOPs: {int(total_flops):,}",
+                    f"  Total FLOPs: {_fmt_flops(total_flops)}",
                     f"  Tracked Time: {_as_float(breakdown.get('tracked_time_s', 0.0)):.6f}s",
                     f"  Untracked Time: {_as_float(breakdown.get('untracked_time_s', 0.0)):.6f}s",
                 ]
@@ -279,8 +280,8 @@ def _render_plain_text_report(report: Dict[str, Any], *, debug: bool = False) ->
                 tracked_time_s = _as_float(bucket.get("tracked_time_s", 0.0))
                 lines.append(
                     "  "
-                    f"{namespace_label}: {int(flops_used):,} FLOPs ({percent:.1f}%), "
-                    f"mean {mean_flops:,.1f}/MLP, tracked {tracked_time_s:.6f}s"
+                    f"{namespace_label}: {_fmt_flops(flops_used)} FLOPs ({percent:.1f}%), "
+                    f"mean {_fmt_flops(mean_flops)}/MLP, tracked {tracked_time_s:.6f}s"
                 )
     return "\n".join(lines) + "\n"
 
@@ -367,7 +368,13 @@ class _LiveTopPaneSession:
             TimeElapsedColumn(),
         )
         self._gen_task_id = self._progress.add_task(gen_label, total=n_mlps)
-        self._scoring_task_id = self._progress.add_task("Scoring", total=total)
+        # Scoring task is added hidden and unstarted so its elapsed timer
+        # doesn't tick during the generating phase. It is revealed and
+        # started on the first "scoring" progress event.
+        self._scoring_task_id = self._progress.add_task(
+            "Scoring", total=total, start=False, visible=False
+        )
+        self._scoring_started = False
         self._live = Live(
             self._renderable(),
             console=None,
@@ -393,6 +400,10 @@ class _LiveTopPaneSession:
             total_update = int(total_value) if isinstance(total_value, int) else None
             self._progress.update(self._gen_task_id, completed=completed, total=total_update)
         else:
+            if not self._scoring_started:
+                self._progress.start_task(self._scoring_task_id)
+                self._progress.update(self._scoring_task_id, visible=True)
+                self._scoring_started = True
             self._progress.update(self._scoring_task_id, completed=completed)
 
     def update_run_meta(self, run_meta: Dict[str, Any]) -> None:
@@ -460,13 +471,9 @@ def _progress_callback(
                 file=sys.stdout,
                 position=0,
             )
-            scoring_bar = classic_tqdm(
-                total=total,
-                desc="Scoring",
-                unit="eval",
-                file=sys.stdout,
-                position=1,
-            )
+        # Scoring bar is constructed on first scoring event so its elapsed
+        # timer doesn't tick during the generating phase.
+        bars: Dict[str, Any] = {"scoring": None}
 
         state = {"gen": 0, "scoring": 0}
 
@@ -479,16 +486,27 @@ def _progress_callback(
                     gen_bar.update(delta)
                     state["gen"] = completed
             else:
+                if bars["scoring"] is None:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", TqdmExperimentalWarning)
+                        bars["scoring"] = classic_tqdm(
+                            total=total,
+                            desc="Scoring",
+                            unit="eval",
+                            file=sys.stdout,
+                            position=1,
+                        )
                 delta = completed - state["scoring"]
                 if delta > 0:
-                    scoring_bar.update(delta)
+                    bars["scoring"].update(delta)
                     state["scoring"] = completed
 
         try:
             yield _on_progress
         finally:
             gen_bar.close()
-            scoring_bar.close()
+            if bars["scoring"] is not None:
+                bars["scoring"].close()
             print()
         return
 
@@ -500,7 +518,9 @@ def _progress_callback(
         TimeElapsedColumn(),
     )
     gen_task_id = progress.add_task(gen_label, total=n_mlps)
-    scoring_task_id = progress.add_task("Scoring", total=total)
+    # Scoring task starts hidden and unstarted — revealed on first scoring event.
+    scoring_task_id = progress.add_task("Scoring", total=total, start=False, visible=False)
+    scoring_started = {"flag": False}
     live = Live(
         Panel(progress, title="[bold bright_yellow]Progress[/]", border_style="bright_yellow"),
         console=None,
@@ -516,6 +536,10 @@ def _progress_callback(
             total_update = int(total_value) if isinstance(total_value, int) else None
             progress.update(gen_task_id, completed=completed, total=total_update)
         else:
+            if not scoring_started["flag"]:
+                progress.start_task(scoring_task_id)
+                progress.update(scoring_task_id, visible=True)
+                scoring_started["flag"] = True
             progress.update(scoring_task_id, completed=completed)
 
     try:

@@ -764,3 +764,41 @@ def _render_panel(panel: object) -> str:
 
 def _strip_ansi(value: str) -> str:
     return re.sub(r"\x1b\[[0-9;]*m", "", value)
+
+
+# --- _fmt_flops --------------------------------------------------------------
+
+
+def test_fmt_flops_small_values_use_comma_grouping() -> None:
+    from whestbench.reporting import _fmt_flops
+
+    assert _fmt_flops(0) == "0"
+    assert _fmt_flops(42) == "42"
+    assert _fmt_flops(12_345) == "12,345"
+    assert _fmt_flops(999_999) == "999,999"
+
+
+def test_fmt_flops_large_values_use_scientific() -> None:
+    from whestbench.reporting import _fmt_flops
+
+    # Threshold is 1e6; at and above, switch to scientific (no exact suffix —
+    # users can get exact values from `whest run --json`).
+    assert _fmt_flops(1_000_000) == "1.00e+06"
+    assert _fmt_flops(845_824_840_400) == "8.46e+11"
+    assert _fmt_flops(int(1e15)) == "1.00e+15"
+
+
+def test_fmt_flops_handles_non_numeric() -> None:
+    from whestbench.reporting import _fmt_flops
+
+    assert _fmt_flops(None) == "n/a"
+    assert _fmt_flops("abc") == "abc"
+    assert _fmt_flops(float("nan")) == "n/a"
+
+
+def test_fmt_flops_handles_float_counts() -> None:
+    """Per-MLP means are floats (e.g. 422,912,420,200.0 in the CLI output)."""
+    from whestbench.reporting import _fmt_flops
+
+    assert _fmt_flops(422_912_420_200.0) == "4.23e+11"
+    assert _fmt_flops(1.5e7) == "1.50e+07"
