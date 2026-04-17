@@ -155,23 +155,23 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     assert "whest validate --estimator ./my-estimator/estimator.py" in plain
     assert "whest run --estimator ./my-estimator/estimator.py" in plain
     assert "--runner" in plain
-    assert "server" in plain
+    assert "local" in plain
     assert "whest package --estimator ./my-estimator/estimator.py" in plain
     assert "--output" in plain
     assert "./submission.tar.gz" in plain
     assert "Optional: run bundled example estimators:" in plain
     assert (
-        "whest run --estimator ./examples/estimators/combined_estimator.py --runner server" in plain
+        "whest run --estimator ./examples/estimators/combined_estimator.py --runner local" in plain
     )
     assert (
-        "whest run --estimator ./examples/estimators/covariance_propagation.py --runner server"
+        "whest run --estimator ./examples/estimators/covariance_propagation.py --runner local"
         in plain
     )
     assert (
-        "whest run --estimator ./examples/estimators/mean_propagation.py --runner server" in plain
+        "whest run --estimator ./examples/estimators/mean_propagation.py --runner local" in plain
     )
     assert (
-        "whest run --estimator ./examples/estimators/random_estimator.py --runner server" in plain
+        "whest run --estimator ./examples/estimators/random_estimator.py --runner local" in plain
     )
 
 

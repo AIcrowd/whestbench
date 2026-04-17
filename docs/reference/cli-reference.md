@@ -51,12 +51,12 @@ Run local scoring with participant estimator.
 whest run --estimator <path> [options]
 ```
 
-Default behavior: `whest run --estimator <path>` is equivalent to `--runner server`.
+Default behavior: `whest run --estimator <path>` is equivalent to `--runner local`.
 
 Key options:
 
 - `--class <name>`
-- `--runner local|server`
+- `--runner local|subprocess|server|inprocess`
 - `--n-mlps <int>`
 - `--wall-time-limit <seconds>` — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`
 - `--untracked-time-limit <seconds>` — limit for non-whest time per `predict()` call, enforced by WhestBench after timing is reported
@@ -86,8 +86,10 @@ whest run --estimator ./path/to/estimator.py --runner local --no-rich   # for pd
 
 Runner mode tradeoff:
 
-- `server` (default): realistic isolation -- your estimator runs against the whest server.
-- `local`: in-process execution with better traceback fidelity while debugging. Required for interactive debuggers (`pdb`, `breakpoint()`).
+- `local` (default): in-process execution with better traceback fidelity while debugging. Required for interactive debuggers (`pdb`, `breakpoint()`).
+- `subprocess`: isolated execution in a separate process via the subprocess runner.
+- `server`: legacy alias for `subprocess`.
+- `inprocess`: alias for `local`.
 
 ## `whest create-dataset`
 

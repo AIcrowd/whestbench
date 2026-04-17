@@ -4,10 +4,9 @@ Most assertions drive the worker's functions in-process to stay fast;
 a single end-to-end spawn validates the full stdio pipeline.
 """
 
-from __future__ import annotations
-
 import io
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -136,6 +135,11 @@ def test_worker_end_to_end_spawn_still_works(tmp_path: Path) -> None:
     round-trip still produces a traceback in the predict-error path. The other
     traceback assertions run in-process above to keep the suite fast."""
     estimator_path = _broken_predict_estimator(tmp_path)
+    env = os.environ.copy()
+    repo_root = Path(__file__).resolve().parents[1]
+    src_path = str(repo_root / "src")
+    current_pythonpath = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = f"{src_path}:{current_pythonpath}" if current_pythonpath else src_path
     proc = subprocess.Popen(
         [sys.executable, "-m", "whestbench.subprocess_worker"],
         stdin=subprocess.PIPE,
@@ -143,6 +147,7 @@ def test_worker_end_to_end_spawn_still_works(tmp_path: Path) -> None:
         stderr=subprocess.PIPE,
         text=True,
         bufsize=1,
+        env=env,
     )
     assert proc.stdin is not None
     start = {
