@@ -292,12 +292,12 @@ def _fmt_bytes(value: Optional[int]) -> str:
 def _fmt_flops(value: Any) -> str:
     """Format FLOP counts legibly.
 
-    - Non-numeric / falsy ``None`` -> "n/a".
+    - Non-numeric / ``None`` -> "n/a".
     - |n| < 1e6 -> comma-grouped integer (e.g. "12,345").
-    - Otherwise -> scientific notation with 3 significant figures and the
-      comma-grouped value in parentheses, e.g. "8.46e11 (845,824,840,400)".
-    Paul @ ARC asked for scientific notation since raw grouped integers
-    with 12 digits are hard to read at a glance.
+    - Otherwise -> scientific notation with 3 significant figures,
+      e.g. "8.46e+11".
+
+    Exact integer values are always available via ``whest run --json``.
     """
     if value is None:
         return "n/a"
@@ -309,7 +309,7 @@ def _fmt_flops(value: Any) -> str:
         return "n/a"
     if abs(numeric) < 1e6:
         return f"{int(numeric):,}"
-    return f"{numeric:.2e} ({int(numeric):,})"
+    return f"{numeric:.2e}"
 
 
 def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
