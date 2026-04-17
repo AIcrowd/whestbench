@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import traceback as _tb
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
@@ -9,6 +10,7 @@ import whest as we
 
 from .domain import MLP
 from .generation import sample_mlp
+from .runner import RunnerError
 from .sdk import BaseEstimator
 from .simulation import sample_layer_statistics
 
@@ -316,12 +318,17 @@ def evaluate_estimator(
     estimator: BaseEstimator,
     data: ContestData,
     on_mlp_scored: Optional[Callable[[int], None]] = None,
+    *,
+    fail_fast: bool = False,
 ) -> Dict[str, Any]:
     """Score an estimator against precomputed contest data.
 
     Each MLP prediction runs under a BudgetContext. If the FLOP budget,
     wall-time limit, or untracked-time limit is exceeded, predictions are
     zeroed and the violation is recorded. Score = pure MSE (lower is better).
+
+    When ``fail_fast`` is True, unexpected predict-time exceptions are re-raised
+    instead of being recorded and skipped.
     """
     spec = data.spec
     per_mlp: List[Dict[str, Any]] = []
@@ -389,11 +396,24 @@ def evaluate_estimator(
             if normalized_breakdown is not None:
                 normalized_breakdowns.append(normalized_breakdown)
         except Exception as exc:
+            if fail_fast:
+                raise
             predictions = we.zeros((spec.depth, spec.width))
+            # Prefer the traceback forwarded from a remote runner (subprocess
+            # worker) when available; otherwise capture the local chain, which
+            # includes the original estimator traceback via `raise ... from exc`.
+            tb_text: Optional[str] = None
+            if isinstance(exc, RunnerError) and exc.detail.traceback:
+                tb_text = exc.detail.traceback
+            else:
+                tb_text = _tb.format_exc()
+            error_code = exc.detail.code if isinstance(exc, RunnerError) else exc.__class__.__name__
             per_mlp.append(
                 {
                     "mlp_index": i,
                     "error": str(exc),
+                    "error_code": error_code,
+                    "traceback": tb_text,
                     "flops_used": 0,
                     "budget_exhausted": False,
                     "time_exhausted": False,

@@ -181,7 +181,7 @@ def run_default_report(
     }
 
 
-def _render_plain_text_report(report: Dict[str, Any]) -> str:
+def _render_plain_text_report(report: Dict[str, Any], *, debug: bool = False) -> str:
     """Render a minimal plain-text summary when Rich rendering is unavailable."""
     results = report.get("results", {})
     run_config = report.get("run_config", {})
@@ -198,6 +198,28 @@ def _render_plain_text_report(report: Dict[str, Any]) -> str:
         f"Wall Time Limit: {run_config.get('wall_time_limit_s') or 'unlimited'}",
         f"Untracked Time Limit: {run_config.get('untracked_time_limit_s') or 'unlimited'}",
     ]
+
+    per_mlp = results.get("per_mlp") if isinstance(results, dict) else None
+    if isinstance(per_mlp, list):
+        failures = [e for e in per_mlp if isinstance(e, dict) and e.get("error")]
+        if failures:
+            lines.append("")
+            lines.append(f"Estimator Errors: {len(failures)} of {len(per_mlp)} MLP(s) raised:")
+            for entry in failures:
+                idx = entry.get("mlp_index", "?")
+                code = entry.get("error_code") or "UNKNOWN"
+                message = str(entry.get("error") or "").splitlines()[0]
+                lines.append(f"  MLP {idx} [{code}]: {message}")
+                if debug:
+                    tb_text = entry.get("traceback")
+                    if tb_text:
+                        for tb_line in str(tb_text).rstrip().splitlines():
+                            lines.append(f"    {tb_line}")
+            if not debug:
+                lines.append(
+                    "  (rerun with --debug to include full tracebacks; "
+                    "--fail-fast to stop on first error.)"
+                )
 
     def _as_float(value: Any) -> float:
         try:
@@ -643,6 +665,14 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument("--debug", action="store_true")
     run_parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help=(
+            "Stop on the first estimator error and let the raw Python traceback "
+            "propagate (combine with --debug to show it)."
+        ),
+    )
+    run_parser.add_argument(
         "--wall-time-limit",
         type=float,
         default=None,
@@ -797,6 +827,7 @@ def _run_estimator_with_runner(
     detail: str,
     progress: Optional[ProgressCallback] = None,
     contest_data: "Optional[Any]" = None,
+    fail_fast: bool = False,
 ) -> Dict[str, Any]:
     """Run estimator through a runner and score against contest data.
 
@@ -851,6 +882,7 @@ def _run_estimator_with_runner(
                 if progress is not None
                 else None
             ),
+            fail_fast=fail_fast,
         )
     finally:
         runner.close()
@@ -1159,6 +1191,7 @@ def _main_participant(argv: "list[str]") -> int:
                 "profile": bool(args.profile),
                 "detail": str(args.detail),
                 "contest_data": contest_data,
+                "fail_fast": bool(getattr(args, "fail_fast", False)),
             }
 
             if json_output:
@@ -1250,18 +1283,20 @@ def _main_participant(argv: "list[str]") -> int:
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
                 if no_rich:
-                    output = _render_plain_text_report(report)
+                    output = _render_plain_text_report(report, debug=debug)
                 else:
                     try:
                         output = render_human_results(
-                            report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
+                            report,
+                            show_diagnostic_plots=bool(args.show_diagnostic_plots),
+                            debug=debug,
                         )
                     except Exception as exc:
                         print(
                             f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
                             file=sys.stderr,
                         )
-                        output = _render_plain_text_report(report)
+                        output = _render_plain_text_report(report, debug=debug)
             print(output, end="" if output.endswith("\n") else "\n")
             if not json_output and not no_rich:
                 _tip_console.print(
@@ -1273,6 +1308,16 @@ def _main_participant(argv: "list[str]") -> int:
                     )
                 if dataset_path is None:
                     _tip_console.print(_dataset_tip)
+            per_mlp = report.get("results", {}).get("per_mlp", [])
+            failing = [e for e in per_mlp if isinstance(e, dict) and e.get("error")]
+            if failing:
+                hint = "rerun with --debug for tracebacks" if not debug else "see tracebacks above"
+                print(
+                    f"{len(failing)} of {len(per_mlp)} MLP(s) raised during predict; "
+                    f"{hint}. Use --fail-fast to stop on first error.",
+                    file=sys.stderr,
+                )
+                return 1
             return 0
 
         if command == "package":

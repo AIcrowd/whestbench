@@ -66,16 +66,22 @@ Key options:
 - `--json`
 - `--dataset <path>` — use pre-created dataset `.npz` file
 - `--no-rich` — disable Rich live display and progress bars; print a plain-text report. Required when attaching `pdb.set_trace()` (the live display would otherwise mask the prompt). Auto-enabled when `sys.gettrace()` is non-None, `PYTHONBREAKPOINT` is set, or `WHESTBENCH_NO_RICH=1`. See [Debugging Checklist](../how-to/debugging-checklist.md#using-pdb--breakpoint-inside-your-estimator).
-- `--debug`
+- `--debug` — include estimator tracebacks in the report's "Estimator Errors" panel (works with any runner).
+- `--fail-fast` — stop on the first estimator error and let the raw Python traceback propagate (combine with `--debug` to show it).
 
 Recommended debug sequence:
 
 ```bash
 whest run --estimator ./path/to/estimator.py
 whest run --estimator ./path/to/estimator.py --debug
-whest run --estimator ./path/to/estimator.py --runner local --debug
+whest run --estimator ./path/to/estimator.py --debug --fail-fast
 whest run --estimator ./path/to/estimator.py --runner local --no-rich   # for pdb.set_trace() / breakpoint()
 ```
+
+### Exit codes
+
+- `0` — scoring completed; no estimator errors (budget or time exhaustion still exits `0`).
+- `1` — at least one MLP raised during `predict`, or setup/runtime failure.
 
 Runner mode tradeoff:
 
