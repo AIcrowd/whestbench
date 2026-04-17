@@ -378,3 +378,102 @@ def test_agent_mode_flag_is_rejected() -> None:
     with pytest.raises(SystemExit) as exc_info:
         cli.main(["--agent-mode"])
     assert int(exc_info.value.code) == 2
+
+
+# --- Progress task visibility/start-state (Paul's "both timers tick" report) -
+
+
+def _find_task(progress: Any, task_id: int) -> Any:
+    return next(t for t in progress.tasks if t.id == task_id)
+
+
+def test_live_top_pane_scoring_task_starts_hidden_and_unstarted() -> None:
+    """Before any scoring event, the scoring task's elapsed timer must not tick."""
+    session = cli._LiveTopPaneSession({"run_config": {}, "run_meta": {}}, total=5, n_mlps=5)
+    scoring = _find_task(session._progress, session._scoring_task_id)
+    gen = _find_task(session._progress, session._gen_task_id)
+
+    assert scoring.visible is False
+    assert scoring.started is False
+    assert gen.visible is True
+    assert gen.started is True
+
+
+def test_live_top_pane_scoring_task_hidden_through_generating_phase() -> None:
+    """Emitting generating events must not reveal or start the scoring task."""
+    session = cli._LiveTopPaneSession({"run_config": {}, "run_meta": {}}, total=5, n_mlps=5)
+
+    for i in range(1, 6):
+        session.on_progress({"phase": "generating", "completed": i, "total": 5})
+
+    scoring = _find_task(session._progress, session._scoring_task_id)
+    assert scoring.visible is False
+    assert scoring.started is False
+
+
+def test_live_top_pane_scoring_task_revealed_on_first_scoring_event() -> None:
+    session = cli._LiveTopPaneSession({"run_config": {}, "run_meta": {}}, total=5, n_mlps=5)
+    # Go through generating first, then first scoring event.
+    for i in range(1, 6):
+        session.on_progress({"phase": "generating", "completed": i, "total": 5})
+    session.on_progress({"phase": "scoring", "completed": 1})
+
+    scoring = _find_task(session._progress, session._scoring_task_id)
+    assert scoring.visible is True
+    assert scoring.started is True
+    assert scoring.completed == 1
+
+
+def test_progress_callback_scoring_task_starts_hidden_and_unstarted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The Rich-based _progress_callback must also keep the scoring task
+    dormant until its phase begins."""
+    # Force the Rich-tqdm codepath (not classic_tqdm).
+    monkeypatch.setattr(cli, "rich_tqdm", object(), raising=False)
+    captured: dict[str, Any] = {}
+
+    # Patch Live so we don't actually take over the terminal in the test.
+    class _FakeLive:
+        def __init__(self, *_a: Any, **_kw: Any) -> None:
+            pass
+
+        def start(self) -> None:
+            pass
+
+        def stop(self) -> None:
+            pass
+
+    monkeypatch.setattr(cli, "Live", _FakeLive)
+
+    # Intercept the Progress object by patching its constructor to record it.
+    original_progress_cls = cli.Progress
+
+    def _capture_progress(*args: Any, **kwargs: Any) -> Any:
+        progress = original_progress_cls(*args, **kwargs)
+        captured["progress"] = progress
+        return progress
+
+    monkeypatch.setattr(cli, "Progress", _capture_progress)
+
+    with cli._progress_callback(total=5, n_mlps=5) as on_progress:
+        progress = captured["progress"]
+        tasks_before = list(progress.tasks)
+        assert len(tasks_before) == 2
+        gen_task, scoring_task = tasks_before
+        assert gen_task.visible is True and gen_task.started is True
+        assert scoring_task.visible is False and scoring_task.started is False
+
+        # Emit generating events — scoring task must remain dormant.
+        for i in range(1, 6):
+            on_progress({"phase": "generating", "completed": i, "total": 5})
+        scoring_task = next(t for t in progress.tasks if t.id == scoring_task.id)
+        assert scoring_task.visible is False
+        assert scoring_task.started is False
+
+        # First scoring event reveals and starts the task.
+        on_progress({"phase": "scoring", "completed": 1})
+        scoring_task = next(t for t in progress.tasks if t.id == scoring_task.id)
+        assert scoring_task.visible is True
+        assert scoring_task.started is True
+        assert scoring_task.completed == 1
