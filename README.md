@@ -187,34 +187,6 @@ uv run --group dev pytest -m "not exhaustive"
 uv run --group dev pytest -m exhaustive
 ```
 
-## 🪝 Local Push Guardrail
-
-Enable the repository pre-push hook so pushes are blocked until local lint/tests pass:
-
-```bash
-scripts/setup-git-hooks.sh
-```
-
-If you create additional worktrees later, rerun:
-
-```bash
-scripts/setup-git-hooks.sh
-```
-
-Run a check manually at any time:
-
-```bash
-.githooks/pre-push
-```
-
-Current checks include:
-
-- `uv run ruff check .`
-- `uv run ruff format --check .`
-- `uv run pytest -m "not exhaustive" -x -q`
-
-This setup requires `uv` to be installed and on `PATH`.
-
 ## 👥 Authors
 
 - Paul Christiano
