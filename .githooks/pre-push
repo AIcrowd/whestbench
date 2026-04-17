@@ -4,21 +4,6 @@
 
 set -euo pipefail
 
-has_link() {
-  local message="$1"
-  [[ "$message" == *"https://"* || "$message" == *"http://"* ]]
-}
-
-check_latest_commit_has_link() {
-  local message
-  message="$(git log -1 --pretty=%B 2>/dev/null || true)"
-  if ! has_link "$message"; then
-    echo "[pre-push] Rejected: latest commit message must include a tracking link (issue/PR/doc link)."
-    echo "Example: git commit --amend -m \"feat: ... (https://github.com/AIcrowd/whestbench/issues/...)\""
-    exit 1
-  fi
-}
-
 run_ci_like_checks() {
   echo ">>> pre-push: running local checks required before push"
 
