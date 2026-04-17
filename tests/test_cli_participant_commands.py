@@ -678,6 +678,76 @@ def test_run_json_output_includes_traceback_per_mlp(
         assert "RuntimeError" in entry["traceback"]
 
 
+def test_run_json_output_includes_validation_details_for_shape_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    estimator = tmp_path / "wrong_shape.py"
+    estimator.write_text(
+        dedent(
+            """
+            import whest as we
+            from whestbench import BaseEstimator
+
+            class Estimator(BaseEstimator):
+                def predict(self, mlp, budget):
+                    return we.ones((mlp.width, mlp.depth), dtype=we.float32)
+            """
+        ).lstrip(),
+        encoding="utf-8",
+    )
+    dataset = tmp_path / "ds.npz"
+    _write_tiny_dataset(dataset, n_mlps=1)
+
+    exit_code = cli.main(_tiny_run_argv(estimator, dataset) + ["--json", "--runner", "subprocess"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    payload = json.loads(captured.out)
+    per_mlp = payload["results"]["per_mlp"]
+    assert len(per_mlp) == 1
+    entry = per_mlp[0]
+    assert entry["error_code"] == "PREDICT_ERROR"
+    assert isinstance(entry["error"], dict)
+    assert "message" in entry["error"]
+    assert "details" in entry["error"]
+    assert entry["error"]["details"]["expected_shape"] == [2, 4]
+    assert entry["error"]["details"]["got_shape"] == [4, 2]
+
+
+def test_run_plain_output_shows_validation_hint_details(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    estimator = tmp_path / "wrong_shape.py"
+    estimator.write_text(
+        dedent(
+            """
+            import whest as we
+            from whestbench import BaseEstimator
+
+            class Estimator(BaseEstimator):
+                def predict(self, mlp, budget):
+                    return we.ones((mlp.width, mlp.depth), dtype=we.float32)
+            """
+        ).lstrip(),
+        encoding="utf-8",
+    )
+    dataset = tmp_path / "ds.npz"
+    _write_tiny_dataset(dataset, n_mlps=1)
+
+    exit_code = cli.main(_tiny_run_argv(estimator, dataset))
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    out = captured.out
+    assert "Estimator Errors" in out
+    assert "MLP 0 [ValueError]:" in out
+    assert "Predictions must have shape (2, 4), got (4, 2)." in out
+    assert "Expected shape: [2, 4]" in out
+    assert "Got shape: [4, 2]" in out
+    assert "Hint:" in out
+    assert "'message':" not in out
+
+
 def test_run_budget_exhausted_does_not_set_exit_1(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -414,7 +414,15 @@ def _render_errors_section(
     for entry in failures:
         idx = str(entry.get("mlp_index", "?"))
         code = str(entry.get("error_code") or "UNKNOWN")
-        message = str(entry.get("error") or "").splitlines()[0] if entry.get("error") else ""
+        raw_error = entry.get("error")
+        if isinstance(raw_error, dict):
+            message = str(raw_error.get("message") or "").splitlines()[0]
+        elif isinstance(raw_error, str):
+            message = raw_error.splitlines()[0]
+        elif raw_error is None:
+            message = ""
+        else:
+            message = str(raw_error)
         table.add_row(idx, code, message)
 
     children: list[Any] = [

@@ -201,6 +201,41 @@ def _render_plain_text_report(report: Dict[str, Any], *, debug: bool = False) ->
         f"Untracked Time Limit: {run_config.get('untracked_time_limit_s') or 'unlimited'}",
     ]
 
+    def _extract_error_line(entry: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
+        raw_error = entry.get("error")
+        if isinstance(raw_error, dict):
+            message = str(raw_error.get("message") or "").strip()
+            details = raw_error.get("details")
+            if not isinstance(details, dict):
+                details = {}
+            if not message:
+                message = "(no message)"
+            return message, details
+        if raw_error is None:
+            return "", {}
+        return str(raw_error), {}
+
+    def _render_error_details(details: Dict[str, Any], indent: str) -> list[str]:
+        if not details:
+            return []
+        lines: list[str] = []
+        hint = details.get("hint")
+        cause_hints = details.get("cause_hints")
+        expected_shape = details.get("expected_shape")
+        got_shape = details.get("got_shape")
+        if isinstance(expected_shape, list):
+            lines.append(f"{indent}Expected shape: {expected_shape}")
+        if isinstance(got_shape, list):
+            lines.append(f"{indent}Got shape: {got_shape}")
+        if isinstance(hint, str) and hint:
+            lines.append(f"{indent}Hint: {hint}")
+        if isinstance(cause_hints, list) and cause_hints:
+            lines.append(f"{indent}Cause hints:")
+            for item in cause_hints:
+                if isinstance(item, str) and item:
+                    lines.append(f"{indent}  - {item}")
+        return lines
+
     per_mlp = results.get("per_mlp") if isinstance(results, dict) else None
     if isinstance(per_mlp, list):
         failures = [e for e in per_mlp if isinstance(e, dict) and e.get("error")]
@@ -210,8 +245,9 @@ def _render_plain_text_report(report: Dict[str, Any], *, debug: bool = False) ->
             for entry in failures:
                 idx = entry.get("mlp_index", "?")
                 code = entry.get("error_code") or "UNKNOWN"
-                message = str(entry.get("error") or "").splitlines()[0]
+                message, details = _extract_error_line(entry)
                 lines.append(f"  MLP {idx} [{code}]: {message}")
+                lines.extend(_render_error_details(details, indent="    "))
                 if debug:
                     tb_text = entry.get("traceback")
                     if tb_text:

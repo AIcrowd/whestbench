@@ -70,7 +70,9 @@ def test_inprocess_runner_predict_before_start_raises(small_mlp) -> None:
         runner.predict(small_mlp, budget=100)
 
 
-def test_inprocess_runner_predict_preserves_estimator_error_details(small_mlp, limits, tmp_path) -> None:
+def test_inprocess_runner_predict_preserves_estimator_error_details(
+    small_mlp, limits, tmp_path
+) -> None:
     details = {
         "expected_shape": [2, 8],
         "got_shape": [8, 2],
@@ -93,7 +95,7 @@ def test_inprocess_runner_predict_preserves_estimator_error_details(small_mlp, l
     )
     runner = LocalRunner()
     entry = EstimatorEntrypoint(file_path=est_file)
-    ctx = SetupContext(width=8, depth=2, flop_budget=100, api_version=\"1.0\")
+    ctx = SetupContext(width=8, depth=2, flop_budget=100, api_version="1.0")
     runner.start(entry, ctx, limits)
     with pytest.raises(RunnerError) as exc_info:
         runner.predict(small_mlp, budget=100)

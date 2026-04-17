@@ -32,16 +32,23 @@ def test_validate_predictions_accepts_correct_shape() -> None:
 
 def test_validate_predictions_rejects_wrong_shape() -> None:
     arr = we.ones((2, 4))
-    with pytest.raises(ValueError, match="shape"):
+    with pytest.raises(ValueError, match="shape") as exc_info:
         validate_predictions(arr, depth=3, width=4)
+    details = getattr(exc_info.value, "details", None)
+    assert isinstance(details, dict)
+    assert details.get("expected_shape") == [3, 4]
+    assert details.get("got_shape") == [2, 4]
 
 
 def test_validate_predictions_rejects_non_finite() -> None:
     arr = we.ones((3, 4), dtype=we.float32)
     arr[0, 0] = float("nan")
     arr = we.array(arr)
-    with pytest.raises(ValueError, match="finite"):
+    with pytest.raises(ValueError, match="finite") as exc_info:
         validate_predictions(arr, depth=3, width=4)
+    details = getattr(exc_info.value, "details", None)
+    assert isinstance(details, dict)
+    assert details.get("expected_shape") == [3, 4]
 
 
 def test_make_contest_produces_correct_data() -> None:

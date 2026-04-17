@@ -49,9 +49,16 @@ If the estimator raised an error, the entry also includes:
 
 | Field | Type | Description |
 |---|---|---|
-| `error` | `str` | Error message from the failed prediction |
+| `error` | `str` \| `dict` | Legacy string message, or structured object: `{"message": str, "details": object}` |
 | `error_code` | `str` | Stable identifier: `PREDICT_ERROR` for a `RunnerError`, or the Python exception class name otherwise |
-| `traceback` | `str \| null` | Formatted traceback string for the failure. Forwarded from the subprocess worker when `--runner subprocess`/`server` is used; captured locally otherwise. `null` when the error arose from a shape/finiteness check (no active exception). |
+| `traceback` | `str \| null` | Formatted traceback string for the failure. Forwarded from the subprocess worker when `--runner subprocess`/`server` is used; captured locally otherwise. |
+
+For structured `error` objects, `error.details` includes:
+
+- `expected_shape`: `List[int]` with expected `(depth, width)`.
+- `got_shape`: `List[int]` observed from estimator output.
+- `cause_hints`: `List[str]` with user-facing hints.
+- `hint`: short summary hint.
 
 ## Breakdown containers
 
