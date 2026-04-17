@@ -272,7 +272,7 @@ def _run_context_panel(report: "dict[str, Any]") -> Panel:
             ("MLPs [n_mlps]", str(run_config.get("n_mlps", "n/a"))),
             ("Width [width]", str(run_config.get("width", "n/a"))),
             ("Depth [depth]", str(run_config.get("depth", "n/a"))),
-            ("FLOP Budget [flop_budget]", str(run_config.get("flop_budget", "n/a"))),
+            ("FLOP Budget [flop_budget]", _fmt_flops(run_config.get("flop_budget"))),
         ]
     )
     for key, value in rows:
@@ -287,6 +287,29 @@ def _fmt_bytes(value: Optional[int]) -> str:
         return "n/a"
     gb = value / (1024**3)
     return f"{gb:.1f} GB"
+
+
+def _fmt_flops(value: Any) -> str:
+    """Format FLOP counts legibly.
+
+    - Non-numeric / falsy ``None`` -> "n/a".
+    - |n| < 1e6 -> comma-grouped integer (e.g. "12,345").
+    - Otherwise -> scientific notation with 3 significant figures and the
+      comma-grouped value in parentheses, e.g. "8.46e11 (845,824,840,400)".
+    Paul @ ARC asked for scientific notation since raw grouped integers
+    with 12 digits are hard to read at a glance.
+    """
+    if value is None:
+        return "n/a"
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    if numeric != numeric:  # NaN
+        return "n/a"
+    if abs(numeric) < 1e6:
+        return f"{int(numeric):,}"
+    return f"{numeric:.2e} ({int(numeric):,})"
 
 
 def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
@@ -401,7 +424,7 @@ def _breakdown_panel(
     summary.add_column("value")
     summary.add_row(
         _label_with_code("Total FLOPs", "flops_used", "bold bright_yellow"),
-        f"{int(total_flops):,}",
+        _fmt_flops(total_flops),
     )
     summary.add_row(
         _label_with_code("Tracked Time", "tracked_time_s", "bold bright_green"),
@@ -433,9 +456,9 @@ def _breakdown_panel(
         tracked_time_s = _as_float(bucket.get("tracked_time_s", 0.0))
         table.add_row(
             namespace_label,
-            f"{int(flops_used):,}",
+            _fmt_flops(flops_used),
             f"{percent:.1f}%",
-            f"{mean_flops:,.1f}",
+            _fmt_flops(mean_flops),
             f"{tracked_time_s:.6f}s",
         )
 
