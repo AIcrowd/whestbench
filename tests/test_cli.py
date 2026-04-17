@@ -338,7 +338,9 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
 
     monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run_estimator_with_runner)
     monkeypatch.setattr(
-        cli, "render_human_results", lambda _report, *, show_diagnostic_plots=False: "results\n"
+        cli,
+        "render_human_results",
+        lambda _report, *, show_diagnostic_plots=False, debug=False: "results\n",
     )
 
     exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
