@@ -388,7 +388,7 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     return Panel(
         Align.center(summary),
         title="Final Score",
-        subtitle="lower MSE is better; primary score = mean final-layer MSE",
+        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
         subtitle_align="left",
         border_style="bright_cyan",
     )
