@@ -75,7 +75,7 @@ whest run --estimator ./my-estimator/estimator.py
 whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz
 ```
 
-`whest run` uses `--runner server` by default.
+`whest run --estimator ...` uses local in-process execution by default for faster iteration.
 
 For faster repeated evaluations, pre-create a dataset and reuse it:
 
@@ -185,21 +185,6 @@ uv run --group dev ruff format --check .
 uv run --group dev pyright
 uv run --group dev pytest -m "not exhaustive"
 uv run --group dev pytest -m exhaustive
-```
-
-## 🪝 Local Push Guardrail
-
-Enable the repository pre-push hook so pushes are blocked until local lint/tests pass:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-By default, the hook also requires the latest commit message to include a tracking link (issue/PR/doc).
-If a push is blocked, amend your commit with a URL and rerun:
-
-```bash
-git commit --amend -m "feat: ... (https://github.com/...)"
 ```
 
 ## 👥 Authors
