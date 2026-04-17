@@ -195,12 +195,19 @@ Enable the repository pre-push hook so pushes are blocked until local lint/tests
 git config core.hooksPath .githooks
 ```
 
-By default, the hook also requires the latest commit message to include a tracking link (issue/PR/doc).
-If a push is blocked, amend your commit with a URL and rerun:
+Run a check manually at any time:
 
 ```bash
-git commit --amend -m "feat: ... (https://github.com/...)"
+.githooks/pre-push
 ```
+
+Current checks include:
+
+- `uv run ruff check .`
+- `uv run ruff format --check .`
+- `uv run pytest -m "not exhaustive" -x -q`
+
+This setup requires `uv` to be installed and on `PATH`.
 
 ## 👥 Authors
 
