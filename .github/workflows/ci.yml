@@ -32,6 +32,23 @@ jobs:
         continue-on-error: true
         run: uv run pyright
 
+      - name: Pre-push hook hint
+        if: failure()
+        run: |
+          cat <<'EOF'
+          ::notice title=Tip: catch this locally before CI::
+          This repo ships pre-commit and pre-push hooks that run ruff (and pytest on push)
+          before each commit/push. If they had been active on your machine, this failure
+          would have been blocked before reaching CI.
+
+          One-time setup per clone:
+
+              git config core.hooksPath .githooks
+
+          After that, every worktree of this clone runs the hooks automatically.
+          See .githooks/pre-commit and .githooks/pre-push for exact commands.
+          EOF
+
   test:
     runs-on: ubuntu-latest
     steps:
