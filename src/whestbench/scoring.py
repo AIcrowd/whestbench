@@ -32,6 +32,7 @@ class ContestSpec:
     memory_limit_mb: int = 4096
     wall_time_limit_s: Optional[float] = None
     untracked_time_limit_s: Optional[float] = None
+    seed: Optional[int] = None
 
     def validate(self) -> None:
         """Validate that all contest specification fields are positive and consistent."""
@@ -49,6 +50,8 @@ class ContestSpec:
             raise ValueError("wall_time_limit_s must be positive when provided.")
         if self.untracked_time_limit_s is not None and self.untracked_time_limit_s <= 0:
             raise ValueError("untracked_time_limit_s must be positive when provided.")
+        if self.seed is not None and not isinstance(self.seed, int):
+            raise ValueError("seed must be an integer when provided.")
 
 
 @dataclass
@@ -69,6 +72,13 @@ def make_contest(
 ) -> ContestData:
     """Generate MLPs, compute ground truth, and collect sampling attribution."""
     spec.validate()
+    spec_seed = spec.seed
+    stream_seeds: List[we.random.SeedSequence] = (
+        we.random.SeedSequence(int(spec_seed)).spawn(2 * spec.n_mlps)
+        if spec_seed is not None
+        else []
+    )
+
     mlps: List[MLP] = []
     all_layer_targets: List[we.ndarray] = []
     final_targets: List[we.ndarray] = []
@@ -76,12 +86,18 @@ def make_contest(
     sampling_breakdowns: List[Dict[str, Any]] = []
 
     for i in range(spec.n_mlps):
-        mlp = sample_mlp(spec.width, spec.depth)
+        mlp_rng = (
+            we.random.default_rng(stream_seeds[2 * i]) if spec_seed is not None else None
+        )
+        sample_rng = (
+            we.random.default_rng(stream_seeds[2 * i + 1]) if spec_seed is not None else None
+        )
+        mlp = sample_mlp(spec.width, spec.depth, mlp_rng)
         with we.BudgetContext(flop_budget=int(1e15)) as sampling_budget:
             with we.namespace("sampling"):
                 with we.namespace("sample_layer_statistics"):
                     all_means, final_mean, avg_var = sample_layer_statistics(
-                        mlp, spec.ground_truth_samples
+                        mlp, spec.ground_truth_samples, rng=sample_rng
                     )
         normalized_sampling = _normalize_sampling_budget_breakdown(
             sampling_budget.summary_dict(by_namespace=True)

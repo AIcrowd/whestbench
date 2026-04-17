@@ -16,7 +16,9 @@ from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
 from .simulation import sample_layer_statistics
 
-SCHEMA_VERSION = "2.0"
+SCHEMA_VERSION = "2.1"
+SEED_PROTOCOL_NAME = "whestbench_seedsequence_hierarchy"
+SEED_PROTOCOL_VERSION = "1.0"
 
 
 def dataset_file_hash(path: "Path | str") -> str:
@@ -55,13 +57,15 @@ def create_dataset(
 ) -> Path:
     """Generate MLPs, compute ground truth, and save to .npz."""
     output_path = Path(output_path)
-    if seed is None:
-        seed = int(we.random.SeedSequence().entropy)  # type: ignore[arg-type]
-    rng = we.random.default_rng(seed)
+    seed_sequence = (
+        we.random.SeedSequence() if seed is None else we.random.SeedSequence(int(seed))
+    )
+    stream_seed = seed_sequence.spawn(2 * n_mlps)
 
     mlps: List[MLP] = []
     for i in range(n_mlps):
-        mlps.append(sample_mlp(width, depth, rng))
+        weight_stream = we.random.default_rng(stream_seed[2 * i])
+        mlps.append(sample_mlp(width, depth, weight_stream))
         if progress is not None:
             progress({"phase": "generating", "completed": i + 1, "total": n_mlps})
 
@@ -73,8 +77,11 @@ def create_dataset(
     final_means_list: List[we.ndarray] = []
     avg_variances: List[float] = []
     for i, mlp in enumerate(mlps):
+        sample_stream = we.random.default_rng(stream_seed[2 * i + 1])
         with we.BudgetContext(flop_budget=int(1e15)):
-            all_means, final_mean, avg_var = sample_layer_statistics(mlp, n_samples)
+            all_means, final_mean, avg_var = sample_layer_statistics(
+                mlp, n_samples, rng=sample_stream
+            )
         all_means_list.append(we.asarray(all_means, dtype=we.float32))
         final_means_list.append(we.asarray(final_mean, dtype=we.float32))
         avg_variances.append(avg_var)
@@ -86,8 +93,13 @@ def create_dataset(
 
     metadata: Dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
+        "seed_protocol": {
+            "name": SEED_PROTOCOL_NAME,
+            "version": SEED_PROTOCOL_VERSION,
+            "seeded": seed is not None,
+        },
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
-        "seed": seed,
+        "seed": int(seed_sequence.entropy),
         "n_mlps": n_mlps,
         "n_samples": n_samples,
         "width": width,

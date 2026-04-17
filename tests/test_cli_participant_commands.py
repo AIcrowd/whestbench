@@ -266,7 +266,7 @@ def _write_fake_dataset(path: Path, n_mlps: int, width: int = 4, depth: int = 2)
     final_means = rng.standard_normal((n_mlps, width)).astype(np.float32)
     avg_variances = np.ones(n_mlps, dtype=np.float64)
     metadata = {
-        "schema_version": "2.0",
+        "schema_version": "2.1",
         "created_at_utc": "2026-04-17T00:00:00+00:00",
         "seed": 0,
         "n_mlps": n_mlps,
@@ -453,6 +453,68 @@ def test_run_without_dataset_honors_explicit_n_mlps(
     assert observed["contest_spec"].n_mlps == 7
 
 
+def test_run_seed_includes_seed_in_run_config_and_replays_inputs(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    observed: dict = {}
+
+    def fake_run_estimator_with_runner(*_args: Any, **kwargs: Any) -> dict:
+        contest_spec = kwargs["contest_spec"]
+        observed.setdefault("seeds", []).append(contest_spec.seed)
+        observed.setdefault("specs", []).append(
+            (
+                contest_spec.width,
+                contest_spec.depth,
+                contest_spec.n_mlps,
+                contest_spec.flop_budget,
+                contest_spec.ground_truth_samples,
+                contest_spec.seed,
+            )
+        )
+        payload = _sample_report()
+        payload["run_config"]["seed"] = contest_spec.seed
+        return payload
+
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run_estimator_with_runner)
+
+    first = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--seed",
+            "2026",
+            "--json",
+        ]
+    )
+    first_out = capsys.readouterr().out
+    first_payload = json.loads(first_out)
+
+    second = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--seed",
+            "2026",
+            "--json",
+        ]
+    )
+    second_out = capsys.readouterr().out
+    second_payload = json.loads(second_out)
+
+    assert first == 0
+    assert second == 0
+    assert first_payload["run_config"]["seed"] == 2026
+    assert second_payload["run_config"]["seed"] == 2026
+    assert observed["seeds"] == [2026, 2026]
+    assert observed["specs"][0] == observed["specs"][1]
+
+
 def test_main_uses_sys_argv_when_argv_is_none(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -510,7 +572,7 @@ def _write_tiny_dataset(path: Path, n_mlps: int = 2, width: int = 4, depth: int 
     final_means = rng.standard_normal((n_mlps, width)).astype(np.float32)
     avg_variances = np.ones(n_mlps, dtype=np.float64)
     metadata = {
-        "schema_version": "2.0",
+        "schema_version": "2.1",
         "created_at_utc": "2026-04-17T00:00:00+00:00",
         "seed": 0,
         "n_mlps": n_mlps,

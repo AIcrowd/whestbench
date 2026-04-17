@@ -175,6 +175,7 @@ def run_default_report(
             "width": spec.width,
             "depth": spec.depth,
             "n_mlps": spec.n_mlps,
+            "seed": spec.seed,
             "flop_budget": spec.flop_budget,
             "wall_time_limit_s": spec.wall_time_limit_s,
             "untracked_time_limit_s": spec.untracked_time_limit_s,
@@ -321,6 +322,7 @@ def _pre_run_report(
             "n_mlps": int(n_mlps),
             "width": int(contest_spec.width),
             "depth": int(contest_spec.depth),
+            "seed": contest_spec.seed,
             "flop_budget": int(contest_spec.flop_budget),
             "wall_time_limit_s": contest_spec.wall_time_limit_s,
             "untracked_time_limit_s": contest_spec.untracked_time_limit_s,
@@ -711,6 +713,12 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Time limit for non-whest operations per predict call (default: unlimited).",
     )
     run_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Seed for deterministic MLP generation and ground-truth sampling (no-dataset runs only).",
+    )
+    run_parser.add_argument(
         "--max-threads",
         type=int,
         default=None,
@@ -926,6 +934,7 @@ def _run_estimator_with_runner(
             "n_mlps": n_mlps,
             "width": spec.width,
             "depth": spec.depth,
+            "seed": spec.seed,
             "flop_budget": spec.flop_budget,
             "wall_time_limit_s": spec.wall_time_limit_s,
             "untracked_time_limit_s": spec.untracked_time_limit_s,
@@ -1146,6 +1155,7 @@ def _main_participant(argv: "list[str]") -> int:
             runner = LocalRunner() if args.runner in ("local", "inprocess") else SubprocessRunner()
             contest_spec = _default_contest_spec()
             user_n_mlps: Optional[int] = int(args.n_mlps) if args.n_mlps is not None else None
+            run_seed: Optional[int] = getattr(args, "seed", None)
             if user_n_mlps is not None and user_n_mlps <= 0:
                 raise ValueError("--n-mlps must be positive.")
             flop_budget = (
@@ -1166,6 +1176,8 @@ def _main_participant(argv: "list[str]") -> int:
             contest_data = None
             bundle = None
             ds_meta: Dict[str, Any] = {}
+            if getattr(args, "dataset", None) is not None and run_seed is not None:
+                raise ValueError("--seed is only valid when --dataset is not provided.")
 
             if dataset_path is not None:
                 from .dataset import dataset_file_hash, load_dataset
@@ -1192,6 +1204,7 @@ def _main_participant(argv: "list[str]") -> int:
                     n_mlps=n_mlps,
                     flop_budget=ds_meta.get("flop_budget", flop_budget),
                     ground_truth_samples=gt_samples,
+                    seed=None,
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
                     untracked_time_limit_s=getattr(args, "untracked_time_limit", None),
                 )
@@ -1204,6 +1217,7 @@ def _main_participant(argv: "list[str]") -> int:
                     n_mlps=n_mlps,
                     flop_budget=flop_budget,
                     ground_truth_samples=gt_samples,
+                    seed=run_seed,
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
                     untracked_time_limit_s=getattr(args, "untracked_time_limit", None),
                 )
