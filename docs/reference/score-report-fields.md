@@ -12,6 +12,7 @@ Typical report sections include:
 - `mode`
 - `run_meta`
 - `run_config`
+- `run_config.seed` (present when `whest run --seed` is provided)
 - `run_config.dataset` (present when `--dataset` is used)
 - `results`
 

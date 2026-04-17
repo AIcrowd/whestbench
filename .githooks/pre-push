@@ -1,16 +1,43 @@
 #!/usr/bin/env bash
-# Pre-push hook: runs the same lint + quick test checks as CI.
+# Pre-push hook: run local checks that match CI before allowing push.
 # Install: git config core.hooksPath .githooks
 
 set -euo pipefail
 
-echo "==> pre-push: ruff check"
-uv run ruff check .
+has_link() {
+  local message="$1"
+  [[ "$message" == *"https://"* || "$message" == *"http://"* ]]
+}
 
-echo "==> pre-push: ruff format --check"
-uv run ruff format --check .
+check_latest_commit_has_link() {
+  local message
+  message="$(git log -1 --pretty=%B 2>/dev/null || true)"
+  if ! has_link "$message"; then
+    echo "[pre-push] Rejected: latest commit message must include a tracking link (issue/PR/doc link)."
+    echo "Example: git commit --amend -m \"feat: ... (https://github.com/AIcrowd/whestbench/issues/...)\""
+    exit 1
+  fi
+}
 
-echo "==> pre-push: pytest (quick)"
-uv run pytest -m "not exhaustive" -x -q
+run_ci_like_checks() {
+  echo ">>> pre-push: running local checks required before push"
 
-echo "==> pre-push: all checks passed"
+  if ! command -v uv >/dev/null; then
+    echo "[pre-push] Missing 'uv' in PATH. Install with: curl -LsSf https://astral.sh/uv/install.sh | sh" >&2
+    exit 1
+  fi
+
+  echo "==> ruff check"
+  uv run ruff check .
+
+  echo "==> ruff format --check"
+  uv run ruff format --check .
+
+  echo "==> pytest (non-exhaustive)"
+  uv run pytest -m "not exhaustive" -x -q
+
+  echo "==> pre-push checks passed"
+}
+
+check_latest_commit_has_link
+run_ci_like_checks
