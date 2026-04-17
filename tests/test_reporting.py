@@ -781,10 +781,11 @@ def test_fmt_flops_small_values_use_comma_grouping() -> None:
 def test_fmt_flops_large_values_use_scientific() -> None:
     from whestbench.reporting import _fmt_flops
 
-    # Threshold is 1e6; at and above, switch to scientific + parenthesised exact.
-    assert _fmt_flops(1_000_000) == "1.00e+06 (1,000,000)"
-    assert _fmt_flops(845_824_840_400) == "8.46e+11 (845,824,840,400)"
-    assert _fmt_flops(int(1e15)) == "1.00e+15 (1,000,000,000,000,000)"
+    # Threshold is 1e6; at and above, switch to scientific (no exact suffix —
+    # users can get exact values from `whest run --json`).
+    assert _fmt_flops(1_000_000) == "1.00e+06"
+    assert _fmt_flops(845_824_840_400) == "8.46e+11"
+    assert _fmt_flops(int(1e15)) == "1.00e+15"
 
 
 def test_fmt_flops_handles_non_numeric() -> None:
@@ -799,5 +800,5 @@ def test_fmt_flops_handles_float_counts() -> None:
     """Per-MLP means are floats (e.g. 422,912,420,200.0 in the CLI output)."""
     from whestbench.reporting import _fmt_flops
 
-    assert _fmt_flops(422_912_420_200.0) == "4.23e+11 (422,912,420,200)"
-    assert _fmt_flops(1.5e7) == "1.50e+07 (15,000,000)"
+    assert _fmt_flops(422_912_420_200.0) == "4.23e+11"
+    assert _fmt_flops(1.5e7) == "1.50e+07"
