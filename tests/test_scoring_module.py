@@ -39,7 +39,9 @@ def test_make_contest_produces_valid_data() -> None:
 
 
 def test_make_contest_is_reproducible_with_seed() -> None:
-    spec = ContestSpec(width=8, depth=2, n_mlps=3, flop_budget=1_000_000, ground_truth_samples=64, seed=7777)
+    spec = ContestSpec(
+        width=8, depth=2, n_mlps=3, flop_budget=1_000_000, ground_truth_samples=64, seed=7777
+    )
     data_a = make_contest(spec)
     data_b = make_contest(spec)
 
