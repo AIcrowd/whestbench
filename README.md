@@ -192,7 +192,13 @@ uv run --group dev pytest -m exhaustive
 Enable the repository pre-push hook so pushes are blocked until local lint/tests pass:
 
 ```bash
-git config core.hooksPath .githooks
+scripts/setup-git-hooks.sh
+```
+
+If you create additional worktrees later, rerun:
+
+```bash
+scripts/setup-git-hooks.sh
 ```
 
 Run a check manually at any time:
