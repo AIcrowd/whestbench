@@ -136,11 +136,15 @@ class LocalRunner:
         try:
             estimator.setup(context)
         except Exception as exc:
+            setup_details = getattr(exc, "details", None)
+            if not isinstance(setup_details, dict):
+                setup_details = None
             raise RunnerError(
                 "setup",
                 RunnerErrorDetail(
                     code="SETUP_ERROR",
                     message=str(exc),
+                    details=setup_details,
                     traceback=_tb.format_exc(),
                 ),
             ) from exc
@@ -169,11 +173,15 @@ class LocalRunner:
         except we.BudgetExhaustedError:
             raise
         except Exception as exc:
+            predict_details = getattr(exc, "details", None)
+            if not isinstance(predict_details, dict):
+                predict_details = None
             raise RunnerError(
                 "predict",
                 RunnerErrorDetail(
                     code="PREDICT_ERROR",
                     message=str(exc),
+                    details=predict_details,
                     traceback=_tb.format_exc(),
                 ),
             ) from exc
@@ -323,12 +331,16 @@ class SubprocessRunner:
         if response.get("status") == "time_exhausted":
             raise we.TimeExhaustedError("subprocess_predict", elapsed_s=0.0, limit_s=0.0)
         if response.get("status") == "error":
+            details = response.get("details")
+            if not isinstance(details, dict):
+                details = None
             raise RunnerError(
                 "predict",
                 RunnerErrorDetail(
                     code="PREDICT_ERROR",
                     message=str(response.get("error_message", "unknown error")),
                     traceback=response.get("traceback"),
+                    details=details,
                 ),
             )
         predictions_data = response.get("predictions")

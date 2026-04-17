@@ -68,3 +68,35 @@ def test_inprocess_runner_predict_before_start_raises(small_mlp) -> None:
     runner = LocalRunner()
     with pytest.raises(RunnerError):
         runner.predict(small_mlp, budget=100)
+
+
+def test_inprocess_runner_predict_preserves_estimator_error_details(small_mlp, limits, tmp_path) -> None:
+    details = {
+        "expected_shape": [2, 8],
+        "got_shape": [8, 2],
+        "hint": "Returned predictions appear to be transposed: expected (depth, width), got (width, depth).",
+        "cause_hints": [
+            "Returned predictions appear to be transposed: expected (depth, width), got (width, depth)."
+        ],
+    }
+    est_file = tmp_path / "est.py"
+    est_file.write_text(
+        "import numpy as np\n"
+        "from whestbench.sdk import BaseEstimator\n"
+        "from whestbench.domain import MLP\n"
+        "\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        exc = ValueError(f'Predictions must have shape ({mlp.depth}, {mlp.width}), got ({mlp.width}, {mlp.depth}).')\n"
+        "        exc.details = {'expected_shape': [2, 8], 'got_shape': [8, 2], 'hint': 'Returned predictions appear to be transposed: expected (depth, width), got (width, depth).', 'cause_hints': ['Returned predictions appear to be transposed: expected (depth, width), got (width, depth).']}\n"
+        "        raise exc\n"
+    )
+    runner = LocalRunner()
+    entry = EstimatorEntrypoint(file_path=est_file)
+    ctx = SetupContext(width=8, depth=2, flop_budget=100, api_version=\"1.0\")
+    runner.start(entry, ctx, limits)
+    with pytest.raises(RunnerError) as exc_info:
+        runner.predict(small_mlp, budget=100)
+    assert exc_info.value.detail.code == "PREDICT_ERROR"
+    assert exc_info.value.detail.details == details
+    runner.close()
