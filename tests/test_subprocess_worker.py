@@ -4,11 +4,9 @@ Most assertions drive the worker's functions in-process to stay fast;
 a single end-to-end spawn validates the full stdio pipeline.
 """
 
-from __future__ import annotations
-
-import os
 import io
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
