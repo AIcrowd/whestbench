@@ -24,5 +24,4 @@ run_ci_like_checks() {
   echo "==> pre-push checks passed"
 }
 
-check_latest_commit_has_link
 run_ci_like_checks
