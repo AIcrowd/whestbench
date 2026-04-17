@@ -154,7 +154,7 @@ def _smoke_next_step_commands() -> "list[str]":
     return [
         "whest init ./my-estimator",
         "whest validate --estimator ./my-estimator/estimator.py",
-        "whest run --estimator ./my-estimator/estimator.py --runner server",
+        "whest run --estimator ./my-estimator/estimator.py --runner local",
         "whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
     ]
 
@@ -174,10 +174,10 @@ def _smoke_next_step_lines() -> "list[Text]":
 
 def _smoke_optional_example_commands() -> "list[str]":
     return [
-        "whest run --estimator ./examples/estimators/combined_estimator.py --runner server",
-        "whest run --estimator ./examples/estimators/covariance_propagation.py --runner server",
-        "whest run --estimator ./examples/estimators/mean_propagation.py --runner server",
-        "whest run --estimator ./examples/estimators/random_estimator.py --runner server",
+        "whest run --estimator ./examples/estimators/combined_estimator.py --runner local",
+        "whest run --estimator ./examples/estimators/covariance_propagation.py --runner local",
+        "whest run --estimator ./examples/estimators/mean_propagation.py --runner local",
+        "whest run --estimator ./examples/estimators/random_estimator.py --runner local",
     ]
 
 
