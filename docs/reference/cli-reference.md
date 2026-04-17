@@ -61,6 +61,7 @@ Key options:
 - `--wall-time-limit <seconds>` — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`
 - `--untracked-time-limit <seconds>` — limit for non-whest time per `predict()` call, enforced by WhestBench after timing is reported
 - `--detail raw|full`
+- `--seed <int>` — deterministic seed for `generate + sample` when `--dataset` is not set
 - `--profile`
 - `--show-diagnostic-plots`
 - `--json`
