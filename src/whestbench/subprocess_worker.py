@@ -12,6 +12,7 @@ import whest as we
 
 from .domain import MLP
 from .loader import load_estimator_from_path
+from .scoring import validate_predictions
 from .sdk import BaseEstimator, SetupContext
 
 
@@ -64,25 +65,8 @@ def _handle_predict(
         with budget_ctx as ctx:
             predictions = estimator.predict(mlp, budget)
             flops_used = ctx.flops_used
-        arr = we.asarray(predictions, dtype=we.float32)
-        if arr.shape != (mlp.depth, mlp.width):
-            _write_response(
-                {
-                    "status": "error",
-                    "error_message": f"Predictions shape {arr.shape} != ({mlp.depth}, {mlp.width})",
-                    "traceback": None,
-                }
-            )
-            return
-        if not we.all(we.isfinite(arr)):
-            _write_response(
-                {
-                    "status": "error",
-                    "error_message": "Non-finite predictions.",
-                    "traceback": None,
-                }
-            )
-            return
+        validated_predictions = validate_predictions(predictions, depth=mlp.depth, width=mlp.width)
+        arr = we.asarray(validated_predictions, dtype=we.float32)
         _write_response(
             {
                 "status": "ok",
@@ -116,6 +100,22 @@ def _handle_predict(
                 "tracked_time_s": budget_ctx.total_tracked_time,
                 "untracked_time_s": budget_ctx.untracked_time or 0.0,
                 "budget_breakdown": _budget_payload(budget_ctx),
+            }
+        )
+    except ValueError as exc:
+        details = getattr(exc, "details", None)
+        if isinstance(details, dict):
+            details_payload = details
+            traceback_payload = None
+        else:
+            details_payload = None
+            traceback_payload = traceback.format_exc()
+        _write_response(
+            {
+                "status": "error",
+                "error_message": str(exc),
+                "details": details_payload,
+                "traceback": traceback_payload,
             }
         )
     except Exception as exc:

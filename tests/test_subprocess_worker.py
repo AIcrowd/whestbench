@@ -61,6 +61,24 @@ def _broken_setup_estimator(tmp_path: Path, message: str = "setup boom") -> Path
     return path
 
 
+def _wrong_shape_predict_estimator(tmp_path: Path) -> Path:
+    path = tmp_path / "wrong_shape_predict.py"
+    path.write_text(
+        dedent(
+            """
+            from whestbench import BaseEstimator
+            import whest as we
+
+            class Estimator(BaseEstimator):
+                def predict(self, mlp, budget):
+                    return we.zeros((mlp.width, mlp.depth), dtype=we.float32)
+            """
+        ).lstrip(),
+        encoding="utf-8",
+    )
+    return path
+
+
 def _trivial_predict_request(width: int = 4, depth: int = 2) -> dict[str, Any]:
     weights = [
         [[1.0 if i == j else 0.0 for j in range(width)] for i in range(width)] for _ in range(depth)
@@ -92,6 +110,59 @@ def test_handle_predict_error_includes_traceback(
     assert isinstance(resp.get("traceback"), str)
     assert "RuntimeError" in resp["traceback"]
     assert "broken_predict.py" in resp["traceback"]
+
+
+def test_handle_predict_shape_error_includes_details(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from whestbench.loader import load_estimator_from_path
+
+    estimator_path = _wrong_shape_predict_estimator(tmp_path)
+    estimator, _ = load_estimator_from_path(estimator_path, class_name=None)
+
+    captured = _capture_responses(monkeypatch)
+    subprocess_worker._handle_predict(estimator, _trivial_predict_request())
+
+    assert len(captured) == 1
+    resp = captured[0]
+    assert resp["status"] == "error"
+    assert "shape" in str(resp["error_message"]).lower()
+    assert isinstance(resp["details"], dict)
+    assert resp["details"]["expected_shape"] == [2, 4]
+    assert resp["details"]["got_shape"] == [4, 2]
+
+
+def test_handle_predict_budgets_exhaustion_errors_win_over_validation_branch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """If budget/time exceptions inherit from ValueError, dedicated branches must win."""
+
+    class FauxBudgetExhaustedError(ValueError):
+        pass
+
+    class FauxTimeExhaustedError(ValueError):
+        pass
+
+    monkeypatch.setattr(subprocess_worker.we, "BudgetExhaustedError", FauxBudgetExhaustedError)
+    monkeypatch.setattr(subprocess_worker.we, "TimeExhaustedError", FauxTimeExhaustedError)
+
+    class _BudgetEstimator:
+        def predict(self, mlp, budget):  # type: ignore[no-untyped-def]
+            raise FauxBudgetExhaustedError("faux budget")
+
+    class _TimeEstimator:
+        def predict(self, mlp, budget):  # type: ignore[no-untyped-def]
+            raise FauxTimeExhaustedError("faux time")
+
+    captured = _capture_responses(monkeypatch)
+    subprocess_worker._handle_predict(_BudgetEstimator(), _trivial_predict_request())
+    assert captured[-1]["status"] == "budget_exhausted"
+    assert captured[-1]["error_message"] == "FLOP budget exceeded."
+
+    captured = _capture_responses(monkeypatch)
+    subprocess_worker._handle_predict(_TimeEstimator(), _trivial_predict_request())
+    assert captured[-1]["status"] == "time_exhausted"
+    assert captured[-1]["error_message"] == "Wall-clock time limit exceeded."
 
 
 def test_main_start_error_includes_traceback(

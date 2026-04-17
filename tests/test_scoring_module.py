@@ -3,6 +3,7 @@ import time
 import pytest
 import whest as we
 
+from whestbench.domain import MLP
 from whestbench.scoring import (
     ContestSpec,
     evaluate_estimator,
@@ -590,8 +591,30 @@ def test_evaluate_estimator_captures_traceback_and_error_code() -> None:
         assert entry["error_code"] == "RuntimeError"
         assert isinstance(entry["traceback"], str)
         assert "boom from predict" in entry["traceback"]
-        assert "RuntimeError" in entry["traceback"]
+    assert "RuntimeError" in entry["traceback"]
     assert result["primary_score"] == float("inf")
+
+
+def test_evaluate_estimator_records_validation_error_details() -> None:
+    spec = ContestSpec(
+        width=4, depth=3, n_mlps=1, flop_budget=100_000_000, ground_truth_samples=100
+    )
+    data = make_contest(spec)
+    from whestbench.sdk import BaseEstimator
+
+    class _WrongShapeEstimator(BaseEstimator):
+        def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+            return we.ones((spec.width, spec.depth), dtype=we.float32)
+
+    result = evaluate_estimator(_WrongShapeEstimator(), data)
+    entry = result["per_mlp"][0]
+
+    assert isinstance(entry["error"], dict)
+    assert entry["error_code"] == "ValueError"
+    assert "shape" in str(entry["error"].get("message", "")).lower()
+    details = entry["error"]["details"]
+    assert details["expected_shape"] == [spec.depth, spec.width]
+    assert details["got_shape"] == [spec.width, spec.depth]
 
 
 def test_evaluate_estimator_prefers_runner_traceback_when_present() -> None:

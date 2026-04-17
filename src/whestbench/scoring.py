@@ -163,11 +163,33 @@ def make_contest_from_bundle(
 def validate_predictions(predictions: we.ndarray, *, depth: int, width: int) -> we.ndarray:
     """Validate estimator prediction array shape and finiteness."""
     shape = tuple(predictions.shape) if hasattr(predictions, "shape") else ()
-    if shape != (depth, width):
-        raise ValueError(f"Predictions must have shape ({depth}, {width}), got {shape}.")
+    expected_shape = (depth, width)
+    if shape != expected_shape:
+        hint = (
+            "Returned predictions appear to be transposed: expected (depth, width), got (width, depth)."
+            if shape == (width, depth)
+            else "Predictions must be a 2D array with shape (depth, width)."
+        )
+        details = {
+            "expected_shape": list(expected_shape),
+            "got_shape": list(shape),
+            "cause_hints": [hint],
+            "hint": hint,
+        }
+        exc = ValueError(f"Predictions must have shape ({depth}, {width}), got {shape}.")
+        setattr(exc, "details", details)
+        raise exc
     pred_np = we.asarray(predictions, dtype=we.float32)
     if not we.all(we.isfinite(pred_np)):
-        raise ValueError("Predictions must contain only finite values.")
+        details = {
+            "expected_shape": list(expected_shape),
+            "got_shape": list(shape),
+            "cause_hints": ["Predictions must contain finite values only."],
+            "hint": "Prediction values must be finite and include neither inf nor NaN.",
+        }
+        exc = ValueError("Predictions must contain only finite values.")
+        setattr(exc, "details", details)
+        raise exc
     return predictions
 
 
@@ -421,11 +443,23 @@ def evaluate_estimator(
                 tb_text = exc.detail.traceback
             else:
                 tb_text = _tb.format_exc()
-            error_code = exc.detail.code if isinstance(exc, RunnerError) else exc.__class__.__name__
+            error_message: object
+            if isinstance(exc, RunnerError):
+                error_code = exc.detail.code
+                if exc.detail.details is not None:
+                    error_message = {"message": str(exc), "details": exc.detail.details}
+                else:
+                    error_message = str(exc)
+            elif isinstance(getattr(exc, "details", None), dict):
+                error_code = exc.__class__.__name__
+                error_message = {"message": str(exc), "details": getattr(exc, "details")}
+            else:
+                error_code = exc.__class__.__name__
+                error_message = str(exc)
             per_mlp.append(
                 {
                     "mlp_index": i,
-                    "error": str(exc),
+                    "error": error_message,
                     "error_code": error_code,
                     "traceback": tb_text,
                     "flops_used": 0,

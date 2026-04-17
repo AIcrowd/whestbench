@@ -48,6 +48,10 @@ Your estimator must use whest primitives (`import whest as we`) for all numerica
 
 When validation fails (wrong shape, non-finite values), the affected prediction is treated as a **zero-filled row**. The scoring loop continues and produces a valid report -- errors are reflected as increased MSE rather than hard failures.
 
+Validation failures now include structured diagnostics in report output under `results.per_mlp[i].error` as
+`{"message": ..., "details": ...}` with details describing `expected_shape`, `got_shape`,
+and actionable hints.
+
 ## Next step
 
 - [Write an Estimator](../how-to/write-an-estimator.md)
