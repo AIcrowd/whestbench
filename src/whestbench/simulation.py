@@ -7,7 +7,7 @@ per-layer outputs/means used by score computation.
 from __future__ import annotations
 
 import warnings
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import whest as we
 
@@ -58,7 +58,11 @@ def _pick_chunk_size(width: int) -> int:
     return max(1024, min(16384, 2**20 // width))
 
 
-def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[we.ndarray, we.ndarray, float]:
+def sample_layer_statistics(
+    mlp: MLP,
+    n_samples: int,
+    rng: Optional[we.random.Generator] = None,
+) -> Tuple[we.ndarray, we.ndarray, float]:
     """Estimate per-layer activation statistics via chunked Monte Carlo sampling.
 
     Feeds ``n_samples`` random Gaussian inputs through the MLP in memory-bounded
@@ -76,6 +80,8 @@ def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[we.ndarray, we.nd
         mlp: The MLP network to evaluate.
         n_samples: How many i.i.d. N(0, 1) input vectors to draw.  Larger
             values give more precise estimates at the cost of compute time.
+        rng: Optional NumPy-compatible random generator used for sampling inputs.
+            If ``None`` a new generator is created once for the call.
 
     Returns:
         all_layer_means: ``(depth, width)`` float32 array — the mean
@@ -89,6 +95,7 @@ def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[we.ndarray, we.nd
     width = mlp.width
     depth = mlp.depth
     chunk_size = _pick_chunk_size(width)
+    rng = we.random.default_rng() if rng is None else rng
 
     layer_sums = we.zeros((depth, width), dtype=we.float64)
     final_sum_sq = we.zeros(width, dtype=we.float64)
@@ -101,7 +108,7 @@ def sample_layer_statistics(mlp: MLP, n_samples: int) -> Tuple[we.ndarray, we.nd
         warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*matmul.*")
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
-            x = we.array(we.random.default_rng().standard_normal((n, width)).astype(we.float32))
+            x = we.array(rng.standard_normal((n, width), dtype=we.float32))
             for layer_idx, w in enumerate(mlp.weights):
                 x = we.maximum(we.matmul(x, w), 0.0)
                 x_f64 = we.asarray(x, dtype=we.float64)

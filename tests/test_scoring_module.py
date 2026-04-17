@@ -38,6 +38,19 @@ def test_make_contest_produces_valid_data() -> None:
         assert var >= 0.0
 
 
+def test_make_contest_is_reproducible_with_seed() -> None:
+    spec = ContestSpec(width=8, depth=2, n_mlps=3, flop_budget=1_000_000, ground_truth_samples=64, seed=7777)
+    data_a = make_contest(spec)
+    data_b = make_contest(spec)
+
+    for i in range(spec.n_mlps):
+        for wa, wb in zip(data_a.mlps[i].weights, data_b.mlps[i].weights):
+            we.testing.assert_array_equal(wa, wb)
+        we.testing.assert_array_equal(data_a.all_layer_targets[i], data_b.all_layer_targets[i])
+        we.testing.assert_array_equal(data_a.final_targets[i], data_b.final_targets[i])
+    assert data_a.avg_variances == data_b.avg_variances
+
+
 def test_make_contest_records_sampling_budget_breakdown() -> None:
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=50)
     data = make_contest(spec)
