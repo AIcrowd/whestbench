@@ -53,17 +53,28 @@ def render_human_context_panels(report: "dict[str, Any]") -> str:
     return buffer.getvalue()
 
 
-def render_human_results(report: "dict[str, Any]", *, show_diagnostic_plots: bool = False) -> str:
+def render_human_results(
+    report: "dict[str, Any]",
+    *,
+    show_diagnostic_plots: bool = False,
+    debug: bool = False,
+) -> str:
     """Render post-run sections for append-only human flows."""
     buffer = io.StringIO()
     console = _new_console(buffer)
     _render_score_row(console, report)
+    _render_errors_section(console, report, debug=debug)
     _render_breakdown_sections(console, report)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
 
 
-def render_human_report(report: "dict[str, Any]", *, show_diagnostic_plots: bool = False) -> str:
+def render_human_report(
+    report: "dict[str, Any]",
+    *,
+    show_diagnostic_plots: bool = False,
+    debug: bool = False,
+) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
     buffer = io.StringIO()
     console = _new_console(buffer)
@@ -81,6 +92,7 @@ def render_human_report(report: "dict[str, Any]", *, show_diagnostic_plots: bool
     console.print("[dim]Use --show-diagnostic-plots to include diagnostic plot panes.[/dim]")
     _render_top_row(console, report)
     _render_score_row(console, report)
+    _render_errors_section(console, report, debug=debug)
     _render_breakdown_sections(console, report)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
@@ -356,6 +368,64 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
         subtitle="lower MSE is better; primary score = mean final-layer MSE",
         subtitle_align="left",
         border_style="bright_cyan",
+    )
+
+
+def _render_errors_section(
+    console: Console, report: "dict[str, Any]", *, debug: bool = False
+) -> None:
+    """Render a red panel listing per-MLP estimator errors when any are present."""
+    results = report.get("results") if isinstance(report, dict) else None
+    per_mlp = results.get("per_mlp") if isinstance(results, dict) else None
+    if not isinstance(per_mlp, list):
+        return
+    failures = [entry for entry in per_mlp if isinstance(entry, dict) and entry.get("error")]
+    if not failures:
+        return
+
+    total = len(per_mlp)
+    table = Table(box=box.SIMPLE, expand=True, show_lines=False)
+    table.add_column("MLP", justify="right", style="bold")
+    table.add_column("Code", style="bright_red")
+    table.add_column("Message")
+    for entry in failures:
+        idx = str(entry.get("mlp_index", "?"))
+        code = str(entry.get("error_code") or "UNKNOWN")
+        message = str(entry.get("error") or "").splitlines()[0] if entry.get("error") else ""
+        table.add_row(idx, code, message)
+
+    children: list[Any] = [
+        Text(f"{len(failures)} of {total} MLP(s) raised during predict.", style="bold red"),
+        table,
+    ]
+    if debug:
+        for entry in failures:
+            tb_text = entry.get("traceback")
+            if not tb_text:
+                continue
+            tb_block = Panel(
+                Text(str(tb_text).rstrip(), style="dim"),
+                title=f"Traceback — MLP {entry.get('mlp_index', '?')}",
+                title_align="left",
+                border_style="red",
+                expand=True,
+            )
+            children.append(tb_block)
+    else:
+        children.append(
+            Text(
+                "Rerun with --debug to include full tracebacks; --fail-fast to stop on first error.",
+                style="dim",
+            )
+        )
+
+    console.print(
+        Panel(
+            Group(*children),
+            title="Estimator Errors",
+            border_style="red",
+            expand=True,
+        )
     )
 
 

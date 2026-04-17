@@ -82,7 +82,7 @@ def test_run_command_renders_human_report_in_non_agent_mode(
     monkeypatch.setattr(
         cli,
         "render_human_results",
-        lambda _report, *, show_diagnostic_plots=False: "human report\n",
+        lambda _report, *, show_diagnostic_plots=False, debug=False: "human report\n",
         raising=False,
     )
     monkeypatch.setattr(
@@ -144,7 +144,7 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
     monkeypatch.setattr(
         cli,
         "render_human_results",
-        lambda _report, *, show_diagnostic_plots=False: "human report\n",
+        lambda _report, *, show_diagnostic_plots=False, debug=False: "human report\n",
         raising=False,
     )
 
@@ -299,7 +299,7 @@ def _patch_run_command_happy_path(monkeypatch: pytest.MonkeyPatch, captured_kwar
     monkeypatch.setattr(
         cli,
         "render_human_results",
-        lambda _report, *, show_diagnostic_plots=False: "human report\n",
+        lambda _report, *, show_diagnostic_plots=False, debug=False: "human report\n",
         raising=False,
     )
 
@@ -465,7 +465,7 @@ def test_main_uses_sys_argv_when_argv_is_none(
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: "human report\n",
+        lambda _report, *, show_diagnostic_plots=False, debug=False: "human report\n",
     )
     monkeypatch.setattr(cli.sys, "argv", ["whest", "smoke-test"])
 
@@ -475,3 +475,178 @@ def test_main_uses_sys_argv_when_argv_is_none(
     assert exit_code == 0
     assert "human report" in captured.out
     assert "Next Steps" in captured.out
+
+
+# --- `whest run` error propagation ------------------------------------------
+
+
+def _write_broken_predict_estimator(path: Path, message: str = "intentional predict crash") -> None:
+    path.write_text(
+        dedent(
+            f"""
+            from whestbench import BaseEstimator
+
+            class Estimator(BaseEstimator):
+                def predict(self, mlp, budget):
+                    raise RuntimeError({message!r})
+            """
+        ).lstrip(),
+        encoding="utf-8",
+    )
+
+
+def _write_tiny_dataset(path: Path, n_mlps: int = 2, width: int = 4, depth: int = 2) -> None:
+    """Write a minimal valid `.npz` dataset so `whest run --dataset` bypasses
+    the real `make_contest` (which uses a 100x16 contest spec by default).
+
+    This is the single biggest reason these tests run in milliseconds rather
+    than seconds: `make_contest_from_bundle` just slices arrays, no compute.
+    """
+    import numpy as np
+
+    rng = np.random.default_rng(0)
+    weights = rng.standard_normal((n_mlps, depth, width, width)).astype(np.float32)
+    all_layer_means = rng.standard_normal((n_mlps, depth, width)).astype(np.float32)
+    final_means = rng.standard_normal((n_mlps, width)).astype(np.float32)
+    avg_variances = np.ones(n_mlps, dtype=np.float64)
+    metadata = {
+        "schema_version": "2.0",
+        "created_at_utc": "2026-04-17T00:00:00+00:00",
+        "seed": 0,
+        "n_mlps": n_mlps,
+        "n_samples": 10,
+        "width": width,
+        "depth": depth,
+        "flop_budget": 1_000_000,
+        "hardware": {},
+    }
+    np.savez(
+        path,
+        metadata=np.array(json.dumps(metadata)),
+        weights=weights,
+        all_layer_means=all_layer_means,
+        final_means=final_means,
+        avg_variances=avg_variances,
+    )
+
+
+def _tiny_run_argv(estimator_path: Path, dataset_path: Path) -> list[str]:
+    """Invoke `whest run` against a tiny dataset — no real sampling happens."""
+    return [
+        "run",
+        "--estimator",
+        str(estimator_path),
+        "--runner",
+        "local",
+        "--dataset",
+        str(dataset_path),
+        "--no-rich",
+    ]
+
+
+def test_run_exits_1_when_predict_raises_local_runner(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    estimator = tmp_path / "broken.py"
+    _write_broken_predict_estimator(estimator)
+    dataset = tmp_path / "ds.npz"
+    _write_tiny_dataset(dataset)
+
+    exit_code = cli.main(_tiny_run_argv(estimator, dataset))
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    # --no-rich uses plain-text output (no Rich panel), but the per-MLP error
+    # text is still rendered and the stderr summary must be present.
+    assert "intentional predict crash" in captured.out
+    assert "raised during predict" in captured.err
+
+
+def test_run_debug_includes_traceback_in_human_output(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    estimator = tmp_path / "broken.py"
+    _write_broken_predict_estimator(estimator)
+    dataset = tmp_path / "ds.npz"
+    _write_tiny_dataset(dataset)
+
+    exit_code = cli.main(_tiny_run_argv(estimator, dataset) + ["--debug"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    combined = captured.out + captured.err
+    assert "Traceback" in combined
+    assert "RuntimeError" in combined
+
+
+def test_run_fail_fast_propagates(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    estimator = tmp_path / "broken.py"
+    _write_broken_predict_estimator(estimator)
+    dataset = tmp_path / "ds.npz"
+    _write_tiny_dataset(dataset)
+
+    exit_code = cli.main(_tiny_run_argv(estimator, dataset) + ["--fail-fast"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    # Top-level handler prints `Error [predict:PREDICT_ERROR]: ...`.
+    combined = captured.out + captured.err
+    assert "PREDICT_ERROR" in combined
+
+
+def test_run_json_output_includes_traceback_per_mlp(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    estimator = tmp_path / "broken.py"
+    _write_broken_predict_estimator(estimator)
+    dataset = tmp_path / "ds.npz"
+    _write_tiny_dataset(dataset, n_mlps=2)
+
+    exit_code = cli.main(_tiny_run_argv(estimator, dataset) + ["--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    payload = json.loads(captured.out)
+    per_mlp = payload["results"]["per_mlp"]
+    assert len(per_mlp) == 2
+    for entry in per_mlp:
+        assert entry["error_code"] == "PREDICT_ERROR"
+        assert "intentional predict crash" in entry["error"]
+        assert isinstance(entry["traceback"], str)
+        assert "RuntimeError" in entry["traceback"]
+
+
+def test_run_budget_exhausted_does_not_set_exit_1(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Budget exhaustion is a legitimate scoring outcome, not an error.
+
+    Uses a trivially tiny budget and a predict that raises
+    BudgetExhaustedError directly (no real FLOP loop), so the test stays
+    fast.
+    """
+    estimator = tmp_path / "hungry.py"
+    estimator.write_text(
+        dedent(
+            """
+            import whest as we
+            from whestbench import BaseEstimator
+
+            class Estimator(BaseEstimator):
+                def predict(self, mlp, budget):
+                    raise we.BudgetExhaustedError('test', flop_cost=0, flops_remaining=0)
+            """
+        ).lstrip(),
+        encoding="utf-8",
+    )
+    dataset = tmp_path / "ds.npz"
+    _write_tiny_dataset(dataset)
+
+    exit_code = cli.main(_tiny_run_argv(estimator, dataset) + ["--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    payload = json.loads(captured.out)
+    per_mlp = payload["results"]["per_mlp"]
+    assert all("error" not in entry for entry in per_mlp)
+    assert all(entry["budget_exhausted"] for entry in per_mlp)
