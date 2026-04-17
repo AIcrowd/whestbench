@@ -8,6 +8,7 @@ import subprocess
 import sys
 import threading
 import time
+import traceback as _tb
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
@@ -137,7 +138,11 @@ class LocalRunner:
         except Exception as exc:
             raise RunnerError(
                 "setup",
-                RunnerErrorDetail(code="SETUP_ERROR", message=str(exc)),
+                RunnerErrorDetail(
+                    code="SETUP_ERROR",
+                    message=str(exc),
+                    traceback=_tb.format_exc(),
+                ),
             ) from exc
         setup_elapsed = time.time() - start_wall
         if setup_elapsed > limits.setup_timeout_s:
@@ -166,7 +171,11 @@ class LocalRunner:
         except Exception as exc:
             raise RunnerError(
                 "predict",
-                RunnerErrorDetail(code="PREDICT_ERROR", message=str(exc)),
+                RunnerErrorDetail(
+                    code="PREDICT_ERROR",
+                    message=str(exc),
+                    traceback=_tb.format_exc(),
+                ),
             ) from exc
 
     def last_predict_stats(self) -> Optional[PredictStats]:
@@ -268,6 +277,7 @@ class SubprocessRunner:
                 RunnerErrorDetail(
                     code="SETUP_ERROR",
                     message=str(response.get("error_message", "worker setup failed")),
+                    traceback=response.get("traceback"),
                 ),
             )
         self._started = True
@@ -318,6 +328,7 @@ class SubprocessRunner:
                 RunnerErrorDetail(
                     code="PREDICT_ERROR",
                     message=str(response.get("error_message", "unknown error")),
+                    traceback=response.get("traceback"),
                 ),
             )
         predictions_data = response.get("predictions")

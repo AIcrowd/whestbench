@@ -547,3 +547,64 @@ def test_make_contest_from_bundle_rejects_spec_mismatch() -> None:
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
     with pytest.raises(ValueError, match="spec.n_mlps"):
         make_contest_from_bundle(spec, bundle, n_mlps=3)
+
+
+# --- evaluate_estimator error propagation --------------------------------
+
+
+class _RaisingEstimator:
+    def __init__(self, exc: Exception) -> None:
+        self._exc = exc
+
+    def predict(self, mlp, budget):  # type: ignore[no-untyped-def]
+        raise self._exc
+
+
+def test_evaluate_estimator_captures_traceback_and_error_code() -> None:
+    spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
+    data = make_contest(spec)
+    estimator = _RaisingEstimator(RuntimeError("boom from predict"))
+
+    result = evaluate_estimator(estimator, data)
+
+    assert len(result["per_mlp"]) == 2
+    for entry in result["per_mlp"]:
+        assert entry["error"] == "boom from predict"
+        # Bare predict exceptions surface as the Python class name;
+        # RunnerError would surface as its .detail.code.
+        assert entry["error_code"] == "RuntimeError"
+        assert isinstance(entry["traceback"], str)
+        assert "boom from predict" in entry["traceback"]
+        assert "RuntimeError" in entry["traceback"]
+    assert result["primary_score"] == float("inf")
+
+
+def test_evaluate_estimator_prefers_runner_traceback_when_present() -> None:
+    from whestbench.runner import RunnerError, RunnerErrorDetail
+
+    spec = ContestSpec(width=8, depth=2, n_mlps=1, flop_budget=1_000_000, ground_truth_samples=100)
+    data = make_contest(spec)
+    runner_err = RunnerError(
+        "predict",
+        RunnerErrorDetail(
+            code="PREDICT_ERROR",
+            message="worker crashed",
+            traceback="FAKE_REMOTE_TRACEBACK",
+        ),
+    )
+    estimator = _RaisingEstimator(runner_err)
+
+    result = evaluate_estimator(estimator, data)
+
+    entry = result["per_mlp"][0]
+    assert entry["error_code"] == "PREDICT_ERROR"
+    assert entry["traceback"] == "FAKE_REMOTE_TRACEBACK"
+
+
+def test_evaluate_estimator_fail_fast_re_raises() -> None:
+    spec = ContestSpec(width=8, depth=2, n_mlps=3, flop_budget=1_000_000, ground_truth_samples=100)
+    data = make_contest(spec)
+    estimator = _RaisingEstimator(RuntimeError("abort here"))
+
+    with pytest.raises(RuntimeError, match="abort here"):
+        evaluate_estimator(estimator, data, fail_fast=True)

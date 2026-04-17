@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+import traceback
 from pathlib import Path
 from typing import Optional
 
@@ -49,7 +50,13 @@ def _handle_predict(
         mlp = _payload_to_mlp(request["mlp"])
         budget = int(request["budget"])
     except Exception as exc:
-        _write_response({"status": "error", "error_message": str(exc)})
+        _write_response(
+            {
+                "status": "error",
+                "error_message": str(exc),
+                "traceback": traceback.format_exc(),
+            }
+        )
         return
 
     budget_ctx = we.BudgetContext(flop_budget=budget, wall_time_limit_s=wall_time_limit_s)
@@ -63,11 +70,18 @@ def _handle_predict(
                 {
                     "status": "error",
                     "error_message": f"Predictions shape {arr.shape} != ({mlp.depth}, {mlp.width})",
+                    "traceback": None,
                 }
             )
             return
         if not we.all(we.isfinite(arr)):
-            _write_response({"status": "error", "error_message": "Non-finite predictions."})
+            _write_response(
+                {
+                    "status": "error",
+                    "error_message": "Non-finite predictions.",
+                    "traceback": None,
+                }
+            )
             return
         _write_response(
             {
@@ -105,7 +119,13 @@ def _handle_predict(
             }
         )
     except Exception as exc:
-        _write_response({"status": "error", "error_message": str(exc)})
+        _write_response(
+            {
+                "status": "error",
+                "error_message": str(exc),
+                "traceback": traceback.format_exc(),
+            }
+        )
 
 
 def main() -> int:
@@ -145,7 +165,13 @@ def main() -> int:
                 estimator.setup(context)
                 _write_response({"status": "ok"})
             except Exception as exc:
-                _write_response({"status": "runtime_error", "error_message": str(exc)})
+                _write_response(
+                    {
+                        "status": "runtime_error",
+                        "error_message": str(exc),
+                        "traceback": traceback.format_exc(),
+                    }
+                )
         elif command == "predict":
             if estimator is None:
                 _write_response({"status": "error", "error_message": "Estimator not initialized."})
