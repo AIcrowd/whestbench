@@ -654,7 +654,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     run_parser.add_argument("--class", dest="class_name")
     run_parser.add_argument(
-        "--runner", choices=("local", "server", "inprocess", "subprocess"), default="server"
+        "--runner", choices=("local", "subprocess", "server", "inprocess"), default="local"
     )
     run_parser.add_argument(
         "--n-mlps",
@@ -820,6 +820,15 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
 
     return parser
+
+
+def _normalize_runner_name(raw_runner: str) -> str:
+    """Normalize legacy/alias runner names to canonical internal names."""
+    if raw_runner == "server":
+        return "subprocess"
+    if raw_runner == "inprocess":
+        return "local"
+    return raw_runner
 
 
 class _RunnerEstimator(BaseEstimator):
@@ -1152,7 +1161,8 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "run":
-            runner = LocalRunner() if args.runner in ("local", "inprocess") else SubprocessRunner()
+            normalized_runner = _normalize_runner_name(str(args.runner))
+            runner = LocalRunner() if normalized_runner == "local" else SubprocessRunner()
             contest_spec = _default_contest_spec()
             user_n_mlps: Optional[int] = int(args.n_mlps) if args.n_mlps is not None else None
             run_seed: Optional[int] = getattr(args, "seed", None)
@@ -1407,7 +1417,8 @@ def _main_participant(argv: "list[str]") -> int:
             json_output=json_output,
             debug=debug,
             show_inprocess_hint=(
-                command == "run" and getattr(args, "runner", None) in ("subprocess", "server")
+                command == "run"
+                and _normalize_runner_name(str(getattr(args, "runner", "local"))) == "subprocess"
             ),
         )
         return 1

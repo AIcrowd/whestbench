@@ -258,7 +258,7 @@ def test_run_subprocess_error_includes_inprocess_debug_hint(
     )
     monkeypatch.setattr(cli, "_run_estimator_with_runner", fail_run)
 
-    exit_code = cli.main(["run", "--estimator", "estimator.py"])
+    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "server"])
     captured = capsys.readouterr()
 
     assert exit_code == 1
@@ -291,6 +291,40 @@ def test_run_inprocess_error_omits_inprocess_debug_hint(
     assert "Error [setup:SETUP_ERROR]: runner failed" in captured.out
     assert "Use --debug to include a traceback." in captured.out
     assert "rerun with --runner local --debug" not in captured.out
+
+
+def test_run_default_uses_local_runner(
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
+    observed: dict[str, str] = {}
+
+    def fake_run_estimator_with_runner(*_args: Any, **_kwargs: Any) -> dict:
+        observed["runner"] = type(_args[0]).__name__
+        return _sample_report(profile_enabled=False, detail="raw")
+
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run_estimator_with_runner)
+
+    exit_code = cli.main(["run", "--estimator", "estimator.py"])
+
+    assert exit_code == 0
+    assert observed.get("runner") == "LocalRunner"
+
+
+def test_run_server_alias_is_subprocess(
+    monkeypatch: pytest.MonkeyPatch
+) -> None:
+    observed: dict[str, str] = {}
+
+    def fake_run_estimator_with_runner(*_args: Any, **_kwargs: Any) -> dict:
+        observed["runner"] = type(_args[0]).__name__
+        return _sample_report(profile_enabled=False, detail="raw")
+
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run_estimator_with_runner)
+
+    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "server"])
+
+    assert exit_code == 0
+    assert observed.get("runner") == "SubprocessRunner"
 
 
 def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(

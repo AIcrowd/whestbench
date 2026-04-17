@@ -75,7 +75,7 @@ whest run --estimator ./my-estimator/estimator.py
 whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz
 ```
 
-`whest run` uses `--runner server` by default.
+`whest run --estimator ...` uses local in-process execution by default for faster iteration.
 
 For faster repeated evaluations, pre-create a dataset and reuse it:
 
