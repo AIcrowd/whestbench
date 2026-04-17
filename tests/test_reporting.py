@@ -167,12 +167,8 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
         "whest run --estimator ./examples/estimators/covariance_propagation.py --runner local"
         in plain
     )
-    assert (
-        "whest run --estimator ./examples/estimators/mean_propagation.py --runner local" in plain
-    )
-    assert (
-        "whest run --estimator ./examples/estimators/random_estimator.py --runner local" in plain
-    )
+    assert "whest run --estimator ./examples/estimators/mean_propagation.py --runner local" in plain
+    assert "whest run --estimator ./examples/estimators/random_estimator.py --runner local" in plain
 
 
 def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:
