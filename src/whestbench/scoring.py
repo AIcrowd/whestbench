@@ -86,9 +86,7 @@ def make_contest(
     sampling_breakdowns: List[Dict[str, Any]] = []
 
     for i in range(spec.n_mlps):
-        mlp_rng = (
-            we.random.default_rng(stream_seeds[2 * i]) if spec_seed is not None else None
-        )
+        mlp_rng = we.random.default_rng(stream_seeds[2 * i]) if spec_seed is not None else None
         sample_rng = (
             we.random.default_rng(stream_seeds[2 * i + 1]) if spec_seed is not None else None
         )
