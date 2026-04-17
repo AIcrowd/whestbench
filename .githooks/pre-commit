@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Pre-commit hook: run ruff checks on staged Python files only.
+# Install: git config core.hooksPath .githooks
+#
+# Scope is intentionally narrow (staged files). The pre-push hook runs
+# repo-wide checks; this one is the fast, focused guard against committing
+# ruff drift in the first place.
+
+set -euo pipefail
+
+if ! command -v uv >/dev/null; then
+  echo "[pre-commit] Missing 'uv' in PATH. Install: curl -LsSf https://astral.sh/uv/install.sh | sh" >&2
+  exit 1
+fi
+
+staged_py=$(git diff --cached --name-only --diff-filter=ACMR -- '*.py')
+
+if [ -z "$staged_py" ]; then
+  exit 0
+fi
+
+echo ">>> pre-commit: ruff on staged Python files"
+
+echo "==> ruff check"
+echo "$staged_py" | xargs uv run ruff check
+
+echo "==> ruff format --check"
+echo "$staged_py" | xargs uv run ruff format --check
+
+echo "==> pre-commit checks passed"
