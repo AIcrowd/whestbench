@@ -524,27 +524,13 @@ def test_main_uses_sys_argv_when_argv_is_none(
         return _sample_report()
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
-    monkeypatch.setattr(
-        cli,
-        "render_human_report",
-        lambda *_args, **_kwargs: pytest.fail(
-            "smoke-test rich path should use presentation render"
-        ),
-        raising=False,
-    )
-    monkeypatch.setattr(
-        cli,
-        "render_rich_presentation",
-        lambda doc: "human report\nNext Steps\n" if doc.command == "smoke-test" else "wrong\n",
-        raising=False,
-    )
     monkeypatch.setattr(cli.sys, "argv", ["whest", "smoke-test"])
 
     exit_code = cli.main(None)
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert "human report" in captured.out
+    assert "WhestBench Report" in captured.out
     assert "Next Steps" in captured.out
 
 

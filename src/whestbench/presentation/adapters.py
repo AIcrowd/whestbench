@@ -2,15 +2,27 @@ from __future__ import annotations
 
 from typing import Any
 
-from .models import CommandPresentation, KeyValueRow, KeyValueSection, StepsSection
+from .models import CommandPresentation, KeyValueRow, KeyValueSection, StepItem, StepsSection
 
 _JSON_OUTPUT_TIP = "Use --json for JSON output when calling from automated agents or UIs."
 _DIAGNOSTIC_PLOTS_TIP = "Use --show-diagnostic-plots to include diagnostic plot panes."
 _SMOKE_TEST_NEXT_STEPS = [
-    "whest init ./my-estimator",
-    "whest validate --estimator ./my-estimator/estimator.py",
-    "whest run --estimator ./my-estimator/estimator.py --runner local",
-    "whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
+    StepItem(
+        purpose="Create starter files you can edit.",
+        command="whest init ./my-estimator",
+    ),
+    StepItem(
+        purpose="Validate an Estimator implementation.",
+        command="whest validate --estimator ./my-estimator/estimator.py",
+    ),
+    StepItem(
+        purpose="Run local evaluation with isolation.",
+        command="whest run --estimator ./my-estimator/estimator.py --runner local",
+    ),
+    StepItem(
+        purpose="Build submission artifacts for AIcrowd.",
+        command="whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
+    ),
 ]
 
 

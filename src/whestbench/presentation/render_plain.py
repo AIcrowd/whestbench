@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .models import CommandPresentation, KeyValueSection, StepsSection
+from .models import CommandPresentation, KeyValueSection, StepItem, StepsSection
 
 
 def render_plain_presentation(doc: CommandPresentation) -> str:
@@ -16,7 +16,7 @@ def render_plain_presentation(doc: CommandPresentation) -> str:
                 lines.append(f"{row.label}: {row.value}")
         elif isinstance(section, StepsSection):
             for step in section.steps:
-                lines.append(step)
+                lines.append(step.command if isinstance(step, StepItem) else step)
 
     if doc.epilogue_messages:
         lines.append("")

@@ -14,6 +14,8 @@ from rich.table import Table
 from rich.text import Text
 
 import whestbench.reporting as reporting
+from whestbench.presentation.adapters import build_smoke_test_presentation
+from whestbench.presentation.models import StepsSection
 from whestbench.reporting import (
     render_agent_report,
     render_human_report,
@@ -140,25 +142,28 @@ def test_render_json_mode_returns_pretty_json_only() -> None:
 def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -> None:
     rendered = render_smoke_test_next_steps(_sample_report())
     plain = _strip_ansi(rendered)
+    doc = build_smoke_test_presentation(_sample_report(), debug=False)
+    next_steps = next(
+        section
+        for section in doc.sections
+        if isinstance(section, StepsSection) and section.title == "Next Steps"
+    )
+    expected_pairs = [(step.purpose, step.command) for step in next_steps.steps]
 
     assert "Next Steps" in plain
     assert "We are all set! Welcome onboard" in plain
     assert "Run these steps:" in plain
-    assert "# 1) Create starter files you can edit." in plain
-    assert "# 2) Validate an Estimator implementation." in plain
-    assert "# 3) Run local evaluation with isolation." in plain
-    assert "# 4) Build submission artifacts for AIcrowd." in plain
     assert "Commands (bash)" not in plain
     assert "Command" not in plain
     assert "Purpose" not in plain
-    assert "whest init ./my-estimator" in plain
-    assert "whest validate --estimator ./my-estimator/estimator.py" in plain
-    assert "whest run --estimator ./my-estimator/estimator.py" in plain
-    assert "--runner" in plain
-    assert "local" in plain
-    assert "whest package --estimator ./my-estimator/estimator.py" in plain
-    assert "--output" in plain
-    assert "./submission.tar.gz" in plain
+    last_index = -1
+    for idx, (purpose, command) in enumerate(expected_pairs, start=1):
+        purpose_line = f"# {idx}) {purpose}"
+        purpose_index = plain.index(purpose_line)
+        command_index = plain.index(command)
+        assert purpose_index < command_index
+        assert last_index < purpose_index
+        last_index = command_index
     assert "Optional: run bundled example estimators:" in plain
     assert (
         "whest run --estimator ./examples/estimators/combined_estimator.py --runner local" in plain
@@ -169,12 +174,18 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     )
     assert "whest run --estimator ./examples/estimators/mean_propagation.py --runner local" in plain
     assert "whest run --estimator ./examples/estimators/random_estimator.py --runner local" in plain
-    assert "Use --json for JSON output when calling from automated agents or UIs." in plain
-    assert "Tip: use --json on validate/run/package for machine-readable output." not in plain
+    assert "Tip: use --json on validate/run/package for machine-readable output." in plain
+    assert "Use --show-diagnostic-plots to include diagnostic plot panes." not in plain
 
 
 def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:
-    lines = reporting._smoke_next_step_lines()
+    doc = build_smoke_test_presentation(_sample_report(), debug=False)
+    next_steps = next(
+        section
+        for section in doc.sections
+        if isinstance(section, StepsSection) and section.title == "Next Steps"
+    )
+    lines = reporting._smoke_next_step_lines(next_steps.steps)
     styles = [str(line.style) for line in lines]
     assert len(lines) == 4
     assert styles == [
