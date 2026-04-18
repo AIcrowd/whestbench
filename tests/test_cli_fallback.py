@@ -124,6 +124,25 @@ def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
     monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_a, **_k: _sample_report())
     monkeypatch.setattr(
         cli,
+        "_pre_run_report",
+        lambda **_kwargs: {
+            "run_meta": {
+                "run_started_at_utc": "2026-03-01T00:00:00+00:00",
+                "host": {"hostname": "example-host", "os": "Darwin", "python_version": "3.13.7"},
+            },
+            "run_config": {
+                "estimator_class": "Estimator",
+                "estimator_path": "estimator.py",
+                "n_mlps": 2,
+                "width": 4,
+                "depth": 3,
+                "flop_budget": 40000,
+            },
+        },
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
         "_print_human_startup",
         lambda *_a, **_k: None,
         raising=False,
@@ -146,6 +165,49 @@ def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
     assert exit_code == 0
     assert "Rich dashboard unavailable (render failed)" in captured.err
     assert "WhestBench Report (Plain Text)" in captured.out
+    assert "Estimator Class: Estimator" in captured.out
+    assert "Estimator Path: estimator.py" in captured.out
+    assert "Host: example-host" in captured.out
+
+
+def test_participant_run_no_rich_preserves_pre_run_context(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_a, **_k: _sample_report())
+    monkeypatch.setattr(
+        cli,
+        "_pre_run_report",
+        lambda **_kwargs: {
+            "run_meta": {
+                "run_started_at_utc": "2026-03-01T00:00:00+00:00",
+                "host": {"hostname": "example-host", "os": "Darwin", "python_version": "3.13.7"},
+            },
+            "run_config": {
+                "estimator_class": "Estimator",
+                "estimator_path": "estimator.py",
+                "n_mlps": 2,
+                "width": 4,
+                "depth": 3,
+                "flop_budget": 40000,
+            },
+        },
+        raising=False,
+    )
+
+    exit_code = cli.main(
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--no-rich"]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "WhestBench Report (Plain Text)" in captured.out
+    assert "Estimator Class: Estimator" in captured.out
+    assert "Estimator Path: estimator.py" in captured.out
+    assert "Host: example-host" in captured.out
 
 
 def test_render_plain_text_report_includes_breakdown_sections_and_summary() -> None:
