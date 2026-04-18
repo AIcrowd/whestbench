@@ -613,6 +613,49 @@ def _render_budget_gauge(console: Console, report: "dict[str, Any]") -> None:
     console.print(line)
 
 
+def _render_over_budget_panel(console: Console, report: "dict[str, Any]") -> None:
+    sel = _select_top_over_budget(report)
+    if sel.busted_count == 0:
+        return
+
+    lines: list[Text] = []
+
+    for row in sel.rows:
+        pct_label = f"{row.pct_of_budget}%" if row.pct_of_budget is not None else "--%"
+        line = Text()
+        line.append(f"MLP #{row.mlp_index:<4}", style="red")
+        line.append("  ")
+        line.append(f"{_fmt_flops(row.flops_used):>9} FLOPs", style="red")
+        line.append("  ")
+        line.append(f"{pct_label:>4} of budget", style="red")
+        line.append("  ")
+        line.append("zeroed", style="red")
+        lines.append(line)
+
+    if sel.is_truncated:
+        remainder = sel.busted_count - len(sel.rows)
+        lines.append(Text(f"... and {remainder} more over budget", style="dim"))
+        lines.append(Text("run with --json for the full list", style="dim"))
+
+    lines.append(Text(""))  # blank line before summary
+    if sel.is_all_busted:
+        summary = (
+            f"All {sel.n_mlps} MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed"
+        )
+    else:
+        summary = f"{sel.busted_count} of {sel.n_mlps} MLPs exceeded the per-MLP FLOP cap"
+    lines.append(Text(summary, style="bold red"))
+
+    body = Group(*lines)
+    console.print(
+        Panel(
+            body,
+            title="Over-Budget MLPs",
+            border_style="red",
+        )
+    )
+
+
 def _render_errors_section(
     console: Console, report: "dict[str, Any]", *, debug: bool = False
 ) -> None:
