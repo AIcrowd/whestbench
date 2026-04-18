@@ -514,3 +514,72 @@ def test_gauge_and_panel_precede_breakdowns_when_present() -> None:
     plain = _strip_ansi(rendered)
     assert plain.index("Estimator FLOPs") < plain.index("Over-Budget MLPs")
     assert plain.index("Over-Budget MLPs") < plain.index("Estimator Budget Breakdown")
+
+
+# --- Plain-text fallback ----------------------------------------------------
+
+
+def test_plain_text_gauge_healthy_uses_ascii_substitutes() -> None:
+    from whestbench.cli import _render_plain_text_report
+
+    report = _full_report(
+        [_mlp(i, flops_used=30_000_000.0) for i in range(3)],
+        flop_budget=100_000_000,
+    )
+    out = _render_plain_text_report(report)
+    assert "Estimator FLOPs" in out
+    assert "30%" in out
+    # filled/empty ASCII glyphs
+    assert "[" + ("#" * 6) + ("-" * 14) + "]" in out
+    # no block glyphs in plain-text mode
+    assert "█" not in out
+    assert "░" not in out
+
+
+def test_plain_text_gauge_busted_uses_ascii_worst_suffix() -> None:
+    from whestbench.cli import _render_plain_text_report
+
+    per_mlp = [_mlp(0, flops_used=50.0), _busted(1, 138.0)]
+    out = _render_plain_text_report(_full_report(per_mlp, flop_budget=100))
+    assert ". worst MLP 138% !" in out
+    assert "⚠" not in out
+    assert "·" not in out
+
+
+def test_plain_text_gauge_catastrophic_uses_ascii_overflow_arrow() -> None:
+    from whestbench.cli import _render_plain_text_report
+
+    per_mlp = [_busted(0, 120.0), _busted(1, 212.0)]
+    out = _render_plain_text_report(_full_report(per_mlp, flop_budget=100))
+    # ASCII overflow marker
+    assert "]>" in out
+    assert "▶" not in out
+
+
+def test_plain_text_over_budget_section_renders_rows_and_summary() -> None:
+    from whestbench.cli import _render_plain_text_report
+
+    per_mlp = [_busted(i, 200.0 - i) for i in range(7)]
+    out = _render_plain_text_report(_full_report(per_mlp, flop_budget=100))
+    # Heading
+    assert "Over-Budget MLPs" in out
+    # Top 5 rows
+    for idx in range(5):
+        assert f"MLP #{idx}" in out
+    # Rows 5 and 6 excluded
+    assert "MLP #5" not in out
+    assert "MLP #6" not in out
+    # Truncation footer
+    assert "... and 2 more over budget" in out
+    assert "run with --json for the full list" in out
+    # All-busted summary (7 of 7)
+    assert "All 7 MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed" in out
+
+
+def test_plain_text_over_budget_section_omitted_when_clean() -> None:
+    from whestbench.cli import _render_plain_text_report
+
+    out = _render_plain_text_report(
+        _full_report([_mlp(i, flops_used=30.0) for i in range(3)], flop_budget=100)
+    )
+    assert "Over-Budget MLPs" not in out

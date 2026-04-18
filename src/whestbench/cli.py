@@ -39,7 +39,10 @@ from .hardware import collect_hardware_fingerprint
 from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
 from .reporting import (
+    _compute_gauge_state,
     _fmt_flops,
+    _gauge_bar_fragment,
+    _select_top_over_budget,
     build_human_context_renderable,
     render_agent_report,
     render_human_context_panels,
@@ -222,6 +225,48 @@ def _render_plain_text_report(report: Dict[str, Any], *, debug: bool = False) ->
                     "  (rerun with --debug to include full tracebacks; "
                     "--fail-fast to stop on first error.)"
                 )
+
+    # FLOP budget gauge (ASCII mirror of the Rich gauge)
+    gauge = _compute_gauge_state(report)
+    lines.append("")
+    if not gauge.has_budget:
+        lines.append("Estimator FLOPs  -- of 0 FLOPs")
+    else:
+        bar_rich = _gauge_bar_fragment(gauge.mean_utilization)
+        bar_ascii = bar_rich.replace("█", "#").replace("░", "-")
+        overflow = ">" if gauge.state_name == "catastrophic" else ""
+        pct_int = int(gauge.mean_utilization * 100)
+        budget_label = _fmt_flops(gauge.flop_budget)
+        suffix = f" . worst MLP {gauge.worst_mlp_pct}% !" if gauge.worst_mlp_pct is not None else ""
+        lines.append(f"Estimator FLOPs  {bar_ascii}{overflow} {pct_int}% of {budget_label}{suffix}")
+
+    # Over-Budget MLPs (ASCII mirror of the Rich panel)
+    selection = _select_top_over_budget(report)
+    if selection.busted_count > 0:
+        lines.append("")
+        lines.append("Over-Budget MLPs")
+        for row in selection.rows:
+            pct_label = f"{row.pct_of_budget}%" if row.pct_of_budget is not None else "--%"
+            lines.append(
+                f"  MLP #{row.mlp_index:<4}  "
+                f"{_fmt_flops(row.flops_used):>9} FLOPs  "
+                f"{pct_label:>4} of budget  zeroed"
+            )
+        if selection.is_truncated:
+            remainder = selection.busted_count - len(selection.rows)
+            lines.append(f"  ... and {remainder} more over budget")
+            lines.append("  run with --json for the full list")
+        lines.append("")
+        if selection.is_all_busted:
+            lines.append(
+                f"  All {selection.n_mlps} MLPs exceeded the per-MLP FLOP cap "
+                f"— predictions entirely zeroed"
+            )
+        else:
+            lines.append(
+                f"  {selection.busted_count} of {selection.n_mlps} MLPs "
+                f"exceeded the per-MLP FLOP cap"
+            )
 
     def _as_float(value: Any) -> float:
         try:
