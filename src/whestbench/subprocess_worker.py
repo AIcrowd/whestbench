@@ -60,7 +60,11 @@ def _handle_predict(
         )
         return
 
-    budget_ctx = we.BudgetContext(flop_budget=budget, wall_time_limit_s=wall_time_limit_s)
+    budget_ctx = we.BudgetContext(
+        flop_budget=budget,
+        wall_time_limit_s=wall_time_limit_s,
+        quiet=True,
+    )
     try:
         with budget_ctx as ctx:
             predictions = estimator.predict(mlp, budget)

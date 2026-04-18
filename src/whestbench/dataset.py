@@ -76,7 +76,7 @@ def create_dataset(
     avg_variances: List[float] = []
     for i, mlp in enumerate(mlps):
         sample_stream = we.random.default_rng(stream_seed[2 * i + 1])
-        with we.BudgetContext(flop_budget=int(1e15)):
+        with we.BudgetContext(flop_budget=int(1e15), quiet=True):
             all_means, final_mean, avg_var = sample_layer_statistics(
                 mlp, n_samples, rng=sample_stream
             )
