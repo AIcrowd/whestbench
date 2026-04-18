@@ -41,9 +41,18 @@ def _primary_error_section(doc: CommandPresentation) -> ErrorSection | None:
     return None
 
 
-def render_rich_presentation(doc: CommandPresentation) -> str:
+def render_rich_presentation(
+    doc: CommandPresentation,
+    *,
+    force_terminal: bool = True,
+) -> str:
     buffer = io.StringIO()
-    console = Console(record=True, file=buffer, force_terminal=True, color_system="truecolor")
+    console = Console(
+        record=True,
+        file=buffer,
+        force_terminal=force_terminal,
+        color_system="truecolor" if force_terminal else None,
+    )
     body: list[object] = []
 
     primary_error = _primary_error_section(doc) if doc.status == "error" else None

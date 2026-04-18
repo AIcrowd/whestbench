@@ -26,8 +26,32 @@ def _strip_ansi(text: str) -> str:
 
 def _sample_run_report() -> dict[str, object]:
     return {
-        "run_meta": {"run_duration_s": 1.0, "host": {}},
-        "run_config": {"n_mlps": 1, "width": 4, "depth": 2, "flop_budget": 100},
+        "run_meta": {
+            "run_started_at_utc": "2026-03-01T00:00:00+00:00",
+            "run_finished_at_utc": "2026-03-01T00:00:01+00:00",
+            "run_duration_s": 1.0,
+            "host": {
+                "hostname": "example-host",
+                "os": "Darwin",
+                "os_release": "25.3.0",
+                "platform": "macOS-15-arm64",
+                "machine": "arm64",
+                "cpu_brand": "Apple M4",
+                "cpu_count_logical": 10,
+                "cpu_count_physical": 8,
+                "ram_total_bytes": 17179869184,
+                "python_version": "3.13.7",
+                "numpy_version": "2.2.6",
+            },
+        },
+        "run_config": {
+            "estimator_class": "CombinedEstimator",
+            "estimator_path": "examples/estimators/combined_estimator.py",
+            "n_mlps": 1,
+            "width": 4,
+            "depth": 2,
+            "flop_budget": 100,
+        },
         "results": {"primary_score": 0.42, "secondary_score": 0.55, "per_mlp": []},
     }
 
@@ -51,8 +75,17 @@ def test_parity_matrix_preserves_settled_information() -> None:
             [
                 "WhestBench Report",
                 "Run Context",
+                "Estimator Class",
+                "CombinedEstimator",
+                "Estimator Path",
+                "examples/estimators/combined_estimator.py",
                 "MLPs",
                 "1",
+                "Hardware & Runtime",
+                "example-host",
+                "Darwin",
+                "Apple M4",
+                "3.13.7",
                 "Primary Score",
                 "0.42",
                 "Use --json for JSON output when calling from automated agents or UIs.",
