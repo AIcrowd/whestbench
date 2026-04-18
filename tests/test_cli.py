@@ -173,7 +173,10 @@ def test_smoke_test_rich_output_includes_dashboard_and_onboarding(
     assert "Primary Score" in plain
     assert "Next Steps" in plain
     assert "whest init ./my-estimator" in plain
+    assert "Create starter files you can edit." in plain
     assert "WhestBench Report (Plain Text)" not in plain
+    assert plain.count("Use --json for JSON output when calling from automated agents or UIs.") == 1
+    assert plain.count("Use --show-diagnostic-plots to include diagnostic plot panes.") == 1
     assert captured.err == ""
     assert observed == {"profile": False, "detail": "raw"}
 

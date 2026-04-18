@@ -23,7 +23,7 @@ from rich.table import Table
 from rich.text import Text
 
 from .presentation.adapters import build_run_presentation, build_smoke_test_presentation
-from .presentation.models import StepItem, StepsSection
+from .presentation.models import CommandPresentation, StepItem, StepsSection
 
 try:
     import plotext as _plotext  # pyright: ignore[reportMissingModuleSource]
@@ -80,11 +80,12 @@ def render_human_report(
     *,
     show_diagnostic_plots: bool = False,
     debug: bool = False,
+    presentation_doc: CommandPresentation | None = None,
 ) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
     buffer = io.StringIO()
     console = _new_console(buffer)
-    doc = build_run_presentation(report, debug=debug)
+    doc = presentation_doc or build_run_presentation(report, debug=debug)
 
     console.print(
         Panel(
@@ -157,12 +158,8 @@ def render_smoke_test_next_steps(report: "dict[str, Any]", *, debug: bool = Fals
         body_items.append(Text(command, style="white"))
     body_items.append(Text())
 
-    body_items.append(
-        Text(
-            "Tip: use --json on validate/run/package for machine-readable output.",
-            style="dim",
-        )
-    )
+    for message in smoke_doc.epilogue_messages:
+        body_items.append(Text(message, style="dim"))
 
     body = Group(*body_items)
     console.print(Panel(body, title=section_title, border_style="bright_cyan"))
