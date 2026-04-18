@@ -613,6 +613,7 @@ def _gauge_renderable(report: "dict[str, Any]") -> ConsoleRenderable:
     bar = ProgressBar(
         total=100.0,
         completed=display_completed,
+        style=f"dim {color}",  # state-colored track so the gauge reads its state at any fill level
         complete_style=color,
         finished_style=color,
         width=None,  # responsive — fills the middle column of the grid
