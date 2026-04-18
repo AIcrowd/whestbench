@@ -22,6 +22,9 @@ from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
 
+from .presentation.adapters import build_run_presentation, build_smoke_test_presentation
+from .presentation.models import StepsSection
+
 try:
     import plotext as _plotext  # pyright: ignore[reportMissingModuleSource]
 except ImportError:  # pragma: no cover - optional dependency
@@ -37,9 +40,10 @@ def render_human_header() -> str:
     """Render only the title/header block for append-first human runs."""
     buffer = io.StringIO()
     console = _new_console(buffer)
+    doc = build_run_presentation({}, debug=False)
     console.print(
         Panel(
-            Align.center(Text("WhestBench Report", style="bold white")),
+            Align.center(Text(doc.title, style="bold white")),
             expand=True,
             border_style="bright_cyan",
         )
@@ -80,18 +84,17 @@ def render_human_report(
     """Render a multi-section Rich report for local CLI exploration."""
     buffer = io.StringIO()
     console = _new_console(buffer)
+    doc = build_run_presentation(report, debug=debug)
 
     console.print(
         Panel(
-            Align.center(Text("WhestBench Report", style="bold white")),
+            Align.center(Text(doc.title, style="bold white")),
             expand=True,
             border_style="bright_cyan",
         )
     )
-    console.print(
-        "[dim]Use --json for JSON output when calling from automated agents or UIs.[/dim]"
-    )
-    console.print("[dim]Use --show-diagnostic-plots to include diagnostic plot panes.[/dim]")
+    for message in doc.epilogue_messages:
+        console.print(f"[dim]{message}[/dim]")
     _render_top_row(console, report)
     _render_score_row(console, report)
     _render_errors_section(console, report, debug=debug)
@@ -124,7 +127,15 @@ def render_smoke_test_next_steps() -> str:
     )
 
     purpose_lines = _smoke_next_step_lines()
-    commands = _smoke_next_step_commands()
+    smoke_doc = build_smoke_test_presentation({}, debug=False)
+    commands = next(
+        (
+            list(section.steps)
+            for section in smoke_doc.sections
+            if isinstance(section, StepsSection) and section.title == "Next Steps"
+        ),
+        _smoke_next_step_commands(),
+    )
     body_items: "list[Text]" = [
         Text("We are all set! Welcome onboard", style="bold bright_green"),
         Text("Run these steps:", style="bold bright_white"),

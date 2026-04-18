@@ -10,6 +10,7 @@ import time
 import traceback
 import warnings
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, Literal, Optional, overload
@@ -38,6 +39,8 @@ from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
 from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
+from .presentation.adapters import build_run_presentation, build_smoke_test_presentation
+from .presentation.render_plain import render_plain_presentation
 from .reporting import (
     _compute_gauge_state,
     _fmt_flops,
@@ -185,23 +188,25 @@ def run_default_report(
     }
 
 
-def _render_plain_text_report(report: Dict[str, Any], *, debug: bool = False) -> str:
-    """Render a minimal plain-text summary when Rich rendering is unavailable."""
+def _render_plain_text_report(
+    report: Dict[str, Any],
+    *,
+    debug: bool = False,
+    command: str = "run",
+) -> str:
+    """Render a plain-text report when Rich rendering is unavailable."""
+    doc = (
+        build_smoke_test_presentation(report, debug=debug)
+        if command == "smoke-test"
+        else build_run_presentation(report, debug=debug)
+    )
+    if command != "smoke-test":
+        doc = replace(doc, epilogue_messages=[])
+    lines = render_plain_presentation(doc).rstrip("\n").splitlines()
+    if lines:
+        lines[0] = "WhestBench Report (Plain Text)"
+
     results = report.get("results", {})
-    run_config = report.get("run_config", {})
-    run_meta = report.get("run_meta", {})
-    lines = [
-        "WhestBench Report (Plain Text)",
-        f"Primary Score: {results.get('primary_score', 'n/a')}",
-        f"Secondary Score: {results.get('secondary_score', 'n/a')}",
-        f"Duration(s): {run_meta.get('run_duration_s', 'n/a')}",
-        f"MLPs: {run_config.get('n_mlps', 'n/a')}",
-        f"Width: {run_config.get('width', 'n/a')}",
-        f"Depth: {run_config.get('depth', 'n/a')}",
-        f"FLOP Budget: {_fmt_flops(run_config.get('flop_budget'))}",
-        f"Wall Time Limit: {run_config.get('wall_time_limit_s') or 'unlimited'}",
-        f"Untracked Time Limit: {run_config.get('untracked_time_limit_s') or 'unlimited'}",
-    ]
 
     def _extract_error_line(entry: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
         raw_error = entry.get("error")
@@ -267,6 +272,7 @@ def _render_plain_text_report(report: Dict[str, Any], *, debug: bool = False) ->
         except (TypeError, ValueError):
             return 0.0
 
+    run_config = report.get("run_config", {})
     n_mlps = int(run_config.get("n_mlps", 0) or 0)
     if n_mlps <= 0:
         n_mlps = 1
@@ -1143,7 +1149,7 @@ def _main_participant(argv: "list[str]") -> int:
                     progress=_plain_smoke_progress,
                 )
                 report["mode"] = "human"
-                output = _render_plain_text_report(report)
+                output = _render_plain_text_report(report, command="smoke-test")
                 print(output, end="" if output.endswith("\n") else "\n")
                 return 0
 
@@ -1199,10 +1205,11 @@ def _main_participant(argv: "list[str]") -> int:
                     f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
                     file=sys.stderr,
                 )
-                output = _render_plain_text_report(report)
+                output = _render_plain_text_report(report, command="smoke-test")
             print(output, end="" if output.endswith("\n") else "\n")
-            next_steps = render_smoke_test_next_steps()
-            print(next_steps, end="" if next_steps.endswith("\n") else "\n")
+            if "Next Steps" not in output:
+                next_steps = render_smoke_test_next_steps()
+                print(next_steps, end="" if next_steps.endswith("\n") else "\n")
             return 0
 
         if command == "init":

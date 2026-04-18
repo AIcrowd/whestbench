@@ -93,6 +93,22 @@ def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
     assert "Primary Score: 0.42" in captured.out
 
 
+def test_smoke_test_plain_output_includes_next_steps_and_json_tip(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        cli,
+        "run_default_report",
+        lambda **_kwargs: _sample_report(),
+    )
+
+    exit_code = cli.main(["smoke-test", "--no-rich"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Next Steps" in captured.out
+    assert "whest init ./my-estimator" in captured.out
+    assert "Use --json for JSON output when calling from automated agents or UIs." in captured.out
+
+
 def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
     monkeypatch, capsys
 ) -> None:
