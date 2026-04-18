@@ -447,6 +447,23 @@ def test_panel_flop_budget_zero_shows_dashes_for_pct() -> None:
 
 
 def _full_report(per_mlp: List[Dict[str, Any]], *, flop_budget: int = 100) -> Dict[str, Any]:
+    results: Dict[str, Any] = {
+        "primary_score": 0.123,
+        "secondary_score": 0.456,
+        "per_mlp": per_mlp,
+    }
+    # The gauge and over-budget content now live inside the Estimator Budget
+    # Breakdown panel. Provide a minimal breakdown so wiring tests see that
+    # panel render (and, transitively, the gauge).
+    if per_mlp:
+        results["breakdowns"] = {
+            "estimator": {
+                "flops_used": sum(float(entry.get("flops_used", 0.0) or 0.0) for entry in per_mlp),
+                "tracked_time_s": 0.0,
+                "untracked_time_s": 0.0,
+                "by_namespace": {},
+            }
+        }
     return {
         "schema_version": "1.0",
         "mode": "human",
@@ -462,25 +479,23 @@ def _full_report(per_mlp: List[Dict[str, Any]], *, flop_budget: int = 100) -> Di
             "depth": 3,
             "flop_budget": flop_budget,
         },
-        "results": {
-            "primary_score": 0.123,
-            "secondary_score": 0.456,
-            "per_mlp": per_mlp,
-        },
+        "results": results,
         "notes": [],
     }
 
 
-def test_render_human_results_includes_gauge_between_score_and_breakdown() -> None:
+def test_render_human_results_renders_gauge_inside_estimator_breakdown() -> None:
     report = _full_report([_mlp(i, flops_used=30.0) for i in range(3)], flop_budget=100)
     rendered = render_human_results(report)
     plain = _strip_ansi(rendered)
 
+    # Gauge appears AFTER the Estimator Budget Breakdown title,
+    # not as a separate top-level line.
     assert "Estimator FLOPs" in plain
-    score_idx = plain.index("Final Score")
+    assert "Estimator Budget Breakdown" in plain
+    breakdown_idx = plain.index("Estimator Budget Breakdown")
     gauge_idx = plain.index("Estimator FLOPs")
-    # Score panel renders before the gauge
-    assert score_idx < gauge_idx
+    assert breakdown_idx < gauge_idx
 
 
 def test_render_human_results_shows_over_budget_panel_when_busted() -> None:
@@ -509,22 +524,37 @@ def test_render_human_results_omits_over_budget_panel_when_clean() -> None:
     assert "Over-Budget MLPs" not in plain
 
 
-def test_gauge_and_panel_precede_breakdowns_when_present() -> None:
+def test_gauge_and_over_budget_embedded_inside_estimator_breakdown() -> None:
     per_mlp = [_busted(0, 120.0), _mlp(1, flops_used=50.0)]
+    # Also inject a sampling breakdown to verify the sampling panel is not
+    # polluted with gauge / over-budget content.
     report = _full_report(per_mlp, flop_budget=100)
-    # Inject a minimal breakdown so the breakdown section also renders
-    report["results"]["breakdowns"] = {
-        "estimator": {
-            "flops_used": 170,
-            "tracked_time_s": 0.01,
-            "untracked_time_s": 0.005,
-            "by_namespace": {},
-        }
+    report["results"]["breakdowns"]["sampling"] = {
+        "flops_used": 30,
+        "tracked_time_s": 0.001,
+        "untracked_time_s": 0.0,
+        "by_namespace": {},
     }
     rendered = render_human_results(report)
     plain = _strip_ansi(rendered)
-    assert plain.index("Estimator FLOPs") < plain.index("Over-Budget MLPs")
-    assert plain.index("Over-Budget MLPs") < plain.index("Estimator Budget Breakdown")
+
+    # Estimator Budget Breakdown title comes first, then the embedded gauge,
+    # then the Over-Budget MLPs block (all inside the same panel).
+    breakdown_idx = plain.index("Estimator Budget Breakdown")
+    gauge_idx = plain.index("Estimator FLOPs")
+    over_budget_idx = plain.index("Over-Budget MLPs")
+    assert breakdown_idx < gauge_idx < over_budget_idx
+
+    # Sampling panel renders before Estimator panel and does not carry
+    # gauge / over-budget content.
+    sampling_idx = plain.index("Sampling Budget Breakdown")
+    assert sampling_idx < breakdown_idx
+    # Between the sampling heading and the estimator heading, there must be
+    # no "Estimator FLOPs" substring — the gauge only belongs in the
+    # estimator panel.
+    between_section = plain[sampling_idx:breakdown_idx]
+    assert "Estimator FLOPs" not in between_section
+    assert "Over-Budget MLPs" not in between_section
 
 
 # --- Plain-text fallback ----------------------------------------------------
@@ -538,7 +568,10 @@ def test_plain_text_gauge_healthy_uses_ascii_substitutes() -> None:
         flop_budget=100_000_000,
     )
     out = _render_plain_text_report(report)
+    # Gauge is now emitted inside the Estimator Budget Breakdown section.
+    assert "Estimator Budget Breakdown" in out
     assert "Estimator FLOPs" in out
+    assert out.index("Estimator Budget Breakdown") < out.index("Estimator FLOPs")
     assert "30%" in out
     # filled/empty ASCII glyphs
     assert "[" + ("#" * 6) + ("-" * 14) + "]" in out
@@ -552,6 +585,7 @@ def test_plain_text_gauge_busted_uses_ascii_worst_suffix() -> None:
 
     per_mlp = [_mlp(0, flops_used=50.0), _busted(1, 138.0)]
     out = _render_plain_text_report(_full_report(per_mlp, flop_budget=100))
+    assert "Estimator Budget Breakdown" in out
     assert ". worst MLP 138% !" in out
     assert "⚠" not in out
     assert "·" not in out
@@ -574,6 +608,8 @@ def test_plain_text_over_budget_section_renders_rows_and_summary() -> None:
     out = _render_plain_text_report(_full_report(per_mlp, flop_budget=100))
     # Heading
     assert "Over-Budget MLPs" in out
+    # Heading is inside the Estimator Budget Breakdown section.
+    assert out.index("Estimator Budget Breakdown") < out.index("Over-Budget MLPs")
     # Top 5 rows
     for idx in range(5):
         assert f"MLP #{idx}" in out

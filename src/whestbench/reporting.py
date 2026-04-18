@@ -65,8 +65,6 @@ def render_human_results(
     console = _new_console(buffer)
     _render_score_row(console, report)
     _render_errors_section(console, report, debug=debug)
-    _render_budget_gauge(console, report)
-    _render_over_budget_panel(console, report)
     _render_breakdown_sections(console, report)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
@@ -96,8 +94,6 @@ def render_human_report(
     _render_top_row(console, report)
     _render_score_row(console, report)
     _render_errors_section(console, report, debug=debug)
-    _render_budget_gauge(console, report)
-    _render_over_budget_panel(console, report)
     _render_breakdown_sections(console, report)
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
@@ -583,7 +579,13 @@ def _gauge_bar_fragment(utilization: float) -> str:
     return "[" + ("█" * filled) + ("░" * empty) + "]"
 
 
-def _render_budget_gauge(console: Console, report: "dict[str, Any]") -> None:
+def _gauge_renderable(report: "dict[str, Any]") -> Text:
+    """Return the gauge line as a Rich Text object without printing it.
+
+    Used both by the standalone ``_render_budget_gauge`` backward-compat
+    wrapper and by ``_breakdown_panel`` when embedding the gauge inside the
+    Estimator Budget Breakdown panel.
+    """
     state = _compute_gauge_state(report)
 
     line = Text()
@@ -592,8 +594,7 @@ def _render_budget_gauge(console: Console, report: "dict[str, Any]") -> None:
 
     if not state.has_budget:
         line.append("-- of 0 FLOPs", style="dim")
-        console.print(line)
-        return
+        return line
 
     color = _GAUGE_COLOR.get(state.state_name, "white")
     bar = _gauge_bar_fragment(state.mean_utilization)
@@ -614,13 +615,19 @@ def _render_budget_gauge(console: Console, report: "dict[str, Any]") -> None:
         line.append(" ")
         line.append("⚠", style="red")
 
-    console.print(line)
+    return line
 
 
-def _render_over_budget_panel(console: Console, report: "dict[str, Any]") -> None:
+def _over_budget_renderable(report: "dict[str, Any]") -> Optional[Group]:
+    """Return a Group of the over-budget rows + truncation footer + summary.
+
+    Returns None when there are no busted MLPs. Does NOT wrap the Group in a
+    Panel — callers decide whether to wrap (standalone panel) or embed
+    (inside the Estimator Budget Breakdown panel).
+    """
     sel = _select_top_over_budget(report)
     if sel.busted_count == 0:
-        return
+        return None
 
     lines: list[Text] = []
 
@@ -650,7 +657,29 @@ def _render_over_budget_panel(console: Console, report: "dict[str, Any]") -> Non
         summary = f"{sel.busted_count} of {sel.n_mlps} MLPs exceeded the per-MLP FLOP cap"
     lines.append(Text(summary, style="bold red"))
 
-    body = Group(*lines)
+    return Group(*lines)
+
+
+def _render_budget_gauge(console: Console, report: "dict[str, Any]") -> None:
+    """Backward-compat wrapper that prints the gauge line standalone.
+
+    The gauge is normally embedded inside the Estimator Budget Breakdown
+    panel (see ``_breakdown_panel``); this wrapper preserves the original
+    standalone call surface for existing unit tests.
+    """
+    console.print(_gauge_renderable(report))
+
+
+def _render_over_budget_panel(console: Console, report: "dict[str, Any]") -> None:
+    """Backward-compat wrapper that prints the over-budget content in a Panel.
+
+    The over-budget content is normally inlined inside the Estimator Budget
+    Breakdown panel; this wrapper preserves the original standalone
+    red-bordered Panel for existing unit tests.
+    """
+    body = _over_budget_renderable(report)
+    if body is None:
+        return
     console.print(
         Panel(
             body,
@@ -798,11 +827,24 @@ def _breakdown_panel(
             f"{tracked_time_s:.6f}s",
         )
 
-    body = [Align.center(summary)]
+    body: "list[Any]" = []
+    if breakdown_key == "estimator":
+        body.append(_gauge_renderable(report))
+        over_budget = _over_budget_renderable(report)
+        if over_budget is not None:
+            body.append(Text(""))
+            body.append(Text("Over-Budget MLPs", style="bold red"))
+            body.append(over_budget)
+        body.append(Text(""))
+    body.append(Align.center(summary))
     if by_namespace:
         body.append(Align.center(table))
 
-    border_style = "bright_magenta" if breakdown_key == "estimator" else "bright_yellow"
+    if breakdown_key == "estimator":
+        any_busted = _compute_gauge_state(report).any_busted
+        border_style = "red" if any_busted else "bright_magenta"
+    else:
+        border_style = "bright_yellow"
     return Panel(
         Group(*body),
         title=title,
