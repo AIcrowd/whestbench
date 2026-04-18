@@ -18,40 +18,42 @@ def _strip_ansi(text: str) -> str:
 
 def test_renderers_preserve_same_key_facts() -> None:
     doc = CommandPresentation(
-        command="smoke-test",
+        command="smoke-test [nightly]",
         status="success",
-        title="WhestBench Report",
-        subtitle="settled result",
+        title="WhestBench Report [beta]",
+        subtitle="settled result [ok]",
         sections=[
             KeyValueSection(
-                title="Run Context",
+                title="Run Context [system]",
                 rows=[
-                    KeyValueRow(label="MLPs", value="3"),
+                    KeyValueRow(label="MLPs [count]", value="3"),
                     KeyValueRow(label="Width", value="100"),
                 ],
             ),
             StepsSection(
-                title="Next Steps",
+                title="Next Steps [follow-up]",
                 steps=[
-                    "whest init ./my-estimator",
+                    "whest init ./my-estimator [template]",
                     "whest validate --estimator ./my-estimator/estimator.py",
                 ],
             ),
         ],
-        epilogue_messages=["Use --json for JSON output when calling from automated agents."],
+        epilogue_messages=["Use --json [machine-readable]"],
     )
 
     plain = render_plain_presentation(doc)
     rich = _strip_ansi(render_rich_presentation(doc))
 
     for needle in (
-        "WhestBench Report",
-        "Run Context",
-        "MLPs",
+        "WhestBench Report [beta]",
+        "Command: smoke-test [nightly]",
+        "Status: success",
+        "Run Context [system]",
+        "MLPs [count]",
         "3",
-        "Next Steps",
-        "whest init ./my-estimator",
-        "Use --json for JSON output when calling from automated agents.",
+        "Next Steps [follow-up]",
+        "whest init ./my-estimator [template]",
+        "Use --json [machine-readable]",
     ):
         assert needle in plain
         assert needle in rich

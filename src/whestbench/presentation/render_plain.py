@@ -4,7 +4,7 @@ from .models import CommandPresentation, KeyValueSection, StepsSection
 
 
 def render_plain_presentation(doc: CommandPresentation) -> str:
-    lines: list[str] = [doc.title]
+    lines: list[str] = [doc.title, f"Command: {doc.command}", f"Status: {doc.status}"]
     if doc.subtitle:
         lines.append(doc.subtitle)
 
