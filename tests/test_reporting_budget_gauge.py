@@ -9,7 +9,10 @@ from rich.console import Console
 
 from whestbench.reporting import (
     GaugeState,
+    OverBudgetRow,
+    OverBudgetSelection,
     _compute_gauge_state,
+    _select_top_over_budget,
 )
 
 
@@ -150,3 +153,103 @@ def test_gauge_state_ignores_errored_entries_for_bust_check() -> None:
     state = _compute_gauge_state(report)
     assert state.any_busted is False
     assert state.state_name == "healthy"
+
+
+# --- _select_top_over_budget ------------------------------------------------
+
+
+def _busted(i: int, flops: float) -> Dict[str, Any]:
+    return _mlp(i, flops_used=flops, budget_exhausted=True)
+
+
+def test_select_over_budget_empty_when_no_busts() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[_mlp(0, flops_used=10.0), _mlp(1, flops_used=20.0)],
+    )
+    sel = _select_top_over_budget(report)
+    assert isinstance(sel, OverBudgetSelection)
+    assert sel.rows == []
+    assert sel.busted_count == 0
+    assert sel.n_mlps == 2
+    assert sel.is_truncated is False
+    assert sel.is_all_busted is False
+
+
+def test_select_over_budget_single_row() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[_mlp(0, flops_used=50.0), _busted(1, 130.0)],
+    )
+    sel = _select_top_over_budget(report)
+    assert [row.mlp_index for row in sel.rows] == [1]
+    assert isinstance(sel.rows[0], OverBudgetRow)
+    assert sel.rows[0].flops_used == 130.0
+    assert sel.rows[0].pct_of_budget == 130
+    assert sel.busted_count == 1
+    assert sel.is_truncated is False
+    assert sel.is_all_busted is False
+
+
+def test_select_over_budget_sorts_by_overage_desc_then_index_asc() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[
+            _busted(5, 150.0),
+            _busted(2, 150.0),  # tie with #5; lower index wins tie
+            _busted(0, 200.0),
+        ],
+    )
+    sel = _select_top_over_budget(report)
+    assert [row.mlp_index for row in sel.rows] == [0, 2, 5]
+
+
+def test_select_over_budget_shows_top_5_and_truncates_with_7_busted() -> None:
+    per_mlp = [_busted(i, 100.0 + (10 - i)) for i in range(7)]
+    report = _report(flop_budget=100, per_mlp=per_mlp)
+    sel = _select_top_over_budget(report)
+    assert len(sel.rows) == 5
+    assert sel.busted_count == 7
+    assert sel.is_truncated is True
+    assert sel.is_all_busted is True  # 7 of 7
+
+
+def test_select_over_budget_keeps_all_6_when_exactly_6_busted() -> None:
+    per_mlp = [_busted(i, 100.0 + (10 - i)) for i in range(6)]
+    report = _report(flop_budget=100, per_mlp=per_mlp)
+    sel = _select_top_over_budget(report)
+    assert len(sel.rows) == 6
+    assert sel.busted_count == 6
+    assert sel.is_truncated is False
+
+
+def test_select_over_budget_marks_all_busted_when_n_equals_m() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[_busted(0, 120.0), _busted(1, 130.0)],
+    )
+    sel = _select_top_over_budget(report)
+    assert sel.is_all_busted is True
+
+
+def test_select_over_budget_excludes_errored_entries() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[
+            _mlp(0, flops_used=0.0, error="boom"),
+            _busted(1, 120.0),
+        ],
+    )
+    sel = _select_top_over_budget(report)
+    assert [row.mlp_index for row in sel.rows] == [1]
+
+
+def test_select_over_budget_handles_flop_budget_zero() -> None:
+    report = _report(
+        flop_budget=0,
+        per_mlp=[_busted(0, 100.0)],
+    )
+    sel = _select_top_over_budget(report)
+    # If budget is 0, pct_of_budget is None; rows still sort by flops_used desc.
+    assert len(sel.rows) == 1
+    assert sel.rows[0].pct_of_budget is None
