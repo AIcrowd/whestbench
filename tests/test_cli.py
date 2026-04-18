@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
 from contextlib import contextmanager
 from typing import Any
 
 import pytest
 
 import whestbench.cli as cli
+import whestbench.reporting as reporting
 from whestbench.runner import RunnerError, RunnerErrorDetail
 
 
@@ -70,11 +72,81 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
     return report
 
 
-def test_smoke_test_renders_adapter_rich_presentation_by_default(
+def _strip_ansi(text: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
+class _PlotextStub:
+    def clear_data(self) -> None:
+        return None
+
+    def clear_figure(self) -> None:
+        return None
+
+    def theme(self, _name: str) -> None:
+        return None
+
+    def plotsize(self, _width: int, _height: int) -> None:
+        return None
+
+    def canvas_color(self, _name: str) -> None:
+        return None
+
+    def axes_color(self, _name: str) -> None:
+        return None
+
+    def ticks_color(self, _name: str) -> None:
+        return None
+
+    def xscale(self, _name: str) -> None:
+        return None
+
+    def yscale(self, _name: str) -> None:
+        return None
+
+    def ylim(self, _low: float, _high: float) -> None:
+        return None
+
+    def plot(
+        self,
+        _x: list[float],
+        _y: list[float],
+        *,
+        color: str | None = None,
+        marker: str | None = None,
+    ) -> None:
+        return None
+
+    def scatter(
+        self,
+        _x: list[float],
+        _y: list[float],
+        *,
+        color: str | None = None,
+        marker: str | None = None,
+    ) -> None:
+        return None
+
+    def xlabel(self, _label: str) -> None:
+        return None
+
+    def ylabel(self, _label: str) -> None:
+        return None
+
+    def grid(self, _enabled: bool, _vertical: bool) -> None:
+        return None
+
+    def xticks(self, _ticks: list[float]) -> None:
+        return None
+
+    def build(self) -> str:
+        return "chart"
+
+
+def test_smoke_test_rich_output_includes_dashboard_and_onboarding(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict = {}
-    render_observed: dict = {}
 
     def fake_run_default_report(
         *, profile: bool = False, detail: str = "raw", progress: Any = None
@@ -89,38 +161,24 @@ def test_smoke_test_renders_adapter_rich_presentation_by_default(
         "render_agent_report",
         lambda _report: pytest.fail("agent renderer should not be used in smoke-test mode"),
     )
-    monkeypatch.setattr(
-        cli,
-        "render_human_report",
-        lambda *_args, **_kwargs: pytest.fail(
-            "smoke-test rich path should use presentation render"
-        ),
-        raising=False,
-    )
-    monkeypatch.setattr(
-        cli,
-        "render_rich_presentation",
-        lambda doc: (
-            render_observed.setdefault("command", doc.command),
-            render_observed.setdefault(
-                "has_next_steps", any(s.title == "Next Steps" for s in doc.sections)
-            ),
-            "smoke rich\nNext Steps\n",
-        )[-1],
-        raising=False,
-    )
 
     exit_code = cli.main(["smoke-test"])
     captured = capsys.readouterr()
+    plain = _strip_ansi(captured.out)
 
     assert exit_code == 0
-    assert "smoke rich\nNext Steps\n" in captured.out
+    assert "WhestBench Report" in plain
+    assert "Run Context" in plain
+    assert "Final Score" in plain
+    assert "Primary Score" in plain
+    assert "Next Steps" in plain
+    assert "whest init ./my-estimator" in plain
+    assert "WhestBench Report (Plain Text)" not in plain
     assert captured.err == ""
     assert observed == {"profile": False, "detail": "raw"}
-    assert render_observed == {"command": "smoke-test", "has_next_steps": True}
 
 
-def test_smoke_test_show_diagnostic_plots_still_uses_adapter_rich_presentation(
+def test_smoke_test_show_diagnostic_plots_affects_rich_output_when_profile_present(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict = {}
@@ -133,29 +191,31 @@ def test_smoke_test_show_diagnostic_plots_still_uses_adapter_rich_presentation(
         return _sample_report(profile_enabled=False, detail=detail)
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
+    monkeypatch.setattr(reporting, "_plotext", _PlotextStub())
 
-    monkeypatch.setattr(
-        cli,
-        "render_human_report",
-        lambda *_args, **_kwargs: pytest.fail(
-            "smoke-test rich path should use presentation render"
-        ),
-        raising=False,
-    )
-    monkeypatch.setattr(
-        cli,
-        "render_rich_presentation",
-        lambda doc: "smoke rich\n" if doc.command == "smoke-test" else "wrong\n",
-        raising=False,
-    )
+    exit_code = cli.main(["smoke-test"])
+    default_output = _strip_ansi(capsys.readouterr().out)
 
-    exit_code = cli.main(["smoke-test", "--show-diagnostic-plots"])
+    observed.clear()
+
+    def fake_profile_report(
+        *, profile: bool = False, detail: str = "raw", progress: Any = None
+    ) -> dict:
+        observed["profile"] = profile
+        observed["detail"] = detail
+        return _sample_report(profile_enabled=True, detail=detail)
+
+    monkeypatch.setattr(cli, "run_default_report", fake_profile_report)
+    exit_code = cli.main(["smoke-test", "--profile", "--show-diagnostic-plots"])
     captured = capsys.readouterr()
+    plotted_output = _strip_ansi(captured.out)
 
     assert exit_code == 0
-    assert captured.err == ""
-    assert "smoke rich\n" in captured.out
-    assert observed == {"profile": False, "detail": "raw"}
+    assert "Profile Runtime Plot" not in default_output
+    assert "Profile Memory Plot" not in default_output
+    assert "Profile Runtime Plot" in plotted_output
+    assert "Profile Memory Plot" in plotted_output
+    assert observed == {"profile": True, "detail": "raw"}
 
 
 def test_smoke_test_profile_and_detail_flags_are_forwarded(
@@ -171,27 +231,13 @@ def test_smoke_test_profile_and_detail_flags_are_forwarded(
         return _sample_report(profile_enabled=True, detail=detail)
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
-    monkeypatch.setattr(
-        cli,
-        "render_human_report",
-        lambda *_args, **_kwargs: pytest.fail(
-            "smoke-test rich path should use presentation render"
-        ),
-        raising=False,
-    )
-    monkeypatch.setattr(
-        cli,
-        "render_rich_presentation",
-        lambda doc: "smoke rich\n" if doc.command == "smoke-test" else "wrong\n",
-        raising=False,
-    )
 
     exit_code = cli.main(["smoke-test", "--profile", "--detail", "full"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert captured.err == ""
-    assert "smoke rich\n" in captured.out
+    assert "WhestBench Report" in _strip_ansi(captured.out)
     assert observed == {"profile": True, "detail": "full"}
 
 
@@ -204,42 +250,15 @@ def test_smoke_test_prints_next_steps(
         return _sample_report(profile_enabled=False, detail=detail)
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
-    monkeypatch.setattr(
-        cli,
-        "render_human_report",
-        lambda *_args, **_kwargs: pytest.fail(
-            "smoke-test rich path should use presentation render"
-        ),
-        raising=False,
-    )
-    monkeypatch.setattr(
-        cli,
-        "render_rich_presentation",
-        lambda doc: (
-            "\n".join(
-                [section.title for section in doc.sections if section.title == "Next Steps"]
-                + [
-                    step
-                    for section in doc.sections
-                    if hasattr(section, "steps")
-                    for step in section.steps
-                ]
-            )
-            + "\n"
-        ),
-        raising=False,
-    )
 
     exit_code = cli.main(["smoke-test"])
     captured = capsys.readouterr()
+    plain = _strip_ansi(captured.out)
 
     assert exit_code == 0
-    assert "Next Steps" in captured.out
-    assert "whest" in captured.out
-    assert "init" in captured.out
-    assert "./my-estimator" in captured.out
-    assert "run" in captured.out
-    assert "--estimator" in captured.out
+    assert "Next Steps" in plain
+    assert "whest init ./my-estimator" in plain
+    assert "whest run --estimator ./my-estimator/estimator.py --runner local" in plain
 
 
 def test_smoke_test_human_mode_surfaces_validation_errors_readably(

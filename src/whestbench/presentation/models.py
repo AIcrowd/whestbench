@@ -19,9 +19,15 @@ class KeyValueSection:
 
 
 @dataclass(frozen=True)
+class StepItem:
+    purpose: str
+    command: str
+
+
+@dataclass(frozen=True)
 class StepsSection:
     title: str
-    steps: list[str]
+    steps: list[str | StepItem]
 
 
 @dataclass(frozen=True)

@@ -8,7 +8,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from .models import CommandPresentation, KeyValueSection, StepsSection
+from .models import CommandPresentation, KeyValueSection, StepItem, StepsSection
 
 
 def render_rich_presentation(doc: CommandPresentation) -> str:
@@ -28,7 +28,17 @@ def render_rich_presentation(doc: CommandPresentation) -> str:
                 table.add_row(Text(row.label), Text(row.value))
             body.append(Panel(table, title=escape(section.title)))
         elif isinstance(section, StepsSection):
-            body.append(Panel(Text("\n".join(section.steps)), title=escape(section.title)))
+            body.append(
+                Panel(
+                    Text(
+                        "\n".join(
+                            step.command if isinstance(step, StepItem) else step
+                            for step in section.steps
+                        )
+                    ),
+                    title=escape(section.title),
+                )
+            )
 
     for message in doc.epilogue_messages:
         if message:

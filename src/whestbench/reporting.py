@@ -23,7 +23,7 @@ from rich.table import Table
 from rich.text import Text
 
 from .presentation.adapters import build_run_presentation, build_smoke_test_presentation
-from .presentation.models import StepsSection
+from .presentation.models import StepItem, StepsSection
 
 try:
     import plotext as _plotext  # pyright: ignore[reportMissingModuleSource]
@@ -127,7 +127,6 @@ def render_smoke_test_next_steps(report: "dict[str, Any]", *, debug: bool = Fals
     )
 
     smoke_doc = build_smoke_test_presentation(report, debug=debug)
-    purpose_lines = _smoke_next_step_lines()
     next_steps = next(
         (
             section
@@ -136,16 +135,21 @@ def render_smoke_test_next_steps(report: "dict[str, Any]", *, debug: bool = Fals
         ),
         None,
     )
-    commands = list(next_steps.steps) if next_steps is not None else _smoke_next_step_commands()
+    structured_steps = (
+        [step for step in next_steps.steps if isinstance(step, StepItem)]
+        if next_steps is not None
+        else []
+    )
+    purpose_lines = _smoke_next_step_lines(structured_steps)
     section_title = next_steps.title if next_steps is not None else "Next Steps"
     body_items: "list[Text]" = [
         Text("We are all set! Welcome onboard", style="bold bright_green"),
         Text("Run these steps:", style="bold bright_white"),
         Text(),
     ]
-    for purpose_line, command in zip(purpose_lines, commands):
+    for purpose_line, step in zip(purpose_lines, structured_steps):
         body_items.append(purpose_line)
-        body_items.append(Text(command, style="white"))
+        body_items.append(Text(step.command, style="white"))
         body_items.append(Text())
 
     body_items.append(Text("Optional: run bundled example estimators:", style="bold bright_cyan"))
@@ -153,33 +157,28 @@ def render_smoke_test_next_steps(report: "dict[str, Any]", *, debug: bool = Fals
         body_items.append(Text(command, style="white"))
     body_items.append(Text())
 
-    for message in smoke_doc.epilogue_messages:
-        body_items.append(Text(message, style="dim"))
+    body_items.append(
+        Text(
+            "Tip: use --json on validate/run/package for machine-readable output.",
+            style="dim",
+        )
+    )
 
     body = Group(*body_items)
     console.print(Panel(body, title=section_title, border_style="bright_cyan"))
     return buffer.getvalue()
 
 
-def _smoke_next_step_commands() -> "list[str]":
-    return [
-        "whest init ./my-estimator",
-        "whest validate --estimator ./my-estimator/estimator.py",
-        "whest run --estimator ./my-estimator/estimator.py --runner local",
-        "whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
-    ]
-
-
-def _smoke_next_step_lines() -> "list[Text]":
-    purposes = [
-        ("Create starter files you can edit.", "bold bright_cyan"),
-        ("Validate an Estimator implementation.", "bold bright_green"),
-        ("Run local evaluation with isolation.", "bold bright_yellow"),
-        ("Build submission artifacts for AIcrowd.", "bold bright_magenta"),
+def _smoke_next_step_lines(steps: Sequence[StepItem]) -> "list[Text]":
+    styles = [
+        "bold bright_cyan",
+        "bold bright_green",
+        "bold bright_yellow",
+        "bold bright_magenta",
     ]
     return [
-        Text(f"# {idx}) {purpose}", style=style)
-        for idx, (purpose, style) in enumerate(purposes, start=1)
+        Text(f"# {idx}) {step.purpose}", style=styles[(idx - 1) % len(styles)])
+        for idx, step in enumerate(steps, start=1)
     ]
 
 
