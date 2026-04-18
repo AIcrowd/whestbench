@@ -36,6 +36,10 @@ _SMOKE_TEST_NEXT_STEPS = [
 ]
 
 
+def _non_empty_messages(messages: list[str]) -> list[str]:
+    return [message for message in messages if message]
+
+
 def _display_value(value: Any, *, fallback: str = "n/a") -> str:
     if value in {None, ""}:
         return fallback
@@ -101,7 +105,7 @@ def build_run_presentation(report: dict[str, Any], *, debug: bool) -> CommandPre
         status=_status_for_report(report),
         title="WhestBench Report",
         sections=_base_sections(report),
-        epilogue_messages=[_JSON_OUTPUT_TIP, _DIAGNOSTIC_PLOTS_TIP],
+        epilogue_messages=_non_empty_messages([_JSON_OUTPUT_TIP, _DIAGNOSTIC_PLOTS_TIP]),
     )
 
 
@@ -119,7 +123,7 @@ def build_smoke_test_presentation(report: dict[str, Any], *, debug: bool) -> Com
                 steps=list(_SMOKE_TEST_NEXT_STEPS),
             ),
         ],
-        epilogue_messages=list(base_doc.epilogue_messages),
+        epilogue_messages=_non_empty_messages(list(base_doc.epilogue_messages)),
     )
 
 
@@ -208,12 +212,6 @@ def build_visualizer_ready_presentation(payload: dict[str, Any]) -> CommandPrese
         browser_host = "localhost" if host == "0.0.0.0" else host
         url = f"http://{browser_host}:{port_text}/"
 
-    epilogue_messages: list[str] = []
-    if payload.get("no_open"):
-        epilogue_messages.append("Browser auto-open disabled.")
-    if payload.get("ran_npm_ci"):
-        epilogue_messages.append("Dependencies were installed with npm ci before launch.")
-
     return CommandPresentation(
         command="visualizer",
         status="success",
@@ -228,7 +226,16 @@ def build_visualizer_ready_presentation(payload: dict[str, Any]) -> CommandPrese
                 ],
             )
         ],
-        epilogue_messages=epilogue_messages,
+        epilogue_messages=_non_empty_messages(
+            [
+                "Browser auto-open disabled." if payload.get("no_open") else "",
+                (
+                    "Dependencies were installed with npm ci before launch."
+                    if payload.get("ran_npm_ci")
+                    else ""
+                ),
+            ]
+        ),
     )
 
 
@@ -326,19 +333,21 @@ def build_profile_presentation(payload: dict[str, Any]) -> CommandPresentation:
             )
         )
 
-    epilogue_messages: list[str] = []
-    if not verbose:
-        if passed_any:
-            epilogue_messages.append("Use --verbose for full timing tables with raw times")
-        else:
-            epilogue_messages.append("Use --verbose for error details.")
-
     return CommandPresentation(
         command="profile-simulation",
         status="success" if passed_any else "error",
         title="Simulation Profile",
         sections=sections,
-        epilogue_messages=epilogue_messages,
+        epilogue_messages=_non_empty_messages(
+            [
+                (
+                    "Use --verbose for full timing tables with raw times"
+                    if not verbose and passed_any
+                    else ""
+                ),
+                "Use --verbose for error details." if not verbose and not passed_any else "",
+            ]
+        ),
     )
 
 
@@ -366,18 +375,19 @@ def build_error_presentation(
         traceback=str(traceback_text) if debug and traceback_text else None,
     )
 
-    epilogue_messages = []
-    if not debug:
-        epilogue_messages.append("Use --debug to include a traceback.")
-    if show_inprocess_hint:
-        epilogue_messages.append(
-            "Tip: For estimator-level tracebacks, rerun with --runner local --debug."
-        )
-
     return CommandPresentation(
         command=stage,
         status="error",
         title=f"Error [{stage}:{code}]",
         sections=[section],
-        epilogue_messages=epilogue_messages,
+        epilogue_messages=_non_empty_messages(
+            [
+                "Use --debug to include a traceback." if not debug else "",
+                (
+                    "Tip: For estimator-level tracebacks, rerun with --runner local --debug."
+                    if show_inprocess_hint
+                    else ""
+                ),
+            ]
+        ),
     )
