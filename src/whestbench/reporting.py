@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from statistics import fmean
 from typing import Any, Optional
@@ -15,8 +16,9 @@ from typing import Any, Optional
 from rich import box
 from rich.align import Align
 from rich.columns import Columns
-from rich.console import Console, Group
+from rich.console import Console, ConsoleRenderable, Group
 from rich.panel import Panel
+from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
 
@@ -324,6 +326,165 @@ def _fmt_flops(value: Any) -> str:
     return f"{numeric:.2e}"
 
 
+# --- Budget gauge state -----------------------------------------------------
+
+
+@dataclass(frozen=True)
+class GaugeState:
+    """Computed inputs for the FLOP budget gauge renderer.
+
+    state_name: one of "healthy", "tight", "busted", "catastrophic".
+    mean_utilization: mean(per_mlp.flops_used) / flop_budget. May exceed 1.0.
+    worst_mlp_pct: integer percent of the worst MLP; None iff any_busted is False.
+    any_busted: any(per_mlp[i].budget_exhausted).
+    flop_budget: echoed from run_config for rendering (0 allowed).
+    has_budget: False iff flop_budget <= 0 (renderer uses this to suppress the bar).
+    """
+
+    state_name: str
+    mean_utilization: float
+    worst_mlp_pct: Optional[int]
+    any_busted: bool
+    flop_budget: int
+    has_budget: bool
+
+
+def _compute_gauge_state(report: "dict[str, Any]") -> GaugeState:
+    run_config = report.get("run_config", {}) if isinstance(report, dict) else {}
+    results = report.get("results", {}) if isinstance(report, dict) else {}
+    per_mlp_raw = results.get("per_mlp", []) if isinstance(results, dict) else []
+    per_mlp: list[dict[str, Any]] = [e for e in per_mlp_raw if isinstance(e, dict)]
+
+    try:
+        flop_budget = int(run_config.get("flop_budget", 0) or 0)
+    except (TypeError, ValueError):
+        flop_budget = 0
+    has_budget = flop_budget > 0
+
+    flops_used = [_as_float(entry.get("flops_used", 0.0)) for entry in per_mlp]
+    if flops_used:
+        mean_flops = sum(flops_used) / len(flops_used)
+    else:
+        mean_flops = 0.0
+    mean_utilization = mean_flops / flop_budget if has_budget else 0.0
+
+    any_busted = any(bool(entry.get("budget_exhausted", False)) for entry in per_mlp)
+
+    if any_busted and has_budget:
+        worst_flops = max(
+            _as_float(entry.get("flops_used", 0.0))
+            for entry in per_mlp
+            if bool(entry.get("budget_exhausted", False))
+        )
+        worst_mlp_pct: Optional[int] = int(worst_flops * 100 // flop_budget)
+    else:
+        worst_mlp_pct = None
+
+    if mean_utilization >= 1.0:
+        state_name = "catastrophic"
+    elif any_busted:
+        state_name = "busted"
+    elif mean_utilization >= 0.80:
+        state_name = "tight"
+    else:
+        state_name = "healthy"
+
+    return GaugeState(
+        state_name=state_name,
+        mean_utilization=mean_utilization,
+        worst_mlp_pct=worst_mlp_pct,
+        any_busted=any_busted,
+        flop_budget=flop_budget,
+        has_budget=has_budget,
+    )
+
+
+# --- Over-budget selection --------------------------------------------------
+
+
+@dataclass(frozen=True)
+class OverBudgetRow:
+    mlp_index: int
+    flops_used: float
+    pct_of_budget: Optional[int]  # None iff flop_budget <= 0
+
+
+@dataclass(frozen=True)
+class OverBudgetSelection:
+    """Selection of over-budget MLPs to render in the Over-Budget panel.
+
+    rows: up to top_n entries sorted by (overage desc, mlp_index asc).
+    busted_count: total number of MLPs with budget_exhausted == True.
+    n_mlps: total number of MLP entries in the run.
+    is_truncated: busted_count > len(rows) (triggers the ``... and N more`` footer).
+    is_all_busted: busted_count == n_mlps and busted_count > 0 (triggers the
+        ``All M MLPs`` summary variant).
+    """
+
+    rows: "list[OverBudgetRow]"
+    busted_count: int
+    n_mlps: int
+    is_truncated: bool
+    is_all_busted: bool
+
+
+def _select_top_over_budget(report: "dict[str, Any]", *, top_n: int = 5) -> OverBudgetSelection:
+    run_config = report.get("run_config", {}) if isinstance(report, dict) else {}
+    results = report.get("results", {}) if isinstance(report, dict) else {}
+    per_mlp_raw = results.get("per_mlp", []) if isinstance(results, dict) else []
+    per_mlp: list[dict[str, Any]] = [e for e in per_mlp_raw if isinstance(e, dict)]
+    n_mlps = len(per_mlp)
+
+    try:
+        flop_budget = int(run_config.get("flop_budget", 0) or 0)
+    except (TypeError, ValueError):
+        flop_budget = 0
+
+    busted = [entry for entry in per_mlp if bool(entry.get("budget_exhausted", False))]
+    busted_count = len(busted)
+
+    def _overage(entry: "dict[str, Any]") -> float:
+        flops = _as_float(entry.get("flops_used", 0.0))
+        if flop_budget > 0:
+            return flops / flop_budget
+        return flops  # fallback when budget is unknown; keeps sort stable
+
+    sorted_busted = sorted(
+        busted,
+        key=lambda entry: (-_overage(entry), int(entry.get("mlp_index", 0))),
+    )
+
+    # Skip-truncation rule: if busted_count is exactly top_n + 1, show all.
+    rows_to_show = sorted_busted if busted_count <= top_n + 1 else sorted_busted[:top_n]
+
+    rows: list[OverBudgetRow] = []
+    for entry in rows_to_show:
+        flops = _as_float(entry.get("flops_used", 0.0))
+        pct: Optional[int]
+        if flop_budget > 0:
+            pct = int(flops * 100 // flop_budget)
+        else:
+            pct = None
+        rows.append(
+            OverBudgetRow(
+                mlp_index=int(entry.get("mlp_index", 0)),
+                flops_used=flops,
+                pct_of_budget=pct,
+            )
+        )
+
+    is_truncated = busted_count > len(rows)
+    is_all_busted = busted_count > 0 and busted_count == n_mlps
+
+    return OverBudgetSelection(
+        rows=rows,
+        busted_count=busted_count,
+        n_mlps=n_mlps,
+        is_truncated=is_truncated,
+        is_all_busted=is_all_busted,
+    )
+
+
 def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
     host = report.get("run_meta", {}).get("host", {})
     host_meta = host if isinstance(host, dict) else {}
@@ -391,6 +552,164 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
         subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
         subtitle_align="left",
         border_style="bright_cyan",
+    )
+
+
+# --- Budget gauge renderer --------------------------------------------------
+
+
+_GAUGE_BAR_WIDTH = 20
+_GAUGE_COLOR = {
+    "healthy": "green",
+    "tight": "yellow",
+    "busted": "red",
+    "catastrophic": "red",
+}
+
+
+def _gauge_bar_fragment(utilization: float) -> str:
+    """Return the ``[filled░░]`` fragment (without trailing ▶) for utilization.
+
+    Catastrophic overflow is handled by the renderer — it appends ▶ after.
+    """
+    if utilization <= 0.0:
+        filled = 0
+    else:
+        filled = min(round(utilization * _GAUGE_BAR_WIDTH), _GAUGE_BAR_WIDTH)
+    empty = _GAUGE_BAR_WIDTH - filled
+    return "[" + ("█" * filled) + ("░" * empty) + "]"
+
+
+def _gauge_renderable(report: "dict[str, Any]") -> ConsoleRenderable:
+    """Return the gauge line as a Rich renderable without printing it.
+
+    Used both by the standalone ``_render_budget_gauge`` backward-compat
+    wrapper and by ``_breakdown_panel`` when embedding the gauge inside the
+    Estimator Budget Breakdown panel.
+
+    The bar itself is a ``rich.progress_bar.ProgressBar`` (responsive width,
+    ``━``-style glyphs) to match the in-run progress bars shown during
+    ``whest run``. Rich clamps ``completed`` at ``total`` internally; the
+    catastrophic-state overflow is signaled by a ``▶`` glyph in the suffix,
+    not by the bar itself.
+    """
+    state = _compute_gauge_state(report)
+
+    label = Text("Estimator FLOPs  ", style="bold bright_yellow")
+
+    if not state.has_budget:
+        no_budget = Text()
+        no_budget.append_text(label)
+        no_budget.append("-- of 0 FLOPs", style="dim")
+        return no_budget
+
+    color = _GAUGE_COLOR.get(state.state_name, "white")
+    pct_int = int(state.mean_utilization * 100)  # truncates toward zero
+    budget_label = _fmt_flops(state.flop_budget)
+
+    # Rich ProgressBar clamps completed at total. Overflow is signaled by the
+    # ▶ arrow in the suffix below, not by the bar.
+    display_completed = min(state.mean_utilization, 1.0) * 100.0
+    bar = ProgressBar(
+        total=100.0,
+        completed=display_completed,
+        style=f"dim {color}",  # state-colored track so the gauge reads its state at any fill level
+        complete_style=color,
+        finished_style=color,
+        width=None,  # responsive — fills the middle column of the grid
+    )
+
+    suffix = Text()
+    suffix.append("  ")
+    if state.state_name == "catastrophic":
+        suffix.append("▶ ", style=color)
+    suffix.append(f"{pct_int}% of {budget_label}", style="bold")
+
+    if state.worst_mlp_pct is not None:
+        suffix.append(" ")
+        suffix.append("·", style="dim")
+        suffix.append(" ")
+        suffix.append(f"worst MLP {state.worst_mlp_pct}%", style="red")
+        suffix.append(" ")
+        suffix.append("⚠", style="red")
+
+    # Three-column grid: label (fixed), bar (flex), suffix (fixed).
+    grid = Table.grid(expand=True)
+    grid.add_column(no_wrap=True)
+    grid.add_column(ratio=1)
+    grid.add_column(no_wrap=True)
+    grid.add_row(label, bar, suffix)
+    return grid
+
+
+def _over_budget_renderable(report: "dict[str, Any]") -> Optional[Group]:
+    """Return a Group of the over-budget rows + truncation footer + summary.
+
+    Returns None when there are no busted MLPs. Does NOT wrap the Group in a
+    Panel — callers decide whether to wrap (standalone panel) or embed
+    (inside the Estimator Budget Breakdown panel).
+    """
+    sel = _select_top_over_budget(report)
+    if sel.busted_count == 0:
+        return None
+
+    lines: list[Text] = []
+
+    for row in sel.rows:
+        pct_label = f"{row.pct_of_budget}%" if row.pct_of_budget is not None else "--%"
+        line = Text()
+        line.append(f"MLP #{row.mlp_index:<4}", style="red")
+        line.append("  ")
+        line.append(f"{_fmt_flops(row.flops_used):>9} FLOPs", style="red")
+        line.append("  ")
+        line.append(f"{pct_label:>4} of budget", style="red")
+        line.append("  ")
+        line.append("zeroed", style="red")
+        lines.append(line)
+
+    if sel.is_truncated:
+        remainder = sel.busted_count - len(sel.rows)
+        lines.append(Text(f"... and {remainder} more over budget", style="dim"))
+        lines.append(Text("run with --json for the full list", style="dim"))
+
+    lines.append(Text(""))  # blank line before summary
+    if sel.is_all_busted:
+        summary = (
+            f"All {sel.n_mlps} MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed"
+        )
+    else:
+        summary = f"{sel.busted_count} of {sel.n_mlps} MLPs exceeded the per-MLP FLOP cap"
+    lines.append(Text(summary, style="bold red"))
+
+    return Group(*lines)
+
+
+def _render_budget_gauge(console: Console, report: "dict[str, Any]") -> None:
+    """Backward-compat wrapper that prints the gauge line standalone.
+
+    The gauge is normally embedded inside the Estimator Budget Breakdown
+    panel (see ``_breakdown_panel``); this wrapper preserves the original
+    standalone call surface for existing unit tests.
+    """
+    console.print(_gauge_renderable(report))
+
+
+def _render_over_budget_panel(console: Console, report: "dict[str, Any]") -> None:
+    """Backward-compat wrapper that prints the over-budget content in a Panel.
+
+    The over-budget content is normally inlined inside the Estimator Budget
+    Breakdown panel; this wrapper preserves the original standalone
+    red-bordered Panel for existing unit tests.
+    """
+    body = _over_budget_renderable(report)
+    if body is None:
+        return
+    console.print(
+        Panel(
+            body,
+            title="Over-Budget MLPs",
+            border_style="red",
+        )
     )
 
 
@@ -540,11 +859,24 @@ def _breakdown_panel(
             f"{tracked_time_s:.6f}s",
         )
 
-    body = [Align.center(summary)]
+    body: "list[Any]" = []
+    if breakdown_key == "estimator":
+        body.append(_gauge_renderable(report))
+        over_budget = _over_budget_renderable(report)
+        if over_budget is not None:
+            body.append(Text(""))
+            body.append(Text("Over-Budget MLPs", style="bold red"))
+            body.append(over_budget)
+        body.append(Text(""))
+    body.append(Align.center(summary))
     if by_namespace:
         body.append(Align.center(table))
 
-    border_style = "bright_magenta" if breakdown_key == "estimator" else "bright_yellow"
+    if breakdown_key == "estimator":
+        any_busted = _compute_gauge_state(report).any_busted
+        border_style = "red" if any_busted else "bright_magenta"
+    else:
+        border_style = "bright_yellow"
     return Panel(
         Group(*body),
         title=title,
