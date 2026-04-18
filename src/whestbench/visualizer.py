@@ -13,7 +13,13 @@ import webbrowser
 from pathlib import Path
 
 from rich.console import Console
-from rich.panel import Panel
+
+from .presentation.adapters import (
+    build_visualizer_error_presentation,
+    build_visualizer_ready_presentation,
+)
+from .presentation.models import CommandPresentation
+from .presentation.render_rich import render_rich_presentation
 
 
 class NodeNotFoundError(RuntimeError):
@@ -58,6 +64,11 @@ class NpmCiError(RuntimeError):
 
 
 _MIN_NODE_MAJOR = 18
+
+
+def _print_visualizer_doc(doc: CommandPresentation, *, stderr: bool = False) -> None:
+    stream = sys.stderr if stderr else sys.stdout
+    print(render_rich_presentation(doc), file=stream, end="")
 
 
 def check_node_available() -> None:
@@ -144,6 +155,7 @@ def _start_dev_server(
     host: str,
     port: int,
     no_open: bool,
+    ran_npm_ci: bool,
     debug: bool,
 ) -> int:
     """Start the Vite dev server and block until it exits.
@@ -151,7 +163,6 @@ def _start_dev_server(
     Returns the process exit code (0 for clean Ctrl+C shutdown).
     """
     cmd = ["npm", "run", "dev", "--", "--host", host, "--port", str(port)]
-    console = Console()
     process = subprocess.Popen(
         cmd,
         cwd=explorer_dir,
@@ -173,8 +184,16 @@ def _start_dev_server(
         if not browser_opened:
             browser_host = "localhost" if host == "0.0.0.0" else host
             url = f"http://{browser_host}:{port}"
-            console.print(
-                f"\n[bold green]WhestBench Explorer should be at:[/] [link={url}]{url}[/]\n"
+            _print_visualizer_doc(
+                build_visualizer_ready_presentation(
+                    {
+                        "url": url,
+                        "host": host,
+                        "port": port,
+                        "no_open": no_open,
+                        "ran_npm_ci": ran_npm_ci,
+                    }
+                )
             )
             browser_opened = True
 
@@ -194,8 +213,16 @@ def _start_dev_server(
                     url = _m.group(1).rstrip("/") if _m else f"http://{browser_host}:{port}"
                     _pm = re.search(r":(\d+)", url)
                     actual_port = int(_pm.group(1)) if _pm else port
-                    console.print(
-                        f"\n[bold green]WhestBench Explorer running at:[/] [link={url}]{url}[/]\n"
+                    _print_visualizer_doc(
+                        build_visualizer_ready_presentation(
+                            {
+                                "url": url,
+                                "host": host,
+                                "port": actual_port,
+                                "no_open": no_open,
+                                "ran_npm_ci": ran_npm_ci,
+                            }
+                        )
                     )
                     if should_open:
                         _open_browser(host, actual_port)
@@ -224,48 +251,28 @@ def run_visualizer(
 
     Returns exit code (0 = success, 1 = error).
     """
-    console = Console(stderr=True)
-
     try:
         check_node_available()
         check_node_version()
     except NodeNotFoundError as exc:
-        console.print(
-            Panel(
-                f"[bold red]{exc.missing}[/] is not installed.\n\n"
-                "[bold]Install Node.js:[/]\n"
-                "  macOS:         [cyan]brew install node[/]\n"
-                "  Ubuntu/Debian: [cyan]sudo apt install nodejs npm[/]\n"
-                "  Other:         [link=https://nodejs.org/en/download]https://nodejs.org/en/download[/]",
-                title="[bold red]Missing Prerequisite[/]",
-                border_style="red",
-            )
+        _print_visualizer_doc(
+            build_visualizer_error_presentation("Missing Prerequisite", str(exc)),
+            stderr=True,
         )
         return 1
     except NodeVersionError as exc:
-        console.print(
-            Panel(
-                f"Found Node.js [bold]{exc.found}[/] but version "
-                f"[bold]>= {exc.minimum}[/] is required.\n\n"
-                "[bold]Upgrade Node.js:[/]\n"
-                "  macOS:         [cyan]brew upgrade node[/]\n"
-                "  Ubuntu/Debian: [cyan]sudo apt install nodejs npm[/] or use [cyan]nvm[/]\n"
-                "  Other:         [link=https://nodejs.org/en/download]https://nodejs.org/en/download[/]",
-                title="[bold red]Node.js Version Too Old[/]",
-                border_style="red",
-            )
+        _print_visualizer_doc(
+            build_visualizer_error_presentation("Node.js Version Too Old", str(exc)),
+            stderr=True,
         )
         return 1
 
     try:
         explorer_dir = find_explorer_dir()
     except ExplorerNotFoundError as exc:
-        console.print(
-            Panel(
-                str(exc),
-                title="[bold red]Explorer Not Found[/]",
-                border_style="red",
-            )
+        _print_visualizer_doc(
+            build_visualizer_error_presentation("Explorer Not Found", str(exc)),
+            stderr=True,
         )
         return 1
 
@@ -275,28 +282,55 @@ def run_visualizer(
             _run_npm_ci(explorer_dir, debug=debug)
             ran_npm_ci = True
         except NpmCiError as exc:
-            console.print("\n[bold red]Installing dependencies failed.[/]")
-            if debug:
-                console.print(f"[dim]{exc.stderr}[/]")
+            _print_visualizer_doc(
+                build_visualizer_error_presentation(
+                    "Installing dependencies failed.",
+                    "Installing dependencies failed.",
+                    details=exc.stderr if debug else None,
+                ),
+                stderr=True,
+            )
             return 1
 
-    exit_code = _start_dev_server(explorer_dir, host=host, port=port, no_open=no_open, debug=debug)
+    exit_code = _start_dev_server(
+        explorer_dir,
+        host=host,
+        port=port,
+        no_open=no_open,
+        ran_npm_ci=ran_npm_ci,
+        debug=debug,
+    )
 
     if exit_code != 0 and not ran_npm_ci:
-        console.print("[yellow]Dev server failed. Retrying after reinstalling dependencies...[/]")
         try:
             _run_npm_ci(explorer_dir, debug=debug)
         except NpmCiError as exc:
-            console.print("\n[bold red]Installing dependencies failed.[/]")
-            if debug:
-                console.print(f"[dim]{exc.stderr}[/]")
+            _print_visualizer_doc(
+                build_visualizer_error_presentation(
+                    "Installing dependencies failed.",
+                    "Installing dependencies failed.",
+                    details=exc.stderr if debug else None,
+                ),
+                stderr=True,
+            )
             return 1
         exit_code = _start_dev_server(
-            explorer_dir, host=host, port=port, no_open=no_open, debug=debug
+            explorer_dir,
+            host=host,
+            port=port,
+            no_open=no_open,
+            ran_npm_ci=True,
+            debug=debug,
         )
 
     if exit_code != 0:
-        console.print(f"\n[bold red]Dev server exited unexpectedly (code {exit_code}).[/]")
+        _print_visualizer_doc(
+            build_visualizer_error_presentation(
+                "Dev Server Exited Unexpectedly",
+                f"Dev server exited unexpectedly (code {exit_code}).",
+            ),
+            stderr=True,
+        )
         return 1
 
     return 0

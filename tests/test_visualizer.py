@@ -278,6 +278,35 @@ def test_run_visualizer_retries_with_npm_ci_on_dev_server_failure(tmp_path, monk
     assert sum(1 for s in cmd_strings if "dev" in s) == 2
 
 
+def test_run_visualizer_prints_ready_state_summary(
+    tmp_path, monkeypatch, capsys: pytest.CaptureFixture[str]
+):
+    explorer = _make_fake_explorer(tmp_path, with_node_modules=True)
+
+    class ReadyProcess(FakeProcess):
+        def __init__(self) -> None:
+            super().__init__(returncode=0)
+            self.stdout = iter(
+                [
+                    "  VITE v7.3.1  ready in 728 ms\n",
+                    "  ➜  Local:   http://127.0.0.1:4173/\n",
+                ]
+            )
+
+    monkeypatch.setattr(viz_mod, "find_explorer_dir", lambda **kw: explorer)
+    monkeypatch.setattr(viz_mod, "check_node_available", lambda: None)
+    monkeypatch.setattr(viz_mod, "check_node_version", lambda: None)
+    monkeypatch.setattr(viz_mod.subprocess, "Popen", lambda *_a, **_k: ReadyProcess())
+    monkeypatch.setattr(viz_mod, "is_headless", lambda: True)
+
+    result = run_visualizer(host="127.0.0.1", port=4173, no_open=True, debug=False)
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "WhestBench Explorer" in captured.out
+    assert "http://127.0.0.1:4173/" in captured.out
+
+
 def test_run_visualizer_returns_1_when_npm_ci_fails(tmp_path, monkeypatch):
     explorer = _make_fake_explorer(tmp_path, with_node_modules=False)
 
@@ -294,7 +323,7 @@ def test_run_visualizer_returns_1_when_npm_ci_fails(tmp_path, monkeypatch):
     assert result == 1
 
 
-def test_run_visualizer_returns_1_when_explorer_not_found(monkeypatch):
+def test_run_visualizer_returns_1_when_explorer_not_found(monkeypatch, capsys):
     monkeypatch.setattr(viz_mod, "check_node_available", lambda: None)
     monkeypatch.setattr(viz_mod, "check_node_version", lambda: None)
 
@@ -304,17 +333,23 @@ def test_run_visualizer_returns_1_when_explorer_not_found(monkeypatch):
     monkeypatch.setattr(viz_mod, "find_explorer_dir", raise_not_found)
 
     result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
+    captured = capsys.readouterr()
     assert result == 1
+    assert "Explorer Not Found" in captured.err
+    assert "source checkout of the repository" in captured.err
 
 
-def test_run_visualizer_returns_1_when_node_missing(monkeypatch):
+def test_run_visualizer_returns_1_when_node_missing(monkeypatch, capsys):
     def raise_not_found():
         raise NodeNotFoundError("node")
 
     monkeypatch.setattr(viz_mod, "check_node_available", raise_not_found)
 
     result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
+    captured = capsys.readouterr()
     assert result == 1
+    assert "Missing Prerequisite" in captured.err
+    assert "node" in captured.err
 
 
 # --- CLI dispatch tests ---
