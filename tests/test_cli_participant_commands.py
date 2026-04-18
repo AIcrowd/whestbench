@@ -527,7 +527,16 @@ def test_main_uses_sys_argv_when_argv_is_none(
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False, debug=False: "human report\n",
+        lambda *_args, **_kwargs: pytest.fail(
+            "smoke-test rich path should use presentation render"
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
+        "render_rich_presentation",
+        lambda doc: "human report\nNext Steps\n" if doc.command == "smoke-test" else "wrong\n",
+        raising=False,
     )
     monkeypatch.setattr(cli.sys, "argv", ["whest", "smoke-test"])
 

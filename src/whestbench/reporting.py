@@ -114,7 +114,7 @@ def _new_console(buffer: io.StringIO) -> Console:
     )
 
 
-def render_smoke_test_next_steps() -> str:
+def render_smoke_test_next_steps(report: "dict[str, Any]", *, debug: bool = False) -> str:
     """Render onboarding next-steps panel for ``whest smoke-test``."""
     buffer = io.StringIO()
     width = _dashboard_width()
@@ -126,16 +126,18 @@ def render_smoke_test_next_steps() -> str:
         _environ=_rich_console_environ(width),
     )
 
+    smoke_doc = build_smoke_test_presentation(report, debug=debug)
     purpose_lines = _smoke_next_step_lines()
-    smoke_doc = build_smoke_test_presentation({}, debug=False)
-    commands = next(
+    next_steps = next(
         (
-            list(section.steps)
+            section
             for section in smoke_doc.sections
             if isinstance(section, StepsSection) and section.title == "Next Steps"
         ),
-        _smoke_next_step_commands(),
+        None,
     )
+    commands = list(next_steps.steps) if next_steps is not None else _smoke_next_step_commands()
+    section_title = next_steps.title if next_steps is not None else "Next Steps"
     body_items: "list[Text]" = [
         Text("We are all set! Welcome onboard", style="bold bright_green"),
         Text("Run these steps:", style="bold bright_white"),
@@ -151,15 +153,11 @@ def render_smoke_test_next_steps() -> str:
         body_items.append(Text(command, style="white"))
     body_items.append(Text())
 
-    body_items.append(
-        Text(
-            "Tip: use --json on validate/run/package for machine-readable output.",
-            style="dim",
-        )
-    )
+    for message in smoke_doc.epilogue_messages:
+        body_items.append(Text(message, style="dim"))
 
     body = Group(*body_items)
-    console.print(Panel(body, title="Next Steps", border_style="bright_cyan"))
+    console.print(Panel(body, title=section_title, border_style="bright_cyan"))
     return buffer.getvalue()
 
 

@@ -41,6 +41,7 @@ from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
 from .presentation.adapters import build_run_presentation, build_smoke_test_presentation
 from .presentation.render_plain import render_plain_presentation
+from .presentation.render_rich import render_rich_presentation
 from .reporting import (
     _compute_gauge_state,
     _fmt_flops,
@@ -49,7 +50,6 @@ from .reporting import (
     render_agent_report,
     render_human_context_panels,
     render_human_header,
-    render_human_report,
     render_human_results,
     render_smoke_test_next_steps,
 )
@@ -1197,8 +1197,8 @@ def _main_participant(argv: "list[str]") -> int:
 
             report["mode"] = "human"
             try:
-                output = render_human_report(
-                    report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
+                output = render_rich_presentation(
+                    build_smoke_test_presentation(report, debug=debug)
                 )
             except Exception as exc:
                 print(
@@ -1208,7 +1208,7 @@ def _main_participant(argv: "list[str]") -> int:
                 output = _render_plain_text_report(report, command="smoke-test")
             print(output, end="" if output.endswith("\n") else "\n")
             if "Next Steps" not in output:
-                next_steps = render_smoke_test_next_steps()
+                next_steps = render_smoke_test_next_steps(report, debug=debug)
                 print(next_steps, end="" if next_steps.endswith("\n") else "\n")
             return 0
 
