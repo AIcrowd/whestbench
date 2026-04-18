@@ -366,7 +366,7 @@ def test_panel_renders_single_row_with_singular_summary() -> None:
     # 1 of 2 busted (singular summary not used: is_all_busted=False)
     assert "1 of 2 MLPs exceeded the per-MLP FLOP cap" in plain
     # no truncation footer
-    assert "and" not in plain or "more over budget" not in plain
+    assert "more over budget" not in plain
     assert "--json" not in plain
 
 
