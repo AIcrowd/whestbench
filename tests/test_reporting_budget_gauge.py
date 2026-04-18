@@ -13,6 +13,7 @@ from whestbench.reporting import (
     OverBudgetSelection,
     _compute_gauge_state,
     _render_budget_gauge,
+    _render_over_budget_panel,
     _select_top_over_budget,
 )
 
@@ -333,3 +334,108 @@ def test_render_gauge_with_flop_budget_zero_suppresses_bar() -> None:
     assert "of 0 FLOPs" in plain
     # no bar brackets
     assert "[" not in plain
+
+
+# --- _render_over_budget_panel ----------------------------------------------
+
+
+def _render_panel_out(report: Dict[str, Any]) -> str:
+    return _render_via(lambda console: _render_over_budget_panel(console, report))
+
+
+def test_panel_not_rendered_when_no_busts() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[_mlp(0, flops_used=50.0), _mlp(1, flops_used=60.0)],
+    )
+    out = _render_panel_out(report)
+    assert out.strip() == ""
+
+
+def test_panel_renders_single_row_with_singular_summary() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[_mlp(0, flops_used=50.0), _busted(1, 138.0)],
+    )
+    out = _render_panel_out(report)
+    plain = _strip_ansi(out)
+    assert "Over-Budget MLPs" in plain
+    assert "MLP #1" in plain
+    assert "138% of budget" in plain
+    assert "zeroed" in plain
+    # 1 of 2 busted (singular summary not used: is_all_busted=False)
+    assert "1 of 2 MLPs exceeded the per-MLP FLOP cap" in plain
+    # no truncation footer
+    assert "and" not in plain or "more over budget" not in plain
+    assert "--json" not in plain
+
+
+def test_panel_top5_and_truncation_footer_when_7_busted() -> None:
+    per_mlp = [_busted(i, 200.0 - i) for i in range(7)]
+    report = _report(flop_budget=100, per_mlp=per_mlp)
+    out = _render_panel_out(report)
+    plain = _strip_ansi(out)
+    # top 5 shown (highest overage first)
+    for idx in range(5):
+        assert f"MLP #{idx}" in plain
+    # remaining 2 excluded
+    assert "MLP #5" not in plain
+    assert "MLP #6" not in plain
+    # truncation footer
+    assert "... and 2 more over budget" in plain
+    assert "run with --json for the full list" in plain
+    # all-busted reframe (7 of 7)
+    assert "All 7 MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed" in plain
+
+
+def test_panel_shows_all_6_when_exactly_6_busted_no_truncation() -> None:
+    per_mlp = [_busted(i, 200.0 - i) for i in range(6)]
+    report = _report(flop_budget=100, per_mlp=per_mlp)
+    out = _render_panel_out(report)
+    plain = _strip_ansi(out)
+    for idx in range(6):
+        assert f"MLP #{idx}" in plain
+    assert "... and" not in plain
+    assert "--json" not in plain
+
+
+def test_panel_normal_vs_all_busted_summary_variant() -> None:
+    # Normal case: 3 of 10
+    per_mlp_normal = [_busted(i, 150.0) for i in range(3)] + [
+        _mlp(i, flops_used=30.0) for i in range(3, 10)
+    ]
+    out_normal = _render_panel_out(_report(flop_budget=100, per_mlp=per_mlp_normal))
+    plain_normal = _strip_ansi(out_normal)
+    assert "3 of 10 MLPs exceeded the per-MLP FLOP cap" in plain_normal
+    assert "entirely zeroed" not in plain_normal
+
+    # All-busted: 3 of 3
+    per_mlp_all = [_busted(i, 150.0) for i in range(3)]
+    out_all = _render_panel_out(_report(flop_budget=100, per_mlp=per_mlp_all))
+    plain_all = _strip_ansi(out_all)
+    assert "All 3 MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed" in plain_all
+
+
+def test_panel_excludes_errored_mlps() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[
+            _mlp(0, flops_used=0.0, error="boom"),
+            _busted(1, 120.0),
+        ],
+    )
+    out = _render_panel_out(report)
+    plain = _strip_ansi(out)
+    assert "MLP #1" in plain
+    assert "MLP #0" not in plain
+
+
+def test_panel_flop_budget_zero_shows_dashes_for_pct() -> None:
+    report = _report(
+        flop_budget=0,
+        per_mlp=[_busted(0, 100.0)],
+    )
+    out = _render_panel_out(report)
+    plain = _strip_ansi(out)
+    assert "MLP #0" in plain
+    assert "--% of budget" in plain
