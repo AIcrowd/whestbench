@@ -203,6 +203,7 @@ def _render_plain_text_report(
     debug: bool = False,
     command: str = "run",
     include_epilogues: bool = True,
+    include_diagnostic_plots_tip: bool = True,
 ) -> str:
     """Render a plain-text report when Rich rendering is unavailable."""
     doc = (
@@ -212,6 +213,15 @@ def _render_plain_text_report(
     )
     if not include_epilogues:
         doc = replace(doc, epilogue_messages=[])
+    elif not include_diagnostic_plots_tip:
+        doc = replace(
+            doc,
+            epilogue_messages=[
+                message
+                for message in doc.epilogue_messages
+                if message != "Use --show-diagnostic-plots to include diagnostic plot panes."
+            ],
+        )
     lines = render_plain_presentation(doc).rstrip("\n").splitlines()
     if lines:
         lines[0] = "WhestBench Report (Plain Text)"
@@ -1539,7 +1549,11 @@ def _main_participant(argv: "list[str]") -> int:
                             f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
                             file=sys.stderr,
                         )
-                        output = _render_plain_text_report(report, debug=debug)
+                        output = _render_plain_text_report(
+                            report,
+                            debug=debug,
+                            include_diagnostic_plots_tip=not bool(args.show_diagnostic_plots),
+                        )
                         used_plain_fallback = True
             print(output, end="" if output.endswith("\n") else "\n")
             if not json_output and not no_rich:
