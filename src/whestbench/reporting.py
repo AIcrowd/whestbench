@@ -398,6 +398,92 @@ def _compute_gauge_state(report: "dict[str, Any]") -> GaugeState:
     )
 
 
+# --- Over-budget selection --------------------------------------------------
+
+
+@dataclass(frozen=True)
+class OverBudgetRow:
+    mlp_index: int
+    flops_used: float
+    pct_of_budget: Optional[int]  # None iff flop_budget <= 0
+
+
+@dataclass(frozen=True)
+class OverBudgetSelection:
+    """Selection of over-budget MLPs to render in the Over-Budget panel.
+
+    rows: up to top_n entries sorted by (overage desc, mlp_index asc).
+    busted_count: total number of MLPs with budget_exhausted == True.
+    n_mlps: total number of MLP entries in the run.
+    is_truncated: busted_count > len(rows) (triggers the ``... and N more`` footer).
+    is_all_busted: busted_count == n_mlps and busted_count > 0 (triggers the
+        ``All M MLPs`` summary variant).
+    """
+
+    rows: "list[OverBudgetRow]"
+    busted_count: int
+    n_mlps: int
+    is_truncated: bool
+    is_all_busted: bool
+
+
+def _select_top_over_budget(report: "dict[str, Any]", *, top_n: int = 5) -> OverBudgetSelection:
+    run_config = report.get("run_config", {}) if isinstance(report, dict) else {}
+    results = report.get("results", {}) if isinstance(report, dict) else {}
+    per_mlp_raw = results.get("per_mlp", []) if isinstance(results, dict) else []
+    per_mlp: list[dict[str, Any]] = [e for e in per_mlp_raw if isinstance(e, dict)]
+    n_mlps = len(per_mlp)
+
+    try:
+        flop_budget = int(run_config.get("flop_budget", 0) or 0)
+    except (TypeError, ValueError):
+        flop_budget = 0
+
+    busted = [entry for entry in per_mlp if bool(entry.get("budget_exhausted", False))]
+    busted_count = len(busted)
+
+    def _overage(entry: "dict[str, Any]") -> float:
+        flops = _as_float(entry.get("flops_used", 0.0))
+        if flop_budget > 0:
+            return flops / flop_budget
+        return flops  # fallback when budget is unknown; keeps sort stable
+
+    sorted_busted = sorted(
+        busted,
+        key=lambda entry: (-_overage(entry), int(entry.get("mlp_index", 0))),
+    )
+
+    # Skip-truncation rule: if busted_count is exactly top_n + 1, show all.
+    rows_to_show = sorted_busted if busted_count <= top_n + 1 else sorted_busted[:top_n]
+
+    rows: list[OverBudgetRow] = []
+    for entry in rows_to_show:
+        flops = _as_float(entry.get("flops_used", 0.0))
+        pct: Optional[int]
+        if flop_budget > 0:
+            pct = int(flops * 100 // flop_budget)
+        else:
+            pct = None
+        rows.append(
+            OverBudgetRow(
+                mlp_index=int(entry.get("mlp_index", 0)),
+                flops_used=flops,
+                pct_of_budget=pct,
+            )
+        )
+
+    is_truncated = busted_count > len(rows)
+    is_all_busted = busted_count > 0 and busted_count == n_mlps
+
+    return OverBudgetSelection(
+        rows=rows,
+        busted_count=busted_count,
+        n_mlps=n_mlps,
+        is_truncated=is_truncated,
+        is_all_busted=is_all_busted,
+    )
+
+
 def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
     host = report.get("run_meta", {}).get("host", {})
     host_meta = host if isinstance(host, dict) else {}
