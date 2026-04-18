@@ -203,7 +203,7 @@ def correctness_check() -> CorrectnessResult:
         mlp = sample_mlp(8, 4, we.random.default_rng(42))
         inputs = we.random.default_rng(123).standard_normal((64, 8)).astype(we.float32)
 
-        with we.BudgetContext(flop_budget=int(1e15)):
+        with we.BudgetContext(flop_budget=int(1e15), quiet=True):
             result = ref_run_mlp(mlp, inputs)
             assert result.shape == (64, 8), f"Expected shape (64, 8), got {result.shape}"
             assert we.all(we.asarray(result) >= 0.0), "ReLU outputs must be non-negative"
@@ -243,7 +243,7 @@ def _time_run_mlp(mlp: MLP, n_samples: int) -> float:
         n = min(_TIMING_CHUNK, n_samples - start)
         inputs = we.array(_random_float32((n, mlp.width)))
         t0 = time.perf_counter()
-        with we.BudgetContext(flop_budget=int(1e15)):
+        with we.BudgetContext(flop_budget=int(1e15), quiet=True):
             ref_run_mlp(mlp, inputs)
         total += time.perf_counter() - t0
         del inputs
@@ -253,7 +253,7 @@ def _time_run_mlp(mlp: MLP, n_samples: int) -> float:
 def _time_sample_layer_statistics(mlp: MLP, n_samples: int) -> float:
     """Time a single sample_layer_statistics call."""
     t0 = time.perf_counter()
-    with we.BudgetContext(flop_budget=int(1e15)):
+    with we.BudgetContext(flop_budget=int(1e15), quiet=True):
         ref_sample_layer_statistics(mlp, n_samples)
     return time.perf_counter() - t0
 

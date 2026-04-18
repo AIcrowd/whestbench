@@ -80,3 +80,35 @@ def test_collect_hardware_fingerprint_uses_unknown_when_whest_metadata_missing(
     fp = collect_hardware_fingerprint()
 
     assert fp["whest_version"] == "unknown"
+
+
+def test_collect_hardware_fingerprint_uses_fallback_probes_when_enabled(monkeypatch) -> None:
+    monkeypatch.setattr(hardware_mod, "psutil", None)
+    monkeypatch.setattr(hardware_mod, "_physical_core_count_fallback", lambda: 12)
+    monkeypatch.setattr(hardware_mod, "_ram_total_fallback", lambda: 34)
+
+    fp = collect_hardware_fingerprint(skip_fallback_probes=False)
+
+    assert fp["cpu_count_physical"] == 12
+    assert fp["ram_total_bytes"] == 34
+
+
+def test_collect_hardware_fingerprint_skips_fallback_probes_via_env(monkeypatch) -> None:
+    monkeypatch.setenv(hardware_mod._SKIP_FALLBACK_PROBES_ENV, "1")
+    monkeypatch.setattr(hardware_mod, "psutil", None)
+
+    def _unexpected_cpu_probe() -> int:
+        raise AssertionError("physical core fallback probe should be skipped")
+
+    def _unexpected_ram_probe() -> int:
+        raise AssertionError("RAM fallback probe should be skipped")
+
+    monkeypatch.setattr(hardware_mod, "_physical_core_count_fallback", _unexpected_cpu_probe)
+    monkeypatch.setattr(hardware_mod, "_ram_total_fallback", _unexpected_ram_probe)
+
+    fp = collect_hardware_fingerprint()
+
+    assert fp["hostname"]
+    assert fp["cpu_count_logical"] > 0
+    assert fp["cpu_count_physical"] is None
+    assert fp["ram_total_bytes"] is None
