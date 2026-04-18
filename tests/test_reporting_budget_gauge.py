@@ -12,6 +12,7 @@ from whestbench.reporting import (
     OverBudgetRow,
     OverBudgetSelection,
     _compute_gauge_state,
+    _render_budget_gauge,
     _select_top_over_budget,
 )
 
@@ -253,3 +254,82 @@ def test_select_over_budget_handles_flop_budget_zero() -> None:
     # If budget is 0, pct_of_budget is None; rows still sort by flops_used desc.
     assert len(sel.rows) == 1
     assert sel.rows[0].pct_of_budget is None
+
+
+# --- _render_budget_gauge ---------------------------------------------------
+
+
+def _render_gauge(report: Dict[str, Any]) -> str:
+    return _render_via(lambda console: _render_budget_gauge(console, report))
+
+
+def test_render_gauge_healthy_shows_green_bar_and_percent() -> None:
+    report = _report(
+        flop_budget=100_000_000,
+        per_mlp=[_mlp(i, flops_used=30_000_000.0) for i in range(3)],
+    )
+    out = _render_gauge(report)
+    plain = _strip_ansi(out)
+    assert "Estimator FLOPs" in plain
+    assert "30%" in plain
+    # _fmt_flops uses `{:.2e}` → "1.00e+08" for 100_000_000
+    assert "of 1.00e+08" in plain
+    # no worst-MLP suffix on healthy runs
+    assert "worst MLP" not in plain
+    # six filled cells out of twenty for 30%
+    assert "[" + ("█" * 6) + ("░" * 14) + "]" in out
+
+
+def test_render_gauge_tight_shows_91_percent_yellow() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[_mlp(0, flops_used=85.0), _mlp(1, flops_used=95.0)],
+    )
+    out = _render_gauge(report)
+    plain = _strip_ansi(out)
+    assert "90%" in plain
+    assert "worst MLP" not in plain
+
+
+def test_render_gauge_busted_shows_worst_mlp_suffix() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[
+            _mlp(0, flops_used=40.0),
+            _mlp(1, flops_used=60.0),
+            _mlp(2, flops_used=138.0, budget_exhausted=True),
+        ],
+    )
+    out = _render_gauge(report)
+    plain = _strip_ansi(out)
+    assert "worst MLP 138%" in plain
+    assert "⚠" in plain
+
+
+def test_render_gauge_catastrophic_shows_overflow_arrow() -> None:
+    report = _report(
+        flop_budget=100,
+        per_mlp=[
+            _mlp(0, flops_used=120.0, budget_exhausted=True),
+            _mlp(1, flops_used=212.0, budget_exhausted=True),
+        ],
+    )
+    out = _render_gauge(report)
+    plain = _strip_ansi(out)
+    assert "▶" in plain
+    assert "worst MLP 212%" in plain
+    # Bar maxed out at 20 filled cells
+    assert "[" + ("█" * 20) + "]" in out
+
+
+def test_render_gauge_with_flop_budget_zero_suppresses_bar() -> None:
+    report = _report(
+        flop_budget=0,
+        per_mlp=[_mlp(0, flops_used=42.0)],
+    )
+    out = _render_gauge(report)
+    plain = _strip_ansi(out)
+    assert "--" in plain
+    assert "of 0 FLOPs" in plain
+    # no bar brackets
+    assert "[" not in plain
