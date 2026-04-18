@@ -138,7 +138,7 @@ def test_render_json_mode_returns_pretty_json_only() -> None:
 
 
 def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -> None:
-    rendered = render_smoke_test_next_steps()
+    rendered = render_smoke_test_next_steps(_sample_report())
     plain = _strip_ansi(rendered)
 
     assert "Next Steps" in plain
@@ -169,6 +169,8 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     )
     assert "whest run --estimator ./examples/estimators/mean_propagation.py --runner local" in plain
     assert "whest run --estimator ./examples/estimators/random_estimator.py --runner local" in plain
+    assert "Use --json for JSON output when calling from automated agents or UIs." in plain
+    assert "Tip: use --json on validate/run/package for machine-readable output." not in plain
 
 
 def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:

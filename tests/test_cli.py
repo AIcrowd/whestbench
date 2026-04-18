@@ -70,7 +70,7 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
     return report
 
 
-def test_smoke_test_renders_human_report_by_default(
+def test_smoke_test_renders_adapter_rich_presentation_by_default(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict = {}
@@ -92,26 +92,38 @@ def test_smoke_test_renders_human_report_by_default(
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: (
-            render_observed.setdefault("show_diagnostic_plots", show_diagnostic_plots) or "human\n"
+        lambda *_args, **_kwargs: pytest.fail(
+            "smoke-test rich path should use presentation render"
         ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
+        "render_rich_presentation",
+        lambda doc: (
+            render_observed.setdefault("command", doc.command),
+            render_observed.setdefault(
+                "has_next_steps", any(s.title == "Next Steps" for s in doc.sections)
+            ),
+            "smoke rich\nNext Steps\n",
+        )[-1],
+        raising=False,
     )
 
     exit_code = cli.main(["smoke-test"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert "human\n" in captured.out
+    assert "smoke rich\nNext Steps\n" in captured.out
     assert captured.err == ""
     assert observed == {"profile": False, "detail": "raw"}
-    assert render_observed == {"show_diagnostic_plots": False}
+    assert render_observed == {"command": "smoke-test", "has_next_steps": True}
 
 
-def test_smoke_test_show_diagnostic_plots_flag_is_forwarded(
+def test_smoke_test_show_diagnostic_plots_still_uses_adapter_rich_presentation(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     observed: dict = {}
-    render_observed: dict = {}
 
     def fake_run_default_report(
         *, profile: bool = False, detail: str = "raw", progress: Any = None
@@ -122,14 +134,19 @@ def test_smoke_test_show_diagnostic_plots_flag_is_forwarded(
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
 
-    def fake_render_human_report(_report: dict, *, show_diagnostic_plots: bool = False) -> str:
-        render_observed["show_diagnostic_plots"] = show_diagnostic_plots
-        return "human\n"
-
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        fake_render_human_report,
+        lambda *_args, **_kwargs: pytest.fail(
+            "smoke-test rich path should use presentation render"
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
+        "render_rich_presentation",
+        lambda doc: "smoke rich\n" if doc.command == "smoke-test" else "wrong\n",
+        raising=False,
     )
 
     exit_code = cli.main(["smoke-test", "--show-diagnostic-plots"])
@@ -137,9 +154,8 @@ def test_smoke_test_show_diagnostic_plots_flag_is_forwarded(
 
     assert exit_code == 0
     assert captured.err == ""
-    assert "human\n" in captured.out
+    assert "smoke rich\n" in captured.out
     assert observed == {"profile": False, "detail": "raw"}
-    assert render_observed == {"show_diagnostic_plots": True}
 
 
 def test_smoke_test_profile_and_detail_flags_are_forwarded(
@@ -158,7 +174,16 @@ def test_smoke_test_profile_and_detail_flags_are_forwarded(
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: "human\n",
+        lambda *_args, **_kwargs: pytest.fail(
+            "smoke-test rich path should use presentation render"
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
+        "render_rich_presentation",
+        lambda doc: "smoke rich\n" if doc.command == "smoke-test" else "wrong\n",
+        raising=False,
     )
 
     exit_code = cli.main(["smoke-test", "--profile", "--detail", "full"])
@@ -166,7 +191,7 @@ def test_smoke_test_profile_and_detail_flags_are_forwarded(
 
     assert exit_code == 0
     assert captured.err == ""
-    assert "human\n" in captured.out
+    assert "smoke rich\n" in captured.out
     assert observed == {"profile": True, "detail": "full"}
 
 
@@ -182,7 +207,27 @@ def test_smoke_test_prints_next_steps(
     monkeypatch.setattr(
         cli,
         "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False: "human\n",
+        lambda *_args, **_kwargs: pytest.fail(
+            "smoke-test rich path should use presentation render"
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
+        "render_rich_presentation",
+        lambda doc: (
+            "\n".join(
+                [section.title for section in doc.sections if section.title == "Next Steps"]
+                + [
+                    step
+                    for section in doc.sections
+                    if hasattr(section, "steps")
+                    for step in section.steps
+                ]
+            )
+            + "\n"
+        ),
+        raising=False,
     )
 
     exit_code = cli.main(["smoke-test"])
@@ -206,11 +251,6 @@ def test_smoke_test_human_mode_surfaces_validation_errors_readably(
         raise ValueError("Predictions must have shape (2, 4), got (1, 4).")
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
-    monkeypatch.setattr(
-        cli,
-        "render_human_report",
-        lambda *_args, **_kwargs: pytest.fail("human renderer should not be called on failure"),
-    )
 
     exit_code = cli.main(["smoke-test"])
     captured = capsys.readouterr()

@@ -80,8 +80,9 @@ def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
 
     monkeypatch.setattr(
         cli,
-        "render_human_report",
+        "render_rich_presentation",
         fail_render,
+        raising=False,
     )
 
     exit_code = cli.main(["smoke-test"])
