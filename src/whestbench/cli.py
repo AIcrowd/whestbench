@@ -209,8 +209,6 @@ def _render_plain_text_report(
         if command == "smoke-test"
         else build_run_presentation(report, debug=debug)
     )
-    if command != "smoke-test":
-        doc = replace(doc, epilogue_messages=[])
     lines = render_plain_presentation(doc).rstrip("\n").splitlines()
     if lines:
         lines[0] = "WhestBench Report (Plain Text)"
