@@ -12,6 +12,7 @@ from whestbench.presentation.adapters import (
 )
 from whestbench.presentation.models import (
     ChecklistSection,
+    ErrorSection,
     KeyValueSection,
     StepItem,
     StepsSection,
@@ -175,20 +176,36 @@ def test_build_visualizer_ready_presentation_contains_url() -> None:
     ]
 
 
-def test_build_visualizer_error_presentation_wraps_message() -> None:
-    doc = build_visualizer_error_presentation("Missing Prerequisite", "node is not installed.")
+def test_build_visualizer_error_presentation_uses_shared_error_shape() -> None:
+    doc = build_visualizer_error_presentation(
+        "Missing Prerequisite",
+        "VISUALIZER_NODE_MISSING",
+        "node is not installed.",
+        next_steps=[
+            "macOS: brew install node",
+            "Ubuntu/Debian: sudo apt install nodejs npm",
+        ],
+    )
 
     failure = next(
         section
         for section in doc.sections
-        if isinstance(section, KeyValueSection) and section.title == "Failure"
+        if isinstance(section, ErrorSection) and section.title == "Failure Details"
+    )
+    next_steps = next(
+        section
+        for section in doc.sections
+        if isinstance(section, StepsSection) and section.title == "Next Steps"
     )
 
     assert doc.command == "visualizer"
     assert doc.status == "error"
     assert doc.title == "Missing Prerequisite"
-    assert [(row.label, row.value) for row in failure.rows] == [
-        ("Message", "node is not installed.")
+    assert failure.code == "VISUALIZER_NODE_MISSING"
+    assert failure.message == "node is not installed."
+    assert list(next_steps.steps) == [
+        "macOS: brew install node",
+        "Ubuntu/Debian: sudo apt install nodejs npm",
     ]
 
 

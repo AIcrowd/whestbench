@@ -81,6 +81,7 @@ def format_error_detail_lines(details: Mapping[str, Any]) -> list[str]:
         ("expected_shape", "Expected shape"),
         ("got_shape", "Got shape"),
         ("hint", "Hint"),
+        ("details", "Details"),
     ):
         value = details.get(key)
         if _has_content(value):
