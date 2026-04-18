@@ -517,6 +517,12 @@ class _LiveTopPaneSession:
                 force_refresh = True
         self._refresh(force=force_refresh)
 
+    def update_run_meta(self, run_meta: Dict[str, Any]) -> None:
+        # The human context panels are printed once outside the Live region, so
+        # final run metadata is not re-rendered in Rich mode anymore. Keep this
+        # hook as a compatibility seam for tests and future display changes.
+        self._pre_report["run_meta"] = run_meta
+
     def start(self) -> None:
         # Capture the current breakpointhook at start-time so we compose with
         # any user-installed hook (e.g. IPython) rather than overwriting it.
@@ -1449,6 +1455,7 @@ def _main_participant(argv: "list[str]") -> int:
                     ) as live_session:
                         score_kwargs["progress"] = live_session.on_progress
                         report = _run_estimator_with_runner(runner, **score_kwargs)
+                        live_session.update_run_meta(report.get("run_meta", {}))
                 report["mode"] = "human"
                 if dataset_path is not None:
                     report.setdefault("run_config", {})["dataset"] = {
