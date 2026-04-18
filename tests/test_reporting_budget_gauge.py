@@ -15,6 +15,7 @@ from whestbench.reporting import (
     _render_budget_gauge,
     _render_over_budget_panel,
     _select_top_over_budget,
+    render_human_report,
     render_human_results,
 )
 
@@ -488,6 +489,16 @@ def test_render_human_results_shows_over_budget_panel_when_busted() -> None:
     plain = _strip_ansi(rendered)
     assert "Over-Budget MLPs" in plain
     assert "worst MLP 138%" in plain
+
+
+def test_render_human_report_shows_over_budget_panel_when_busted() -> None:
+    per_mlp = [_mlp(0, flops_used=50.0), _busted(1, 138.0)]
+    rendered = render_human_report(_full_report(per_mlp, flop_budget=100))
+    plain = _strip_ansi(rendered)
+    assert "Over-Budget MLPs" in plain
+    assert "worst MLP 138%" in plain
+    # render_human_report also includes the header — sanity check it's there too
+    assert "WhestBench Report" in plain
 
 
 def test_render_human_results_omits_over_budget_panel_when_clean() -> None:
