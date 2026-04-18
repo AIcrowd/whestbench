@@ -1279,7 +1279,13 @@ def _main_participant(argv: "list[str]") -> int:
                 print(json.dumps(payload, indent=2))
             else:
                 result = _run_validate_checks(args.estimator, class_name=args.class_name)
-                print(render_rich_presentation(build_validate_presentation(result)), end="")
+                print(
+                    render_rich_presentation(
+                        build_validate_presentation(result),
+                        force_terminal=bool(getattr(sys.stdout, "isatty", lambda: False)()),
+                    ),
+                    end="",
+                )
             return 0
 
         if command == "create-dataset":

@@ -165,6 +165,40 @@ def test_render_plain_text_report_includes_breakdown_sections_and_summary() -> N
     assert "estimator.estimator-client" in rendered
 
 
+def test_render_plain_text_report_includes_run_context_and_hardware_metadata() -> None:
+    report = _sample_report()
+    report["run_meta"]["host"] = {
+        "hostname": "example-host",
+        "os": "Darwin",
+        "os_release": "25.3.0",
+        "platform": "macOS-15-arm64",
+        "machine": "arm64",
+        "cpu_brand": "Apple M4",
+        "cpu_count_logical": 10,
+        "cpu_count_physical": 8,
+        "ram_total_bytes": 17179869184,
+        "python_version": "3.13.7",
+        "numpy_version": "2.2.6",
+    }
+    report["run_meta"]["run_started_at_utc"] = "2026-03-01T00:00:00+00:00"
+    report["run_meta"]["run_finished_at_utc"] = "2026-03-01T00:00:01+00:00"
+    report["run_config"]["estimator_class"] = "CombinedEstimator"
+    report["run_config"]["estimator_path"] = "examples/estimators/combined_estimator.py"
+
+    rendered = cli._render_plain_text_report(report)
+
+    for text in (
+        "Estimator Class: CombinedEstimator",
+        "Estimator Path: examples/estimators/combined_estimator.py",
+        "Hardware & Runtime",
+        "Host: example-host",
+        "OS: Darwin",
+        "CPU: Apple M4",
+        "Python: 3.13.7",
+    ):
+        assert text in rendered
+
+
 def test_error_code_mapping_for_validation_messages() -> None:
     bad_shape = "Predictions must have shape (2, 4), got (1, 4)."
     assert cli._error_code(ValueError(bad_shape), bad_shape) == "ESTIMATOR_BAD_SHAPE"

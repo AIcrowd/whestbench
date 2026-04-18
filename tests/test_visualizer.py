@@ -311,6 +311,7 @@ def test_run_visualizer_prints_ready_state_summary(
     assert "Port" in captured.out
     assert "4173" in captured.out
     assert "Browser auto-open disabled." in captured.out
+    assert "\x1b[" not in captured.out
 
 
 def test_run_visualizer_returns_1_when_npm_ci_fails(tmp_path, monkeypatch):
@@ -360,6 +361,7 @@ def test_run_visualizer_returns_1_when_node_missing(monkeypatch, capsys):
     assert "brew install node" in captured.err
     assert "sudo apt install nodejs npm" in captured.err
     assert "nodejs.org/en/download" in captured.err
+    assert "\x1b[" not in captured.err
 
 
 def test_run_visualizer_returns_1_when_node_version_too_old(monkeypatch, capsys):

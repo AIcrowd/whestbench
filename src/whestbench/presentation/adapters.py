@@ -46,6 +46,15 @@ def _display_value(value: Any, *, fallback: str = "n/a") -> str:
     return str(value)
 
 
+def _display_bytes(value: Any, *, fallback: str = "n/a") -> str:
+    if value in {None, ""}:
+        return fallback
+    try:
+        return f"{float(value) / (1024**3):.1f} GB"
+    except (TypeError, ValueError):
+        return str(value)
+
+
 def _status_for_report(report: dict[str, Any]) -> str:
     results = report.get("results")
     if not isinstance(results, dict):
@@ -65,6 +74,9 @@ def _base_sections(report: dict[str, Any]) -> list[KeyValueSection]:
     run_meta = report.get("run_meta")
     if not isinstance(run_meta, dict):
         run_meta = {}
+    host_meta = run_meta.get("host")
+    if not isinstance(host_meta, dict):
+        host_meta = {}
     results = report.get("results")
     if not isinstance(results, dict):
         results = {}
@@ -73,6 +85,22 @@ def _base_sections(report: dict[str, Any]) -> list[KeyValueSection]:
         KeyValueSection(
             title="Run Context",
             rows=[
+                KeyValueRow(
+                    "Estimator Class",
+                    _display_value(run_config.get("estimator_class")),
+                ),
+                KeyValueRow(
+                    "Estimator Path",
+                    _display_value(run_config.get("estimator_path")),
+                ),
+                KeyValueRow(
+                    "Started",
+                    _display_value(run_meta.get("run_started_at_utc")),
+                ),
+                KeyValueRow(
+                    "Finished",
+                    _display_value(run_meta.get("run_finished_at_utc")),
+                ),
                 KeyValueRow("MLPs", _display_value(run_config.get("n_mlps"))),
                 KeyValueRow("Width", _display_value(run_config.get("width"))),
                 KeyValueRow("Depth", _display_value(run_config.get("depth"))),
@@ -86,6 +114,28 @@ def _base_sections(report: dict[str, Any]) -> list[KeyValueSection]:
                     "Untracked Time Limit",
                     _display_value(run_config.get("untracked_time_limit_s"), fallback="unlimited"),
                 ),
+            ],
+        ),
+        KeyValueSection(
+            title="Hardware & Runtime",
+            rows=[
+                KeyValueRow("Host", _display_value(host_meta.get("hostname"))),
+                KeyValueRow("OS", _display_value(host_meta.get("os"))),
+                KeyValueRow("Release", _display_value(host_meta.get("os_release"))),
+                KeyValueRow("Platform", _display_value(host_meta.get("platform"))),
+                KeyValueRow("Arch", _display_value(host_meta.get("machine"))),
+                KeyValueRow("CPU", _display_value(host_meta.get("cpu_brand"))),
+                KeyValueRow(
+                    "CPU Cores (logical)",
+                    _display_value(host_meta.get("cpu_count_logical")),
+                ),
+                KeyValueRow(
+                    "CPU Cores (physical)",
+                    _display_value(host_meta.get("cpu_count_physical")),
+                ),
+                KeyValueRow("RAM Total", _display_bytes(host_meta.get("ram_total_bytes"))),
+                KeyValueRow("Python", _display_value(host_meta.get("python_version"))),
+                KeyValueRow("NumPy", _display_value(host_meta.get("numpy_version"))),
             ],
         ),
         KeyValueSection(

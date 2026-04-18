@@ -93,6 +93,7 @@ def test_validate_command_renders_checklist_in_human_mode(
     assert "Validation" in captured.out
     assert "class resolved" in captured.out
     assert "predict() returned shape" in captured.out
+    assert "\x1b[" not in captured.out
 
 
 def test_validate_json_shape_stays_stable(

@@ -82,7 +82,13 @@ _EXPLORER_NOT_FOUND_STEPS = [
 
 def _print_visualizer_doc(doc: CommandPresentation, *, stderr: bool = False) -> None:
     stream = sys.stderr if stderr else sys.stdout
-    print(render_rich_presentation(doc), file=stream, end="")
+    print(
+        render_rich_presentation(
+            doc, force_terminal=bool(getattr(stream, "isatty", lambda: False)())
+        ),
+        file=stream,
+        end="",
+    )
 
 
 def check_node_available() -> None:
