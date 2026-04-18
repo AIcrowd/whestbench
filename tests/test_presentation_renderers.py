@@ -38,7 +38,9 @@ def test_renderers_preserve_same_key_facts() -> None:
                 ],
             ),
         ],
-        epilogue_messages=["Use --json [machine-readable]"],
+        epilogue_messages=[
+            "Use --json [machine-readable] to preserve the full structured report when integrating with automated systems."
+        ],
     )
 
     plain = render_plain_presentation(doc)
@@ -53,7 +55,13 @@ def test_renderers_preserve_same_key_facts() -> None:
         "3",
         "Next Steps [follow-up]",
         "whest init ./my-estimator [template]",
-        "Use --json [machine-readable]",
     ):
         assert needle in plain
         assert needle in rich
+
+    for fragment in (
+        "Use --json [machine-readable]",
+        "preserve the full structured report",
+        "integrating with automated systems.",
+    ):
+        assert fragment in rich
