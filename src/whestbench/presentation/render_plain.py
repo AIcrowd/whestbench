@@ -7,6 +7,7 @@ from .models import (
     KeyValueSection,
     StepItem,
     StepsSection,
+    TableSection,
     format_error_detail_lines,
 )
 
@@ -51,6 +52,12 @@ def render_plain_presentation(doc: CommandPresentation) -> str:
         if isinstance(section, KeyValueSection):
             for row in section.rows:
                 lines.append(f"{row.label}: {row.value}")
+        elif isinstance(section, TableSection):
+            if section.columns:
+                lines.append(" | ".join(section.columns))
+                lines.append(" | ".join("-" * len(column) for column in section.columns))
+            for row in section.rows:
+                lines.append(" | ".join(row))
         elif isinstance(section, StepsSection):
             for step in section.steps:
                 lines.extend(_render_step(step))

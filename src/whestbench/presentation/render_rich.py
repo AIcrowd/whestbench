@@ -15,6 +15,7 @@ from .models import (
     KeyValueSection,
     StepItem,
     StepsSection,
+    TableSection,
     format_error_detail_lines,
 )
 
@@ -59,6 +60,13 @@ def render_rich_presentation(doc: CommandPresentation) -> str:
             table.add_column("value")
             for row in section.rows:
                 table.add_row(Text(row.label), Text(row.value))
+            body.append(Panel(table, title=escape(section.title)))
+        elif isinstance(section, TableSection):
+            table = Table(show_header=True)
+            for column in section.columns:
+                table.add_column(column)
+            for row in section.rows:
+                table.add_row(*row)
             body.append(Panel(table, title=escape(section.title)))
         elif isinstance(section, StepsSection):
             body.append(

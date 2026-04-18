@@ -60,6 +60,8 @@ import whest as we
 from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
+from .presentation.adapters import build_profile_presentation
+from .presentation.render_rich import render_rich_presentation
 from .simulation import (
     run_mlp as ref_run_mlp,
 )
@@ -720,6 +722,49 @@ def format_json_output(
     }
 
 
+def _build_profile_payload(
+    correctness_results: List[CorrectnessResult],
+    timing_results: List[TimingResult],
+    hardware_info: Dict[str, Any],
+    *,
+    verbose: bool,
+) -> Dict[str, Any]:
+    passed_names = {cr.backend_name for cr in correctness_results if cr.passed}
+    grouped_rows: Dict[Tuple[str, int, int, int], Dict[str, str]] = {}
+
+    for tr in timing_results:
+        if tr.error or tr.backend_name not in passed_names:
+            continue
+        if tr.operation not in ("run_mlp", "sample_layer_statistics"):
+            continue
+        key = (tr.backend_name, tr.width, tr.depth, tr.n_samples)
+        row = grouped_rows.setdefault(
+            key,
+            {
+                "backend": tr.backend_name,
+                "dims": format_dims(tr.width, tr.depth, tr.n_samples),
+                "run_mlp": "—",
+                "sample_layer_statistics": "—",
+            },
+        )
+        row[tr.operation] = f"{tr.median_time:.4f}s"
+
+    timing_rows = [
+        grouped_rows[key]
+        for key in sorted(grouped_rows, key=lambda item: (item[1], item[2], item[3], item[0]))
+    ]
+
+    return {
+        "hardware": hardware_info,
+        "correctness": [
+            {"backend": cr.backend_name, "passed": cr.passed, "error": cr.error}
+            for cr in correctness_results
+        ],
+        "timing": timing_rows,
+        "verbose": verbose,
+    }
+
+
 def run_profile(
     preset_name: str = "standard",
     output_path: Optional[str] = None,
@@ -884,11 +929,15 @@ def run_profile(
         print(f"[done] Timing sweep complete. {n_ok} results.{err_msg}", flush=True)
 
     # Format output
-    terminal_output = format_compact_output(
-        correctness_results,
-        timing_results,
-        {},
-        hardware_info=hardware_info,
+    terminal_output = render_rich_presentation(
+        build_profile_presentation(
+            _build_profile_payload(
+                correctness_results,
+                timing_results,
+                hardware_info,
+                verbose=verbose,
+            )
+        )
     )
     if verbose:
         terminal_output += "\n" + format_verbose_output(

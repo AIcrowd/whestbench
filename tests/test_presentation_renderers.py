@@ -9,6 +9,7 @@ from whestbench.presentation.models import (
     KeyValueSection,
     StepItem,
     StepsSection,
+    TableSection,
 )
 from whestbench.presentation.render_plain import render_plain_presentation
 from whestbench.presentation.render_rich import render_rich_presentation
@@ -170,3 +171,33 @@ def test_renderers_do_not_crash_on_array_like_error_detail_values() -> None:
 
     assert "Got shape: array([1, 2])" in plain
     assert "Got shape: array([1, 2])" in rich
+
+
+def test_renderers_include_table_section_cells() -> None:
+    doc = CommandPresentation(
+        command="profile-simulation",
+        status="success",
+        title="Simulation Profile",
+        sections=[
+            TableSection(
+                title="Detail",
+                columns=["Backend", "Dims", "run_mlp", "sample_layer_statistics"],
+                rows=[["whest", "256×4×10k", "0.0444s", "0.1135s"]],
+            )
+        ],
+    )
+
+    plain = render_plain_presentation(doc)
+    rich = _strip_ansi(render_rich_presentation(doc))
+
+    for text in (
+        "Detail",
+        "Backend",
+        "Dims",
+        "whest",
+        "256×4×10k",
+        "0.0444s",
+        "0.1135s",
+    ):
+        assert text in plain
+        assert text in rich

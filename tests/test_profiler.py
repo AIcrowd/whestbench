@@ -34,6 +34,12 @@ class TestRunProfile:
         assert "whest" in terminal_output
         assert "Detail" in terminal_output
 
+    def test_terminal_output_contains_compact_summary(self) -> None:
+        terminal_output, _ = run_profile(preset_name="super-quick")
+        assert "Correctness" in terminal_output
+        assert "Detail" in terminal_output
+        assert "Use --verbose for full timing tables with raw times" in terminal_output
+
     def test_json_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             out_path = str(Path(tmpdir) / "results.json")
