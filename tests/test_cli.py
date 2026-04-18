@@ -293,9 +293,7 @@ def test_run_inprocess_error_omits_inprocess_debug_hint(
     assert "rerun with --runner local --debug" not in captured.out
 
 
-def test_run_default_uses_local_runner(
-    monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_run_default_uses_local_runner(monkeypatch: pytest.MonkeyPatch) -> None:
     observed: dict[str, str] = {}
 
     def fake_run_estimator_with_runner(*_args: Any, **_kwargs: Any) -> dict:
@@ -316,9 +314,7 @@ def test_run_default_uses_local_runner(
     assert observed.get("runner") == "LocalRunner"
 
 
-def test_run_server_alias_is_subprocess(
-    monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_run_server_alias_is_subprocess(monkeypatch: pytest.MonkeyPatch) -> None:
     observed: dict[str, str] = {}
 
     def fake_run_estimator_with_runner(*_args: Any, **_kwargs: Any) -> dict:

@@ -57,9 +57,7 @@ def create_dataset(
 ) -> Path:
     """Generate MLPs, compute ground truth, and save to .npz."""
     output_path = Path(output_path)
-    seed_sequence = (
-        we.random.SeedSequence() if seed is None else we.random.SeedSequence(int(seed))
-    )
+    seed_sequence = we.random.SeedSequence() if seed is None else we.random.SeedSequence(int(seed))
     stream_seed = seed_sequence.spawn(2 * n_mlps)
 
     mlps: List[MLP] = []
