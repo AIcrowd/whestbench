@@ -233,17 +233,29 @@ def build_visualizer_ready_presentation(payload: dict[str, Any]) -> CommandPrese
 
 
 def build_visualizer_error_presentation(
-    title: str, message: str, *, details: str | None = None
+    title: str,
+    code: str,
+    message: str,
+    *,
+    details: str | None = None,
+    next_steps: list[str] | None = None,
 ) -> CommandPresentation:
-    rows = [KeyValueRow("Message", message)]
-    if details:
-        rows.append(KeyValueRow("Details", details))
+    sections: list[ErrorSection | StepsSection] = [
+        ErrorSection(
+            title="Failure Details",
+            code=code,
+            message=message,
+            details={"details": details} if details else {},
+        )
+    ]
+    if next_steps:
+        sections.append(StepsSection(title="Next Steps", steps=list(next_steps)))
 
     return CommandPresentation(
         command="visualizer",
         status="error",
         title=title,
-        sections=[KeyValueSection(title="Failure", rows=rows)],
+        sections=sections,
     )
 
 

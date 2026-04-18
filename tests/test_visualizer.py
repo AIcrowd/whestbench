@@ -304,7 +304,13 @@ def test_run_visualizer_prints_ready_state_summary(
 
     assert result == 0
     assert "WhestBench Explorer" in captured.out
+    assert "Ready" in captured.out
     assert "http://127.0.0.1:4173/" in captured.out
+    assert "Host" in captured.out
+    assert "127.0.0.1" in captured.out
+    assert "Port" in captured.out
+    assert "4173" in captured.out
+    assert "Browser auto-open disabled." in captured.out
 
 
 def test_run_visualizer_returns_1_when_npm_ci_fails(tmp_path, monkeypatch):
@@ -336,7 +342,8 @@ def test_run_visualizer_returns_1_when_explorer_not_found(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert result == 1
     assert "Explorer Not Found" in captured.err
-    assert "source checkout of the repository" in captured.err
+    assert "source checkout" in captured.err
+    assert "the repository" in captured.err
 
 
 def test_run_visualizer_returns_1_when_node_missing(monkeypatch, capsys):
@@ -350,6 +357,59 @@ def test_run_visualizer_returns_1_when_node_missing(monkeypatch, capsys):
     assert result == 1
     assert "Missing Prerequisite" in captured.err
     assert "node" in captured.err
+    assert "brew install node" in captured.err
+    assert "sudo apt install nodejs npm" in captured.err
+    assert "nodejs.org/en/download" in captured.err
+
+
+def test_run_visualizer_returns_1_when_node_version_too_old(monkeypatch, capsys):
+    monkeypatch.setattr(viz_mod, "check_node_available", lambda: None)
+
+    def raise_old_version():
+        raise NodeVersionError("v16.20.0")
+
+    monkeypatch.setattr(viz_mod, "check_node_version", raise_old_version)
+
+    result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert "Node.js Version Too Old" in captured.err
+    assert "v16.20.0" in captured.err
+    assert "brew upgrade node" in captured.err
+    assert "sudo apt install nodejs npm" in captured.err
+    assert "nvm" in captured.err
+
+
+def test_run_visualizer_reports_retry_before_reinstalling_dependencies(
+    tmp_path, monkeypatch, capsys: pytest.CaptureFixture[str]
+):
+    explorer = _make_fake_explorer(tmp_path, with_node_modules=True)
+    calls: list[list[str]] = []
+    dev_call_count = 0
+
+    def fake_run(cmd, **kwargs):
+        calls.append(list(cmd))
+        return type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    def fake_popen(cmd, **kwargs):
+        nonlocal dev_call_count
+        calls.append(list(cmd))
+        dev_call_count += 1
+        return FakeProcess(returncode=1 if dev_call_count == 1 else 0)
+
+    monkeypatch.setattr(viz_mod, "find_explorer_dir", lambda **kw: explorer)
+    monkeypatch.setattr(viz_mod, "check_node_available", lambda: None)
+    monkeypatch.setattr(viz_mod, "check_node_version", lambda: None)
+    monkeypatch.setattr(viz_mod.subprocess, "run", fake_run)
+    monkeypatch.setattr(viz_mod.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(viz_mod, "is_headless", lambda: True)
+
+    result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Retrying after reinstalling dependencies" in captured.err
 
 
 # --- CLI dispatch tests ---

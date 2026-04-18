@@ -64,6 +64,20 @@ class NpmCiError(RuntimeError):
 
 
 _MIN_NODE_MAJOR = 18
+_NODE_INSTALL_STEPS = [
+    "macOS: brew install node",
+    "Ubuntu/Debian: sudo apt install nodejs npm",
+    "Other: https://nodejs.org/en/download",
+]
+_NODE_UPGRADE_STEPS = [
+    "macOS: brew upgrade node",
+    "Ubuntu/Debian: sudo apt install nodejs npm",
+    "Other: use nvm or https://nodejs.org/en/download",
+]
+_EXPLORER_NOT_FOUND_STEPS = [
+    "Clone the repository source checkout.",
+    "Reinstall with `uv tool install -e .`.",
+]
 
 
 def _print_visualizer_doc(doc: CommandPresentation, *, stderr: bool = False) -> None:
@@ -256,13 +270,23 @@ def run_visualizer(
         check_node_version()
     except NodeNotFoundError as exc:
         _print_visualizer_doc(
-            build_visualizer_error_presentation("Missing Prerequisite", str(exc)),
+            build_visualizer_error_presentation(
+                "Missing Prerequisite",
+                "VISUALIZER_NODE_MISSING",
+                str(exc),
+                next_steps=list(_NODE_INSTALL_STEPS),
+            ),
             stderr=True,
         )
         return 1
     except NodeVersionError as exc:
         _print_visualizer_doc(
-            build_visualizer_error_presentation("Node.js Version Too Old", str(exc)),
+            build_visualizer_error_presentation(
+                "Node.js Version Too Old",
+                "VISUALIZER_NODE_VERSION_TOO_OLD",
+                str(exc),
+                next_steps=list(_NODE_UPGRADE_STEPS),
+            ),
             stderr=True,
         )
         return 1
@@ -271,7 +295,12 @@ def run_visualizer(
         explorer_dir = find_explorer_dir()
     except ExplorerNotFoundError as exc:
         _print_visualizer_doc(
-            build_visualizer_error_presentation("Explorer Not Found", str(exc)),
+            build_visualizer_error_presentation(
+                "Explorer Not Found",
+                "VISUALIZER_EXPLORER_NOT_FOUND",
+                str(exc),
+                next_steps=list(_EXPLORER_NOT_FOUND_STEPS),
+            ),
             stderr=True,
         )
         return 1
@@ -284,7 +313,8 @@ def run_visualizer(
         except NpmCiError as exc:
             _print_visualizer_doc(
                 build_visualizer_error_presentation(
-                    "Installing dependencies failed.",
+                    "Installing Dependencies Failed",
+                    "VISUALIZER_NPM_CI_FAILED",
                     "Installing dependencies failed.",
                     details=exc.stderr if debug else None,
                 ),
@@ -302,12 +332,16 @@ def run_visualizer(
     )
 
     if exit_code != 0 and not ran_npm_ci:
+        Console(stderr=True).print(
+            "[yellow]Dev server failed. Retrying after reinstalling dependencies...[/]"
+        )
         try:
             _run_npm_ci(explorer_dir, debug=debug)
         except NpmCiError as exc:
             _print_visualizer_doc(
                 build_visualizer_error_presentation(
-                    "Installing dependencies failed.",
+                    "Installing Dependencies Failed",
+                    "VISUALIZER_NPM_CI_FAILED",
                     "Installing dependencies failed.",
                     details=exc.stderr if debug else None,
                 ),
@@ -327,6 +361,7 @@ def run_visualizer(
         _print_visualizer_doc(
             build_visualizer_error_presentation(
                 "Dev Server Exited Unexpectedly",
+                "VISUALIZER_DEV_SERVER_EXITED",
                 f"Dev server exited unexpectedly (code {exit_code}).",
             ),
             stderr=True,
