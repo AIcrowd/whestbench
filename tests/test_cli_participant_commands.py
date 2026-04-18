@@ -124,6 +124,113 @@ def test_validate_json_shape_stays_stable(
     }
 
 
+def test_init_command_renders_created_files_section(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_write_init_template",
+        lambda _path: [
+            str(Path("/tmp/demo/estimator.py")),
+            str(Path("/tmp/demo/requirements.txt")),
+        ],
+    )
+
+    exit_code = cli.main(["init", "/tmp/demo"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Starter Files" in captured.out
+    assert "Created Files" in captured.out
+    assert "/tmp/demo/estimator.py" in captured.out
+
+
+def test_init_command_json_shape_stays_stable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_write_init_template",
+        lambda _path: [str(Path("/tmp/demo/estimator.py"))],
+    )
+
+    exit_code = cli.main(["init", "/tmp/demo", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert json.loads(captured.out) == {"ok": True, "created": ["/tmp/demo/estimator.py"]}
+
+
+def test_init_command_renders_noop_status_when_nothing_created(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(cli, "_write_init_template", lambda _path: [])
+
+    exit_code = cli.main(["init", "/tmp/demo"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Starter Files" in captured.out
+    assert "Starter files already exist; nothing created." in captured.out
+
+
+def test_create_dataset_command_renders_dataset_summary(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output_path = Path("/tmp/eval_dataset.npz")
+    monkeypatch.setattr(
+        "whestbench.dataset.create_dataset",
+        lambda **_kwargs: output_path,
+    )
+
+    exit_code = cli.main(
+        ["create-dataset", "--n-mlps", "2", "--n-samples", "5", "-o", str(output_path)]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Dataset Created" in captured.out
+    assert "Dataset" in captured.out
+    assert str(output_path) in captured.out
+
+
+def test_create_dataset_json_shape_stays_stable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output_path = Path("/tmp/eval_dataset.npz")
+    monkeypatch.setattr(
+        "whestbench.dataset.create_dataset",
+        lambda **_kwargs: output_path,
+    )
+
+    exit_code = cli.main(
+        ["create-dataset", "--n-mlps", "2", "--n-samples", "5", "-o", str(output_path), "--json"]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert json.loads(captured.out) == {"ok": True, "path": str(output_path)}
+
+
+def test_package_command_renders_artifact_summary(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    artifact_path = Path("/tmp/submission.tar.gz")
+    monkeypatch.setattr(
+        cli,
+        "package_submission",
+        lambda *_args, **_kwargs: artifact_path,
+    )
+
+    exit_code = cli.main(["package", "--estimator", "estimator.py"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Packaged Submission" in captured.out
+    assert "Artifact" in captured.out
+    assert str(artifact_path) in captured.out
+
+
 def test_run_command_renders_human_report_in_non_agent_mode(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

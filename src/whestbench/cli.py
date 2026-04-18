@@ -40,7 +40,10 @@ from .hardware import collect_hardware_fingerprint
 from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
 from .presentation.adapters import (
+    build_create_dataset_presentation,
     build_error_presentation,
+    build_init_presentation,
+    build_package_presentation,
     build_run_presentation,
     build_smoke_test_presentation,
     build_validate_presentation,
@@ -1255,12 +1258,8 @@ def _main_participant(argv: "list[str]") -> int:
             payload = {"ok": True, "created": created}
             if json_output:
                 print(json.dumps(payload, indent=2))
-            elif created:
-                print("Initialized starter files:")
-                for file in created:
-                    print(f"- {file}")
             else:
-                print("Starter files already exist; nothing created.")
+                print(render_plain_presentation(build_init_presentation(payload)), end="")
             return 0
 
         if command == "validate":
@@ -1331,7 +1330,6 @@ def _main_participant(argv: "list[str]") -> int:
                         seed=getattr(args, "seed", None),
                         output_path=Path(args.output),
                     )
-                print(f"Dataset created: {out}")
             else:
                 out = _create_dataset(
                     n_mlps=n_mlps_ds,
@@ -1342,7 +1340,11 @@ def _main_participant(argv: "list[str]") -> int:
                     seed=getattr(args, "seed", None),
                     output_path=Path(args.output),
                 )
-                print(json.dumps({"ok": True, "path": str(out)}, indent=2))
+            payload = {"ok": True, "path": str(out)}
+            if json_output:
+                print(json.dumps(payload, indent=2))
+            else:
+                print(render_plain_presentation(build_create_dataset_presentation(payload)), end="")
             return 0
 
         if command == "run":
@@ -1568,7 +1570,7 @@ def _main_participant(argv: "list[str]") -> int:
             if json_output:
                 print(json.dumps(payload, indent=2))
             else:
-                print(f"Packaged submission: {artifact_path}")
+                print(render_plain_presentation(build_package_presentation(payload)), end="")
             return 0
 
         if command == "visualizer":

@@ -146,6 +146,58 @@ def build_validate_presentation(payload: dict[str, Any]) -> CommandPresentation:
     )
 
 
+def build_init_presentation(payload: dict[str, Any]) -> CommandPresentation:
+    raw_created = payload.get("created")
+    created = [str(path) for path in raw_created] if isinstance(raw_created, list) else []
+
+    if created:
+        sections: list[KeyValueSection | StepsSection] = [
+            StepsSection(title="Created Files", steps=created)
+        ]
+    else:
+        sections = [
+            KeyValueSection(
+                title="Status",
+                rows=[KeyValueRow("Message", "Starter files already exist; nothing created.")],
+            )
+        ]
+
+    return CommandPresentation(
+        command="init",
+        status="success",
+        title="Starter Files",
+        sections=sections,
+    )
+
+
+def build_create_dataset_presentation(payload: dict[str, Any]) -> CommandPresentation:
+    return CommandPresentation(
+        command="create-dataset",
+        status="success",
+        title="Dataset Created",
+        sections=[
+            KeyValueSection(
+                title="Dataset",
+                rows=[KeyValueRow("Path", _display_value(payload.get("path")))],
+            )
+        ],
+    )
+
+
+def build_package_presentation(payload: dict[str, Any]) -> CommandPresentation:
+    return CommandPresentation(
+        command="package",
+        status="success",
+        title="Packaged Submission",
+        sections=[
+            KeyValueSection(
+                title="Artifact",
+                rows=[KeyValueRow("Path", _display_value(payload.get("artifact_path")))],
+            )
+        ],
+    )
+
+
 def build_error_presentation(
     payload: dict[str, Any],
     *,
