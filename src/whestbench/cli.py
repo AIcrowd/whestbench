@@ -39,7 +39,11 @@ from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
 from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
-from .presentation.adapters import build_run_presentation, build_smoke_test_presentation
+from .presentation.adapters import (
+    build_error_presentation,
+    build_run_presentation,
+    build_smoke_test_presentation,
+)
 from .presentation.render_plain import render_plain_presentation
 from .reporting import (
     _compute_gauge_state,
@@ -1597,14 +1601,19 @@ def _print_error(
     if json_output:
         print(json.dumps(payload, indent=2))
         return
-    error = payload["error"]
-    print(f"Error [{error['stage']}:{error['code']}]: {error['message']}")
-    if debug and "traceback" in error:
-        print(error["traceback"])
-    elif not debug:
-        print("Use --debug to include a traceback.")
-    if show_inprocess_hint:
-        print("Tip: For estimator-level tracebacks, rerun with --runner local --debug.")
+    doc = build_error_presentation(
+        payload,
+        debug=debug,
+        show_inprocess_hint=show_inprocess_hint,
+    )
+    print(render_plain_presentation(doc), end="")
+
+
+def _extract_exception_details(exc: Exception) -> Dict[str, Any] | None:
+    details = exc.detail.details if isinstance(exc, RunnerError) else getattr(exc, "details", None)
+    if isinstance(details, dict) and details:
+        return details
+    return None
 
 
 def _error_payload(
@@ -1620,8 +1629,9 @@ def _error_payload(
         "code": _error_code(exc, message),
         "message": message,
     }
-    if isinstance(exc, RunnerError) and exc.detail.details:
-        error["details"] = exc.detail.details
+    details = _extract_exception_details(exc)
+    if details is not None:
+        error["details"] = details
     if include_traceback:
         error["traceback"] = traceback.format_exc()
     return {"ok": False, "error": error}

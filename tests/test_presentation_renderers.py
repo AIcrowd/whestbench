@@ -4,6 +4,7 @@ import re
 
 from whestbench.presentation.models import (
     CommandPresentation,
+    ErrorSection,
     KeyValueRow,
     KeyValueSection,
     StepItem,
@@ -98,6 +99,45 @@ def test_renderers_include_purpose_and_command_for_structured_steps() -> None:
         "whest init ./my-estimator",
         "Validate an Estimator implementation.",
         "whest validate --estimator ./my-estimator/estimator.py",
+    ):
+        assert text in plain
+        assert text in rich
+
+
+def test_renderers_curate_known_error_details_and_keep_unknown_ones() -> None:
+    doc = CommandPresentation(
+        command="validate",
+        status="error",
+        title="Error [validate:ESTIMATOR_BAD_SHAPE]",
+        sections=[
+            ErrorSection(
+                title="Failure",
+                code="ESTIMATOR_BAD_SHAPE",
+                message="Predictions must have shape (2, 4), got (4, 2).",
+                details={
+                    "expected_shape": [2, 4],
+                    "got_shape": [4, 2],
+                    "hint": "Returned predictions appear to be transposed.",
+                    "cause_hints": ["Predictions must be a 2D array with shape (depth, width)."],
+                    "extra_note": "Read the estimator contract.",
+                },
+            )
+        ],
+        epilogue_messages=["Use --debug to include a traceback."],
+    )
+
+    plain = render_plain_presentation(doc)
+    rich = _strip_ansi(render_rich_presentation(doc))
+
+    for text in (
+        "Predictions must have shape (2, 4), got (4, 2).",
+        "Expected shape: [2, 4]",
+        "Got shape: [4, 2]",
+        "Hint: Returned predictions appear to be transposed.",
+        "Possible causes:",
+        "Predictions must be a 2D array with shape (depth, width).",
+        "extra_note: Read the estimator contract.",
+        "Use --debug to include a traceback.",
     ):
         assert text in plain
         assert text in rich

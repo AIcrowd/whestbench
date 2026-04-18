@@ -8,7 +8,14 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from .models import CommandPresentation, KeyValueSection, StepItem, StepsSection
+from .models import (
+    CommandPresentation,
+    ErrorSection,
+    KeyValueSection,
+    StepItem,
+    StepsSection,
+    format_error_detail_lines,
+)
 
 
 def _render_step(step: str | StepItem) -> str:
@@ -17,13 +24,24 @@ def _render_step(step: str | StepItem) -> str:
     return step
 
 
+def _primary_error_section(doc: CommandPresentation) -> ErrorSection | None:
+    for section in doc.sections:
+        if isinstance(section, ErrorSection):
+            return section
+    return None
+
+
 def render_rich_presentation(doc: CommandPresentation) -> str:
     buffer = io.StringIO()
     console = Console(record=True, file=buffer, force_terminal=True, color_system="truecolor")
     body: list[object] = []
 
-    body.append(Text.assemble(("Command: ", "bold"), doc.command))
-    body.append(Text.assemble(("Status: ", "bold"), doc.status))
+    primary_error = _primary_error_section(doc) if doc.status == "error" else None
+    if primary_error is None:
+        body.append(Text.assemble(("Command: ", "bold"), doc.command))
+        body.append(Text.assemble(("Status: ", "bold"), doc.status))
+    elif primary_error.message:
+        body.append(Text(primary_error.message, style="bold"))
 
     for section in doc.sections:
         if isinstance(section, KeyValueSection):
@@ -40,6 +58,19 @@ def render_rich_presentation(doc: CommandPresentation) -> str:
                     title=escape(section.title),
                 )
             )
+        elif isinstance(section, ErrorSection):
+            detail_lines = format_error_detail_lines(section.details)
+            if section.traceback:
+                detail_lines.append("Traceback:")
+                detail_lines.extend(section.traceback.rstrip("\n").splitlines())
+            if detail_lines:
+                body.append(
+                    Panel(
+                        Text("\n".join(detail_lines)),
+                        title=escape(section.title),
+                        border_style="red",
+                    )
+                )
 
     for message in doc.epilogue_messages:
         if message:

@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from .models import CommandPresentation, KeyValueSection, StepItem, StepsSection
+from .models import (
+    CommandPresentation,
+    ErrorSection,
+    KeyValueSection,
+    StepItem,
+    StepsSection,
+    format_error_detail_lines,
+)
 
 
 def _render_step(step: str | StepItem) -> list[str]:
@@ -9,10 +16,26 @@ def _render_step(step: str | StepItem) -> list[str]:
     return [step]
 
 
+def _primary_error_section(doc: CommandPresentation) -> ErrorSection | None:
+    for section in doc.sections:
+        if isinstance(section, ErrorSection):
+            return section
+    return None
+
+
 def render_plain_presentation(doc: CommandPresentation) -> str:
-    lines: list[str] = [doc.title, f"Command: {doc.command}", f"Status: {doc.status}"]
-    if doc.subtitle:
-        lines.append(doc.subtitle)
+    primary_error = _primary_error_section(doc) if doc.status == "error" else None
+    if primary_error is not None:
+        title = doc.title
+        if primary_error.message:
+            title = f"{title}: {primary_error.message}"
+        lines: list[str] = [title]
+        if doc.subtitle:
+            lines.append(doc.subtitle)
+    else:
+        lines = [doc.title, f"Command: {doc.command}", f"Status: {doc.status}"]
+        if doc.subtitle:
+            lines.append(doc.subtitle)
 
     for section in doc.sections:
         lines.append("")
@@ -23,6 +46,16 @@ def render_plain_presentation(doc: CommandPresentation) -> str:
         elif isinstance(section, StepsSection):
             for step in section.steps:
                 lines.extend(_render_step(step))
+        elif isinstance(section, ErrorSection):
+            content = format_error_detail_lines(section.details)
+            if section.traceback:
+                content.append("Traceback:")
+                content.extend(section.traceback.rstrip("\n").splitlines())
+            if not content:
+                lines.pop()
+                lines.pop()
+                continue
+            lines.extend(content)
 
     if doc.epilogue_messages:
         lines.append("")

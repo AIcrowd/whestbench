@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from .models import CommandPresentation, KeyValueRow, KeyValueSection, StepItem, StepsSection
+from .models import (
+    CommandPresentation,
+    ErrorSection,
+    KeyValueRow,
+    KeyValueSection,
+    StepItem,
+    StepsSection,
+)
 
 _JSON_OUTPUT_TIP = "Use --json for JSON output when calling from automated agents or UIs."
 _DIAGNOSTIC_PLOTS_TIP = "Use --show-diagnostic-plots to include diagnostic plot panes."
@@ -110,4 +117,45 @@ def build_smoke_test_presentation(report: dict[str, Any], *, debug: bool) -> Com
             ),
         ],
         epilogue_messages=list(base_doc.epilogue_messages),
+    )
+
+
+def build_error_presentation(
+    payload: dict[str, Any],
+    *,
+    debug: bool,
+    show_inprocess_hint: bool,
+) -> CommandPresentation:
+    error = payload.get("error")
+    if not isinstance(error, dict):
+        error = {}
+
+    stage = str(error.get("stage") or "scoring")
+    code = str(error.get("code") or "SCORING_RUNTIME_ERROR")
+    message = str(error.get("message") or "Unknown error")
+    details = error.get("details")
+    traceback_text = error.get("traceback")
+
+    section = ErrorSection(
+        title="Failure Details",
+        code=code,
+        message=message,
+        details=dict(details) if isinstance(details, dict) else {},
+        traceback=str(traceback_text) if debug and traceback_text else None,
+    )
+
+    epilogue_messages = []
+    if not debug:
+        epilogue_messages.append("Use --debug to include a traceback.")
+    if show_inprocess_hint:
+        epilogue_messages.append(
+            "Tip: For estimator-level tracebacks, rerun with --runner local --debug."
+        )
+
+    return CommandPresentation(
+        command=stage,
+        status="error",
+        title=f"Error [{stage}:{code}]",
+        sections=[section],
+        epilogue_messages=epilogue_messages,
     )
