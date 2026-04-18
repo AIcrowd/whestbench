@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from statistics import fmean
 from typing import Any, Optional
@@ -322,6 +323,79 @@ def _fmt_flops(value: Any) -> str:
     if abs(numeric) < 1e6:
         return f"{int(numeric):,}"
     return f"{numeric:.2e}"
+
+
+# --- Budget gauge state -----------------------------------------------------
+
+
+@dataclass(frozen=True)
+class GaugeState:
+    """Computed inputs for the FLOP budget gauge renderer.
+
+    state_name: one of "healthy", "tight", "busted", "catastrophic".
+    mean_utilization: mean(per_mlp.flops_used) / flop_budget. May exceed 1.0.
+    worst_mlp_pct: integer percent of the worst MLP; None iff any_busted is False.
+    any_busted: any(per_mlp[i].budget_exhausted).
+    flop_budget: echoed from run_config for rendering (0 allowed).
+    has_budget: False iff flop_budget <= 0 (renderer uses this to suppress the bar).
+    """
+
+    state_name: str
+    mean_utilization: float
+    worst_mlp_pct: Optional[int]
+    any_busted: bool
+    flop_budget: int
+    has_budget: bool
+
+
+def _compute_gauge_state(report: "dict[str, Any]") -> GaugeState:
+    run_config = report.get("run_config", {}) if isinstance(report, dict) else {}
+    results = report.get("results", {}) if isinstance(report, dict) else {}
+    per_mlp_raw = results.get("per_mlp", []) if isinstance(results, dict) else []
+    per_mlp: list[dict[str, Any]] = [e for e in per_mlp_raw if isinstance(e, dict)]
+
+    try:
+        flop_budget = int(run_config.get("flop_budget", 0) or 0)
+    except (TypeError, ValueError):
+        flop_budget = 0
+    has_budget = flop_budget > 0
+
+    flops_used = [_as_float(entry.get("flops_used", 0.0)) for entry in per_mlp]
+    if flops_used:
+        mean_flops = sum(flops_used) / len(flops_used)
+    else:
+        mean_flops = 0.0
+    mean_utilization = mean_flops / flop_budget if has_budget else 0.0
+
+    any_busted = any(bool(entry.get("budget_exhausted", False)) for entry in per_mlp)
+
+    if any_busted and has_budget:
+        worst_flops = max(
+            _as_float(entry.get("flops_used", 0.0))
+            for entry in per_mlp
+            if bool(entry.get("budget_exhausted", False))
+        )
+        worst_mlp_pct: Optional[int] = int(worst_flops * 100 // flop_budget)
+    else:
+        worst_mlp_pct = None
+
+    if mean_utilization >= 1.0:
+        state_name = "catastrophic"
+    elif any_busted:
+        state_name = "busted"
+    elif mean_utilization >= 0.80:
+        state_name = "tight"
+    else:
+        state_name = "healthy"
+
+    return GaugeState(
+        state_name=state_name,
+        mean_utilization=mean_utilization,
+        worst_mlp_pct=worst_mlp_pct,
+        any_busted=any_busted,
+        flop_budget=flop_budget,
+        has_budget=has_budget,
+    )
 
 
 def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
