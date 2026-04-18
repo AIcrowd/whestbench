@@ -303,6 +303,42 @@ def test_smoke_test_debug_includes_traceback_field(
     assert "RuntimeError: boom" in captured.out
 
 
+def test_print_error_renders_structured_details_and_unknown_keys(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    payload = {
+        "ok": False,
+        "error": {
+            "stage": "validate",
+            "code": "ESTIMATOR_BAD_SHAPE",
+            "message": "Predictions must have shape (2, 4), got (4, 2).",
+            "details": {
+                "expected_shape": [2, 4],
+                "got_shape": [4, 2],
+                "hint": "Returned predictions appear to be transposed.",
+                "extra_note": "Read the estimator contract.",
+            },
+        },
+    }
+
+    cli._print_error(payload, json_output=False, debug=False)
+    captured = capsys.readouterr()
+
+    assert "Expected shape: [2, 4]" in captured.out
+    assert "Got shape: [4, 2]" in captured.out
+    assert "Hint: Returned predictions appear to be transposed." in captured.out
+    assert "extra_note: Read the estimator contract." in captured.out
+
+
+def test_error_payload_keeps_generic_exception_details() -> None:
+    exc = ValueError("bad shape")
+    exc.details = {"hint": "Return shape (depth, width)."}  # type: ignore[attr-defined]
+
+    payload = cli._error_payload(exc, include_traceback=False, stage="validate")
+
+    assert payload["error"]["details"] == {"hint": "Return shape (depth, width)."}
+
+
 def test_run_subprocess_error_includes_inprocess_debug_hint(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
