@@ -554,6 +554,65 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     )
 
 
+# --- Budget gauge renderer --------------------------------------------------
+
+
+_GAUGE_BAR_WIDTH = 20
+_GAUGE_COLOR = {
+    "healthy": "green",
+    "tight": "yellow",
+    "busted": "red",
+    "catastrophic": "red",
+}
+
+
+def _gauge_bar_fragment(utilization: float) -> str:
+    """Return the ``[filled░░]`` fragment (without trailing ▶) for utilization.
+
+    Catastrophic overflow is handled by the renderer — it appends ▶ after.
+    """
+    if utilization <= 0.0:
+        filled = 0
+    else:
+        filled = min(round(utilization * _GAUGE_BAR_WIDTH), _GAUGE_BAR_WIDTH)
+    empty = _GAUGE_BAR_WIDTH - filled
+    return "[" + ("█" * filled) + ("░" * empty) + "]"
+
+
+def _render_budget_gauge(console: Console, report: "dict[str, Any]") -> None:
+    state = _compute_gauge_state(report)
+
+    line = Text()
+    line.append("Estimator FLOPs", style="bold bright_yellow")
+    line.append("  ")
+
+    if not state.has_budget:
+        line.append("-- of 0 FLOPs", style="dim")
+        console.print(line)
+        return
+
+    color = _GAUGE_COLOR.get(state.state_name, "white")
+    bar = _gauge_bar_fragment(state.mean_utilization)
+    pct_int = int(state.mean_utilization * 100)  # truncates toward zero
+    budget_label = _fmt_flops(state.flop_budget)
+
+    line.append(bar, style=color)
+    if state.state_name == "catastrophic":
+        line.append("▶")
+    line.append(" ")
+    line.append(f"{pct_int}% of {budget_label}", style="bold")
+
+    if state.worst_mlp_pct is not None:
+        line.append(" ")
+        line.append("·", style="dim")
+        line.append(" ")
+        line.append(f"worst MLP {state.worst_mlp_pct}%", style="red")
+        line.append(" ")
+        line.append("⚠", style="red")
+
+    console.print(line)
+
+
 def _render_errors_section(
     console: Console, report: "dict[str, Any]", *, debug: bool = False
 ) -> None:
