@@ -202,6 +202,7 @@ def _render_plain_text_report(
     *,
     debug: bool = False,
     command: str = "run",
+    include_epilogues: bool = True,
 ) -> str:
     """Render a plain-text report when Rich rendering is unavailable."""
     doc = (
@@ -209,6 +210,8 @@ def _render_plain_text_report(
         if command == "smoke-test"
         else build_run_presentation(report, debug=debug)
     )
+    if not include_epilogues:
+        doc = replace(doc, epilogue_messages=[])
     lines = render_plain_presentation(doc).rstrip("\n").splitlines()
     if lines:
         lines[0] = "WhestBench Report (Plain Text)"
@@ -1517,8 +1520,13 @@ def _main_participant(argv: "list[str]") -> int:
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
+                used_plain_fallback = False
                 if no_rich:
-                    output = _render_plain_text_report(report, debug=debug)
+                    output = _render_plain_text_report(
+                        report,
+                        debug=debug,
+                        include_epilogues=False,
+                    )
                 else:
                     try:
                         output = render_human_results(
@@ -1532,15 +1540,17 @@ def _main_participant(argv: "list[str]") -> int:
                             file=sys.stderr,
                         )
                         output = _render_plain_text_report(report, debug=debug)
+                        used_plain_fallback = True
             print(output, end="" if output.endswith("\n") else "\n")
             if not json_output and not no_rich:
-                _tip_console.print(
-                    "[bold bright_yellow]Tip:[/] Use [green]--json[/] for JSON output when calling from automated agents or UIs."
-                )
-                if not args.show_diagnostic_plots:
+                if not used_plain_fallback:
                     _tip_console.print(
-                        "[bold bright_yellow]Tip:[/] Use [green]--show-diagnostic-plots[/] to include diagnostic plot panes."
+                        "[bold bright_yellow]Tip:[/] Use [green]--json[/] for JSON output when calling from automated agents or UIs."
                     )
+                    if not args.show_diagnostic_plots:
+                        _tip_console.print(
+                            "[bold bright_yellow]Tip:[/] Use [green]--show-diagnostic-plots[/] to include diagnostic plot panes."
+                        )
                 if dataset_path is None:
                     _tip_console.print(_dataset_tip)
             per_mlp = report.get("results", {}).get("per_mlp", [])
