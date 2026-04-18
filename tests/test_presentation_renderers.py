@@ -6,6 +6,7 @@ from whestbench.presentation.models import (
     CommandPresentation,
     KeyValueRow,
     KeyValueSection,
+    StepItem,
     StepsSection,
 )
 from whestbench.presentation.render_plain import render_plain_presentation
@@ -65,3 +66,38 @@ def test_renderers_preserve_same_key_facts() -> None:
         "integrating with automated systems.",
     ):
         assert fragment in rich
+
+
+def test_renderers_include_purpose_and_command_for_structured_steps() -> None:
+    doc = CommandPresentation(
+        command="smoke-test",
+        status="success",
+        title="WhestBench Report",
+        sections=[
+            StepsSection(
+                title="Next Steps",
+                steps=[
+                    StepItem(
+                        purpose="Create starter files you can edit.",
+                        command="whest init ./my-estimator",
+                    ),
+                    StepItem(
+                        purpose="Validate an Estimator implementation.",
+                        command="whest validate --estimator ./my-estimator/estimator.py",
+                    ),
+                ],
+            )
+        ],
+    )
+
+    plain = render_plain_presentation(doc)
+    rich = _strip_ansi(render_rich_presentation(doc))
+
+    for text in (
+        "Create starter files you can edit.",
+        "whest init ./my-estimator",
+        "Validate an Estimator implementation.",
+        "whest validate --estimator ./my-estimator/estimator.py",
+    ):
+        assert text in plain
+        assert text in rich

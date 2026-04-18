@@ -1197,11 +1197,13 @@ def _main_participant(argv: "list[str]") -> int:
 
             report["mode"] = "human"
             rich_rendered = False
+            smoke_doc = build_smoke_test_presentation(report, debug=debug)
             try:
                 output = render_human_report(
                     report,
                     show_diagnostic_plots=bool(args.show_diagnostic_plots),
                     debug=debug,
+                    presentation_doc=replace(smoke_doc, epilogue_messages=[]),
                 )
                 rich_rendered = True
             except Exception as exc:

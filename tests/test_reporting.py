@@ -174,8 +174,9 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     )
     assert "whest run --estimator ./examples/estimators/mean_propagation.py --runner local" in plain
     assert "whest run --estimator ./examples/estimators/random_estimator.py --runner local" in plain
-    assert "Tip: use --json on validate/run/package for machine-readable output." in plain
-    assert "Use --show-diagnostic-plots to include diagnostic plot panes." not in plain
+    assert "Use --json for JSON output when calling from automated agents or UIs." in plain
+    assert "Use --show-diagnostic-plots to include diagnostic plot panes." in plain
+    assert "Tip: use --json on validate/run/package for machine-readable output." not in plain
 
 
 def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:

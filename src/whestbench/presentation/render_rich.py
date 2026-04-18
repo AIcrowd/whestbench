@@ -11,6 +11,12 @@ from rich.text import Text
 from .models import CommandPresentation, KeyValueSection, StepItem, StepsSection
 
 
+def _render_step(step: str | StepItem) -> str:
+    if isinstance(step, StepItem):
+        return f"{step.purpose}\n{step.command}"
+    return step
+
+
 def render_rich_presentation(doc: CommandPresentation) -> str:
     buffer = io.StringIO()
     console = Console(record=True, file=buffer, force_terminal=True, color_system="truecolor")
@@ -30,12 +36,7 @@ def render_rich_presentation(doc: CommandPresentation) -> str:
         elif isinstance(section, StepsSection):
             body.append(
                 Panel(
-                    Text(
-                        "\n".join(
-                            step.command if isinstance(step, StepItem) else step
-                            for step in section.steps
-                        )
-                    ),
+                    Text("\n".join(_render_step(step) for step in section.steps)),
                     title=escape(section.title),
                 )
             )

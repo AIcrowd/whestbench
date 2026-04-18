@@ -106,8 +106,10 @@ def test_smoke_test_plain_output_includes_next_steps_and_json_tip(monkeypatch, c
 
     assert exit_code == 0
     assert "Next Steps" in captured.out
+    assert "Create starter files you can edit." in captured.out
     assert "whest init ./my-estimator" in captured.out
     assert "Use --json for JSON output when calling from automated agents or UIs." in captured.out
+    assert "Use --show-diagnostic-plots to include diagnostic plot panes." in captured.out
 
 
 def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
