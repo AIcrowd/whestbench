@@ -16,8 +16,9 @@ from typing import Any, Optional
 from rich import box
 from rich.align import Align
 from rich.columns import Columns
-from rich.console import Console, Group
+from rich.console import Console, ConsoleRenderable, Group
 from rich.panel import Panel
+from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
 
@@ -579,43 +580,65 @@ def _gauge_bar_fragment(utilization: float) -> str:
     return "[" + ("█" * filled) + ("░" * empty) + "]"
 
 
-def _gauge_renderable(report: "dict[str, Any]") -> Text:
-    """Return the gauge line as a Rich Text object without printing it.
+def _gauge_renderable(report: "dict[str, Any]") -> ConsoleRenderable:
+    """Return the gauge line as a Rich renderable without printing it.
 
     Used both by the standalone ``_render_budget_gauge`` backward-compat
     wrapper and by ``_breakdown_panel`` when embedding the gauge inside the
     Estimator Budget Breakdown panel.
+
+    The bar itself is a ``rich.progress_bar.ProgressBar`` (responsive width,
+    ``━``-style glyphs) to match the in-run progress bars shown during
+    ``whest run``. Rich clamps ``completed`` at ``total`` internally; the
+    catastrophic-state overflow is signaled by a ``▶`` glyph in the suffix,
+    not by the bar itself.
     """
     state = _compute_gauge_state(report)
 
-    line = Text()
-    line.append("Estimator FLOPs", style="bold bright_yellow")
-    line.append("  ")
+    label = Text("Estimator FLOPs  ", style="bold bright_yellow")
 
     if not state.has_budget:
-        line.append("-- of 0 FLOPs", style="dim")
-        return line
+        no_budget = Text()
+        no_budget.append_text(label)
+        no_budget.append("-- of 0 FLOPs", style="dim")
+        return no_budget
 
     color = _GAUGE_COLOR.get(state.state_name, "white")
-    bar = _gauge_bar_fragment(state.mean_utilization)
     pct_int = int(state.mean_utilization * 100)  # truncates toward zero
     budget_label = _fmt_flops(state.flop_budget)
 
-    line.append(bar, style=color)
+    # Rich ProgressBar clamps completed at total. Overflow is signaled by the
+    # ▶ arrow in the suffix below, not by the bar.
+    display_completed = min(state.mean_utilization, 1.0) * 100.0
+    bar = ProgressBar(
+        total=100.0,
+        completed=display_completed,
+        complete_style=color,
+        finished_style=color,
+        width=None,  # responsive — fills the middle column of the grid
+    )
+
+    suffix = Text()
+    suffix.append("  ")
     if state.state_name == "catastrophic":
-        line.append("▶")
-    line.append(" ")
-    line.append(f"{pct_int}% of {budget_label}", style="bold")
+        suffix.append("▶ ", style=color)
+    suffix.append(f"{pct_int}% of {budget_label}", style="bold")
 
     if state.worst_mlp_pct is not None:
-        line.append(" ")
-        line.append("·", style="dim")
-        line.append(" ")
-        line.append(f"worst MLP {state.worst_mlp_pct}%", style="red")
-        line.append(" ")
-        line.append("⚠", style="red")
+        suffix.append(" ")
+        suffix.append("·", style="dim")
+        suffix.append(" ")
+        suffix.append(f"worst MLP {state.worst_mlp_pct}%", style="red")
+        suffix.append(" ")
+        suffix.append("⚠", style="red")
 
-    return line
+    # Three-column grid: label (fixed), bar (flex), suffix (fixed).
+    grid = Table.grid(expand=True)
+    grid.add_column(no_wrap=True)
+    grid.add_column(ratio=1)
+    grid.add_column(no_wrap=True)
+    grid.add_row(label, bar, suffix)
+    return grid
 
 
 def _over_budget_renderable(report: "dict[str, Any]") -> Optional[Group]:

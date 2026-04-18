@@ -279,8 +279,8 @@ def test_render_gauge_healthy_shows_green_bar_and_percent() -> None:
     assert "of 1.00e+08" in plain
     # no worst-MLP suffix on healthy runs
     assert "worst MLP" not in plain
-    # six filled cells out of twenty for 30%
-    assert "[" + ("█" * 6) + ("░" * 14) + "]" in out
+    # Rich ProgressBar renders ━-style glyphs (responsive width, not fixed cells)
+    assert "━" in plain
 
 
 def test_render_gauge_tight_shows_91_percent_yellow() -> None:
@@ -321,8 +321,9 @@ def test_render_gauge_catastrophic_shows_overflow_arrow() -> None:
     plain = _strip_ansi(out)
     assert "▶" in plain
     assert "worst MLP 212%" in plain
-    # Bar maxed out at 20 filled cells
-    assert "[" + ("█" * 20) + "]" in out
+    # Rich ProgressBar renders ━-style glyphs and clamps at 100%;
+    # overflow is signaled by the ▶ above, not by the bar itself.
+    assert "━" in plain
 
 
 def test_render_gauge_with_flop_budget_zero_suppresses_bar() -> None:
@@ -334,8 +335,8 @@ def test_render_gauge_with_flop_budget_zero_suppresses_bar() -> None:
     plain = _strip_ansi(out)
     assert "--" in plain
     assert "of 0 FLOPs" in plain
-    # no bar brackets
-    assert "[" not in plain
+    # no bar is rendered when there's no budget
+    assert "━" not in plain
 
 
 # --- _render_over_budget_panel ----------------------------------------------
