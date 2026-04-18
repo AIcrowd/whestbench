@@ -266,14 +266,19 @@ def build_profile_presentation(payload: dict[str, Any]) -> CommandPresentation:
             )
         )
 
+    epilogue_messages: list[str] = []
+    if not verbose:
+        if passed_any:
+            epilogue_messages.append("Use --verbose for full timing tables with raw times")
+        else:
+            epilogue_messages.append("Use --verbose for error details.")
+
     return CommandPresentation(
         command="profile-simulation",
         status="success" if passed_any else "error",
         title="Simulation Profile",
         sections=sections,
-        epilogue_messages=[]
-        if verbose
-        else ["Use --verbose for full timing tables with raw times"],
+        epilogue_messages=epilogue_messages,
     )
 
 

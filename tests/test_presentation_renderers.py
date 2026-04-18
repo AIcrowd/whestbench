@@ -201,3 +201,30 @@ def test_renderers_include_table_section_cells() -> None:
     ):
         assert text in plain
         assert text in rich
+
+
+def test_rich_table_renderer_preserves_literal_markup_text() -> None:
+    doc = CommandPresentation(
+        command="profile-simulation",
+        status="success",
+        title="Simulation Profile",
+        sections=[
+            TableSection(
+                title="Detail [literal]",
+                columns=["Backend", "[dims]"],
+                rows=[["[bold]whest[/bold]", "64x4x1k"]],
+            )
+        ],
+    )
+
+    plain = render_plain_presentation(doc)
+    rich = _strip_ansi(render_rich_presentation(doc))
+
+    for text in (
+        "Detail [literal]",
+        "[dims]",
+        "[bold]whest[/bold]",
+        "64x4x1k",
+    ):
+        assert text in plain
+        assert text in rich

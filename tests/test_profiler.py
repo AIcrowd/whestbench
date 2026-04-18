@@ -7,8 +7,10 @@ import json
 import tempfile
 from pathlib import Path
 
+import pytest
 import whest as we
 
+import whestbench.profiler as profiler
 from whestbench.profiler import (
     PRESETS,
     CorrectnessResult,
@@ -60,6 +62,22 @@ class TestRunProfile:
     def test_single_backend_in_output(self) -> None:
         terminal_output, _ = run_profile(preset_name="super-quick")
         assert "whest" in terminal_output
+
+    def test_failed_correctness_output_uses_error_detail_hint(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            profiler,
+            "correctness_check",
+            lambda: CorrectnessResult(backend_name="whest", passed=False, error="boom"),
+        )
+
+        terminal_output, _ = run_profile(preset_name="super-quick")
+
+        assert "Correctness" in terminal_output
+        assert "boom" in terminal_output
+        assert "Use --verbose for error details." in terminal_output
+        assert "Use --verbose for full timing tables with raw times" not in terminal_output
 
 
 class TestFormatDims:
