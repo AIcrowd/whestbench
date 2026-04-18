@@ -48,7 +48,13 @@ def format_error_detail_lines(details: Mapping[str, Any]) -> list[str]:
     handled: set[str] = set()
 
     def _has_content(value: Any) -> bool:
-        return value not in (None, "", [], {}, ())
+        if value is None:
+            return False
+        if isinstance(value, (str, bytes, bytearray)):
+            return len(value) > 0
+        if isinstance(value, (list, tuple, set, frozenset, dict)):
+            return len(value) > 0
+        return True
 
     for key, label in (
         ("expected_shape", "Expected shape"),
