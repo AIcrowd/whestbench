@@ -9,6 +9,7 @@ from rich.table import Table
 from rich.text import Text
 
 from .models import (
+    ChecklistSection,
     CommandPresentation,
     ErrorSection,
     KeyValueSection,
@@ -22,6 +23,14 @@ def _render_step(step: str | StepItem) -> str:
     if isinstance(step, StepItem):
         return f"{step.purpose}\n{step.command}"
     return step
+
+
+def _checklist_status_style(status: str) -> str:
+    if status == "ok":
+        return "green"
+    if status == "warn":
+        return "yellow"
+    return "red"
 
 
 def _primary_error_section(doc: CommandPresentation) -> ErrorSection | None:
@@ -58,6 +67,18 @@ def render_rich_presentation(doc: CommandPresentation) -> str:
                     title=escape(section.title),
                 )
             )
+        elif isinstance(section, ChecklistSection):
+            table = Table(show_header=True)
+            table.add_column("Status")
+            table.add_column("Check")
+            table.add_column("Detail")
+            for item in section.items:
+                table.add_row(
+                    Text(item.status.upper(), style=_checklist_status_style(item.status)),
+                    Text(item.label),
+                    Text(item.detail),
+                )
+            body.append(Panel(table, title=escape(section.title)))
         elif isinstance(section, ErrorSection):
             detail_lines = format_error_detail_lines(section.details)
             if section.traceback:

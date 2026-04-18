@@ -65,6 +65,65 @@ def test_validate_command_returns_json_only_with_json_flag(
     }
 
 
+def test_validate_command_renders_checklist_in_human_mode(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_run_validate_checks",
+        lambda *_args, **_kwargs: {
+            "ok": True,
+            "class_name": "Estimator",
+            "module_name": "_submission",
+            "output_shape": [2, 4],
+            "checks": [
+                {"name": "class resolved", "status": "ok", "detail": "Estimator"},
+                {"name": "setup(context) completed", "status": "ok", "detail": "ok"},
+                {"name": "predict() returned shape", "status": "ok", "detail": "(2, 4)"},
+            ],
+        },
+        raising=False,
+    )
+
+    exit_code = cli.main(["validate", "--estimator", "estimator.py"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Validation" in captured.out
+    assert "class resolved" in captured.out
+    assert "predict() returned shape" in captured.out
+
+
+def test_validate_json_shape_stays_stable(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_run_validate_checks",
+        lambda *_args, **_kwargs: {
+            "ok": True,
+            "class_name": "Estimator",
+            "module_name": "_submission",
+            "output_shape": [2, 4],
+            "checks": [{"name": "class resolved", "status": "ok", "detail": "Estimator"}],
+        },
+        raising=False,
+    )
+
+    exit_code = cli.main(["validate", "--estimator", "estimator.py", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert json.loads(captured.out) == {
+        "ok": True,
+        "class_name": "Estimator",
+        "module_name": "_submission",
+        "output_shape": [2, 4],
+    }
+
+
 def test_run_command_renders_human_report_in_non_agent_mode(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

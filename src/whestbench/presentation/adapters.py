@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from .models import (
+    ChecklistItem,
+    ChecklistSection,
     CommandPresentation,
     ErrorSection,
     KeyValueRow,
@@ -117,6 +119,30 @@ def build_smoke_test_presentation(report: dict[str, Any], *, debug: bool) -> Com
             ),
         ],
         epilogue_messages=list(base_doc.epilogue_messages),
+    )
+
+
+def build_validate_presentation(payload: dict[str, Any]) -> CommandPresentation:
+    raw_checks = payload.get("checks")
+    checks = raw_checks if isinstance(raw_checks, list) else []
+    return CommandPresentation(
+        command="validate",
+        status="success",
+        title="Validation",
+        sections=[
+            ChecklistSection(
+                title="Checks",
+                items=[
+                    ChecklistItem(
+                        label=str(item.get("name", "")),
+                        status=str(item.get("status", "ok")),
+                        detail=str(item.get("detail", "")),
+                    )
+                    for item in checks
+                    if isinstance(item, dict)
+                ],
+            )
+        ],
     )
 
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .models import (
+    ChecklistSection,
     CommandPresentation,
     ErrorSection,
     KeyValueSection,
@@ -14,6 +15,13 @@ def _render_step(step: str | StepItem) -> list[str]:
     if isinstance(step, StepItem):
         return [step.purpose, step.command]
     return [step]
+
+
+def _render_checklist_line(label: str, status: str, detail: str) -> str:
+    rendered = f"[{status}] {label}"
+    if detail:
+        rendered = f"{rendered}: {detail}"
+    return rendered
 
 
 def _primary_error_section(doc: CommandPresentation) -> ErrorSection | None:
@@ -46,6 +54,9 @@ def render_plain_presentation(doc: CommandPresentation) -> str:
         elif isinstance(section, StepsSection):
             for step in section.steps:
                 lines.extend(_render_step(step))
+        elif isinstance(section, ChecklistSection):
+            for item in section.items:
+                lines.append(_render_checklist_line(item.label, item.status, item.detail))
         elif isinstance(section, ErrorSection):
             content = format_error_detail_lines(section.details)
             if section.traceback:

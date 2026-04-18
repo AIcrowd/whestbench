@@ -43,8 +43,10 @@ from .presentation.adapters import (
     build_error_presentation,
     build_run_presentation,
     build_smoke_test_presentation,
+    build_validate_presentation,
 )
 from .presentation.render_plain import render_plain_presentation
+from .presentation.render_rich import render_rich_presentation
 from .reporting import (
     _compute_gauge_state,
     _fmt_flops,
@@ -722,7 +724,7 @@ def _write_init_template(target_dir: Path) -> "list[str]":
     return created
 
 
-def validate_submission_entrypoint(
+def _run_validate_checks(
     estimator_path: "Any",
     *,
     class_name: Optional[str] = None,
@@ -730,10 +732,21 @@ def validate_submission_entrypoint(
     estimator, metadata = load_estimator_from_path(estimator_path, class_name=class_name)
     context = SetupContext(width=4, depth=2, flop_budget=100, api_version="1.0")
     mlp = sample_mlp(width=4, depth=2)
+    checks: list[dict[str, str]] = []
     try:
+        checks.append({"name": "class resolved", "status": "ok", "detail": metadata.class_name})
         estimator.setup(context)
+        checks.append({"name": "setup(context) completed", "status": "ok", "detail": "ok"})
         predictions = estimator.predict(mlp, 100)
         arr = validate_predictions(predictions, depth=mlp.depth, width=mlp.width)
+        checks.append(
+            {
+                "name": "predict() returned shape",
+                "status": "ok",
+                "detail": str(tuple(arr.shape)),
+            }
+        )
+        checks.append({"name": "values finite", "status": "ok", "detail": "all finite"})
     finally:
         estimator.teardown()
     return {
@@ -741,6 +754,21 @@ def validate_submission_entrypoint(
         "class_name": metadata.class_name,
         "module_name": metadata.module_name,
         "output_shape": list(arr.shape),
+        "checks": checks,
+    }
+
+
+def validate_submission_entrypoint(
+    estimator_path: "Any",
+    *,
+    class_name: Optional[str] = None,
+) -> Dict[str, Any]:
+    result = _run_validate_checks(estimator_path, class_name=class_name)
+    return {
+        "ok": result["ok"],
+        "class_name": result["class_name"],
+        "module_name": result["module_name"],
+        "output_shape": result["output_shape"],
     }
 
 
@@ -1236,14 +1264,12 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "validate":
-            payload = validate_submission_entrypoint(args.estimator, class_name=args.class_name)
             if json_output:
+                payload = validate_submission_entrypoint(args.estimator, class_name=args.class_name)
                 print(json.dumps(payload, indent=2))
             else:
-                print(
-                    f"Validation passed: class={payload['class_name']} "
-                    f"shape={tuple(payload['output_shape'])}"
-                )
+                result = _run_validate_checks(args.estimator, class_name=args.class_name)
+                print(render_rich_presentation(build_validate_presentation(result)), end="")
             return 0
 
         if command == "create-dataset":
