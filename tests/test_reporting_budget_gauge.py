@@ -15,6 +15,7 @@ from whestbench.reporting import (
     _render_budget_gauge,
     _render_over_budget_panel,
     _select_top_over_budget,
+    render_human_results,
 )
 
 
@@ -439,3 +440,77 @@ def test_panel_flop_budget_zero_shows_dashes_for_pct() -> None:
     plain = _strip_ansi(out)
     assert "MLP #0" in plain
     assert "--% of budget" in plain
+
+
+# --- Wiring into render_human_results / render_human_report -----------------
+
+
+def _full_report(per_mlp: List[Dict[str, Any]], *, flop_budget: int = 100) -> Dict[str, Any]:
+    return {
+        "schema_version": "1.0",
+        "mode": "human",
+        "detail": "raw",
+        "run_meta": {
+            "run_started_at_utc": "2026-04-18T00:00:00+00:00",
+            "run_finished_at_utc": "2026-04-18T00:00:01+00:00",
+            "run_duration_s": 1.0,
+        },
+        "run_config": {
+            "n_mlps": len(per_mlp),
+            "width": 4,
+            "depth": 3,
+            "flop_budget": flop_budget,
+        },
+        "results": {
+            "primary_score": 0.123,
+            "secondary_score": 0.456,
+            "per_mlp": per_mlp,
+        },
+        "notes": [],
+    }
+
+
+def test_render_human_results_includes_gauge_between_score_and_breakdown() -> None:
+    report = _full_report([_mlp(i, flops_used=30.0) for i in range(3)], flop_budget=100)
+    rendered = render_human_results(report)
+    plain = _strip_ansi(rendered)
+
+    assert "Estimator FLOPs" in plain
+    score_idx = plain.index("Final Score")
+    gauge_idx = plain.index("Estimator FLOPs")
+    # Score panel renders before the gauge
+    assert score_idx < gauge_idx
+
+
+def test_render_human_results_shows_over_budget_panel_when_busted() -> None:
+    per_mlp = [_mlp(0, flops_used=50.0), _busted(1, 138.0)]
+    rendered = render_human_results(_full_report(per_mlp, flop_budget=100))
+    plain = _strip_ansi(rendered)
+    assert "Over-Budget MLPs" in plain
+    assert "worst MLP 138%" in plain
+
+
+def test_render_human_results_omits_over_budget_panel_when_clean() -> None:
+    rendered = render_human_results(
+        _full_report([_mlp(i, flops_used=30.0) for i in range(3)], flop_budget=100)
+    )
+    plain = _strip_ansi(rendered)
+    assert "Over-Budget MLPs" not in plain
+
+
+def test_gauge_and_panel_precede_breakdowns_when_present() -> None:
+    per_mlp = [_busted(0, 120.0), _mlp(1, flops_used=50.0)]
+    report = _full_report(per_mlp, flop_budget=100)
+    # Inject a minimal breakdown so the breakdown section also renders
+    report["results"]["breakdowns"] = {
+        "estimator": {
+            "flops_used": 170,
+            "tracked_time_s": 0.01,
+            "untracked_time_s": 0.005,
+            "by_namespace": {},
+        }
+    }
+    rendered = render_human_results(report)
+    plain = _strip_ansi(rendered)
+    assert plain.index("Estimator FLOPs") < plain.index("Over-Budget MLPs")
+    assert plain.index("Over-Budget MLPs") < plain.index("Estimator Budget Breakdown")
