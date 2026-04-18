@@ -468,6 +468,37 @@ def _print_human_header_and_hints() -> None:
     print(render_human_header(), end="")
 
 
+def _merge_pre_run_context(report: Dict[str, Any], pre_report: Dict[str, Any]) -> Dict[str, Any]:
+    run_meta = report.get("run_meta")
+    if not isinstance(run_meta, dict):
+        run_meta = {}
+        report["run_meta"] = run_meta
+    pre_run_meta = pre_report.get("run_meta")
+    if isinstance(pre_run_meta, dict):
+        started = pre_run_meta.get("run_started_at_utc")
+        if started not in {None, "", "n/a"}:
+            run_meta["run_started_at_utc"] = started
+        pre_host = pre_run_meta.get("host")
+        host_meta = run_meta.get("host")
+        if isinstance(pre_host, dict):
+            if not isinstance(host_meta, dict):
+                host_meta = {}
+            merged_host = dict(pre_host)
+            merged_host.update(host_meta)
+            run_meta["host"] = merged_host
+
+    run_config = report.get("run_config")
+    if not isinstance(run_config, dict):
+        run_config = {}
+        report["run_config"] = run_config
+    pre_run_config = pre_report.get("run_config")
+    if isinstance(pre_run_config, dict):
+        for key, value in pre_run_config.items():
+            run_config.setdefault(key, value)
+
+    return report
+
+
 class _LiveTopPaneSession:
     def __init__(
         self,
@@ -1536,6 +1567,7 @@ def _main_participant(argv: "list[str]") -> int:
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
+                report = _merge_pre_run_context(report, pre_report)
                 used_plain_fallback = False
                 if no_rich:
                     output = _render_plain_text_report(
