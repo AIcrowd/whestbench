@@ -583,3 +583,28 @@ def test_plain_text_over_budget_section_omitted_when_clean() -> None:
         _full_report([_mlp(i, flops_used=30.0) for i in range(3)], flop_budget=100)
     )
     assert "Over-Budget MLPs" not in out
+
+
+# --- JSON regression --------------------------------------------------------
+
+
+def test_render_agent_report_unchanged_when_gauge_inputs_present() -> None:
+    """Gauge introduces no changes to the JSON payload shape.
+
+    Reporting helpers must not mutate the report dict. This test asserts that
+    feeding a report with ``budget_exhausted`` entries through the JSON path
+    produces bytes whose parsed form is identical to the input dict.
+    """
+    from whestbench.reporting import render_agent_report
+
+    per_mlp = [_mlp(0, flops_used=50.0), _busted(1, 138.0)]
+    report = _full_report(per_mlp, flop_budget=100)
+    import copy
+    import json
+
+    snapshot = copy.deepcopy(report)
+    rendered = render_agent_report(report)
+    parsed = json.loads(rendered)
+
+    assert parsed == snapshot
+    assert report == snapshot  # no mutation side-effect
