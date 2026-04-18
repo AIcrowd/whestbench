@@ -17,6 +17,15 @@ except ImportError:  # pragma: no cover
     psutil = None
 
 
+_SKIP_FALLBACK_PROBES_ENV = "WHEST_SKIP_HARDWARE_FALLBACK_PROBES"
+
+
+def _env_flag_enabled(name: str) -> bool:
+    """Return True when an environment toggle is set to a truthy value."""
+    value = os.environ.get(name, "").strip().lower()
+    return value not in {"", "0", "false", "no"}
+
+
 def _physical_core_count_fallback() -> int | None:
     """Try OS-native methods to get physical core count without psutil."""
     system = platform.system()
@@ -77,14 +86,20 @@ def _ram_total_fallback() -> int | None:
     return None
 
 
-def collect_hardware_fingerprint() -> dict[str, Any]:
+def collect_hardware_fingerprint(*, skip_fallback_probes: bool | None = None) -> dict[str, Any]:
     """Collect a hardware fingerprint dict for the current machine.
 
     Returns a dict containing hostname, OS info, CPU details,
     RAM statistics, and numpy version. Uses ``psutil`` when available,
     with OS-native fallbacks (sysctl on macOS, /proc on Linux) to
-    ensure fields are populated on all major platforms.
+    ensure fields are populated on all major platforms. When
+    ``skip_fallback_probes`` is ``None``, the
+    ``WHEST_SKIP_HARDWARE_FALLBACK_PROBES`` environment variable controls
+    whether those OS-native fallback probes run.
     """
+    if skip_fallback_probes is None:
+        skip_fallback_probes = _env_flag_enabled(_SKIP_FALLBACK_PROBES_ENV)
+
     try:
         whest_version = importlib_metadata.version("whest")
     except importlib_metadata.PackageNotFoundError:
@@ -117,11 +132,12 @@ def collect_hardware_fingerprint() -> dict[str, Any]:
         except Exception:
             pass
 
-    # OS-native fallbacks when psutil didn't provide values
-    if fp["cpu_count_physical"] is None:
-        fp["cpu_count_physical"] = _physical_core_count_fallback()
-    if fp["ram_total_bytes"] is None:
-        fp["ram_total_bytes"] = _ram_total_fallback()
+    # OS-native fallbacks when psutil didn't provide values.
+    if not skip_fallback_probes:
+        if fp["cpu_count_physical"] is None:
+            fp["cpu_count_physical"] = _physical_core_count_fallback()
+        if fp["ram_total_bytes"] is None:
+            fp["ram_total_bytes"] = _ram_total_fallback()
     return fp
 
 

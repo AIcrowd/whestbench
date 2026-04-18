@@ -91,7 +91,7 @@ def make_contest(
             we.random.default_rng(stream_seeds[2 * i + 1]) if spec_seed is not None else None
         )
         mlp = sample_mlp(spec.width, spec.depth, mlp_rng)
-        with we.BudgetContext(flop_budget=int(1e15)) as sampling_budget:
+        with we.BudgetContext(flop_budget=int(1e15), quiet=True) as sampling_budget:
             with we.namespace("sampling"):
                 with we.namespace("sample_layer_statistics"):
                     all_means, final_mean, avg_var = sample_layer_statistics(
@@ -384,6 +384,7 @@ def evaluate_estimator(
         budget_ctx = we.BudgetContext(
             flop_budget=spec.flop_budget,
             wall_time_limit_s=spec.wall_time_limit_s,
+            quiet=True,
         )
         try:
             with budget_ctx:
