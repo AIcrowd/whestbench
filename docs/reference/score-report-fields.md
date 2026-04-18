@@ -16,6 +16,10 @@ Typical report sections include:
 - `run_config.dataset` (present when `--dataset` is used)
 - `results`
 
+## Host metadata
+
+`run_meta.host` is always an object. If you set `WHEST_SKIP_HARDWARE_FALLBACK_PROBES=1`, WhestBench still records cheap host fields and any values available through `psutil`, but fallback-backed fields such as `cpu_count_physical` and `ram_total_bytes` may be `null`.
+
 ## Core result fields
 
 Inside `results`:

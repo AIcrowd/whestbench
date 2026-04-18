@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import sys
+import time
 import traceback
 import warnings
 from contextlib import contextmanager
@@ -14,14 +15,13 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, Literal, Optional, overload
 
 import whest as we
-from rich.console import Console, Group
+from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
     Progress,
-    SpinnerColumn,
     TextColumn,
     TimeElapsedColumn,
 )
@@ -43,7 +43,6 @@ from .reporting import (
     _fmt_flops,
     _gauge_bar_fragment,
     _select_top_over_budget,
-    build_human_context_renderable,
     render_agent_report,
     render_human_context_panels,
     render_human_header,
@@ -453,7 +452,6 @@ class _LiveTopPaneSession:
     ) -> None:
         self._pre_report = pre_report
         self._progress = Progress(
-            SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
             BarColumn(bar_width=None),
             MofNCompleteColumn(),
@@ -467,42 +465,57 @@ class _LiveTopPaneSession:
             "Scoring", total=total, start=False, visible=False
         )
         self._scoring_started = False
+        self._last_completed = {"generating": -1, "scoring": -1}
+        self._refresh_interval_s = 0.5
+        self._last_refresh_at = 0.0
         self._live = Live(
             self._renderable(),
             console=None,
-            refresh_per_second=8,
+            auto_refresh=False,
             transient=False,
         )
         self._prev_breakpointhook: Optional[Callable[..., Any]] = None
 
-    def _renderable(self) -> Group:
-        context = build_human_context_renderable(self._pre_report)
-        progress_panel = Panel(
+    def _renderable(self) -> Panel:
+        return Panel(
             self._progress,
             title="[bold bright_yellow]Progress[/]",
             border_style="bright_yellow",
         )
-        return Group(context, progress_panel)
+
+    def _refresh(self, *, force: bool = False) -> None:
+        now = time.monotonic()
+        if force or (now - self._last_refresh_at) >= self._refresh_interval_s:
+            self._last_refresh_at = now
+            self._live.refresh()
 
     def on_progress(self, event: Dict[str, Any]) -> None:
         phase = str(event.get("phase", "scoring"))
         completed = int(event.get("completed", 0))
+        if completed <= self._last_completed.get(phase, -1):
+            return
+        self._last_completed[phase] = completed
         total_value = event.get("total")
+        force_refresh = False
         if phase == "generating":
             total_update = int(total_value) if isinstance(total_value, int) else None
-            self._progress.update(self._gen_task_id, completed=completed, total=total_update)
+            self._progress.update(
+                self._gen_task_id,
+                completed=completed,
+                total=total_update,
+                refresh=False,
+            )
+            force_refresh = total_update is not None and completed >= total_update
         else:
             if not self._scoring_started:
                 self._progress.start_task(self._scoring_task_id)
-                self._progress.update(self._scoring_task_id, visible=True)
+                self._progress.update(self._scoring_task_id, visible=True, refresh=False)
                 self._scoring_started = True
-            self._progress.update(self._scoring_task_id, completed=completed)
-
-    def update_run_meta(self, run_meta: Dict[str, Any]) -> None:
-        current_meta = self._pre_report.get("run_meta")
-        if isinstance(current_meta, dict):
-            current_meta.update(run_meta)
-        self._live.update(self._renderable())
+                force_refresh = True
+            self._progress.update(self._scoring_task_id, completed=completed, refresh=False)
+            if isinstance(total_value, int) and completed >= total_value:
+                force_refresh = True
+        self._refresh(force=force_refresh)
 
     def start(self) -> None:
         # Capture the current breakpointhook at start-time so we compose with
@@ -521,7 +534,8 @@ class _LiveTopPaneSession:
             return prev(*args, **kwargs)
 
         sys.breakpointhook = _bphook
-        self._live.start()
+        self._live.start(refresh=True)
+        self._last_refresh_at = time.monotonic()
 
     def stop(self) -> None:
         self._live.stop()
@@ -603,7 +617,6 @@ def _progress_callback(
         return
 
     progress = Progress(
-        SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(bar_width=None),
         MofNCompleteColumn(),
@@ -613,29 +626,52 @@ def _progress_callback(
     # Scoring task starts hidden and unstarted — revealed on first scoring event.
     scoring_task_id = progress.add_task("Scoring", total=total, start=False, visible=False)
     scoring_started = {"flag": False}
+    state = {"generating": -1, "scoring": -1}
+    refresh_state = {"last_at": 0.0}
     live = Live(
         Panel(progress, title="[bold bright_yellow]Progress[/]", border_style="bright_yellow"),
         console=None,
-        refresh_per_second=8,
+        auto_refresh=False,
         transient=False,
     )
+
+    def _refresh(*, force: bool = False) -> None:
+        now = time.monotonic()
+        if force or (now - refresh_state["last_at"]) >= 0.5:
+            refresh_state["last_at"] = now
+            live.refresh()
 
     def _on_progress(event: Dict[str, Any]) -> None:
         phase = str(event.get("phase", "scoring"))
         completed = int(event.get("completed", 0))
+        if completed <= state.get(phase, -1):
+            return
+        state[phase] = completed
         total_value = event.get("total")
+        force_refresh = False
         if phase == "generating":
             total_update = int(total_value) if isinstance(total_value, int) else None
-            progress.update(gen_task_id, completed=completed, total=total_update)
+            progress.update(
+                gen_task_id,
+                completed=completed,
+                total=total_update,
+                refresh=False,
+            )
+            force_refresh = total_update is not None and completed >= total_update
         else:
             if not scoring_started["flag"]:
                 progress.start_task(scoring_task_id)
-                progress.update(scoring_task_id, visible=True)
+                progress.update(scoring_task_id, visible=True, refresh=False)
                 scoring_started["flag"] = True
-            progress.update(scoring_task_id, completed=completed)
+                force_refresh = True
+            progress.update(scoring_task_id, completed=completed, refresh=False)
+            if isinstance(total_value, int) and completed >= total_value:
+                force_refresh = True
+        _refresh(force=force_refresh)
 
     try:
-        live.start()
+        live.start(refresh=True)
+        refresh_state["last_at"] = time.monotonic()
         yield _on_progress
     finally:
         live.stop()
@@ -1402,16 +1438,17 @@ def _main_participant(argv: "list[str]") -> int:
                         score_kwargs["progress"] = progress_cb
                         report = _run_estimator_with_runner(runner, **score_kwargs)
                 else:
-                    _print_human_header_and_hints()
+                    _print_human_startup(
+                        pre_report,
+                        estimator_class=metadata.class_name,
+                        estimator_path=args.estimator,
+                    )
 
                     with _live_top_pane_session(
                         pre_report, total_units, n_mlps, gen_label=gen_label
                     ) as live_session:
                         score_kwargs["progress"] = live_session.on_progress
                         report = _run_estimator_with_runner(runner, **score_kwargs)
-                        run_meta = report.get("run_meta")
-                        if isinstance(run_meta, dict):
-                            live_session.update_run_meta(run_meta)
                 report["mode"] = "human"
                 if dataset_path is not None:
                     report.setdefault("run_config", {})["dataset"] = {
