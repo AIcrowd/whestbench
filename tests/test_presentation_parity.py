@@ -234,3 +234,42 @@ def test_run_rich_fallback_keeps_shared_run_epilogues_once(monkeypatch, capsys) 
         == 1
     )
     assert captured.out.count("Use --show-diagnostic-plots to include diagnostic plot panes.") == 1
+
+
+def test_run_rich_fallback_omits_diagnostic_plots_hint_when_already_enabled(
+    monkeypatch, capsys
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_a, **_k: _sample_run_report())
+    monkeypatch.setattr(cli, "_print_human_header_and_hints", lambda *_a, **_k: None)
+    monkeypatch.setattr(cli, "_live_top_pane_session", _fake_live_session, raising=True)
+
+    def _fail_render(*_args, **_kwargs):
+        raise RuntimeError("render failed")
+
+    monkeypatch.setattr(cli, "render_human_results", _fail_render, raising=False)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--show-diagnostic-plots",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Rich dashboard unavailable (render failed)" in captured.err
+    assert (
+        captured.out.count("Use --json for JSON output when calling from automated agents or UIs.")
+        == 1
+    )
+    assert "Use --show-diagnostic-plots to include diagnostic plot panes." not in captured.out
