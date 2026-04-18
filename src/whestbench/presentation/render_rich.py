@@ -32,7 +32,7 @@ def render_rich_presentation(doc: CommandPresentation) -> str:
 
     for message in doc.epilogue_messages:
         if message:
-            body.append(Text(message, no_wrap=True))
+            body.append(Text(message))
 
     console.print(Panel(Group(*body), title=escape(doc.title), subtitle=escape(doc.subtitle or "")))
     return buffer.getvalue()
