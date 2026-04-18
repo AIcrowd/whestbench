@@ -245,7 +245,7 @@ def build_visualizer_error_presentation(
             title="Failure Details",
             code=code,
             message=message,
-            details={"details": details} if details else {},
+            details={"stderr": details} if details else {},
         )
     ]
     if next_steps:
