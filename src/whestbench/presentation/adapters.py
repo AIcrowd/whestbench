@@ -199,6 +199,54 @@ def build_package_presentation(payload: dict[str, Any]) -> CommandPresentation:
     )
 
 
+def build_visualizer_ready_presentation(payload: dict[str, Any]) -> CommandPresentation:
+    host = str(payload.get("host") or "localhost")
+    port = payload.get("port")
+    port_text = str(port) if port not in {None, ""} else "5173"
+    url = str(payload.get("url") or "")
+    if not url:
+        browser_host = "localhost" if host == "0.0.0.0" else host
+        url = f"http://{browser_host}:{port_text}/"
+
+    epilogue_messages: list[str] = []
+    if payload.get("no_open"):
+        epilogue_messages.append("Browser auto-open disabled.")
+    if payload.get("ran_npm_ci"):
+        epilogue_messages.append("Dependencies were installed with npm ci before launch.")
+
+    return CommandPresentation(
+        command="visualizer",
+        status="success",
+        title="WhestBench Explorer",
+        sections=[
+            KeyValueSection(
+                title="Ready",
+                rows=[
+                    KeyValueRow("URL", url),
+                    KeyValueRow("Host", host),
+                    KeyValueRow("Port", port_text),
+                ],
+            )
+        ],
+        epilogue_messages=epilogue_messages,
+    )
+
+
+def build_visualizer_error_presentation(
+    title: str, message: str, *, details: str | None = None
+) -> CommandPresentation:
+    rows = [KeyValueRow("Message", message)]
+    if details:
+        rows.append(KeyValueRow("Details", details))
+
+    return CommandPresentation(
+        command="visualizer",
+        status="error",
+        title=title,
+        sections=[KeyValueSection(title="Failure", rows=rows)],
+    )
+
+
 def build_profile_presentation(payload: dict[str, Any]) -> CommandPresentation:
     hardware = payload.get("hardware")
     correctness = payload.get("correctness")

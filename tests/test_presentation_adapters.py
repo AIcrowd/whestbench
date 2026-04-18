@@ -7,6 +7,8 @@ from whestbench.presentation.adapters import (
     build_profile_presentation,
     build_smoke_test_presentation,
     build_validate_presentation,
+    build_visualizer_error_presentation,
+    build_visualizer_ready_presentation,
 )
 from whestbench.presentation.models import (
     ChecklistSection,
@@ -140,6 +142,54 @@ def test_build_package_presentation_includes_artifact_path() -> None:
     assert doc.status == "success"
     assert doc.title == "Packaged Submission"
     assert [(row.label, row.value) for row in artifact.rows] == [("Path", "/tmp/submission.tar.gz")]
+
+
+def test_build_visualizer_ready_presentation_contains_url() -> None:
+    doc = build_visualizer_ready_presentation(
+        {
+            "url": "http://127.0.0.1:4173/",
+            "host": "127.0.0.1",
+            "port": 4173,
+            "no_open": True,
+            "ran_npm_ci": True,
+        }
+    )
+
+    ready = next(
+        section
+        for section in doc.sections
+        if isinstance(section, KeyValueSection) and section.title == "Ready"
+    )
+
+    assert doc.command == "visualizer"
+    assert doc.status == "success"
+    assert doc.title == "WhestBench Explorer"
+    assert [(row.label, row.value) for row in ready.rows] == [
+        ("URL", "http://127.0.0.1:4173/"),
+        ("Host", "127.0.0.1"),
+        ("Port", "4173"),
+    ]
+    assert doc.epilogue_messages == [
+        "Browser auto-open disabled.",
+        "Dependencies were installed with npm ci before launch.",
+    ]
+
+
+def test_build_visualizer_error_presentation_wraps_message() -> None:
+    doc = build_visualizer_error_presentation("Missing Prerequisite", "node is not installed.")
+
+    failure = next(
+        section
+        for section in doc.sections
+        if isinstance(section, KeyValueSection) and section.title == "Failure"
+    )
+
+    assert doc.command == "visualizer"
+    assert doc.status == "error"
+    assert doc.title == "Missing Prerequisite"
+    assert [(row.label, row.value) for row in failure.rows] == [
+        ("Message", "node is not installed.")
+    ]
 
 
 def test_build_profile_presentation_includes_correctness_and_timing_rows() -> None:
