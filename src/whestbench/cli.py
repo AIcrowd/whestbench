@@ -487,7 +487,9 @@ class _LiveTopPaneSession:
         now = time.monotonic()
         if force or (now - self._last_refresh_at) >= self._refresh_interval_s:
             self._last_refresh_at = now
-            self._live.refresh()
+            refresh = getattr(self._live, "refresh", None)
+            if callable(refresh):
+                refresh()
 
     def on_progress(self, event: Dict[str, Any]) -> None:
         phase = str(event.get("phase", "scoring"))
@@ -540,7 +542,10 @@ class _LiveTopPaneSession:
             return prev(*args, **kwargs)
 
         sys.breakpointhook = _bphook
-        self._live.start(refresh=True)
+        self._live.start()
+        refresh = getattr(self._live, "refresh", None)
+        if callable(refresh):
+            refresh()
         self._last_refresh_at = time.monotonic()
 
     def stop(self) -> None:
@@ -645,7 +650,9 @@ def _progress_callback(
         now = time.monotonic()
         if force or (now - refresh_state["last_at"]) >= 0.5:
             refresh_state["last_at"] = now
-            live.refresh()
+            refresh = getattr(live, "refresh", None)
+            if callable(refresh):
+                refresh()
 
     def _on_progress(event: Dict[str, Any]) -> None:
         phase = str(event.get("phase", "scoring"))
@@ -676,7 +683,10 @@ def _progress_callback(
         _refresh(force=force_refresh)
 
     try:
-        live.start(refresh=True)
+        live.start()
+        refresh = getattr(live, "refresh", None)
+        if callable(refresh):
+            refresh()
         refresh_state["last_at"] = time.monotonic()
         yield _on_progress
     finally:
