@@ -141,3 +141,32 @@ def test_renderers_curate_known_error_details_and_keep_unknown_ones() -> None:
     ):
         assert text in plain
         assert text in rich
+
+
+def test_renderers_do_not_crash_on_array_like_error_detail_values() -> None:
+    class _ArrayLikeDetail:
+        def __eq__(self, _other: object) -> bool:
+            raise ValueError("ambiguous truth value")
+
+        def __str__(self) -> str:
+            return "array([1, 2])"
+
+    doc = CommandPresentation(
+        command="validate",
+        status="error",
+        title="Error [validate:ESTIMATOR_BAD_SHAPE]",
+        sections=[
+            ErrorSection(
+                title="Failure",
+                code="ESTIMATOR_BAD_SHAPE",
+                message="bad shape",
+                details={"got_shape": _ArrayLikeDetail()},
+            )
+        ],
+    )
+
+    plain = render_plain_presentation(doc)
+    rich = _strip_ansi(render_rich_presentation(doc))
+
+    assert "Got shape: array([1, 2])" in plain
+    assert "Got shape: array([1, 2])" in rich
