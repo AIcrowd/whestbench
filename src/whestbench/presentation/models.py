@@ -21,6 +21,13 @@ class KeyValueSection:
 
 
 @dataclass(frozen=True)
+class TableSection:
+    title: str
+    columns: list[str]
+    rows: list[list[str]]
+
+
+@dataclass(frozen=True)
 class StepItem:
     purpose: str
     command: str
@@ -104,7 +111,7 @@ class CommandPresentation:
     status: PresentationStatus
     title: str
     subtitle: str | None = None
-    sections: list[KeyValueSection | StepsSection | ChecklistSection | ErrorSection] = field(
-        default_factory=list
-    )
+    sections: list[
+        KeyValueSection | TableSection | StepsSection | ChecklistSection | ErrorSection
+    ] = field(default_factory=list)
     epilogue_messages: list[str] = field(default_factory=list)

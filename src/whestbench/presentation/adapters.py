@@ -11,6 +11,7 @@ from .models import (
     KeyValueSection,
     StepItem,
     StepsSection,
+    TableSection,
 )
 
 _JSON_OUTPUT_TIP = "Use --json for JSON output when calling from automated agents or UIs."
@@ -195,6 +196,84 @@ def build_package_presentation(payload: dict[str, Any]) -> CommandPresentation:
                 rows=[KeyValueRow("Path", _display_value(payload.get("artifact_path")))],
             )
         ],
+    )
+
+
+def build_profile_presentation(payload: dict[str, Any]) -> CommandPresentation:
+    hardware = payload.get("hardware")
+    correctness = payload.get("correctness")
+    timing = payload.get("timing")
+    verbose = bool(payload.get("verbose"))
+
+    sections: list[KeyValueSection | TableSection] = []
+
+    hardware_rows: list[KeyValueRow] = []
+    if isinstance(hardware, dict):
+        for key, label in (
+            ("os", "OS"),
+            ("machine", "Architecture"),
+            ("cpu_count_physical", "Physical Cores"),
+            ("cpu_count_logical", "Logical Cores"),
+            ("ram_total_bytes", "RAM"),
+            ("python_version", "Python"),
+            ("numpy_version", "NumPy"),
+        ):
+            value = hardware.get(key)
+            if value is None:
+                continue
+            if key == "ram_total_bytes":
+                value = f"{float(value) / (1024**3):.1f} GB"
+            hardware_rows.append(KeyValueRow(label, str(value)))
+    if hardware_rows:
+        sections.append(KeyValueSection(title="Hardware", rows=hardware_rows))
+
+    correctness_rows: list[KeyValueRow] = []
+    passed_any = False
+    if isinstance(correctness, list):
+        for item in correctness:
+            if not isinstance(item, dict):
+                continue
+            passed = bool(item.get("passed"))
+            passed_any = passed_any or passed
+            correctness_rows.append(
+                KeyValueRow(
+                    str(item.get("backend", "")),
+                    "PASS" if passed else str(item.get("error") or "FAIL"),
+                )
+            )
+    if correctness_rows:
+        sections.append(KeyValueSection(title="Correctness", rows=correctness_rows))
+
+    detail_rows: list[list[str]] = []
+    if isinstance(timing, list):
+        for row in timing:
+            if not isinstance(row, dict):
+                continue
+            detail_rows.append(
+                [
+                    str(row.get("backend", "")),
+                    str(row.get("dims", "")),
+                    str(row.get("run_mlp", "")),
+                    str(row.get("sample_layer_statistics", "")),
+                ]
+            )
+    if detail_rows:
+        sections.append(
+            TableSection(
+                title="Detail",
+                columns=["Backend", "Dims", "run_mlp", "sample_layer_statistics"],
+                rows=detail_rows,
+            )
+        )
+
+    return CommandPresentation(
+        command="profile-simulation",
+        status="success" if passed_any else "error",
+        title="Simulation Profile",
+        sections=sections,
+        epilogue_messages=[]
+        if verbose
+        else ["Use --verbose for full timing tables with raw times"],
     )
 
 

@@ -4,10 +4,17 @@ from whestbench.presentation.adapters import (
     build_create_dataset_presentation,
     build_init_presentation,
     build_package_presentation,
+    build_profile_presentation,
     build_smoke_test_presentation,
     build_validate_presentation,
 )
-from whestbench.presentation.models import ChecklistSection, KeyValueSection, StepItem, StepsSection
+from whestbench.presentation.models import (
+    ChecklistSection,
+    KeyValueSection,
+    StepItem,
+    StepsSection,
+    TableSection,
+)
 
 
 def test_build_smoke_test_presentation_includes_structured_next_steps() -> None:
@@ -133,3 +140,32 @@ def test_build_package_presentation_includes_artifact_path() -> None:
     assert doc.status == "success"
     assert doc.title == "Packaged Submission"
     assert [(row.label, row.value) for row in artifact.rows] == [("Path", "/tmp/submission.tar.gz")]
+
+
+def test_build_profile_presentation_includes_correctness_and_timing_rows() -> None:
+    doc = build_profile_presentation(
+        {
+            "hardware": {"os": "Darwin", "machine": "arm64", "python_version": "3.14.3"},
+            "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+            "timing": [
+                {
+                    "backend": "whest",
+                    "dims": "256×4×10k",
+                    "run_mlp": "0.0444s",
+                    "sample_layer_statistics": "0.1135s",
+                }
+            ],
+            "verbose": False,
+        }
+    )
+
+    assert doc.title == "Simulation Profile"
+    assert any(section.title == "Correctness" for section in doc.sections)
+
+    detail = next(
+        section
+        for section in doc.sections
+        if isinstance(section, TableSection) and section.title == "Detail"
+    )
+    assert detail.columns == ["Backend", "Dims", "run_mlp", "sample_layer_statistics"]
+    assert detail.rows == [["whest", "256×4×10k", "0.0444s", "0.1135s"]]
