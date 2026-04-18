@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 PresentationStatus = Literal["success", "warning", "error"]
+ChecklistStatus = Literal["ok", "warn", "fail"]
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,19 @@ class StepItem:
 class StepsSection:
     title: str
     steps: list[str | StepItem]
+
+
+@dataclass(frozen=True)
+class ChecklistItem:
+    label: str
+    status: ChecklistStatus
+    detail: str
+
+
+@dataclass(frozen=True)
+class ChecklistSection:
+    title: str
+    items: list[ChecklistItem]
 
 
 @dataclass(frozen=True)
@@ -90,5 +104,7 @@ class CommandPresentation:
     status: PresentationStatus
     title: str
     subtitle: str | None = None
-    sections: list[KeyValueSection | StepsSection | ErrorSection] = field(default_factory=list)
+    sections: list[KeyValueSection | StepsSection | ChecklistSection | ErrorSection] = field(
+        default_factory=list
+    )
     epilogue_messages: list[str] = field(default_factory=list)

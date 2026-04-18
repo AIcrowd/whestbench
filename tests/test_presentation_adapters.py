@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from whestbench.presentation.adapters import build_smoke_test_presentation
-from whestbench.presentation.models import StepItem, StepsSection
+from whestbench.presentation.adapters import (
+    build_smoke_test_presentation,
+    build_validate_presentation,
+)
+from whestbench.presentation.models import ChecklistSection, StepItem, StepsSection
 
 
 def test_build_smoke_test_presentation_includes_structured_next_steps() -> None:
@@ -33,4 +36,33 @@ def test_build_smoke_test_presentation_includes_structured_next_steps() -> None:
             "Build submission artifacts for AIcrowd.",
             "whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
         ),
+    ]
+
+
+def test_build_validate_presentation_includes_structured_checklist() -> None:
+    doc = build_validate_presentation(
+        {
+            "ok": True,
+            "class_name": "Estimator",
+            "module_name": "_submission",
+            "output_shape": [2, 4],
+            "checks": [
+                {"name": "class resolved", "status": "ok", "detail": "Estimator"},
+                {"name": "predict() returned shape", "status": "ok", "detail": "(2, 4)"},
+            ],
+        }
+    )
+
+    checklist = next(
+        section
+        for section in doc.sections
+        if isinstance(section, ChecklistSection) and section.title == "Checks"
+    )
+
+    assert doc.command == "validate"
+    assert doc.status == "success"
+    assert doc.title == "Validation"
+    assert [(item.label, item.status, item.detail) for item in checklist.items] == [
+        ("class resolved", "ok", "Estimator"),
+        ("predict() returned shape", "ok", "(2, 4)"),
     ]
