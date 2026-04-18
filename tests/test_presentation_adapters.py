@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from whestbench.presentation.adapters import (
+    build_create_dataset_presentation,
+    build_init_presentation,
+    build_package_presentation,
     build_smoke_test_presentation,
     build_validate_presentation,
 )
-from whestbench.presentation.models import ChecklistSection, StepItem, StepsSection
+from whestbench.presentation.models import ChecklistSection, KeyValueSection, StepItem, StepsSection
 
 
 def test_build_smoke_test_presentation_includes_structured_next_steps() -> None:
@@ -66,3 +69,67 @@ def test_build_validate_presentation_includes_structured_checklist() -> None:
         ("class resolved", "ok", "Estimator"),
         ("predict() returned shape", "ok", "(2, 4)"),
     ]
+
+
+def test_build_init_presentation_includes_created_files() -> None:
+    doc = build_init_presentation(
+        {"ok": True, "created": ["/tmp/demo/estimator.py", "/tmp/demo/requirements.txt"]}
+    )
+
+    created_files = next(
+        section
+        for section in doc.sections
+        if isinstance(section, StepsSection) and section.title == "Created Files"
+    )
+
+    assert doc.command == "init"
+    assert doc.status == "success"
+    assert doc.title == "Starter Files"
+    assert list(created_files.steps) == ["/tmp/demo/estimator.py", "/tmp/demo/requirements.txt"]
+
+
+def test_build_init_presentation_includes_noop_status_when_no_files_created() -> None:
+    doc = build_init_presentation({"ok": True, "created": []})
+
+    status = next(
+        section
+        for section in doc.sections
+        if isinstance(section, KeyValueSection) and section.title == "Status"
+    )
+
+    assert doc.command == "init"
+    assert doc.status == "success"
+    assert doc.title == "Starter Files"
+    assert [(row.label, row.value) for row in status.rows] == [
+        ("Message", "Starter files already exist; nothing created.")
+    ]
+
+
+def test_build_create_dataset_presentation_includes_dataset_path() -> None:
+    doc = build_create_dataset_presentation({"ok": True, "path": "/tmp/eval_dataset.npz"})
+
+    dataset = next(
+        section
+        for section in doc.sections
+        if isinstance(section, KeyValueSection) and section.title == "Dataset"
+    )
+
+    assert doc.command == "create-dataset"
+    assert doc.status == "success"
+    assert doc.title == "Dataset Created"
+    assert [(row.label, row.value) for row in dataset.rows] == [("Path", "/tmp/eval_dataset.npz")]
+
+
+def test_build_package_presentation_includes_artifact_path() -> None:
+    doc = build_package_presentation({"ok": True, "artifact_path": "/tmp/submission.tar.gz"})
+
+    artifact = next(
+        section
+        for section in doc.sections
+        if isinstance(section, KeyValueSection) and section.title == "Artifact"
+    )
+
+    assert doc.command == "package"
+    assert doc.status == "success"
+    assert doc.title == "Packaged Submission"
+    assert [(row.label, row.value) for row in artifact.rows] == [("Path", "/tmp/submission.tar.gz")]
