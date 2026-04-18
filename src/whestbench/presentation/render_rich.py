@@ -64,9 +64,9 @@ def render_rich_presentation(doc: CommandPresentation) -> str:
         elif isinstance(section, TableSection):
             table = Table(show_header=True)
             for column in section.columns:
-                table.add_column(column)
+                table.add_column(Text(column))
             for row in section.rows:
-                table.add_row(*row)
+                table.add_row(*(Text(cell) for cell in row))
             body.append(Panel(table, title=escape(section.title)))
         elif isinstance(section, StepsSection):
             body.append(
