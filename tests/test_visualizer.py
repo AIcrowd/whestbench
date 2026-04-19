@@ -278,6 +278,42 @@ def test_run_visualizer_retries_with_npm_ci_on_dev_server_failure(tmp_path, monk
     assert sum(1 for s in cmd_strings if "dev" in s) == 2
 
 
+def test_run_visualizer_prints_ready_state_summary(
+    tmp_path, monkeypatch, capsys: pytest.CaptureFixture[str]
+):
+    explorer = _make_fake_explorer(tmp_path, with_node_modules=True)
+
+    class ReadyProcess(FakeProcess):
+        def __init__(self) -> None:
+            super().__init__(returncode=0)
+            self.stdout = iter(
+                [
+                    "  VITE v7.3.1  ready in 728 ms\n",
+                    "  ➜  Local:   http://127.0.0.1:4173/\n",
+                ]
+            )
+
+    monkeypatch.setattr(viz_mod, "find_explorer_dir", lambda **kw: explorer)
+    monkeypatch.setattr(viz_mod, "check_node_available", lambda: None)
+    monkeypatch.setattr(viz_mod, "check_node_version", lambda: None)
+    monkeypatch.setattr(viz_mod.subprocess, "Popen", lambda *_a, **_k: ReadyProcess())
+    monkeypatch.setattr(viz_mod, "is_headless", lambda: True)
+
+    result = run_visualizer(host="127.0.0.1", port=4173, no_open=True, debug=False)
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "WhestBench Explorer" in captured.out
+    assert "Ready" in captured.out
+    assert "http://127.0.0.1:4173/" in captured.out
+    assert "Host" in captured.out
+    assert "127.0.0.1" in captured.out
+    assert "Port" in captured.out
+    assert "4173" in captured.out
+    assert "Browser auto-open disabled." in captured.out
+    assert "\x1b[" not in captured.out
+
+
 def test_run_visualizer_returns_1_when_npm_ci_fails(tmp_path, monkeypatch):
     explorer = _make_fake_explorer(tmp_path, with_node_modules=False)
 
@@ -294,7 +330,7 @@ def test_run_visualizer_returns_1_when_npm_ci_fails(tmp_path, monkeypatch):
     assert result == 1
 
 
-def test_run_visualizer_returns_1_when_explorer_not_found(monkeypatch):
+def test_run_visualizer_returns_1_when_explorer_not_found(monkeypatch, capsys):
     monkeypatch.setattr(viz_mod, "check_node_available", lambda: None)
     monkeypatch.setattr(viz_mod, "check_node_version", lambda: None)
 
@@ -304,17 +340,106 @@ def test_run_visualizer_returns_1_when_explorer_not_found(monkeypatch):
     monkeypatch.setattr(viz_mod, "find_explorer_dir", raise_not_found)
 
     result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
+    captured = capsys.readouterr()
     assert result == 1
+    assert "Explorer Not Found" in captured.err
+    assert "source checkout" in captured.err
+    assert "the repository" in captured.err
 
 
-def test_run_visualizer_returns_1_when_node_missing(monkeypatch):
+def test_run_visualizer_returns_1_when_node_missing(monkeypatch, capsys):
     def raise_not_found():
         raise NodeNotFoundError("node")
 
     monkeypatch.setattr(viz_mod, "check_node_available", raise_not_found)
 
     result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
+    captured = capsys.readouterr()
     assert result == 1
+    assert "Missing Prerequisite" in captured.err
+    assert "node" in captured.err
+    assert "brew install node" in captured.err
+    assert "sudo apt install nodejs npm" in captured.err
+    assert "nodejs.org/en/download" in captured.err
+    assert "\x1b[" not in captured.err
+
+
+def test_run_visualizer_missing_node_uses_shared_presenter_path(monkeypatch, capsys):
+    observed: dict[str, object] = {}
+
+    def fake_render_command_presentation(doc, *, output_format, force_terminal, **_kwargs):
+        observed["title"] = doc.title
+        observed["output_format"] = output_format
+        observed["force_terminal"] = force_terminal
+        return "shared visualizer error\n"
+
+    monkeypatch.setattr(viz_mod, "render_command_presentation", fake_render_command_presentation)
+
+    def raise_not_found():
+        raise NodeNotFoundError("node")
+
+    monkeypatch.setattr(viz_mod, "check_node_available", raise_not_found)
+
+    result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert captured.err == "shared visualizer error\n"
+    assert observed == {
+        "title": "Missing Prerequisite",
+        "output_format": "plain",
+        "force_terminal": False,
+    }
+
+
+def test_run_visualizer_returns_1_when_node_version_too_old(monkeypatch, capsys):
+    monkeypatch.setattr(viz_mod, "check_node_available", lambda: None)
+
+    def raise_old_version():
+        raise NodeVersionError("v16.20.0")
+
+    monkeypatch.setattr(viz_mod, "check_node_version", raise_old_version)
+
+    result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert "Node.js Version Too Old" in captured.err
+    assert "v16.20.0" in captured.err
+    assert "brew upgrade node" in captured.err
+    assert "sudo apt install nodejs npm" in captured.err
+    assert "nvm" in captured.err
+
+
+def test_run_visualizer_reports_retry_before_reinstalling_dependencies(
+    tmp_path, monkeypatch, capsys: pytest.CaptureFixture[str]
+):
+    explorer = _make_fake_explorer(tmp_path, with_node_modules=True)
+    calls: list[list[str]] = []
+    dev_call_count = 0
+
+    def fake_run(cmd, **kwargs):
+        calls.append(list(cmd))
+        return type("R", (), {"returncode": 0, "stdout": "", "stderr": ""})()
+
+    def fake_popen(cmd, **kwargs):
+        nonlocal dev_call_count
+        calls.append(list(cmd))
+        dev_call_count += 1
+        return FakeProcess(returncode=1 if dev_call_count == 1 else 0)
+
+    monkeypatch.setattr(viz_mod, "find_explorer_dir", lambda **kw: explorer)
+    monkeypatch.setattr(viz_mod, "check_node_available", lambda: None)
+    monkeypatch.setattr(viz_mod, "check_node_version", lambda: None)
+    monkeypatch.setattr(viz_mod.subprocess, "run", fake_run)
+    monkeypatch.setattr(viz_mod.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(viz_mod, "is_headless", lambda: True)
+
+    result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Retrying after reinstalling dependencies" in captured.err
 
 
 # --- CLI dispatch tests ---

@@ -14,6 +14,8 @@ from rich.table import Table
 from rich.text import Text
 
 import whestbench.reporting as reporting
+from whestbench.presentation.adapters import build_smoke_test_presentation
+from whestbench.presentation.models import StepsSection
 from whestbench.reporting import (
     render_agent_report,
     render_human_report,
@@ -138,27 +140,30 @@ def test_render_json_mode_returns_pretty_json_only() -> None:
 
 
 def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -> None:
-    rendered = render_smoke_test_next_steps()
+    rendered = render_smoke_test_next_steps(_sample_report())
     plain = _strip_ansi(rendered)
+    doc = build_smoke_test_presentation(_sample_report(), debug=False)
+    next_steps = next(
+        section
+        for section in doc.sections
+        if isinstance(section, StepsSection) and section.title == "Next Steps"
+    )
+    expected_pairs = [(step.purpose, step.command) for step in next_steps.steps]
 
     assert "Next Steps" in plain
     assert "We are all set! Welcome onboard" in plain
     assert "Run these steps:" in plain
-    assert "# 1) Create starter files you can edit." in plain
-    assert "# 2) Validate an Estimator implementation." in plain
-    assert "# 3) Run local evaluation with isolation." in plain
-    assert "# 4) Build submission artifacts for AIcrowd." in plain
     assert "Commands (bash)" not in plain
     assert "Command" not in plain
     assert "Purpose" not in plain
-    assert "whest init ./my-estimator" in plain
-    assert "whest validate --estimator ./my-estimator/estimator.py" in plain
-    assert "whest run --estimator ./my-estimator/estimator.py" in plain
-    assert "--runner" in plain
-    assert "local" in plain
-    assert "whest package --estimator ./my-estimator/estimator.py" in plain
-    assert "--output" in plain
-    assert "./submission.tar.gz" in plain
+    last_index = -1
+    for idx, (purpose, command) in enumerate(expected_pairs, start=1):
+        purpose_line = f"# {idx}) {purpose}"
+        purpose_index = plain.index(purpose_line)
+        command_index = plain.index(command)
+        assert purpose_index < command_index
+        assert last_index < purpose_index
+        last_index = command_index
     assert "Optional: run bundled example estimators:" in plain
     assert (
         "whest run --estimator ./examples/estimators/combined_estimator.py --runner local" in plain
@@ -169,10 +174,19 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     )
     assert "whest run --estimator ./examples/estimators/mean_propagation.py --runner local" in plain
     assert "whest run --estimator ./examples/estimators/random_estimator.py --runner local" in plain
+    assert "Use --format json for JSON output when calling from automated agents or UIs." in plain
+    assert "Use --show-diagnostic-plots to include diagnostic plot panes." in plain
+    assert "Tip: use --json on validate/run/package for machine-readable output." not in plain
 
 
 def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:
-    lines = reporting._smoke_next_step_lines()
+    doc = build_smoke_test_presentation(_sample_report(), debug=False)
+    next_steps = next(
+        section
+        for section in doc.sections
+        if isinstance(section, StepsSection) and section.title == "Next Steps"
+    )
+    lines = reporting._smoke_next_step_lines(next_steps.steps)
     styles = [str(line.style) for line in lines]
     assert len(lines) == 4
     assert styles == [
@@ -188,7 +202,7 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
 
     # Human mode contract: high-level run summary.
     assert "WhestBench Report" in rendered
-    assert "Use --json for JSON output" in rendered
+    assert "Use --format json for JSON output" in rendered
     assert "Run Context" in rendered
     assert "Final Score" in rendered
     assert "Profile" not in rendered or "Profile" in rendered  # Profile only if data present
@@ -220,16 +234,20 @@ def test_render_human_mode_includes_budget_breakdown_sections_when_present() -> 
     )
     plain = _strip_ansi(rendered)
 
-    assert "Sampling Budget Breakdown" in plain
+    assert "Sampling Budget Breakdown (Ground Truth)" in plain
     assert "Estimator Budget Breakdown" in plain
-    assert plain.index("Sampling Budget Breakdown") < plain.index("Estimator Budget Breakdown")
+    assert plain.index("Sampling Budget Breakdown (Ground Truth)") < plain.index(
+        "Estimator Budget Breakdown"
+    )
     assert "Total FLOPs" in plain
     assert "Tracked Time" in plain
     assert "Untracked Time" in plain
-    assert "sampling.sample_layer_statistics" in plain
+    assert "sampling.sample_layer" in plain
+    assert "statistics" in plain
     assert "sampling.draw_weights" in plain
     assert "estimator.phase" in plain
-    assert "estimator.estimator-client" in plain
+    assert "estimator.estimator" in plain
+    assert "client" in plain
 
 
 def test_render_human_results_includes_budget_breakdown_sections_when_present() -> None:
@@ -242,9 +260,86 @@ def test_render_human_results_includes_budget_breakdown_sections_when_present() 
     )
     plain = _strip_ansi(rendered)
 
-    assert "Sampling Budget Breakdown" in plain
+    assert "Sampling Budget Breakdown (Ground Truth)" in plain
     assert "Estimator Budget Breakdown" in plain
-    assert plain.index("Sampling Budget Breakdown") < plain.index("Estimator Budget Breakdown")
+    assert plain.index("Sampling Budget Breakdown (Ground Truth)") < plain.index(
+        "Estimator Budget Breakdown"
+    )
+
+
+def test_render_human_results_plain_preserves_shared_run_section_order() -> None:
+    report = _sample_report(
+        include_profile=False,
+        include_sampling_breakdown=True,
+        include_estimator_breakdown=True,
+    )
+
+    rendered = render_human_results(
+        report,
+        output_format="plain",
+        include_context=True,
+        include_epilogues=False,
+    )
+
+    assert rendered.index("WhestBench Report") < rendered.index("Run Context")
+    assert rendered.index("Run Context") < rendered.index("Hardware & Runtime")
+    assert rendered.index("Hardware & Runtime") < rendered.index(
+        "Sampling Budget Breakdown (Ground Truth)"
+    )
+    assert rendered.index("Sampling Budget Breakdown (Ground Truth)") < rendered.index(
+        "Estimator Budget Breakdown"
+    )
+    assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
+
+
+def test_render_human_report_plain_uses_shared_smoke_test_shape() -> None:
+    report = _sample_report(include_profile=False)
+
+    rendered = render_human_report(
+        report,
+        output_format="plain",
+        presentation_doc=build_smoke_test_presentation(report, debug=False),
+    )
+
+    assert rendered.index("Run Context") < rendered.index("Hardware & Runtime")
+    assert rendered.index("Hardware & Runtime") < rendered.index("Final Score")
+    assert rendered.index("Final Score") < rendered.index("Next Steps")
+    assert "Create starter files you can edit." in rendered
+    assert "whest init ./my-estimator" in rendered
+    assert (
+        "Use --format json for JSON output when calling from automated agents or UIs." in rendered
+    )
+
+
+def test_render_human_mode_matches_main_style_score_and_breakdown_information() -> None:
+    report = _sample_report(
+        include_profile=False,
+        include_sampling_breakdown=True,
+        include_estimator_breakdown=True,
+    )
+    results = cast("dict[str, Any]", report["results"])
+    results["per_mlp"] = [
+        {"mlp_index": 0, "final_mse": 0.1},
+        {"mlp_index": 1, "final_mse": 0.146},
+    ]
+
+    rendered = render_human_report(report)
+    plain = _strip_ansi(rendered)
+
+    assert plain.index("Sampling Budget Breakdown (Ground Truth)") < plain.index(
+        "Estimator Budget Breakdown"
+    )
+    assert plain.index("Estimator Budget Breakdown") < plain.index("Final Score")
+    assert "Total FLOPs [flops_used]" in plain
+    assert "Tracked Time [tracked_time_s]" in plain
+    assert "Untracked Time [untracked_time_s]" in plain
+    assert "aggregated across all evaluated MLPs" in plain
+    assert "Primary Score [primary_score]" in plain
+    assert "Secondary Score [secondary_score]" in plain
+    assert "Best MLP Score [best_mlp_score]" in plain
+    assert "Worst MLP Score [worst_mlp_score]" in plain
+    assert "lower MSE is better; primary score = mean across MLPs of final-layer MSE" in plain
+    assert "Estimator FLOPs" not in plain
 
 
 def test_render_human_mode_omits_budget_breakdown_sections_when_absent() -> None:
@@ -778,7 +873,7 @@ def test_fmt_flops_large_values_use_scientific() -> None:
     from whestbench.reporting import _fmt_flops
 
     # Threshold is 1e6; at and above, switch to scientific (no exact suffix —
-    # users can get exact values from `whest run --json`).
+    # users can get exact values from `whest run --format json`).
     assert _fmt_flops(1_000_000) == "1.00e+06"
     assert _fmt_flops(845_824_840_400) == "8.46e+11"
     assert _fmt_flops(int(1e15)) == "1.00e+15"

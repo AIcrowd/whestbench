@@ -75,22 +75,49 @@ def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
 
+    original_render = cli.render_human_report
+
     def fail_render(*_args, **_kwargs):
+        if _kwargs.get("output_format", "rich") == "plain":
+            return original_render(*_args, **_kwargs)
         raise RuntimeError("rich boom")
 
     monkeypatch.setattr(
         cli,
         "render_human_report",
         fail_render,
+        raising=False,
     )
 
-    exit_code = cli.main(["smoke-test"])
+    exit_code = cli.main(["smoke-test", "--format", "rich"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert "Rich dashboard unavailable (rich boom)" in captured.err
-    assert "WhestBench Report (Plain Text)" in captured.out
-    assert "Primary Score: 0.42" in captured.out
+    assert "WhestBench Report" in captured.out
+    assert "Primary Score [primary_score]" in captured.out
+    assert "0.42000000" in captured.out
+
+
+def test_smoke_test_plain_output_includes_next_steps_and_json_tip(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        cli,
+        "run_default_report",
+        lambda **_kwargs: _sample_report(),
+    )
+
+    exit_code = cli.main(["smoke-test", "--format", "plain"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Next Steps" in captured.out
+    assert "Create starter files you can edit." in captured.out
+    assert "whest init ./my-estimator" in captured.out
+    assert (
+        "Use --format json for JSON output when calling from automated agents or UIs."
+        in captured.out
+    )
+    assert "Use --show-diagnostic-plots to include diagnostic plot panes." in captured.out
 
 
 def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
@@ -105,6 +132,25 @@ def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
     monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_a, **_k: _sample_report())
     monkeypatch.setattr(
         cli,
+        "_pre_run_report",
+        lambda **_kwargs: {
+            "run_meta": {
+                "run_started_at_utc": "2026-03-01T00:00:00+00:00",
+                "host": {"hostname": "example-host", "os": "Darwin", "python_version": "3.13.7"},
+            },
+            "run_config": {
+                "estimator_class": "Estimator",
+                "estimator_path": "estimator.py",
+                "n_mlps": 2,
+                "width": 4,
+                "depth": 3,
+                "flop_budget": 40000,
+            },
+        },
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
         "_print_human_startup",
         lambda *_a, **_k: None,
         raising=False,
@@ -116,34 +162,214 @@ def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
         raising=False,
     )
 
+    original_render = cli.render_human_results
+
     def fail_render(*_args, **_kwargs):
+        if _kwargs.get("output_format", "rich") == "plain":
+            return original_render(*_args, **_kwargs)
         raise RuntimeError("render failed")
 
     monkeypatch.setattr(cli, "render_human_results", fail_render, raising=False)
 
-    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    exit_code = cli.main(
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--format", "rich"]
+    )
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert "Rich dashboard unavailable (render failed)" in captured.err
-    assert "WhestBench Report (Plain Text)" in captured.out
+    assert "WhestBench Report" in captured.out
+    assert "Final Score" in captured.out
+    assert "Primary Score [primary_score]" in captured.out
+    assert "0.42000000" in captured.out
+
+
+def test_participant_run_rich_fallback_does_not_duplicate_pre_run_context(
+    monkeypatch, capsys
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_a, **_k: _sample_report())
+    monkeypatch.setattr(
+        cli,
+        "_pre_run_report",
+        lambda **_kwargs: {
+            "run_meta": {
+                "run_started_at_utc": "2026-03-01T00:00:00+00:00",
+                "host": {"hostname": "example-host", "os": "Darwin", "python_version": "3.13.7"},
+            },
+            "run_config": {
+                "estimator_class": "Estimator",
+                "estimator_path": "estimator.py",
+                "n_mlps": 2,
+                "width": 4,
+                "depth": 3,
+                "flop_budget": 40000,
+            },
+        },
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
+        "_print_human_startup",
+        lambda *_a, **_k: print("Run Context"),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        cli,
+        "_progress_callback",
+        _noop_progress,
+        raising=False,
+    )
+
+    original_render = cli.render_human_results
+
+    def fail_render(*_args, **_kwargs):
+        if _kwargs.get("output_format", "rich") == "plain":
+            return original_render(*_args, **_kwargs)
+        raise RuntimeError("render failed")
+
+    monkeypatch.setattr(cli, "render_human_results", fail_render, raising=False)
+    monkeypatch.setattr(cli, "rich_tqdm", None, raising=False)
+
+    exit_code = cli.main(
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--format", "rich"]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.out.count("Run Context") == 1
+
+
+def test_participant_run_plain_preserves_pre_run_context(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_a, **_k: _sample_report())
+    monkeypatch.setattr(
+        cli,
+        "_pre_run_report",
+        lambda **_kwargs: {
+            "run_meta": {
+                "run_started_at_utc": "2026-03-01T00:00:00+00:00",
+                "host": {"hostname": "example-host", "os": "Darwin", "python_version": "3.13.7"},
+            },
+            "run_config": {
+                "estimator_class": "Estimator",
+                "estimator_path": "estimator.py",
+                "n_mlps": 2,
+                "width": 4,
+                "depth": 3,
+                "flop_budget": 40000,
+            },
+        },
+        raising=False,
+    )
+
+    exit_code = cli.main(
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--format", "plain"]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "WhestBench Report" in captured.out
+    assert "Estimator Class [estimator_class]" in captured.out
+    assert "Estimator" in captured.out
+    assert "Estimator Path [estimator_path]" in captured.out
+    assert "estimator.py" in captured.out
+    assert "Host [host.hostname]" in captured.out
+    assert "example-host" in captured.out
 
 
 def test_render_plain_text_report_includes_breakdown_sections_and_summary() -> None:
     rendered = cli._render_plain_text_report(_sample_report())
 
-    assert "Sampling Budget Breakdown:" in rendered
-    assert "Estimator Budget Breakdown:" in rendered
-    assert rendered.index("Sampling Budget Breakdown:") < rendered.index(
-        "Estimator Budget Breakdown:"
+    assert "Sampling Budget Breakdown (Ground Truth)" in rendered
+    assert "Estimator Budget Breakdown" in rendered
+    assert rendered.index("Sampling Budget Breakdown (Ground Truth)") < rendered.index(
+        "Estimator Budget Breakdown"
     )
-    assert "Total FLOPs: 60" in rendered
-    assert "Tracked Time: 0.015000s" in rendered
-    assert "Untracked Time: 0.005000s" in rendered
+    assert "Total FLOPs [flops_used]" in rendered
+    assert "60" in rendered
+    assert "Tracked Time [tracked_time_s]" in rendered
+    assert "0.015000s" in rendered
+    assert "Untracked Time [untracked_time_s]" in rendered
+    assert "0.005000s" in rendered
     assert "sampling.sample_layer_statistics" in rendered
     assert "sampling.draw_weights" in rendered
     assert "estimator.phase" in rendered
     assert "estimator.estimator-client" in rendered
+    assert "aggregated across all evaluated MLPs" in rendered
+
+
+def test_render_plain_text_report_matches_main_style_score_and_breakdown_information() -> None:
+    report = _sample_report()
+    report["results"]["per_mlp"] = [
+        {"mlp_index": 0, "final_mse": 0.4},
+        {"mlp_index": 1, "final_mse": 0.44},
+    ]
+
+    rendered = cli._render_plain_text_report(report)
+
+    assert rendered.index("Sampling Budget Breakdown (Ground Truth)") < rendered.index(
+        "Estimator Budget Breakdown"
+    )
+    assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
+    assert "Total FLOPs [flops_used]" in rendered
+    assert "Tracked Time [tracked_time_s]" in rendered
+    assert "Untracked Time [untracked_time_s]" in rendered
+    assert "aggregated across all evaluated MLPs" in rendered
+    assert "Primary Score [primary_score]" in rendered
+    assert "Secondary Score [secondary_score]" in rendered
+    assert "Best MLP Score [best_mlp_score]" in rendered
+    assert "Worst MLP Score [worst_mlp_score]" in rendered
+    assert "Estimator FLOPs" not in rendered
+
+
+def test_render_plain_text_report_includes_run_context_and_hardware_metadata() -> None:
+    report = _sample_report()
+    report["run_meta"]["host"] = {
+        "hostname": "example-host",
+        "os": "Darwin",
+        "os_release": "25.3.0",
+        "platform": "macOS-15-arm64",
+        "machine": "arm64",
+        "cpu_brand": "Apple M4",
+        "cpu_count_logical": 10,
+        "cpu_count_physical": 8,
+        "ram_total_bytes": 17179869184,
+        "python_version": "3.13.7",
+        "numpy_version": "2.2.6",
+    }
+    report["run_meta"]["run_started_at_utc"] = "2026-03-01T00:00:00+00:00"
+    report["run_meta"]["run_finished_at_utc"] = "2026-03-01T00:00:01+00:00"
+    report["run_config"]["estimator_class"] = "CombinedEstimator"
+    report["run_config"]["estimator_path"] = "examples/estimators/combined_estimator.py"
+
+    rendered = cli._render_plain_text_report(report)
+
+    for text in (
+        "Hardware & Runtime",
+        "Estimator Class [estimator_class]",
+        "CombinedEstimator",
+        "Estimator Path [estimator_path]",
+        "Host [host.hostname]",
+        "example-host",
+        "OS [host.os]",
+        "Darwin",
+        "CPU [host.cpu_brand]",
+        "Apple M4",
+        "Python [host.python_version]",
+        "3.13.7",
+    ):
+        assert text in rendered
 
 
 def test_error_code_mapping_for_validation_messages() -> None:

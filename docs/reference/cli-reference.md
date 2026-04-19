@@ -6,7 +6,6 @@ Use this page for exact command syntax and key flags.
 
 ## Environment toggles
 
-- `WHESTBENCH_NO_RICH=1` — disable Rich live displays automatically when invoking `smoke-test` or `run`.
 - `WHEST_SKIP_HARDWARE_FALLBACK_PROBES=1` — skip OS-native fallback probes when collecting `run_meta.host` or dataset `metadata.hardware`. Cheap fields and `psutil`-backed fields are still collected; fallback-backed fields may remain `null`.
 
 ## Entry commands
@@ -27,17 +26,17 @@ Participant workflow commands:
 Run a built-in `CombinedEstimator` dashboard check and print next-step participant commands.
 
 ```bash
-whest smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--no-rich] [--debug]
+whest smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--format rich|plain|json] [--debug]
 ```
 
-- `--no-rich` — disable Rich live display and progress bars; print a plain-text report. Useful for non-TTY logs and for debugger sessions. Auto-enabled when `sys.gettrace()` is non-None, `PYTHONBREAKPOINT` is set, or `WHESTBENCH_NO_RICH=1`.
+- `--format rich|plain|json` — choose styled terminal output, plain log-friendly output, or JSON. Defaults to `rich` on TTYs and `plain` otherwise. Under a debugger, `smoke-test` automatically forces `plain` if `rich` was requested.
 
 ## `whest init`
 
 Create starter files in a target directory.
 
 ```bash
-whest init [path] [--json] [--debug]
+whest init [path] [--format rich|plain|json] [--json] [--debug]
 ```
 
 ## `whest validate`
@@ -45,7 +44,7 @@ whest init [path] [--json] [--debug]
 Validate estimator loading and output contract.
 
 ```bash
-whest validate --estimator <path> [--class <name>] [--json] [--debug]
+whest validate --estimator <path> [--class <name>] [--format rich|plain|json] [--json] [--debug]
 ```
 
 ## `whest run`
@@ -69,9 +68,9 @@ Key options:
 - `--seed <int>` — deterministic seed for `generate + sample` when `--dataset` is not set
 - `--profile`
 - `--show-diagnostic-plots`
-- `--json`
+- `--format rich|plain|json` — choose styled terminal output, plain log-friendly output, or JSON. Defaults to `rich` on TTYs and `plain` otherwise.
+- `--json` — alias for `--format json`
 - `--dataset <path>` — use pre-created dataset `.npz` file
-- `--no-rich` — disable Rich live display and progress bars; print a plain-text report. Required when attaching `pdb.set_trace()` (the live display would otherwise mask the prompt). Auto-enabled when `sys.gettrace()` is non-None, `PYTHONBREAKPOINT` is set, or `WHESTBENCH_NO_RICH=1`. See [Debugging Checklist](../how-to/debugging-checklist.md#using-pdb--breakpoint-inside-your-estimator).
 - `--debug` — include estimator tracebacks in the report's "Estimator Errors" panel (works with any runner).
 - `--fail-fast` — stop on the first estimator error and let the raw Python traceback propagate (combine with `--debug` to show it).
 
@@ -81,7 +80,7 @@ Recommended debug sequence:
 whest run --estimator ./path/to/estimator.py
 whest run --estimator ./path/to/estimator.py --debug
 whest run --estimator ./path/to/estimator.py --debug --fail-fast
-whest run --estimator ./path/to/estimator.py --runner local --no-rich   # for pdb.set_trace() / breakpoint()
+whest run --estimator ./path/to/estimator.py --runner local --format plain   # for pdb.set_trace() / breakpoint()
 ```
 
 ### Exit codes
@@ -107,11 +106,12 @@ whest create-dataset [options] -o <output-path>
 Key options:
 
 - `--n-mlps <int>` (default: 10)
-- `--ground-truth-samples <int>` (default: 10000)
+- `--n-samples <int>` (default: 10000)
 - `--seed <int>` (optional, auto-generated if omitted)
 - `--width <int>`, `--depth <int>`, `--flop-budget <int>`
 - `-o, --output <path>` (default: `eval_dataset.npz`)
-- `--json`
+- `--format rich|plain|json`
+- `--json` — alias for `--format json`
 - `--debug`
 
 See [Use Evaluation Datasets](../how-to/use-evaluation-datasets.md) for usage patterns.
@@ -131,7 +131,8 @@ Key options:
 - `--submission-metadata <path>`
 - `--approach <path>`
 - `--output <path>`
-- `--json`
+- `--format rich|plain|json`
+- `--json` — alias for `--format json`
 - `--debug`
 
 ## `whest visualizer`
@@ -160,6 +161,8 @@ Profile whest FLOP accounting and analytical correctness across a grid of networ
 ```bash
 whest profile-simulation [--preset super-quick|quick|standard|exhaustive]
                           [--output <path>]
+                          [--format rich|plain|json]
+                          [--json]
                           [--verbose]
                           [--debug]
 ```
@@ -170,8 +173,10 @@ Key options:
   - `super-quick` — 1 width (256), 1 depth (4), 10 000 samples. Sub-second, for testing the debug loop.
   - `quick` — 1 width (256), 2 depths (4, 128), 2 sample counts (10 000, 100 000). Finishes in seconds.
   - `standard` — 2 widths (64, 256), 3 depths (4, 32, 128), 2 sample counts (10 000, 100 000). Under a minute.
-  - `exhaustive` — 2 widths (64, 256), 3 depths (4, 32, 128), 3 sample counts (10 000, 100 000, 1 000 000). Thorough but slow.
+- `exhaustive` — 2 widths (64, 256), 3 depths (4, 32, 128), 3 sample counts (10 000, 100 000, 1 000 000). Thorough but slow.
 - `--output <path>` — save a JSON report with correctness results and FLOP accounting data.
+- `--format rich|plain|json` — choose styled terminal output, plain log-friendly output, or JSON. Defaults to `rich` on TTYs and `plain` otherwise.
+- `--json` — alias for `--format json`
 - `--debug` — show full tracebacks on errors.
 - `--verbose` — show full tables with all columns and raw data.
 
