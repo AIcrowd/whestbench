@@ -8,6 +8,8 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from whestbench.presentation.blocks import build_budget_breakdown_block, build_score_block
+from whestbench.presentation.human import render_document
 from whestbench.presentation.models import (
     BudgetBreakdownGauge,
     BudgetBreakdownNamespaceRow,
@@ -550,3 +552,50 @@ def test_final_score_rich_renderer_keeps_old_color_coding() -> None:
     assert value_cells[1] == "[cyan]0.03770037[/]"
     assert value_cells[2] == "[green]0.01329615[/]"
     assert value_cells[3] == "[yellow]0.01329615[/]"
+
+
+def test_shared_human_document_renders_budget_before_final_score_in_rich_and_plain() -> None:
+    budget_section = BudgetBreakdownSection(
+        title="Estimator Budget Breakdown",
+        available=True,
+        total_flops="4.84e+07",
+        tracked_time="0.005277s",
+        untracked_time="0.012066s",
+        namespace_rows=[
+            BudgetBreakdownNamespaceRow(
+                namespace="estimator.estimator-client",
+                total_flops="4.84e+07",
+                percent_of_section_flops="100.0%",
+                mean_flops_per_mlp="4.84e+07",
+                tracked_time="0.005277s",
+            )
+        ],
+    )
+    score_section = TableSection(
+        title="Final Score",
+        columns=["metric", "value"],
+        rows=[
+            ["Primary Score [primary_score]", "0.01329615"],
+            ["Secondary Score [secondary_score]", "0.03770037"],
+        ],
+        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+    )
+
+    blocks = [
+        build_budget_breakdown_block(budget_section),
+        build_score_block(score_section),
+    ]
+
+    rich = _strip_ansi(
+        render_document(title="WhestBench Report", blocks=blocks, output_format="rich")
+    )
+    plain = render_document(title="WhestBench Report", blocks=blocks, output_format="plain")
+
+    for rendered in (rich, plain):
+        assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
+        assert "Total FLOPs [flops_used]" in rendered
+        assert "Tracked Time [tracked_time_s]" in rendered
+        assert "Untracked Time [untracked_time_s]" in rendered
+        assert "Primary Score [primary_score]" in rendered
+        assert "Secondary Score [secondary_score]" in rendered
+        assert "lower MSE is better" in rendered
