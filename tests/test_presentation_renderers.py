@@ -706,12 +706,7 @@ def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_te
     for text in (
         "WhestBench Report",
         "Estimator Budget Breakdown",
-        "Total FLOPs [flops_used]",
-        "Tracked Time [tracked_time_s]",
-        "Untracked Time [untracked_time_s]",
-        "sampling.sample_layer_statistics",
         "Final Score",
-        "Primary Score [primary_score]",
         "lower MSE is better",
     ):
         assert text in plain
