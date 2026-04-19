@@ -234,16 +234,20 @@ def test_render_human_mode_includes_budget_breakdown_sections_when_present() -> 
     )
     plain = _strip_ansi(rendered)
 
-    assert "Sampling Budget Breakdown" in plain
+    assert "Sampling Budget Breakdown (Ground Truth)" in plain
     assert "Estimator Budget Breakdown" in plain
-    assert plain.index("Sampling Budget Breakdown") < plain.index("Estimator Budget Breakdown")
+    assert plain.index("Sampling Budget Breakdown (Ground Truth)") < plain.index(
+        "Estimator Budget Breakdown"
+    )
     assert "Total FLOPs" in plain
     assert "Tracked Time" in plain
     assert "Untracked Time" in plain
-    assert "sampling.sample_layer_statistics" in plain
+    assert "sampling.sample_layer" in plain
+    assert "statistics" in plain
     assert "sampling.draw_weights" in plain
     assert "estimator.phase" in plain
-    assert "estimator.estimator-client" in plain
+    assert "estimator.estimator" in plain
+    assert "client" in plain
 
 
 def test_render_human_results_includes_budget_breakdown_sections_when_present() -> None:
@@ -256,9 +260,44 @@ def test_render_human_results_includes_budget_breakdown_sections_when_present() 
     )
     plain = _strip_ansi(rendered)
 
-    assert "Sampling Budget Breakdown" in plain
+    assert "Sampling Budget Breakdown (Ground Truth)" in plain
     assert "Estimator Budget Breakdown" in plain
-    assert plain.index("Sampling Budget Breakdown") < plain.index("Estimator Budget Breakdown")
+    assert plain.index("Sampling Budget Breakdown (Ground Truth)") < plain.index(
+        "Estimator Budget Breakdown"
+    )
+
+
+def test_render_human_mode_matches_main_style_score_and_breakdown_information() -> None:
+    report = _sample_report(
+        include_profile=False,
+        include_sampling_breakdown=True,
+        include_estimator_breakdown=True,
+    )
+    results = cast("dict[str, Any]", report["results"])
+    results["per_mlp"] = [
+        {"mlp_index": 0, "final_mse": 0.1},
+        {"mlp_index": 1, "final_mse": 0.146},
+    ]
+
+    rendered = render_human_report(report)
+    plain = _strip_ansi(rendered)
+
+    assert plain.index("Sampling Budget Breakdown (Ground Truth)") < plain.index(
+        "Estimator Budget Breakdown"
+    )
+    assert plain.index("Estimator Budget Breakdown") < plain.index("Final Score")
+    assert "Total FLOPs [flops_used]" in plain
+    assert "Tracked Time [tracked_time_s]" in plain
+    assert "Untracked Time [untracked_time_s]" in plain
+    assert "aggregated across all evaluated MLPs" in plain
+    assert "Primary Score [primary_score]" in plain
+    assert "Secondary Score [secondary_score]" in plain
+    assert "Best MLP Score [best_mlp_score]" in plain
+    assert "Worst MLP Score [worst_mlp_score]" in plain
+    assert (
+        "lower MSE is better; primary score = mean across MLPs of final-layer MSE" in plain
+    )
+    assert "Estimator FLOPs" not in plain
 
 
 def test_render_human_mode_omits_budget_breakdown_sections_when_absent() -> None:

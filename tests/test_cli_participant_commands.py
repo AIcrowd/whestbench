@@ -423,7 +423,14 @@ def test_init_and_run_help_text_reference_examples_estimators_path() -> None:
 # --- `whest run --dataset` + `--n-mlps` integration --------------------------
 
 
-def _write_fake_dataset(path: Path, n_mlps: int, width: int = 4, depth: int = 2) -> None:
+def _write_fake_dataset(
+    path: Path,
+    n_mlps: int,
+    width: int = 4,
+    depth: int = 2,
+    *,
+    sampling_budget_breakdowns: list[dict[str, object]] | None = None,
+) -> None:
     """Write a .npz file that `load_dataset` accepts."""
     import numpy as np
 
@@ -450,6 +457,15 @@ def _write_fake_dataset(path: Path, n_mlps: int, width: int = 4, depth: int = 2)
         all_layer_means=all_layer_means,
         final_means=final_means,
         avg_variances=avg_variances,
+        **(
+            {
+                "sampling_budget_breakdowns": np.array(
+                    json.dumps(sampling_budget_breakdowns)
+                )
+            }
+            if sampling_budget_breakdowns is not None
+            else {}
+        ),
     )
 
 
@@ -538,6 +554,88 @@ def test_run_with_dataset_honors_smaller_n_mlps(
     assert observed["n_mlps"] == 2
     assert len(observed["contest_data"].mlps) == 2
     assert observed["contest_data"].spec.n_mlps == 2
+
+
+def test_run_with_dataset_restores_sampling_breakdown_subset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ds_path = tmp_path / "ds.npz"
+    _write_fake_dataset(
+        ds_path,
+        n_mlps=3,
+        sampling_budget_breakdowns=[
+            {
+                "flop_budget": 1000,
+                "flops_used": 10,
+                "flops_remaining": 990,
+                "wall_time_s": 0.01,
+                "tracked_time_s": 0.005,
+                "untracked_time_s": 0.002,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 10,
+                        "calls": 1,
+                        "tracked_time_s": 0.005,
+                        "operations": {},
+                    }
+                },
+            },
+            {
+                "flop_budget": 1000,
+                "flops_used": 20,
+                "flops_remaining": 980,
+                "wall_time_s": 0.02,
+                "tracked_time_s": 0.010,
+                "untracked_time_s": 0.004,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 20,
+                        "calls": 1,
+                        "tracked_time_s": 0.010,
+                        "operations": {},
+                    }
+                },
+            },
+            {
+                "flop_budget": 1000,
+                "flops_used": 30,
+                "flops_remaining": 970,
+                "wall_time_s": 0.03,
+                "tracked_time_s": 0.015,
+                "untracked_time_s": 0.006,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 30,
+                        "calls": 1,
+                        "tracked_time_s": 0.015,
+                        "operations": {},
+                    }
+                },
+            },
+        ],
+    )
+
+    observed: dict = {}
+    _patch_run_command_happy_path(monkeypatch, observed)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--dataset",
+            str(ds_path),
+            "--n-mlps",
+            "2",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    assert observed["contest_data"].sampling_budget_breakdown is not None
+    assert observed["contest_data"].sampling_budget_breakdown["flops_used"] == 30
 
 
 def test_run_with_dataset_clamps_and_warns_when_n_mlps_exceeds_dataset(
@@ -838,6 +936,154 @@ def test_run_json_output_includes_traceback_per_mlp(
         assert "intentional predict crash" in entry["error"]
         assert isinstance(entry["traceback"], str)
         assert "RuntimeError" in entry["traceback"]
+
+
+def test_run_json_output_restores_dataset_sampling_breakdown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ds_path = tmp_path / "ds.npz"
+    _write_fake_dataset(
+        ds_path,
+        n_mlps=3,
+        sampling_budget_breakdowns=[
+            {
+                "flop_budget": 1000,
+                "flops_used": 10,
+                "flops_remaining": 990,
+                "wall_time_s": 0.01,
+                "tracked_time_s": 0.005,
+                "untracked_time_s": 0.002,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 10,
+                        "calls": 1,
+                        "tracked_time_s": 0.005,
+                        "operations": {},
+                    }
+                },
+            },
+            {
+                "flop_budget": 1000,
+                "flops_used": 20,
+                "flops_remaining": 980,
+                "wall_time_s": 0.02,
+                "tracked_time_s": 0.010,
+                "untracked_time_s": 0.004,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 20,
+                        "calls": 1,
+                        "tracked_time_s": 0.010,
+                        "operations": {},
+                    }
+                },
+            },
+            {
+                "flop_budget": 1000,
+                "flops_used": 30,
+                "flops_remaining": 970,
+                "wall_time_s": 0.03,
+                "tracked_time_s": 0.015,
+                "untracked_time_s": 0.006,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 30,
+                        "calls": 1,
+                        "tracked_time_s": 0.015,
+                        "operations": {},
+                    }
+                },
+            },
+        ],
+    )
+
+    monkeypatch.setattr(
+        cli,
+        "_run_estimator_with_runner",
+        lambda *_args, **kwargs: {
+            **_sample_report(),
+            "results": {
+                **_sample_report()["results"],
+                "breakdowns": {
+                    "sampling": kwargs["contest_data"].sampling_budget_breakdown,
+                    "estimator": None,
+                },
+            },
+        },
+    )
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--dataset",
+            str(ds_path),
+            "--n-mlps",
+            "2",
+            "--json",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    payload = json.loads(captured.out)
+    assert payload["results"]["breakdowns"]["sampling"]["flops_used"] == 30
+    assert (
+        payload["results"]["breakdowns"]["sampling"]["by_namespace"][
+            "sampling.sample_layer_statistics"
+        ]["flops_used"]
+        == 30
+    )
+
+
+def test_run_plain_output_shows_legacy_dataset_sampling_unavailable_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ds_path = tmp_path / "ds.npz"
+    _write_fake_dataset(ds_path, n_mlps=2)
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+
+    monkeypatch.setattr(
+        cli,
+        "_run_estimator_with_runner",
+        lambda *_args, **_kwargs: {
+            **_sample_report(),
+            "results": {
+                **_sample_report()["results"],
+                "breakdowns": {
+                    "sampling": None,
+                    "estimator": None,
+                },
+            },
+        },
+    )
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--dataset",
+            str(ds_path),
+            "--no-rich",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    assert "Sampling Budget Breakdown (Ground Truth)" in captured.out
+    assert "Ground-truth sampling baseline is unavailable for this dataset." in captured.out
+    assert "newer whestbench" in captured.out
 
 
 def test_run_json_output_includes_validation_details_for_shape_error(

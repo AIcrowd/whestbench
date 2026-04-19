@@ -128,7 +128,8 @@ def make_contest_from_bundle(
     """Build ContestData from a precomputed dataset bundle.
 
     Takes the first ``n_mlps`` entries from the bundle's MLPs and targets.
-    Ground truth is not recomputed; ``sampling_budget_breakdown`` is ``None``.
+    Ground truth is not recomputed. Sampling attribution is restored from the
+    dataset when available and aggregated across the first ``n_mlps`` entries.
 
     Raises ``ValueError`` if ``n_mlps`` is not in ``[1, bundle.n_mlps]`` or if
     ``spec`` is inconsistent with the bundle's width/depth.
@@ -156,7 +157,11 @@ def make_contest_from_bundle(
         all_layer_targets=all_layer_targets,
         final_targets=final_targets,
         avg_variances=avg_variances,
-        sampling_budget_breakdown=None,
+        sampling_budget_breakdown=_aggregate_budget_breakdowns(
+            list(bundle.sampling_budget_breakdowns[:n_mlps])
+            if isinstance(bundle.sampling_budget_breakdowns, list)
+            else []
+        ),
     )
 
 

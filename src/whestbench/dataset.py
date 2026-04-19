@@ -14,9 +14,10 @@ import whest as we
 from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
+from .scoring import _normalize_sampling_budget_breakdown
 from .simulation import sample_layer_statistics
 
-SCHEMA_VERSION = "2.1"
+SCHEMA_VERSION = "2.2"
 SEED_PROTOCOL_NAME = "whestbench_seedsequence_hierarchy"
 SEED_PROTOCOL_VERSION = "1.0"
 
@@ -38,6 +39,7 @@ class DatasetBundle:
     all_layer_means: we.ndarray
     final_means: we.ndarray
     avg_variances: List[float]
+    sampling_budget_breakdowns: List[Dict[str, Any]] | None = None
 
     @property
     def n_mlps(self) -> int:
@@ -74,12 +76,20 @@ def create_dataset(
     all_means_list: List[we.ndarray] = []
     final_means_list: List[we.ndarray] = []
     avg_variances: List[float] = []
+    sampling_budget_breakdowns: List[Dict[str, Any]] = []
     for i, mlp in enumerate(mlps):
         sample_stream = we.random.default_rng(stream_seed[2 * i + 1])
-        with we.BudgetContext(flop_budget=int(1e15), quiet=True):
-            all_means, final_mean, avg_var = sample_layer_statistics(
-                mlp, n_samples, rng=sample_stream
-            )
+        with we.BudgetContext(flop_budget=int(1e15), quiet=True) as sampling_budget:
+            with we.namespace("sampling"):
+                with we.namespace("sample_layer_statistics"):
+                    all_means, final_mean, avg_var = sample_layer_statistics(
+                        mlp, n_samples, rng=sample_stream
+                    )
+        normalized_sampling = _normalize_sampling_budget_breakdown(
+            sampling_budget.summary_dict(by_namespace=True)
+        )
+        if normalized_sampling is not None:
+            sampling_budget_breakdowns.append(normalized_sampling)
         all_means_list.append(we.asarray(all_means, dtype=we.float32))
         final_means_list.append(we.asarray(final_mean, dtype=we.float32))
         avg_variances.append(avg_var)
@@ -113,6 +123,7 @@ def create_dataset(
         all_layer_means=all_layer_means,
         final_means=final_means,
         avg_variances=np.array(avg_variances, dtype=np.float64),
+        sampling_budget_breakdowns=np.array(json.dumps(sampling_budget_breakdowns)),
     )
     return output_path
 
@@ -129,6 +140,13 @@ def load_dataset(path: "Path | str") -> DatasetBundle:
     all_layer_means = data["all_layer_means"].astype(np.float32)
     final_means = data["final_means"].astype(np.float32)
     avg_variances = data["avg_variances"].astype(np.float64).tolist()
+    sampling_budget_breakdowns: List[Dict[str, Any]] | None = None
+    if "sampling_budget_breakdowns" in data.files:
+        raw_sampling_breakdowns = json.loads(str(data["sampling_budget_breakdowns"]))
+        if isinstance(raw_sampling_breakdowns, list):
+            sampling_budget_breakdowns = [
+                item for item in raw_sampling_breakdowns if isinstance(item, dict)
+            ]
 
     n_mlps = int(weights_array.shape[0])
     depth = int(weights_array.shape[1])
@@ -147,4 +165,5 @@ def load_dataset(path: "Path | str") -> DatasetBundle:
         all_layer_means=all_layer_means,
         final_means=final_means,
         avg_variances=avg_variances,
+        sampling_budget_breakdowns=sampling_budget_breakdowns,
     )

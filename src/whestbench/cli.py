@@ -48,6 +48,7 @@ from .presentation.adapters import (
     build_smoke_test_presentation,
     build_validate_presentation,
 )
+from .presentation.models import StepsSection
 from .presentation.render_plain import render_plain_presentation
 from .presentation.render_rich import render_rich_presentation
 from .reporting import (
@@ -55,6 +56,7 @@ from .reporting import (
     _fmt_flops,
     _gauge_bar_fragment,
     _select_top_over_budget,
+    build_human_context_renderable,
     render_agent_report,
     render_human_context_panels,
     render_human_header,
@@ -225,180 +227,10 @@ def _render_plain_text_report(
     lines = render_plain_presentation(doc).rstrip("\n").splitlines()
     if lines:
         lines[0] = "WhestBench Report (Plain Text)"
-
-    results = report.get("results", {})
-
-    def _extract_error_line(entry: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
-        raw_error = entry.get("error")
-        if isinstance(raw_error, dict):
-            message = str(raw_error.get("message") or "").strip()
-            details = raw_error.get("details")
-            if not isinstance(details, dict):
-                details = {}
-            if not message:
-                message = "(no message)"
-            return message, details
-        if raw_error is None:
-            return "", {}
-        return str(raw_error), {}
-
-    def _render_error_details(details: Dict[str, Any], indent: str) -> list[str]:
-        if not details:
-            return []
-        lines: list[str] = []
-        hint = details.get("hint")
-        cause_hints = details.get("cause_hints")
-        expected_shape = details.get("expected_shape")
-        got_shape = details.get("got_shape")
-        if isinstance(expected_shape, list):
-            lines.append(f"{indent}Expected shape: {expected_shape}")
-        if isinstance(got_shape, list):
-            lines.append(f"{indent}Got shape: {got_shape}")
-        if isinstance(hint, str) and hint:
-            lines.append(f"{indent}Hint: {hint}")
-        if isinstance(cause_hints, list) and cause_hints:
-            lines.append(f"{indent}Cause hints:")
-            for item in cause_hints:
-                if isinstance(item, str) and item:
-                    lines.append(f"{indent}  - {item}")
-        return lines
-
-    per_mlp = results.get("per_mlp") if isinstance(results, dict) else None
-    if isinstance(per_mlp, list):
-        failures = [e for e in per_mlp if isinstance(e, dict) and e.get("error")]
-        if failures:
-            lines.append("")
-            lines.append(f"Estimator Errors: {len(failures)} of {len(per_mlp)} MLP(s) raised:")
-            for entry in failures:
-                idx = entry.get("mlp_index", "?")
-                code = entry.get("error_code") or "UNKNOWN"
-                message, details = _extract_error_line(entry)
-                lines.append(f"  MLP {idx} [{code}]: {message}")
-                lines.extend(_render_error_details(details, indent="    "))
-                if debug:
-                    tb_text = entry.get("traceback")
-                    if tb_text:
-                        for tb_line in str(tb_text).rstrip().splitlines():
-                            lines.append(f"    {tb_line}")
-            if not debug:
-                lines.append(
-                    "  (rerun with --debug to include full tracebacks; "
-                    "--fail-fast to stop on first error.)"
-                )
-
-    def _as_float(value: Any) -> float:
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return 0.0
-
-    run_config = report.get("run_config", {})
-    n_mlps = int(run_config.get("n_mlps", 0) or 0)
-    if n_mlps <= 0:
-        n_mlps = 1
-
-    breakdowns = results.get("breakdowns")
-    if isinstance(breakdowns, dict):
-        for breakdown_key, title in (
-            ("sampling", "Sampling Budget Breakdown"),
-            ("estimator", "Estimator Budget Breakdown"),
-        ):
-            breakdown = breakdowns.get(breakdown_key)
-            if not isinstance(breakdown, dict):
-                continue
-            by_namespace = breakdown.get("by_namespace")
-            if not isinstance(by_namespace, dict):
-                by_namespace = {}
-
-            total_flops = _as_float(breakdown.get("flops_used", 0.0))
-            if total_flops <= 0.0:
-                total_flops = sum(
-                    _as_float(bucket.get("flops_used", 0.0))
-                    for bucket in by_namespace.values()
-                    if isinstance(bucket, dict)
-                )
-
-            lines.append("")
-            lines.append(f"{title}:")
-
-            if breakdown_key == "estimator":
-                # FLOP budget gauge (ASCII mirror of the Rich gauge)
-                gauge = _compute_gauge_state(report)
-                if not gauge.has_budget:
-                    lines.append("  Estimator FLOPs  -- of 0 FLOPs")
-                else:
-                    bar_rich = _gauge_bar_fragment(gauge.mean_utilization)
-                    bar_ascii = bar_rich.replace("█", "#").replace("░", "-")
-                    overflow = ">" if gauge.state_name == "catastrophic" else ""
-                    pct_int = int(gauge.mean_utilization * 100)
-                    budget_label = _fmt_flops(gauge.flop_budget)
-                    suffix = (
-                        f" . worst MLP {gauge.worst_mlp_pct}% !"
-                        if gauge.worst_mlp_pct is not None
-                        else ""
-                    )
-                    lines.append(
-                        f"  Estimator FLOPs  {bar_ascii}{overflow} {pct_int}% of "
-                        f"{budget_label}{suffix}"
-                    )
-
-                # Over-Budget MLPs (ASCII mirror of the Rich panel)
-                selection = _select_top_over_budget(report)
-                if selection.busted_count > 0:
-                    lines.append("  Over-Budget MLPs")
-                    for row in selection.rows:
-                        pct_label = (
-                            f"{row.pct_of_budget}%" if row.pct_of_budget is not None else "--%"
-                        )
-                        lines.append(
-                            f"    MLP #{row.mlp_index:<4}  "
-                            f"{_fmt_flops(row.flops_used):>9} FLOPs  "
-                            f"{pct_label:>4} of budget  zeroed"
-                        )
-                    if selection.is_truncated:
-                        remainder = selection.busted_count - len(selection.rows)
-                        lines.append(f"    ... and {remainder} more over budget")
-                        lines.append("    run with --json for the full list")
-                    if selection.is_all_busted:
-                        lines.append(
-                            f"    All {selection.n_mlps} MLPs exceeded the per-MLP FLOP cap "
-                            f"— predictions entirely zeroed"
-                        )
-                    else:
-                        lines.append(
-                            f"    {selection.busted_count} of {selection.n_mlps} MLPs "
-                            f"exceeded the per-MLP FLOP cap"
-                        )
-
-            lines.extend(
-                [
-                    f"  Total FLOPs: {_fmt_flops(total_flops)}",
-                    f"  Tracked Time: {_as_float(breakdown.get('tracked_time_s', 0.0)):.6f}s",
-                    f"  Untracked Time: {_as_float(breakdown.get('untracked_time_s', 0.0)):.6f}s",
-                ]
-            )
-
-            for namespace, bucket in sorted(
-                (
-                    (namespace, bucket)
-                    for namespace, bucket in by_namespace.items()
-                    if isinstance(bucket, dict)
-                ),
-                key=lambda item: _as_float(item[1].get("flops_used", 0.0)),
-                reverse=True,
-            ):
-                namespace_label = (
-                    "(unlabeled)" if namespace in {None, "", "null", "None"} else str(namespace)
-                )
-                flops_used = _as_float(bucket.get("flops_used", 0.0))
-                percent = (flops_used / total_flops * 100.0) if total_flops > 0 else 0.0
-                mean_flops = flops_used / n_mlps if n_mlps > 0 else 0.0
-                tracked_time_s = _as_float(bucket.get("tracked_time_s", 0.0))
-                lines.append(
-                    "  "
-                    f"{namespace_label}: {_fmt_flops(flops_used)} FLOPs ({percent:.1f}%), "
-                    f"mean {_fmt_flops(mean_flops)}/MLP, tracked {tracked_time_s:.6f}s"
-                )
+    if len(lines) >= 3 and lines[1].startswith("Command: ") and lines[2].startswith("Status: "):
+        del lines[1:3]
+        if len(lines) >= 2 and lines[1] == "":
+            del lines[1]
     return "\n".join(lines) + "\n"
 
 
@@ -1280,7 +1112,17 @@ def _main_participant(argv: "list[str]") -> int:
                     report,
                     show_diagnostic_plots=bool(args.show_diagnostic_plots),
                     debug=debug,
-                    presentation_doc=replace(smoke_doc, epilogue_messages=[]),
+                    presentation_doc=replace(
+                        smoke_doc,
+                        sections=[
+                            section
+                            for section in smoke_doc.sections
+                            if not (
+                                isinstance(section, StepsSection) and section.title == "Next Steps"
+                            )
+                        ],
+                        epilogue_messages=[],
+                    ),
                 )
                 rich_rendered = True
             except Exception as exc:

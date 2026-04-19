@@ -2,7 +2,17 @@ from __future__ import annotations
 
 import re
 
+from rich.align import Align
+from rich.console import Group
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
+
 from whestbench.presentation.models import (
+    BudgetBreakdownGauge,
+    BudgetBreakdownNamespaceRow,
+    BudgetBreakdownOverBudgetRow,
+    BudgetBreakdownSection,
     CommandPresentation,
     ErrorSection,
     KeyValueRow,
@@ -12,7 +22,7 @@ from whestbench.presentation.models import (
     TableSection,
 )
 from whestbench.presentation.render_plain import render_plain_presentation
-from whestbench.presentation.render_rich import render_rich_presentation
+from whestbench.presentation.render_rich import _section_renderables, render_rich_presentation
 
 
 def _strip_ansi(text: str) -> str:
@@ -228,3 +238,315 @@ def test_rich_table_renderer_preserves_literal_markup_text() -> None:
     ):
         assert text in plain
         assert text in rich
+
+
+def test_renderers_render_budget_breakdowns_before_final_score() -> None:
+    doc = CommandPresentation(
+        command="run",
+        status="success",
+        title="WhestBench Report",
+        sections=[
+            BudgetBreakdownSection(
+                title="Sampling Budget Breakdown (Ground Truth)",
+                available=True,
+                total_flops="80",
+                tracked_time="0.020000s",
+                untracked_time="0.010000s",
+                namespace_rows=[
+                    BudgetBreakdownNamespaceRow(
+                        namespace="sampling.sample_layer_statistics",
+                        total_flops="80",
+                        percent_of_section_flops="100.0%",
+                        mean_flops_per_mlp="40",
+                        tracked_time="0.020000s",
+                    )
+                ],
+                source_note="restored from dataset metadata for the MLPs used in this run.",
+            ),
+            BudgetBreakdownSection(
+                title="Estimator Budget Breakdown",
+                available=True,
+                total_flops="90",
+                tracked_time="0.030000s",
+                untracked_time="0.010000s",
+                namespace_rows=[
+                    BudgetBreakdownNamespaceRow(
+                        namespace="estimator.estimator-client",
+                        total_flops="90",
+                        percent_of_section_flops="100.0%",
+                        mean_flops_per_mlp="45",
+                        tracked_time="0.030000s",
+                    )
+                ],
+                gauge=BudgetBreakdownGauge(
+                    label="Estimator FLOPs",
+                    bar="[##########----------]",
+                    overflow=False,
+                    percent_of_budget="45%",
+                    budget_label="100",
+                    worst_mlp_percent="60%",
+                ),
+                over_budget_rows=[
+                    BudgetBreakdownOverBudgetRow(
+                        mlp_index=1,
+                        flops_used="120",
+                        percent_of_budget="120%",
+                    )
+                ],
+                over_budget_summary="1 of 2 MLPs exceeded the per-MLP FLOP cap",
+            ),
+            KeyValueSection(
+                title="Final Score",
+                rows=[
+                    KeyValueRow(label="Primary Score", value="0.123"),
+                    KeyValueRow(label="Secondary Score", value="0.456"),
+                ],
+            ),
+        ],
+    )
+
+    plain = render_plain_presentation(doc)
+    rich = _strip_ansi(render_rich_presentation(doc))
+
+    for rendered in (plain, rich):
+        assert rendered.index("Sampling Budget Breakdown (Ground Truth)") < rendered.index(
+            "Estimator Budget Breakdown"
+        )
+        assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
+        assert "restored from dataset metadata for the MLPs used in this run." in rendered
+        assert "aggregated across all evaluated MLPs" in rendered
+        assert "Estimator FLOPs" not in rendered
+        assert "1 of 2 MLPs exceeded the per-MLP FLOP cap" not in rendered
+
+
+def test_renderers_show_unavailable_budget_breakdown_message() -> None:
+    doc = CommandPresentation(
+        command="run",
+        status="success",
+        title="WhestBench Report",
+        sections=[
+            BudgetBreakdownSection(
+                title="Sampling Budget Breakdown (Ground Truth)",
+                available=False,
+                unavailable_message=(
+                    "Ground-truth sampling baseline is unavailable for this dataset. "
+                    "Recreate the dataset with a newer whestbench to compare against sampling."
+                ),
+            )
+        ],
+    )
+
+    plain = render_plain_presentation(doc)
+    rich = _strip_ansi(render_rich_presentation(doc))
+
+    for rendered in (plain, rich):
+        assert "Sampling Budget Breakdown (Ground Truth)" in rendered
+        assert "Ground-truth sampling baseline is unavailable for this dataset." in rendered
+        assert "newer whestbench" in rendered
+
+
+def test_renderers_match_main_style_run_score_and_breakdown_information() -> None:
+    doc = CommandPresentation(
+        command="run",
+        status="success",
+        title="WhestBench Report",
+        sections=[
+            BudgetBreakdownSection(
+                title="Sampling Budget Breakdown (Ground Truth)",
+                available=True,
+                total_flops="1.33e+06",
+                tracked_time="0.000841s",
+                untracked_time="0.003194s",
+                namespace_rows=[
+                    BudgetBreakdownNamespaceRow(
+                        namespace="sampling.sample_layer_statistics",
+                        total_flops="1.33e+06",
+                        percent_of_section_flops="100.0%",
+                        mean_flops_per_mlp="1.33e+06",
+                        tracked_time="0.000841s",
+                    )
+                ],
+            ),
+            BudgetBreakdownSection(
+                title="Estimator Budget Breakdown",
+                available=True,
+                total_flops="4.84e+07",
+                tracked_time="0.005277s",
+                untracked_time="0.012066s",
+                namespace_rows=[
+                    BudgetBreakdownNamespaceRow(
+                        namespace="estimator.estimator-client",
+                        total_flops="4.84e+07",
+                        percent_of_section_flops="100.0%",
+                        mean_flops_per_mlp="4.84e+07",
+                        tracked_time="0.005277s",
+                    )
+                ],
+                gauge=BudgetBreakdownGauge(
+                    label="Estimator FLOPs",
+                    bar="[##########----------]",
+                    overflow=False,
+                    percent_of_budget="48%",
+                    budget_label="1.00e+08",
+                ),
+            ),
+            TableSection(
+                title="Final Score",
+                columns=["metric", "value"],
+                rows=[
+                    ["Primary Score [primary_score]", "0.01329615"],
+                    ["Secondary Score [secondary_score]", "0.03770037"],
+                    ["Best MLP Score [best_mlp_score]", "0.01329615"],
+                    ["Worst MLP Score [worst_mlp_score]", "0.01329615"],
+                ],
+                subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+            ),
+        ],
+    )
+
+    plain = render_plain_presentation(doc)
+    rich = _strip_ansi(render_rich_presentation(doc))
+
+    for rendered in (plain, rich):
+        assert rendered.index("Sampling Budget Breakdown (Ground Truth)") < rendered.index(
+            "Estimator Budget Breakdown"
+        )
+        assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
+        assert "Total FLOPs [flops_used]" in rendered
+        assert "Tracked Time [tracked_time_s]" in rendered
+        assert "Untracked Time [untracked_time_s]" in rendered
+        assert "aggregated across all evaluated MLPs" in rendered
+        assert "Primary Score [primary_score]" in rendered
+        assert "Secondary Score [secondary_score]" in rendered
+        assert "Best MLP Score [best_mlp_score]" in rendered
+        assert "Worst MLP Score [worst_mlp_score]" in rendered
+        assert "lower MSE is better" in rendered
+        assert "primary score = mean across MLPs" in rendered
+        assert "Estimator FLOPs" not in rendered
+
+
+def test_budget_breakdown_rich_renderer_uses_centered_rich_tables() -> None:
+    section = BudgetBreakdownSection(
+        title="Sampling Budget Breakdown (Ground Truth)",
+        available=True,
+        total_flops="1.33e+06",
+        tracked_time="0.000841s",
+        untracked_time="0.003194s",
+        namespace_rows=[
+            BudgetBreakdownNamespaceRow(
+                namespace="sampling.sample_layer_statistics",
+                total_flops="1.33e+06",
+                percent_of_section_flops="100.0%",
+                mean_flops_per_mlp="1.33e+06",
+                tracked_time="0.000841s",
+            )
+        ],
+    )
+
+    renderables = _section_renderables(section)
+
+    assert len(renderables) == 1
+    panel = renderables[0]
+    assert isinstance(panel, Panel)
+    assert isinstance(panel.renderable, Group)
+    children = list(panel.renderable.renderables)
+    assert isinstance(children[0], Align)
+    assert isinstance(children[0].renderable, Table)
+    assert isinstance(children[1], Align)
+    assert isinstance(children[1].renderable, Table)
+
+
+def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
+    section = BudgetBreakdownSection(
+        title="Sampling Budget Breakdown (Ground Truth)",
+        available=True,
+        total_flops="1.33e+06",
+        tracked_time="0.000841s",
+        untracked_time="0.003194s",
+    )
+
+    panel = _section_renderables(section)[0]
+    assert isinstance(panel, Panel)
+    assert isinstance(panel.renderable, Group)
+    summary = list(panel.renderable.renderables)[0]
+    assert isinstance(summary, Align)
+    assert isinstance(summary.renderable, Table)
+
+    label_cells = summary.renderable.columns[0]._cells
+    first_label = label_cells[0]
+    second_label = label_cells[1]
+    third_label = label_cells[2]
+
+    assert isinstance(first_label, Text)
+    assert first_label.plain == "Total FLOPs [flops_used]"
+    assert [str(span.style) for span in first_label.spans] == [
+        "bold bright_yellow",
+        "bold bright_white",
+    ]
+    assert isinstance(second_label, Text)
+    assert second_label.plain == "Tracked Time [tracked_time_s]"
+    assert [str(span.style) for span in second_label.spans] == [
+        "bold bright_green",
+        "bold bright_white",
+    ]
+    assert isinstance(third_label, Text)
+    assert third_label.plain == "Untracked Time [untracked_time_s]"
+    assert [str(span.style) for span in third_label.spans] == [
+        "bold bright_green",
+        "bold bright_white",
+    ]
+
+
+def test_final_score_rich_renderer_keeps_old_color_coding() -> None:
+    section = TableSection(
+        title="Final Score",
+        columns=["metric", "value"],
+        rows=[
+            ["Primary Score [primary_score]", "0.01329615"],
+            ["Secondary Score [secondary_score]", "0.03770037"],
+            ["Best MLP Score [best_mlp_score]", "0.01329615"],
+            ["Worst MLP Score [worst_mlp_score]", "0.01329615"],
+        ],
+        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+        align_center=True,
+        border_style="bright_cyan",
+    )
+
+    panel = _section_renderables(section)[0]
+    assert isinstance(panel, Panel)
+    assert isinstance(panel.renderable, Align)
+    assert isinstance(panel.renderable.renderable, Table)
+    table = panel.renderable.renderable
+
+    metric_cells = table.columns[0]._cells
+    value_cells = table.columns[1]._cells
+
+    assert isinstance(metric_cells[0], Text)
+    assert metric_cells[0].plain == "Primary Score [primary_score]"
+    assert [str(span.style) for span in metric_cells[0].spans] == [
+        "bold bright_green",
+        "bold bright_white",
+    ]
+    assert isinstance(metric_cells[1], Text)
+    assert metric_cells[1].plain == "Secondary Score [secondary_score]"
+    assert [str(span.style) for span in metric_cells[1].spans] == [
+        "bold bright_cyan",
+        "bold bright_white",
+    ]
+    assert isinstance(metric_cells[2], Text)
+    assert metric_cells[2].plain == "Best MLP Score [best_mlp_score]"
+    assert [str(span.style) for span in metric_cells[2].spans] == [
+        "bold green",
+        "bold bright_white",
+    ]
+    assert isinstance(metric_cells[3], Text)
+    assert metric_cells[3].plain == "Worst MLP Score [worst_mlp_score]"
+    assert [str(span.style) for span in metric_cells[3].spans] == [
+        "bold yellow",
+        "bold bright_white",
+    ]
+
+    assert value_cells[0] == "[bold bright_green]0.01329615[/]"
+    assert value_cells[1] == "[cyan]0.03770037[/]"
+    assert value_cells[2] == "[green]0.01329615[/]"
+    assert value_cells[3] == "[yellow]0.01329615[/]"

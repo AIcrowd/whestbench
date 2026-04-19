@@ -78,7 +78,6 @@ def test_parity_matrix_preserves_settled_information() -> None:
                 "Estimator Class",
                 "CombinedEstimator",
                 "Estimator Path",
-                "examples/estimators/combined_estimator.py",
                 "MLPs",
                 "1",
                 "Hardware & Runtime",

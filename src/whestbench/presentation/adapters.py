@@ -2,13 +2,26 @@ from __future__ import annotations
 
 from typing import Any
 
+from .breakdowns import (
+    as_float,
+    compute_gauge_state,
+    fmt_flops,
+    gauge_bar_fragment,
+    select_top_over_budget,
+)
 from .models import (
+    BudgetBreakdownGauge,
+    BudgetBreakdownNamespaceRow,
+    BudgetBreakdownOverBudgetRow,
+    BudgetBreakdownSection,
     ChecklistItem,
     ChecklistSection,
     CommandPresentation,
     ErrorSection,
     KeyValueRow,
     KeyValueSection,
+    RunErrorEntry,
+    RunErrorsSection,
     StepItem,
     StepsSection,
     TableSection,
@@ -67,7 +80,20 @@ def _status_for_report(report: dict[str, Any]) -> str:
     return "success"
 
 
-def _base_sections(report: dict[str, Any]) -> list[KeyValueSection]:
+def _display_time_seconds(value: Any) -> str:
+    return f"{as_float(value):.6f}s"
+
+
+def _display_metric_value(value: Any, *, decimals: int = 8) -> str:
+    if value in {None, ""}:
+        return "n/a"
+    try:
+        return f"{float(value):.{decimals}f}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _run_context_sections(report: dict[str, Any]) -> list[KeyValueSection]:
     run_config = report.get("run_config")
     if not isinstance(run_config, dict):
         run_config = {}
@@ -77,41 +103,37 @@ def _base_sections(report: dict[str, Any]) -> list[KeyValueSection]:
     host_meta = run_meta.get("host")
     if not isinstance(host_meta, dict):
         host_meta = {}
-    results = report.get("results")
-    if not isinstance(results, dict):
-        results = {}
-
     return [
         KeyValueSection(
             title="Run Context",
             rows=[
                 KeyValueRow(
-                    "Estimator Class",
+                    "Estimator Class [estimator_class]",
                     _display_value(run_config.get("estimator_class")),
                 ),
                 KeyValueRow(
-                    "Estimator Path",
+                    "Estimator Path [estimator_path]",
                     _display_value(run_config.get("estimator_path")),
                 ),
                 KeyValueRow(
-                    "Started",
+                    "Started [run_started_at_utc]",
                     _display_value(run_meta.get("run_started_at_utc")),
                 ),
                 KeyValueRow(
-                    "Finished",
+                    "Finished [run_finished_at_utc]",
                     _display_value(run_meta.get("run_finished_at_utc")),
                 ),
-                KeyValueRow("MLPs", _display_value(run_config.get("n_mlps"))),
-                KeyValueRow("Width", _display_value(run_config.get("width"))),
-                KeyValueRow("Depth", _display_value(run_config.get("depth"))),
-                KeyValueRow("FLOP Budget", _display_value(run_config.get("flop_budget"))),
-                KeyValueRow("Duration(s)", _display_value(run_meta.get("run_duration_s"))),
+                KeyValueRow("Duration(s) [run_duration_s]", _display_value(run_meta.get("run_duration_s"))),
+                KeyValueRow("MLPs [n_mlps]", _display_value(run_config.get("n_mlps"))),
+                KeyValueRow("Width [width]", _display_value(run_config.get("width"))),
+                KeyValueRow("Depth [depth]", _display_value(run_config.get("depth"))),
+                KeyValueRow("FLOP Budget [flop_budget]", fmt_flops(run_config.get("flop_budget"))),
                 KeyValueRow(
-                    "Wall Time Limit",
+                    "Wall Time Limit [wall_time_limit_s]",
                     _display_value(run_config.get("wall_time_limit_s"), fallback="unlimited"),
                 ),
                 KeyValueRow(
-                    "Untracked Time Limit",
+                    "Untracked Time Limit [untracked_time_limit_s]",
                     _display_value(run_config.get("untracked_time_limit_s"), fallback="unlimited"),
                 ),
             ],
@@ -119,42 +141,247 @@ def _base_sections(report: dict[str, Any]) -> list[KeyValueSection]:
         KeyValueSection(
             title="Hardware & Runtime",
             rows=[
-                KeyValueRow("Host", _display_value(host_meta.get("hostname"))),
-                KeyValueRow("OS", _display_value(host_meta.get("os"))),
-                KeyValueRow("Release", _display_value(host_meta.get("os_release"))),
-                KeyValueRow("Platform", _display_value(host_meta.get("platform"))),
-                KeyValueRow("Arch", _display_value(host_meta.get("machine"))),
-                KeyValueRow("CPU", _display_value(host_meta.get("cpu_brand"))),
+                KeyValueRow("Host [host.hostname]", _display_value(host_meta.get("hostname"))),
+                KeyValueRow("OS [host.os]", _display_value(host_meta.get("os"))),
+                KeyValueRow("Release [host.os_release]", _display_value(host_meta.get("os_release"))),
+                KeyValueRow("Platform [host.platform]", _display_value(host_meta.get("platform"))),
+                KeyValueRow("Arch [host.machine]", _display_value(host_meta.get("machine"))),
+                KeyValueRow("CPU [host.cpu_brand]", _display_value(host_meta.get("cpu_brand"))),
                 KeyValueRow(
-                    "CPU Cores (logical)",
+                    "CPU Cores (logical) [host.cpu_count_logical]",
                     _display_value(host_meta.get("cpu_count_logical")),
                 ),
                 KeyValueRow(
-                    "CPU Cores (physical)",
+                    "CPU Cores (physical) [host.cpu_count_physical]",
                     _display_value(host_meta.get("cpu_count_physical")),
                 ),
-                KeyValueRow("RAM Total", _display_bytes(host_meta.get("ram_total_bytes"))),
-                KeyValueRow("Python", _display_value(host_meta.get("python_version"))),
-                KeyValueRow("NumPy", _display_value(host_meta.get("numpy_version"))),
-            ],
-        ),
-        KeyValueSection(
-            title="Final Score",
-            rows=[
-                KeyValueRow("Primary Score", _display_value(results.get("primary_score"))),
-                KeyValueRow("Secondary Score", _display_value(results.get("secondary_score"))),
+                KeyValueRow("RAM Total [host.ram_total_bytes]", _display_bytes(host_meta.get("ram_total_bytes"))),
+                KeyValueRow("Python [host.python_version]", _display_value(host_meta.get("python_version"))),
+                KeyValueRow("NumPy [host.numpy_version]", _display_value(host_meta.get("numpy_version"))),
             ],
         ),
     ]
 
 
+def _score_section(report: dict[str, Any]) -> TableSection:
+    results = report.get("results")
+    if not isinstance(results, dict):
+        results = {}
+    rows = [
+        ["Primary Score [primary_score]", _display_metric_value(results.get("primary_score"))],
+        ["Secondary Score [secondary_score]", _display_metric_value(results.get("secondary_score"))],
+    ]
+    per_mlp = results.get("per_mlp")
+    if isinstance(per_mlp, list) and per_mlp:
+        mlp_primaries = [
+            as_float(entry.get("final_mse", 0.0)) for entry in per_mlp if isinstance(entry, dict)
+        ]
+        if mlp_primaries:
+            rows.extend(
+                [
+                    ["Best MLP Score [best_mlp_score]", _display_metric_value(min(mlp_primaries))],
+                    ["Worst MLP Score [worst_mlp_score]", _display_metric_value(max(mlp_primaries))],
+                ]
+            )
+    return TableSection(
+        title="Final Score",
+        columns=["metric", "value"],
+        rows=rows,
+        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+        align_center=True,
+        border_style="bright_cyan",
+    )
+
+
+def _extract_run_error_entry(entry: dict[str, Any], *, debug: bool) -> RunErrorEntry:
+    raw_error = entry.get("error")
+    details: dict[str, Any] = {}
+    if isinstance(raw_error, dict):
+        message = str(raw_error.get("message") or "").strip() or "(no message)"
+        raw_details = raw_error.get("details")
+        if isinstance(raw_details, dict):
+            details = raw_details
+    elif raw_error is None:
+        message = "(no message)"
+    else:
+        message = str(raw_error)
+    traceback = entry.get("traceback") if debug else None
+    return RunErrorEntry(
+        mlp_index=int(entry.get("mlp_index", 0)),
+        code=str(entry.get("error_code") or "UNKNOWN"),
+        message=message,
+        details=details,
+        traceback=str(traceback) if traceback else None,
+    )
+
+
+def _run_errors_section(report: dict[str, Any], *, debug: bool) -> RunErrorsSection | None:
+    results = report.get("results")
+    if not isinstance(results, dict):
+        return None
+    per_mlp = results.get("per_mlp")
+    if not isinstance(per_mlp, list):
+        return None
+    failures = [entry for entry in per_mlp if isinstance(entry, dict) and entry.get("error")]
+    if not failures:
+        return None
+    return RunErrorsSection(
+        title="Estimator Errors",
+        summary=f"{len(failures)} of {len(per_mlp)} MLP(s) raised during predict.",
+        entries=[_extract_run_error_entry(entry, debug=debug) for entry in failures],
+        footer=(
+            None
+            if debug
+            else "Rerun with --debug to include full tracebacks; --fail-fast to stop on first error."
+        ),
+    )
+
+
+def _breakdown_section(
+    report: dict[str, Any],
+    *,
+    breakdown_key: str,
+    title: str,
+) -> BudgetBreakdownSection | None:
+    results = report.get("results")
+    if not isinstance(results, dict):
+        return None
+    run_config = report.get("run_config")
+    if not isinstance(run_config, dict):
+        run_config = {}
+    breakdowns = results.get("breakdowns")
+    if not isinstance(breakdowns, dict):
+        breakdowns = {}
+    breakdown = breakdowns.get(breakdown_key)
+
+    dataset = run_config.get("dataset")
+    dataset_backed = isinstance(dataset, dict)
+    if breakdown_key == "sampling" and not isinstance(breakdown, dict) and dataset_backed:
+        return BudgetBreakdownSection(
+            title=title,
+            available=False,
+            unavailable_message=(
+                "Ground-truth sampling baseline is unavailable for this dataset. "
+                "Recreate the dataset with a newer whestbench to compare against sampling."
+            ),
+        )
+    if not isinstance(breakdown, dict):
+        return None
+
+    by_namespace = breakdown.get("by_namespace")
+    if not isinstance(by_namespace, dict):
+        by_namespace = {}
+    n_mlps = int(run_config.get("n_mlps", 0) or 0)
+    if n_mlps <= 0:
+        n_mlps = 1
+
+    total_flops = as_float(breakdown.get("flops_used", 0.0))
+    if total_flops <= 0.0:
+        total_flops = sum(
+            as_float(bucket.get("flops_used", 0.0))
+            for bucket in by_namespace.values()
+            if isinstance(bucket, dict)
+        )
+
+    namespace_rows = []
+    for namespace, bucket in sorted(
+        (
+            (namespace, bucket)
+            for namespace, bucket in by_namespace.items()
+            if isinstance(bucket, dict)
+        ),
+        key=lambda item: as_float(item[1].get("flops_used", 0.0)),
+        reverse=True,
+    ):
+        flops_used = as_float(bucket.get("flops_used", 0.0))
+        namespace_rows.append(
+            BudgetBreakdownNamespaceRow(
+                namespace="(unlabeled)" if namespace in {None, "", "null", "None"} else str(namespace),
+                total_flops=fmt_flops(flops_used),
+                percent_of_section_flops=(
+                    f"{(flops_used / total_flops * 100.0):.1f}%" if total_flops > 0 else "0.0%"
+                ),
+                mean_flops_per_mlp=fmt_flops(flops_used / n_mlps if n_mlps > 0 else 0.0),
+                tracked_time=_display_time_seconds(bucket.get("tracked_time_s", 0.0)),
+            )
+        )
+
+    gauge = None
+    over_budget_rows: list[BudgetBreakdownOverBudgetRow] = []
+    over_budget_summary: str | None = None
+    over_budget_truncated_remainder: int | None = None
+    if breakdown_key == "estimator":
+        state = compute_gauge_state(report)
+        gauge = BudgetBreakdownGauge(
+            label="Estimator FLOPs",
+            bar=gauge_bar_fragment(state.mean_utilization),
+            overflow=state.state_name == "catastrophic",
+            percent_of_budget=f"{int(state.mean_utilization * 100)}%",
+            budget_label=fmt_flops(state.flop_budget),
+            worst_mlp_percent=(
+                f"{state.worst_mlp_pct}%"
+                if state.worst_mlp_pct is not None
+                else None
+            ),
+        )
+        selection = select_top_over_budget(report)
+        over_budget_rows = [
+            BudgetBreakdownOverBudgetRow(
+                mlp_index=row.mlp_index,
+                flops_used=fmt_flops(row.flops_used),
+                percent_of_budget=(
+                    f"{row.pct_of_budget}%" if row.pct_of_budget is not None else None
+                ),
+            )
+            for row in selection.rows
+        ]
+        if selection.is_truncated:
+            over_budget_truncated_remainder = selection.busted_count - len(selection.rows)
+        if selection.busted_count > 0:
+            over_budget_summary = (
+                f"All {selection.n_mlps} MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed"
+                if selection.is_all_busted
+                else f"{selection.busted_count} of {selection.n_mlps} MLPs exceeded the per-MLP FLOP cap"
+            )
+
+    return BudgetBreakdownSection(
+        title=title,
+        available=True,
+        total_flops=fmt_flops(total_flops),
+        tracked_time=_display_time_seconds(breakdown.get("tracked_time_s", 0.0)),
+        untracked_time=_display_time_seconds(breakdown.get("untracked_time_s", 0.0)),
+        namespace_rows=namespace_rows,
+        gauge=gauge,
+        over_budget_rows=over_budget_rows,
+        over_budget_summary=over_budget_summary,
+        over_budget_truncated_remainder=over_budget_truncated_remainder,
+        source_note=(
+            "restored from dataset metadata for the MLPs used in this run."
+            if breakdown_key == "sampling" and dataset_backed
+            else None
+        ),
+        footer_note="aggregated across all evaluated MLPs",
+    )
+
+
 def build_run_presentation(report: dict[str, Any], *, debug: bool) -> CommandPresentation:
-    del debug
+    sections: list[Any] = list(_run_context_sections(report))
+    errors = _run_errors_section(report, debug=debug)
+    if errors is not None:
+        sections.append(errors)
+    for breakdown_key, title in (
+        ("sampling", "Sampling Budget Breakdown (Ground Truth)"),
+        ("estimator", "Estimator Budget Breakdown"),
+    ):
+        section = _breakdown_section(report, breakdown_key=breakdown_key, title=title)
+        if section is not None:
+            sections.append(section)
+    sections.append(_score_section(report))
     return CommandPresentation(
         command="run",
         status=_status_for_report(report),
         title="WhestBench Report",
-        sections=_base_sections(report),
+        sections=sections,
         epilogue_messages=_non_empty_messages([_JSON_OUTPUT_TIP, _DIAGNOSTIC_PLOTS_TIP]),
     )
 
