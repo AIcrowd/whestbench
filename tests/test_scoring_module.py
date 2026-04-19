@@ -1,4 +1,5 @@
 import time
+from dataclasses import replace
 
 import pytest
 import whest as we
@@ -503,6 +504,7 @@ def _build_bundle_from_contest(n_mlps: int = 4, width: int = 8, depth: int = 2):
         all_layer_means=all_layer_means,
         final_means=final_means,
         avg_variances=list(data.avg_variances),
+        sampling_budget_breakdowns=None,
     )
 
 
@@ -540,6 +542,76 @@ def test_make_contest_from_bundle_subsets_first_n() -> None:
     assert data.mlps[1] is bundle.mlps[1]
     assert np.allclose(np.asarray(data.final_targets[0]), bundle.final_means[0])
     assert np.allclose(np.asarray(data.final_targets[1]), bundle.final_means[1])
+
+
+def test_make_contest_from_bundle_restores_sampling_breakdown_for_subset() -> None:
+    bundle = replace(
+        _build_bundle_from_contest(n_mlps=3),
+        sampling_budget_breakdowns=[
+            {
+                "flop_budget": 1000,
+                "flops_used": 10,
+                "flops_remaining": 990,
+                "wall_time_s": 0.01,
+                "tracked_time_s": 0.005,
+                "untracked_time_s": 0.002,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 10,
+                        "calls": 1,
+                        "tracked_time_s": 0.005,
+                        "operations": {},
+                    }
+                },
+            },
+            {
+                "flop_budget": 1000,
+                "flops_used": 20,
+                "flops_remaining": 980,
+                "wall_time_s": 0.02,
+                "tracked_time_s": 0.010,
+                "untracked_time_s": 0.004,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 20,
+                        "calls": 1,
+                        "tracked_time_s": 0.010,
+                        "operations": {},
+                    }
+                },
+            },
+            {
+                "flop_budget": 1000,
+                "flops_used": 30,
+                "flops_remaining": 970,
+                "wall_time_s": 0.03,
+                "tracked_time_s": 0.015,
+                "untracked_time_s": 0.006,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 30,
+                        "calls": 1,
+                        "tracked_time_s": 0.015,
+                        "operations": {},
+                    }
+                },
+            },
+        ],
+    )
+
+    spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
+    data = make_contest_from_bundle(spec, bundle, n_mlps=2)
+
+    assert data.sampling_budget_breakdown is not None
+    assert data.sampling_budget_breakdown["flops_used"] == 30
+    assert data.sampling_budget_breakdown["tracked_time_s"] == 0.015
+    assert data.sampling_budget_breakdown["untracked_time_s"] == 0.006
+    assert (
+        data.sampling_budget_breakdown["by_namespace"]["sampling.sample_layer_statistics"][
+            "flops_used"
+        ]
+        == 30
+    )
 
 
 def test_make_contest_from_bundle_rejects_oversize() -> None:

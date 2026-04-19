@@ -91,7 +91,7 @@ def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
     assert exit_code == 0
     assert "Rich dashboard unavailable (rich boom)" in captured.err
     assert "WhestBench Report (Plain Text)" in captured.out
-    assert "Primary Score: 0.42" in captured.out
+    assert "Primary Score [primary_score] | 0.42000000" in captured.out
 
 
 def test_smoke_test_plain_output_includes_next_steps_and_json_tip(monkeypatch, capsys) -> None:
@@ -165,9 +165,9 @@ def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
     assert exit_code == 0
     assert "Rich dashboard unavailable (render failed)" in captured.err
     assert "WhestBench Report (Plain Text)" in captured.out
-    assert "Estimator Class: Estimator" in captured.out
-    assert "Estimator Path: estimator.py" in captured.out
-    assert "Host: example-host" in captured.out
+    assert "Estimator Class [estimator_class]: Estimator" in captured.out
+    assert "Estimator Path [estimator_path]: estimator.py" in captured.out
+    assert "Host [host.hostname]: example-host" in captured.out
 
 
 def test_participant_run_no_rich_preserves_pre_run_context(monkeypatch, capsys) -> None:
@@ -205,26 +205,51 @@ def test_participant_run_no_rich_preserves_pre_run_context(monkeypatch, capsys) 
 
     assert exit_code == 0
     assert "WhestBench Report (Plain Text)" in captured.out
-    assert "Estimator Class: Estimator" in captured.out
-    assert "Estimator Path: estimator.py" in captured.out
-    assert "Host: example-host" in captured.out
+    assert "Estimator Class [estimator_class]: Estimator" in captured.out
+    assert "Estimator Path [estimator_path]: estimator.py" in captured.out
+    assert "Host [host.hostname]: example-host" in captured.out
 
 
 def test_render_plain_text_report_includes_breakdown_sections_and_summary() -> None:
     rendered = cli._render_plain_text_report(_sample_report())
 
-    assert "Sampling Budget Breakdown:" in rendered
-    assert "Estimator Budget Breakdown:" in rendered
-    assert rendered.index("Sampling Budget Breakdown:") < rendered.index(
-        "Estimator Budget Breakdown:"
+    assert "Sampling Budget Breakdown (Ground Truth)" in rendered
+    assert "Estimator Budget Breakdown" in rendered
+    assert rendered.index("Sampling Budget Breakdown (Ground Truth)") < rendered.index(
+        "Estimator Budget Breakdown"
     )
-    assert "Total FLOPs: 60" in rendered
-    assert "Tracked Time: 0.015000s" in rendered
-    assert "Untracked Time: 0.005000s" in rendered
+    assert "Total FLOPs [flops_used]: 60" in rendered
+    assert "Tracked Time [tracked_time_s]: 0.015000s" in rendered
+    assert "Untracked Time [untracked_time_s]: 0.005000s" in rendered
     assert "sampling.sample_layer_statistics" in rendered
     assert "sampling.draw_weights" in rendered
     assert "estimator.phase" in rendered
     assert "estimator.estimator-client" in rendered
+    assert "aggregated across all evaluated MLPs" in rendered
+
+
+def test_render_plain_text_report_matches_main_style_score_and_breakdown_information() -> None:
+    report = _sample_report()
+    report["results"]["per_mlp"] = [
+        {"mlp_index": 0, "final_mse": 0.4},
+        {"mlp_index": 1, "final_mse": 0.44},
+    ]
+
+    rendered = cli._render_plain_text_report(report)
+
+    assert rendered.index("Sampling Budget Breakdown (Ground Truth)") < rendered.index(
+        "Estimator Budget Breakdown"
+    )
+    assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
+    assert "Total FLOPs [flops_used]" in rendered
+    assert "Tracked Time [tracked_time_s]" in rendered
+    assert "Untracked Time [untracked_time_s]" in rendered
+    assert "aggregated across all evaluated MLPs" in rendered
+    assert "Primary Score [primary_score]" in rendered
+    assert "Secondary Score [secondary_score]" in rendered
+    assert "Best MLP Score [best_mlp_score]" in rendered
+    assert "Worst MLP Score [worst_mlp_score]" in rendered
+    assert "Estimator FLOPs" not in rendered
 
 
 def test_render_plain_text_report_includes_run_context_and_hardware_metadata() -> None:
@@ -250,13 +275,13 @@ def test_render_plain_text_report_includes_run_context_and_hardware_metadata() -
     rendered = cli._render_plain_text_report(report)
 
     for text in (
-        "Estimator Class: CombinedEstimator",
-        "Estimator Path: examples/estimators/combined_estimator.py",
+        "Estimator Class [estimator_class]: CombinedEstimator",
+        "Estimator Path [estimator_path]: examples/estimators/combined_estimator.py",
         "Hardware & Runtime",
-        "Host: example-host",
-        "OS: Darwin",
-        "CPU: Apple M4",
-        "Python: 3.13.7",
+        "Host [host.hostname]: example-host",
+        "OS [host.os]: Darwin",
+        "CPU [host.cpu_brand]: Apple M4",
+        "Python [host.python_version]: 3.13.7",
     ):
         assert text in rendered
 

@@ -5,12 +5,14 @@ from whestbench.presentation.adapters import (
     build_init_presentation,
     build_package_presentation,
     build_profile_presentation,
+    build_run_presentation,
     build_smoke_test_presentation,
     build_validate_presentation,
     build_visualizer_error_presentation,
     build_visualizer_ready_presentation,
 )
 from whestbench.presentation.models import (
+    BudgetBreakdownSection,
     ChecklistSection,
     ErrorSection,
     KeyValueSection,
@@ -50,6 +52,161 @@ def test_build_smoke_test_presentation_includes_structured_next_steps() -> None:
             "whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
         ),
     ]
+
+
+def test_build_run_presentation_orders_breakdowns_before_final_score() -> None:
+    doc = build_run_presentation(
+        {
+            "run_meta": {"run_duration_s": 1.0, "host": {}},
+            "run_config": {"n_mlps": 2, "width": 4, "depth": 3, "flop_budget": 100},
+            "results": {
+                "primary_score": 0.123,
+                "secondary_score": 0.456,
+                "per_mlp": [],
+                "breakdowns": {
+                    "sampling": {
+                        "flops_used": 80,
+                        "tracked_time_s": 0.02,
+                        "untracked_time_s": 0.01,
+                        "by_namespace": {
+                            "sampling.sample_layer_statistics": {
+                                "flops_used": 80,
+                                "tracked_time_s": 0.02,
+                            }
+                        },
+                    },
+                    "estimator": {
+                        "flop_budget": 200,
+                        "flops_used": 90,
+                        "tracked_time_s": 0.03,
+                        "untracked_time_s": 0.01,
+                        "by_namespace": {
+                            "estimator.estimator-client": {
+                                "flops_used": 90,
+                                "tracked_time_s": 0.03,
+                            }
+                        },
+                    },
+                },
+            },
+        },
+        debug=False,
+    )
+
+    titles = [section.title for section in doc.sections]
+
+    assert titles.index("Sampling Budget Breakdown (Ground Truth)") < titles.index(
+        "Estimator Budget Breakdown"
+    )
+    assert titles.index("Estimator Budget Breakdown") < titles.index("Final Score")
+    sampling = next(
+        section
+        for section in doc.sections
+        if isinstance(section, BudgetBreakdownSection)
+        and section.title == "Sampling Budget Breakdown (Ground Truth)"
+    )
+    estimator = next(
+        section
+        for section in doc.sections
+        if isinstance(section, BudgetBreakdownSection)
+        and section.title == "Estimator Budget Breakdown"
+    )
+    assert sampling.available is True
+    assert estimator.available is True
+    assert estimator.gauge is not None
+
+
+def test_build_run_presentation_restores_main_style_score_and_context_fields() -> None:
+    doc = build_run_presentation(
+        {
+            "run_meta": {
+                "run_duration_s": 1.0,
+                "host": {
+                    "hostname": "example-host",
+                    "os": "Darwin",
+                    "python_version": "3.13.7",
+                },
+            },
+            "run_config": {
+                "estimator_class": "CombinedEstimator",
+                "estimator_path": "examples/estimators/combined_estimator.py",
+                "n_mlps": 2,
+                "width": 4,
+                "depth": 3,
+                "flop_budget": 100,
+            },
+            "results": {
+                "primary_score": 0.123456789,
+                "secondary_score": 0.456789123,
+                "per_mlp": [
+                    {"mlp_index": 0, "final_mse": 0.1},
+                    {"mlp_index": 1, "final_mse": 0.2},
+                ],
+            },
+        },
+        debug=False,
+    )
+
+    run_context = next(
+        section
+        for section in doc.sections
+        if isinstance(section, KeyValueSection) and section.title == "Run Context"
+    )
+    score = next(
+        section
+        for section in doc.sections
+        if isinstance(section, TableSection) and section.title == "Final Score"
+    )
+
+    assert [row.label for row in run_context.rows][:4] == [
+        "Estimator Class [estimator_class]",
+        "Estimator Path [estimator_path]",
+        "Started [run_started_at_utc]",
+        "Finished [run_finished_at_utc]",
+    ]
+    assert score.columns == ["metric", "value"]
+    assert score.rows == [
+        ["Primary Score [primary_score]", "0.12345679"],
+        ["Secondary Score [secondary_score]", "0.45678912"],
+        ["Best MLP Score [best_mlp_score]", "0.10000000"],
+        ["Worst MLP Score [worst_mlp_score]", "0.20000000"],
+    ]
+    assert (
+        score.subtitle
+        == "lower MSE is better; primary score = mean across MLPs of final-layer MSE"
+    )
+
+
+def test_build_run_presentation_marks_dataset_sampling_breakdown_as_unavailable() -> None:
+    doc = build_run_presentation(
+        {
+            "run_meta": {"run_duration_s": 1.0, "host": {}},
+            "run_config": {
+                "n_mlps": 2,
+                "width": 4,
+                "depth": 3,
+                "flop_budget": 100,
+                "dataset": {"path": "/tmp/eval.npz", "sha256": "abc123"},
+            },
+            "results": {
+                "primary_score": 0.123,
+                "secondary_score": 0.456,
+                "per_mlp": [],
+                "breakdowns": {"sampling": None, "estimator": None},
+            },
+        },
+        debug=False,
+    )
+
+    sampling = next(
+        section
+        for section in doc.sections
+        if isinstance(section, BudgetBreakdownSection)
+        and section.title == "Sampling Budget Breakdown (Ground Truth)"
+    )
+
+    assert sampling.available is False
+    assert "recreate the dataset" in sampling.unavailable_message.lower()
 
 
 def test_build_validate_presentation_includes_structured_checklist() -> None:

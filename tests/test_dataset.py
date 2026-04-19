@@ -1,3 +1,6 @@
+import json
+
+import numpy as np
 import whest as we
 
 from whestbench import hardware as hardware_mod
@@ -20,6 +23,13 @@ def test_create_and_load_roundtrip(tmp_path) -> None:
     assert bundle.all_layer_means.shape == (2, 2, 8)
     assert bundle.final_means.shape == (2, 8)
     assert len(bundle.avg_variances) == 2
+    assert bundle.sampling_budget_breakdowns is not None
+    assert len(bundle.sampling_budget_breakdowns) == 2
+    assert bundle.sampling_budget_breakdowns[0]["flops_used"] > 0
+    assert (
+        "sampling.sample_layer_statistics"
+        in bundle.sampling_budget_breakdowns[0]["by_namespace"]
+    )
     for mlp in bundle.mlps:
         mlp.validate()
         assert mlp.width == 8
@@ -90,3 +100,50 @@ def test_create_dataset_skips_hardware_fallback_probes_via_env(tmp_path, monkeyp
     assert bundle.metadata["hardware"]["cpu_count_logical"] > 0
     assert bundle.metadata["hardware"]["cpu_count_physical"] is None
     assert bundle.metadata["hardware"]["ram_total_bytes"] is None
+    assert bundle_a.sampling_budget_breakdowns is not None
+    assert bundle_b.sampling_budget_breakdowns is not None
+    for breakdown_a, breakdown_b in zip(
+        bundle_a.sampling_budget_breakdowns,
+        bundle_b.sampling_budget_breakdowns,
+        strict=True,
+    ):
+        assert breakdown_a["flops_used"] == breakdown_b["flops_used"]
+        assert sorted(breakdown_a["by_namespace"]) == sorted(breakdown_b["by_namespace"])
+        for namespace in breakdown_a["by_namespace"]:
+            assert (
+                breakdown_a["by_namespace"][namespace]["flops_used"]
+                == breakdown_b["by_namespace"][namespace]["flops_used"]
+            )
+
+
+def test_load_dataset_accepts_older_files_without_sampling_breakdowns(tmp_path) -> None:
+    path = tmp_path / "legacy.npz"
+    rng = np.random.default_rng(0)
+    weights = rng.standard_normal((2, 2, 4, 4)).astype(np.float32)
+    all_layer_means = rng.standard_normal((2, 2, 4)).astype(np.float32)
+    final_means = rng.standard_normal((2, 4)).astype(np.float32)
+    avg_variances = np.ones(2, dtype=np.float64)
+    metadata = {
+        "schema_version": "2.1",
+        "created_at_utc": "2026-04-19T00:00:00+00:00",
+        "seed": 0,
+        "n_mlps": 2,
+        "n_samples": 16,
+        "width": 4,
+        "depth": 2,
+        "flop_budget": 1000,
+        "hardware": {},
+    }
+    np.savez(
+        path,
+        metadata=np.array(json.dumps(metadata)),
+        weights=weights,
+        all_layer_means=all_layer_means,
+        final_means=final_means,
+        avg_variances=avg_variances,
+    )
+
+    bundle = load_dataset(path)
+
+    assert bundle.n_mlps == 2
+    assert bundle.sampling_budget_breakdowns is None

@@ -25,6 +25,9 @@ class TableSection:
     title: str
     columns: list[str]
     rows: list[list[str]]
+    subtitle: str | None = None
+    align_center: bool = False
+    border_style: str | None = None
 
 
 @dataclass(frozen=True)
@@ -106,12 +109,78 @@ def format_error_detail_lines(details: Mapping[str, Any]) -> list[str]:
 
 
 @dataclass(frozen=True)
+class RunErrorEntry:
+    mlp_index: int
+    code: str
+    message: str
+    details: dict[str, Any] = field(default_factory=dict)
+    traceback: str | None = None
+
+
+@dataclass(frozen=True)
+class RunErrorsSection:
+    title: str
+    summary: str
+    entries: list[RunErrorEntry]
+    footer: str | None = None
+
+
+@dataclass(frozen=True)
+class BudgetBreakdownNamespaceRow:
+    namespace: str
+    total_flops: str
+    percent_of_section_flops: str
+    mean_flops_per_mlp: str
+    tracked_time: str
+
+
+@dataclass(frozen=True)
+class BudgetBreakdownGauge:
+    label: str
+    bar: str
+    overflow: bool
+    percent_of_budget: str
+    budget_label: str
+    worst_mlp_percent: str | None = None
+
+
+@dataclass(frozen=True)
+class BudgetBreakdownOverBudgetRow:
+    mlp_index: int
+    flops_used: str
+    percent_of_budget: str | None = None
+
+
+@dataclass(frozen=True)
+class BudgetBreakdownSection:
+    title: str
+    available: bool
+    unavailable_message: str | None = None
+    total_flops: str | None = None
+    tracked_time: str | None = None
+    untracked_time: str | None = None
+    namespace_rows: list[BudgetBreakdownNamespaceRow] = field(default_factory=list)
+    gauge: BudgetBreakdownGauge | None = None
+    over_budget_rows: list[BudgetBreakdownOverBudgetRow] = field(default_factory=list)
+    over_budget_summary: str | None = None
+    over_budget_truncated_remainder: int | None = None
+    source_note: str | None = None
+    footer_note: str | None = None
+
+
+@dataclass(frozen=True)
 class CommandPresentation:
     command: str
     status: PresentationStatus
     title: str
     subtitle: str | None = None
     sections: list[
-        KeyValueSection | TableSection | StepsSection | ChecklistSection | ErrorSection
+        KeyValueSection
+        | TableSection
+        | StepsSection
+        | ChecklistSection
+        | ErrorSection
+        | RunErrorsSection
+        | BudgetBreakdownSection
     ] = field(default_factory=list)
     epilogue_messages: list[str] = field(default_factory=list)

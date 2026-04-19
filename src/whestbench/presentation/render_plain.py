@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from .models import (
+    BudgetBreakdownSection,
     ChecklistSection,
     CommandPresentation,
     ErrorSection,
     KeyValueSection,
+    RunErrorsSection,
     StepItem,
     StepsSection,
     TableSection,
@@ -30,6 +32,42 @@ def _primary_error_section(doc: CommandPresentation) -> ErrorSection | None:
         if isinstance(section, ErrorSection):
             return section
     return None
+
+
+def _render_budget_breakdown(section: BudgetBreakdownSection) -> list[str]:
+    if not section.available:
+        return [section.unavailable_message] if section.unavailable_message else []
+
+    lines: list[str] = []
+    if section.source_note:
+        lines.append(section.source_note)
+    if section.total_flops is not None:
+        lines.append(f"Total FLOPs [flops_used]: {section.total_flops}")
+    if section.tracked_time is not None:
+        lines.append(f"Tracked Time [tracked_time_s]: {section.tracked_time}")
+    if section.untracked_time is not None:
+        lines.append(f"Untracked Time [untracked_time_s]: {section.untracked_time}")
+    if section.namespace_rows:
+        lines.append("namespace | total flops | % of section flops | mean flops / MLP | tracked time")
+        lines.append(
+            "--------- | ----------- | ------------------ | ---------------- | ------------"
+        )
+    for row in section.namespace_rows:
+        lines.append(
+            " | ".join(
+                [
+                    row.namespace,
+                    row.total_flops,
+                    row.percent_of_section_flops,
+                    row.mean_flops_per_mlp,
+                    row.tracked_time,
+                ]
+            )
+        )
+    footer_note = section.footer_note or "aggregated across all evaluated MLPs"
+    if footer_note:
+        lines.append(footer_note)
+    return lines
 
 
 def render_plain_presentation(doc: CommandPresentation) -> str:
@@ -58,6 +96,8 @@ def render_plain_presentation(doc: CommandPresentation) -> str:
                 lines.append(" | ".join("-" * len(column) for column in section.columns))
             for row in section.rows:
                 lines.append(" | ".join(row))
+            if section.subtitle:
+                lines.append(section.subtitle)
         elif isinstance(section, StepsSection):
             for step in section.steps:
                 lines.extend(_render_step(step))
@@ -74,6 +114,19 @@ def render_plain_presentation(doc: CommandPresentation) -> str:
                 lines.pop()
                 continue
             lines.extend(content)
+        elif isinstance(section, RunErrorsSection):
+            lines.append(section.summary)
+            for entry in section.entries:
+                lines.append(f"  MLP {entry.mlp_index} [{entry.code}]: {entry.message}")
+                for detail_line in format_error_detail_lines(entry.details):
+                    lines.append(f"    {detail_line}")
+                if entry.traceback:
+                    for tb_line in entry.traceback.rstrip("\n").splitlines():
+                        lines.append(f"    {tb_line}")
+            if section.footer:
+                lines.append(section.footer)
+        elif isinstance(section, BudgetBreakdownSection):
+            lines.extend(_render_budget_breakdown(section))
 
     if doc.epilogue_messages:
         lines.append("")

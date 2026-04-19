@@ -23,7 +23,8 @@ from rich.table import Table
 from rich.text import Text
 
 from .presentation.adapters import build_run_presentation, build_smoke_test_presentation
-from .presentation.models import CommandPresentation, StepItem, StepsSection
+from .presentation.models import CommandPresentation, KeyValueSection, StepItem, StepsSection
+from .presentation.render_rich import render_rich_sections
 
 try:
     import plotext as _plotext  # pyright: ignore[reportMissingModuleSource]
@@ -68,9 +69,23 @@ def render_human_results(
     """Render post-run sections for append-only human flows."""
     buffer = io.StringIO()
     console = _new_console(buffer)
-    _render_score_row(console, report)
-    _render_errors_section(console, report, debug=debug)
-    _render_breakdown_sections(console, report)
+    doc = build_run_presentation(report, debug=debug)
+    settled_sections = [
+        section
+        for section in doc.sections
+        if not (isinstance(section, KeyValueSection) and section.title in {"Run Context", "Hardware & Runtime"})
+    ]
+    buffer.write(
+        render_rich_sections(
+            CommandPresentation(
+                command=doc.command,
+                status=doc.status,
+                title=doc.title,
+                subtitle=doc.subtitle,
+                sections=settled_sections,
+            )
+        )
+    )
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
 
@@ -97,9 +112,22 @@ def render_human_report(
     for message in doc.epilogue_messages:
         console.print(f"[dim]{message}[/dim]")
     _render_top_row(console, report)
-    _render_score_row(console, report)
-    _render_errors_section(console, report, debug=debug)
-    _render_breakdown_sections(console, report)
+    settled_sections = [
+        section
+        for section in doc.sections
+        if not (isinstance(section, KeyValueSection) and section.title in {"Run Context", "Hardware & Runtime"})
+    ]
+    buffer.write(
+        render_rich_sections(
+            CommandPresentation(
+                command=doc.command,
+                status=doc.status,
+                title=doc.title,
+                subtitle=doc.subtitle,
+                sections=settled_sections,
+            )
+        )
+    )
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
 
