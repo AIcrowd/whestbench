@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 import whest as we
 
+import whestbench.cli as cli
 import whestbench.profiler as profiler
 from whestbench.profiler import (
     PRESETS,
@@ -201,6 +202,17 @@ class TestRunProfileVerbose:
         # Full verbose tables also present
         assert "Timing Results" in output
 
+    def test_plain_verbose_stays_on_shared_plain_output(self) -> None:
+        output, _ = run_profile(
+            preset_name="super-quick",
+            verbose=True,
+            output_format="plain",
+        )
+
+        assert "Simulation Profile" in output
+        assert "Detail" in output
+        assert "Timing Results" not in output
+
     def test_multi_dim_leaderboard_grouping(self) -> None:
         """Multiple dimension combos should produce separate leaderboard groups."""
         PRESETS["_ci"] = PresetConfig(
@@ -260,3 +272,176 @@ class TestCLIFlags:
         parser = _build_participant_parser()
         args = parser.parse_args(["profile-simulation"])
         assert args.log_progress is False
+
+
+def test_profile_simulation_format_json_uses_json_payload(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        profiler,
+        "run_profile",
+        lambda **_kwargs: (
+            "terminal output",
+            {
+                "hardware": {"cpu_count_logical": 8},
+                "timing": [{"backend": "whest"}],
+                "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+            },
+        ),
+        raising=False,
+    )
+
+    exit_code = cli.main(["profile-simulation", "--format", "json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["hardware"]["cpu_count_logical"] == 8
+    assert payload["timing"] == [{"backend": "whest"}]
+
+
+def test_profile_simulation_format_plain_uses_plain_human_output(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        profiler,
+        "run_profile",
+        lambda **_kwargs: (
+            "Simulation Profile\nCommand: profile-simulation\nStatus: success\n\nDetail\n",
+            {
+                "hardware": {"cpu_count_logical": 8},
+                "timing": [{"backend": "whest"}],
+                "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+            },
+        ),
+        raising=False,
+    )
+
+    exit_code = cli.main(["profile-simulation", "--format", "plain"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Simulation Profile" in captured.out
+    assert "Command: profile-simulation" in captured.out
+    assert captured.out.lstrip()[0] != "{"
+
+
+def test_profile_simulation_plain_uses_shared_presenter_path(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    observed: dict[str, object] = {}
+
+    def fake_render_command_presentation(doc, *, output_format, force_terminal, **_kwargs):
+        observed["title"] = doc.title
+        observed["output_format"] = output_format
+        observed["force_terminal"] = force_terminal
+        return "shared profile output\n"
+
+    monkeypatch.setattr(profiler, "render_command_presentation", fake_render_command_presentation)
+
+    exit_code = cli.main(["profile-simulation", "--preset", "super-quick", "--format", "plain"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.out == "shared profile output\n"
+    assert observed == {
+        "title": "Simulation Profile",
+        "output_format": "plain",
+        "force_terminal": False,
+    }
+
+
+def test_profile_simulation_format_json_keeps_timing_warnings_off_stdout(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        profiler,
+        "correctness_check",
+        lambda: CorrectnessResult(backend_name="whest", passed=True, error=""),
+    )
+
+    def fake_run_timing_sweep(*_args, warning_stream=None, **_kwargs):
+        if warning_stream is not None:
+            print("[warning] timing skipped", file=warning_stream)
+        return []
+
+    monkeypatch.setattr(profiler, "run_timing_sweep", fake_run_timing_sweep, raising=False)
+
+    exit_code = cli.main(["profile-simulation", "--format", "json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["correctness"] == [{"backend": "whest", "passed": True, "error": ""}]
+    assert "[warning]" not in captured.out
+    assert "[warning] timing skipped" in captured.err
+
+
+def test_profile_simulation_defaults_to_plain_in_non_tty_cli(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    observed: dict[str, object] = {}
+
+    def fake_run_profile(**kwargs):
+        observed.update(kwargs)
+        return (
+            "Simulation Profile\nCommand: profile-simulation\nStatus: success\n",
+            {
+                "hardware": {"cpu_count_logical": 8},
+                "timing": [],
+                "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+            },
+        )
+
+    monkeypatch.setattr(profiler, "run_profile", fake_run_profile, raising=False)
+
+    exit_code = cli.main(["profile-simulation"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert observed["output_format"] == "plain"
+    assert "Simulation Profile" in captured.out
+
+
+def test_profile_simulation_format_json_log_progress_keeps_stdout_parseable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        profiler,
+        "correctness_check",
+        lambda: CorrectnessResult(backend_name="whest", passed=True, error=""),
+    )
+    monkeypatch.setattr(profiler, "run_timing_sweep", lambda *_args, **_kwargs: [], raising=False)
+
+    exit_code = cli.main(["profile-simulation", "--format", "json", "--log-progress"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["correctness"] == [{"backend": "whest", "passed": True, "error": ""}]
+    assert "[correctness]" not in captured.out
+    assert "[timing]" not in captured.out
+    assert "[done]" not in captured.out
+
+
+def test_profile_simulation_format_json_does_not_depend_on_human_renderer(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        profiler,
+        "correctness_check",
+        lambda: CorrectnessResult(backend_name="whest", passed=True, error=""),
+    )
+    monkeypatch.setattr(profiler, "run_timing_sweep", lambda *_args, **_kwargs: [], raising=False)
+    monkeypatch.setattr(
+        profiler,
+        "render_command_presentation",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("shared human boom")),
+    )
+
+    exit_code = cli.main(["profile-simulation", "--format", "json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["correctness"] == [{"backend": "whest", "passed": True, "error": ""}]

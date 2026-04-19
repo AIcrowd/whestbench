@@ -8,7 +8,17 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from .models import BudgetBreakdownSection, TableSection
+from .models import (
+    BudgetBreakdownSection,
+    ChecklistSection,
+    ErrorSection,
+    KeyValueSection,
+    RunErrorsSection,
+    StepItem,
+    StepsSection,
+    TableSection,
+    format_error_detail_lines,
+)
 
 
 def make_keyed_label(human: str, code: str, style: str) -> Text:
@@ -130,3 +140,117 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
 
     border_style = "bright_yellow" if "Ground Truth" in section.title else "bright_magenta"
     return Panel(Group(*body), title=escape(section.title), border_style=border_style)
+
+
+def _render_step(step: str | StepItem) -> str:
+    if isinstance(step, StepItem):
+        return f"{step.purpose}\n{step.command}"
+    return step
+
+
+def _checklist_status_style(status: str) -> str:
+    if status == "ok":
+        return "green"
+    if status == "warn":
+        return "yellow"
+    return "red"
+
+
+def build_section_renderables(section: object) -> list[RenderableType]:
+    if isinstance(section, KeyValueSection):
+        table = Table(show_header=False)
+        table.add_column("field")
+        table.add_column("value", overflow="fold")
+        for row in section.rows:
+            table.add_row(Text(row.label), Text(row.value))
+        return [Panel(table, title=escape(section.title))]
+
+    if isinstance(section, TableSection):
+        if section.title == "Final Score" and section.columns == ["metric", "value"]:
+            return [build_score_block(section)]
+        table = Table(show_header=True)
+        for column in section.columns:
+            table.add_column(Text(column))
+        for row in section.rows:
+            table.add_row(*(Text(cell) for cell in row))
+        renderable: RenderableType = Align.center(table) if section.align_center else table
+        panel_kwargs = {
+            "title": escape(section.title),
+            "subtitle": escape(section.subtitle or ""),
+            "subtitle_align": "left",
+        }
+        if section.border_style is not None:
+            panel_kwargs["border_style"] = section.border_style
+        return [Panel(renderable, **panel_kwargs)]
+
+    if isinstance(section, StepsSection):
+        return [
+            Panel(
+                Text("\n".join(_render_step(step) for step in section.steps)),
+                title=escape(section.title),
+            )
+        ]
+
+    if isinstance(section, ChecklistSection):
+        table = Table(show_header=True)
+        table.add_column("Status")
+        table.add_column("Check")
+        table.add_column("Detail")
+        for item in section.items:
+            table.add_row(
+                Text(item.status.upper(), style=_checklist_status_style(item.status)),
+                Text(item.label),
+                Text(item.detail),
+            )
+        return [Panel(table, title=escape(section.title))]
+
+    if isinstance(section, ErrorSection):
+        detail_lines = [section.message] if section.message else []
+        detail_lines.extend(format_error_detail_lines(section.details))
+        if section.traceback:
+            detail_lines.append("Traceback:")
+            detail_lines.extend(section.traceback.rstrip("\n").splitlines())
+        if detail_lines:
+            return [
+                Panel(
+                    Text("\n".join(detail_lines)),
+                    title=escape(section.title),
+                    border_style="red",
+                )
+            ]
+        return []
+
+    if isinstance(section, RunErrorsSection):
+        table = Table(show_header=True)
+        table.add_column("MLP")
+        table.add_column("Code")
+        table.add_column("Message")
+        for entry in section.entries:
+            table.add_row(str(entry.mlp_index), entry.code, entry.message)
+        children: list[RenderableType] = [Text(section.summary, style="bold red"), table]
+        for entry in section.entries:
+            detail_lines = format_error_detail_lines(entry.details)
+            if detail_lines:
+                children.append(
+                    Panel(
+                        Text("\n".join(detail_lines)),
+                        title=f"MLP {entry.mlp_index} Details",
+                        border_style="red",
+                    )
+                )
+            if entry.traceback:
+                children.append(
+                    Panel(
+                        Text(entry.traceback.rstrip("\n"), style="dim"),
+                        title=f"Traceback — MLP {entry.mlp_index}",
+                        border_style="red",
+                    )
+                )
+        if section.footer:
+            children.append(Text(section.footer, style="dim"))
+        return [Panel(Group(*children), title=escape(section.title), border_style="red")]
+
+    if isinstance(section, BudgetBreakdownSection):
+        return [build_budget_breakdown_block(section)]
+
+    return []

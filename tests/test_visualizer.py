@@ -364,6 +364,34 @@ def test_run_visualizer_returns_1_when_node_missing(monkeypatch, capsys):
     assert "\x1b[" not in captured.err
 
 
+def test_run_visualizer_missing_node_uses_shared_presenter_path(monkeypatch, capsys):
+    observed: dict[str, object] = {}
+
+    def fake_render_command_presentation(doc, *, output_format, force_terminal, **_kwargs):
+        observed["title"] = doc.title
+        observed["output_format"] = output_format
+        observed["force_terminal"] = force_terminal
+        return "shared visualizer error\n"
+
+    monkeypatch.setattr(viz_mod, "render_command_presentation", fake_render_command_presentation)
+
+    def raise_not_found():
+        raise NodeNotFoundError("node")
+
+    monkeypatch.setattr(viz_mod, "check_node_available", raise_not_found)
+
+    result = run_visualizer(host="localhost", port=5173, no_open=True, debug=False)
+    captured = capsys.readouterr()
+
+    assert result == 1
+    assert captured.err == "shared visualizer error\n"
+    assert observed == {
+        "title": "Missing Prerequisite",
+        "output_format": "plain",
+        "force_terminal": False,
+    }
+
+
 def test_run_visualizer_returns_1_when_node_version_too_old(monkeypatch, capsys):
     monkeypatch.setattr(viz_mod, "check_node_available", lambda: None)
 

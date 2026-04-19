@@ -1,4 +1,4 @@
-"""Tests for --no-rich and debugger-aware Rich suppression in cli.py."""
+"""Tests for format selection and debugger-aware Rich suppression in cli.py."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ class _SessionSpy:
 
     def __init__(self, *_args: Any, **_kwargs: Any) -> None:
         type(self).instantiations += 1
-        raise AssertionError("_LiveTopPaneSession must not be instantiated in --no-rich path")
+        raise AssertionError("_LiveTopPaneSession must not be instantiated in plain-output path")
 
 
 def _patch_run_to_skip_rich(monkeypatch) -> None:
@@ -50,29 +50,36 @@ def _patch_run_to_skip_rich(monkeypatch) -> None:
     # Any code path that reaches the Rich fallback-when-exception branch would
     # still try to call render_human_results; stub it so failure modes don't
     # hide behind rendering errors.
-    monkeypatch.setattr(cli, "render_human_results", lambda *_a, **_k: "RICH OUTPUT", raising=False)
+    monkeypatch.setattr(
+        cli,
+        "render_human_results",
+        lambda *_a, **_k: (
+            "WhestBench Report\n" if _k.get("output_format") == "plain" else "RICH OUTPUT"
+        ),
+        raising=False,
+    )
 
 
-def test_no_rich_flag_skips_live_session_in_run(monkeypatch, capsys) -> None:
+def test_format_plain_skips_live_session_in_run(monkeypatch, capsys) -> None:
     _patch_run_to_skip_rich(monkeypatch)
     _SessionSpy.instantiations = 0
     monkeypatch.setattr(cli, "_LiveTopPaneSession", _SessionSpy, raising=True)
     monkeypatch.setattr(cli, "_live_top_pane_session", _SessionSpy, raising=True)
 
     exit_code = cli.main(
-        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--no-rich"]
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--format", "plain"]
     )
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert _SessionSpy.instantiations == 0
-    assert "WhestBench Report (Plain Text)" in captured.out
-    # No Rich-styled tip block in --no-rich mode.
+    assert "WhestBench Report" in captured.out
+    # No Rich-styled tip block in plain-output mode.
     assert "Use --json for JSON output" not in captured.out
     assert "Use [green]--json[/]" not in captured.out
 
 
-def test_no_rich_flag_skips_live_session_in_smoke_test(monkeypatch, capsys) -> None:
+def test_format_plain_skips_live_session_in_smoke_test(monkeypatch, capsys) -> None:
     def fake_run_default_report(
         *, profile: bool = False, detail: str = "raw", progress=None
     ) -> Dict[str, Any]:
@@ -84,26 +91,33 @@ def test_no_rich_flag_skips_live_session_in_smoke_test(monkeypatch, capsys) -> N
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
 
-    # render_human_report must NOT be called in the --no-rich path.
-    render_calls = {"count": 0}
-
-    def fail_render(*_a, **_k):
-        render_calls["count"] += 1
-        raise AssertionError("render_human_report must not be called with --no-rich")
-
-    monkeypatch.setattr(cli, "render_human_report", fail_render, raising=False)
-
-    exit_code = cli.main(["smoke-test", "--no-rich"])
+    exit_code = cli.main(["smoke-test", "--format", "plain"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert render_calls["count"] == 0
-    assert "WhestBench Report (Plain Text)" in captured.out
+    assert "WhestBench Report" in captured.out
     assert "[smoke-test] ground_truth: 1/1" in captured.err
     assert "[smoke-test] scoring: 1/1" in captured.err
 
 
-def test_pythonbreakpoint_env_promotes_no_rich(monkeypatch, capsys) -> None:
+def test_smoke_test_format_rich_forces_plain_when_debugger_detected(monkeypatch, capsys) -> None:
+    monkeypatch.setenv("PYTHONBREAKPOINT", "pdb.set_trace")
+    monkeypatch.setattr(
+        cli,
+        "run_default_report",
+        lambda **_kwargs: _sample_report(),
+    )
+
+    exit_code = cli.main(["smoke-test", "--format", "rich"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "forcing plain output" in captured.err.lower()
+    assert "WhestBench Report" in captured.out
+    assert "\x1b[" not in captured.out
+
+
+def test_run_format_rich_forces_plain_when_debugger_detected(monkeypatch, capsys) -> None:
     _patch_run_to_skip_rich(monkeypatch)
     _SessionSpy.instantiations = 0
     monkeypatch.setattr(cli, "_LiveTopPaneSession", _SessionSpy, raising=True)
@@ -111,13 +125,17 @@ def test_pythonbreakpoint_env_promotes_no_rich(monkeypatch, capsys) -> None:
 
     monkeypatch.setenv("PYTHONBREAKPOINT", "pdb.set_trace")
 
-    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    exit_code = cli.main(
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--format", "rich"]
+    )
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert _SessionSpy.instantiations == 0
-    assert "Debugger detected" in captured.err
-    assert "WhestBench Report (Plain Text)" in captured.out
+    assert (
+        "Debugger detected (sys.gettrace / PYTHONBREAKPOINT); forcing plain output." in captured.err
+    )
+    assert "WhestBench Report" in captured.out
 
 
 def test_pythonbreakpoint_zero_does_not_promote(monkeypatch, capsys) -> None:
@@ -128,7 +146,7 @@ def test_pythonbreakpoint_zero_does_not_promote(monkeypatch, capsys) -> None:
     monkeypatch.setattr(sys, "gettrace", lambda: None)
 
     # Also block _LiveTopPaneSession but allow _live_top_pane_session so we
-    # can verify the non-`no_rich` path would try to instantiate it. The run
+    # can verify the non-plain path would try to instantiate it. The run
     # path needs a Live to complete, so we swap in a no-op context manager.
     @contextmanager
     def _fake_live(*_a, **_k):
@@ -150,23 +168,7 @@ def test_pythonbreakpoint_zero_does_not_promote(monkeypatch, capsys) -> None:
     assert "Debugger detected" not in captured.err
 
 
-def test_whestbench_no_rich_env_promotes_no_rich(monkeypatch, capsys) -> None:
-    _patch_run_to_skip_rich(monkeypatch)
-    _SessionSpy.instantiations = 0
-    monkeypatch.setattr(cli, "_LiveTopPaneSession", _SessionSpy, raising=True)
-    monkeypatch.setattr(cli, "_live_top_pane_session", _SessionSpy, raising=True)
-
-    monkeypatch.setenv("WHESTBENCH_NO_RICH", "1")
-
-    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
-    captured = capsys.readouterr()
-
-    assert exit_code == 0
-    assert _SessionSpy.instantiations == 0
-    assert "Debugger detected" in captured.err
-
-
-def test_sys_gettrace_promotes_no_rich(monkeypatch, capsys) -> None:
+def test_sys_gettrace_forces_plain(monkeypatch, capsys) -> None:
     _patch_run_to_skip_rich(monkeypatch)
     _SessionSpy.instantiations = 0
     monkeypatch.setattr(cli, "_LiveTopPaneSession", _SessionSpy, raising=True)
@@ -177,17 +179,19 @@ def test_sys_gettrace_promotes_no_rich(monkeypatch, capsys) -> None:
     # trace function so pytest's own trace state isn't disturbed.
     monkeypatch.setattr(sys, "gettrace", lambda: lambda *a, **k: None)
 
-    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    exit_code = cli.main(
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--format", "rich"]
+    )
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert _SessionSpy.instantiations == 0
     assert "Debugger detected" in captured.err
+    assert "WhestBench Report" in captured.out
 
 
-def test_debugger_active_all_triggers(monkeypatch) -> None:
+def test_debugger_active_only_checks_trace_and_pythonbreakpoint(monkeypatch) -> None:
     monkeypatch.delenv("PYTHONBREAKPOINT", raising=False)
-    monkeypatch.delenv("WHESTBENCH_NO_RICH", raising=False)
     monkeypatch.setattr(sys, "gettrace", lambda: None)
     assert cli._debugger_active() is False
 
@@ -202,12 +206,6 @@ def test_debugger_active_all_triggers(monkeypatch) -> None:
     assert cli._debugger_active() is False
 
     monkeypatch.setenv("PYTHONBREAKPOINT", "")
-    assert cli._debugger_active() is False
-
-    monkeypatch.setenv("WHESTBENCH_NO_RICH", "1")
-    assert cli._debugger_active() is True
-
-    monkeypatch.setenv("WHESTBENCH_NO_RICH", "0")
     assert cli._debugger_active() is False
 
 

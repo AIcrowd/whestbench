@@ -19,7 +19,7 @@ from .presentation.adapters import (
     build_visualizer_ready_presentation,
 )
 from .presentation.models import CommandPresentation
-from .presentation.render_rich import render_rich_presentation
+from .presentation.presenters import render_command_presentation
 
 
 class NodeNotFoundError(RuntimeError):
@@ -82,9 +82,12 @@ _EXPLORER_NOT_FOUND_STEPS = [
 
 def _print_visualizer_doc(doc: CommandPresentation, *, stderr: bool = False) -> None:
     stream = sys.stderr if stderr else sys.stdout
+    output_format = "rich" if bool(getattr(stream, "isatty", lambda: False)()) else "plain"
     print(
-        render_rich_presentation(
-            doc, force_terminal=bool(getattr(stream, "isatty", lambda: False)())
+        render_command_presentation(
+            doc,
+            output_format=output_format,
+            force_terminal=bool(getattr(stream, "isatty", lambda: False)()),
         ),
         file=stream,
         end="",

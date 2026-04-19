@@ -8,7 +8,11 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from whestbench.presentation.blocks import build_budget_breakdown_block, build_score_block
+from whestbench.presentation.blocks import (
+    build_budget_breakdown_block,
+    build_score_block,
+    build_section_renderables,
+)
 from whestbench.presentation.human import render_document
 from whestbench.presentation.models import (
     BudgetBreakdownGauge,
@@ -23,12 +27,29 @@ from whestbench.presentation.models import (
     StepsSection,
     TableSection,
 )
-from whestbench.presentation.render_plain import render_plain_presentation
-from whestbench.presentation.render_rich import _section_renderables, render_rich_presentation
+from whestbench.presentation.presenters import render_command_presentation
 
 
 def _strip_ansi(text: str) -> str:
     return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
+def _render_plain(doc: CommandPresentation) -> str:
+    return render_command_presentation(
+        doc,
+        output_format="plain",
+        force_terminal=False,
+        width=200,
+    )
+
+
+def _render_rich(doc: CommandPresentation) -> str:
+    return render_command_presentation(
+        doc,
+        output_format="rich",
+        force_terminal=True,
+        width=200,
+    )
 
 
 def test_renderers_preserve_same_key_facts() -> None:
@@ -58,8 +79,8 @@ def test_renderers_preserve_same_key_facts() -> None:
         ],
     )
 
-    plain = render_plain_presentation(doc)
-    rich = _strip_ansi(render_rich_presentation(doc))
+    plain = _render_plain(doc)
+    rich = _strip_ansi(_render_rich(doc))
 
     for needle in (
         "WhestBench Report [beta]",
@@ -104,8 +125,8 @@ def test_renderers_include_purpose_and_command_for_structured_steps() -> None:
         ],
     )
 
-    plain = render_plain_presentation(doc)
-    rich = _strip_ansi(render_rich_presentation(doc))
+    plain = _render_plain(doc)
+    rich = _strip_ansi(_render_rich(doc))
 
     for text in (
         "Create starter files you can edit.",
@@ -139,8 +160,8 @@ def test_renderers_curate_known_error_details_and_keep_unknown_ones() -> None:
         epilogue_messages=["Use --debug to include a traceback."],
     )
 
-    plain = render_plain_presentation(doc)
-    rich = _strip_ansi(render_rich_presentation(doc))
+    plain = _render_plain(doc)
+    rich = _strip_ansi(_render_rich(doc))
 
     for text in (
         "Predictions must have shape (2, 4), got (4, 2).",
@@ -178,8 +199,8 @@ def test_renderers_do_not_crash_on_array_like_error_detail_values() -> None:
         ],
     )
 
-    plain = render_plain_presentation(doc)
-    rich = _strip_ansi(render_rich_presentation(doc))
+    plain = _render_plain(doc)
+    rich = _strip_ansi(_render_rich(doc))
 
     assert "Got shape: array([1, 2])" in plain
     assert "Got shape: array([1, 2])" in rich
@@ -199,8 +220,8 @@ def test_renderers_include_table_section_cells() -> None:
         ],
     )
 
-    plain = render_plain_presentation(doc)
-    rich = _strip_ansi(render_rich_presentation(doc))
+    plain = _render_plain(doc)
+    rich = _strip_ansi(_render_rich(doc))
 
     for text in (
         "Detail",
@@ -229,8 +250,8 @@ def test_rich_table_renderer_preserves_literal_markup_text() -> None:
         ],
     )
 
-    plain = render_plain_presentation(doc)
-    rich = _strip_ansi(render_rich_presentation(doc))
+    plain = _render_plain(doc)
+    rich = _strip_ansi(_render_rich(doc))
 
     for text in (
         "Detail [literal]",
@@ -307,8 +328,8 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
         ],
     )
 
-    plain = render_plain_presentation(doc)
-    rich = _strip_ansi(render_rich_presentation(doc))
+    plain = _render_plain(doc)
+    rich = _strip_ansi(_render_rich(doc))
 
     for rendered in (plain, rich):
         assert rendered.index("Sampling Budget Breakdown (Ground Truth)") < rendered.index(
@@ -338,8 +359,8 @@ def test_renderers_show_unavailable_budget_breakdown_message() -> None:
         ],
     )
 
-    plain = render_plain_presentation(doc)
-    rich = _strip_ansi(render_rich_presentation(doc))
+    plain = _render_plain(doc)
+    rich = _strip_ansi(_render_rich(doc))
 
     for rendered in (plain, rich):
         assert "Sampling Budget Breakdown (Ground Truth)" in rendered
@@ -406,8 +427,8 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
         ],
     )
 
-    plain = render_plain_presentation(doc)
-    rich = _strip_ansi(render_rich_presentation(doc))
+    plain = _render_plain(doc)
+    rich = _strip_ansi(_render_rich(doc))
 
     for rendered in (plain, rich):
         assert rendered.index("Sampling Budget Breakdown (Ground Truth)") < rendered.index(
@@ -445,7 +466,7 @@ def test_budget_breakdown_rich_renderer_uses_centered_rich_tables() -> None:
         ],
     )
 
-    renderables = _section_renderables(section)
+    renderables = build_section_renderables(section)
 
     assert len(renderables) == 1
     panel = renderables[0]
@@ -467,7 +488,7 @@ def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
         untracked_time="0.003194s",
     )
 
-    panel = _section_renderables(section)[0]
+    panel = build_section_renderables(section)[0]
     assert isinstance(panel, Panel)
     assert isinstance(panel.renderable, Group)
     summary = list(panel.renderable.renderables)[0]
@@ -514,7 +535,7 @@ def test_final_score_rich_renderer_keeps_old_color_coding() -> None:
         border_style="bright_cyan",
     )
 
-    panel = _section_renderables(section)[0]
+    panel = build_section_renderables(section)[0]
     assert isinstance(panel, Panel)
     assert isinstance(panel.renderable, Align)
     assert isinstance(panel.renderable.renderable, Table)
@@ -599,3 +620,90 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
         assert "Primary Score [primary_score]" in rendered
         assert "Secondary Score [secondary_score]" in rendered
         assert "lower MSE is better" in rendered
+
+
+def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
+    budget_section = BudgetBreakdownSection(
+        title="Estimator Budget Breakdown",
+        available=True,
+        total_flops="4.84e+07",
+        tracked_time="0.005277s",
+        untracked_time="0.012066s",
+        namespace_rows=[
+            BudgetBreakdownNamespaceRow(
+                namespace="estimator.estimator-client",
+                total_flops="4.84e+07",
+                percent_of_section_flops="100.0%",
+                mean_flops_per_mlp="4.84e+07",
+                tracked_time="0.005277s",
+            )
+        ],
+    )
+    score_section = TableSection(
+        title="Final Score",
+        columns=["metric", "value"],
+        rows=[
+            ["Primary Score [primary_score]", "0.01329615"],
+            ["Secondary Score [secondary_score]", "0.03770037"],
+        ],
+        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+    )
+
+    plain = render_document(
+        title="WhestBench Report",
+        blocks=[
+            build_budget_breakdown_block(budget_section),
+            build_score_block(score_section),
+        ],
+        output_format="plain",
+        width=100,
+    )
+
+    assert re.search(r"^[╭┌+].*WhestBench Report", plain, re.MULTILINE)
+    assert "metric | value" not in plain
+    assert "namespace | total flops" not in plain
+
+
+def test_shared_human_plain_output_preserves_long_values_under_rich_safe_text_rendering() -> None:
+    budget_section = BudgetBreakdownSection(
+        title="Estimator Budget Breakdown",
+        available=True,
+        total_flops="123456789012345678901234567890",
+        tracked_time="0.12345678901234567890s",
+        untracked_time="0.98765432109876543210s",
+        namespace_rows=[
+            BudgetBreakdownNamespaceRow(
+                namespace="sampling.sample_layer_statistics.really_long_namespace",
+                total_flops="123456789012345678901234567890",
+                percent_of_section_flops="100.0000000000%",
+                mean_flops_per_mlp="12345678901234567890",
+                tracked_time="0.12345678901234567890s",
+            )
+        ],
+    )
+    score_section = TableSection(
+        title="Final Score",
+        columns=["metric", "value"],
+        rows=[["Primary Score [primary_score]", "0.123456789012345678901234567890"]],
+        subtitle=(
+            "lower MSE is better; primary score = mean across MLPs of final-layer "
+            "MSE and this subtitle should not be truncated"
+        ),
+    )
+
+    plain = render_document(
+        title="WhestBench Report",
+        blocks=[
+            build_budget_breakdown_block(budget_section),
+            build_score_block(score_section),
+        ],
+        output_format="plain",
+        width=40,
+    )
+
+    assert "123456789012345678901234567890" in plain
+    assert "sampling.sample_layer_statistics.really_long_namespace" in plain
+    assert "Primary Score [primary_score]" in plain
+    assert "0.123456789012345678901234567890" in plain
+    assert "lower MSE is better" in plain
+    assert max(len(line) for line in plain.splitlines()) < 200

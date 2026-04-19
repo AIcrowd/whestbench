@@ -17,5 +17,9 @@ from .human import (
     render_document as render_document,
 )
 from .models import CommandPresentation as CommandPresentation
-from .render_plain import render_plain_presentation as render_plain_presentation
-from .render_rich import render_rich_presentation as render_rich_presentation
+from .presenters import (
+    build_presentation_blocks as build_presentation_blocks,
+)
+from .presenters import (
+    render_command_presentation as render_command_presentation,
+)

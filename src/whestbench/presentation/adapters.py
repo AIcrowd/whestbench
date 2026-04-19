@@ -27,7 +27,7 @@ from .models import (
     TableSection,
 )
 
-_JSON_OUTPUT_TIP = "Use --json for JSON output when calling from automated agents or UIs."
+_JSON_OUTPUT_TIP = "Use --format json for JSON output when calling from automated agents or UIs."
 _DIAGNOSTIC_PLOTS_TIP = "Use --show-diagnostic-plots to include diagnostic plot panes."
 _SMOKE_TEST_NEXT_STEPS = [
     StepItem(
@@ -123,7 +123,9 @@ def _run_context_sections(report: dict[str, Any]) -> list[KeyValueSection]:
                     "Finished [run_finished_at_utc]",
                     _display_value(run_meta.get("run_finished_at_utc")),
                 ),
-                KeyValueRow("Duration(s) [run_duration_s]", _display_value(run_meta.get("run_duration_s"))),
+                KeyValueRow(
+                    "Duration(s) [run_duration_s]", _display_value(run_meta.get("run_duration_s"))
+                ),
                 KeyValueRow("MLPs [n_mlps]", _display_value(run_config.get("n_mlps"))),
                 KeyValueRow("Width [width]", _display_value(run_config.get("width"))),
                 KeyValueRow("Depth [depth]", _display_value(run_config.get("depth"))),
@@ -143,7 +145,9 @@ def _run_context_sections(report: dict[str, Any]) -> list[KeyValueSection]:
             rows=[
                 KeyValueRow("Host [host.hostname]", _display_value(host_meta.get("hostname"))),
                 KeyValueRow("OS [host.os]", _display_value(host_meta.get("os"))),
-                KeyValueRow("Release [host.os_release]", _display_value(host_meta.get("os_release"))),
+                KeyValueRow(
+                    "Release [host.os_release]", _display_value(host_meta.get("os_release"))
+                ),
                 KeyValueRow("Platform [host.platform]", _display_value(host_meta.get("platform"))),
                 KeyValueRow("Arch [host.machine]", _display_value(host_meta.get("machine"))),
                 KeyValueRow("CPU [host.cpu_brand]", _display_value(host_meta.get("cpu_brand"))),
@@ -155,9 +159,16 @@ def _run_context_sections(report: dict[str, Any]) -> list[KeyValueSection]:
                     "CPU Cores (physical) [host.cpu_count_physical]",
                     _display_value(host_meta.get("cpu_count_physical")),
                 ),
-                KeyValueRow("RAM Total [host.ram_total_bytes]", _display_bytes(host_meta.get("ram_total_bytes"))),
-                KeyValueRow("Python [host.python_version]", _display_value(host_meta.get("python_version"))),
-                KeyValueRow("NumPy [host.numpy_version]", _display_value(host_meta.get("numpy_version"))),
+                KeyValueRow(
+                    "RAM Total [host.ram_total_bytes]",
+                    _display_bytes(host_meta.get("ram_total_bytes")),
+                ),
+                KeyValueRow(
+                    "Python [host.python_version]", _display_value(host_meta.get("python_version"))
+                ),
+                KeyValueRow(
+                    "NumPy [host.numpy_version]", _display_value(host_meta.get("numpy_version"))
+                ),
             ],
         ),
     ]
@@ -169,7 +180,10 @@ def _score_section(report: dict[str, Any]) -> TableSection:
         results = {}
     rows = [
         ["Primary Score [primary_score]", _display_metric_value(results.get("primary_score"))],
-        ["Secondary Score [secondary_score]", _display_metric_value(results.get("secondary_score"))],
+        [
+            "Secondary Score [secondary_score]",
+            _display_metric_value(results.get("secondary_score")),
+        ],
     ]
     per_mlp = results.get("per_mlp")
     if isinstance(per_mlp, list) and per_mlp:
@@ -180,7 +194,10 @@ def _score_section(report: dict[str, Any]) -> TableSection:
             rows.extend(
                 [
                     ["Best MLP Score [best_mlp_score]", _display_metric_value(min(mlp_primaries))],
-                    ["Worst MLP Score [worst_mlp_score]", _display_metric_value(max(mlp_primaries))],
+                    [
+                        "Worst MLP Score [worst_mlp_score]",
+                        _display_metric_value(max(mlp_primaries)),
+                    ],
                 ]
             )
     return TableSection(
@@ -296,7 +313,9 @@ def _breakdown_section(
         flops_used = as_float(bucket.get("flops_used", 0.0))
         namespace_rows.append(
             BudgetBreakdownNamespaceRow(
-                namespace="(unlabeled)" if namespace in {None, "", "null", "None"} else str(namespace),
+                namespace="(unlabeled)"
+                if namespace in {None, "", "null", "None"}
+                else str(namespace),
                 total_flops=fmt_flops(flops_used),
                 percent_of_section_flops=(
                     f"{(flops_used / total_flops * 100.0):.1f}%" if total_flops > 0 else "0.0%"
@@ -319,9 +338,7 @@ def _breakdown_section(
             percent_of_budget=f"{int(state.mean_utilization * 100)}%",
             budget_label=fmt_flops(state.flop_budget),
             worst_mlp_percent=(
-                f"{state.worst_mlp_pct}%"
-                if state.worst_mlp_pct is not None
-                else None
+                f"{state.worst_mlp_pct}%" if state.worst_mlp_pct is not None else None
             ),
         )
         selection = select_top_over_budget(report)

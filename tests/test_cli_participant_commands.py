@@ -125,6 +125,35 @@ def test_validate_json_shape_stays_stable(
     }
 
 
+def test_validate_format_json_matches_json_flag(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_run_validate_checks",
+        lambda *_args, **_kwargs: {
+            "ok": True,
+            "class_name": "Estimator",
+            "module_name": "_submission",
+            "output_shape": [2, 4],
+            "checks": [{"name": "class resolved", "status": "ok", "detail": "Estimator"}],
+        },
+        raising=False,
+    )
+
+    exit_code = cli.main(["validate", "--estimator", "estimator.py", "--format", "json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert json.loads(captured.out) == {
+        "ok": True,
+        "class_name": "Estimator",
+        "module_name": "_submission",
+        "output_shape": [2, 4],
+    }
+
+
 def test_init_command_renders_created_files_section(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -173,6 +202,36 @@ def test_init_command_renders_noop_status_when_nothing_created(
     assert exit_code == 0
     assert "Starter Files" in captured.out
     assert "Starter files already exist; nothing created." in captured.out
+
+
+def test_init_format_plain_uses_shared_presenter_path(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_write_init_template",
+        lambda _path: [str(Path("/tmp/demo/estimator.py"))],
+    )
+    observed: dict[str, object] = {}
+
+    def fake_render_command_presentation(doc, *, output_format, force_terminal, **_kwargs):
+        observed["title"] = doc.title
+        observed["output_format"] = output_format
+        observed["force_terminal"] = force_terminal
+        return "shared presenter output\n"
+
+    monkeypatch.setattr(cli, "render_command_presentation", fake_render_command_presentation)
+
+    exit_code = cli.main(["init", "/tmp/demo", "--format", "plain"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.out == "shared presenter output\n"
+    assert observed == {
+        "title": "Starter Files",
+        "output_format": "plain",
+        "force_terminal": False,
+    }
 
 
 def test_create_dataset_command_renders_dataset_summary(
@@ -258,12 +317,15 @@ def test_run_command_renders_human_report_in_non_agent_mode(
         lambda _report: pytest.fail("agent renderer should not be called"),
     )
 
-    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    exit_code = cli.main(
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--format", "rich"]
+    )
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert captured.err == ""
     assert "human report\n" in captured.out
+    assert "--format json" in captured.out
 
 
 def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
@@ -324,6 +386,8 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
             "inprocess",
             "--n-mlps",
             "2",
+            "--format",
+            "rich",
         ]
     )
     captured = capsys.readouterr()
@@ -458,11 +522,7 @@ def _write_fake_dataset(
         final_means=final_means,
         avg_variances=avg_variances,
         **(
-            {
-                "sampling_budget_breakdowns": np.array(
-                    json.dumps(sampling_budget_breakdowns)
-                )
-            }
+            {"sampling_budget_breakdowns": np.array(json.dumps(sampling_budget_breakdowns))}
             if sampling_budget_breakdowns is not None
             else {}
         ),
@@ -482,7 +542,7 @@ def _patch_run_command_happy_path(monkeypatch: pytest.MonkeyPatch, captured_kwar
     monkeypatch.setattr(
         cli,
         "render_human_results",
-        lambda _report, *, show_diagnostic_plots=False, debug=False: "human report\n",
+        lambda _report, **_kwargs: "human report\n",
         raising=False,
     )
 
@@ -862,7 +922,8 @@ def _tiny_run_argv(estimator_path: Path, dataset_path: Path) -> list[str]:
         "local",
         "--dataset",
         str(dataset_path),
-        "--no-rich",
+        "--format",
+        "plain",
     ]
 
 
@@ -878,7 +939,7 @@ def test_run_exits_1_when_predict_raises_local_runner(
     captured = capsys.readouterr()
 
     assert exit_code == 1
-    # --no-rich uses plain-text output (no Rich panel), but the per-MLP error
+    # --format plain uses plain-text output (no Rich panel), but the per-MLP error
     # text is still rendered and the stderr summary must be present.
     assert "intentional predict crash" in captured.out
     assert "raised during predict" in captured.err
@@ -1075,7 +1136,8 @@ def test_run_plain_output_shows_legacy_dataset_sampling_unavailable_message(
             "inprocess",
             "--dataset",
             str(ds_path),
-            "--no-rich",
+            "--format",
+            "plain",
         ]
     )
     captured = capsys.readouterr()
@@ -1148,7 +1210,10 @@ def test_run_plain_output_shows_validation_hint_details(
     assert exit_code == 1
     out = captured.out
     assert "Estimator Errors" in out
-    assert "MLP 0 [ValueError]:" in out
+    assert "MLP" in out
+    assert "Code" in out
+    assert "Message" in out
+    assert "ValueError" in out
     assert "Predictions must have shape (2, 4), got (4, 2)." in out
     assert "Expected shape: [2, 4]" in out
     assert "Got shape: [4, 2]" in out

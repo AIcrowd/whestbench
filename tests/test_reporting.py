@@ -174,7 +174,7 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
     )
     assert "whest run --estimator ./examples/estimators/mean_propagation.py --runner local" in plain
     assert "whest run --estimator ./examples/estimators/random_estimator.py --runner local" in plain
-    assert "Use --json for JSON output when calling from automated agents or UIs." in plain
+    assert "Use --format json for JSON output when calling from automated agents or UIs." in plain
     assert "Use --show-diagnostic-plots to include diagnostic plot panes." in plain
     assert "Tip: use --json on validate/run/package for machine-readable output." not in plain
 
@@ -202,7 +202,7 @@ def test_render_human_mode_includes_expected_sections_without_profile() -> None:
 
     # Human mode contract: high-level run summary.
     assert "WhestBench Report" in rendered
-    assert "Use --json for JSON output" in rendered
+    assert "Use --format json for JSON output" in rendered
     assert "Run Context" in rendered
     assert "Final Score" in rendered
     assert "Profile" not in rendered or "Profile" in rendered  # Profile only if data present
@@ -267,6 +267,50 @@ def test_render_human_results_includes_budget_breakdown_sections_when_present() 
     )
 
 
+def test_render_human_results_plain_preserves_shared_run_section_order() -> None:
+    report = _sample_report(
+        include_profile=False,
+        include_sampling_breakdown=True,
+        include_estimator_breakdown=True,
+    )
+
+    rendered = render_human_results(
+        report,
+        output_format="plain",
+        include_context=True,
+        include_epilogues=False,
+    )
+
+    assert rendered.index("WhestBench Report") < rendered.index("Run Context")
+    assert rendered.index("Run Context") < rendered.index("Hardware & Runtime")
+    assert rendered.index("Hardware & Runtime") < rendered.index(
+        "Sampling Budget Breakdown (Ground Truth)"
+    )
+    assert rendered.index("Sampling Budget Breakdown (Ground Truth)") < rendered.index(
+        "Estimator Budget Breakdown"
+    )
+    assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
+
+
+def test_render_human_report_plain_uses_shared_smoke_test_shape() -> None:
+    report = _sample_report(include_profile=False)
+
+    rendered = render_human_report(
+        report,
+        output_format="plain",
+        presentation_doc=build_smoke_test_presentation(report, debug=False),
+    )
+
+    assert rendered.index("Run Context") < rendered.index("Hardware & Runtime")
+    assert rendered.index("Hardware & Runtime") < rendered.index("Final Score")
+    assert rendered.index("Final Score") < rendered.index("Next Steps")
+    assert "Create starter files you can edit." in rendered
+    assert "whest init ./my-estimator" in rendered
+    assert (
+        "Use --format json for JSON output when calling from automated agents or UIs." in rendered
+    )
+
+
 def test_render_human_mode_matches_main_style_score_and_breakdown_information() -> None:
     report = _sample_report(
         include_profile=False,
@@ -294,9 +338,7 @@ def test_render_human_mode_matches_main_style_score_and_breakdown_information() 
     assert "Secondary Score [secondary_score]" in plain
     assert "Best MLP Score [best_mlp_score]" in plain
     assert "Worst MLP Score [worst_mlp_score]" in plain
-    assert (
-        "lower MSE is better; primary score = mean across MLPs of final-layer MSE" in plain
-    )
+    assert "lower MSE is better; primary score = mean across MLPs of final-layer MSE" in plain
     assert "Estimator FLOPs" not in plain
 
 
@@ -831,7 +873,7 @@ def test_fmt_flops_large_values_use_scientific() -> None:
     from whestbench.reporting import _fmt_flops
 
     # Threshold is 1e6; at and above, switch to scientific (no exact suffix —
-    # users can get exact values from `whest run --json`).
+    # users can get exact values from `whest run --format json`).
     assert _fmt_flops(1_000_000) == "1.00e+06"
     assert _fmt_flops(845_824_840_400) == "8.46e+11"
     assert _fmt_flops(int(1e15)) == "1.00e+15"

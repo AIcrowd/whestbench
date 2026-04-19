@@ -49,10 +49,11 @@ import gc
 import json
 import os
 import shutil
+import sys
 import time
 import warnings
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, TextIO, Tuple
 
 import numpy as np  # needed for np.__version__ in version reporting
 import whest as we
@@ -61,7 +62,7 @@ from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
 from .presentation.adapters import build_profile_presentation
-from .presentation.render_rich import render_rich_presentation
+from .presentation.presenters import render_command_presentation
 from .simulation import (
     run_mlp as ref_run_mlp,
 )
@@ -264,6 +265,7 @@ def run_timing_sweep(
     preset: PresetConfig,
     n_iterations: int = 3,
     progress_callback: Optional[Any] = None,
+    warning_stream: TextIO | None = sys.stdout,
 ) -> List[TimingResult]:
     """Run the full timing sweep across all parameter combinations.
 
@@ -333,12 +335,14 @@ def run_timing_sweep(
 
                     except (MemoryError, Exception) as exc:
                         err_msg = f"{type(exc).__name__}: {exc}"
-                        print(
-                            f"[warning] whest {op} "
-                            f"w={width} d={depth} n={n_samples:,} "
-                            f"skipped: {err_msg}",
-                            flush=True,
-                        )
+                        if warning_stream is not None:
+                            print(
+                                f"[warning] whest {op} "
+                                f"w={width} d={depth} n={n_samples:,} "
+                                f"skipped: {err_msg}",
+                                file=warning_stream,
+                                flush=True,
+                            )
                         results.append(
                             TimingResult(
                                 backend_name="whest",
@@ -772,6 +776,7 @@ def run_profile(
     max_threads: Optional[int] = None,
     verbose: bool = False,
     log_progress: bool = False,
+    output_format: str = "rich",
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     """Run the complete profiling pipeline and return formatted results.
 
@@ -791,10 +796,11 @@ def run_profile(
         log_progress: When ``True``, print one line per benchmark step to
             stdout.  Designed for non-TTY environments (e.g. containers)
             where the Rich progress bar is invisible.
+        output_format: Output format, one of ``"rich"``, ``"plain"``, or ``"json"``.
 
     Returns:
         A tuple of ``(terminal_output, json_data)`` where *terminal_output*
-        is a Rich-formatted string and *json_data* is the JSON dict (or
+        is a human-formatted string and *json_data* is the JSON dict (or
         ``None`` if *output_path* was not set).
 
     Example::
@@ -819,8 +825,10 @@ def run_profile(
 
     preset = PRESETS[preset_name]
 
+    emit_human_output = output_format != "json"
+
     # Set up progress display
-    use_rich_progress = show_progress and not log_progress
+    use_rich_progress = emit_human_output and show_progress and not log_progress
     progress_ctx: Any = None
     if use_rich_progress:
         try:
@@ -856,13 +864,13 @@ def run_profile(
             description="Correctness check [cyan]whest[/]",
         )
 
-    if log_progress:
+    if log_progress and emit_human_output:
         print("[correctness] whest ...", end=" ", flush=True)
 
     cr = correctness_check()
     correctness_results = [cr]
 
-    if log_progress:
+    if log_progress and emit_human_output:
         print("PASS" if cr.passed else f"FAIL: {cr.error}", flush=True)
     if progress_ctx is not None:
         progress_ctx.advance(correctness_task)
@@ -879,7 +887,7 @@ def run_profile(
 
         callback: Any = None
 
-        if log_progress:
+        if log_progress and emit_human_output:
             _log_counter = [0]
             _log_start = [time.time()]
 
@@ -917,20 +925,25 @@ def run_profile(
 
             callback = _rich_callback
 
-        timing_results = run_timing_sweep(preset, progress_callback=callback)
+        timing_results = run_timing_sweep(
+            preset,
+            progress_callback=callback,
+            warning_stream=sys.stderr if output_format == "json" else sys.stdout,
+        )
 
     if progress_ctx is not None:
         progress_ctx.stop()
 
-    if log_progress:
+    if log_progress and emit_human_output:
         n_errors = sum(1 for tr in timing_results if tr.error)
         n_ok = len(timing_results) - n_errors
         err_msg = f" ({n_errors} skipped due to errors)" if n_errors else ""
         print(f"[done] Timing sweep complete. {n_ok} results.{err_msg}", flush=True)
 
     # Format output
-    terminal_output = render_rich_presentation(
-        build_profile_presentation(
+    terminal_output = ""
+    if emit_human_output:
+        presentation = build_profile_presentation(
             _build_profile_payload(
                 correctness_results,
                 timing_results,
@@ -938,24 +951,27 @@ def run_profile(
                 verbose=verbose,
             )
         )
-    )
-    if verbose:
-        terminal_output += "\n" + format_verbose_output(
-            correctness_results,
-            timing_results,
-            {},
-            hardware_info=hardware_info,
+        terminal_output = render_command_presentation(
+            presentation,
+            output_format="plain" if output_format == "plain" else "rich",
+            force_terminal=output_format == "rich",
         )
+        if verbose and output_format == "rich":
+            terminal_output += "\n" + format_verbose_output(
+                correctness_results,
+                timing_results,
+                {},
+                hardware_info=hardware_info,
+            )
 
-    json_data = None
+    json_data = format_json_output(
+        correctness_results,
+        timing_results,
+        {},
+        backend_names=["whest"],
+        hardware_info=hardware_info,
+    )
     if output_path:
-        json_data = format_json_output(
-            correctness_results,
-            timing_results,
-            {},
-            backend_names=["whest"],
-            hardware_info=hardware_info,
-        )
         os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
         with open(output_path, "w") as f:
             json.dump(json_data, f, indent=2)

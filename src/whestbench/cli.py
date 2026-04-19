@@ -49,8 +49,8 @@ from .presentation.adapters import (
     build_validate_presentation,
 )
 from .presentation.models import StepsSection
-from .presentation.render_plain import render_plain_presentation
-from .presentation.render_rich import render_rich_presentation
+from .presentation.output import add_output_format_arguments, resolve_output_format
+from .presentation.presenters import render_command_presentation
 from .reporting import (
     _compute_gauge_state,
     _fmt_flops,
@@ -106,16 +106,11 @@ def _debugger_active() -> bool:
       under ``python -m pdb`` or an attached debugger).
     - ``PYTHONBREAKPOINT`` is set to a non-empty, non-"0" value (CPython's
       standard env var that controls ``breakpoint()``).
-    - ``WHESTBENCH_NO_RICH`` is set to a non-empty, non-"0" value
-      (project-specific escape hatch for CI / non-TTY logs).
     """
     if sys.gettrace() is not None:
         return True
     pb = os.environ.get("PYTHONBREAKPOINT", "").strip()
     if pb and pb != "0":
-        return True
-    no_rich_env = os.environ.get("WHESTBENCH_NO_RICH", "").strip()
-    if no_rich_env and no_rich_env != "0":
         return True
     return False
 
@@ -206,6 +201,7 @@ def _render_plain_text_report(
     command: str = "run",
     include_epilogues: bool = True,
     include_diagnostic_plots_tip: bool = True,
+    include_context: bool = True,
 ) -> str:
     """Render a plain-text report when Rich rendering is unavailable."""
     doc = (
@@ -224,14 +220,21 @@ def _render_plain_text_report(
                 if message != "Use --show-diagnostic-plots to include diagnostic plot panes."
             ],
         )
-    lines = render_plain_presentation(doc).rstrip("\n").splitlines()
-    if lines:
-        lines[0] = "WhestBench Report (Plain Text)"
-    if len(lines) >= 3 and lines[1].startswith("Command: ") and lines[2].startswith("Status: "):
-        del lines[1:3]
-        if len(lines) >= 2 and lines[1] == "":
-            del lines[1]
-    return "\n".join(lines) + "\n"
+    if command == "smoke-test":
+        return render_human_report(
+            report,
+            debug=debug,
+            presentation_doc=doc,
+            output_format="plain",
+        )
+    return render_human_results(
+        report,
+        debug=debug,
+        presentation_doc=doc,
+        output_format="plain",
+        include_context=include_context,
+        include_epilogues=bool(doc.epilogue_messages),
+    )
 
 
 def _host_metadata() -> Dict[str, Any]:
@@ -668,14 +671,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     smoke_test_parser.add_argument("--profile", action="store_true")
     smoke_test_parser.add_argument("--show-diagnostic-plots", action="store_true")
     smoke_test_parser.add_argument("--debug", action="store_true")
-    smoke_test_parser.add_argument(
-        "--no-rich",
-        action="store_true",
-        help=(
-            "Disable Rich live display and progress bars; use plain-text output. "
-            "Use when attaching a debugger (pdb/ipdb) or running in a non-TTY environment."
-        ),
-    )
+    add_output_format_arguments(smoke_test_parser)
     smoke_test_parser.add_argument(
         "--max-threads",
         type=int,
@@ -686,10 +682,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     init_parser = subparsers.add_parser("init", help="Create starter estimator files.")
     init_parser.add_argument("path", nargs="?", default=".")
-    init_parser.add_argument(
-        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
-    )
     init_parser.add_argument("--debug", action="store_true")
+    add_output_format_arguments(init_parser)
 
     validate_parser = subparsers.add_parser("validate", help="Validate estimator contract.")
     validate_parser.add_argument(
@@ -698,10 +692,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Path to estimator.py (see examples/estimators/ for starter files).",
     )
     validate_parser.add_argument("--class", dest="class_name")
-    validate_parser.add_argument(
-        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
-    )
     validate_parser.add_argument("--debug", action="store_true")
+    add_output_format_arguments(validate_parser)
 
     run_parser = subparsers.add_parser("run", help="Run local evaluation for an estimator.")
     run_parser.add_argument(
@@ -726,9 +718,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
     run_parser.add_argument("--profile", action="store_true")
     run_parser.add_argument("--show-diagnostic-plots", action="store_true")
-    run_parser.add_argument(
-        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
-    )
+    add_output_format_arguments(run_parser)
     run_parser.add_argument(
         "--dataset", default=None, help="Path to pre-created dataset .npz file."
     )
@@ -782,14 +772,6 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Limit BLAS to at most N CPU threads.",
     )
-    run_parser.add_argument(
-        "--no-rich",
-        action="store_true",
-        help=(
-            "Disable Rich live display and progress bars; use plain-text output. "
-            "Use when attaching a debugger (pdb/ipdb) or running in a non-TTY environment."
-        ),
-    )
 
     create_ds_parser = subparsers.add_parser(
         "create-dataset", help="Pre-create evaluation dataset."
@@ -801,10 +783,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     create_ds_parser.add_argument("--flop-budget", type=int, default=None)
     create_ds_parser.add_argument("--seed", type=int, default=None)
     create_ds_parser.add_argument("-o", "--output", default="eval_dataset.npz")
-    create_ds_parser.add_argument(
-        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
-    )
     create_ds_parser.add_argument("--debug", action="store_true")
+    add_output_format_arguments(create_ds_parser)
     create_ds_parser.add_argument(
         "--max-threads",
         type=int,
@@ -820,10 +800,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     package_parser.add_argument("--submission-metadata")
     package_parser.add_argument("--approach")
     package_parser.add_argument("--output")
-    package_parser.add_argument(
-        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
-    )
     package_parser.add_argument("--debug", action="store_true")
+    add_output_format_arguments(package_parser)
 
     visualizer_parser = subparsers.add_parser(
         "visualizer",
@@ -856,6 +834,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Path to save JSON results.",
     )
     profile_parser.add_argument("--debug", action="store_true")
+    add_output_format_arguments(profile_parser)
     profile_parser.add_argument(
         "--max-threads",
         type=int,
@@ -1011,7 +990,19 @@ def _run_estimator_with_runner(
 def _main_participant(argv: "list[str]") -> int:
     args = _build_participant_parser().parse_args(argv)
     command = str(args.command)
-    json_output = bool(getattr(args, "json_output", False))
+    stdout_is_tty = bool(getattr(sys.stdout, "isatty", lambda: False)())
+    output_format = resolve_output_format(
+        format_arg=getattr(args, "output_format", None),
+        json_output=bool(getattr(args, "json_output", False)),
+        is_tty=stdout_is_tty,
+    )
+    if command in {"run", "smoke-test"} and output_format == "rich" and _debugger_active():
+        output_format = "plain"
+        print(
+            "Debugger detected (sys.gettrace / PYTHONBREAKPOINT); forcing plain output.",
+            file=sys.stderr,
+        )
+    json_output = output_format == "json"
 
     # Apply thread limit early, before any backend module is imported.
     max_threads = getattr(args, "max_threads", None)
@@ -1020,25 +1011,19 @@ def _main_participant(argv: "list[str]") -> int:
 
         apply_thread_limit(max_threads)
     debug = bool(getattr(args, "debug", False))
-
-    # Promote debugger detection to --no-rich so Live displays don't mask pdb
-    # prompts. Only affects subcommands that expose the flag (run, smoke-test);
-    # other subcommands silently ignore it via getattr defaults.
-    if (
-        hasattr(args, "no_rich")
-        and not bool(getattr(args, "no_rich", False))
-        and _debugger_active()
-    ):
-        args.no_rich = True
-        print(
-            "Debugger detected (sys.gettrace / PYTHONBREAKPOINT / WHESTBENCH_NO_RICH); "
-            "disabling Rich live display.",
-            file=sys.stderr,
-        )
-    no_rich = bool(getattr(args, "no_rich", False))
+    no_rich = output_format == "plain"
 
     try:
         if command == "smoke-test":
+            if json_output:
+                report = run_default_report(
+                    profile=bool(args.profile),
+                    detail=str(args.detail),
+                )
+                report["mode"] = "agent"
+                print(render_agent_report(report), end="")
+                return 0
+
             if no_rich:
                 # Plain-text path: no Rich Live, no progress bar. Emit
                 # single-line phase updates to stderr so a log-scraper still
@@ -1143,7 +1128,15 @@ def _main_participant(argv: "list[str]") -> int:
             if json_output:
                 print(json.dumps(payload, indent=2))
             else:
-                print(render_plain_presentation(build_init_presentation(payload)), end="")
+                doc = build_init_presentation(payload)
+                print(
+                    render_command_presentation(
+                        doc,
+                        output_format=output_format,
+                        force_terminal=stdout_is_tty,
+                    ),
+                    end="",
+                )
             return 0
 
         if command == "validate":
@@ -1152,10 +1145,12 @@ def _main_participant(argv: "list[str]") -> int:
                 print(json.dumps(payload, indent=2))
             else:
                 result = _run_validate_checks(args.estimator, class_name=args.class_name)
+                doc = build_validate_presentation(result)
                 print(
-                    render_rich_presentation(
-                        build_validate_presentation(result),
-                        force_terminal=bool(getattr(sys.stdout, "isatty", lambda: False)()),
+                    render_command_presentation(
+                        doc,
+                        output_format=output_format,
+                        force_terminal=stdout_is_tty,
                     ),
                     end="",
                 )
@@ -1170,7 +1165,7 @@ def _main_participant(argv: "list[str]") -> int:
             ds_flop_budget = args.flop_budget or contest.flop_budget
             n_mlps_ds = int(args.n_mlps)
 
-            if not json_output:
+            if output_format == "rich":
                 try:
                     from rich.progress import (
                         BarColumn,
@@ -1234,7 +1229,15 @@ def _main_participant(argv: "list[str]") -> int:
             if json_output:
                 print(json.dumps(payload, indent=2))
             else:
-                print(render_plain_presentation(build_create_dataset_presentation(payload)), end="")
+                doc = build_create_dataset_presentation(payload)
+                print(
+                    render_command_presentation(
+                        doc,
+                        output_format=output_format,
+                        force_terminal=stdout_is_tty,
+                    ),
+                    end="",
+                )
             return 0
 
         if command == "run":
@@ -1433,13 +1436,14 @@ def _main_participant(argv: "list[str]") -> int:
                             report,
                             debug=debug,
                             include_diagnostic_plots_tip=not bool(args.show_diagnostic_plots),
+                            include_context=False,
                         )
                         used_plain_fallback = True
             print(output, end="" if output.endswith("\n") else "\n")
             if not json_output and not no_rich:
                 if not used_plain_fallback:
                     _tip_console.print(
-                        "[bold bright_yellow]Tip:[/] Use [green]--json[/] for JSON output when calling from automated agents or UIs."
+                        "[bold bright_yellow]Tip:[/] Use [green]--format json[/] for JSON output when calling from automated agents or UIs."
                     )
                     if not args.show_diagnostic_plots:
                         _tip_console.print(
@@ -1472,7 +1476,15 @@ def _main_participant(argv: "list[str]") -> int:
             if json_output:
                 print(json.dumps(payload, indent=2))
             else:
-                print(render_plain_presentation(build_package_presentation(payload)), end="")
+                doc = build_package_presentation(payload)
+                print(
+                    render_command_presentation(
+                        doc,
+                        output_format=output_format,
+                        force_terminal=stdout_is_tty,
+                    ),
+                    end="",
+                )
             return 0
 
         if command == "visualizer":
@@ -1488,15 +1500,19 @@ def _main_participant(argv: "list[str]") -> int:
         if command == "profile-simulation":
             from .profiler import run_profile
 
-            terminal_output, _ = run_profile(
+            terminal_output, json_data = run_profile(
                 preset_name=str(args.preset),
                 output_path=args.output,
-                show_progress=not json_output,
+                show_progress=output_format == "rich",
                 max_threads=args.max_threads,
                 verbose=bool(args.verbose),
                 log_progress=bool(args.log_progress),
+                output_format=output_format,
             )
-            print(terminal_output)
+            if json_output:
+                print(json.dumps(json_data, indent=2))
+            else:
+                print(terminal_output, end="" if terminal_output.endswith("\n") else "\n")
             return 0
 
         raise ValueError(f"Unsupported command: {command}")
@@ -1507,6 +1523,8 @@ def _main_participant(argv: "list[str]") -> int:
             payload,
             json_output=json_output,
             debug=debug,
+            output_format="rich" if output_format == "rich" else "plain",
+            force_terminal=stdout_is_tty,
             show_inprocess_hint=(
                 command == "run"
                 and _normalize_runner_name(str(getattr(args, "runner", "local"))) == "subprocess"
@@ -1526,6 +1544,8 @@ def _print_error(
     *,
     json_output: bool,
     debug: bool,
+    output_format: Literal["rich", "plain"] = "plain",
+    force_terminal: bool = False,
     show_inprocess_hint: bool = False,
 ) -> None:
     if json_output:
@@ -1536,7 +1556,14 @@ def _print_error(
         debug=debug,
         show_inprocess_hint=show_inprocess_hint,
     )
-    print(render_plain_presentation(doc), end="")
+    print(
+        render_command_presentation(
+            doc,
+            output_format=output_format,
+            force_terminal=force_terminal,
+        ),
+        end="",
+    )
 
 
 def _extract_exception_details(exc: Exception) -> Dict[str, Any] | None:
