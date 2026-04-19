@@ -4,7 +4,11 @@ import json
 from unittest.mock import MagicMock, patch
 
 from whestbench.doctor import (
+    check_blas,
+    check_cwd_writable,
+    check_disk,
     check_install_mode,
+    check_node,
     check_python,
     check_uv,
 )
@@ -125,3 +129,112 @@ def test_check_install_mode_fail_when_not_installed() -> None:
         result = check_install_mode()
     assert result["status"] == "fail"
     assert result["fix_hint"] and "uv sync" in result["fix_hint"]
+
+
+# --- check_node --------------------------------------------------------------
+
+
+def test_check_node_ok_when_on_path_and_version_resolvable() -> None:
+    fake_result = MagicMock()
+    fake_result.returncode = 0
+    fake_result.stdout = "v20.11.0\n"
+    with (
+        patch("shutil.which", return_value="/usr/local/bin/node"),
+        patch("subprocess.run", return_value=fake_result),
+    ):
+        result = check_node()
+    assert result["status"] == "ok"
+    assert result["name"] == "node_js"
+    assert "v20.11.0" in result["detail"]
+    assert result["fix_hint"] is None
+
+
+def test_check_node_warn_when_not_on_path() -> None:
+    with patch("shutil.which", return_value=None):
+        result = check_node()
+    assert result["status"] == "warn"
+    assert result["fix_hint"] and "nodejs.org" in result["fix_hint"]
+    assert "whest visualizer" in result["fix_hint"]
+
+
+# --- check_blas --------------------------------------------------------------
+
+
+def test_check_blas_ok_when_pool_detected() -> None:
+    fake_pools = [
+        {"internal_api": "openblas", "num_threads": 8, "user_api": "blas"},
+    ]
+    with patch("threadpoolctl.threadpool_info", return_value=fake_pools):
+        result = check_blas()
+    assert result["status"] == "ok"
+    assert result["name"] == "blas_threads"
+    assert "openblas" in result["detail"]
+    assert "8 threads" in result["detail"]
+
+
+def test_check_blas_warn_when_no_pool() -> None:
+    with patch("threadpoolctl.threadpool_info", return_value=[]):
+        result = check_blas()
+    assert result["status"] == "warn"
+    assert "no blas pool" in result["detail"].lower()
+
+
+def test_check_blas_fail_when_threadpoolctl_import_fails() -> None:
+    import sys
+
+    saved = sys.modules.pop("threadpoolctl", None)
+    with patch.dict(sys.modules, {"threadpoolctl": None}):
+        result = check_blas()
+    if saved is not None:
+        sys.modules["threadpoolctl"] = saved
+    assert result["status"] == "fail"
+    assert result["fix_hint"] and "uv sync" in result["fix_hint"]
+
+
+# --- check_disk --------------------------------------------------------------
+
+
+_GIB = 1024 * 1024 * 1024
+
+
+def test_check_disk_ok_when_at_least_1_gib_free() -> None:
+    fake_usage = MagicMock()
+    fake_usage.free = 150 * _GIB
+    with patch("shutil.disk_usage", return_value=fake_usage):
+        result = check_disk()
+    assert result["status"] == "ok"
+    assert result["name"] == "disk_space"
+    assert "150" in result["detail"] or "150.0" in result["detail"]
+
+
+def test_check_disk_warn_when_less_than_1_gib_free() -> None:
+    fake_usage = MagicMock()
+    fake_usage.free = 500 * 1024 * 1024  # 500 MiB
+    with patch("shutil.disk_usage", return_value=fake_usage):
+        result = check_disk()
+    assert result["status"] == "warn"
+    assert result["fix_hint"] and "free some space" in result["fix_hint"].lower()
+
+
+def test_check_disk_fail_when_os_error() -> None:
+    with patch("shutil.disk_usage", side_effect=OSError("no such file")):
+        result = check_disk()
+    assert result["status"] == "fail"
+
+
+# --- check_cwd_writable ------------------------------------------------------
+
+
+def test_check_cwd_writable_ok(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    result = check_cwd_writable()
+    assert result["status"] == "ok"
+    assert result["name"] == "cwd_writable"
+    assert str(tmp_path) in result["detail"]
+
+
+def test_check_cwd_writable_fail_when_permission_error() -> None:
+    with patch("tempfile.NamedTemporaryFile", side_effect=PermissionError("denied")):
+        result = check_cwd_writable()
+    assert result["status"] == "fail"
+    assert result["fix_hint"] and "permissions" in result["fix_hint"].lower()
