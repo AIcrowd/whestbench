@@ -52,11 +52,6 @@ from .presentation.models import StepsSection
 from .presentation.output import add_output_format_arguments, resolve_output_format
 from .presentation.presenters import render_command_presentation
 from .reporting import (
-    _compute_gauge_state,
-    _fmt_flops,
-    _gauge_bar_fragment,
-    _select_top_over_budget,
-    build_human_context_renderable,
     render_agent_report,
     render_human_context_panels,
     render_human_header,

@@ -68,6 +68,20 @@ def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
         we.testing.assert_array_equal(bundle_a.all_layer_means[idx], bundle_b.all_layer_means[idx])
         we.testing.assert_array_equal(bundle_a.final_means[idx], bundle_b.final_means[idx])
     assert bundle_a.avg_variances == bundle_b.avg_variances
+    assert bundle_a.sampling_budget_breakdowns is not None
+    assert bundle_b.sampling_budget_breakdowns is not None
+    for breakdown_a, breakdown_b in zip(
+        bundle_a.sampling_budget_breakdowns,
+        bundle_b.sampling_budget_breakdowns,
+        strict=True,
+    ):
+        assert breakdown_a["flops_used"] == breakdown_b["flops_used"]
+        assert sorted(breakdown_a["by_namespace"]) == sorted(breakdown_b["by_namespace"])
+        for namespace in breakdown_a["by_namespace"]:
+            assert (
+                breakdown_a["by_namespace"][namespace]["flops_used"]
+                == breakdown_b["by_namespace"][namespace]["flops_used"]
+            )
 
 
 def test_create_dataset_skips_hardware_fallback_probes_via_env(tmp_path, monkeypatch) -> None:
@@ -99,20 +113,6 @@ def test_create_dataset_skips_hardware_fallback_probes_via_env(tmp_path, monkeyp
     assert bundle.metadata["hardware"]["cpu_count_logical"] > 0
     assert bundle.metadata["hardware"]["cpu_count_physical"] is None
     assert bundle.metadata["hardware"]["ram_total_bytes"] is None
-    assert bundle_a.sampling_budget_breakdowns is not None
-    assert bundle_b.sampling_budget_breakdowns is not None
-    for breakdown_a, breakdown_b in zip(
-        bundle_a.sampling_budget_breakdowns,
-        bundle_b.sampling_budget_breakdowns,
-        strict=True,
-    ):
-        assert breakdown_a["flops_used"] == breakdown_b["flops_used"]
-        assert sorted(breakdown_a["by_namespace"]) == sorted(breakdown_b["by_namespace"])
-        for namespace in breakdown_a["by_namespace"]:
-            assert (
-                breakdown_a["by_namespace"][namespace]["flops_used"]
-                == breakdown_b["by_namespace"][namespace]["flops_used"]
-            )
 
 
 def test_load_dataset_accepts_older_files_without_sampling_breakdowns(tmp_path) -> None:
