@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -318,8 +319,6 @@ def _fixture_checks() -> "list[Check]":
 
 
 def test_render_doctor_report_rich_contains_glyphs_and_summary() -> None:
-    import re
-
     from whestbench.reporting import render_doctor_report
 
     out = render_doctor_report(_fixture_checks(), rich=True)
@@ -356,8 +355,6 @@ def test_render_doctor_report_border_turns_red_on_fail() -> None:
     out = render_doctor_report(failing, rich=True)
     # Rich renders the panel border with the requested color token.
     # We just assert "[FAIL]-equivalent" glyph + counts update.
-    import re
-
     plain = re.sub(r"\x1b\[[0-9;]*m", "", out)
     assert "✗" in plain
     assert "4 checks · 2 ok · 1 warn · 1 fail" in plain
@@ -373,3 +370,89 @@ def test_render_doctor_json_matches_spec_shape() -> None:
     assert parsed["counts"] == {"ok": 2, "warn": 1, "fail": 0}
     assert len(parsed["checks"]) == 3
     assert parsed["checks"][0]["name"] == "python_version"
+
+
+# --- CLI integration ---------------------------------------------------------
+
+
+def _all_ok_checks() -> "list[Check]":
+    return [
+        Check(
+            name=n,
+            label=n.replace("_", " ").title(),
+            status="ok",
+            detail="ok",
+            fix_hint=None,
+        )
+        for n in [
+            "python_version",
+            "uv",
+            "install_mode",
+            "node_js",
+            "blas_threads",
+            "disk_space",
+            "cwd_writable",
+        ]
+    ]
+
+
+def _one_warn_checks() -> "list[Check]":
+    checks = _all_ok_checks()
+    checks[3] = Check(
+        name="node_js",
+        label="Node.js on PATH",
+        status="warn",
+        detail="not on PATH",
+        fix_hint="Install Node.js 20+ from https://nodejs.org",
+    )
+    return checks
+
+
+def test_cli_doctor_exits_0_when_all_ok(capsys: pytest.CaptureFixture[str]) -> None:
+    from whestbench.cli import _main_participant
+
+    with patch("whestbench.doctor.run_all", return_value=_all_ok_checks()):
+        exit_code = _main_participant(["doctor"])
+    assert exit_code == 0
+
+
+def test_cli_doctor_exits_0_on_warn_without_strict() -> None:
+    from whestbench.cli import _main_participant
+
+    with patch("whestbench.doctor.run_all", return_value=_one_warn_checks()):
+        exit_code = _main_participant(["doctor"])
+    assert exit_code == 0
+
+
+def test_cli_doctor_strict_exits_1_on_warn() -> None:
+    from whestbench.cli import _main_participant
+
+    with patch("whestbench.doctor.run_all", return_value=_one_warn_checks()):
+        exit_code = _main_participant(["doctor", "--strict"])
+    assert exit_code == 1
+
+
+def test_cli_doctor_json_emits_valid_shape(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from whestbench.cli import _main_participant
+
+    with patch("whestbench.doctor.run_all", return_value=_one_warn_checks()):
+        _main_participant(["doctor", "--json"])
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert parsed["overall"] == "warn"
+    assert parsed["counts"]["warn"] == 1
+    assert parsed["counts"]["ok"] == 6
+
+
+def test_cli_doctor_no_rich_output_has_no_ansi(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from whestbench.cli import _main_participant
+
+    with patch("whestbench.doctor.run_all", return_value=_all_ok_checks()):
+        _main_participant(["doctor", "--no-rich"])
+    out = capsys.readouterr().out
+    assert "[OK]" in out
+    assert not re.search(r"\x1b\[[0-9;]*m", out)
