@@ -290,3 +290,86 @@ def test_run_all_reraises_on_debug() -> None:
     with patch("whestbench.doctor.check_uv", _boom):
         with pytest.raises(RuntimeError, match="intentional test crash"):
             run_all(debug=True)
+
+
+# --- rendering ---------------------------------------------------------------
+
+
+def _fixture_checks() -> "list[Check]":
+    return [
+        Check(
+            name="python_version",
+            label="Python version",
+            status="ok",
+            detail="3.14.3 satisfies >=3.10",
+            fix_hint=None,
+        ),
+        Check(
+            name="uv", label="uv on PATH", status="ok", detail="/opt/homebrew/bin/uv", fix_hint=None
+        ),
+        Check(
+            name="node_js",
+            label="Node.js on PATH",
+            status="warn",
+            detail="not found on PATH",
+            fix_hint="Install Node.js 20+ from https://nodejs.org",
+        ),
+    ]
+
+
+def test_render_doctor_report_rich_contains_glyphs_and_summary() -> None:
+    import re
+
+    from whestbench.reporting import render_doctor_report
+
+    out = render_doctor_report(_fixture_checks(), rich=True)
+    plain = re.sub(r"\x1b\[[0-9;]*m", "", out)
+    assert "✓" in plain
+    assert "⚠" in plain
+    assert "Python version" in plain
+    assert "3 checks · 2 ok · 1 warn · 0 fail" in plain
+
+
+def test_render_doctor_report_plain_uses_ascii_tokens() -> None:
+    from whestbench.reporting import render_doctor_report
+
+    out = render_doctor_report(_fixture_checks(), rich=False)
+    assert "[OK]" in out
+    assert "[WARN]" in out
+    assert "✓" not in out
+    assert "⚠" not in out
+    assert "3 checks · 2 ok · 1 warn · 0 fail" in out
+
+
+def test_render_doctor_report_border_turns_red_on_fail() -> None:
+    from whestbench.reporting import render_doctor_report
+
+    failing = _fixture_checks() + [
+        Check(
+            name="disk_space",
+            label="Free disk in CWD",
+            status="fail",
+            detail="could not read disk usage",
+            fix_hint="check permissions",
+        ),
+    ]
+    out = render_doctor_report(failing, rich=True)
+    # Rich renders the panel border with the requested color token.
+    # We just assert "[FAIL]-equivalent" glyph + counts update.
+    import re
+
+    plain = re.sub(r"\x1b\[[0-9;]*m", "", out)
+    assert "✗" in plain
+    assert "4 checks · 2 ok · 1 warn · 1 fail" in plain
+
+
+def test_render_doctor_json_matches_spec_shape() -> None:
+    from whestbench.reporting import render_doctor_json
+
+    out = render_doctor_json(_fixture_checks())
+    parsed = json.loads(out)
+    assert parsed["schema_version"] == "1.0"
+    assert parsed["overall"] == "warn"
+    assert parsed["counts"] == {"ok": 2, "warn": 1, "fail": 0}
+    assert len(parsed["checks"]) == 3
+    assert parsed["checks"][0]["name"] == "python_version"
