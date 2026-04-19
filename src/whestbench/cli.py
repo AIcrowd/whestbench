@@ -19,9 +19,7 @@ from typing import (
     Dict,
     Iterator,
     Literal,
-    Mapping,
     Optional,
-    Sequence,
     overload,
 )
 
@@ -1519,7 +1517,7 @@ def _main_participant(argv: "list[str]") -> int:
             )
 
         if command == "doctor":
-            from .doctor import run_all
+            from .doctor import _doctor_exit_code, run_all
             from .reporting import render_doctor_json, render_doctor_report
 
             checks = run_all(debug=debug)
@@ -1640,15 +1638,3 @@ def _error_code(exc: Exception, message: str) -> str:
             return "ESTIMATOR_NON_FINITE"
         return "SCORING_VALIDATION_ERROR"
     return "SCORING_RUNTIME_ERROR"
-
-
-def _doctor_exit_code(checks: "Sequence[Mapping[str, Any]]", *, strict: bool) -> int:
-    """Return exit code per the doctor exit-code table.
-
-    Default: exit 1 iff any check is ``fail``.
-    ``strict``: exit 1 iff any check is ``warn`` or ``fail``.
-    """
-    statuses = [c.get("status", "fail") for c in checks]
-    if strict:
-        return 0 if all(s == "ok" for s in statuses) else 1
-    return 0 if not any(s == "fail" for s in statuses) else 1

@@ -164,6 +164,21 @@ def test_check_node_warn_when_not_on_path() -> None:
     assert "whest visualizer" in result["fix_hint"]
 
 
+def test_check_node_warn_when_subprocess_raises() -> None:
+    import subprocess
+
+    # Node is present on PATH but invoking it raises (e.g. TimeoutExpired,
+    # PermissionError, OSError). Exercise the `except Exception` branch.
+    with (
+        patch("shutil.which", return_value="/usr/local/bin/node"),
+        patch("subprocess.run", side_effect=subprocess.TimeoutExpired("node", 5)),
+    ):
+        result = check_node()
+    assert result["status"] == "warn"
+    assert "installed but 'node --version' failed" in result["detail"]
+    assert result["fix_hint"] and "Node.js" in result["fix_hint"]
+
+
 # --- check_blas --------------------------------------------------------------
 
 

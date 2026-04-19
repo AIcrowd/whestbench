@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import json as _json
 import platform
+from collections.abc import Mapping, Sequence
 from importlib.metadata import Distribution, PackageMetadata, PackageNotFoundError, metadata
-from typing import Literal, Optional, TypedDict
+from typing import Any, Literal, Optional, TypedDict
 
 try:
     from packaging.specifiers import SpecifierSet  # pyright: ignore[reportMissingModuleSource]
@@ -327,21 +328,24 @@ def check_cwd_writable() -> Check:
 # --- run_all -----------------------------------------------------------------
 
 
+# 3-tuple carries the human-readable label alongside the name + function so
+# _crashed_check can surface the same label the check itself would return on
+# success (instead of a machine-derived title-case slug).
 _CHECKS = (
-    ("python_version", check_python),
-    ("uv", check_uv),
-    ("install_mode", check_install_mode),
-    ("node_js", check_node),
-    ("blas_threads", check_blas),
-    ("disk_space", check_disk),
-    ("cwd_writable", check_cwd_writable),
+    ("python_version", "Python version", check_python),
+    ("uv", "uv on PATH", check_uv),
+    ("install_mode", "whest install mode", check_install_mode),
+    ("node_js", "Node.js on PATH", check_node),
+    ("blas_threads", "BLAS thread pool", check_blas),
+    ("disk_space", "Free disk in CWD", check_disk),
+    ("cwd_writable", "CWD writable", check_cwd_writable),
 )
 
 
-def _crashed_check(name: str, exc: BaseException) -> Check:
+def _crashed_check(name: str, label: str, exc: BaseException) -> Check:
     return Check(
         name=name,
-        label=name.replace("_", " ").title(),
+        label=label,
         status="fail",
         detail=f"check crashed: {type(exc).__name__}: {exc}",
         fix_hint="Please file a bug at https://github.com/AIcrowd/whestbench/issues.",
@@ -355,7 +359,7 @@ def run_all(*, debug: bool = False) -> "list[Check]":
     catches them and surfaces as ``status="fail"``.
     """
     results: "list[Check]" = []
-    for name, fn in _CHECKS:
+    for name, label, fn in _CHECKS:
         try:
             # Look up through the module so tests can ``patch`` individual checks.
             import whestbench.doctor as _self  # noqa: PLW0406
@@ -365,5 +369,17 @@ def run_all(*, debug: bool = False) -> "list[Check]":
         except BaseException as exc:
             if debug:
                 raise
-            results.append(_crashed_check(name, exc))
+            results.append(_crashed_check(name, label, exc))
     return results
+
+
+def _doctor_exit_code(checks: "Sequence[Mapping[str, Any]]", *, strict: bool) -> int:
+    """Return exit code per the doctor exit-code table.
+
+    Default: exit 1 iff any check is ``fail``.
+    ``strict``: exit 1 iff any check is ``warn`` or ``fail``.
+    """
+    statuses = [c.get("status", "fail") for c in checks]
+    if strict:
+        return 0 if all(s == "ok" for s in statuses) else 1
+    return 0 if not any(s == "fail" for s in statuses) else 1
