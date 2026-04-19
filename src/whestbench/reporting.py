@@ -1476,7 +1476,10 @@ def render_doctor_report(checks: "Sequence[Mapping[str, Any]]", *, rich: bool = 
         line.append(c["detail"])
         rows.append(line)
         if c.get("fix_hint"):
-            hint = Text(" " * (4 + 22 + 1))
+            # Indent derivation: Rich row prefix is " {glyph} " (3 chars) +
+            # "{label:<22} " (22 + 1 chars) = 26 cols before the detail column.
+            # Align the hint under the detail column.
+            hint = Text(" " * (3 + 22 + 1))
             hint.append(c["fix_hint"], style="dim")
             rows.append(hint)
 
