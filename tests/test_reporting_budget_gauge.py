@@ -386,7 +386,7 @@ def test_panel_top5_and_truncation_footer_when_7_busted() -> None:
     assert "MLP #6" not in plain
     # truncation footer
     assert "... and 2 more over budget" in plain
-    assert "run with --json for the full list" in plain
+    assert "run with --format json for the full list" in plain
     # all-busted reframe (7 of 7)
     assert "All 7 MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed" in plain
 
@@ -485,34 +485,32 @@ def _full_report(per_mlp: List[Dict[str, Any]], *, flop_budget: int = 100) -> Di
     }
 
 
-def test_render_human_results_renders_gauge_inside_estimator_breakdown() -> None:
+def test_render_human_results_uses_main_style_estimator_breakdown_without_gauge() -> None:
     report = _full_report([_mlp(i, flops_used=30.0) for i in range(3)], flop_budget=100)
     rendered = render_human_results(report)
     plain = _strip_ansi(rendered)
 
-    # Gauge appears AFTER the Estimator Budget Breakdown title,
-    # not as a separate top-level line.
-    assert "Estimator FLOPs" in plain
     assert "Estimator Budget Breakdown" in plain
-    breakdown_idx = plain.index("Estimator Budget Breakdown")
-    gauge_idx = plain.index("Estimator FLOPs")
-    assert breakdown_idx < gauge_idx
+    assert "Estimator FLOPs" not in plain
+    assert "Over-Budget MLPs" not in plain
+    assert "Total FLOPs [flops_used]" in plain
 
 
-def test_render_human_results_shows_over_budget_panel_when_busted() -> None:
+def test_render_human_results_omits_over_budget_panel_when_busted() -> None:
     per_mlp = [_mlp(0, flops_used=50.0), _busted(1, 138.0)]
     rendered = render_human_results(_full_report(per_mlp, flop_budget=100))
     plain = _strip_ansi(rendered)
-    assert "Over-Budget MLPs" in plain
-    assert "worst MLP 138%" in plain
+    assert "Estimator Budget Breakdown" in plain
+    assert "Over-Budget MLPs" not in plain
+    assert "worst MLP" not in plain
 
 
-def test_render_human_report_shows_over_budget_panel_when_busted() -> None:
+def test_render_human_report_omits_over_budget_panel_when_busted() -> None:
     per_mlp = [_mlp(0, flops_used=50.0), _busted(1, 138.0)]
     rendered = render_human_report(_full_report(per_mlp, flop_budget=100))
     plain = _strip_ansi(rendered)
-    assert "Over-Budget MLPs" in plain
-    assert "worst MLP 138%" in plain
+    assert "Over-Budget MLPs" not in plain
+    assert "worst MLP" not in plain
     # render_human_report also includes the header — sanity check it's there too
     assert "WhestBench Report" in plain
 
@@ -525,10 +523,8 @@ def test_render_human_results_omits_over_budget_panel_when_clean() -> None:
     assert "Over-Budget MLPs" not in plain
 
 
-def test_gauge_and_over_budget_embedded_inside_estimator_breakdown() -> None:
+def test_gauge_and_over_budget_are_not_embedded_in_settled_human_output() -> None:
     per_mlp = [_busted(0, 120.0), _mlp(1, flops_used=50.0)]
-    # Also inject a sampling breakdown to verify the sampling panel is not
-    # polluted with gauge / over-budget content.
     report = _full_report(per_mlp, flop_budget=100)
     report["results"]["breakdowns"]["sampling"] = {
         "flops_used": 30,
@@ -539,29 +535,17 @@ def test_gauge_and_over_budget_embedded_inside_estimator_breakdown() -> None:
     rendered = render_human_results(report)
     plain = _strip_ansi(rendered)
 
-    # Estimator Budget Breakdown title comes first, then the embedded gauge,
-    # then the Over-Budget MLPs block (all inside the same panel).
     breakdown_idx = plain.index("Estimator Budget Breakdown")
-    gauge_idx = plain.index("Estimator FLOPs")
-    over_budget_idx = plain.index("Over-Budget MLPs")
-    assert breakdown_idx < gauge_idx < over_budget_idx
-
-    # Sampling panel renders before Estimator panel and does not carry
-    # gauge / over-budget content.
     sampling_idx = plain.index("Sampling Budget Breakdown")
     assert sampling_idx < breakdown_idx
-    # Between the sampling heading and the estimator heading, there must be
-    # no "Estimator FLOPs" substring — the gauge only belongs in the
-    # estimator panel.
-    between_section = plain[sampling_idx:breakdown_idx]
-    assert "Estimator FLOPs" not in between_section
-    assert "Over-Budget MLPs" not in between_section
+    assert "Estimator FLOPs" not in plain
+    assert "Over-Budget MLPs" not in plain
 
 
 # --- Plain-text fallback ----------------------------------------------------
 
 
-def test_plain_text_gauge_healthy_uses_ascii_substitutes() -> None:
+def test_plain_text_run_output_uses_main_style_estimator_breakdown_without_gauge() -> None:
     from whestbench.cli import _render_plain_text_report
 
     report = _full_report(
@@ -569,59 +553,20 @@ def test_plain_text_gauge_healthy_uses_ascii_substitutes() -> None:
         flop_budget=100_000_000,
     )
     out = _render_plain_text_report(report)
-    # Gauge is now emitted inside the Estimator Budget Breakdown section.
     assert "Estimator Budget Breakdown" in out
-    assert "Estimator FLOPs" in out
-    assert out.index("Estimator Budget Breakdown") < out.index("Estimator FLOPs")
-    assert "30%" in out
-    # filled/empty ASCII glyphs
-    assert "[" + ("#" * 6) + ("-" * 14) + "]" in out
-    # no block glyphs in plain-text mode
-    assert "█" not in out
-    assert "░" not in out
+    assert "Estimator FLOPs" not in out
+    assert "Over-Budget MLPs" not in out
+    assert "Total FLOPs [flops_used]" in out
 
 
-def test_plain_text_gauge_busted_uses_ascii_worst_suffix() -> None:
+def test_plain_text_run_output_omits_over_budget_panel_when_busted() -> None:
     from whestbench.cli import _render_plain_text_report
 
     per_mlp = [_mlp(0, flops_used=50.0), _busted(1, 138.0)]
     out = _render_plain_text_report(_full_report(per_mlp, flop_budget=100))
     assert "Estimator Budget Breakdown" in out
-    assert ". worst MLP 138% !" in out
-    assert "⚠" not in out
-    assert "·" not in out
-
-
-def test_plain_text_gauge_catastrophic_uses_ascii_overflow_arrow() -> None:
-    from whestbench.cli import _render_plain_text_report
-
-    per_mlp = [_busted(0, 120.0), _busted(1, 212.0)]
-    out = _render_plain_text_report(_full_report(per_mlp, flop_budget=100))
-    # ASCII overflow marker
-    assert "]>" in out
-    assert "▶" not in out
-
-
-def test_plain_text_over_budget_section_renders_rows_and_summary() -> None:
-    from whestbench.cli import _render_plain_text_report
-
-    per_mlp = [_busted(i, 200.0 - i) for i in range(7)]
-    out = _render_plain_text_report(_full_report(per_mlp, flop_budget=100))
-    # Heading
-    assert "Over-Budget MLPs" in out
-    # Heading is inside the Estimator Budget Breakdown section.
-    assert out.index("Estimator Budget Breakdown") < out.index("Over-Budget MLPs")
-    # Top 5 rows
-    for idx in range(5):
-        assert f"MLP #{idx}" in out
-    # Rows 5 and 6 excluded
-    assert "MLP #5" not in out
-    assert "MLP #6" not in out
-    # Truncation footer
-    assert "... and 2 more over budget" in out
-    assert "run with --json for the full list" in out
-    # All-busted summary (7 of 7)
-    assert "All 7 MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed" in out
+    assert "Over-Budget MLPs" not in out
+    assert "worst MLP" not in out
 
 
 def test_plain_text_over_budget_section_omitted_when_clean() -> None:

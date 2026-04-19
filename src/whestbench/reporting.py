@@ -22,6 +22,11 @@ from rich.progress_bar import ProgressBar
 from rich.table import Table
 from rich.text import Text
 
+from .presentation.adapters import build_run_presentation, build_smoke_test_presentation
+from .presentation.blocks import build_section_renderables
+from .presentation.human import HumanOutputFormat, render_blocks
+from .presentation.models import CommandPresentation, KeyValueSection, StepItem, StepsSection
+
 try:
     import plotext as _plotext  # pyright: ignore[reportMissingModuleSource]
 except ImportError:  # pragma: no cover - optional dependency
@@ -37,9 +42,10 @@ def render_human_header() -> str:
     """Render only the title/header block for append-first human runs."""
     buffer = io.StringIO()
     console = _new_console(buffer)
+    doc = build_run_presentation({}, debug=False)
     console.print(
         Panel(
-            Align.center(Text("WhestBench Report", style="bold white")),
+            Align.center(Text(doc.title, style="bold white")),
             expand=True,
             border_style="bright_cyan",
         )
@@ -60,13 +66,25 @@ def render_human_results(
     *,
     show_diagnostic_plots: bool = False,
     debug: bool = False,
+    output_format: HumanOutputFormat = "rich",
+    include_context: bool = False,
+    include_epilogues: bool = False,
+    presentation_doc: CommandPresentation | None = None,
 ) -> str:
     """Render post-run sections for append-only human flows."""
+    doc = presentation_doc or build_run_presentation(report, debug=debug)
+    if output_format == "plain":
+        return _render_human_report_blocks(
+            report,
+            doc,
+            output_format=output_format,
+            include_context=include_context,
+            include_epilogues=include_epilogues,
+        )
+
     buffer = io.StringIO()
     console = _new_console(buffer)
-    _render_score_row(console, report)
-    _render_errors_section(console, report, debug=debug)
-    _render_breakdown_sections(console, report)
+    buffer.write(render_blocks(_settled_section_renderables(doc), output_format="rich"))
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
 
@@ -76,28 +94,78 @@ def render_human_report(
     *,
     show_diagnostic_plots: bool = False,
     debug: bool = False,
+    presentation_doc: CommandPresentation | None = None,
+    output_format: HumanOutputFormat = "rich",
 ) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
+    doc = presentation_doc or build_run_presentation(report, debug=debug)
+    if output_format == "plain":
+        return _render_human_report_blocks(
+            report,
+            doc,
+            output_format=output_format,
+            include_context=True,
+            include_epilogues=True,
+        )
+
     buffer = io.StringIO()
     console = _new_console(buffer)
 
     console.print(
         Panel(
-            Align.center(Text("WhestBench Report", style="bold white")),
+            Align.center(Text(doc.title, style="bold white")),
             expand=True,
             border_style="bright_cyan",
         )
     )
-    console.print(
-        "[dim]Use --json for JSON output when calling from automated agents or UIs.[/dim]"
-    )
-    console.print("[dim]Use --show-diagnostic-plots to include diagnostic plot panes.[/dim]")
+    for message in doc.epilogue_messages:
+        console.print(f"[dim]{message}[/dim]")
     _render_top_row(console, report)
-    _render_score_row(console, report)
-    _render_errors_section(console, report, debug=debug)
-    _render_breakdown_sections(console, report)
+    buffer.write(render_blocks(_settled_section_renderables(doc), output_format="rich"))
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
+
+
+def _report_header_block(title: str) -> Panel:
+    return Panel(
+        Align.center(Text(title, style="bold white")),
+        expand=True,
+        border_style="bright_cyan",
+    )
+
+
+def _is_context_section(section: object) -> bool:
+    return isinstance(section, KeyValueSection) and section.title in {
+        "Run Context",
+        "Hardware & Runtime",
+    }
+
+
+def _settled_section_renderables(doc: CommandPresentation) -> list[object]:
+    renderables: list[object] = []
+    for section in doc.sections:
+        if _is_context_section(section):
+            continue
+        renderables.extend(build_section_renderables(section))
+    return renderables
+
+
+def _render_human_report_blocks(
+    report: "dict[str, Any]",
+    doc: CommandPresentation,
+    *,
+    output_format: HumanOutputFormat,
+    include_context: bool,
+    include_epilogues: bool,
+) -> str:
+    blocks: list[object] = [_report_header_block(doc.title)]
+    if include_context:
+        context_width = 80 if output_format == "plain" else None
+        blocks.append(build_human_context_renderable(report, console_width=context_width))
+    blocks.extend(_settled_section_renderables(doc))
+    if include_epilogues:
+        blocks.extend(Text(message) for message in doc.epilogue_messages if message)
+    return render_blocks(blocks, output_format=output_format, force_terminal=True)
 
 
 def _new_console(buffer: io.StringIO) -> Console:
@@ -111,7 +179,7 @@ def _new_console(buffer: io.StringIO) -> Console:
     )
 
 
-def render_smoke_test_next_steps() -> str:
+def render_smoke_test_next_steps(report: "dict[str, Any]", *, debug: bool = False) -> str:
     """Render onboarding next-steps panel for ``whest smoke-test``."""
     buffer = io.StringIO()
     width = _dashboard_width()
@@ -123,16 +191,30 @@ def render_smoke_test_next_steps() -> str:
         _environ=_rich_console_environ(width),
     )
 
-    purpose_lines = _smoke_next_step_lines()
-    commands = _smoke_next_step_commands()
+    smoke_doc = build_smoke_test_presentation(report, debug=debug)
+    next_steps = next(
+        (
+            section
+            for section in smoke_doc.sections
+            if isinstance(section, StepsSection) and section.title == "Next Steps"
+        ),
+        None,
+    )
+    structured_steps = (
+        [step for step in next_steps.steps if isinstance(step, StepItem)]
+        if next_steps is not None
+        else []
+    )
+    purpose_lines = _smoke_next_step_lines(structured_steps)
+    section_title = next_steps.title if next_steps is not None else "Next Steps"
     body_items: "list[Text]" = [
         Text("We are all set! Welcome onboard", style="bold bright_green"),
         Text("Run these steps:", style="bold bright_white"),
         Text(),
     ]
-    for purpose_line, command in zip(purpose_lines, commands):
+    for purpose_line, step in zip(purpose_lines, structured_steps):
         body_items.append(purpose_line)
-        body_items.append(Text(command, style="white"))
+        body_items.append(Text(step.command, style="white"))
         body_items.append(Text())
 
     body_items.append(Text("Optional: run bundled example estimators:", style="bold bright_cyan"))
@@ -140,37 +222,24 @@ def render_smoke_test_next_steps() -> str:
         body_items.append(Text(command, style="white"))
     body_items.append(Text())
 
-    body_items.append(
-        Text(
-            "Tip: use --json on validate/run/package for machine-readable output.",
-            style="dim",
-        )
-    )
+    for message in smoke_doc.epilogue_messages:
+        body_items.append(Text(message, style="dim"))
 
     body = Group(*body_items)
-    console.print(Panel(body, title="Next Steps", border_style="bright_cyan"))
+    console.print(Panel(body, title=section_title, border_style="bright_cyan"))
     return buffer.getvalue()
 
 
-def _smoke_next_step_commands() -> "list[str]":
-    return [
-        "whest init ./my-estimator",
-        "whest validate --estimator ./my-estimator/estimator.py",
-        "whest run --estimator ./my-estimator/estimator.py --runner local",
-        "whest package --estimator ./my-estimator/estimator.py --output ./submission.tar.gz",
-    ]
-
-
-def _smoke_next_step_lines() -> "list[Text]":
-    purposes = [
-        ("Create starter files you can edit.", "bold bright_cyan"),
-        ("Validate an Estimator implementation.", "bold bright_green"),
-        ("Run local evaluation with isolation.", "bold bright_yellow"),
-        ("Build submission artifacts for AIcrowd.", "bold bright_magenta"),
+def _smoke_next_step_lines(steps: Sequence[StepItem]) -> "list[Text]":
+    styles = [
+        "bold bright_cyan",
+        "bold bright_green",
+        "bold bright_yellow",
+        "bold bright_magenta",
     ]
     return [
-        Text(f"# {idx}) {purpose}", style=style)
-        for idx, (purpose, style) in enumerate(purposes, start=1)
+        Text(f"# {idx}) {step.purpose}", style=styles[(idx - 1) % len(styles)])
+        for idx, step in enumerate(steps, start=1)
     ]
 
 
@@ -311,7 +380,7 @@ def _fmt_flops(value: Any) -> str:
     - Otherwise -> scientific notation with 3 significant figures,
       e.g. "8.46e+11".
 
-    Exact integer values are always available via ``whest run --json``.
+    Exact integer values are always available via ``whest run --format json``.
     """
     if value is None:
         return "n/a"
@@ -670,7 +739,7 @@ def _over_budget_renderable(report: "dict[str, Any]") -> Optional[Group]:
     if sel.is_truncated:
         remainder = sel.busted_count - len(sel.rows)
         lines.append(Text(f"... and {remainder} more over budget", style="dim"))
-        lines.append(Text("run with --json for the full list", style="dim"))
+        lines.append(Text("run with --format json for the full list", style="dim"))
 
     lines.append(Text(""))  # blank line before summary
     if sel.is_all_busted:

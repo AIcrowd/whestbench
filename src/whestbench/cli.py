@@ -10,6 +10,7 @@ import time
 import traceback
 import warnings
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator, Literal, Optional, overload
@@ -38,11 +39,19 @@ from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
 from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
+from .presentation.adapters import (
+    build_create_dataset_presentation,
+    build_error_presentation,
+    build_init_presentation,
+    build_package_presentation,
+    build_run_presentation,
+    build_smoke_test_presentation,
+    build_validate_presentation,
+)
+from .presentation.models import StepsSection
+from .presentation.output import add_output_format_arguments, resolve_output_format
+from .presentation.presenters import render_command_presentation
 from .reporting import (
-    _compute_gauge_state,
-    _fmt_flops,
-    _gauge_bar_fragment,
-    _select_top_over_budget,
     render_agent_report,
     render_human_context_panels,
     render_human_header,
@@ -92,16 +101,11 @@ def _debugger_active() -> bool:
       under ``python -m pdb`` or an attached debugger).
     - ``PYTHONBREAKPOINT`` is set to a non-empty, non-"0" value (CPython's
       standard env var that controls ``breakpoint()``).
-    - ``WHESTBENCH_NO_RICH`` is set to a non-empty, non-"0" value
-      (project-specific escape hatch for CI / non-TTY logs).
     """
     if sys.gettrace() is not None:
         return True
     pb = os.environ.get("PYTHONBREAKPOINT", "").strip()
     if pb and pb != "0":
-        return True
-    no_rich_env = os.environ.get("WHESTBENCH_NO_RICH", "").strip()
-    if no_rich_env and no_rich_env != "0":
         return True
     return False
 
@@ -185,195 +189,47 @@ def run_default_report(
     }
 
 
-def _render_plain_text_report(report: Dict[str, Any], *, debug: bool = False) -> str:
-    """Render a minimal plain-text summary when Rich rendering is unavailable."""
-    results = report.get("results", {})
-    run_config = report.get("run_config", {})
-    run_meta = report.get("run_meta", {})
-    lines = [
-        "WhestBench Report (Plain Text)",
-        f"Primary Score: {results.get('primary_score', 'n/a')}",
-        f"Secondary Score: {results.get('secondary_score', 'n/a')}",
-        f"Duration(s): {run_meta.get('run_duration_s', 'n/a')}",
-        f"MLPs: {run_config.get('n_mlps', 'n/a')}",
-        f"Width: {run_config.get('width', 'n/a')}",
-        f"Depth: {run_config.get('depth', 'n/a')}",
-        f"FLOP Budget: {_fmt_flops(run_config.get('flop_budget'))}",
-        f"Wall Time Limit: {run_config.get('wall_time_limit_s') or 'unlimited'}",
-        f"Untracked Time Limit: {run_config.get('untracked_time_limit_s') or 'unlimited'}",
-    ]
-
-    def _extract_error_line(entry: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
-        raw_error = entry.get("error")
-        if isinstance(raw_error, dict):
-            message = str(raw_error.get("message") or "").strip()
-            details = raw_error.get("details")
-            if not isinstance(details, dict):
-                details = {}
-            if not message:
-                message = "(no message)"
-            return message, details
-        if raw_error is None:
-            return "", {}
-        return str(raw_error), {}
-
-    def _render_error_details(details: Dict[str, Any], indent: str) -> list[str]:
-        if not details:
-            return []
-        lines: list[str] = []
-        hint = details.get("hint")
-        cause_hints = details.get("cause_hints")
-        expected_shape = details.get("expected_shape")
-        got_shape = details.get("got_shape")
-        if isinstance(expected_shape, list):
-            lines.append(f"{indent}Expected shape: {expected_shape}")
-        if isinstance(got_shape, list):
-            lines.append(f"{indent}Got shape: {got_shape}")
-        if isinstance(hint, str) and hint:
-            lines.append(f"{indent}Hint: {hint}")
-        if isinstance(cause_hints, list) and cause_hints:
-            lines.append(f"{indent}Cause hints:")
-            for item in cause_hints:
-                if isinstance(item, str) and item:
-                    lines.append(f"{indent}  - {item}")
-        return lines
-
-    per_mlp = results.get("per_mlp") if isinstance(results, dict) else None
-    if isinstance(per_mlp, list):
-        failures = [e for e in per_mlp if isinstance(e, dict) and e.get("error")]
-        if failures:
-            lines.append("")
-            lines.append(f"Estimator Errors: {len(failures)} of {len(per_mlp)} MLP(s) raised:")
-            for entry in failures:
-                idx = entry.get("mlp_index", "?")
-                code = entry.get("error_code") or "UNKNOWN"
-                message, details = _extract_error_line(entry)
-                lines.append(f"  MLP {idx} [{code}]: {message}")
-                lines.extend(_render_error_details(details, indent="    "))
-                if debug:
-                    tb_text = entry.get("traceback")
-                    if tb_text:
-                        for tb_line in str(tb_text).rstrip().splitlines():
-                            lines.append(f"    {tb_line}")
-            if not debug:
-                lines.append(
-                    "  (rerun with --debug to include full tracebacks; "
-                    "--fail-fast to stop on first error.)"
-                )
-
-    def _as_float(value: Any) -> float:
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return 0.0
-
-    n_mlps = int(run_config.get("n_mlps", 0) or 0)
-    if n_mlps <= 0:
-        n_mlps = 1
-
-    breakdowns = results.get("breakdowns")
-    if isinstance(breakdowns, dict):
-        for breakdown_key, title in (
-            ("sampling", "Sampling Budget Breakdown"),
-            ("estimator", "Estimator Budget Breakdown"),
-        ):
-            breakdown = breakdowns.get(breakdown_key)
-            if not isinstance(breakdown, dict):
-                continue
-            by_namespace = breakdown.get("by_namespace")
-            if not isinstance(by_namespace, dict):
-                by_namespace = {}
-
-            total_flops = _as_float(breakdown.get("flops_used", 0.0))
-            if total_flops <= 0.0:
-                total_flops = sum(
-                    _as_float(bucket.get("flops_used", 0.0))
-                    for bucket in by_namespace.values()
-                    if isinstance(bucket, dict)
-                )
-
-            lines.append("")
-            lines.append(f"{title}:")
-
-            if breakdown_key == "estimator":
-                # FLOP budget gauge (ASCII mirror of the Rich gauge)
-                gauge = _compute_gauge_state(report)
-                if not gauge.has_budget:
-                    lines.append("  Estimator FLOPs  -- of 0 FLOPs")
-                else:
-                    bar_rich = _gauge_bar_fragment(gauge.mean_utilization)
-                    bar_ascii = bar_rich.replace("█", "#").replace("░", "-")
-                    overflow = ">" if gauge.state_name == "catastrophic" else ""
-                    pct_int = int(gauge.mean_utilization * 100)
-                    budget_label = _fmt_flops(gauge.flop_budget)
-                    suffix = (
-                        f" . worst MLP {gauge.worst_mlp_pct}% !"
-                        if gauge.worst_mlp_pct is not None
-                        else ""
-                    )
-                    lines.append(
-                        f"  Estimator FLOPs  {bar_ascii}{overflow} {pct_int}% of "
-                        f"{budget_label}{suffix}"
-                    )
-
-                # Over-Budget MLPs (ASCII mirror of the Rich panel)
-                selection = _select_top_over_budget(report)
-                if selection.busted_count > 0:
-                    lines.append("  Over-Budget MLPs")
-                    for row in selection.rows:
-                        pct_label = (
-                            f"{row.pct_of_budget}%" if row.pct_of_budget is not None else "--%"
-                        )
-                        lines.append(
-                            f"    MLP #{row.mlp_index:<4}  "
-                            f"{_fmt_flops(row.flops_used):>9} FLOPs  "
-                            f"{pct_label:>4} of budget  zeroed"
-                        )
-                    if selection.is_truncated:
-                        remainder = selection.busted_count - len(selection.rows)
-                        lines.append(f"    ... and {remainder} more over budget")
-                        lines.append("    run with --json for the full list")
-                    if selection.is_all_busted:
-                        lines.append(
-                            f"    All {selection.n_mlps} MLPs exceeded the per-MLP FLOP cap "
-                            f"— predictions entirely zeroed"
-                        )
-                    else:
-                        lines.append(
-                            f"    {selection.busted_count} of {selection.n_mlps} MLPs "
-                            f"exceeded the per-MLP FLOP cap"
-                        )
-
-            lines.extend(
-                [
-                    f"  Total FLOPs: {_fmt_flops(total_flops)}",
-                    f"  Tracked Time: {_as_float(breakdown.get('tracked_time_s', 0.0)):.6f}s",
-                    f"  Untracked Time: {_as_float(breakdown.get('untracked_time_s', 0.0)):.6f}s",
-                ]
-            )
-
-            for namespace, bucket in sorted(
-                (
-                    (namespace, bucket)
-                    for namespace, bucket in by_namespace.items()
-                    if isinstance(bucket, dict)
-                ),
-                key=lambda item: _as_float(item[1].get("flops_used", 0.0)),
-                reverse=True,
-            ):
-                namespace_label = (
-                    "(unlabeled)" if namespace in {None, "", "null", "None"} else str(namespace)
-                )
-                flops_used = _as_float(bucket.get("flops_used", 0.0))
-                percent = (flops_used / total_flops * 100.0) if total_flops > 0 else 0.0
-                mean_flops = flops_used / n_mlps if n_mlps > 0 else 0.0
-                tracked_time_s = _as_float(bucket.get("tracked_time_s", 0.0))
-                lines.append(
-                    "  "
-                    f"{namespace_label}: {_fmt_flops(flops_used)} FLOPs ({percent:.1f}%), "
-                    f"mean {_fmt_flops(mean_flops)}/MLP, tracked {tracked_time_s:.6f}s"
-                )
-    return "\n".join(lines) + "\n"
+def _render_plain_text_report(
+    report: Dict[str, Any],
+    *,
+    debug: bool = False,
+    command: str = "run",
+    include_epilogues: bool = True,
+    include_diagnostic_plots_tip: bool = True,
+    include_context: bool = True,
+) -> str:
+    """Render a plain-text report when Rich rendering is unavailable."""
+    doc = (
+        build_smoke_test_presentation(report, debug=debug)
+        if command == "smoke-test"
+        else build_run_presentation(report, debug=debug)
+    )
+    if not include_epilogues:
+        doc = replace(doc, epilogue_messages=[])
+    elif not include_diagnostic_plots_tip:
+        doc = replace(
+            doc,
+            epilogue_messages=[
+                message
+                for message in doc.epilogue_messages
+                if message != "Use --show-diagnostic-plots to include diagnostic plot panes."
+            ],
+        )
+    if command == "smoke-test":
+        return render_human_report(
+            report,
+            debug=debug,
+            presentation_doc=doc,
+            output_format="plain",
+        )
+    return render_human_results(
+        report,
+        debug=debug,
+        presentation_doc=doc,
+        output_format="plain",
+        include_context=include_context,
+        include_epilogues=bool(doc.epilogue_messages),
+    )
 
 
 def _host_metadata() -> Dict[str, Any]:
@@ -440,6 +296,37 @@ def _print_human_startup(
 
 def _print_human_header_and_hints() -> None:
     print(render_human_header(), end="")
+
+
+def _merge_pre_run_context(report: Dict[str, Any], pre_report: Dict[str, Any]) -> Dict[str, Any]:
+    run_meta = report.get("run_meta")
+    if not isinstance(run_meta, dict):
+        run_meta = {}
+        report["run_meta"] = run_meta
+    pre_run_meta = pre_report.get("run_meta")
+    if isinstance(pre_run_meta, dict):
+        started = pre_run_meta.get("run_started_at_utc")
+        if started not in {None, "", "n/a"}:
+            run_meta["run_started_at_utc"] = started
+        pre_host = pre_run_meta.get("host")
+        host_meta = run_meta.get("host")
+        if isinstance(pre_host, dict):
+            if not isinstance(host_meta, dict):
+                host_meta = {}
+            merged_host = dict(pre_host)
+            merged_host.update(host_meta)
+            run_meta["host"] = merged_host
+
+    run_config = report.get("run_config")
+    if not isinstance(run_config, dict):
+        run_config = {}
+        report["run_config"] = run_config
+    pre_run_config = pre_report.get("run_config")
+    if isinstance(pre_run_config, dict):
+        for key, value in pre_run_config.items():
+            run_config.setdefault(key, value)
+
+    return report
 
 
 class _LiveTopPaneSession:
@@ -712,7 +599,7 @@ def _write_init_template(target_dir: Path) -> "list[str]":
     return created
 
 
-def validate_submission_entrypoint(
+def _run_validate_checks(
     estimator_path: "Any",
     *,
     class_name: Optional[str] = None,
@@ -720,10 +607,21 @@ def validate_submission_entrypoint(
     estimator, metadata = load_estimator_from_path(estimator_path, class_name=class_name)
     context = SetupContext(width=4, depth=2, flop_budget=100, api_version="1.0")
     mlp = sample_mlp(width=4, depth=2)
+    checks: list[dict[str, str]] = []
     try:
+        checks.append({"name": "class resolved", "status": "ok", "detail": metadata.class_name})
         estimator.setup(context)
+        checks.append({"name": "setup(context) completed", "status": "ok", "detail": "ok"})
         predictions = estimator.predict(mlp, 100)
         arr = validate_predictions(predictions, depth=mlp.depth, width=mlp.width)
+        checks.append(
+            {
+                "name": "predict() returned shape",
+                "status": "ok",
+                "detail": str(tuple(arr.shape)),
+            }
+        )
+        checks.append({"name": "values finite", "status": "ok", "detail": "all finite"})
     finally:
         estimator.teardown()
     return {
@@ -731,6 +629,21 @@ def validate_submission_entrypoint(
         "class_name": metadata.class_name,
         "module_name": metadata.module_name,
         "output_shape": list(arr.shape),
+        "checks": checks,
+    }
+
+
+def validate_submission_entrypoint(
+    estimator_path: "Any",
+    *,
+    class_name: Optional[str] = None,
+) -> Dict[str, Any]:
+    result = _run_validate_checks(estimator_path, class_name=class_name)
+    return {
+        "ok": result["ok"],
+        "class_name": result["class_name"],
+        "module_name": result["module_name"],
+        "output_shape": result["output_shape"],
     }
 
 
@@ -753,14 +666,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     smoke_test_parser.add_argument("--profile", action="store_true")
     smoke_test_parser.add_argument("--show-diagnostic-plots", action="store_true")
     smoke_test_parser.add_argument("--debug", action="store_true")
-    smoke_test_parser.add_argument(
-        "--no-rich",
-        action="store_true",
-        help=(
-            "Disable Rich live display and progress bars; use plain-text output. "
-            "Use when attaching a debugger (pdb/ipdb) or running in a non-TTY environment."
-        ),
-    )
+    add_output_format_arguments(smoke_test_parser)
     smoke_test_parser.add_argument(
         "--max-threads",
         type=int,
@@ -771,10 +677,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     init_parser = subparsers.add_parser("init", help="Create starter estimator files.")
     init_parser.add_argument("path", nargs="?", default=".")
-    init_parser.add_argument(
-        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
-    )
     init_parser.add_argument("--debug", action="store_true")
+    add_output_format_arguments(init_parser)
 
     validate_parser = subparsers.add_parser("validate", help="Validate estimator contract.")
     validate_parser.add_argument(
@@ -783,10 +687,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Path to estimator.py (see examples/estimators/ for starter files).",
     )
     validate_parser.add_argument("--class", dest="class_name")
-    validate_parser.add_argument(
-        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
-    )
     validate_parser.add_argument("--debug", action="store_true")
+    add_output_format_arguments(validate_parser)
 
     run_parser = subparsers.add_parser("run", help="Run local evaluation for an estimator.")
     run_parser.add_argument(
@@ -811,9 +713,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
     run_parser.add_argument("--profile", action="store_true")
     run_parser.add_argument("--show-diagnostic-plots", action="store_true")
-    run_parser.add_argument(
-        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
-    )
+    add_output_format_arguments(run_parser)
     run_parser.add_argument(
         "--dataset", default=None, help="Path to pre-created dataset .npz file."
     )
@@ -867,14 +767,6 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Limit BLAS to at most N CPU threads.",
     )
-    run_parser.add_argument(
-        "--no-rich",
-        action="store_true",
-        help=(
-            "Disable Rich live display and progress bars; use plain-text output. "
-            "Use when attaching a debugger (pdb/ipdb) or running in a non-TTY environment."
-        ),
-    )
 
     create_ds_parser = subparsers.add_parser(
         "create-dataset", help="Pre-create evaluation dataset."
@@ -886,10 +778,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     create_ds_parser.add_argument("--flop-budget", type=int, default=None)
     create_ds_parser.add_argument("--seed", type=int, default=None)
     create_ds_parser.add_argument("-o", "--output", default="eval_dataset.npz")
-    create_ds_parser.add_argument(
-        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
-    )
     create_ds_parser.add_argument("--debug", action="store_true")
+    add_output_format_arguments(create_ds_parser)
     create_ds_parser.add_argument(
         "--max-threads",
         type=int,
@@ -905,10 +795,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     package_parser.add_argument("--submission-metadata")
     package_parser.add_argument("--approach")
     package_parser.add_argument("--output")
-    package_parser.add_argument(
-        "--json", dest="json_output", action="store_true", help="Return results as a JSON string."
-    )
     package_parser.add_argument("--debug", action="store_true")
+    add_output_format_arguments(package_parser)
 
     visualizer_parser = subparsers.add_parser(
         "visualizer",
@@ -941,6 +829,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Path to save JSON results.",
     )
     profile_parser.add_argument("--debug", action="store_true")
+    add_output_format_arguments(profile_parser)
     profile_parser.add_argument(
         "--max-threads",
         type=int,
@@ -1096,7 +985,19 @@ def _run_estimator_with_runner(
 def _main_participant(argv: "list[str]") -> int:
     args = _build_participant_parser().parse_args(argv)
     command = str(args.command)
-    json_output = bool(getattr(args, "json_output", False))
+    stdout_is_tty = bool(getattr(sys.stdout, "isatty", lambda: False)())
+    output_format = resolve_output_format(
+        format_arg=getattr(args, "output_format", None),
+        json_output=bool(getattr(args, "json_output", False)),
+        is_tty=stdout_is_tty,
+    )
+    if command in {"run", "smoke-test"} and output_format == "rich" and _debugger_active():
+        output_format = "plain"
+        print(
+            "Debugger detected (sys.gettrace / PYTHONBREAKPOINT); forcing plain output.",
+            file=sys.stderr,
+        )
+    json_output = output_format == "json"
 
     # Apply thread limit early, before any backend module is imported.
     max_threads = getattr(args, "max_threads", None)
@@ -1105,25 +1006,19 @@ def _main_participant(argv: "list[str]") -> int:
 
         apply_thread_limit(max_threads)
     debug = bool(getattr(args, "debug", False))
-
-    # Promote debugger detection to --no-rich so Live displays don't mask pdb
-    # prompts. Only affects subcommands that expose the flag (run, smoke-test);
-    # other subcommands silently ignore it via getattr defaults.
-    if (
-        hasattr(args, "no_rich")
-        and not bool(getattr(args, "no_rich", False))
-        and _debugger_active()
-    ):
-        args.no_rich = True
-        print(
-            "Debugger detected (sys.gettrace / PYTHONBREAKPOINT / WHESTBENCH_NO_RICH); "
-            "disabling Rich live display.",
-            file=sys.stderr,
-        )
-    no_rich = bool(getattr(args, "no_rich", False))
+    no_rich = output_format == "plain"
 
     try:
         if command == "smoke-test":
+            if json_output:
+                report = run_default_report(
+                    profile=bool(args.profile),
+                    detail=str(args.detail),
+                )
+                report["mode"] = "agent"
+                print(render_agent_report(report), end="")
+                return 0
+
             if no_rich:
                 # Plain-text path: no Rich Live, no progress bar. Emit
                 # single-line phase updates to stderr so a log-scraper still
@@ -1143,7 +1038,7 @@ def _main_participant(argv: "list[str]") -> int:
                     progress=_plain_smoke_progress,
                 )
                 report["mode"] = "human"
-                output = _render_plain_text_report(report)
+                output = _render_plain_text_report(report, command="smoke-test")
                 print(output, end="" if output.endswith("\n") else "\n")
                 return 0
 
@@ -1190,19 +1085,36 @@ def _main_participant(argv: "list[str]") -> int:
                 report = run_default_report(profile=bool(args.profile), detail=str(args.detail))
 
             report["mode"] = "human"
+            rich_rendered = False
+            smoke_doc = build_smoke_test_presentation(report, debug=debug)
             try:
                 output = render_human_report(
-                    report, show_diagnostic_plots=bool(args.show_diagnostic_plots)
+                    report,
+                    show_diagnostic_plots=bool(args.show_diagnostic_plots),
+                    debug=debug,
+                    presentation_doc=replace(
+                        smoke_doc,
+                        sections=[
+                            section
+                            for section in smoke_doc.sections
+                            if not (
+                                isinstance(section, StepsSection) and section.title == "Next Steps"
+                            )
+                        ],
+                        epilogue_messages=[],
+                    ),
                 )
+                rich_rendered = True
             except Exception as exc:
                 print(
                     f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
                     file=sys.stderr,
                 )
-                output = _render_plain_text_report(report)
+                output = _render_plain_text_report(report, command="smoke-test")
             print(output, end="" if output.endswith("\n") else "\n")
-            next_steps = render_smoke_test_next_steps()
-            print(next_steps, end="" if next_steps.endswith("\n") else "\n")
+            if rich_rendered:
+                next_steps = render_smoke_test_next_steps(report, debug=debug)
+                print(next_steps, end="" if next_steps.endswith("\n") else "\n")
             return 0
 
         if command == "init":
@@ -1210,22 +1122,32 @@ def _main_participant(argv: "list[str]") -> int:
             payload = {"ok": True, "created": created}
             if json_output:
                 print(json.dumps(payload, indent=2))
-            elif created:
-                print("Initialized starter files:")
-                for file in created:
-                    print(f"- {file}")
             else:
-                print("Starter files already exist; nothing created.")
+                doc = build_init_presentation(payload)
+                print(
+                    render_command_presentation(
+                        doc,
+                        output_format=output_format,
+                        force_terminal=stdout_is_tty,
+                    ),
+                    end="",
+                )
             return 0
 
         if command == "validate":
-            payload = validate_submission_entrypoint(args.estimator, class_name=args.class_name)
             if json_output:
+                payload = validate_submission_entrypoint(args.estimator, class_name=args.class_name)
                 print(json.dumps(payload, indent=2))
             else:
+                result = _run_validate_checks(args.estimator, class_name=args.class_name)
+                doc = build_validate_presentation(result)
                 print(
-                    f"Validation passed: class={payload['class_name']} "
-                    f"shape={tuple(payload['output_shape'])}"
+                    render_command_presentation(
+                        doc,
+                        output_format=output_format,
+                        force_terminal=stdout_is_tty,
+                    ),
+                    end="",
                 )
             return 0
 
@@ -1238,7 +1160,7 @@ def _main_participant(argv: "list[str]") -> int:
             ds_flop_budget = args.flop_budget or contest.flop_budget
             n_mlps_ds = int(args.n_mlps)
 
-            if not json_output:
+            if output_format == "rich":
                 try:
                     from rich.progress import (
                         BarColumn,
@@ -1288,7 +1210,6 @@ def _main_participant(argv: "list[str]") -> int:
                         seed=getattr(args, "seed", None),
                         output_path=Path(args.output),
                     )
-                print(f"Dataset created: {out}")
             else:
                 out = _create_dataset(
                     n_mlps=n_mlps_ds,
@@ -1299,7 +1220,19 @@ def _main_participant(argv: "list[str]") -> int:
                     seed=getattr(args, "seed", None),
                     output_path=Path(args.output),
                 )
-                print(json.dumps({"ok": True, "path": str(out)}, indent=2))
+            payload = {"ok": True, "path": str(out)}
+            if json_output:
+                print(json.dumps(payload, indent=2))
+            else:
+                doc = build_create_dataset_presentation(payload)
+                print(
+                    render_command_presentation(
+                        doc,
+                        output_format=output_format,
+                        force_terminal=stdout_is_tty,
+                    ),
+                    end="",
+                )
             return 0
 
         if command == "run":
@@ -1474,8 +1407,14 @@ def _main_participant(argv: "list[str]") -> int:
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
+                report = _merge_pre_run_context(report, pre_report)
+                used_plain_fallback = False
                 if no_rich:
-                    output = _render_plain_text_report(report, debug=debug)
+                    output = _render_plain_text_report(
+                        report,
+                        debug=debug,
+                        include_epilogues=False,
+                    )
                 else:
                     try:
                         output = render_human_results(
@@ -1488,16 +1427,23 @@ def _main_participant(argv: "list[str]") -> int:
                             f"Rich dashboard unavailable ({exc}); falling back to plain-text report.",
                             file=sys.stderr,
                         )
-                        output = _render_plain_text_report(report, debug=debug)
+                        output = _render_plain_text_report(
+                            report,
+                            debug=debug,
+                            include_diagnostic_plots_tip=not bool(args.show_diagnostic_plots),
+                            include_context=False,
+                        )
+                        used_plain_fallback = True
             print(output, end="" if output.endswith("\n") else "\n")
             if not json_output and not no_rich:
-                _tip_console.print(
-                    "[bold bright_yellow]Tip:[/] Use [green]--json[/] for JSON output when calling from automated agents or UIs."
-                )
-                if not args.show_diagnostic_plots:
+                if not used_plain_fallback:
                     _tip_console.print(
-                        "[bold bright_yellow]Tip:[/] Use [green]--show-diagnostic-plots[/] to include diagnostic plot panes."
+                        "[bold bright_yellow]Tip:[/] Use [green]--format json[/] for JSON output when calling from automated agents or UIs."
                     )
+                    if not args.show_diagnostic_plots:
+                        _tip_console.print(
+                            "[bold bright_yellow]Tip:[/] Use [green]--show-diagnostic-plots[/] to include diagnostic plot panes."
+                        )
                 if dataset_path is None:
                     _tip_console.print(_dataset_tip)
             per_mlp = report.get("results", {}).get("per_mlp", [])
@@ -1525,7 +1471,15 @@ def _main_participant(argv: "list[str]") -> int:
             if json_output:
                 print(json.dumps(payload, indent=2))
             else:
-                print(f"Packaged submission: {artifact_path}")
+                doc = build_package_presentation(payload)
+                print(
+                    render_command_presentation(
+                        doc,
+                        output_format=output_format,
+                        force_terminal=stdout_is_tty,
+                    ),
+                    end="",
+                )
             return 0
 
         if command == "visualizer":
@@ -1541,15 +1495,19 @@ def _main_participant(argv: "list[str]") -> int:
         if command == "profile-simulation":
             from .profiler import run_profile
 
-            terminal_output, _ = run_profile(
+            terminal_output, json_data = run_profile(
                 preset_name=str(args.preset),
                 output_path=args.output,
-                show_progress=not json_output,
+                show_progress=output_format == "rich",
                 max_threads=args.max_threads,
                 verbose=bool(args.verbose),
                 log_progress=bool(args.log_progress),
+                output_format=output_format,
             )
-            print(terminal_output)
+            if json_output:
+                print(json.dumps(json_data, indent=2))
+            else:
+                print(terminal_output, end="" if terminal_output.endswith("\n") else "\n")
             return 0
 
         raise ValueError(f"Unsupported command: {command}")
@@ -1560,6 +1518,8 @@ def _main_participant(argv: "list[str]") -> int:
             payload,
             json_output=json_output,
             debug=debug,
+            output_format="rich" if output_format == "rich" else "plain",
+            force_terminal=stdout_is_tty,
             show_inprocess_hint=(
                 command == "run"
                 and _normalize_runner_name(str(getattr(args, "runner", "local"))) == "subprocess"
@@ -1579,19 +1539,33 @@ def _print_error(
     *,
     json_output: bool,
     debug: bool,
+    output_format: Literal["rich", "plain"] = "plain",
+    force_terminal: bool = False,
     show_inprocess_hint: bool = False,
 ) -> None:
     if json_output:
         print(json.dumps(payload, indent=2))
         return
-    error = payload["error"]
-    print(f"Error [{error['stage']}:{error['code']}]: {error['message']}")
-    if debug and "traceback" in error:
-        print(error["traceback"])
-    elif not debug:
-        print("Use --debug to include a traceback.")
-    if show_inprocess_hint:
-        print("Tip: For estimator-level tracebacks, rerun with --runner local --debug.")
+    doc = build_error_presentation(
+        payload,
+        debug=debug,
+        show_inprocess_hint=show_inprocess_hint,
+    )
+    print(
+        render_command_presentation(
+            doc,
+            output_format=output_format,
+            force_terminal=force_terminal,
+        ),
+        end="",
+    )
+
+
+def _extract_exception_details(exc: Exception) -> Dict[str, Any] | None:
+    details = exc.detail.details if isinstance(exc, RunnerError) else getattr(exc, "details", None)
+    if isinstance(details, dict) and details:
+        return details
+    return None
 
 
 def _error_payload(
@@ -1607,8 +1581,9 @@ def _error_payload(
         "code": _error_code(exc, message),
         "message": message,
     }
-    if isinstance(exc, RunnerError) and exc.detail.details:
-        error["details"] = exc.detail.details
+    details = _extract_exception_details(exc)
+    if details is not None:
+        error["details"] = details
     if include_traceback:
         error["traceback"] = traceback.format_exc()
     return {"ok": False, "error": error}

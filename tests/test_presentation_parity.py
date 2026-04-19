@@ -1,0 +1,435 @@
+from __future__ import annotations
+
+import re
+from contextlib import contextmanager
+
+import whestbench.cli as cli
+from whestbench.presentation.adapters import (
+    build_create_dataset_presentation,
+    build_error_presentation,
+    build_init_presentation,
+    build_package_presentation,
+    build_profile_presentation,
+    build_run_presentation,
+    build_smoke_test_presentation,
+    build_validate_presentation,
+    build_visualizer_error_presentation,
+    build_visualizer_ready_presentation,
+)
+from whestbench.presentation.blocks import build_budget_breakdown_block, build_score_block
+from whestbench.presentation.human import render_document
+from whestbench.presentation.models import (
+    BudgetBreakdownNamespaceRow,
+    BudgetBreakdownSection,
+    TableSection,
+)
+from whestbench.presentation.presenters import render_command_presentation
+
+
+def _strip_ansi(text: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
+def _render_plain(doc) -> str:
+    return render_command_presentation(
+        doc,
+        output_format="plain",
+        force_terminal=False,
+        width=200,
+    )
+
+
+def _render_rich(doc) -> str:
+    return render_command_presentation(
+        doc,
+        output_format="rich",
+        force_terminal=True,
+        width=200,
+    )
+
+
+def _sample_run_report() -> dict[str, object]:
+    return {
+        "run_meta": {
+            "run_started_at_utc": "2026-03-01T00:00:00+00:00",
+            "run_finished_at_utc": "2026-03-01T00:00:01+00:00",
+            "run_duration_s": 1.0,
+            "host": {
+                "hostname": "example-host",
+                "os": "Darwin",
+                "os_release": "25.3.0",
+                "platform": "macOS-15-arm64",
+                "machine": "arm64",
+                "cpu_brand": "Apple M4",
+                "cpu_count_logical": 10,
+                "cpu_count_physical": 8,
+                "ram_total_bytes": 17179869184,
+                "python_version": "3.13.7",
+                "numpy_version": "2.2.6",
+            },
+        },
+        "run_config": {
+            "estimator_class": "CombinedEstimator",
+            "estimator_path": "examples/estimators/combined_estimator.py",
+            "n_mlps": 1,
+            "width": 4,
+            "depth": 2,
+            "flop_budget": 100,
+        },
+        "results": {"primary_score": 0.42, "secondary_score": 0.55, "per_mlp": []},
+    }
+
+
+@contextmanager
+def _fake_live_session(*_args: object, **_kwargs: object):
+    class _Session:
+        def on_progress(self, _event: dict[str, object]) -> None:
+            return None
+
+        def update_run_meta(self, _run_meta: dict[str, object]) -> None:
+            return None
+
+    yield _Session()
+
+
+def test_parity_matrix_preserves_settled_information() -> None:
+    cases = [
+        (
+            build_run_presentation(_sample_run_report(), debug=False),
+            [
+                "WhestBench Report",
+                "Run Context",
+                "Estimator Class",
+                "CombinedEstimator",
+                "Estimator Path",
+                "MLPs",
+                "1",
+                "Hardware & Runtime",
+                "example-host",
+                "Darwin",
+                "Apple M4",
+                "3.13.7",
+                "Primary Score",
+                "0.42",
+                "Use --format json for JSON output when calling from automated agents or UIs.",
+                "Use --show-diagnostic-plots to include diagnostic plot panes.",
+            ],
+        ),
+        (
+            build_smoke_test_presentation(
+                {
+                    "run_meta": {"run_duration_s": 1.0, "host": {}},
+                    "run_config": {
+                        "n_mlps": 3,
+                        "width": 100,
+                        "depth": 16,
+                        "flop_budget": 10_000_000,
+                    },
+                    "results": {
+                        "primary_score": 0.42,
+                        "secondary_score": 0.55,
+                        "per_mlp": [],
+                    },
+                },
+                debug=False,
+            ),
+            [
+                "WhestBench Report",
+                "Next Steps",
+                "Create starter files you can edit.",
+                "whest init ./my-estimator",
+                "Use --format json for JSON output when calling from automated agents or UIs.",
+            ],
+        ),
+        (
+            build_init_presentation({"ok": True, "created": ["/tmp/demo/estimator.py"]}),
+            ["Starter Files", "Created Files", "/tmp/demo/estimator.py"],
+        ),
+        (
+            build_create_dataset_presentation({"ok": True, "path": "/tmp/eval_dataset.npz"}),
+            ["Dataset Created", "Dataset", "/tmp/eval_dataset.npz"],
+        ),
+        (
+            build_package_presentation({"ok": True, "artifact_path": "/tmp/submission.tar.gz"}),
+            ["Packaged Submission", "Artifact", "/tmp/submission.tar.gz"],
+        ),
+        (
+            build_validate_presentation(
+                {
+                    "ok": True,
+                    "class_name": "Estimator",
+                    "module_name": "_submission",
+                    "output_shape": [2, 4],
+                    "checks": [{"name": "class resolved", "status": "ok", "detail": "Estimator"}],
+                }
+            ),
+            ["Validation", "Checks", "class resolved", "Estimator"],
+        ),
+        (
+            build_error_presentation(
+                {
+                    "ok": False,
+                    "error": {
+                        "stage": "validate",
+                        "code": "ESTIMATOR_BAD_SHAPE",
+                        "message": "Predictions must have shape (2, 4), got (4, 2).",
+                        "details": {"expected_shape": [2, 4], "got_shape": [4, 2]},
+                    },
+                },
+                debug=False,
+                show_inprocess_hint=False,
+            ),
+            [
+                "Error [validate:ESTIMATOR_BAD_SHAPE]",
+                "Predictions must have shape (2, 4), got (4, 2).",
+                "Expected shape: [2, 4]",
+                "Got shape: [4, 2]",
+                "Use --debug to include a traceback.",
+            ],
+        ),
+        (
+            build_visualizer_ready_presentation(
+                {
+                    "url": "http://127.0.0.1:4173/",
+                    "host": "127.0.0.1",
+                    "port": 4173,
+                    "no_open": True,
+                    "ran_npm_ci": True,
+                }
+            ),
+            [
+                "WhestBench Explorer",
+                "Ready",
+                "http://127.0.0.1:4173/",
+                "127.0.0.1",
+                "4173",
+                "Browser auto-open disabled.",
+                "Dependencies were installed with npm ci before launch.",
+            ],
+        ),
+        (
+            build_visualizer_error_presentation(
+                "Missing Prerequisite",
+                "VISUALIZER_NODE_MISSING",
+                "node is not installed.",
+                next_steps=[
+                    "macOS: brew install node",
+                    "Ubuntu/Debian: sudo apt install nodejs npm",
+                ],
+            ),
+            [
+                "Missing Prerequisite",
+                "node is not installed.",
+                "Next Steps",
+                "macOS: brew install node",
+                "Ubuntu/Debian: sudo apt install nodejs npm",
+            ],
+        ),
+        (
+            build_profile_presentation(
+                {
+                    "hardware": {"os": "Darwin", "machine": "arm64", "python_version": "3.14.3"},
+                    "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+                    "timing": [
+                        {
+                            "backend": "whest",
+                            "dims": "256×4×10k",
+                            "run_mlp": "0.0444s",
+                            "sample_layer_statistics": "0.1135s",
+                        }
+                    ],
+                    "verbose": False,
+                }
+            ),
+            [
+                "Simulation Profile",
+                "Hardware",
+                "Darwin",
+                "Correctness",
+                "PASS",
+                "Detail",
+                "256×4×10k",
+                "Use --verbose for full timing tables with raw times",
+            ],
+        ),
+    ]
+
+    for doc, required_tokens in cases:
+        plain = _render_plain(doc)
+        rich = _strip_ansi(_render_rich(doc))
+
+        for token in required_tokens:
+            if token:
+                assert token in plain
+                assert token in rich
+
+
+def test_run_rich_fallback_keeps_shared_run_epilogues_once(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_a, **_k: _sample_run_report())
+    monkeypatch.setattr(cli, "_print_human_header_and_hints", lambda *_a, **_k: None)
+    monkeypatch.setattr(cli, "_live_top_pane_session", _fake_live_session, raising=True)
+
+    original_render = cli.render_human_results
+
+    def _fail_render(*_args, **_kwargs):
+        if _kwargs.get("output_format", "rich") == "plain":
+            return original_render(*_args, **_kwargs)
+        raise RuntimeError("render failed")
+
+    monkeypatch.setattr(cli, "render_human_results", _fail_render, raising=False)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--format",
+            "rich",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Rich dashboard unavailable (render failed)" in captured.err
+    assert (
+        captured.out.count(
+            "Use --format json for JSON output when calling from automated agents or UIs."
+        )
+        == 1
+    )
+    assert captured.out.count("Use --show-diagnostic-plots to include diagnostic plot panes.") == 1
+
+
+def test_run_rich_fallback_omits_diagnostic_plots_hint_when_already_enabled(
+    monkeypatch, capsys
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", lambda *_a, **_k: _sample_run_report())
+    monkeypatch.setattr(cli, "_print_human_header_and_hints", lambda *_a, **_k: None)
+    monkeypatch.setattr(cli, "_live_top_pane_session", _fake_live_session, raising=True)
+
+    original_render = cli.render_human_results
+
+    def _fail_render(*_args, **_kwargs):
+        if _kwargs.get("output_format", "rich") == "plain":
+            return original_render(*_args, **_kwargs)
+        raise RuntimeError("render failed")
+
+    monkeypatch.setattr(cli, "render_human_results", _fail_render, raising=False)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--format",
+            "rich",
+            "--show-diagnostic-plots",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Rich dashboard unavailable (render failed)" in captured.err
+    assert (
+        captured.out.count(
+            "Use --format json for JSON output when calling from automated agents or UIs."
+        )
+        == 1
+    )
+    assert "Use --show-diagnostic-plots to include diagnostic plot panes." not in captured.out
+
+
+def test_shared_human_plain_output_has_no_ansi_sequences() -> None:
+    plain = render_document(
+        title="WhestBench Report",
+        blocks=[
+            build_budget_breakdown_block(
+                BudgetBreakdownSection(
+                    title="Estimator Budget Breakdown",
+                    available=True,
+                    total_flops="90",
+                    tracked_time="0.030000s",
+                    untracked_time="0.010000s",
+                )
+            ),
+            build_score_block(
+                TableSection(
+                    title="Final Score",
+                    columns=["metric", "value"],
+                    rows=[["Primary Score [primary_score]", "0.123"]],
+                )
+            ),
+        ],
+        output_format="plain",
+    )
+
+    assert "\x1b[" not in plain
+    assert "Estimator Budget Breakdown" in plain
+    assert "Final Score" in plain
+    assert max(len(line) for line in plain.splitlines()) < 200
+
+
+def test_shared_human_plain_output_keeps_long_budget_and_score_sections_readable() -> None:
+    plain = render_document(
+        title="WhestBench Report",
+        blocks=[
+            build_budget_breakdown_block(
+                BudgetBreakdownSection(
+                    title="Estimator Budget Breakdown",
+                    available=True,
+                    total_flops="123456789012345678901234567890",
+                    tracked_time="0.12345678901234567890s",
+                    untracked_time="0.98765432109876543210s",
+                    namespace_rows=[
+                        BudgetBreakdownNamespaceRow(
+                            namespace="sampling.sample_layer_statistics.really_long_namespace",
+                            total_flops="123456789012345678901234567890",
+                            percent_of_section_flops="100.0000000000%",
+                            mean_flops_per_mlp="12345678901234567890",
+                            tracked_time="0.12345678901234567890s",
+                        )
+                    ],
+                )
+            ),
+            build_score_block(
+                TableSection(
+                    title="Final Score",
+                    columns=["metric", "value"],
+                    rows=[["Primary Score [primary_score]", "0.123456789012345678901234567890"]],
+                    subtitle=(
+                        "lower MSE is better; primary score = mean across MLPs of "
+                        "final-layer MSE and this subtitle should not be truncated"
+                    ),
+                )
+            ),
+        ],
+        output_format="plain",
+        width=40,
+    )
+
+    for text in (
+        "WhestBench Report",
+        "Estimator Budget Breakdown",
+        "Final Score",
+        "lower MSE is better",
+    ):
+        assert text in plain
+    assert "metric | value" not in plain
+    assert "namespace | total flops" not in plain
+    assert max(len(line) for line in plain.splitlines()) < 200

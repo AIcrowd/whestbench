@@ -65,6 +65,232 @@ def test_validate_command_returns_json_only_with_json_flag(
     }
 
 
+def test_validate_command_renders_checklist_in_human_mode(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_run_validate_checks",
+        lambda *_args, **_kwargs: {
+            "ok": True,
+            "class_name": "Estimator",
+            "module_name": "_submission",
+            "output_shape": [2, 4],
+            "checks": [
+                {"name": "class resolved", "status": "ok", "detail": "Estimator"},
+                {"name": "setup(context) completed", "status": "ok", "detail": "ok"},
+                {"name": "predict() returned shape", "status": "ok", "detail": "(2, 4)"},
+            ],
+        },
+        raising=False,
+    )
+
+    exit_code = cli.main(["validate", "--estimator", "estimator.py"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Validation" in captured.out
+    assert "class resolved" in captured.out
+    assert "predict() returned shape" in captured.out
+    assert "\x1b[" not in captured.out
+
+
+def test_validate_json_shape_stays_stable(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_run_validate_checks",
+        lambda *_args, **_kwargs: {
+            "ok": True,
+            "class_name": "Estimator",
+            "module_name": "_submission",
+            "output_shape": [2, 4],
+            "checks": [{"name": "class resolved", "status": "ok", "detail": "Estimator"}],
+        },
+        raising=False,
+    )
+
+    exit_code = cli.main(["validate", "--estimator", "estimator.py", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert json.loads(captured.out) == {
+        "ok": True,
+        "class_name": "Estimator",
+        "module_name": "_submission",
+        "output_shape": [2, 4],
+    }
+
+
+def test_validate_format_json_matches_json_flag(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_run_validate_checks",
+        lambda *_args, **_kwargs: {
+            "ok": True,
+            "class_name": "Estimator",
+            "module_name": "_submission",
+            "output_shape": [2, 4],
+            "checks": [{"name": "class resolved", "status": "ok", "detail": "Estimator"}],
+        },
+        raising=False,
+    )
+
+    exit_code = cli.main(["validate", "--estimator", "estimator.py", "--format", "json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert json.loads(captured.out) == {
+        "ok": True,
+        "class_name": "Estimator",
+        "module_name": "_submission",
+        "output_shape": [2, 4],
+    }
+
+
+def test_init_command_renders_created_files_section(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_write_init_template",
+        lambda _path: [
+            str(Path("/tmp/demo/estimator.py")),
+            str(Path("/tmp/demo/requirements.txt")),
+        ],
+    )
+
+    exit_code = cli.main(["init", "/tmp/demo"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Starter Files" in captured.out
+    assert "Created Files" in captured.out
+    assert "/tmp/demo/estimator.py" in captured.out
+
+
+def test_init_command_json_shape_stays_stable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_write_init_template",
+        lambda _path: [str(Path("/tmp/demo/estimator.py"))],
+    )
+
+    exit_code = cli.main(["init", "/tmp/demo", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert json.loads(captured.out) == {"ok": True, "created": ["/tmp/demo/estimator.py"]}
+
+
+def test_init_command_renders_noop_status_when_nothing_created(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(cli, "_write_init_template", lambda _path: [])
+
+    exit_code = cli.main(["init", "/tmp/demo"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Starter Files" in captured.out
+    assert "Starter files already exist; nothing created." in captured.out
+
+
+def test_init_format_plain_uses_shared_presenter_path(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_write_init_template",
+        lambda _path: [str(Path("/tmp/demo/estimator.py"))],
+    )
+    observed: dict[str, object] = {}
+
+    def fake_render_command_presentation(doc, *, output_format, force_terminal, **_kwargs):
+        observed["title"] = doc.title
+        observed["output_format"] = output_format
+        observed["force_terminal"] = force_terminal
+        return "shared presenter output\n"
+
+    monkeypatch.setattr(cli, "render_command_presentation", fake_render_command_presentation)
+
+    exit_code = cli.main(["init", "/tmp/demo", "--format", "plain"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.out == "shared presenter output\n"
+    assert observed == {
+        "title": "Starter Files",
+        "output_format": "plain",
+        "force_terminal": False,
+    }
+
+
+def test_create_dataset_command_renders_dataset_summary(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output_path = Path("/tmp/eval_dataset.npz")
+    monkeypatch.setattr(
+        "whestbench.dataset.create_dataset",
+        lambda **_kwargs: output_path,
+    )
+
+    exit_code = cli.main(
+        ["create-dataset", "--n-mlps", "2", "--n-samples", "5", "-o", str(output_path)]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Dataset Created" in captured.out
+    assert "Dataset" in captured.out
+    assert str(output_path) in captured.out
+
+
+def test_create_dataset_json_shape_stays_stable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    output_path = Path("/tmp/eval_dataset.npz")
+    monkeypatch.setattr(
+        "whestbench.dataset.create_dataset",
+        lambda **_kwargs: output_path,
+    )
+
+    exit_code = cli.main(
+        ["create-dataset", "--n-mlps", "2", "--n-samples", "5", "-o", str(output_path), "--json"]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert json.loads(captured.out) == {"ok": True, "path": str(output_path)}
+
+
+def test_package_command_renders_artifact_summary(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    artifact_path = Path("/tmp/submission.tar.gz")
+    monkeypatch.setattr(
+        cli,
+        "package_submission",
+        lambda *_args, **_kwargs: artifact_path,
+    )
+
+    exit_code = cli.main(["package", "--estimator", "estimator.py"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "Packaged Submission" in captured.out
+    assert "Artifact" in captured.out
+    assert str(artifact_path) in captured.out
+
+
 def test_run_command_renders_human_report_in_non_agent_mode(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -91,12 +317,15 @@ def test_run_command_renders_human_report_in_non_agent_mode(
         lambda _report: pytest.fail("agent renderer should not be called"),
     )
 
-    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    exit_code = cli.main(
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--format", "rich"]
+    )
     captured = capsys.readouterr()
 
     assert exit_code == 0
     assert captured.err == ""
     assert "human report\n" in captured.out
+    assert "--format json" in captured.out
 
 
 def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
@@ -157,6 +386,8 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
             "inprocess",
             "--n-mlps",
             "2",
+            "--format",
+            "rich",
         ]
     )
     captured = capsys.readouterr()
@@ -256,7 +487,14 @@ def test_init_and_run_help_text_reference_examples_estimators_path() -> None:
 # --- `whest run --dataset` + `--n-mlps` integration --------------------------
 
 
-def _write_fake_dataset(path: Path, n_mlps: int, width: int = 4, depth: int = 2) -> None:
+def _write_fake_dataset(
+    path: Path,
+    n_mlps: int,
+    width: int = 4,
+    depth: int = 2,
+    *,
+    sampling_budget_breakdowns: list[dict[str, object]] | None = None,
+) -> None:
     """Write a .npz file that `load_dataset` accepts."""
     import numpy as np
 
@@ -283,6 +521,11 @@ def _write_fake_dataset(path: Path, n_mlps: int, width: int = 4, depth: int = 2)
         all_layer_means=all_layer_means,
         final_means=final_means,
         avg_variances=avg_variances,
+        **(
+            {"sampling_budget_breakdowns": np.array(json.dumps(sampling_budget_breakdowns))}
+            if sampling_budget_breakdowns is not None
+            else {}
+        ),
     )
 
 
@@ -299,7 +542,7 @@ def _patch_run_command_happy_path(monkeypatch: pytest.MonkeyPatch, captured_kwar
     monkeypatch.setattr(
         cli,
         "render_human_results",
-        lambda _report, *, show_diagnostic_plots=False, debug=False: "human report\n",
+        lambda _report, **_kwargs: "human report\n",
         raising=False,
     )
 
@@ -371,6 +614,88 @@ def test_run_with_dataset_honors_smaller_n_mlps(
     assert observed["n_mlps"] == 2
     assert len(observed["contest_data"].mlps) == 2
     assert observed["contest_data"].spec.n_mlps == 2
+
+
+def test_run_with_dataset_restores_sampling_breakdown_subset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ds_path = tmp_path / "ds.npz"
+    _write_fake_dataset(
+        ds_path,
+        n_mlps=3,
+        sampling_budget_breakdowns=[
+            {
+                "flop_budget": 1000,
+                "flops_used": 10,
+                "flops_remaining": 990,
+                "wall_time_s": 0.01,
+                "tracked_time_s": 0.005,
+                "untracked_time_s": 0.002,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 10,
+                        "calls": 1,
+                        "tracked_time_s": 0.005,
+                        "operations": {},
+                    }
+                },
+            },
+            {
+                "flop_budget": 1000,
+                "flops_used": 20,
+                "flops_remaining": 980,
+                "wall_time_s": 0.02,
+                "tracked_time_s": 0.010,
+                "untracked_time_s": 0.004,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 20,
+                        "calls": 1,
+                        "tracked_time_s": 0.010,
+                        "operations": {},
+                    }
+                },
+            },
+            {
+                "flop_budget": 1000,
+                "flops_used": 30,
+                "flops_remaining": 970,
+                "wall_time_s": 0.03,
+                "tracked_time_s": 0.015,
+                "untracked_time_s": 0.006,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 30,
+                        "calls": 1,
+                        "tracked_time_s": 0.015,
+                        "operations": {},
+                    }
+                },
+            },
+        ],
+    )
+
+    observed: dict = {}
+    _patch_run_command_happy_path(monkeypatch, observed)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--dataset",
+            str(ds_path),
+            "--n-mlps",
+            "2",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    assert observed["contest_data"].sampling_budget_breakdown is not None
+    assert observed["contest_data"].sampling_budget_breakdown["flops_used"] == 30
 
 
 def test_run_with_dataset_clamps_and_warns_when_n_mlps_exceeds_dataset(
@@ -524,18 +849,13 @@ def test_main_uses_sys_argv_when_argv_is_none(
         return _sample_report()
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
-    monkeypatch.setattr(
-        cli,
-        "render_human_report",
-        lambda _report, *, show_diagnostic_plots=False, debug=False: "human report\n",
-    )
     monkeypatch.setattr(cli.sys, "argv", ["whest", "smoke-test"])
 
     exit_code = cli.main(None)
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert "human report" in captured.out
+    assert "WhestBench Report" in captured.out
     assert "Next Steps" in captured.out
 
 
@@ -602,7 +922,8 @@ def _tiny_run_argv(estimator_path: Path, dataset_path: Path) -> list[str]:
         "local",
         "--dataset",
         str(dataset_path),
-        "--no-rich",
+        "--format",
+        "plain",
     ]
 
 
@@ -618,7 +939,7 @@ def test_run_exits_1_when_predict_raises_local_runner(
     captured = capsys.readouterr()
 
     assert exit_code == 1
-    # --no-rich uses plain-text output (no Rich panel), but the per-MLP error
+    # --format plain uses plain-text output (no Rich panel), but the per-MLP error
     # text is still rendered and the stderr summary must be present.
     assert "intentional predict crash" in captured.out
     assert "raised during predict" in captured.err
@@ -676,6 +997,155 @@ def test_run_json_output_includes_traceback_per_mlp(
         assert "intentional predict crash" in entry["error"]
         assert isinstance(entry["traceback"], str)
         assert "RuntimeError" in entry["traceback"]
+
+
+def test_run_json_output_restores_dataset_sampling_breakdown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ds_path = tmp_path / "ds.npz"
+    _write_fake_dataset(
+        ds_path,
+        n_mlps=3,
+        sampling_budget_breakdowns=[
+            {
+                "flop_budget": 1000,
+                "flops_used": 10,
+                "flops_remaining": 990,
+                "wall_time_s": 0.01,
+                "tracked_time_s": 0.005,
+                "untracked_time_s": 0.002,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 10,
+                        "calls": 1,
+                        "tracked_time_s": 0.005,
+                        "operations": {},
+                    }
+                },
+            },
+            {
+                "flop_budget": 1000,
+                "flops_used": 20,
+                "flops_remaining": 980,
+                "wall_time_s": 0.02,
+                "tracked_time_s": 0.010,
+                "untracked_time_s": 0.004,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 20,
+                        "calls": 1,
+                        "tracked_time_s": 0.010,
+                        "operations": {},
+                    }
+                },
+            },
+            {
+                "flop_budget": 1000,
+                "flops_used": 30,
+                "flops_remaining": 970,
+                "wall_time_s": 0.03,
+                "tracked_time_s": 0.015,
+                "untracked_time_s": 0.006,
+                "by_namespace": {
+                    "sampling.sample_layer_statistics": {
+                        "flops_used": 30,
+                        "calls": 1,
+                        "tracked_time_s": 0.015,
+                        "operations": {},
+                    }
+                },
+            },
+        ],
+    )
+
+    monkeypatch.setattr(
+        cli,
+        "_run_estimator_with_runner",
+        lambda *_args, **kwargs: {
+            **_sample_report(),
+            "results": {
+                **_sample_report()["results"],
+                "breakdowns": {
+                    "sampling": kwargs["contest_data"].sampling_budget_breakdown,
+                    "estimator": None,
+                },
+            },
+        },
+    )
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--dataset",
+            str(ds_path),
+            "--n-mlps",
+            "2",
+            "--json",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    payload = json.loads(captured.out)
+    assert payload["results"]["breakdowns"]["sampling"]["flops_used"] == 30
+    assert (
+        payload["results"]["breakdowns"]["sampling"]["by_namespace"][
+            "sampling.sample_layer_statistics"
+        ]["flops_used"]
+        == 30
+    )
+
+
+def test_run_plain_output_shows_legacy_dataset_sampling_unavailable_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    ds_path = tmp_path / "ds.npz"
+    _write_fake_dataset(ds_path, n_mlps=2)
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+
+    monkeypatch.setattr(
+        cli,
+        "_run_estimator_with_runner",
+        lambda *_args, **_kwargs: {
+            **_sample_report(),
+            "results": {
+                **_sample_report()["results"],
+                "breakdowns": {
+                    "sampling": None,
+                    "estimator": None,
+                },
+            },
+        },
+    )
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--dataset",
+            str(ds_path),
+            "--format",
+            "plain",
+        ]
+    )
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    assert "Sampling Budget Breakdown (Ground Truth)" in captured.out
+    assert "Ground-truth sampling baseline is unavailable for this dataset." in captured.out
+    assert "newer whestbench" in captured.out
 
 
 def test_run_json_output_includes_validation_details_for_shape_error(
@@ -740,7 +1210,10 @@ def test_run_plain_output_shows_validation_hint_details(
     assert exit_code == 1
     out = captured.out
     assert "Estimator Errors" in out
-    assert "MLP 0 [ValueError]:" in out
+    assert "MLP" in out
+    assert "Code" in out
+    assert "Message" in out
+    assert "ValueError" in out
     assert "Predictions must have shape (2, 4), got (4, 2)." in out
     assert "Expected shape: [2, 4]" in out
     assert "Got shape: [4, 2]" in out
