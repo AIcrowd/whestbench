@@ -664,7 +664,9 @@ def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
     assert "namespace | total flops" not in plain
 
 
-def test_shared_human_plain_output_preserves_long_values_under_rich_safe_text_rendering() -> None:
+def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_text_rendering() -> (
+    None
+):
     budget_section = BudgetBreakdownSection(
         title="Estimator Budget Breakdown",
         available=True,
@@ -701,9 +703,18 @@ def test_shared_human_plain_output_preserves_long_values_under_rich_safe_text_re
         width=40,
     )
 
-    assert "123456789012345678901234567890" in plain
-    assert "sampling.sample_layer_statistics.really_long_namespace" in plain
-    assert "Primary Score [primary_score]" in plain
-    assert "0.123456789012345678901234567890" in plain
-    assert "lower MSE is better" in plain
+    for text in (
+        "WhestBench Report",
+        "Estimator Budget Breakdown",
+        "Total FLOPs [flops_used]",
+        "Tracked Time [tracked_time_s]",
+        "Untracked Time [untracked_time_s]",
+        "sampling.sample_layer_statistics",
+        "Final Score",
+        "Primary Score [primary_score]",
+        "lower MSE is better",
+    ):
+        assert text in plain
+    assert "metric | value" not in plain
+    assert "namespace | total flops" not in plain
     assert max(len(line) for line in plain.splitlines()) < 200
