@@ -13,7 +13,17 @@ from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, Literal, Optional, overload
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    overload,
+)
 
 import whest as we
 from rich.console import Console
@@ -850,6 +860,32 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Print one line per benchmark step (for non-TTY environments like containers).",
     )
 
+    doctor_parser = subparsers.add_parser(
+        "doctor",
+        help="Run install/environment health checks.",
+    )
+    doctor_parser.add_argument(
+        "--json",
+        dest="json_output",
+        action="store_true",
+        help="Emit structured JSON instead of human output.",
+    )
+    doctor_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat warnings as failures for exit-code purposes.",
+    )
+    doctor_parser.add_argument(
+        "--no-rich",
+        action="store_true",
+        help="Disable Rich live display; use plain-text output.",
+    )
+    doctor_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Re-raise exceptions from crashing checks instead of capturing them.",
+    )
+
     return parser
 
 
@@ -1492,6 +1528,19 @@ def _main_participant(argv: "list[str]") -> int:
                 debug=bool(args.debug),
             )
 
+        if command == "doctor":
+            from .doctor import run_all
+            from .reporting import render_doctor_json, render_doctor_report
+
+            checks = run_all(debug=debug)
+            if json_output:
+                print(render_doctor_json(checks), end="")
+            elif no_rich:
+                print(render_doctor_report(checks, rich=False), end="")
+            else:
+                print(render_doctor_report(checks, rich=True), end="")
+            return _doctor_exit_code(checks, strict=bool(args.strict))
+
         if command == "profile-simulation":
             from .profiler import run_profile
 
@@ -1601,3 +1650,15 @@ def _error_code(exc: Exception, message: str) -> str:
             return "ESTIMATOR_NON_FINITE"
         return "SCORING_VALIDATION_ERROR"
     return "SCORING_RUNTIME_ERROR"
+
+
+def _doctor_exit_code(checks: "Sequence[Mapping[str, Any]]", *, strict: bool) -> int:
+    """Return exit code per the doctor exit-code table.
+
+    Default: exit 1 iff any check is ``fail``.
+    ``strict``: exit 1 iff any check is ``warn`` or ``fail``.
+    """
+    statuses = [c.get("status", "fail") for c in checks]
+    if strict:
+        return 0 if all(s == "ok" for s in statuses) else 1
+    return 0 if not any(s == "fail" for s in statuses) else 1
