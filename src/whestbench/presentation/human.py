@@ -22,8 +22,11 @@ def create_console(
             record=True,
             file=file,
             width=width,
-            force_terminal=False,
+            force_terminal=True,
             color_system=None,
+            no_color=True,
+            highlight=False,
+            safe_box=True,
         )
 
     terminal = True if force_terminal is None else force_terminal
@@ -61,7 +64,8 @@ def render_blocks(
         )
     console.print(renderable)
     if output_format == "plain":
-        return console.export_text(styles=False)
+        exported = console.export_text(styles=False)
+        return exported if exported.endswith("\n") else exported + "\n"
     return buffer.getvalue()
 
 

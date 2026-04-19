@@ -172,8 +172,7 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
         ["Worst MLP Score [worst_mlp_score]", "0.20000000"],
     ]
     assert (
-        score.subtitle
-        == "lower MSE is better; primary score = mean across MLPs of final-layer MSE"
+        score.subtitle == "lower MSE is better; primary score = mean across MLPs of final-layer MSE"
     )
 
 

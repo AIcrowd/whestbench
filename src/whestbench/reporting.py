@@ -23,8 +23,9 @@ from rich.table import Table
 from rich.text import Text
 
 from .presentation.adapters import build_run_presentation, build_smoke_test_presentation
+from .presentation.blocks import build_section_renderables
+from .presentation.human import HumanOutputFormat, render_blocks
 from .presentation.models import CommandPresentation, KeyValueSection, StepItem, StepsSection
-from .presentation.render_rich import render_rich_sections
 
 try:
     import plotext as _plotext  # pyright: ignore[reportMissingModuleSource]
@@ -65,27 +66,25 @@ def render_human_results(
     *,
     show_diagnostic_plots: bool = False,
     debug: bool = False,
+    output_format: HumanOutputFormat = "rich",
+    include_context: bool = False,
+    include_epilogues: bool = False,
+    presentation_doc: CommandPresentation | None = None,
 ) -> str:
     """Render post-run sections for append-only human flows."""
+    doc = presentation_doc or build_run_presentation(report, debug=debug)
+    if output_format == "plain":
+        return _render_human_report_blocks(
+            report,
+            doc,
+            output_format=output_format,
+            include_context=include_context,
+            include_epilogues=include_epilogues,
+        )
+
     buffer = io.StringIO()
     console = _new_console(buffer)
-    doc = build_run_presentation(report, debug=debug)
-    settled_sections = [
-        section
-        for section in doc.sections
-        if not (isinstance(section, KeyValueSection) and section.title in {"Run Context", "Hardware & Runtime"})
-    ]
-    buffer.write(
-        render_rich_sections(
-            CommandPresentation(
-                command=doc.command,
-                status=doc.status,
-                title=doc.title,
-                subtitle=doc.subtitle,
-                sections=settled_sections,
-            )
-        )
-    )
+    buffer.write(render_blocks(_settled_section_renderables(doc), output_format="rich"))
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
 
@@ -96,11 +95,21 @@ def render_human_report(
     show_diagnostic_plots: bool = False,
     debug: bool = False,
     presentation_doc: CommandPresentation | None = None,
+    output_format: HumanOutputFormat = "rich",
 ) -> str:
     """Render a multi-section Rich report for local CLI exploration."""
+    doc = presentation_doc or build_run_presentation(report, debug=debug)
+    if output_format == "plain":
+        return _render_human_report_blocks(
+            report,
+            doc,
+            output_format=output_format,
+            include_context=True,
+            include_epilogues=True,
+        )
+
     buffer = io.StringIO()
     console = _new_console(buffer)
-    doc = presentation_doc or build_run_presentation(report, debug=debug)
 
     console.print(
         Panel(
@@ -112,24 +121,51 @@ def render_human_report(
     for message in doc.epilogue_messages:
         console.print(f"[dim]{message}[/dim]")
     _render_top_row(console, report)
-    settled_sections = [
-        section
-        for section in doc.sections
-        if not (isinstance(section, KeyValueSection) and section.title in {"Run Context", "Hardware & Runtime"})
-    ]
-    buffer.write(
-        render_rich_sections(
-            CommandPresentation(
-                command=doc.command,
-                status=doc.status,
-                title=doc.title,
-                subtitle=doc.subtitle,
-                sections=settled_sections,
-            )
-        )
-    )
+    buffer.write(render_blocks(_settled_section_renderables(doc), output_format="rich"))
     _render_profile_section(console, report, show_diagnostic_plots=show_diagnostic_plots)
     return buffer.getvalue()
+
+
+def _report_header_block(title: str) -> Panel:
+    return Panel(
+        Align.center(Text(title, style="bold white")),
+        expand=True,
+        border_style="bright_cyan",
+    )
+
+
+def _is_context_section(section: object) -> bool:
+    return isinstance(section, KeyValueSection) and section.title in {
+        "Run Context",
+        "Hardware & Runtime",
+    }
+
+
+def _settled_section_renderables(doc: CommandPresentation) -> list[object]:
+    renderables: list[object] = []
+    for section in doc.sections:
+        if _is_context_section(section):
+            continue
+        renderables.extend(build_section_renderables(section))
+    return renderables
+
+
+def _render_human_report_blocks(
+    report: "dict[str, Any]",
+    doc: CommandPresentation,
+    *,
+    output_format: HumanOutputFormat,
+    include_context: bool,
+    include_epilogues: bool,
+) -> str:
+    blocks: list[object] = [_report_header_block(doc.title)]
+    if include_context:
+        context_width = 80 if output_format == "plain" else None
+        blocks.append(build_human_context_renderable(report, console_width=context_width))
+    blocks.extend(_settled_section_renderables(doc))
+    if include_epilogues:
+        blocks.extend(Text(message) for message in doc.epilogue_messages if message)
+    return render_blocks(blocks, output_format=output_format, force_terminal=True)
 
 
 def _new_console(buffer: io.StringIO) -> Console:
@@ -344,7 +380,7 @@ def _fmt_flops(value: Any) -> str:
     - Otherwise -> scientific notation with 3 significant figures,
       e.g. "8.46e+11".
 
-    Exact integer values are always available via ``whest run --json``.
+    Exact integer values are always available via ``whest run --format json``.
     """
     if value is None:
         return "n/a"
@@ -703,7 +739,7 @@ def _over_budget_renderable(report: "dict[str, Any]") -> Optional[Group]:
     if sel.is_truncated:
         remainder = sel.busted_count - len(sel.rows)
         lines.append(Text(f"... and {remainder} more over budget", style="dim"))
-        lines.append(Text("run with --json for the full list", style="dim"))
+        lines.append(Text("run with --format json for the full list", style="dim"))
 
     lines.append(Text(""))  # blank line before summary
     if sel.is_all_busted:

@@ -386,7 +386,7 @@ def test_panel_top5_and_truncation_footer_when_7_busted() -> None:
     assert "MLP #6" not in plain
     # truncation footer
     assert "... and 2 more over budget" in plain
-    assert "run with --json for the full list" in plain
+    assert "run with --format json for the full list" in plain
     # all-busted reframe (7 of 7)
     assert "All 7 MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed" in plain
 

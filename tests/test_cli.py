@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from contextlib import contextmanager
 from typing import Any
@@ -162,7 +163,7 @@ def test_smoke_test_rich_output_includes_dashboard_and_onboarding(
         lambda _report: pytest.fail("agent renderer should not be used in smoke-test mode"),
     )
 
-    exit_code = cli.main(["smoke-test"])
+    exit_code = cli.main(["smoke-test", "--format", "rich"])
     captured = capsys.readouterr()
     plain = _strip_ansi(captured.out)
 
@@ -175,7 +176,10 @@ def test_smoke_test_rich_output_includes_dashboard_and_onboarding(
     assert "whest init ./my-estimator" in plain
     assert "Create starter files you can edit." in plain
     assert "WhestBench Report (Plain Text)" not in plain
-    assert plain.count("Use --json for JSON output when calling from automated agents or UIs.") == 1
+    assert (
+        plain.count("Use --format json for JSON output when calling from automated agents or UIs.")
+        == 1
+    )
     assert plain.count("Use --show-diagnostic-plots to include diagnostic plot panes.") == 1
     assert captured.err == ""
     assert observed == {"profile": False, "detail": "raw"}
@@ -196,7 +200,7 @@ def test_smoke_test_show_diagnostic_plots_affects_rich_output_when_profile_prese
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
     monkeypatch.setattr(reporting, "_plotext", _PlotextStub())
 
-    exit_code = cli.main(["smoke-test"])
+    exit_code = cli.main(["smoke-test", "--format", "rich"])
     default_output = _strip_ansi(capsys.readouterr().out)
 
     observed.clear()
@@ -209,7 +213,7 @@ def test_smoke_test_show_diagnostic_plots_affects_rich_output_when_profile_prese
         return _sample_report(profile_enabled=True, detail=detail)
 
     monkeypatch.setattr(cli, "run_default_report", fake_profile_report)
-    exit_code = cli.main(["smoke-test", "--profile", "--show-diagnostic-plots"])
+    exit_code = cli.main(["smoke-test", "--profile", "--show-diagnostic-plots", "--format", "rich"])
     captured = capsys.readouterr()
     plotted_output = _strip_ansi(captured.out)
 
@@ -235,7 +239,7 @@ def test_smoke_test_profile_and_detail_flags_are_forwarded(
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
 
-    exit_code = cli.main(["smoke-test", "--profile", "--detail", "full"])
+    exit_code = cli.main(["smoke-test", "--profile", "--detail", "full", "--format", "rich"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
@@ -254,7 +258,7 @@ def test_smoke_test_prints_next_steps(
 
     monkeypatch.setattr(cli, "run_default_report", fake_run_default_report)
 
-    exit_code = cli.main(["smoke-test"])
+    exit_code = cli.main(["smoke-test", "--format", "rich"])
     captured = capsys.readouterr()
     plain = _strip_ansi(captured.out)
 
@@ -262,6 +266,26 @@ def test_smoke_test_prints_next_steps(
     assert "Next Steps" in plain
     assert "whest init ./my-estimator" in plain
     assert "whest run --estimator ./my-estimator/estimator.py --runner local" in plain
+
+
+def test_smoke_test_plain_output_uses_shared_report_shape(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "run_default_report",
+        lambda **_kwargs: _sample_report(profile_enabled=False, detail="raw"),
+    )
+
+    exit_code = cli.main(["smoke-test", "--format", "plain"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    plain = _strip_ansi(captured.out)
+    assert plain.index("Run Context") < plain.index("Hardware & Runtime")
+    assert plain.index("Hardware & Runtime") < plain.index("Final Score")
+    assert plain.index("Final Score") < plain.index("Next Steps")
+    assert "WhestBench Report (Plain Text)" not in plain
 
 
 def test_smoke_test_human_mode_surfaces_validation_errors_readably(
@@ -382,7 +406,9 @@ def test_run_inprocess_error_omits_inprocess_debug_hint(
     )
     monkeypatch.setattr(cli, "_run_estimator_with_runner", fail_run)
 
-    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    exit_code = cli.main(
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--format", "rich"]
+    )
     captured = capsys.readouterr()
 
     assert exit_code == 1
@@ -480,10 +506,14 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     monkeypatch.setattr(
         cli,
         "render_human_results",
-        lambda _report, *, show_diagnostic_plots=False, debug=False: "results\n",
+        lambda _report, *, show_diagnostic_plots=False, debug=False, output_format="rich", **_kwargs: (
+            "results\n"
+        ),
     )
 
-    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    exit_code = cli.main(
+        ["run", "--estimator", "estimator.py", "--runner", "inprocess", "--format", "rich"]
+    )
     captured = capsys.readouterr()
 
     assert exit_code == 0
@@ -496,10 +526,22 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     assert observed["final_meta"]["run_duration_s"] == 3.0
 
 
-def test_smoke_test_json_flag_is_rejected() -> None:
-    with pytest.raises(SystemExit) as exc_info:
-        cli.main(["smoke-test", "--json"])
-    assert int(exc_info.value.code) == 2
+def test_smoke_test_json_flag_returns_machine_readable_report(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "run_default_report",
+        lambda **_kwargs: _sample_report(profile_enabled=False, detail="raw"),
+    )
+
+    exit_code = cli.main(["smoke-test", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["mode"] == "agent"
+    assert payload["results"]["primary_score"] == 0.42
 
 
 def test_no_subcommand_is_rejected() -> None:

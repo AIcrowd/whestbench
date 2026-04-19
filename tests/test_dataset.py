@@ -27,8 +27,7 @@ def test_create_and_load_roundtrip(tmp_path) -> None:
     assert len(bundle.sampling_budget_breakdowns) == 2
     assert bundle.sampling_budget_breakdowns[0]["flops_used"] > 0
     assert (
-        "sampling.sample_layer_statistics"
-        in bundle.sampling_budget_breakdowns[0]["by_namespace"]
+        "sampling.sample_layer_statistics" in bundle.sampling_budget_breakdowns[0]["by_namespace"]
     )
     for mlp in bundle.mlps:
         mlp.validate()

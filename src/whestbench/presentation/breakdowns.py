@@ -108,9 +108,7 @@ class OverBudgetSelection:
     is_all_busted: bool
 
 
-def select_top_over_budget(
-    report: dict[str, Any], *, top_n: int = 5
-) -> OverBudgetSelection:
+def select_top_over_budget(report: dict[str, Any], *, top_n: int = 5) -> OverBudgetSelection:
     run_config = report.get("run_config", {}) if isinstance(report, dict) else {}
     results = report.get("results", {}) if isinstance(report, dict) else {}
     per_mlp_raw = results.get("per_mlp", []) if isinstance(results, dict) else []

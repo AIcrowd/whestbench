@@ -18,13 +18,34 @@ from whestbench.presentation.adapters import (
 )
 from whestbench.presentation.blocks import build_budget_breakdown_block, build_score_block
 from whestbench.presentation.human import render_document
-from whestbench.presentation.models import BudgetBreakdownSection, TableSection
-from whestbench.presentation.render_plain import render_plain_presentation
-from whestbench.presentation.render_rich import render_rich_presentation
+from whestbench.presentation.models import (
+    BudgetBreakdownNamespaceRow,
+    BudgetBreakdownSection,
+    TableSection,
+)
+from whestbench.presentation.presenters import render_command_presentation
 
 
 def _strip_ansi(text: str) -> str:
     return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
+def _render_plain(doc) -> str:
+    return render_command_presentation(
+        doc,
+        output_format="plain",
+        force_terminal=False,
+        width=200,
+    )
+
+
+def _render_rich(doc) -> str:
+    return render_command_presentation(
+        doc,
+        output_format="rich",
+        force_terminal=True,
+        width=200,
+    )
 
 
 def _sample_run_report() -> dict[str, object]:
@@ -90,7 +111,7 @@ def test_parity_matrix_preserves_settled_information() -> None:
                 "3.13.7",
                 "Primary Score",
                 "0.42",
-                "Use --json for JSON output when calling from automated agents or UIs.",
+                "Use --format json for JSON output when calling from automated agents or UIs.",
                 "Use --show-diagnostic-plots to include diagnostic plot panes.",
             ],
         ),
@@ -117,7 +138,7 @@ def test_parity_matrix_preserves_settled_information() -> None:
                 "Next Steps",
                 "Create starter files you can edit.",
                 "whest init ./my-estimator",
-                "Use --json for JSON output when calling from automated agents or UIs.",
+                "Use --format json for JSON output when calling from automated agents or UIs.",
             ],
         ),
         (
@@ -234,8 +255,8 @@ def test_parity_matrix_preserves_settled_information() -> None:
     ]
 
     for doc, required_tokens in cases:
-        plain = render_plain_presentation(doc)
-        rich = _strip_ansi(render_rich_presentation(doc))
+        plain = _render_plain(doc)
+        rich = _strip_ansi(_render_rich(doc))
 
         for token in required_tokens:
             if token:
@@ -254,7 +275,11 @@ def test_run_rich_fallback_keeps_shared_run_epilogues_once(monkeypatch, capsys) 
     monkeypatch.setattr(cli, "_print_human_header_and_hints", lambda *_a, **_k: None)
     monkeypatch.setattr(cli, "_live_top_pane_session", _fake_live_session, raising=True)
 
+    original_render = cli.render_human_results
+
     def _fail_render(*_args, **_kwargs):
+        if _kwargs.get("output_format", "rich") == "plain":
+            return original_render(*_args, **_kwargs)
         raise RuntimeError("render failed")
 
     monkeypatch.setattr(cli, "render_human_results", _fail_render, raising=False)
@@ -275,7 +300,9 @@ def test_run_rich_fallback_keeps_shared_run_epilogues_once(monkeypatch, capsys) 
     assert exit_code == 0
     assert "Rich dashboard unavailable (render failed)" in captured.err
     assert (
-        captured.out.count("Use --json for JSON output when calling from automated agents or UIs.")
+        captured.out.count(
+            "Use --format json for JSON output when calling from automated agents or UIs."
+        )
         == 1
     )
     assert captured.out.count("Use --show-diagnostic-plots to include diagnostic plot panes.") == 1
@@ -294,7 +321,11 @@ def test_run_rich_fallback_omits_diagnostic_plots_hint_when_already_enabled(
     monkeypatch.setattr(cli, "_print_human_header_and_hints", lambda *_a, **_k: None)
     monkeypatch.setattr(cli, "_live_top_pane_session", _fake_live_session, raising=True)
 
+    original_render = cli.render_human_results
+
     def _fail_render(*_args, **_kwargs):
+        if _kwargs.get("output_format", "rich") == "plain":
+            return original_render(*_args, **_kwargs)
         raise RuntimeError("render failed")
 
     monkeypatch.setattr(cli, "render_human_results", _fail_render, raising=False)
@@ -316,7 +347,9 @@ def test_run_rich_fallback_omits_diagnostic_plots_hint_when_already_enabled(
     assert exit_code == 0
     assert "Rich dashboard unavailable (render failed)" in captured.err
     assert (
-        captured.out.count("Use --json for JSON output when calling from automated agents or UIs.")
+        captured.out.count(
+            "Use --format json for JSON output when calling from automated agents or UIs."
+        )
         == 1
     )
     assert "Use --show-diagnostic-plots to include diagnostic plot panes." not in captured.out
@@ -349,3 +382,53 @@ def test_shared_human_plain_output_has_no_ansi_sequences() -> None:
     assert "\x1b[" not in plain
     assert "Estimator Budget Breakdown" in plain
     assert "Final Score" in plain
+    assert max(len(line) for line in plain.splitlines()) < 200
+
+
+def test_shared_human_plain_output_does_not_truncate_budget_or_score_content() -> None:
+    plain = render_document(
+        title="WhestBench Report",
+        blocks=[
+            build_budget_breakdown_block(
+                BudgetBreakdownSection(
+                    title="Estimator Budget Breakdown",
+                    available=True,
+                    total_flops="123456789012345678901234567890",
+                    tracked_time="0.12345678901234567890s",
+                    untracked_time="0.98765432109876543210s",
+                    namespace_rows=[
+                        BudgetBreakdownNamespaceRow(
+                            namespace="sampling.sample_layer_statistics.really_long_namespace",
+                            total_flops="123456789012345678901234567890",
+                            percent_of_section_flops="100.0000000000%",
+                            mean_flops_per_mlp="12345678901234567890",
+                            tracked_time="0.12345678901234567890s",
+                        )
+                    ],
+                )
+            ),
+            build_score_block(
+                TableSection(
+                    title="Final Score",
+                    columns=["metric", "value"],
+                    rows=[["Primary Score [primary_score]", "0.123456789012345678901234567890"]],
+                    subtitle=(
+                        "lower MSE is better; primary score = mean across MLPs of "
+                        "final-layer MSE and this subtitle should not be truncated"
+                    ),
+                )
+            ),
+        ],
+        output_format="plain",
+        width=40,
+    )
+
+    for text in (
+        "123456789012345678901234567890",
+        "sampling.sample_layer_statistics.really_long_namespace",
+        "Primary Score [primary_score]",
+        "0.123456789012345678901234567890",
+        "lower MSE is better",
+    ):
+        assert text in plain
+    assert max(len(line) for line in plain.splitlines()) < 200
