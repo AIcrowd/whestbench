@@ -13,6 +13,7 @@ Use this page for exact command syntax and key flags.
 Participant workflow commands:
 
 - `whest smoke-test`
+- `whest doctor`
 - `whest init`
 - `whest validate`
 - `whest run`
@@ -30,6 +31,42 @@ whest smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--fo
 ```
 
 - `--format rich|plain|json` — choose styled terminal output, plain log-friendly output, or JSON. Defaults to `rich` on TTYs and `plain` otherwise. Under a debugger, `smoke-test` automatically forces `plain` if `rich` was requested.
+
+## `whest doctor`
+
+Run install and environment health checks. Prints a pass/fail list for Python version, `uv`/Node.js availability, BLAS thread pool, disk space, and working-directory writability. Useful for first-hour setup troubleshooting and for CI gates.
+
+```bash
+whest doctor [--json] [--strict] [--no-rich] [--debug]
+```
+
+Key options:
+
+- `--json` — emit structured JSON (`schema_version`, `checks`, `counts`, `overall`) instead of human output. Same shape as `whest run --json`.
+- `--strict` — treat warnings as failures for exit-code purposes. Rendering is unchanged.
+- `--no-rich` — disable Rich output; use plain-text (`[OK]`/`[WARN]`/`[FAIL]` tokens, no box-drawing). Also honors `WHESTBENCH_NO_RICH=1`.
+- `--debug` — re-raise exceptions from crashing checks instead of capturing them as `fail`.
+
+### Severity model
+
+- `ok` — the check passed.
+- `warn` — the check found something worth knowing but not blocking. Examples: Node.js missing (only needed by `whest visualizer`), `uv` missing (safe to ignore if you installed via pip), less than 1 GiB free disk in the current directory.
+- `fail` — the check found a genuine blocker. Examples: Python version below `requires-python`, `threadpoolctl` failed to import, cannot write to the working directory.
+
+### Exit codes
+
+- Default: `0` if all checks are `ok` or `warn`; `1` if any `fail`.
+- `--strict`: `0` only if all checks are `ok`; `1` otherwise.
+
+### Example
+
+```bash
+# Interactive first-hour check
+whest doctor
+
+# CI pre-flight (treat anything that isn't OK as a failure)
+whest doctor --strict --json
+```
 
 ## `whest init`
 
