@@ -110,9 +110,13 @@ def check_uv() -> Check:
     return Check(
         name="uv",
         label="uv on PATH",
-        status="fail",
+        status="warn",
         detail="not on PATH",
-        fix_hint="Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh",
+        fix_hint=(
+            "uv is recommended for the quickstart commands; install via "
+            "'curl -LsSf https://astral.sh/uv/install.sh | sh'. "
+            "Safe to ignore if you installed via pip."
+        ),
     )
 
 

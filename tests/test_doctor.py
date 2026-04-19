@@ -72,11 +72,14 @@ def test_check_uv_ok_when_on_path() -> None:
     assert result["fix_hint"] is None
 
 
-def test_check_uv_fail_when_not_on_path() -> None:
+def test_check_uv_warn_when_not_on_path() -> None:
     with patch("shutil.which", return_value=None):
         result = check_uv()
-    assert result["status"] == "fail"
+    # warn (not fail): uv is recommended for the quickstart but not required;
+    # participants using pip install instead of uv should not see a failure.
+    assert result["status"] == "warn"
     assert result["fix_hint"] and "astral.sh/uv" in result["fix_hint"]
+    assert result["fix_hint"] and "pip" in result["fix_hint"]
 
 
 # --- check_install_mode ------------------------------------------------------
