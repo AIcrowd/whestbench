@@ -7,7 +7,7 @@ import json
 import os
 import re
 import shutil
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from statistics import fmean
@@ -1407,3 +1407,106 @@ def _as_float(value: Any) -> float:
 
 def _fmt_float(value: object, decimals: int) -> str:
     return f"{_as_float(value):.{decimals}f}"
+
+
+# --- whest doctor rendering --------------------------------------------------
+
+
+_DOCTOR_GLYPHS = {
+    "ok": ("✓", "green"),
+    "warn": ("⚠", "yellow"),
+    "fail": ("✗", "red"),
+}
+
+_DOCTOR_ASCII = {
+    "ok": "[OK]  ",
+    "warn": "[WARN]",
+    "fail": "[FAIL]",
+}
+
+
+def _doctor_counts(checks: "Sequence[Mapping[str, Any]]") -> "dict[str, int]":
+    counts = {"ok": 0, "warn": 0, "fail": 0}
+    for c in checks:
+        status = c.get("status", "fail")
+        if status in counts:
+            counts[status] += 1
+    return counts
+
+
+def _doctor_overall(counts: "dict[str, int]") -> str:
+    if counts["fail"] > 0:
+        return "fail"
+    if counts["warn"] > 0:
+        return "warn"
+    return "ok"
+
+
+def render_doctor_report(checks: "Sequence[Mapping[str, Any]]", *, rich: bool = True) -> str:
+    """Render doctor output as a Rich panel or plain-text table.
+
+    The Rich path returns ANSI-colored text inside a bordered panel. The
+    plain-text path returns an unboxed ASCII table suitable for
+    ``--no-rich`` and piped output.
+    """
+    counts = _doctor_counts(checks)
+    overall = _doctor_overall(counts)
+    summary = (
+        f"{len(checks)} checks · {counts['ok']} ok · {counts['warn']} warn · {counts['fail']} fail"
+    )
+
+    if not rich:
+        lines = ["whest doctor", "-" * 12]
+        for c in checks:
+            tok = _DOCTOR_ASCII.get(c["status"], "[????]")
+            lines.append(f"  {tok}  {c['label']:<22} {c['detail']}")
+            if c.get("fix_hint"):
+                indent = " " * (len("  ") + len(tok) + 2 + 22 + 1)
+                lines.append(f"{indent}{c['fix_hint']}")
+        lines.append("")
+        lines.append(f"  {summary}")
+        return "\n".join(lines) + "\n"
+
+    rows: "list[Text]" = []
+    for c in checks:
+        glyph, color = _DOCTOR_GLYPHS.get(c["status"], ("?", "white"))
+        line = Text()
+        line.append(f" {glyph} ", style=color)
+        line.append(f"{c['label']:<22} ", style="bold")
+        line.append(c["detail"])
+        rows.append(line)
+        if c.get("fix_hint"):
+            # Indent derivation: Rich row prefix is " {glyph} " (3 chars) +
+            # "{label:<22} " (22 + 1 chars) = 26 cols before the detail column.
+            # Align the hint under the detail column.
+            hint = Text(" " * (3 + 22 + 1))
+            hint.append(c["fix_hint"], style="dim")
+            rows.append(hint)
+
+    rows.append(Text(""))
+    rows.append(Text(f" {summary}", style="bold"))
+
+    border = {"ok": "green", "warn": "yellow", "fail": "red"}[overall]
+
+    buffer = io.StringIO()
+    console = _new_console(buffer)
+    console.print(
+        Panel(
+            Group(*rows),
+            title="whest doctor",
+            border_style=border,
+        )
+    )
+    return buffer.getvalue()
+
+
+def render_doctor_json(checks: "Sequence[Mapping[str, Any]]") -> str:
+    """Render doctor output as a stable JSON string (terminated with newline)."""
+    counts = _doctor_counts(checks)
+    payload = {
+        "schema_version": "1.0",
+        "checks": [dict(c) for c in checks],
+        "counts": counts,
+        "overall": _doctor_overall(counts),
+    }
+    return json.dumps(payload, indent=2) + "\n"
