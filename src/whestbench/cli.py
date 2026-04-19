@@ -13,7 +13,15 @@ from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, Literal, Optional, overload
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    Literal,
+    Optional,
+    overload,
+)
 
 import whest as we
 from rich.console import Console
@@ -850,6 +858,22 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Print one line per benchmark step (for non-TTY environments like containers).",
     )
 
+    doctor_parser = subparsers.add_parser(
+        "doctor",
+        help="Run install/environment health checks.",
+    )
+    add_output_format_arguments(doctor_parser)
+    doctor_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat warnings as failures for exit-code purposes.",
+    )
+    doctor_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Re-raise exceptions from crashing checks instead of capturing them.",
+    )
+
     return parser
 
 
@@ -1491,6 +1515,19 @@ def _main_participant(argv: "list[str]") -> int:
                 no_open=bool(args.no_open),
                 debug=bool(args.debug),
             )
+
+        if command == "doctor":
+            from .doctor import _doctor_exit_code, run_all
+            from .reporting import render_doctor_json, render_doctor_report
+
+            checks = run_all(debug=debug)
+            if output_format == "json":
+                print(render_doctor_json(checks), end="")
+            elif output_format == "plain":
+                print(render_doctor_report(checks, rich=False), end="")
+            else:
+                print(render_doctor_report(checks, rich=True), end="")
+            return _doctor_exit_code(checks, strict=bool(args.strict))
 
         if command == "profile-simulation":
             from .profiler import run_profile
