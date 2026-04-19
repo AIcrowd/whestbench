@@ -449,13 +449,27 @@ def test_cli_doctor_json_emits_valid_shape(
     assert parsed["counts"]["ok"] == 6
 
 
-def test_cli_doctor_no_rich_output_has_no_ansi(
+def test_cli_doctor_format_plain_output_has_no_ansi(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     from whestbench.cli import _main_participant
 
     with patch("whestbench.doctor.run_all", return_value=_all_ok_checks()):
-        _main_participant(["doctor", "--no-rich"])
+        _main_participant(["doctor", "--format", "plain"])
     out = capsys.readouterr().out
     assert "[OK]" in out
     assert not re.search(r"\x1b\[[0-9;]*m", out)
+
+
+def test_cli_doctor_format_json_alias_for_json_flag(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from whestbench.cli import _main_participant
+
+    # Both --json and --format json should produce the same JSON output.
+    with patch("whestbench.doctor.run_all", return_value=_one_warn_checks()):
+        _main_participant(["doctor", "--format", "json"])
+    out = capsys.readouterr().out
+    parsed = json.loads(out)
+    assert parsed["overall"] == "warn"
+    assert parsed["counts"]["warn"] == 1

@@ -37,14 +37,14 @@ whest smoke-test [--detail raw|full] [--profile] [--show-diagnostic-plots] [--fo
 Run install and environment health checks. Prints a pass/fail list for Python version, `uv`/Node.js availability, BLAS thread pool, disk space, and working-directory writability. Useful for first-hour setup troubleshooting and for CI gates.
 
 ```bash
-whest doctor [--json] [--strict] [--no-rich] [--debug]
+whest doctor [--format rich|plain|json] [--json] [--strict] [--debug]
 ```
 
 Key options:
 
-- `--json` — emit structured JSON (`schema_version`, `checks`, `counts`, `overall`) instead of human output. Same shape as `whest run --json`.
+- `--format rich|plain|json` — choose styled terminal output, plain log-friendly output (`[OK]`/`[WARN]`/`[FAIL]` tokens, no box-drawing), or JSON (`schema_version`, `checks`, `counts`, `overall`). Defaults to `rich` on TTYs and `plain` otherwise.
+- `--json` — alias for `--format json`.
 - `--strict` — treat warnings as failures for exit-code purposes. Rendering is unchanged.
-- `--no-rich` — disable Rich output; use plain-text (`[OK]`/`[WARN]`/`[FAIL]` tokens, no box-drawing). Also honors `WHESTBENCH_NO_RICH=1`.
 - `--debug` — re-raise exceptions from crashing checks instead of capturing them as `fail`.
 
 ### Severity model

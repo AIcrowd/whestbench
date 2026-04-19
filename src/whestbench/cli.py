@@ -864,21 +864,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "doctor",
         help="Run install/environment health checks.",
     )
-    doctor_parser.add_argument(
-        "--json",
-        dest="json_output",
-        action="store_true",
-        help="Emit structured JSON instead of human output.",
-    )
+    add_output_format_arguments(doctor_parser)
     doctor_parser.add_argument(
         "--strict",
         action="store_true",
         help="Treat warnings as failures for exit-code purposes.",
-    )
-    doctor_parser.add_argument(
-        "--no-rich",
-        action="store_true",
-        help="Disable Rich live display; use plain-text output.",
     )
     doctor_parser.add_argument(
         "--debug",
@@ -1533,9 +1523,9 @@ def _main_participant(argv: "list[str]") -> int:
             from .reporting import render_doctor_json, render_doctor_report
 
             checks = run_all(debug=debug)
-            if json_output:
+            if output_format == "json":
                 print(render_doctor_json(checks), end="")
-            elif no_rich:
+            elif output_format == "plain":
                 print(render_doctor_report(checks, rich=False), end="")
             else:
                 print(render_doctor_report(checks, rich=True), end="")
