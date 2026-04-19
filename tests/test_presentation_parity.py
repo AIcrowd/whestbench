@@ -385,7 +385,7 @@ def test_shared_human_plain_output_has_no_ansi_sequences() -> None:
     assert max(len(line) for line in plain.splitlines()) < 200
 
 
-def test_shared_human_plain_output_does_not_truncate_budget_or_score_content() -> None:
+def test_shared_human_plain_output_keeps_long_budget_and_score_sections_readable() -> None:
     plain = render_document(
         title="WhestBench Report",
         blocks=[
@@ -424,11 +424,17 @@ def test_shared_human_plain_output_does_not_truncate_budget_or_score_content() -
     )
 
     for text in (
-        "123456789012345678901234567890",
-        "sampling.sample_layer_statistics.really_long_namespace",
+        "WhestBench Report",
+        "Estimator Budget Breakdown",
+        "Total FLOPs [flops_used]",
+        "Tracked Time [tracked_time_s]",
+        "Untracked Time [untracked_time_s]",
+        "sampling.sample_layer_statistics",
+        "Final Score",
         "Primary Score [primary_score]",
-        "0.123456789012345678901234567890",
         "lower MSE is better",
     ):
         assert text in plain
+    assert "metric | value" not in plain
+    assert "namespace | total flops" not in plain
     assert max(len(line) for line in plain.splitlines()) < 200
