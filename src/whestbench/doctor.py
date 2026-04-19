@@ -318,3 +318,48 @@ def check_cwd_writable() -> Check:
         detail=cwd,
         fix_hint=None,
     )
+
+
+# --- run_all -----------------------------------------------------------------
+
+
+_CHECKS = (
+    ("python_version", check_python),
+    ("uv", check_uv),
+    ("install_mode", check_install_mode),
+    ("node_js", check_node),
+    ("blas_threads", check_blas),
+    ("disk_space", check_disk),
+    ("cwd_writable", check_cwd_writable),
+)
+
+
+def _crashed_check(name: str, exc: BaseException) -> Check:
+    return Check(
+        name=name,
+        label=name.replace("_", " ").title(),
+        status="fail",
+        detail=f"check crashed: {type(exc).__name__}: {exc}",
+        fix_hint="Please file a bug at https://github.com/AIcrowd/whestbench/issues.",
+    )
+
+
+def run_all(*, debug: bool = False) -> "list[Check]":
+    """Run every check in stable order.
+
+    ``debug=True`` re-raises exceptions from crashing checks; the default
+    catches them and surfaces as ``status="fail"``.
+    """
+    results: "list[Check]" = []
+    for name, fn in _CHECKS:
+        try:
+            # Look up through the module so tests can ``patch`` individual checks.
+            import whestbench.doctor as _self  # noqa: PLW0406
+
+            impl = getattr(_self, fn.__name__)
+            results.append(impl())
+        except BaseException as exc:
+            if debug:
+                raise
+            results.append(_crashed_check(name, exc))
+    return results

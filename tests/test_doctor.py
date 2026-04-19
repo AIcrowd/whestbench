@@ -3,7 +3,10 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from whestbench.doctor import (
+    Check,
     check_blas,
     check_cwd_writable,
     check_disk,
@@ -238,3 +241,52 @@ def test_check_cwd_writable_fail_when_permission_error() -> None:
         result = check_cwd_writable()
     assert result["status"] == "fail"
     assert result["fix_hint"] and "permissions" in result["fix_hint"].lower()
+
+
+# --- run_all -----------------------------------------------------------------
+
+
+def test_run_all_returns_seven_checks_in_stable_order() -> None:
+    from whestbench.doctor import run_all
+
+    checks = run_all()
+    assert len(checks) == 7
+    names = [c["name"] for c in checks]
+    assert names == [
+        "python_version",
+        "uv",
+        "install_mode",
+        "node_js",
+        "blas_threads",
+        "disk_space",
+        "cwd_writable",
+    ]
+    for c in checks:
+        assert set(c.keys()) >= {"name", "label", "status", "detail", "fix_hint"}
+        assert c["status"] in {"ok", "warn", "fail"}
+
+
+def test_run_all_captures_check_crashes_as_fail_by_default() -> None:
+    from whestbench.doctor import run_all
+
+    def _boom() -> Check:
+        raise RuntimeError("intentional test crash")
+
+    with patch("whestbench.doctor.check_uv", _boom):
+        checks = run_all(debug=False)
+
+    uv_check = next(c for c in checks if c["name"] == "uv")
+    assert uv_check["status"] == "fail"
+    assert "check crashed" in uv_check["detail"].lower()
+    assert "RuntimeError" in uv_check["detail"]
+
+
+def test_run_all_reraises_on_debug() -> None:
+    from whestbench.doctor import run_all
+
+    def _boom() -> Check:
+        raise RuntimeError("intentional test crash")
+
+    with patch("whestbench.doctor.check_uv", _boom):
+        with pytest.raises(RuntimeError, match="intentional test crash"):
+            run_all(debug=True)
