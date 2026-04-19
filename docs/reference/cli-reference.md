@@ -6,7 +6,6 @@ Use this page for exact command syntax and key flags.
 
 ## Environment toggles
 
-- `WHESTBENCH_NO_RICH=1` — disable Rich live displays automatically when invoking `smoke-test` or `run`.
 - `WHEST_SKIP_HARDWARE_FALLBACK_PROBES=1` — skip OS-native fallback probes when collecting `run_meta.host` or dataset `metadata.hardware`. Cheap fields and `psutil`-backed fields are still collected; fallback-backed fields may remain `null`.
 
 ## Entry commands
