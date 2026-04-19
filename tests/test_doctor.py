@@ -102,6 +102,19 @@ def test_check_install_mode_ok_tool_installed_when_direct_url_absent() -> None:
     assert "0.2.0" in result["detail"]
 
 
+def test_check_install_mode_ok_from_source_non_editable() -> None:
+    fake_dist = MagicMock()
+    fake_dist.version = "0.2.0"
+    fake_dist.read_text.return_value = json.dumps(
+        {"url": "file:///path/to/sdist", "dir_info": {"editable": False}}
+    )
+    with patch("whestbench.doctor.Distribution.from_name", return_value=fake_dist):
+        result = check_install_mode()
+    assert result["status"] == "ok"
+    assert "from-source" in result["detail"]
+    assert "/path/to/sdist" in result["detail"]
+
+
 def test_check_install_mode_fail_when_not_installed() -> None:
     from importlib.metadata import PackageNotFoundError
 
