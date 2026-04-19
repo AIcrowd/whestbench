@@ -16,6 +16,9 @@ from whestbench.presentation.adapters import (
     build_visualizer_error_presentation,
     build_visualizer_ready_presentation,
 )
+from whestbench.presentation.blocks import build_budget_breakdown_block, build_score_block
+from whestbench.presentation.human import render_document
+from whestbench.presentation.models import BudgetBreakdownSection, TableSection
 from whestbench.presentation.render_plain import render_plain_presentation
 from whestbench.presentation.render_rich import render_rich_presentation
 
@@ -256,7 +259,17 @@ def test_run_rich_fallback_keeps_shared_run_epilogues_once(monkeypatch, capsys) 
 
     monkeypatch.setattr(cli, "render_human_results", _fail_render, raising=False)
 
-    exit_code = cli.main(["run", "--estimator", "estimator.py", "--runner", "inprocess"])
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--runner",
+            "inprocess",
+            "--format",
+            "rich",
+        ]
+    )
     captured = capsys.readouterr()
 
     assert exit_code == 0
@@ -293,6 +306,8 @@ def test_run_rich_fallback_omits_diagnostic_plots_hint_when_already_enabled(
             "estimator.py",
             "--runner",
             "inprocess",
+            "--format",
+            "rich",
             "--show-diagnostic-plots",
         ]
     )
@@ -305,3 +320,32 @@ def test_run_rich_fallback_omits_diagnostic_plots_hint_when_already_enabled(
         == 1
     )
     assert "Use --show-diagnostic-plots to include diagnostic plot panes." not in captured.out
+
+
+def test_shared_human_plain_output_has_no_ansi_sequences() -> None:
+    plain = render_document(
+        title="WhestBench Report",
+        blocks=[
+            build_budget_breakdown_block(
+                BudgetBreakdownSection(
+                    title="Estimator Budget Breakdown",
+                    available=True,
+                    total_flops="90",
+                    tracked_time="0.030000s",
+                    untracked_time="0.010000s",
+                )
+            ),
+            build_score_block(
+                TableSection(
+                    title="Final Score",
+                    columns=["metric", "value"],
+                    rows=[["Primary Score [primary_score]", "0.123"]],
+                )
+            ),
+        ],
+        output_format="plain",
+    )
+
+    assert "\x1b[" not in plain
+    assert "Estimator Budget Breakdown" in plain
+    assert "Final Score" in plain
