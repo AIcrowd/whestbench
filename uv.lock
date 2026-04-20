@@ -630,7 +630,7 @@ wheels = [
 [[package]]
 name = "whest"
 version = "0.2.0"
-source = { git = "https://github.com/AIcrowd/whest.git#fa58cc8351f36dcedacb6c84d351a733acf1f34a" }
+source = { git = "https://github.com/AIcrowd/whest.git#2aec67df537d70e724ba88e25b8f0a01b69bc358" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -639,7 +639,7 @@ dependencies = [
 [[package]]
 name = "whest-server"
 version = "0.1.0"
-source = { git = "https://github.com/AIcrowd/whest.git?subdirectory=whest-server#fa58cc8351f36dcedacb6c84d351a733acf1f34a" }
+source = { git = "https://github.com/AIcrowd/whest.git?subdirectory=whest-server#2aec67df537d70e724ba88e25b8f0a01b69bc358" }
 dependencies = [
     { name = "msgpack" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
