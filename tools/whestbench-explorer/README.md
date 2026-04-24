@@ -42,4 +42,4 @@ whest run --estimator <path> --runner server
 ## Participant docs
 
 - [Documentation Index](../../docs/index.md)
-- [Use WhestBench Explorer](../../docs/how-to/use-whestbench-explorer.md)
+- [Use WhestBench Explorer](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/advanced/use-whestbench-explorer.md) (in the starter kit)

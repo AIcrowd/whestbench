@@ -217,9 +217,9 @@ def render_smoke_test_next_steps(report: "dict[str, Any]", *, debug: bool = Fals
         body_items.append(Text(step.command, style="white"))
         body_items.append(Text())
 
-    body_items.append(Text("Optional: run bundled example estimators:", style="bold bright_cyan"))
-    for command in _smoke_optional_example_commands():
-        body_items.append(Text(command, style="white"))
+    body_items.append(Text("Worked examples live in the starter kit:", style="bold bright_cyan"))
+    for line in _smoke_optional_example_commands():
+        body_items.append(Text(line, style="white"))
     body_items.append(Text())
 
     for message in smoke_doc.epilogue_messages:
@@ -245,10 +245,7 @@ def _smoke_next_step_lines(steps: Sequence[StepItem]) -> "list[Text]":
 
 def _smoke_optional_example_commands() -> "list[str]":
     return [
-        "whest run --estimator ./examples/estimators/combined_estimator.py --runner local",
-        "whest run --estimator ./examples/estimators/covariance_propagation.py --runner local",
-        "whest run --estimator ./examples/estimators/mean_propagation.py --runner local",
-        "whest run --estimator ./examples/estimators/random_estimator.py --runner local",
+        "https://github.com/AIcrowd/whest-starterkit",
     ]
 
 
