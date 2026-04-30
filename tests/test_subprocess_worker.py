@@ -13,9 +13,12 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
+import flopscope.numpy as fnp
 import pytest
 
 from whestbench import subprocess_worker
+from whestbench.domain import MLP
+from whestbench.sdk import BaseEstimator
 
 
 def _capture_responses(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
@@ -147,12 +150,12 @@ def test_handle_predict_budgets_exhaustion_errors_win_over_validation_branch(
     monkeypatch.setattr(subprocess_worker.flops, "BudgetExhaustedError", FauxBudgetExhaustedError)
     monkeypatch.setattr(subprocess_worker.flops, "TimeExhaustedError", FauxTimeExhaustedError)
 
-    class _BudgetEstimator:
-        def predict(self, mlp, budget):  # type: ignore[no-untyped-def]
+    class _BudgetEstimator(BaseEstimator):
+        def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
             raise FauxBudgetExhaustedError("faux budget")
 
-    class _TimeEstimator:
-        def predict(self, mlp, budget):  # type: ignore[no-untyped-def]
+    class _TimeEstimator(BaseEstimator):
+        def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
             raise FauxTimeExhaustedError("faux time")
 
     captured = _capture_responses(monkeypatch)

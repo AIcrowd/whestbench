@@ -29,6 +29,6 @@ def resolve_output_format(
 ) -> OutputFormat:
     if json_output:
         return "json"
-    if format_arg in {"rich", "plain", "json"}:
+    if format_arg == "rich" or format_arg == "plain" or format_arg == "json":
         return format_arg
     return "rich" if is_tty else "plain"

@@ -39,7 +39,7 @@ class StepItem:
 @dataclass(frozen=True)
 class StepsSection:
     title: str
-    steps: list[str | StepItem]
+    steps: Sequence[str | StepItem]
 
 
 @dataclass(frozen=True)

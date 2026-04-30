@@ -490,16 +490,16 @@ def test_evaluate_estimator_preserves_partial_breakdown_on_budget_exhaustion() -
 
 def _build_bundle_from_contest(n_mlps: int = 4, width: int = 8, depth: int = 2):
     """Use make_contest to create MLPs/targets, wrap them in a DatasetBundle."""
-    import numpy as np
-
     from whestbench.dataset import DatasetBundle
 
     spec = ContestSpec(
         width=width, depth=depth, n_mlps=n_mlps, flop_budget=1_000_000, ground_truth_samples=100
     )
     data = make_contest(spec)
-    all_layer_means = np.stack([np.asarray(t) for t in data.all_layer_targets]).astype(np.float32)
-    final_means = np.stack([np.asarray(t) for t in data.final_targets]).astype(np.float32)
+    all_layer_means = fnp.stack([fnp.asarray(t) for t in data.all_layer_targets]).astype(
+        fnp.float32
+    )
+    final_means = fnp.stack([fnp.asarray(t) for t in data.final_targets]).astype(fnp.float32)
     return DatasetBundle(
         metadata={"width": width, "depth": depth, "n_mlps": n_mlps},
         mlps=list(data.mlps),
