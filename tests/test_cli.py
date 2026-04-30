@@ -547,19 +547,19 @@ def test_smoke_test_json_flag_returns_machine_readable_report(
 def test_no_subcommand_is_rejected() -> None:
     with pytest.raises(SystemExit) as exc_info:
         cli.main([])
-    assert int(exc_info.value.code) == 2
+    assert exc_info.value.code == 2
 
 
 def test_global_json_without_subcommand_is_rejected() -> None:
     with pytest.raises(SystemExit) as exc_info:
         cli.main(["--json"])
-    assert int(exc_info.value.code) == 2
+    assert exc_info.value.code == 2
 
 
 def test_agent_mode_flag_is_rejected() -> None:
     with pytest.raises(SystemExit) as exc_info:
         cli.main(["--agent-mode"])
-    assert int(exc_info.value.code) == 2
+    assert exc_info.value.code == 2
 
 
 # --- Progress task visibility/start-state (Paul's "both timers tick" report) -

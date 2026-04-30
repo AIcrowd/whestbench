@@ -188,7 +188,8 @@ def test_smoke_test_next_steps_uses_distinct_styles_per_purpose_line() -> None:
         for section in doc.sections
         if isinstance(section, StepsSection) and section.title == "Next Steps"
     )
-    lines = reporting._smoke_next_step_lines(next_steps.steps)
+    step_items = [s for s in next_steps.steps if isinstance(s, StepItem)]
+    lines = reporting._smoke_next_step_lines(step_items)
     styles = [str(line.style) for line in lines]
     assert len(lines) == 4
     assert styles == [

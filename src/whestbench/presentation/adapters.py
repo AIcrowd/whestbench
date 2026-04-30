@@ -16,6 +16,7 @@ from .models import (
     BudgetBreakdownSection,
     ChecklistItem,
     ChecklistSection,
+    ChecklistStatus,
     CommandPresentation,
     ErrorSection,
     KeyValueRow,
@@ -422,6 +423,13 @@ def build_smoke_test_presentation(report: dict[str, Any], *, debug: bool) -> Com
     )
 
 
+def _coerce_checklist_status(raw: Any) -> ChecklistStatus:
+    value = str(raw)
+    if value not in ("ok", "warn", "fail"):
+        return "fail"
+    return value  # type: ignore[return-value]
+
+
 def build_validate_presentation(payload: dict[str, Any]) -> CommandPresentation:
     raw_checks = payload.get("checks")
     checks = raw_checks if isinstance(raw_checks, list) else []
@@ -435,7 +443,7 @@ def build_validate_presentation(payload: dict[str, Any]) -> CommandPresentation:
                 items=[
                     ChecklistItem(
                         label=str(item.get("name", "")),
-                        status=str(item.get("status", "ok")),
+                        status=_coerce_checklist_status(item.get("status", "ok")),
                         detail=str(item.get("detail", "")),
                     )
                     for item in checks
@@ -450,10 +458,9 @@ def build_init_presentation(payload: dict[str, Any]) -> CommandPresentation:
     raw_created = payload.get("created")
     created = [str(path) for path in raw_created] if isinstance(raw_created, list) else []
 
+    sections: list[KeyValueSection | StepsSection]
     if created:
-        sections: list[KeyValueSection | StepsSection] = [
-            StepsSection(title="Created Files", steps=created)
-        ]
+        sections = [StepsSection(title="Created Files", steps=created)]
     else:
         sections = [
             KeyValueSection(
