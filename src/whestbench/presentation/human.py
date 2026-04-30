@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+from collections.abc import Sequence
 from typing import Literal
 
 from rich.console import Console, Group, RenderableType
@@ -40,7 +41,7 @@ def create_console(
 
 
 def render_blocks(
-    blocks: list[RenderableType],
+    blocks: Sequence[RenderableType],
     *,
     output_format: HumanOutputFormat = "rich",
     title: str | None = None,
@@ -72,7 +73,7 @@ def render_blocks(
 def render_document(
     *,
     title: str,
-    blocks: list[RenderableType],
+    blocks: Sequence[RenderableType],
     subtitle: str | None = None,
     output_format: HumanOutputFormat = "rich",
     width: int | None = None,

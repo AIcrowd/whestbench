@@ -514,6 +514,9 @@ def _write_fake_dataset(
         "flop_budget": 1_000_000,
         "hardware": {},
     }
+    extra: dict[str, Any] = {}
+    if sampling_budget_breakdowns is not None:
+        extra["sampling_budget_breakdowns"] = np.array(json.dumps(sampling_budget_breakdowns))
     np.savez(
         path,
         metadata=np.array(json.dumps(metadata)),
@@ -521,11 +524,7 @@ def _write_fake_dataset(
         all_layer_means=all_layer_means,
         final_means=final_means,
         avg_variances=avg_variances,
-        **(
-            {"sampling_budget_breakdowns": np.array(json.dumps(sampling_budget_breakdowns))}
-            if sampling_budget_breakdowns is not None
-            else {}
-        ),
+        **extra,
     )
 
 

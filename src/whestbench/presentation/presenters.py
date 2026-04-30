@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from rich.console import RenderableType
 from rich.text import Text
 
 from .blocks import build_section_renderables
@@ -19,8 +20,8 @@ def build_presentation_blocks(
     *,
     include_doc_meta: bool = True,
     include_epilogues: bool = True,
-) -> list[object]:
-    blocks: list[object] = []
+) -> list[RenderableType]:
+    blocks: list[RenderableType] = []
     primary_error = _primary_error_section(doc) if doc.status == "error" else None
 
     if include_doc_meta:
