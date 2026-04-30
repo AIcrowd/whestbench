@@ -123,7 +123,7 @@ Start at: [Documentation Index](docs/index.md)
 - [Validate, Run, and Package](docs/how-to/validate-run-package.md)
 - [Use Evaluation Datasets](docs/how-to/use-evaluation-datasets.md)
 - [Use WhestBench Explorer](docs/how-to/use-whestbench-explorer.md)
-- [Profile Simulation Backends](docs/how-to/profile-simulation-backends.md) — profile whest FLOP usage and analytical correctness
+- [Profile Simulation Backends](docs/how-to/profile-simulation-backends.md) — profile flopscope FLOP usage and analytical correctness
 - [Performance Tips](docs/how-to/performance-tips.md)
 - [Debugging Checklist](docs/how-to/debugging-checklist.md)
 

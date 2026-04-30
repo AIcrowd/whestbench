@@ -1,7 +1,7 @@
 import json
 
+import flopscope.numpy as fnp
 import numpy as np
-import whest as we
 
 from whestbench import hardware as hardware_mod
 from whestbench.dataset import create_dataset, load_dataset
@@ -63,10 +63,10 @@ def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
         mlp_a = bundle_a.mlps[idx]
         mlp_b = bundle_b.mlps[idx]
         for wa, wb in zip(mlp_a.weights, mlp_b.weights):
-            we.testing.assert_array_equal(wa, wb)
+            fnp.testing.assert_array_equal(wa, wb)
 
-        we.testing.assert_array_equal(bundle_a.all_layer_means[idx], bundle_b.all_layer_means[idx])
-        we.testing.assert_array_equal(bundle_a.final_means[idx], bundle_b.final_means[idx])
+        fnp.testing.assert_array_equal(bundle_a.all_layer_means[idx], bundle_b.all_layer_means[idx])
+        fnp.testing.assert_array_equal(bundle_a.final_means[idx], bundle_b.final_means[idx])
     assert bundle_a.avg_variances == bundle_b.avg_variances
     assert bundle_a.sampling_budget_breakdowns is not None
     assert bundle_b.sampling_budget_breakdowns is not None

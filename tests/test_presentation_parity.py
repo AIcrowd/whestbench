@@ -229,10 +229,10 @@ def test_parity_matrix_preserves_settled_information() -> None:
             build_profile_presentation(
                 {
                     "hardware": {"os": "Darwin", "machine": "arm64", "python_version": "3.14.3"},
-                    "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+                    "correctness": [{"backend": "flopscope", "passed": True, "error": ""}],
                     "timing": [
                         {
-                            "backend": "whest",
+                            "backend": "flopscope",
                             "dims": "256×4×10k",
                             "run_mlp": "0.0444s",
                             "sample_layer_statistics": "0.1135s",

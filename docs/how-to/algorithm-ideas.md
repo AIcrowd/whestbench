@@ -7,18 +7,19 @@ This page surveys estimation strategies for the ARC Whitebox Estimation Challeng
 Generate random inputs, propagate them through the MLP, average the outputs.
 
 ```python
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 def predict_sampling(mlp, budget):
     width = mlp.width
     n_samples = budget // (mlp.depth * width * width)  # rough FLOP estimate per sample
     n_samples = max(n_samples, 1)
-    x = we.array(we.random.default_rng().standard_normal((n_samples, width)).astype(we.float32))
+    x = fnp.array(fnp.random.default_rng().standard_normal((n_samples, width)).astype(fnp.float32))
     rows = []
     for w in mlp.weights:
-        x = we.maximum(we.matmul(x, w), 0.0)
-        rows.append(we.mean(x, axis=0))
-    return we.stack(rows, axis=0)
+        x = fnp.maximum(fnp.matmul(x, w), 0.0)
+        rows.append(fnp.mean(x, axis=0))
+    return fnp.stack(rows, axis=0)
 ```
 
 **FLOP cost:** O(samples x depth x width^2). For width=100, depth=16, one sample costs ~160K FLOPs. 100 samples costs ~16M FLOPs.

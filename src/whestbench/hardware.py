@@ -101,9 +101,9 @@ def collect_hardware_fingerprint(*, skip_fallback_probes: bool | None = None) ->
         skip_fallback_probes = _env_flag_enabled(_SKIP_FALLBACK_PROBES_ENV)
 
     try:
-        whest_version = importlib_metadata.version("whest")
+        flopscope_version = importlib_metadata.version("flopscope")
     except importlib_metadata.PackageNotFoundError:
-        whest_version = "unknown"
+        flopscope_version = "unknown"
 
     fp: dict[str, Any] = {
         "hostname": socket.gethostname(),
@@ -118,7 +118,7 @@ def collect_hardware_fingerprint(*, skip_fallback_probes: bool | None = None) ->
         "ram_total_bytes": None,
         "ram_available_bytes": None,
         "numpy_version": np.__version__,
-        "whest_version": whest_version,
+        "flopscope_version": flopscope_version,
     }
     if psutil is not None:
         try:

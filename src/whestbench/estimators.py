@@ -1,4 +1,4 @@
-"""Reference estimators for MLP mean prediction using whest.
+"""Reference estimators for MLP mean prediction using flopscope.
 
 This module provides tutorial estimator classes that predict per-layer
 output means using analytical first-moment propagation through ReLU networks.
@@ -14,7 +14,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 from .domain import MLP
 from .sdk import BaseEstimator
@@ -27,34 +28,34 @@ class MeanPropagationEstimator(BaseEstimator):
     with a diagonal variance approximation (assumes independent neurons).
     """
 
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         """Predict per-layer output means via first-moment propagation through ReLU layers."""
         _ = budget
         width = mlp.width
-        mu = we.zeros(width)
-        var = we.ones(width)
+        mu = fnp.zeros(width)
+        var = fnp.ones(width)
 
         rows = []
         for w in mlp.weights:
             mu_pre = w.T @ mu
             var_pre = (w * w).T @ var
-            var_pre = we.maximum(var_pre, 1e-12)
-            sigma_pre = we.sqrt(var_pre)
+            var_pre = fnp.maximum(var_pre, 1e-12)
+            sigma_pre = fnp.sqrt(var_pre)
 
             alpha = mu_pre / sigma_pre
-            phi_alpha = we.stats.norm.pdf(alpha)
-            Phi_alpha = we.stats.norm.cdf(alpha)
+            phi_alpha = flops.stats.norm.pdf(alpha)
+            Phi_alpha = flops.stats.norm.cdf(alpha)
 
             # E[ReLU(z)]
             mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
 
             # Var[ReLU(z)]
             ez2 = (mu_pre * mu_pre + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
-            var = we.maximum(ez2 - mu * mu, 0.0)
+            var = fnp.maximum(ez2 - mu * mu, 0.0)
 
             rows.append(mu)
 
-        return we.stack(rows, axis=0)
+        return fnp.stack(rows, axis=0)
 
 
 class CovariancePropagationEstimator(BaseEstimator):
@@ -62,55 +63,55 @@ class CovariancePropagationEstimator(BaseEstimator):
 
     _COV_RESCALE_THRESHOLD = 1e100
 
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         """Predict per-layer means via full covariance propagation through ReLU layers."""
         _ = budget
         width = mlp.width
-        mu = we.zeros(width)
-        cov = we.eye(width)
+        mu = fnp.zeros(width)
+        cov = fnp.eye(width)
         log_scale = 0.0
 
         rows = []
         for w in mlp.weights:
             # Rescale before matmul to prevent overflow
-            cov_diag = we.diag(cov)
-            max_var_np = float(we.max(we.asarray(cov_diag)))
+            cov_diag = fnp.diag(cov)
+            max_var_np = float(fnp.max(fnp.asarray(cov_diag)))
             if max_var_np > self._COV_RESCALE_THRESHOLD:
-                s = float(we.sqrt(max_var_np))
+                s = float(fnp.sqrt(max_var_np))
                 mu = mu / s
                 cov = cov / (s * s)
-                log_scale += float(we.log(s))
+                log_scale += float(fnp.log(s))
 
             mu_pre = w.T @ mu
             cov_pre = w.T @ cov @ w
-            var_pre = we.maximum(we.diag(cov_pre), 1e-12)
-            sigma_pre = we.sqrt(var_pre)
+            var_pre = fnp.maximum(fnp.diag(cov_pre), 1e-12)
+            sigma_pre = fnp.sqrt(var_pre)
 
             alpha = mu_pre / sigma_pre
-            phi_alpha = we.stats.norm.pdf(alpha)
-            Phi_alpha = we.stats.norm.cdf(alpha)
+            phi_alpha = flops.stats.norm.pdf(alpha)
+            Phi_alpha = flops.stats.norm.cdf(alpha)
 
             # Post-ReLU means
             mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
 
             # Post-ReLU diagonal variance
             ez2 = (mu_pre * mu_pre + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
-            var_post = we.maximum(ez2 - mu * mu, 0.0)
+            var_post = fnp.maximum(ez2 - mu * mu, 0.0)
 
             # Approximate post-ReLU covariance
-            sigma_np = we.asarray(sigma_pre, dtype=we.float64)
-            Phi_np = we.asarray(Phi_alpha, dtype=we.float64)
-            gain_np = we.where(sigma_np > 1e-12, Phi_np, 0.0)
-            gain = we.array(gain_np.astype(we.float32))
-            cov = we.multiply(we.outer(gain, gain), cov_pre)
+            sigma_np = fnp.asarray(sigma_pre, dtype=fnp.float64)
+            Phi_np = fnp.asarray(Phi_alpha, dtype=fnp.float64)
+            gain_np = fnp.where(sigma_np > 1e-12, Phi_np, 0.0)
+            gain = fnp.array(gain_np.astype(fnp.float32))
+            cov = fnp.multiply(fnp.outer(gain, gain), cov_pre)
             # Set diagonal to var_post (in-place, like numpy)
-            we.fill_diagonal(cov, var_post)
+            fnp.fill_diagonal(cov, var_post)
 
             # Record mean in original (unscaled) coordinates
-            scale_factor = float(we.exp(log_scale))
+            scale_factor = float(fnp.exp(log_scale))
             rows.append(mu * scale_factor)
 
-        return we.stack(rows, axis=0)
+        return fnp.stack(rows, axis=0)
 
 
 class CombinedEstimator(BaseEstimator):
@@ -131,7 +132,7 @@ class CombinedEstimator(BaseEstimator):
         self._mean_estimator = mean_estimator or MeanPropagationEstimator()
         self._covariance_estimator = covariance_estimator or CovariancePropagationEstimator()
 
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         """Route to covariance or mean propagation based on available FLOP budget."""
         if budget >= self._COVARIANCE_FLOP_MULTIPLIER * mlp.width * mlp.width:
             return self._covariance_estimator.predict(mlp, budget)

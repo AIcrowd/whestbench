@@ -1,5 +1,5 @@
+import flopscope.numpy as fnp
 import pytest
-import whest as we
 
 from whestbench.generation import sample_mlp
 from whestbench.runner import (
@@ -13,7 +13,7 @@ from whestbench.sdk import SetupContext
 
 @pytest.fixture
 def small_mlp():
-    return sample_mlp(width=8, depth=2, rng=we.random.default_rng(42))
+    return sample_mlp(width=8, depth=2, rng=fnp.random.default_rng(42))
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def test_inprocess_runner_predict_returns_array(small_mlp, limits, tmp_path) -> 
     runner.start(entry, ctx, limits)
     result = runner.predict(small_mlp, budget=100)
     assert result.shape == (2, 8)
-    assert result.dtype == we.float32
+    assert result.dtype == fnp.float32
     runner.close()
 
 

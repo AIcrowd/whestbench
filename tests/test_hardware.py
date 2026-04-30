@@ -25,7 +25,7 @@ def test_collect_hardware_fingerprint_returns_required_keys():
         "ram_total_bytes",
         "ram_available_bytes",
         "numpy_version",
-        "whest_version",
+        "flopscope_version",
     }
     assert required <= set(fp.keys())
     assert isinstance(fp["cpu_count_logical"], int)
@@ -43,33 +43,33 @@ def test_hardware_matches_detects_mismatch():
     assert hardware_matches(fp, altered) is False
 
 
-def test_collect_hardware_fingerprint_uses_distribution_metadata_without_importing_whest(
+def test_collect_hardware_fingerprint_uses_distribution_metadata_without_importing_flopscope(
     monkeypatch,
 ):
-    previous_whest = sys.modules.pop("whest", None)
+    previous_flopscope = sys.modules.pop("flopscope", None)
     real_import = builtins.__import__
 
     def _version(name: str) -> str:
-        assert name == "whest"
+        assert name == "flopscope"
         return "9.9.9"
 
     def _guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
-        if name == "whest":
-            raise AssertionError("collect_hardware_fingerprint should not import whest")
+        if name == "flopscope":
+            raise AssertionError("collect_hardware_fingerprint should not import flopscope")
         return real_import(name, globals, locals, fromlist, level)
 
     monkeypatch.setattr(hardware_mod.importlib_metadata, "version", _version)
     monkeypatch.setattr(builtins, "__import__", _guarded_import)
     try:
         fp = collect_hardware_fingerprint()
-        assert fp["whest_version"] == "9.9.9"
-        assert "whest" not in sys.modules
+        assert fp["flopscope_version"] == "9.9.9"
+        assert "flopscope" not in sys.modules
     finally:
-        if previous_whest is not None:
-            sys.modules["whest"] = previous_whest
+        if previous_flopscope is not None:
+            sys.modules["flopscope"] = previous_flopscope
 
 
-def test_collect_hardware_fingerprint_uses_unknown_when_whest_metadata_missing(
+def test_collect_hardware_fingerprint_uses_unknown_when_flopscope_metadata_missing(
     monkeypatch,
 ):
     def _missing(name: str) -> str:
@@ -79,7 +79,7 @@ def test_collect_hardware_fingerprint_uses_unknown_when_whest_metadata_missing(
 
     fp = collect_hardware_fingerprint()
 
-    assert fp["whest_version"] == "unknown"
+    assert fp["flopscope_version"] == "unknown"
 
 
 def test_collect_hardware_fingerprint_uses_fallback_probes_when_enabled(monkeypatch) -> None:

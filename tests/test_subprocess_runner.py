@@ -1,5 +1,6 @@
+import flopscope as flops
+import flopscope.numpy as fnp
 import pytest
-import whest as we
 
 from whestbench.generation import sample_mlp
 from whestbench.runner import (
@@ -12,7 +13,7 @@ from whestbench.sdk import SetupContext
 
 @pytest.fixture
 def small_mlp():
-    return sample_mlp(width=8, depth=2, rng=we.random.default_rng(42))
+    return sample_mlp(width=8, depth=2, rng=fnp.random.default_rng(42))
 
 
 def test_subprocess_runner_returns_timing(small_mlp, tmp_path) -> None:
@@ -66,12 +67,12 @@ def test_subprocess_runner_predict(small_mlp, tmp_path) -> None:
 def test_subprocess_runner_stores_budget_breakdown(small_mlp, tmp_path) -> None:
     est_file = tmp_path / "est.py"
     est_file.write_text(
-        "import whest as we\n"
+        "import flopscope as flops\nimport flopscope.numpy as fnp\n"
         "from whestbench.sdk import BaseEstimator\n"
         "class Estimator(BaseEstimator):\n"
         "    def predict(self, mlp, budget):\n"
-        "        base = we.zeros((mlp.depth, mlp.width), dtype=we.float32)\n"
-        "        with we.namespace('phase'):\n"
+        "        base = fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)\n"
+        "        with flops.namespace('phase'):\n"
         "            return base + 1.0\n"
     )
     runner = SubprocessRunner()
@@ -97,11 +98,11 @@ def test_subprocess_runner_stores_budget_breakdown(small_mlp, tmp_path) -> None:
 def test_subprocess_runner_stores_budget_breakdown_for_unlabeled_ops(small_mlp, tmp_path) -> None:
     est_file = tmp_path / "est.py"
     est_file.write_text(
-        "import whest as we\n"
+        "import flopscope as flops\nimport flopscope.numpy as fnp\n"
         "from whestbench.sdk import BaseEstimator\n"
         "class Estimator(BaseEstimator):\n"
         "    def predict(self, mlp, budget):\n"
-        "        return we.zeros((mlp.depth, mlp.width), dtype=we.float32) + 1.0\n"
+        "        return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32) + 1.0\n"
     )
     runner = SubprocessRunner()
     entry = EstimatorEntrypoint(file_path=est_file)
@@ -127,12 +128,12 @@ def test_subprocess_runner_preserves_partial_budget_breakdown_on_exhaustion(
 ) -> None:
     est_file = tmp_path / "est.py"
     est_file.write_text(
-        "import whest as we\n"
+        "import flopscope as flops\nimport flopscope.numpy as fnp\n"
         "from whestbench.sdk import BaseEstimator\n"
         "class Estimator(BaseEstimator):\n"
         "    def predict(self, mlp, budget):\n"
-        "        acc = we.zeros((mlp.depth, mlp.width), dtype=we.float32)\n"
-        "        with we.namespace('phase'):\n"
+        "        acc = fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)\n"
+        "        with flops.namespace('phase'):\n"
         "            for _ in range(20):\n"
         "                acc = acc + 1.0\n"
         "        return acc\n"
@@ -147,7 +148,7 @@ def test_subprocess_runner_preserves_partial_budget_breakdown_on_exhaustion(
         flop_budget=100_000_000,
     )
     runner.start(entry, ctx, limits)
-    with pytest.raises(we.BudgetExhaustedError):
+    with pytest.raises(flops.BudgetExhaustedError):
         runner.predict(small_mlp, budget=50)
     stats = runner.last_predict_stats()
     assert stats is not None

@@ -8,8 +8,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import flopscope as flops
+import flopscope.numpy as fnp
 import numpy as np  # needed for np.savez, np.load (file I/O)
-import whest as we
 
 from .domain import MLP
 from .generation import sample_mlp
@@ -36,8 +37,8 @@ def dataset_file_hash(path: "Path | str") -> str:
 class DatasetBundle:
     metadata: Dict[str, Any]
     mlps: List[MLP]
-    all_layer_means: we.ndarray
-    final_means: we.ndarray
+    all_layer_means: fnp.ndarray
+    final_means: fnp.ndarray
     avg_variances: List[float]
     sampling_budget_breakdowns: List[Dict[str, Any]] | None = None
 
@@ -59,12 +60,14 @@ def create_dataset(
 ) -> Path:
     """Generate MLPs, compute ground truth, and save to .npz."""
     output_path = Path(output_path)
-    seed_sequence = we.random.SeedSequence() if seed is None else we.random.SeedSequence(int(seed))
+    seed_sequence = (
+        fnp.random.SeedSequence() if seed is None else fnp.random.SeedSequence(int(seed))
+    )
     stream_seed = seed_sequence.spawn(2 * n_mlps)
 
     mlps: List[MLP] = []
     for i in range(n_mlps):
-        weight_stream = we.random.default_rng(stream_seed[2 * i])
+        weight_stream = fnp.random.default_rng(stream_seed[2 * i])
         mlps.append(sample_mlp(width, depth, weight_stream))
         if progress is not None:
             progress({"phase": "generating", "completed": i + 1, "total": n_mlps})
@@ -73,15 +76,15 @@ def create_dataset(
     weights_array = np.stack([np.stack(mlp.weights) for mlp in mlps]).astype(np.float32)
 
     # Compute ground truth
-    all_means_list: List[we.ndarray] = []
-    final_means_list: List[we.ndarray] = []
+    all_means_list: List[fnp.ndarray] = []
+    final_means_list: List[fnp.ndarray] = []
     avg_variances: List[float] = []
     sampling_budget_breakdowns: List[Dict[str, Any]] = []
     for i, mlp in enumerate(mlps):
-        sample_stream = we.random.default_rng(stream_seed[2 * i + 1])
-        with we.BudgetContext(flop_budget=int(1e15), quiet=True) as sampling_budget:
-            with we.namespace("sampling"):
-                with we.namespace("sample_layer_statistics"):
+        sample_stream = fnp.random.default_rng(stream_seed[2 * i + 1])
+        with flops.BudgetContext(flop_budget=int(1e15), quiet=True) as sampling_budget:
+            with flops.namespace("sampling"):
+                with flops.namespace("sample_layer_statistics"):
                     all_means, final_mean, avg_var = sample_layer_statistics(
                         mlp, n_samples, rng=sample_stream
                     )
@@ -90,9 +93,12 @@ def create_dataset(
         )
         if normalized_sampling is not None:
             sampling_budget_breakdowns.append(normalized_sampling)
-        all_means_list.append(we.asarray(all_means, dtype=we.float32))
-        final_means_list.append(we.asarray(final_mean, dtype=we.float32))
-        avg_variances.append(avg_var)
+        # The triple is always bound: flopscope's namespace `__exit__` returns
+        # False at runtime (never suppresses), but pyright reads the `-> bool`
+        # annotation conservatively.
+        all_means_list.append(fnp.asarray(all_means, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
+        final_means_list.append(fnp.asarray(final_mean, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
+        avg_variances.append(avg_var)  # pyright: ignore[reportPossiblyUnboundVariable]
         if progress is not None:
             progress({"phase": "sampling", "completed": i + 1, "total": n_mlps})
 
@@ -154,7 +160,7 @@ def load_dataset(path: "Path | str") -> DatasetBundle:
 
     mlps: List[MLP] = []
     for i in range(n_mlps):
-        layer_weights = [we.array(weights_array[i, j]) for j in range(depth)]
+        layer_weights = [fnp.array(weights_array[i, j]) for j in range(depth)]
         mlp = MLP(width=width, depth=depth, weights=layer_weights)
         mlp.validate()
         mlps.append(mlp)

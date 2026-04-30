@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -174,7 +174,7 @@ class CommandPresentation:
     status: PresentationStatus
     title: str
     subtitle: str | None = None
-    sections: list[
+    sections: Sequence[
         KeyValueSection
         | TableSection
         | StepsSection
@@ -183,4 +183,4 @@ class CommandPresentation:
         | RunErrorsSection
         | BudgetBreakdownSection
     ] = field(default_factory=list)
-    epilogue_messages: list[str] = field(default_factory=list)
+    epilogue_messages: Sequence[str] = field(default_factory=list)

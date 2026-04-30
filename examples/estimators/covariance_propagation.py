@@ -33,7 +33,8 @@ Numerical stability:
 
 from __future__ import annotations
 
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 from whestbench import BaseEstimator
 from whestbench.domain import MLP
@@ -51,7 +52,7 @@ class Estimator(BaseEstimator):
     O(width^2) memory and O(width^3) FLOPs per layer.
     """
 
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         """Predict per-layer output means via full covariance propagation.
 
         Returns an array of shape (depth, width) where row i is the predicted
@@ -62,8 +63,8 @@ class Estimator(BaseEstimator):
 
         # --- Step 1: initialise the input distribution ---
         # Input is modelled as standard multivariate normal: mu=0, cov=I.
-        mu = we.zeros(width)  # shape (width,)
-        cov = we.eye(width)  # shape (width, width)
+        mu = fnp.zeros(width)  # shape (width,)
+        cov = fnp.eye(width)  # shape (width, width)
         log_scale = 0.0  # tracks accumulated log of rescaling factor
 
         rows = []
@@ -72,13 +73,13 @@ class Estimator(BaseEstimator):
             # If the covariance has grown very large, rescale (mu, cov) by the
             # square root of the largest variance so that downstream matmuls
             # stay in a safe range.  We compensate in the recorded mean later.
-            cov_diag = we.diag(cov)
-            max_var_np = float(we.max(cov_diag))
+            cov_diag = fnp.diag(cov)
+            max_var_np = float(fnp.max(cov_diag))
             if max_var_np > _COV_RESCALE_THRESHOLD:
-                s = float(we.sqrt(max_var_np))
+                s = float(fnp.sqrt(max_var_np))
                 mu = mu / s
                 cov = cov / (s * s)
-                log_scale += float(we.log(s))
+                log_scale += float(fnp.log(s))
 
             # --- Step 3: propagate through the linear layer ---
             # Pre-activation mean:         mu_pre  = W^T mu
@@ -88,13 +89,13 @@ class Estimator(BaseEstimator):
 
             # Extract per-neuron pre-activation standard deviations from the
             # diagonal of cov_pre.
-            var_pre = we.maximum(we.diag(cov_pre), 1e-12)
-            sigma_pre = we.sqrt(var_pre)
+            var_pre = fnp.maximum(fnp.diag(cov_pre), 1e-12)
+            sigma_pre = fnp.sqrt(var_pre)
 
             # --- Step 4: compute alpha = mu / sigma for each neuron ---
             alpha = mu_pre / sigma_pre
-            phi_alpha = we.stats.norm.pdf(alpha)
-            Phi_alpha = we.stats.norm.cdf(alpha)
+            phi_alpha = flops.stats.norm.pdf(alpha)
+            Phi_alpha = flops.stats.norm.cdf(alpha)
 
             # --- Step 5: post-ReLU mean (exact per neuron) ---
             # E[ReLU(pre)] = mu_pre * Phi(alpha) + sigma_pre * phi(alpha)
@@ -103,24 +104,24 @@ class Estimator(BaseEstimator):
             # --- Step 6: post-ReLU diagonal variance (exact per neuron) ---
             # E[z^2] = (mu_pre^2 + var_pre) * Phi(alpha) + mu_pre * sigma_pre * phi(alpha)
             ez2 = (mu_pre * mu_pre + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
-            var_post = we.maximum(ez2 - mu * mu, 0.0)
+            var_post = fnp.maximum(ez2 - mu * mu, 0.0)
 
             # --- Step 7: approximate post-ReLU covariance ---
             # gain[i] = Phi(alpha[i])  when sigma_pre[i] > 0, else 0
-            sigma_np = we.asarray(sigma_pre, dtype=we.float64)
-            Phi_np = we.asarray(Phi_alpha, dtype=we.float64)
-            gain_np = we.where(sigma_np > 1e-12, Phi_np, 0.0)
-            gain = we.array(gain_np.astype(we.float32))
+            sigma_np = fnp.asarray(sigma_pre, dtype=fnp.float64)
+            Phi_np = fnp.asarray(Phi_alpha, dtype=fnp.float64)
+            gain_np = fnp.where(sigma_np > 1e-12, Phi_np, 0.0)
+            gain = fnp.array(gain_np.astype(fnp.float32))
 
             # Off-diagonal approximation:  cov_post[i,j] ≈ gain[i]*gain[j]*cov_pre[i,j]
-            cov = we.multiply(we.outer(gain, gain), cov_pre)
+            cov = fnp.multiply(fnp.outer(gain, gain), cov_pre)
 
             # Replace the diagonal with the exact marginal variances.
-            we.fill_diagonal(cov, var_post)
+            fnp.fill_diagonal(cov, var_post)
 
             # --- Step 8: record mean in original (unscaled) coordinates ---
-            scale_factor = float(we.exp(log_scale))
+            scale_factor = float(fnp.exp(log_scale))
             rows.append(mu * scale_factor)
 
         # Stack all layer means into a single (depth, width) array
-        return we.stack(rows, axis=0)
+        return fnp.stack(rows, axis=0)

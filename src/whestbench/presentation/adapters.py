@@ -20,6 +20,7 @@ from .models import (
     ErrorSection,
     KeyValueRow,
     KeyValueSection,
+    PresentationStatus,
     RunErrorEntry,
     RunErrorsSection,
     StepItem,
@@ -68,7 +69,7 @@ def _display_bytes(value: Any, *, fallback: str = "n/a") -> str:
         return str(value)
 
 
-def _status_for_report(report: dict[str, Any]) -> str:
+def _status_for_report(report: dict[str, Any]) -> PresentationStatus:
     results = report.get("results")
     if not isinstance(results, dict):
         return "success"

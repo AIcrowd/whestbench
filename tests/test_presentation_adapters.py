@@ -36,8 +36,9 @@ def test_build_smoke_test_presentation_includes_structured_next_steps() -> None:
         for section in doc.sections
         if isinstance(section, StepsSection) and section.title == "Next Steps"
     )
-    assert all(isinstance(step, StepItem) for step in next_steps.steps)
-    assert [(step.purpose, step.command) for step in next_steps.steps] == [
+    steps = [step for step in next_steps.steps if isinstance(step, StepItem)]
+    assert len(steps) == len(next_steps.steps)
+    assert [(step.purpose, step.command) for step in steps] == [
         ("Create starter files you can edit.", "whest init ./my-estimator"),
         (
             "Validate an Estimator implementation.",
@@ -205,6 +206,7 @@ def test_build_run_presentation_marks_dataset_sampling_breakdown_as_unavailable(
     )
 
     assert sampling.available is False
+    assert sampling.unavailable_message is not None
     assert "recreate the dataset" in sampling.unavailable_message.lower()
 
 
@@ -369,10 +371,10 @@ def test_build_profile_presentation_includes_correctness_and_timing_rows() -> No
     doc = build_profile_presentation(
         {
             "hardware": {"os": "Darwin", "machine": "arm64", "python_version": "3.14.3"},
-            "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+            "correctness": [{"backend": "flopscope", "passed": True, "error": ""}],
             "timing": [
                 {
-                    "backend": "whest",
+                    "backend": "flopscope",
                     "dims": "256×4×10k",
                     "run_mlp": "0.0444s",
                     "sample_layer_statistics": "0.1135s",
@@ -391,4 +393,4 @@ def test_build_profile_presentation_includes_correctness_and_timing_rows() -> No
         if isinstance(section, TableSection) and section.title == "Detail"
     )
     assert detail.columns == ["Backend", "Dims", "run_mlp", "sample_layer_statistics"]
-    assert detail.rows == [["whest", "256×4×10k", "0.0444s", "0.1135s"]]
+    assert detail.rows == [["flopscope", "256×4×10k", "0.0444s", "0.1135s"]]

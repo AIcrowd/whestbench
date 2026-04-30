@@ -4,18 +4,18 @@ This page lists concrete patterns for reducing FLOP usage in your estimator.
 
 ## Matmul dominates your budget
 
-A single `we.matmul(A, B)` on two (n, n) matrices costs O(n^3) FLOPs. For width=100, that is ~1M FLOPs per matmul. In a 16-layer network, 16 matmuls cost ~16M FLOPs — a large fraction of a typical budget.
+A single `fnp.matmul(A, B)` on two (n, n) matrices costs O(n^3) FLOPs. For width=100, that is ~1M FLOPs per matmul. In a 16-layer network, 16 matmuls cost ~16M FLOPs — a large fraction of a typical budget.
 
 **Tip:** If you only need diagonal information (per-neuron variance), avoid full matrix-matrix multiplies. Diagonal propagation uses matrix-vector products: O(n^2) per layer instead of O(n^3).
 
 ## Free operations — use them liberally
 
-These cost 0 FLOPs in whest:
+These cost 0 FLOPs in flopscope:
 
-- `we.zeros()`, `we.ones()`, `we.eye()`, `we.array()`
-- `we.reshape()`, `we.transpose()`
-- `we.concatenate()`, `we.stack()`
-- Indexing: `x[0]`, `x[:, 3]`, `we.diag(M)`
+- `fnp.zeros()`, `fnp.ones()`, `fnp.eye()`, `fnp.array()`
+- `fnp.reshape()`, `fnp.transpose()`
+- `fnp.concatenate()`, `fnp.stack()`
+- Indexing: `x[0]`, `x[:, 3]`, `fnp.diag(M)`
 
 Precompute anything you can using free ops. Store intermediate values in variables — there is no memory cost in FLOP terms.
 
@@ -24,15 +24,16 @@ Precompute anything you can using free ops. Store intermediate values in variabl
 If your estimator computes something that does not change per-layer, move it before the loop:
 
 ```python
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 # Instead of this (wasteful):
 for w in mlp.weights:
-    scale = we.sqrt(2.0 / mlp.width)  # recomputed every layer
+    scale = fnp.sqrt(2.0 / mlp.width)  # recomputed every layer
     ...
 
 # Do this (free):
-scale = we.sqrt(2.0 / mlp.width)  # computed once
+scale = fnp.sqrt(2.0 / mlp.width)  # computed once
 for w in mlp.weights:
     ...
 ```
@@ -48,14 +49,15 @@ The combined estimator in `examples/estimators/combined_estimator.py` shows this
 
 ## Check your budget breakdown
 
-Use `we.budget_summary()` inside a `BudgetContext` to see exactly where your FLOPs go:
+Use `fnp.budget_summary()` inside a `BudgetContext` to see exactly where your FLOPs go:
 
 ```python
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
-with we.BudgetContext(flop_budget=100_000_000) as budget:
+with flops.BudgetContext(flop_budget=100_000_000) as budget:
     result = estimator.predict(mlp, budget=100_000_000)
-    we.budget_summary()
+    fnp.budget_summary()
 ```
 
 This prints a per-operation table showing call counts and cumulative FLOPs. Look for the dominant operation and optimize that first.

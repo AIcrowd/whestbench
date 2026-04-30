@@ -7,8 +7,8 @@ import json
 import tempfile
 from pathlib import Path
 
+import flopscope as flops
 import pytest
-import whest as we
 
 import whestbench.cli as cli
 import whestbench.profiler as profiler
@@ -34,7 +34,7 @@ class TestCorrectnessCheck:
 class TestRunProfile:
     def test_quick_preset_runs(self) -> None:
         terminal_output, _ = run_profile(preset_name="super-quick")
-        assert "whest" in terminal_output
+        assert "flopscope" in terminal_output
         assert "Detail" in terminal_output
 
     def test_terminal_output_contains_compact_summary(self) -> None:
@@ -62,7 +62,7 @@ class TestRunProfile:
 
     def test_single_backend_in_output(self) -> None:
         terminal_output, _ = run_profile(preset_name="super-quick")
-        assert "whest" in terminal_output
+        assert "flopscope" in terminal_output
 
     def test_failed_correctness_output_uses_error_detail_hint(
         self, monkeypatch: pytest.MonkeyPatch
@@ -70,7 +70,7 @@ class TestRunProfile:
         monkeypatch.setattr(
             profiler,
             "correctness_check",
-            lambda: CorrectnessResult(backend_name="whest", passed=False, error="boom"),
+            lambda: CorrectnessResult(backend_name="flopscope", passed=False, error="boom"),
         )
 
         terminal_output, _ = run_profile(preset_name="super-quick")
@@ -113,13 +113,13 @@ class TestPresets:
 
 class TestFormatCompactOutput:
     def _make_results(self):
-        """Build minimal test data with single whest backend."""
+        """Build minimal test data with single flopscope backend."""
         correctness = [
-            CorrectnessResult(backend_name="whest", passed=True),
+            CorrectnessResult(backend_name="flopscope", passed=True),
         ]
         timing = [
             TimingResult(
-                backend_name="whest",
+                backend_name="flopscope",
                 operation="run_mlp",
                 width=64,
                 depth=4,
@@ -129,7 +129,7 @@ class TestFormatCompactOutput:
                 speedup_vs_numpy=1.0,
             ),
             TimingResult(
-                backend_name="whest",
+                backend_name="flopscope",
                 operation="sample_layer_statistics",
                 width=64,
                 depth=4,
@@ -148,7 +148,7 @@ class TestFormatCompactOutput:
             "ram_total_bytes": 64 * 1024**3,
             "python_version": "3.10.17",
             "numpy_version": "2.2.6",
-            "whest_version": we.__version__,
+            "flopscope_version": flops.__version__,
             "os": "Darwin",
         }
         return correctness, timing, skipped, hardware
@@ -181,7 +181,7 @@ class TestFormatCompactOutput:
         assert "Leaderboard" not in output
 
     def test_zero_passed_backends(self) -> None:
-        cr = [CorrectnessResult(backend_name="whest", passed=False, error="boom")]
+        cr = [CorrectnessResult(backend_name="flopscope", passed=False, error="boom")]
         output = format_compact_output(cr, [], {})
         assert "No backends passed" in output
 
@@ -234,7 +234,7 @@ class TestLogProgress:
         captured = capsys.readouterr()
         assert "[correctness]" in captured.out
         assert "[timing]" in captured.out
-        assert "whest" in captured.out
+        assert "flopscope" in captured.out
         assert "[done]" in captured.out
 
     def test_log_progress_off_by_default(self, capsys) -> None:
@@ -284,8 +284,8 @@ def test_profile_simulation_format_json_uses_json_payload(
             "terminal output",
             {
                 "hardware": {"cpu_count_logical": 8},
-                "timing": [{"backend": "whest"}],
-                "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+                "timing": [{"backend": "flopscope"}],
+                "correctness": [{"backend": "flopscope", "passed": True, "error": ""}],
             },
         ),
         raising=False,
@@ -297,7 +297,7 @@ def test_profile_simulation_format_json_uses_json_payload(
     assert exit_code == 0
     payload = json.loads(captured.out)
     assert payload["hardware"]["cpu_count_logical"] == 8
-    assert payload["timing"] == [{"backend": "whest"}]
+    assert payload["timing"] == [{"backend": "flopscope"}]
 
 
 def test_profile_simulation_format_plain_uses_plain_human_output(
@@ -310,8 +310,8 @@ def test_profile_simulation_format_plain_uses_plain_human_output(
             "Simulation Profile\nCommand: profile-simulation\nStatus: success\n\nDetail\n",
             {
                 "hardware": {"cpu_count_logical": 8},
-                "timing": [{"backend": "whest"}],
-                "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+                "timing": [{"backend": "flopscope"}],
+                "correctness": [{"backend": "flopscope", "passed": True, "error": ""}],
             },
         ),
         raising=False,
@@ -357,7 +357,7 @@ def test_profile_simulation_format_json_keeps_timing_warnings_off_stdout(
     monkeypatch.setattr(
         profiler,
         "correctness_check",
-        lambda: CorrectnessResult(backend_name="whest", passed=True, error=""),
+        lambda: CorrectnessResult(backend_name="flopscope", passed=True, error=""),
     )
 
     def fake_run_timing_sweep(*_args, warning_stream=None, **_kwargs):
@@ -372,7 +372,7 @@ def test_profile_simulation_format_json_keeps_timing_warnings_off_stdout(
 
     assert exit_code == 0
     payload = json.loads(captured.out)
-    assert payload["correctness"] == [{"backend": "whest", "passed": True, "error": ""}]
+    assert payload["correctness"] == [{"backend": "flopscope", "passed": True, "error": ""}]
     assert "[warning]" not in captured.out
     assert "[warning] timing skipped" in captured.err
 
@@ -389,7 +389,7 @@ def test_profile_simulation_defaults_to_plain_in_non_tty_cli(
             {
                 "hardware": {"cpu_count_logical": 8},
                 "timing": [],
-                "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+                "correctness": [{"backend": "flopscope", "passed": True, "error": ""}],
             },
         )
 
@@ -409,7 +409,7 @@ def test_profile_simulation_format_json_log_progress_keeps_stdout_parseable(
     monkeypatch.setattr(
         profiler,
         "correctness_check",
-        lambda: CorrectnessResult(backend_name="whest", passed=True, error=""),
+        lambda: CorrectnessResult(backend_name="flopscope", passed=True, error=""),
     )
     monkeypatch.setattr(profiler, "run_timing_sweep", lambda *_args, **_kwargs: [], raising=False)
 
@@ -418,7 +418,7 @@ def test_profile_simulation_format_json_log_progress_keeps_stdout_parseable(
 
     assert exit_code == 0
     payload = json.loads(captured.out)
-    assert payload["correctness"] == [{"backend": "whest", "passed": True, "error": ""}]
+    assert payload["correctness"] == [{"backend": "flopscope", "passed": True, "error": ""}]
     assert "[correctness]" not in captured.out
     assert "[timing]" not in captured.out
     assert "[done]" not in captured.out
@@ -430,7 +430,7 @@ def test_profile_simulation_format_json_does_not_depend_on_human_renderer(
     monkeypatch.setattr(
         profiler,
         "correctness_check",
-        lambda: CorrectnessResult(backend_name="whest", passed=True, error=""),
+        lambda: CorrectnessResult(backend_name="flopscope", passed=True, error=""),
     )
     monkeypatch.setattr(profiler, "run_timing_sweep", lambda *_args, **_kwargs: [], raising=False)
     monkeypatch.setattr(
@@ -444,4 +444,4 @@ def test_profile_simulation_format_json_does_not_depend_on_human_renderer(
 
     assert exit_code == 0
     payload = json.loads(captured.out)
-    assert payload["correctness"] == [{"backend": "whest", "passed": True, "error": ""}]
+    assert payload["correctness"] == [{"backend": "flopscope", "passed": True, "error": ""}]

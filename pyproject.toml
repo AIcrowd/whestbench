@@ -10,7 +10,7 @@ name = "whestbench"
 version = "0.2.0"
 requires-python = ">=3.10"
 dependencies = [
-    "whest @ git+https://github.com/AIcrowd/whest.git",
+    "flopscope @ git+https://github.com/AIcrowd/flopscope.git",
     "plotext",
     "rich",
     "threadpoolctl>=3.0",
@@ -28,7 +28,7 @@ dev = [
     "ruff>=0.6.0",
 ]
 server = [
-    "whest-server @ git+https://github.com/AIcrowd/whest.git#subdirectory=whest-server",
+    "flopscope-server @ git+https://github.com/AIcrowd/flopscope.git#subdirectory=flopscope-server",
 ]
 
 [tool.ruff]
@@ -45,6 +45,10 @@ ignore = ["E501"]
 [tool.pyright]
 pythonVersion = "3.10"
 typeCheckingMode = "standard"
+# flopscope re-exports its public API as `from flopscope._X import Y`
+# rather than `from flopscope._X import Y as Y`, which pyright treats as a
+# private-import access. Suppress the false positives here.
+reportPrivateImportUsage = "none"
 include = [
     "src",
     "tests",

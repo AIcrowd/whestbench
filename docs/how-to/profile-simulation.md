@@ -2,13 +2,13 @@
 
 ## When to use this page
 
-The starter kit uses whest as its single simulation backend — analytical FLOP counting replaces wall-clock timing across multiple backends. The `profile-simulation` command lets you verify FLOP accounting correctness and explore how FLOP costs scale with network size.
+The starter kit uses flopscope as its single simulation backend — analytical FLOP counting replaces wall-clock timing across multiple backends. The `profile-simulation` command lets you verify FLOP accounting correctness and explore how FLOP costs scale with network size.
 
 > This page covers the `whest profile-simulation` command for benchmarking the backend's correctness and FLOP scaling. For managing your estimator's FLOP budget during development, see [Manage Your FLOP Budget](./manage-flop-budget.md).
 
 Use this page when you want to:
 
-- **Verify whest is installed and correct** — the profiler runs a pre-flight correctness check before reporting FLOP data.
+- **Verify flopscope is installed and correct** — the profiler runs a pre-flight correctness check before reporting FLOP data.
 - **Understand FLOP scaling** — see how FLOP costs grow with width, depth, and budget so you can calibrate your estimator's budget usage.
 - **Collect reproducible profiling data** — JSON output includes correctness results and FLOP accounting across network sizes.
 
@@ -53,8 +53,8 @@ Use `quick` for a fast sanity check and `standard` for development decisions.
 
 The terminal table shows:
 
-- **Pre-flight Correctness Check** — PASS or FAIL for the whest backend. A FAIL indicates a version mismatch or installation problem.
-- **FLOP Accounting Results** — one row per (width, depth) combination showing the total FLOPs reported by whest for a forward pass.
+- **Pre-flight Correctness Check** — PASS or FAIL for the flopscope backend. A FAIL indicates a version mismatch or installation problem.
+- **FLOP Accounting Results** — one row per (width, depth) combination showing the total FLOPs reported by flopscope for a forward pass.
 
 ## Common workflows
 
@@ -83,6 +83,6 @@ Use the FLOP counts in the JSON to understand how much budget your estimator con
 
 ## Next step
 
-- [CLI Reference: profile-simulation](../reference/cli-reference.md#whest-profile-simulation) — full flag reference
+- [CLI Reference: profile-simulation](../reference/cli-reference.md#flopscope-profile-simulation) — full flag reference
 - [Use Evaluation Datasets](./use-evaluation-datasets.md) — pre-create datasets for faster iteration
 - [Validate, Run, and Package](./validate-run-package.md) — score your estimator
