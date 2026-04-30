@@ -1,5 +1,5 @@
 # src/whestbench/profiler.py
-"""Profiling engine for whest simulation performance.
+"""Profiling engine for flopscope simulation performance.
 
 Benchmarks the two core operations — ``run_mlp`` and
 ``sample_layer_statistics`` — across a configurable grid of network sizes
@@ -55,8 +55,9 @@ import warnings
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, TextIO, Tuple
 
+import flopscope as flops
+import flopscope.numpy as fnp
 import numpy as np  # needed for np.__version__ in version reporting
-import whest as we
 
 from .domain import MLP
 from .generation import sample_mlp
@@ -188,8 +189,8 @@ def _collect_hardware_info(max_threads: Optional[int] = None) -> Dict[str, Any]:
 
 
 def _collect_versions() -> Dict[str, str]:
-    """Collect version strings for whest and numpy."""
-    return {"whest": we.__version__, "numpy": np.__version__}
+    """Collect version strings for flopscope and numpy."""
+    return {"flopscope": flops.__version__, "numpy": np.__version__}
 
 
 def correctness_check() -> CorrectnessResult:
@@ -203,13 +204,13 @@ def correctness_check() -> CorrectnessResult:
         details.
     """
     try:
-        mlp = sample_mlp(8, 4, we.random.default_rng(42))
-        inputs = we.random.default_rng(123).standard_normal((64, 8)).astype(we.float32)
+        mlp = sample_mlp(8, 4, fnp.random.default_rng(42))
+        inputs = fnp.random.default_rng(123).standard_normal((64, 8)).astype(fnp.float32)
 
-        with we.BudgetContext(flop_budget=int(1e15), quiet=True):
+        with flops.BudgetContext(flop_budget=int(1e15), quiet=True):
             result = ref_run_mlp(mlp, inputs)
             assert result.shape == (64, 8), f"Expected shape (64, 8), got {result.shape}"
-            assert we.all(we.asarray(result) >= 0.0), "ReLU outputs must be non-negative"
+            assert fnp.all(fnp.asarray(result) >= 0.0), "ReLU outputs must be non-negative"
 
             means, final_mean, avg_var = ref_sample_layer_statistics(mlp, 1000)
             assert means.shape == (4, 8), f"Expected means shape (4, 8), got {means.shape}"
@@ -218,20 +219,20 @@ def correctness_check() -> CorrectnessResult:
             )
             assert avg_var >= 0.0, f"Expected non-negative variance, got {avg_var}"
 
-        return CorrectnessResult(backend_name="whest", passed=True)
+        return CorrectnessResult(backend_name="flopscope", passed=True)
 
     except Exception as e:
-        return CorrectnessResult(backend_name="whest", passed=False, error=str(e))
+        return CorrectnessResult(backend_name="flopscope", passed=False, error=str(e))
 
 
-def _random_float32(shape: tuple) -> we.ndarray:
+def _random_float32(shape: tuple) -> fnp.ndarray:
     """Generate standard-normal float32 array without a float64 intermediate.
 
     ``np.random.randn(...).astype(np.float32)`` temporarily holds both
     the float64 and float32 arrays in memory, doubling peak usage.
     Using ``Generator.standard_normal`` with ``dtype`` avoids this.
     """
-    return we.random.default_rng().standard_normal(shape, dtype=we.float32)
+    return fnp.random.default_rng().standard_normal(shape, dtype=fnp.float32)
 
 
 # Maximum rows per chunk for timed forward passes.  Keeps peak memory
@@ -244,9 +245,9 @@ def _time_run_mlp(mlp: MLP, n_samples: int) -> float:
     total = 0.0
     for start in range(0, n_samples, _TIMING_CHUNK):
         n = min(_TIMING_CHUNK, n_samples - start)
-        inputs = we.array(_random_float32((n, mlp.width)))
+        inputs = fnp.array(_random_float32((n, mlp.width)))
         t0 = time.perf_counter()
-        with we.BudgetContext(flop_budget=int(1e15), quiet=True):
+        with flops.BudgetContext(flop_budget=int(1e15), quiet=True):
             ref_run_mlp(mlp, inputs)
         total += time.perf_counter() - t0
         del inputs
@@ -256,7 +257,7 @@ def _time_run_mlp(mlp: MLP, n_samples: int) -> float:
 def _time_sample_layer_statistics(mlp: MLP, n_samples: int) -> float:
     """Time a single sample_layer_statistics call."""
     t0 = time.perf_counter()
-    with we.BudgetContext(flop_budget=int(1e15), quiet=True):
+    with flops.BudgetContext(flop_budget=int(1e15), quiet=True):
         ref_sample_layer_statistics(mlp, n_samples)
     return time.perf_counter() - t0
 
@@ -295,7 +296,7 @@ def run_timing_sweep(
 
     for width in preset.widths:
         for depth in preset.depths:
-            mlp = sample_mlp(width, depth, we.random.default_rng(42))
+            mlp = sample_mlp(width, depth, fnp.random.default_rng(42))
             for n_samples in preset.n_samples_list:
                 for op in operations:
                     time_fn = time_fns[op]
@@ -317,11 +318,11 @@ def run_timing_sweep(
                             if gc_was_enabled:
                                 gc.enable()
 
-                        median_t = float(we.median(we.asarray(times)))
+                        median_t = float(fnp.median(fnp.asarray(times)))
 
                         results.append(
                             TimingResult(
-                                backend_name="whest",
+                                backend_name="flopscope",
                                 operation=op,
                                 width=width,
                                 depth=depth,
@@ -337,7 +338,7 @@ def run_timing_sweep(
                         err_msg = f"{type(exc).__name__}: {exc}"
                         if warning_stream is not None:
                             print(
-                                f"[warning] whest {op} "
+                                f"[warning] flopscope {op} "
                                 f"w={width} d={depth} n={n_samples:,} "
                                 f"skipped: {err_msg}",
                                 file=warning_stream,
@@ -345,7 +346,7 @@ def run_timing_sweep(
                             )
                         results.append(
                             TimingResult(
-                                backend_name="whest",
+                                backend_name="flopscope",
                                 operation=op,
                                 width=width,
                                 depth=depth,
@@ -861,11 +862,11 @@ def run_profile(
         progress_ctx.start()
         progress_ctx.update(
             correctness_task,
-            description="Correctness check [cyan]whest[/]",
+            description="Correctness check [cyan]flopscope[/]",
         )
 
     if log_progress and emit_human_output:
-        print("[correctness] whest ...", end=" ", flush=True)
+        print("[correctness] flopscope ...", end=" ", flush=True)
 
     cr = correctness_check()
     correctness_results = [cr]
@@ -901,7 +902,7 @@ def run_profile(
                 elapsed = time.time() - _log_start[0]
                 print(
                     f"[timing] {_log_counter[0]}/{n_combos} "
-                    f"whest {operation} "
+                    f"flopscope {operation} "
                     f"w={width} d={depth} n={n_samples:,} "
                     f"({elapsed:.0f}s elapsed)",
                     flush=True,
@@ -918,9 +919,7 @@ def run_profile(
                 depth: int = 0,
                 n_samples: int = 0,
             ) -> None:
-                desc = (
-                    f"[cyan]whest[/] {operation:<18} w={width:<4} d={depth:<4} n={n_samples:>11,}"
-                )
+                desc = f"[cyan]flopscope[/] {operation:<18} w={width:<4} d={depth:<4} n={n_samples:>11,}"
                 progress_ctx.update(timing_task, advance=1, description=desc)
 
             callback = _rich_callback
@@ -968,7 +967,7 @@ def run_profile(
         correctness_results,
         timing_results,
         {},
-        backend_names=["whest"],
+        backend_names=["flopscope"],
         hardware_info=hardware_info,
     )
     if output_path:

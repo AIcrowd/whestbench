@@ -1,8 +1,8 @@
 # src/whestbench/concurrency.py
-"""CPU thread-limiting utilities for whest/BLAS.
+"""CPU thread-limiting utilities for flopscope/BLAS.
 
 Provides a single function to cap the number of CPU threads used by
-BLAS libraries (OpenBLAS, MKL, Accelerate) that underpin whest.
+BLAS libraries (OpenBLAS, MKL, Accelerate) that underpin flopscope.
 
 The limit can be set in two ways (in priority order):
 

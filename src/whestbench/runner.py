@@ -14,7 +14,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Protocol
 
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 from .domain import MLP
 from .loader import load_estimator_from_path
@@ -98,7 +99,7 @@ class EstimatorRunner(Protocol):
         limits: ResourceLimits,
     ) -> None: ...
 
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray: ...
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray: ...
 
     def close(self) -> None: ...
 
@@ -159,7 +160,7 @@ class LocalRunner:
             )
         self._started = True
 
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         if not self._started or self._estimator is None:
             raise RunnerError(
                 "predict",
@@ -170,7 +171,7 @@ class LocalRunner:
             )
         try:
             return self._estimator.predict(mlp, budget)
-        except we.BudgetExhaustedError:
+        except flops.BudgetExhaustedError:
             raise
         except Exception as exc:
             predict_details = getattr(exc, "details", None)
@@ -293,7 +294,7 @@ class SubprocessRunner:
     def last_predict_stats(self) -> Optional[PredictStats]:
         return self._last_predict_stats
 
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         if not self._started or self._process is None or self._limits is None:
             raise RunnerError(
                 "predict",
@@ -327,9 +328,9 @@ class SubprocessRunner:
             budget_breakdown=response.get("budget_breakdown"),
         )
         if response.get("status") == "budget_exhausted":
-            raise we.BudgetExhaustedError("subprocess_predict", flop_cost=0, flops_remaining=0)
+            raise flops.BudgetExhaustedError("subprocess_predict", flop_cost=0, flops_remaining=0)
         if response.get("status") == "time_exhausted":
-            raise we.TimeExhaustedError("subprocess_predict", elapsed_s=0.0, limit_s=0.0)
+            raise flops.TimeExhaustedError("subprocess_predict", elapsed_s=0.0, limit_s=0.0)
         if response.get("status") == "error":
             details = response.get("details")
             if not isinstance(details, dict):
@@ -349,7 +350,7 @@ class SubprocessRunner:
                 "predict",
                 RunnerErrorDetail(code="PREDICT_NO_DATA", message="No predictions in response."),
             )
-        result = we.asarray(predictions_data, dtype=we.float32)
+        result = fnp.asarray(predictions_data, dtype=fnp.float32)
         return result
 
     def close(self) -> None:

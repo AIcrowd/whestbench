@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import whest as we
+import flopscope.numpy as fnp
 
 from whestbench import BaseEstimator, MLP
 
 
 class Estimator(BaseEstimator):
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         _ = budget
-        return we.zeros((mlp.depth, mlp.width))
+        return fnp.zeros((mlp.depth, mlp.width))

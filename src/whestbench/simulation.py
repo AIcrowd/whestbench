@@ -9,17 +9,17 @@ from __future__ import annotations
 import warnings
 from typing import List, Optional, Tuple
 
-import whest as we
+import flopscope.numpy as fnp
 
 from .domain import MLP
 
 
-def relu(x: we.ndarray) -> we.ndarray:
+def relu(x: fnp.ndarray) -> fnp.ndarray:
     """Element-wise ReLU activation."""
-    return we.maximum(x, we.float32(0.0))
+    return fnp.maximum(x, fnp.float32(0.0))
 
 
-def run_mlp(mlp: MLP, inputs: we.ndarray) -> we.ndarray:
+def run_mlp(mlp: MLP, inputs: fnp.ndarray) -> fnp.ndarray:
     """Forward pass returning final-layer activations.
 
     Args:
@@ -35,7 +35,7 @@ def run_mlp(mlp: MLP, inputs: we.ndarray) -> we.ndarray:
     return x
 
 
-def run_mlp_all_layers(mlp: MLP, inputs: we.ndarray) -> List[we.ndarray]:
+def run_mlp_all_layers(mlp: MLP, inputs: fnp.ndarray) -> List[fnp.ndarray]:
     """Forward pass returning activations after each layer.
 
     Args:
@@ -46,7 +46,7 @@ def run_mlp_all_layers(mlp: MLP, inputs: we.ndarray) -> List[we.ndarray]:
         List of ``depth`` arrays, each shape ``(samples, mlp.width)``.
     """
     x = inputs
-    layers: List[we.ndarray] = []
+    layers: List[fnp.ndarray] = []
     for w in mlp.weights:
         x = relu(x @ w)
         layers.append(x)
@@ -61,8 +61,8 @@ def _pick_chunk_size(width: int) -> int:
 def sample_layer_statistics(
     mlp: MLP,
     n_samples: int,
-    rng: Optional[we.random.Generator] = None,
-) -> Tuple[we.ndarray, we.ndarray, float]:
+    rng: Optional[fnp.random.Generator] = None,
+) -> Tuple[fnp.ndarray, fnp.ndarray, float]:
     """Estimate per-layer activation statistics via chunked Monte Carlo sampling.
 
     Feeds ``n_samples`` random Gaussian inputs through the MLP in memory-bounded
@@ -95,10 +95,10 @@ def sample_layer_statistics(
     width = mlp.width
     depth = mlp.depth
     chunk_size = _pick_chunk_size(width)
-    rng = we.random.default_rng() if rng is None else rng
+    rng = fnp.random.default_rng() if rng is None else rng
 
-    layer_sums = we.zeros((depth, width), dtype=we.float64)
-    final_sum_sq = we.zeros(width, dtype=we.float64)
+    layer_sums = fnp.zeros((depth, width), dtype=fnp.float64)
+    final_sum_sq = fnp.zeros(width, dtype=fnp.float64)
     n_processed = 0
 
     # Suppress expected overflow/invalid warnings from deep-network matmuls.
@@ -108,18 +108,18 @@ def sample_layer_statistics(
         warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*matmul.*")
         for start in range(0, n_samples, chunk_size):
             n = min(chunk_size, n_samples - start)
-            x = we.array(rng.standard_normal((n, width), dtype=we.float32))
+            x = fnp.array(rng.standard_normal((n, width), dtype=fnp.float32))
             for layer_idx, w in enumerate(mlp.weights):
-                x = we.maximum(we.matmul(x, w), 0.0)
-                x_f64 = we.asarray(x, dtype=we.float64)
-                layer_sums[layer_idx] += we.sum(x_f64, axis=0)
-            x_f64 = we.asarray(x, dtype=we.float64)
-            final_sum_sq += we.sum(x_f64**2, axis=0)
+                x = fnp.maximum(fnp.matmul(x, w), 0.0)
+                x_f64 = fnp.asarray(x, dtype=fnp.float64)
+                layer_sums[layer_idx] += fnp.sum(x_f64, axis=0)
+            x_f64 = fnp.asarray(x, dtype=fnp.float64)
+            final_sum_sq += fnp.sum(x_f64**2, axis=0)
             n_processed += n
 
-    layer_means = we.asarray(layer_sums / n_processed, dtype=we.float32)
+    layer_means = fnp.asarray(layer_sums / n_processed, dtype=fnp.float32)
     final_mean = layer_means[-1].copy()
     avg_variance = float(
-        we.mean(final_sum_sq / n_processed - we.asarray(final_mean, dtype=we.float64) ** 2)
+        fnp.mean(final_sum_sq / n_processed - fnp.asarray(final_mean, dtype=fnp.float64) ** 2)
     )
     return layer_means, final_mean, avg_variance
