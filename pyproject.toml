@@ -10,7 +10,7 @@ name = "whestbench"
 version = "0.2.0"
 requires-python = ">=3.10"
 dependencies = [
-    "whest @ git+https://github.com/AIcrowd/whest.git",
+    "flopscope @ git+https://github.com/AIcrowd/flopscope.git",
     "plotext",
     "rich",
     "threadpoolctl>=3.0",
@@ -28,7 +28,7 @@ dev = [
     "ruff>=0.6.0",
 ]
 server = [
-    "whest-server @ git+https://github.com/AIcrowd/whest.git#subdirectory=whest-server",
+    "flopscope-server @ git+https://github.com/AIcrowd/flopscope.git#subdirectory=flopscope-server",
 ]
 
 [tool.ruff]

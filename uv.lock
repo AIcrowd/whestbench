@@ -110,6 +110,27 @@ wheels = [
 ]
 
 [[package]]
+name = "flopscope"
+version = "0.2.0"
+source = { git = "https://github.com/AIcrowd/flopscope.git#1c44b1d0cb03b740cfd0476821f287042cd1892e" }
+dependencies = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+]
+
+[[package]]
+name = "flopscope-server"
+version = "0.1.0"
+source = { git = "https://github.com/AIcrowd/flopscope.git?subdirectory=flopscope-server#1c44b1d0cb03b740cfd0476821f287042cd1892e" }
+dependencies = [
+    { name = "flopscope" },
+    { name = "msgpack" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "pyzmq" },
+]
+
+[[package]]
 name = "iniconfig"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -628,36 +649,15 @@ wheels = [
 ]
 
 [[package]]
-name = "whest"
-version = "0.2.0"
-source = { git = "https://github.com/AIcrowd/whest.git#2aec67df537d70e724ba88e25b8f0a01b69bc358" }
-dependencies = [
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-]
-
-[[package]]
-name = "whest-server"
-version = "0.1.0"
-source = { git = "https://github.com/AIcrowd/whest.git?subdirectory=whest-server#2aec67df537d70e724ba88e25b8f0a01b69bc358" }
-dependencies = [
-    { name = "msgpack" },
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "pyzmq" },
-    { name = "whest" },
-]
-
-[[package]]
 name = "whestbench"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
+    { name = "flopscope" },
     { name = "plotext" },
     { name = "rich" },
     { name = "threadpoolctl" },
     { name = "tqdm" },
-    { name = "whest" },
 ]
 
 [package.dev-dependencies]
@@ -667,16 +667,16 @@ dev = [
     { name = "ruff" },
 ]
 server = [
-    { name = "whest-server" },
+    { name = "flopscope-server" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "flopscope", git = "https://github.com/AIcrowd/flopscope.git" },
     { name = "plotext" },
     { name = "rich" },
     { name = "threadpoolctl", specifier = ">=3.0" },
     { name = "tqdm" },
-    { name = "whest", git = "https://github.com/AIcrowd/whest.git" },
 ]
 
 [package.metadata.requires-dev]
@@ -685,4 +685,4 @@ dev = [
     { name = "pytest", specifier = ">=8.2.0" },
     { name = "ruff", specifier = ">=0.6.0" },
 ]
-server = [{ name = "whest-server", git = "https://github.com/AIcrowd/whest.git?subdirectory=whest-server" }]
+server = [{ name = "flopscope-server", git = "https://github.com/AIcrowd/flopscope.git?subdirectory=flopscope-server" }]
