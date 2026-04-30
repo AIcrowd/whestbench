@@ -659,7 +659,7 @@ def validate_submission_entrypoint(
 def _build_participant_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Participant-first WhestBench CLI. Starter examples live in examples/estimators/."
+            "Participant-first WhestBench CLI. Starter examples live in https://github.com/AIcrowd/whest-starterkit."
         )
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -693,7 +693,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     validate_parser.add_argument(
         "--estimator",
         required=True,
-        help="Path to estimator.py (see examples/estimators/ for starter files).",
+        help="Path to estimator.py (see https://github.com/AIcrowd/whest-starterkit for starter files).",
     )
     validate_parser.add_argument("--class", dest="class_name")
     validate_parser.add_argument("--debug", action="store_true")
@@ -703,7 +703,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--estimator",
         required=True,
-        help="Path to estimator.py (see examples/estimators/ for starter files).",
+        help="Path to estimator.py (see https://github.com/AIcrowd/whest-starterkit for starter files).",
     )
     run_parser.add_argument("--class", dest="class_name")
     run_parser.add_argument(

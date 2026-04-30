@@ -478,10 +478,10 @@ def test_package_command_writes_manifest_with_entrypoint_and_hashes(
     assert manifest["entrypoint"]["class"] == "Estimator"
 
 
-def test_init_and_run_help_text_reference_examples_estimators_path() -> None:
+def test_init_and_run_help_text_reference_starterkit() -> None:
     parser = cli._build_participant_parser()
     help_text = parser.format_help()
-    assert "examples/estimators" in help_text
+    assert "whest-starterkit" in help_text
 
 
 # --- `whest run --dataset` + `--n-mlps` integration --------------------------

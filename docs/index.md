@@ -1,47 +1,30 @@
-<img src="../assets/logo/logo.png" alt="ARC Whitebox Estimation Challenge logo" style="height: 80px;">
+# Whestbench docs
 
-# Documentation Index
+> Participant-facing curriculum (getting-started, concepts, how-to,
+> troubleshooting) lives in the [whest-starterkit](https://github.com/AIcrowd/whest-starterkit).
+> This site documents the library and CLI surface only.
 
-Pick the path that matches what you need right now.
+## Library reference
 
-## I want my first valid run
+- [CLI reference](reference/cli-reference.md)
+- [Estimator contract](reference/estimator-contract.md)
+- [Score report fields](reference/score-report-fields.md)
+- [Code patterns (flopscope cheat sheet)](reference/code-patterns.md)
+- [Flopscope primer (BudgetContext, FLOP costs)](reference/flopscope-primer.md)
 
-- [Install and CLI Quickstart](./getting-started/install-and-cli-quickstart.md)
-- [First Local Run](./getting-started/first-local-run.md)
-- [From Problem to Code](./getting-started/from-problem-to-code.md) — complete walkthrough to a scored estimator
+## Source map
 
-## Something broke
+- `src/whestbench/cli.py` — `whest` / `whestbench` entry point
+- `src/whestbench/domain.py` — `MLP`, `SetupContext`, scoring contracts
+- `src/whestbench/estimators.py` — `BaseEstimator` + reference impls
+- `src/whestbench/generation.py` — `sample_mlp`
+- `src/whestbench/simulation.py` — Monte Carlo ground truth via flopscope
+- `src/whestbench/scoring.py` — `evaluate_estimator`, `ContestSpec`
+- `src/whestbench/reporting.py` — Rich score report
+- `src/whestbench/protocol.py` — server-runner JSON protocol
 
-- [Common Participant Errors](./troubleshooting/common-participant-errors.md)
-- [Debugging Checklist](./how-to/debugging-checklist.md)
-- [FAQ](./troubleshooting/faq.md)
+## Releases
 
-## I want to improve my score
+See [`RELEASING.md`](RELEASING.md).
 
-- [Write an Estimator](./how-to/write-an-estimator.md)
-- [Algorithm Ideas](./how-to/algorithm-ideas.md) — survey of estimation strategies
-- [Manage Your FLOP Budget](./how-to/manage-flop-budget.md)
-- [Performance Tips](./how-to/performance-tips.md)
-- [Code Patterns](./reference/code-patterns.md) — flopscope cheat sheet
-- [Inspect and Traverse MLP Structure](./how-to/inspect-mlp-structure.md)
-- [Use WhestBench Explorer](./how-to/use-whestbench-explorer.md)
-
-## I want the research framing
-
-- [Problem Setup](./concepts/problem-setup.md) — MLPs, ReLU, He initialization, why depth is hard
-- [Scoring Model](./concepts/scoring-model.md) — pure MSE under FLOP budget
-- [How Ground Truth Is Generated](./concepts/ground-truth.md) — sampling process, error bounds
-
-## Reference
-
-- [Estimator Contract](./reference/estimator-contract.md)
-- [CLI Reference](./reference/cli-reference.md)
-- [Score Report Fields](./reference/score-report-fields.md)
-- [Code Patterns](./reference/code-patterns.md)
-- [Flopscope Primer](./reference/flopscope-primer.md)
-
-## Standard workflow
-
-- [Validate, Run, and Package](./how-to/validate-run-package.md)
-- [Use Evaluation Datasets](./how-to/use-evaluation-datasets.md)
-- [Profile Simulation](./how-to/profile-simulation.md)
+Underlying FLOP-counting library: [`AIcrowd/flopscope`](https://github.com/AIcrowd/flopscope).
