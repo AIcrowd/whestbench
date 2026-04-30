@@ -1,8 +1,9 @@
 import time
 from dataclasses import replace
 
+import flopscope as flops
+import flopscope.numpy as fnp
 import pytest
-import whest as we
 
 from whestbench.domain import MLP
 from whestbench.scoring import (
@@ -49,9 +50,9 @@ def test_make_contest_is_reproducible_with_seed() -> None:
 
     for i in range(spec.n_mlps):
         for wa, wb in zip(data_a.mlps[i].weights, data_b.mlps[i].weights):
-            we.testing.assert_array_equal(wa, wb)
-        we.testing.assert_array_equal(data_a.all_layer_targets[i], data_b.all_layer_targets[i])
-        we.testing.assert_array_equal(data_a.final_targets[i], data_b.final_targets[i])
+            fnp.testing.assert_array_equal(wa, wb)
+        fnp.testing.assert_array_equal(data_a.all_layer_targets[i], data_b.all_layer_targets[i])
+        fnp.testing.assert_array_equal(data_a.final_targets[i], data_b.final_targets[i])
     assert data_a.avg_variances == data_b.avg_variances
 
 
@@ -80,7 +81,7 @@ def test_evaluate_estimator_with_zeros_estimator() -> None:
 
     class ZerosEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            return we.zeros((mlp.depth, mlp.width), dtype=we.float32)
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
 
     spec = ContestSpec(
         width=8, depth=2, n_mlps=2, flop_budget=100_000_000, ground_truth_samples=200
@@ -90,21 +91,21 @@ def test_evaluate_estimator_with_zeros_estimator() -> None:
     assert isinstance(result, dict)
     assert "primary_score" in result
     assert "secondary_score" in result
-    assert we.isfinite(result["primary_score"])
-    assert we.isfinite(result["secondary_score"])
+    assert fnp.isfinite(result["primary_score"])
+    assert fnp.isfinite(result["secondary_score"])
 
 
 def test_validate_predictions_rejects_wrong_shape() -> None:
     from whestbench.scoring import validate_predictions
 
     with pytest.raises(ValueError, match="shape"):
-        validate_predictions(we.zeros((3, 4), dtype=we.float32), depth=2, width=4)
+        validate_predictions(fnp.zeros((3, 4), dtype=fnp.float32), depth=2, width=4)
 
 
 def test_validate_predictions_rejects_nonfinite() -> None:
     from whestbench.scoring import validate_predictions
 
-    arr = we.zeros((2, 4), dtype=we.float32)
+    arr = fnp.zeros((2, 4), dtype=fnp.float32)
     arr[0, 0] = float("inf")
     with pytest.raises(ValueError, match="finite"):
         validate_predictions(arr, depth=2, width=4)
@@ -161,7 +162,7 @@ def test_evaluate_estimator_records_flops_used() -> None:
 
     class ZerosEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            return we.zeros((mlp.depth, mlp.width), dtype=we.float32)
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
 
     spec = ContestSpec(
         width=8, depth=2, n_mlps=1, flop_budget=100_000_000, ground_truth_samples=200
@@ -177,7 +178,7 @@ def test_evaluate_estimator_catches_wall_time_exhaustion() -> None:
 
     class SlowEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            arr = we.zeros((mlp.depth, mlp.width), dtype=we.float32)
+            arr = fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
             time.sleep(0.3)
             return arr
 
@@ -203,7 +204,7 @@ def test_evaluate_estimator_catches_untracked_time_exhaustion() -> None:
     class UntrackedTimeEstimator(BaseEstimator):
         def predict(self, mlp, budget):
             time.sleep(0.3)
-            return we.zeros((mlp.depth, mlp.width), dtype=we.float32)
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
 
     spec = ContestSpec(
         width=8,
@@ -226,7 +227,7 @@ def test_evaluate_estimator_reports_timing() -> None:
 
     class ZerosEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            return we.zeros((mlp.depth, mlp.width), dtype=we.float32)
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
 
     spec = ContestSpec(
         width=8, depth=2, n_mlps=1, flop_budget=100_000_000, ground_truth_samples=200
@@ -249,8 +250,8 @@ def test_evaluate_estimator_normalizes_explicit_namespaces() -> None:
 
     class NamespacedEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            base = we.zeros((mlp.depth, mlp.width), dtype=we.float32)
-            with we.namespace("phase"):
+            base = fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
+            with flops.namespace("phase"):
                 return base + 1.0
 
     spec = ContestSpec(
@@ -275,7 +276,7 @@ def test_evaluate_estimator_synthesizes_estimator_client_bucket() -> None:
 
     class UnlabeledEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            return we.zeros((mlp.depth, mlp.width), dtype=we.float32) + 1.0
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32) + 1.0
 
     spec = ContestSpec(
         width=8, depth=2, n_mlps=1, flop_budget=100_000_000, ground_truth_samples=200
@@ -293,8 +294,8 @@ def test_evaluate_estimator_aggregates_breakdowns_across_mlps() -> None:
 
     class NamespacedEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            base = we.zeros((mlp.depth, mlp.width), dtype=we.float32)
-            with we.namespace("phase"):
+            base = fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
+            with flops.namespace("phase"):
                 return base + 1.0
 
     spec = ContestSpec(
@@ -315,7 +316,7 @@ def test_evaluate_estimator_stores_per_mlp_estimator_breakdown_under_breakdowns_
 
     class ZerosEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            return we.zeros((mlp.depth, mlp.width), dtype=we.float32)
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
 
     spec = ContestSpec(
         width=8, depth=2, n_mlps=1, flop_budget=100_000_000, ground_truth_samples=200
@@ -357,7 +358,7 @@ def test_evaluate_estimator_prefers_runner_metadata_when_available() -> None:
             }
 
         def predict(self, mlp, budget):
-            return we.zeros((mlp.depth, mlp.width), dtype=we.float32)
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
 
         def last_predict_stats(self):
             return self._stats
@@ -380,7 +381,7 @@ def test_evaluate_estimator_synthesizes_estimator_client_for_empty_namespace_bre
 
     class MetadataEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            return we.zeros((mlp.depth, mlp.width), dtype=we.float32)
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
 
         def last_predict_stats(self):
             return {
@@ -415,7 +416,7 @@ def test_evaluate_estimator_merges_colliding_normalized_namespaces() -> None:
 
     class MetadataEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            return we.zeros((mlp.depth, mlp.width), dtype=we.float32)
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
 
         def last_predict_stats(self):
             return {
@@ -467,8 +468,8 @@ def test_evaluate_estimator_preserves_partial_breakdown_on_budget_exhaustion() -
 
     class ExhaustingEstimator(BaseEstimator):
         def predict(self, mlp, budget):
-            acc = we.zeros((mlp.depth, mlp.width), dtype=we.float32)
-            with we.namespace("phase"):
+            acc = fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
+            with flops.namespace("phase"):
                 for _ in range(20):
                     acc = acc + 1.0
             return acc
@@ -675,8 +676,8 @@ def test_evaluate_estimator_records_validation_error_details() -> None:
     from whestbench.sdk import BaseEstimator
 
     class _WrongShapeEstimator(BaseEstimator):
-        def predict(self, mlp: MLP, budget: int) -> we.ndarray:
-            return we.ones((spec.width, spec.depth), dtype=we.float32)
+        def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
+            return fnp.ones((spec.width, spec.depth), dtype=fnp.float32)
 
     result = evaluate_estimator(_WrongShapeEstimator(), data)
     entry = result["per_mlp"][0]

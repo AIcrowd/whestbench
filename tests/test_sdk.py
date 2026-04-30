@@ -1,5 +1,5 @@
+import flopscope.numpy as fnp
 import pytest
-import whest as we
 
 from whestbench.domain import MLP
 from whestbench.sdk import BaseEstimator, SetupContext
@@ -28,8 +28,8 @@ def test_base_estimator_default_setup_teardown() -> None:
     """setup and teardown should be callable without error."""
 
     class MinimalEstimator(BaseEstimator):
-        def predict(self, mlp: MLP, budget: int) -> we.ndarray:
-            return we.zeros((mlp.depth, mlp.width))
+        def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
+            return fnp.zeros((mlp.depth, mlp.width))
 
     est = MinimalEstimator()
     ctx = SetupContext(width=4, depth=2, flop_budget=100, api_version="1.0")

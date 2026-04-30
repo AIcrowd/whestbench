@@ -14,11 +14,11 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
-      - name: Notify whest-docs
+      - name: Notify flopscope-docs
         env:
           GH_TOKEN: ${{ secrets.AICROWD_DOCS_DISPATCH_TOKEN }}
         run: |
-          gh api repos/AIcrowd/whest-docs/dispatches \
+          gh api repos/AIcrowd/flopscope-docs/dispatches \
             --method POST \
             --input - <<'EOF'
           {

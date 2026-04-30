@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import flopscope.numpy as fnp
 import pytest
-import whest as we
 
 from whestbench.domain import MLP
 from whestbench.scoring import (
@@ -25,13 +25,13 @@ def test_contest_spec_has_flop_budget() -> None:
 
 
 def test_validate_predictions_accepts_correct_shape() -> None:
-    arr = we.ones((3, 4))
+    arr = fnp.ones((3, 4))
     result = validate_predictions(arr, depth=3, width=4)
     assert tuple(result.shape) == (3, 4)
 
 
 def test_validate_predictions_rejects_wrong_shape() -> None:
-    arr = we.ones((2, 4))
+    arr = fnp.ones((2, 4))
     with pytest.raises(ValueError, match="shape") as exc_info:
         validate_predictions(arr, depth=3, width=4)
     details = getattr(exc_info.value, "details", None)
@@ -41,9 +41,9 @@ def test_validate_predictions_rejects_wrong_shape() -> None:
 
 
 def test_validate_predictions_rejects_non_finite() -> None:
-    arr = we.ones((3, 4), dtype=we.float32)
+    arr = fnp.ones((3, 4), dtype=fnp.float32)
     arr[0, 0] = float("nan")
-    arr = we.array(arr)
+    arr = fnp.array(arr)
     with pytest.raises(ValueError, match="finite") as exc_info:
         validate_predictions(arr, depth=3, width=4)
     details = getattr(exc_info.value, "details", None)
@@ -77,8 +77,8 @@ def test_evaluate_estimator_returns_mse_scores() -> None:
     data = make_contest(spec)
 
     class _SimpleEstimator(BaseEstimator):
-        def predict(self, mlp: MLP, budget: int) -> we.ndarray:
-            return we.zeros((mlp.depth, mlp.width))
+        def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
+            return fnp.zeros((mlp.depth, mlp.width))
 
     estimator = _SimpleEstimator()
     result = evaluate_estimator(estimator, data)
@@ -101,7 +101,7 @@ def test_evaluate_estimator_handles_error_gracefully() -> None:
     data = make_contest(spec)
 
     class _BadEstimator(BaseEstimator):
-        def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+        def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
             raise RuntimeError("intentional error")
 
     result = evaluate_estimator(_BadEstimator(), data)

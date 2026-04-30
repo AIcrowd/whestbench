@@ -1,15 +1,16 @@
-name: Bump whest
+name: Bump flopscope
 
-# Keeps the committed `whest` / `whest-server` pin in `uv.lock` tracking
-# the tip of AIcrowd/whest main. CI itself already uses `--upgrade-package`
-# so CI builds always run against the latest whest — this workflow refreshes
-# the committed lockfile so new local clones don't drift from CI.
+# Keeps the committed `flopscope` / `flopscope-server` pin in `uv.lock`
+# tracking the tip of AIcrowd/flopscope main. CI itself already uses
+# `--upgrade-package` so CI builds always run against the latest flopscope —
+# this workflow refreshes the committed lockfile so new local clones don't
+# drift from CI.
 #
 # Runs daily (08:00 UTC) and on-demand via workflow_dispatch.
 # If the lock doesn't move, no PR is opened.
 # If the lock moves, a PR is opened (or updated) on a rolling branch —
 # repeat runs while the PR is open force-push the branch so the PR
-# always reflects the newest whest main.
+# always reflects the newest flopscope main.
 
 on:
   schedule:
@@ -34,15 +35,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Upgrade whest pin in uv.lock
-        run: uv lock --upgrade-package whest --upgrade-package whest-server
+      - name: Upgrade flopscope pin in uv.lock
+        run: uv lock --upgrade-package flopscope --upgrade-package flopscope-server
 
       - name: Detect change
         id: diff
         run: |
           if git diff --quiet uv.lock; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No change to uv.lock — already tracking latest whest main."
+            echo "No change to uv.lock — already tracking latest flopscope main."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "uv.lock changed:"
@@ -59,10 +60,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          BRANCH="chore/bump-whest-auto"
+          BRANCH="chore/bump-flopscope-auto"
           git checkout -B "$BRANCH"
           git add uv.lock
-          git commit -m "chore(deps): bump whest pin to latest main"
+          git commit -m "chore(deps): bump flopscope pin to latest main"
           git push -f origin "$BRANCH"
 
           if gh pr view "$BRANCH" --json number >/dev/null 2>&1; then
@@ -71,8 +72,8 @@ jobs:
             gh pr create \
               --base main \
               --head "$BRANCH" \
-              --title "chore(deps): bump whest pin to latest main" \
-              --body "Automated daily bump of the \`whest\` and \`whest-server\` pin in \`uv.lock\` to the current tip of AIcrowd/whest main. CI already uses \`--upgrade-package\` on every build, so CI itself has always run against latest whest — this PR keeps the committed lockfile fresh so local clones don't drift from what CI actually uses. Review the upstream whest commit range (https://github.com/AIcrowd/whest/compare) before merging — if FLOP-counting or scoring semantics changed, the exhaustive test suite should catch it." \
+              --title "chore(deps): bump flopscope pin to latest main" \
+              --body "Automated daily bump of the \`flopscope\` and \`flopscope-server\` pin in \`uv.lock\` to the current tip of AIcrowd/flopscope main. CI already uses \`--upgrade-package\` on every build, so CI itself has always run against latest flopscope — this PR keeps the committed lockfile fresh so local clones don't drift from what CI actually uses. Review the upstream flopscope commit range (https://github.com/AIcrowd/flopscope/compare) before merging — if FLOP-counting or scoring semantics changed, the exhaustive test suite should catch it." \
               --label chore \
               --label priority:p3
           fi

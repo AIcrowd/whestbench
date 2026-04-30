@@ -19,8 +19,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies (with latest whest)
-        run: uv sync --group dev --upgrade-package whest --upgrade-package whest-server
+      - name: Install dependencies (with latest flopscope)
+        run: uv sync --group dev --upgrade-package flopscope --upgrade-package flopscope-server
 
       - name: Lint
         run: uv run ruff check .
@@ -62,8 +62,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies (with latest whest)
-        run: uv sync --group dev --upgrade-package whest --upgrade-package whest-server
+      - name: Install dependencies (with latest flopscope)
+        run: uv sync --group dev --upgrade-package flopscope --upgrade-package flopscope-server
 
       - name: Test
         run: uv run pytest -m "not exhaustive" -x -q
@@ -82,8 +82,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies (with latest whest)
-        run: uv sync --group dev --upgrade-package whest --upgrade-package whest-server
+      - name: Install dependencies (with latest flopscope)
+        run: uv sync --group dev --upgrade-package flopscope --upgrade-package flopscope-server
 
       - name: Exhaustive tests
         run: uv run pytest -m exhaustive -x -q

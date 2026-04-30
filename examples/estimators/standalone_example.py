@@ -12,8 +12,8 @@
 
 Reading guide: docstring → imports → knobs → ``Estimator`` class →
 hand-rolled MLP + Monte Carlo helpers → ``__main__`` table loop.
-Everything uses raw whest primitives (``we.matmul``, ``we.maximum``,
-``we.mean``, ``we.BudgetContext``) — no magic from ``whestbench.*``.
+Everything uses raw flopscope primitives (``fnp.matmul``, ``fnp.maximum``,
+``fnp.mean``, ``flops.BudgetContext``) — no magic from ``whestbench.*``.
 
 The table shows the central phenomenon of the challenge: the structural
 estimator is nearly free in FLOPs, sampling cost grows linearly with
@@ -23,7 +23,8 @@ plateauing at the estimator's intrinsic bias.
 
 from __future__ import annotations
 
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 from whestbench import MLP, BaseEstimator
 
@@ -53,66 +54,66 @@ class Estimator(BaseEstimator):
     each layer stacked into a ``(depth, width)`` array.
     """
 
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         _ = budget  # structural estimator cost is fixed and tiny
         width = mlp.width
 
-        mu = we.zeros(width)
-        var = we.ones(width)
+        mu = fnp.zeros(width)
+        var = fnp.ones(width)
 
         rows = []
         for w in mlp.weights:
             mu_pre = w.T @ mu
-            var_pre = we.maximum((w * w).T @ var, 1e-12)
-            sigma_pre = we.sqrt(var_pre)
+            var_pre = fnp.maximum((w * w).T @ var, 1e-12)
+            sigma_pre = fnp.sqrt(var_pre)
 
             alpha = mu_pre / sigma_pre
-            phi_alpha = we.stats.norm.pdf(alpha)
-            Phi_alpha = we.stats.norm.cdf(alpha)
+            phi_alpha = flops.stats.norm.pdf(alpha)
+            Phi_alpha = flops.stats.norm.cdf(alpha)
 
             mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
             ez2 = (mu_pre * mu_pre + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
-            var = we.maximum(ez2 - mu * mu, 0.0)
+            var = fnp.maximum(ez2 - mu * mu, 0.0)
 
             rows.append(mu)
 
-        return we.stack(rows, axis=0)
+        return fnp.stack(rows, axis=0)
 
 
-def build_mlp(width: int, depth: int, rng: we.random.Generator) -> MLP:
-    """He-initialise a square MLP using raw whest primitives."""
+def build_mlp(width: int, depth: int, rng: fnp.random.Generator) -> MLP:
+    """He-initialise a square MLP using raw flopscope primitives."""
     scale = (2.0 / width) ** 0.5
     weights = [
-        we.array((rng.standard_normal((width, width)) * scale).astype(we.float32))
+        fnp.array((rng.standard_normal((width, width)) * scale).astype(fnp.float32))
         for _ in range(depth)
     ]
     return MLP(width=width, depth=depth, weights=weights)
 
 
 def monte_carlo_layer_means(
-    weights: list[we.ndarray],
+    weights: list[fnp.ndarray],
     n_samples: int,
-    rng: we.random.Generator,
-) -> we.ndarray:
+    rng: fnp.random.Generator,
+) -> fnp.ndarray:
     """Forward ``n_samples`` N(0,1) inputs through ``weights`` and average per layer.
 
     Returns shape ``(depth, width)`` — same shape as ``Estimator.predict`` so
     the two can be subtracted directly.
     """
     width = int(weights[0].shape[0])
-    x = we.array(rng.standard_normal((n_samples, width)).astype(we.float32))
+    x = fnp.array(rng.standard_normal((n_samples, width)).astype(fnp.float32))
     rows = []
     for w in weights:
-        x = we.maximum(we.matmul(x, w), 0.0)
-        rows.append(we.mean(x, axis=0))
-    return we.stack(rows, axis=0)
+        x = fnp.maximum(fnp.matmul(x, w), 0.0)
+        rows.append(fnp.mean(x, axis=0))
+    return fnp.stack(rows, axis=0)
 
 
 if __name__ == "__main__":
-    master = we.random.default_rng(SEED)
+    master = fnp.random.default_rng(SEED)
     mlp = build_mlp(WIDTH, DEPTH, master)
 
-    with we.BudgetContext(flop_budget=ESTIMATOR_BUDGET, quiet=True) as est_ctx:
+    with flops.BudgetContext(flop_budget=ESTIMATOR_BUDGET, quiet=True) as est_ctx:
         est_pred = Estimator().predict(mlp, ESTIMATOR_BUDGET)
     estimator_flops = est_ctx.flops_used
 
@@ -122,7 +123,7 @@ if __name__ == "__main__":
     print(header)
     print("-" * len(header))
     for n in SAMPLE_COUNTS:
-        with we.BudgetContext(flop_budget=SAMPLING_BUDGET, quiet=True) as mc_ctx:
+        with flops.BudgetContext(flop_budget=SAMPLING_BUDGET, quiet=True) as mc_ctx:
             sampled = monte_carlo_layer_means(mlp.weights, n, master)
-        mse = float(we.mean((est_pred - sampled) ** 2))
+        mse = float(fnp.mean((est_pred - sampled) ** 2))
         print(row(f"{n:,}", f"{mc_ctx.flops_used:,}", f"{estimator_flops:,}", f"{mse:.6f}"))

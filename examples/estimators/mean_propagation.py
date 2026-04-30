@@ -20,7 +20,8 @@ post-ReLU mean for each layer stacked into a (depth, width) array.
 
 from __future__ import annotations
 
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 from whestbench import BaseEstimator
 from whestbench.domain import MLP
@@ -33,7 +34,7 @@ class Estimator(BaseEstimator):
     formula with a diagonal variance approximation (assumes independent neurons).
     """
 
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         """Predict per-layer output means via first-moment propagation.
 
         Returns an array of shape (depth, width) where row i is the predicted
@@ -44,8 +45,8 @@ class Estimator(BaseEstimator):
 
         # --- Step 1: initialise the input distribution ---
         # Treat the network input as standard normal: mu=0, var=1 per dimension.
-        mu = we.zeros(width)  # shape (width,)
-        var = we.ones(width)  # shape (width,)  — diagonal of the covariance
+        mu = fnp.zeros(width)  # shape (width,)
+        var = fnp.ones(width)  # shape (width,)  — diagonal of the covariance
 
         rows = []
         for w in mlp.weights:  # w has shape (width, width)
@@ -59,15 +60,15 @@ class Estimator(BaseEstimator):
             var_pre = (w * w).T @ var
 
             # Clamp to avoid division by zero or negative values from rounding.
-            var_pre = we.maximum(var_pre, 1e-12)
-            sigma_pre = we.sqrt(var_pre)  # shape (width,)
+            var_pre = fnp.maximum(var_pre, 1e-12)
+            sigma_pre = fnp.sqrt(var_pre)  # shape (width,)
 
             # --- Step 3: compute the standardised ratio alpha = mu / sigma ---
             alpha = mu_pre / sigma_pre
 
             # Evaluate the PDF and CDF at alpha
-            phi_alpha = we.stats.norm.pdf(alpha)  # phi(alpha)
-            Phi_alpha = we.stats.norm.cdf(alpha)  # Phi(alpha)
+            phi_alpha = flops.stats.norm.pdf(alpha)  # phi(alpha)
+            Phi_alpha = flops.stats.norm.cdf(alpha)  # Phi(alpha)
 
             # --- Step 4: ReLU expectation ---
             # E[ReLU(pre)] = mu_pre * Phi(alpha) + sigma_pre * phi(alpha)
@@ -78,10 +79,10 @@ class Estimator(BaseEstimator):
             #                  + mu_pre * sigma_pre * phi(alpha)
             ez2 = (mu_pre * mu_pre + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
             # Var[ReLU] = E[z^2] - E[z]^2  (clamped to 0 for numerical safety)
-            var = we.maximum(ez2 - mu * mu, 0.0)
+            var = fnp.maximum(ez2 - mu * mu, 0.0)
 
             # Record the post-ReLU mean for this layer
             rows.append(mu)
 
         # Stack all layer means into a single (depth, width) array
-        return we.stack(rows, axis=0)
+        return fnp.stack(rows, axis=0)
