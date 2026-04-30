@@ -6,7 +6,8 @@ import traceback as _tb
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 from .domain import MLP
 from .generation import sample_mlp
@@ -60,8 +61,8 @@ class ContestData:
 
     spec: ContestSpec
     mlps: List[MLP]
-    all_layer_targets: List[we.ndarray]
-    final_targets: List[we.ndarray]
+    all_layer_targets: List[fnp.ndarray]
+    final_targets: List[fnp.ndarray]
     avg_variances: List[float]
     sampling_budget_breakdown: Optional[Dict[str, Any]] = None
 
@@ -73,27 +74,27 @@ def make_contest(
     """Generate MLPs, compute ground truth, and collect sampling attribution."""
     spec.validate()
     spec_seed = spec.seed
-    stream_seeds: List[we.random.SeedSequence] = (
-        we.random.SeedSequence(int(spec_seed)).spawn(2 * spec.n_mlps)
+    stream_seeds: List[fnp.random.SeedSequence] = (
+        fnp.random.SeedSequence(int(spec_seed)).spawn(2 * spec.n_mlps)
         if spec_seed is not None
         else []
     )
 
     mlps: List[MLP] = []
-    all_layer_targets: List[we.ndarray] = []
-    final_targets: List[we.ndarray] = []
+    all_layer_targets: List[fnp.ndarray] = []
+    final_targets: List[fnp.ndarray] = []
     avg_variances: List[float] = []
     sampling_breakdowns: List[Dict[str, Any]] = []
 
     for i in range(spec.n_mlps):
-        mlp_rng = we.random.default_rng(stream_seeds[2 * i]) if spec_seed is not None else None
+        mlp_rng = fnp.random.default_rng(stream_seeds[2 * i]) if spec_seed is not None else None
         sample_rng = (
-            we.random.default_rng(stream_seeds[2 * i + 1]) if spec_seed is not None else None
+            fnp.random.default_rng(stream_seeds[2 * i + 1]) if spec_seed is not None else None
         )
         mlp = sample_mlp(spec.width, spec.depth, mlp_rng)
-        with we.BudgetContext(flop_budget=int(1e15), quiet=True) as sampling_budget:
-            with we.namespace("sampling"):
-                with we.namespace("sample_layer_statistics"):
+        with flops.BudgetContext(flop_budget=int(1e15), quiet=True) as sampling_budget:
+            with flops.namespace("sampling"):
+                with flops.namespace("sample_layer_statistics"):
                     all_means, final_mean, avg_var = sample_layer_statistics(
                         mlp, spec.ground_truth_samples, rng=sample_rng
                     )
@@ -102,11 +103,14 @@ def make_contest(
         )
         if normalized_sampling is not None:
             sampling_breakdowns.append(normalized_sampling)
-        # Convert to whest arrays for ground truth storage
-        all_layer_targets.append(we.asarray(all_means, dtype=we.float32))
-        final_targets.append(we.asarray(final_mean, dtype=we.float32))
+        # Convert to flopscope arrays for ground truth storage.
+        # The triple is always bound: flopscope's namespace `__exit__` returns
+        # False at runtime (never suppresses), but pyright reads the `-> bool`
+        # annotation conservatively.
+        all_layer_targets.append(fnp.asarray(all_means, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
+        final_targets.append(fnp.asarray(final_mean, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
         mlps.append(mlp)
-        avg_variances.append(avg_var)
+        avg_variances.append(avg_var)  # pyright: ignore[reportPossiblyUnboundVariable]
         if on_mlp_done is not None:
             on_mlp_done(i + 1)
 
@@ -146,9 +150,9 @@ def make_contest_from_bundle(
 
     mlps = list(bundle.mlps[:n_mlps])
     all_layer_targets = [
-        we.asarray(bundle.all_layer_means[i], dtype=we.float32) for i in range(n_mlps)
+        fnp.asarray(bundle.all_layer_means[i], dtype=fnp.float32) for i in range(n_mlps)
     ]
-    final_targets = [we.asarray(bundle.final_means[i], dtype=we.float32) for i in range(n_mlps)]
+    final_targets = [fnp.asarray(bundle.final_means[i], dtype=fnp.float32) for i in range(n_mlps)]
     avg_variances = list(bundle.avg_variances[:n_mlps])
 
     return ContestData(
@@ -165,7 +169,7 @@ def make_contest_from_bundle(
     )
 
 
-def validate_predictions(predictions: we.ndarray, *, depth: int, width: int) -> we.ndarray:
+def validate_predictions(predictions: fnp.ndarray, *, depth: int, width: int) -> fnp.ndarray:
     """Validate estimator prediction array shape and finiteness."""
     shape = tuple(predictions.shape) if hasattr(predictions, "shape") else ()
     expected_shape = (depth, width)
@@ -184,8 +188,8 @@ def validate_predictions(predictions: we.ndarray, *, depth: int, width: int) -> 
         exc = ValueError(f"Predictions must have shape ({depth}, {width}), got {shape}.")
         setattr(exc, "details", details)
         raise exc
-    pred_np = we.asarray(predictions, dtype=we.float32)
-    if not we.all(we.isfinite(pred_np)):
+    pred_np = fnp.asarray(predictions, dtype=fnp.float32)
+    if not fnp.all(fnp.isfinite(pred_np)):
         details = {
             "expected_shape": list(expected_shape),
             "got_shape": list(shape),
@@ -386,7 +390,7 @@ def evaluate_estimator(
         raw_breakdown: Optional[Dict[str, Any]] = None
         normalized_breakdown: Optional[Dict[str, Any]] = None
 
-        budget_ctx = we.BudgetContext(
+        budget_ctx = flops.BudgetContext(
             flop_budget=spec.flop_budget,
             wall_time_limit_s=spec.wall_time_limit_s,
             quiet=True,
@@ -408,8 +412,8 @@ def evaluate_estimator(
             predictions = validate_predictions(raw_predictions, depth=spec.depth, width=spec.width)
             if normalized_breakdown is not None:
                 normalized_breakdowns.append(normalized_breakdown)
-        except we.BudgetExhaustedError:
-            predictions = we.zeros((spec.depth, spec.width))
+        except flops.BudgetExhaustedError:
+            predictions = fnp.zeros((spec.depth, spec.width))
             budget_exhausted = True
             stats = _predict_stats_to_dict(
                 last_predict_stats() if callable(last_predict_stats) else None
@@ -423,8 +427,8 @@ def evaluate_estimator(
             flops_used = flops_used or spec.flop_budget
             if normalized_breakdown is not None:
                 normalized_breakdowns.append(normalized_breakdown)
-        except we.TimeExhaustedError:
-            predictions = we.zeros((spec.depth, spec.width))
+        except flops.TimeExhaustedError:
+            predictions = fnp.zeros((spec.depth, spec.width))
             time_exhausted = True
             stats = _predict_stats_to_dict(
                 last_predict_stats() if callable(last_predict_stats) else None
@@ -440,7 +444,7 @@ def evaluate_estimator(
         except Exception as exc:
             if fail_fast:
                 raise
-            predictions = we.zeros((spec.depth, spec.width))
+            predictions = fnp.zeros((spec.depth, spec.width))
             # Prefer the traceback forwarded from a remote runner (subprocess
             # worker) when available; otherwise capture the local chain, which
             # includes the original estimator traceback via `raise ... from exc`.
@@ -495,7 +499,7 @@ def evaluate_estimator(
             and spec.wall_time_limit_s is not None
             and wall_time_s > spec.wall_time_limit_s
         ):
-            predictions = we.zeros((spec.depth, spec.width))
+            predictions = fnp.zeros((spec.depth, spec.width))
             time_exhausted = True
 
         # Post-predict check: untracked time limit
@@ -505,20 +509,20 @@ def evaluate_estimator(
             and spec.untracked_time_limit_s is not None
             and untracked_time_s > spec.untracked_time_limit_s
         ):
-            predictions = we.zeros((spec.depth, spec.width))
+            predictions = fnp.zeros((spec.depth, spec.width))
             untracked_time_exhausted = True
 
         # Convert predictions for MSE computation
-        pred_np = we.asarray(predictions, dtype=we.float32)
+        pred_np = fnp.asarray(predictions, dtype=fnp.float32)
 
         # Primary score: final layer MSE
         final_pred = pred_np[-1]
         final_target = data.final_targets[i]
-        final_mse = float(we.mean((final_pred - final_target) ** 2))
+        final_mse = float(fnp.mean((final_pred - final_target) ** 2))
 
         # Secondary score: all layers MSE
         all_target = data.all_layer_targets[i]
-        all_mse = float(we.mean((pred_np - all_target) ** 2))
+        all_mse = float(fnp.mean((pred_np - all_target) ** 2))
 
         primary_scores.append(final_mse)
         secondary_scores.append(all_mse)
@@ -544,10 +548,10 @@ def evaluate_estimator(
 
     aggregate_breakdown = _aggregate_budget_breakdowns(normalized_breakdowns)
     return {
-        "primary_score": float(we.mean(we.asarray(primary_scores)))
+        "primary_score": float(fnp.mean(fnp.asarray(primary_scores)))
         if primary_scores
         else float("inf"),
-        "secondary_score": float(we.mean(we.asarray(secondary_scores)))
+        "secondary_score": float(fnp.mean(fnp.asarray(secondary_scores)))
         if secondary_scores
         else float("inf"),
         "per_mlp": per_mlp,

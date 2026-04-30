@@ -22,7 +22,7 @@ Pick the path that matches what you need right now.
 - [Algorithm Ideas](./how-to/algorithm-ideas.md) — survey of estimation strategies
 - [Manage Your FLOP Budget](./how-to/manage-flop-budget.md)
 - [Performance Tips](./how-to/performance-tips.md)
-- [Code Patterns](./reference/code-patterns.md) — whest cheat sheet
+- [Code Patterns](./reference/code-patterns.md) — flopscope cheat sheet
 - [Inspect and Traverse MLP Structure](./how-to/inspect-mlp-structure.md)
 - [Use WhestBench Explorer](./how-to/use-whestbench-explorer.md)
 
@@ -38,7 +38,7 @@ Pick the path that matches what you need right now.
 - [CLI Reference](./reference/cli-reference.md)
 - [Score Report Fields](./reference/score-report-fields.md)
 - [Code Patterns](./reference/code-patterns.md)
-- [Whest Primer](./reference/whest-primer.md)
+- [Flopscope Primer](./reference/flopscope-primer.md)
 
 ## Standard workflow
 

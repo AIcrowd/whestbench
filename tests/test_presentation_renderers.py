@@ -215,7 +215,7 @@ def test_renderers_include_table_section_cells() -> None:
             TableSection(
                 title="Detail",
                 columns=["Backend", "Dims", "run_mlp", "sample_layer_statistics"],
-                rows=[["whest", "256×4×10k", "0.0444s", "0.1135s"]],
+                rows=[["flopscope", "256×4×10k", "0.0444s", "0.1135s"]],
             )
         ],
     )
@@ -227,7 +227,7 @@ def test_renderers_include_table_section_cells() -> None:
         "Detail",
         "Backend",
         "Dims",
-        "whest",
+        "flopscope",
         "256×4×10k",
         "0.0444s",
         "0.1135s",
@@ -245,7 +245,7 @@ def test_rich_table_renderer_preserves_literal_markup_text() -> None:
             TableSection(
                 title="Detail [literal]",
                 columns=["Backend", "[dims]"],
-                rows=[["[bold]whest[/bold]", "64x4x1k"]],
+                rows=[["[bold]flopscope[/bold]", "64x4x1k"]],
             )
         ],
     )
@@ -256,7 +256,7 @@ def test_rich_table_renderer_preserves_literal_markup_text() -> None:
     for text in (
         "Detail [literal]",
         "[dims]",
-        "[bold]whest[/bold]",
+        "[bold]flopscope[/bold]",
         "64x4x1k",
     ):
         assert text in plain

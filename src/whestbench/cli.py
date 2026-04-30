@@ -23,7 +23,7 @@ from typing import (
     overload,
 )
 
-import whest as we
+import flopscope.numpy as fnp
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
@@ -42,6 +42,7 @@ try:
 except Exception:  # pragma: no cover - optional at runtime
     rich_tqdm = None
 
+from .dataset import create_dataset, dataset_file_hash, load_dataset
 from .estimators import CombinedEstimator
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
@@ -760,7 +761,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         type=float,
         default=None,
         metavar="SECONDS",
-        help="Time limit for non-whest operations per predict call (default: unlimited).",
+        help="Time limit for non-flopscope operations per predict call (default: unlimited).",
     )
     run_parser.add_argument(
         "--seed",
@@ -823,7 +824,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     profile_parser = subparsers.add_parser(
         "profile-simulation",
-        help="Benchmark whest simulation performance.",
+        help="Benchmark flopscope simulation performance.",
     )
     profile_parser.add_argument(
         "--preset",
@@ -892,7 +893,7 @@ class _RunnerEstimator(BaseEstimator):
     def __init__(self, runner: "Any") -> None:
         self._runner = runner
 
-    def predict(self, mlp: "Any", budget: int) -> we.ndarray:
+    def predict(self, mlp: "Any", budget: int) -> fnp.ndarray:
         return self._runner.predict(mlp, budget)
 
     def last_predict_stats(self) -> Optional[Dict[str, Any]]:
@@ -1176,8 +1177,6 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "create-dataset":
-            from .dataset import create_dataset as _create_dataset
-
             contest = _default_contest_spec()
             ds_width = args.width or contest.width
             ds_depth = args.depth or contest.depth
@@ -1214,7 +1213,7 @@ def _main_participant(argv: "list[str]") -> int:
                             progress_bar.update(sample_task, completed=completed)
 
                     with progress_bar:
-                        out = _create_dataset(
+                        out = create_dataset(
                             n_mlps=n_mlps_ds,
                             n_samples=int(args.n_samples),
                             width=ds_width,
@@ -1225,7 +1224,7 @@ def _main_participant(argv: "list[str]") -> int:
                             progress=_on_ds_progress,
                         )
                 except ImportError:
-                    out = _create_dataset(
+                    out = create_dataset(
                         n_mlps=n_mlps_ds,
                         n_samples=int(args.n_samples),
                         width=ds_width,
@@ -1235,7 +1234,7 @@ def _main_participant(argv: "list[str]") -> int:
                         output_path=Path(args.output),
                     )
             else:
-                out = _create_dataset(
+                out = create_dataset(
                     n_mlps=n_mlps_ds,
                     n_samples=int(args.n_samples),
                     width=ds_width,
@@ -1289,7 +1288,6 @@ def _main_participant(argv: "list[str]") -> int:
                 raise ValueError("--seed is only valid when --dataset is not provided.")
 
             if dataset_path is not None:
-                from .dataset import dataset_file_hash, load_dataset
                 from .scoring import make_contest_from_bundle
 
                 bundle = load_dataset(dataset_path)
@@ -1341,6 +1339,9 @@ def _main_participant(argv: "list[str]") -> int:
                 "fail_fast": bool(getattr(args, "fail_fast", False)),
             }
 
+            used_plain_fallback = False
+            _tip_console = Console(highlight=False)
+            _dataset_tip = ""
             if json_output:
                 report = _run_estimator_with_runner(runner, **score_kwargs)
                 report["mode"] = "agent"
@@ -1371,7 +1372,6 @@ def _main_participant(argv: "list[str]") -> int:
                     "   [cyan]whest create-dataset[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]-o[/] [yellow]my_dataset.npz[/]\n"
                     "   [cyan]whest run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]my_dataset.npz[/]\n"
                 )
-                _tip_console = Console(highlight=False)
                 gen_label = "Loading dataset" if dataset_path is not None else "Generating MLPs"
                 if no_rich:
                     # Plain-text path: skip every Rich Live/progress display so
@@ -1432,7 +1432,6 @@ def _main_participant(argv: "list[str]") -> int:
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
                 report = _merge_pre_run_context(report, pre_report)
-                used_plain_fallback = False
                 if no_rich:
                     output = _render_plain_text_report(
                         report,

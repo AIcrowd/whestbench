@@ -4,13 +4,11 @@ import importlib
 from pathlib import Path
 
 
-def _doc_len(doc):
-    # type: (Optional[str]) -> int
+def _doc_len(doc: str | None) -> int:
     return len((doc or "").strip())
 
 
-def _normalize_h2_heading(line):
-    # type: (str) -> str
+def _normalize_h2_heading(line: str) -> str:
     if not line.startswith("## "):
         return line
     heading = line[3:].strip()
@@ -20,18 +18,16 @@ def _normalize_h2_heading(line):
     return "## {}".format(heading)
 
 
-def _participant_markdown_paths(repo_root):
-    # type: (Path) -> List[Path]
-    paths = [repo_root / "README.md", repo_root / "tools/whestbench-explorer/README.md"]  # type: List[Path]
+def _participant_markdown_paths(repo_root: Path) -> list[Path]:
+    paths: list[Path] = [repo_root / "README.md", repo_root / "tools/whestbench-explorer/README.md"]
     docs_root = repo_root / "docs"
     for path in sorted(docs_root.rglob("*.md")):
         rel = path.relative_to(repo_root).as_posix()
         if rel.startswith("internal plans/"):
             continue
         paths.append(path)
-    # Dedupe while preserving order.
-    deduped = []  # type: List[Path]
-    seen = set()  # type: Set[Path]
+    deduped: list[Path] = []
+    seen: set[Path] = set()
     for path in paths:
         if path not in seen:
             deduped.append(path)
@@ -39,8 +35,7 @@ def _participant_markdown_paths(repo_root):
     return deduped
 
 
-def test_docs_taxonomy_directories_exist():
-    # type: () -> None
+def test_docs_taxonomy_directories_exist() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     required = [
         "docs/getting-started",
@@ -53,8 +48,7 @@ def test_docs_taxonomy_directories_exist():
         assert (repo_root / rel).is_dir(), rel
 
 
-def test_docs_index_exists_and_links_taxonomy():
-    # type: () -> None
+def test_docs_index_exists_and_links_taxonomy() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "docs/index.md").read_text(encoding="utf-8").lower()
 
@@ -69,8 +63,7 @@ def test_docs_index_exists_and_links_taxonomy():
         assert token in text
 
 
-def test_readme_is_front_door_with_expected_sections():
-    # type: () -> None
+def test_readme_is_front_door_with_expected_sections() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8")
     headings = {
@@ -87,8 +80,7 @@ def test_readme_is_front_door_with_expected_sections():
         assert heading in headings
 
 
-def test_core_modules_have_descriptive_module_docstrings():
-    # type: () -> None
+def test_core_modules_have_descriptive_module_docstrings() -> None:
     modules = [
         "whestbench.domain",
         "whestbench.generation",
@@ -104,8 +96,7 @@ def test_core_modules_have_descriptive_module_docstrings():
         assert _doc_len(module.__doc__) >= 40, name
 
 
-def test_critical_public_apis_have_docstrings():
-    # type: () -> None
+def test_critical_public_apis_have_docstrings() -> None:
     from whestbench import (
         cli,
         domain,
@@ -139,8 +130,7 @@ def test_critical_public_apis_have_docstrings():
         assert _doc_len(getattr(obj, "__doc__", None)) >= 30, repr(obj)
 
 
-def test_estimators_module_has_tutorial_walkthrough_markers():
-    # type: () -> None
+def test_estimators_module_has_tutorial_walkthrough_markers() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "src/whestbench/estimators.py").read_text(encoding="utf-8")
     required_phrases = [
@@ -153,8 +143,7 @@ def test_estimators_module_has_tutorial_walkthrough_markers():
         assert phrase in lowered
 
 
-def test_docs_do_not_reference_predict_batch_contract():
-    # type: () -> None
+def test_docs_do_not_reference_predict_batch_contract() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     paths = [
         repo_root / "README.md",
@@ -166,8 +155,7 @@ def test_docs_do_not_reference_predict_batch_contract():
         assert "predict_batch" not in text, str(path)
 
 
-def test_readme_links_primary_docs_pages():
-    # type: () -> None
+def test_readme_links_primary_docs_pages() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
     required_links = [
@@ -186,8 +174,7 @@ def test_readme_links_primary_docs_pages():
         assert link in text
 
 
-def test_readme_documents_whest_install_and_usage():
-    # type: () -> None
+def test_readme_documents_whest_install_and_usage() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     text = (repo_root / "README.md").read_text(encoding="utf-8").lower()
     assert "uv tool install -e ." in text
@@ -196,16 +183,14 @@ def test_readme_documents_whest_install_and_usage():
     assert "uv run whest --" not in text
 
 
-def test_participant_docs_do_not_use_mermaid_blocks():
-    # type: () -> None
+def test_participant_docs_do_not_use_mermaid_blocks() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     for path in _participant_markdown_paths(repo_root):
         text = path.read_text(encoding="utf-8").lower()
         assert "```mermaid" not in text, str(path)
 
 
-def test_participant_docs_do_not_reference_sanitized_internal_paths():
-    # type: () -> None
+def test_participant_docs_do_not_reference_sanitized_internal_paths() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     banned = [
         "internal docs/",
@@ -224,14 +209,12 @@ def test_participant_docs_do_not_reference_sanitized_internal_paths():
             assert token not in text, "{}: {}".format(path, token)
 
 
-def test_legacy_guides_directory_is_removed():
-    # type: () -> None
+def test_legacy_guides_directory_is_removed() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     assert not (repo_root / "docs/guides").exists()
 
 
-def test_examples_estimators_folder_contains_starter_classes():
-    # type: () -> None
+def test_examples_estimators_folder_contains_starter_classes() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     examples_dir = repo_root / "examples/estimators"
     assert (examples_dir / "random_estimator.py").exists()
@@ -240,8 +223,7 @@ def test_examples_estimators_folder_contains_starter_classes():
     assert (examples_dir / "combined_estimator.py").exists()
 
 
-def test_onboarding_docs_recommend_random_estimator_first():
-    # type: () -> None
+def test_onboarding_docs_recommend_random_estimator_first() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
     how_to = (repo_root / "docs/how-to/write-an-estimator.md").read_text(encoding="utf-8")

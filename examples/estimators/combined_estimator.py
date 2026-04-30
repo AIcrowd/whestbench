@@ -30,7 +30,8 @@ The two paths differ only in how sigma_pre is obtained:
 
 from __future__ import annotations
 
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 from whestbench import BaseEstimator
 from whestbench.domain import MLP
@@ -40,7 +41,7 @@ from whestbench.domain import MLP
 # ---------------------------------------------------------------------------
 
 
-def _mean_path(mlp: MLP) -> we.ndarray:
+def _mean_path(mlp: MLP) -> fnp.ndarray:
     """Propagate means with a diagonal variance approximation.
 
     Cost: O(width^2) per layer — scales well to large networks.
@@ -50,8 +51,8 @@ def _mean_path(mlp: MLP) -> we.ndarray:
     width = mlp.width
 
     # Initialise input distribution as standard normal
-    mu = we.zeros(width)  # mean vector
-    var = we.ones(width)  # per-neuron variance (diagonal of covariance)
+    mu = fnp.zeros(width)  # mean vector
+    var = fnp.ones(width)  # per-neuron variance (diagonal of covariance)
 
     rows = []
     for w in mlp.weights:
@@ -60,24 +61,24 @@ def _mean_path(mlp: MLP) -> we.ndarray:
         mu_pre = w.T @ mu
         # Pre-activation variance:  var_pre[i] = sum_j W[j,i]^2 * var[j]
         var_pre = (w * w).T @ var
-        var_pre = we.maximum(var_pre, 1e-12)
-        sigma_pre = we.sqrt(var_pre)
+        var_pre = fnp.maximum(var_pre, 1e-12)
+        sigma_pre = fnp.sqrt(var_pre)
 
         # -- ReLU layer --
         alpha = mu_pre / sigma_pre
-        phi_alpha = we.stats.norm.pdf(alpha)
-        Phi_alpha = we.stats.norm.cdf(alpha)
+        phi_alpha = flops.stats.norm.pdf(alpha)
+        Phi_alpha = flops.stats.norm.cdf(alpha)
 
         # E[ReLU(pre)]
         mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
 
         # Var[ReLU(pre)]
         ez2 = (mu_pre * mu_pre + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
-        var = we.maximum(ez2 - mu * mu, 0.0)
+        var = fnp.maximum(ez2 - mu * mu, 0.0)
 
         rows.append(mu)
 
-    return we.stack(rows, axis=0)
+    return fnp.stack(rows, axis=0)
 
 
 # ---------------------------------------------------------------------------
@@ -88,7 +89,7 @@ def _mean_path(mlp: MLP) -> we.ndarray:
 _COV_RESCALE_THRESHOLD = 1e100
 
 
-def _covariance_path(mlp: MLP) -> we.ndarray:
+def _covariance_path(mlp: MLP) -> fnp.ndarray:
     """Propagate means with a full covariance matrix.
 
     Cost: O(width^3) per layer — more accurate but expensive for wide networks.
@@ -98,21 +99,21 @@ def _covariance_path(mlp: MLP) -> we.ndarray:
     width = mlp.width
 
     # Initialise input as standard multivariate normal
-    mu = we.zeros(width)  # mean vector
-    cov = we.eye(width)  # full covariance matrix
+    mu = fnp.zeros(width)  # mean vector
+    cov = fnp.eye(width)  # full covariance matrix
     log_scale = 0.0  # accumulated log of rescaling factor
 
     rows = []
     for w in mlp.weights:
         # -- Overflow prevention --
         # Rescale (mu, cov) if the covariance has grown too large
-        cov_diag = we.diag(cov)
-        max_var_np = float(we.max(cov_diag))
+        cov_diag = fnp.diag(cov)
+        max_var_np = float(fnp.max(cov_diag))
         if max_var_np > _COV_RESCALE_THRESHOLD:
-            s = float(we.sqrt(max_var_np))
+            s = float(fnp.sqrt(max_var_np))
             mu = mu / s
             cov = cov / (s * s)
-            log_scale += float(we.log(s))
+            log_scale += float(fnp.log(s))
 
         # -- Linear layer --
         # Pre-activation mean:         mu_pre  = W^T mu
@@ -120,35 +121,35 @@ def _covariance_path(mlp: MLP) -> we.ndarray:
         mu_pre = w.T @ mu
         cov_pre = w.T @ cov @ w
 
-        var_pre = we.maximum(we.diag(cov_pre), 1e-12)
-        sigma_pre = we.sqrt(var_pre)
+        var_pre = fnp.maximum(fnp.diag(cov_pre), 1e-12)
+        sigma_pre = fnp.sqrt(var_pre)
 
         # -- ReLU layer --
         alpha = mu_pre / sigma_pre
-        phi_alpha = we.stats.norm.pdf(alpha)
-        Phi_alpha = we.stats.norm.cdf(alpha)
+        phi_alpha = flops.stats.norm.pdf(alpha)
+        Phi_alpha = flops.stats.norm.cdf(alpha)
 
         # Post-ReLU mean (exact per neuron)
         mu = mu_pre * Phi_alpha + sigma_pre * phi_alpha
 
         # Post-ReLU diagonal variance (exact per neuron)
         ez2 = (mu_pre * mu_pre + var_pre) * Phi_alpha + mu_pre * sigma_pre * phi_alpha
-        var_post = we.maximum(ez2 - mu * mu, 0.0)
+        var_post = fnp.maximum(ez2 - mu * mu, 0.0)
 
         # Approximate post-ReLU off-diagonal covariance via gain scaling
-        sigma_np = we.asarray(sigma_pre, dtype=we.float64)
-        Phi_np = we.asarray(Phi_alpha, dtype=we.float64)
-        gain_np = we.where(sigma_np > 1e-12, Phi_np, 0.0)
-        gain = we.array(gain_np.astype(we.float32))
+        sigma_np = fnp.asarray(sigma_pre, dtype=fnp.float64)
+        Phi_np = fnp.asarray(Phi_alpha, dtype=fnp.float64)
+        gain_np = fnp.where(sigma_np > 1e-12, Phi_np, 0.0)
+        gain = fnp.array(gain_np.astype(fnp.float32))
 
-        cov = we.multiply(we.outer(gain, gain), cov_pre)
-        we.fill_diagonal(cov, var_post)  # exact diagonal
+        cov = fnp.multiply(fnp.outer(gain, gain), cov_pre)
+        fnp.fill_diagonal(cov, var_post)  # exact diagonal
 
         # Record mean in original (unscaled) coordinates
-        scale_factor = float(we.exp(log_scale))
+        scale_factor = float(fnp.exp(log_scale))
         rows.append(mu * scale_factor)
 
-    return we.stack(rows, axis=0)
+    return fnp.stack(rows, axis=0)
 
 
 # ---------------------------------------------------------------------------
@@ -171,7 +172,7 @@ class Estimator(BaseEstimator):
         budget <  30 * width^2  →  _mean_path(mlp)
     """
 
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         """Route to the appropriate algorithm based on available FLOP budget.
 
         Returns an array of shape (depth, width) where row i is the predicted

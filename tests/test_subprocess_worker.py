@@ -67,11 +67,12 @@ def _wrong_shape_predict_estimator(tmp_path: Path) -> Path:
         dedent(
             """
             from whestbench import BaseEstimator
-            import whest as we
+            import flopscope as flops
+            import flopscope.numpy as fnp
 
             class Estimator(BaseEstimator):
                 def predict(self, mlp, budget):
-                    return we.zeros((mlp.width, mlp.depth), dtype=we.float32)
+                    return fnp.zeros((mlp.width, mlp.depth), dtype=fnp.float32)
             """
         ).lstrip(),
         encoding="utf-8",
@@ -143,8 +144,8 @@ def test_handle_predict_budgets_exhaustion_errors_win_over_validation_branch(
     class FauxTimeExhaustedError(ValueError):
         pass
 
-    monkeypatch.setattr(subprocess_worker.we, "BudgetExhaustedError", FauxBudgetExhaustedError)
-    monkeypatch.setattr(subprocess_worker.we, "TimeExhaustedError", FauxTimeExhaustedError)
+    monkeypatch.setattr(subprocess_worker.flops, "BudgetExhaustedError", FauxBudgetExhaustedError)
+    monkeypatch.setattr(subprocess_worker.flops, "TimeExhaustedError", FauxTimeExhaustedError)
 
     class _BudgetEstimator:
         def predict(self, mlp, budget):  # type: ignore[no-untyped-def]

@@ -126,4 +126,4 @@ The CLI auto-disables rich output for debugger sessions, so plain output is usua
 - [Validate, Run, and Package](../how-to/validate-run-package.md)
 - [Use Evaluation Datasets](../how-to/use-evaluation-datasets.md) — skip repeated sampling when iterating
 - [Common Participant Errors](../troubleshooting/common-participant-errors.md)
-- [Whest Primer](../reference/whest-primer.md) — how FLOP tracking works under the hood
+- [Flopscope Primer](../reference/flopscope-primer.md) — how FLOP tracking works under the hood

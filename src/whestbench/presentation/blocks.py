@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from rich import box
 from rich.align import Align
 from rich.console import Group, RenderableType
@@ -64,7 +66,7 @@ def build_score_block(section: TableSection) -> Panel:
     for metric, value in section.rows:
         table.add_row(metric_labels.get(metric, Text(metric)), _score_value_markup(metric, value))
 
-    panel_kwargs = {
+    panel_kwargs: dict[str, Any] = {
         "title": escape(section.title),
         "subtitle": escape(section.subtitle or ""),
         "subtitle_align": "left",
@@ -174,7 +176,7 @@ def build_section_renderables(section: object) -> list[RenderableType]:
         for row in section.rows:
             table.add_row(*(Text(cell) for cell in row))
         renderable: RenderableType = Align.center(table) if section.align_center else table
-        panel_kwargs = {
+        panel_kwargs: dict[str, Any] = {
             "title": escape(section.title),
             "subtitle": escape(section.subtitle or ""),
             "subtitle_align": "left",

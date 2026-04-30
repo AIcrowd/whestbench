@@ -100,7 +100,7 @@ Key options:
 - `--runner local|subprocess|server|inprocess`
 - `--n-mlps <int>`
 - `--wall-time-limit <seconds>` — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`
-- `--untracked-time-limit <seconds>` — limit for non-whest time per `predict()` call, enforced by WhestBench after timing is reported
+- `--untracked-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported
 - `--detail raw|full`
 - `--seed <int>` — deterministic seed for `generate + sample` when `--dataset` is not set
 - `--profile`
@@ -193,7 +193,7 @@ On SSH/headless environments, browser auto-open is skipped automatically.
 
 ## `whest profile-simulation`
 
-Profile whest FLOP accounting and analytical correctness across a grid of network sizes and FLOP budgets.
+Profile flopscope FLOP accounting and analytical correctness across a grid of network sizes and FLOP budgets.
 
 ```bash
 whest profile-simulation [--preset super-quick|quick|standard|exhaustive]

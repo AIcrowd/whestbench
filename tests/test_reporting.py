@@ -15,7 +15,7 @@ from rich.text import Text
 
 import whestbench.reporting as reporting
 from whestbench.presentation.adapters import build_smoke_test_presentation
-from whestbench.presentation.models import StepsSection
+from whestbench.presentation.models import StepItem, StepsSection
 from whestbench.reporting import (
     render_agent_report,
     render_human_report,
@@ -29,8 +29,8 @@ def _sample_report(
     include_profile: bool = False,
     include_sampling_breakdown: bool = False,
     include_estimator_breakdown: bool = False,
-) -> "dict[str, object]":
-    report: "dict[str, object]" = {
+) -> "dict[str, Any]":
+    report: "dict[str, Any]" = {
         "schema_version": "1.0",
         "mode": "agent",
         "detail": "raw",
@@ -148,7 +148,9 @@ def test_smoke_test_next_steps_uses_colored_purpose_lines_and_plain_commands() -
         for section in doc.sections
         if isinstance(section, StepsSection) and section.title == "Next Steps"
     )
-    expected_pairs = [(step.purpose, step.command) for step in next_steps.steps]
+    expected_pairs = [
+        (step.purpose, step.command) for step in next_steps.steps if isinstance(step, StepItem)
+    ]
 
     assert "Next Steps" in plain
     assert "We are all set! Welcome onboard" in plain
