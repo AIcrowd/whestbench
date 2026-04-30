@@ -40,12 +40,12 @@ Creates these resources:
 
 | Resource | Name | Purpose |
 |----------|------|---------|
-| S3 bucket | `whest-profiling-{account-id}` | Result storage |
-| ECR repository | `whest-profiler` | Docker image registry |
-| ECS cluster | `whest-profiling` | Fargate task execution |
-| IAM execution role | `whest-profiler-execution` | ECR pull + CloudWatch |
-| IAM task role | `whest-profiler-task` | S3 upload (scoped) |
-| CloudWatch log group | `/ecs/whest-profiling` | Task logs |
+| S3 bucket | `flopscope-profiling-{account-id}` | Result storage |
+| ECR repository | `flopscope-profiler` | Docker image registry |
+| ECS cluster | `flopscope-profiling` | Fargate task execution |
+| IAM execution role | `flopscope-profiler-execution` | ECR pull + CloudWatch |
+| IAM task role | `flopscope-profiler-task` | S3 upload (scoped) |
+| CloudWatch log group | `/ecs/flopscope-profiling` | Task logs |
 
 Resource ARNs are written to `profiling/.infra-config.json` (gitignored).
 
@@ -102,7 +102,7 @@ python profiling/run_benchmarks.py \
     --backends numpy,pytorch         # only profile specific backends
     --max-threads 4                  # cap CPU threads
     --timeout 90                     # minutes before aborting (default: 60)
-    --verbose                        # pass --verbose to whest profiler
+    --verbose                        # pass --verbose to flopscope profiler
     --dry-run                        # show plan without launching
 ```
 
@@ -136,12 +136,12 @@ a `[warning]` line and continues with the remaining combinations. Partial
 results are preserved and uploaded to S3. The JSON output includes an
 `error` field on skipped entries for diagnostics.
 
-These lines appear in CloudWatch under the log group `/ecs/whest-profiling`
+These lines appear in CloudWatch under the log group `/ecs/flopscope-profiling`
 with stream prefix `{run-id}/profiler/{task-id}`.
 
 To tail logs in real time:
 ```bash
-aws logs tail /ecs/whest-profiling --follow --since 1h
+aws logs tail /ecs/flopscope-profiling --follow --since 1h
 ```
 
 For local testing, pass `--log-progress` directly:
@@ -284,7 +284,7 @@ aws service-quotas get-service-quota \
 
 Check CloudWatch logs:
 ```bash
-aws logs tail /ecs/whest-profiling --since 1h
+aws logs tail /ecs/flopscope-profiling --since 1h
 ```
 
 ### S3 upload fails in container

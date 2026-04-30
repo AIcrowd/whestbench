@@ -41,10 +41,10 @@ Each entry in `per_mlp`:
 | `flops_used` | `int` | Total FLOPs used by your estimator for this MLP |
 | `budget_exhausted` | `bool` | Whether the estimator exceeded the FLOP budget (predictions zeroed if true) |
 | `time_exhausted` | `bool` | Whether the estimator exceeded the wall-clock limit for this MLP (predictions zeroed if true) |
-| `untracked_time_exhausted` | `bool` | Whether WhestBench judged non-whest time to exceed `untracked_time_limit_s` (predictions zeroed if true) |
+| `untracked_time_exhausted` | `bool` | Whether WhestBench judged non-flopscope time to exceed `untracked_time_limit_s` (predictions zeroed if true) |
 | `wall_time_s` | `float` | Total elapsed wall-clock time measured for this MLP's estimator context |
-| `tracked_time_s` | `float` | Time spent inside counted whest operations for this MLP |
-| `untracked_time_s` | `float` | `wall_time_s - tracked_time_s`, i.e. time outside counted whest operations |
+| `tracked_time_s` | `float` | Time spent inside counted flopscope operations for this MLP |
+| `untracked_time_s` | `float` | `wall_time_s - tracked_time_s`, i.e. time outside counted flopscope operations |
 | `final_mse` | `float` | MSE of your final-layer predictions vs ground truth |
 | `all_layer_mse` | `float` | MSE of your all-layer predictions vs ground truth |
 | `breakdowns` | `dict \| null` | Per-MLP breakdown container. Currently includes estimator-only data under `estimator`. Sampling is aggregate-only. |
@@ -66,7 +66,7 @@ For structured `error` objects, `error.details` includes:
 
 ## Breakdown containers
 
-When namespace-aware whest data is available, WhestBench adds breakdown containers in
+When namespace-aware flopscope data is available, WhestBench adds breakdown containers in
 these places:
 
 - `results.breakdowns.estimator` - aggregated estimator breakdown across all evaluated MLPs
@@ -82,8 +82,8 @@ Namespace normalization rules:
 
 Each breakdown summary also includes timing totals:
 
-- `tracked_time_s` - accumulated time inside counted whest operations
-- `untracked_time_s` - elapsed time outside counted whest operations
+- `tracked_time_s` - accumulated time inside counted flopscope operations
+- `untracked_time_s` - elapsed time outside counted flopscope operations
 
 For `results.breakdowns.*`, those values are aggregated across all evaluated
 MLPs.
@@ -93,9 +93,9 @@ MLPs.
 - `final_mse` is your most actionable diagnostic — it directly drives `primary_score`.
 - `budget_exhausted` is the first thing to check if your score is unexpectedly high — exceeded budget means your predictions were zeroed.
 - `time_exhausted` means the estimator crossed the wall-clock limit configured through `wall_time_limit_s` / `--wall-time-limit`.
-- `untracked_time_exhausted` means the non-whest portion of execution crossed WhestBench's `untracked_time_limit_s` / `--untracked-time-limit`.
+- `untracked_time_exhausted` means the non-flopscope portion of execution crossed WhestBench's `untracked_time_limit_s` / `--untracked-time-limit`.
 - `flops_used` vs `flop_budget` shows how much headroom you have. If you are consistently near the cap, consider lighter methods.
-- `tracked_time_s` vs `untracked_time_s` tells you whether time is dominated by counted whest ops or by Python / other library work outside whest.
+- `tracked_time_s` vs `untracked_time_s` tells you whether time is dominated by counted flopscope ops or by Python / other library work outside flopscope.
 - `primary_score` is raw MSE — compare across runs to see whether estimator changes are helping.
 
 ## Dataset traceability fields

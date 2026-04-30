@@ -6,32 +6,33 @@ Use this page to understand how FLOP budgets work and how to optimize your estim
 
 ## Why FLOPs, not wall-clock time
 
-This challenge scores estimators by **analytical FLOP count**, not execution time. Every mathematical operation your estimator performs is tracked by [whest](https://github.com/AIcrowd/whest) — a NumPy-compatible library that counts floating-point operations deterministically from tensor shapes.
+This challenge scores estimators by **analytical FLOP count**, not execution time. Every mathematical operation your estimator performs is tracked by [flopscope](https://github.com/AIcrowd/flopscope) — a NumPy-compatible library that counts floating-point operations deterministically from tensor shapes.
 
 This means your score is **hardware-independent**: the same estimator produces the same FLOP count on a laptop and a GPU cluster. You can focus on algorithmic efficiency rather than hardware tuning.
 
-For the full whest API and cost model, see the [whest documentation](https://github.com/AIcrowd/whest).
+For the full flopscope API and cost model, see the [flopscope documentation](https://github.com/AIcrowd/flopscope).
 
 ## Which operations cost FLOPs
 
 | Category | Examples | Cost |
 |----------|----------|------|
-| **Free (0 FLOPs)** | `we.array()`, `we.zeros()`, `we.ones()`, `we.reshape()`, `we.transpose()`, indexing, `we.concatenate()`, `we.stack()` | No budget impact |
-| **Pointwise (1 FLOP/element)** | `we.add()`, `we.multiply()`, `we.exp()`, `we.sqrt()`, `we.maximum()` | Output element count |
-| **Reductions** | `we.sum()`, `we.mean()`, `we.max()` | Input element count |
-| **Matrix operations** | `we.matmul()`, `we.einsum()` | Depends on dimensions — typically dominates your budget |
-| **Random generation** | `we.random.normal()`, `we.random.uniform()` | Output element count |
+| **Free (0 FLOPs)** | `fnp.array()`, `fnp.zeros()`, `fnp.ones()`, `fnp.reshape()`, `fnp.transpose()`, indexing, `fnp.concatenate()`, `fnp.stack()` | No budget impact |
+| **Pointwise (1 FLOP/element)** | `fnp.add()`, `fnp.multiply()`, `fnp.exp()`, `fnp.sqrt()`, `fnp.maximum()` | Output element count |
+| **Reductions** | `fnp.sum()`, `fnp.mean()`, `fnp.max()` | Input element count |
+| **Matrix operations** | `fnp.matmul()`, `fnp.einsum()` | Depends on dimensions — typically dominates your budget |
+| **Random generation** | `fnp.random.normal()`, `fnp.random.uniform()` | Output element count |
 
-**Key insight:** `we.matmul` on `(n, n)` matrices costs `O(n^3)` FLOPs. For width-100 networks, a single matmul costs ~1M FLOPs. Most of your budget goes to matrix operations.
+**Key insight:** `fnp.matmul` on `(n, n)` matrices costs `O(n^3)` FLOPs. For width-100 networks, a single matmul costs ~1M FLOPs. Most of your budget goes to matrix operations.
 
 ## Check your budget usage
 
 Wrap your estimator logic in a `BudgetContext` to see how many FLOPs it consumes:
 
 ```python
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
-with we.BudgetContext(flop_budget=100_000_000) as budget:
+with flops.BudgetContext(flop_budget=100_000_000) as budget:
     result = estimator.predict(mlp, budget=100_000_000)
 
 print(f"FLOPs used: {budget.flops_used:,}")
@@ -42,7 +43,7 @@ If you also want a wall-clock guardrail while debugging locally, set
 `wall_time_limit_s` on the same `BudgetContext`:
 
 ```python
-with we.BudgetContext(
+with flops.BudgetContext(
     flop_budget=100_000_000,
     wall_time_limit_s=2.0,
 ) as budget:
@@ -52,17 +53,18 @@ with we.BudgetContext(
 ## Get a per-operation breakdown
 
 Use `budget.summary()` for the current explicit context or
-`we.budget_summary()` for the session/global view to see which operations
+`fnp.budget_summary()` for the session/global view to see which operations
 consume the most FLOPs:
 
 ```python
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
-with we.BudgetContext(flop_budget=100_000_000) as budget:
+with flops.BudgetContext(flop_budget=100_000_000) as budget:
     result = estimator.predict(mlp, budget=100_000_000)
     print(budget.summary())
 
-we.budget_summary()
+fnp.budget_summary()
 ```
 
 This prints a table showing each operation's name, call count, and cumulative FLOP cost — letting you identify the expensive operations to optimize.
@@ -70,8 +72,8 @@ This prints a table showing each operation's name, call count, and cumulative FL
 The same summaries also show timing data:
 
 - `wall_time_s`: total elapsed time for the context
-- `tracked_time_s`: time spent inside counted whest calls
-- `untracked_time_s`: time spent outside counted whest calls
+- `tracked_time_s`: time spent inside counted flopscope calls
+- `untracked_time_s`: time spent outside counted flopscope calls
 
 In `whest run`, the CLI flags map to these concepts as follows:
 
@@ -90,11 +92,11 @@ If `budget_exhausted` is `true`, your predictions were discarded. You need to re
 
 ## Optimization tips
 
-1. **Matmul dominates.** Each `we.matmul(W.T, mu)` on a `(width, width)` matrix costs `O(width^2)` FLOPs per layer. Reducing the number of matmuls (or their dimensions) has the biggest impact.
+1. **Matmul dominates.** Each `fnp.matmul(W.T, mu)` on a `(width, width)` matrix costs `O(width^2)` FLOPs per layer. Reducing the number of matmuls (or their dimensions) has the biggest impact.
 
 2. **Diagonal approximations save FLOPs.** Mean propagation uses diagonal variance (`O(width^2)` per layer) instead of full covariance propagation (`O(width^3)` per layer). Choose the right level of approximation for your budget.
 
-3. **Array creation is free.** `we.array()`, `we.zeros()`, `we.ones()`, `we.eye()` cost 0 FLOPs. Precompute and store intermediate values freely.
+3. **Array creation is free.** `fnp.array()`, `fnp.zeros()`, `fnp.ones()`, `fnp.eye()` cost 0 FLOPs. Precompute and store intermediate values freely.
 
 4. **Use the combined estimator pattern.** Route between cheap (mean propagation) and expensive (covariance propagation) algorithms based on the available FLOP budget. See [`examples/estimators/combined_estimator.py`](../../examples/estimators/combined_estimator.py).
 
