@@ -93,9 +93,12 @@ def create_dataset(
         )
         if normalized_sampling is not None:
             sampling_budget_breakdowns.append(normalized_sampling)
-        all_means_list.append(fnp.asarray(all_means, dtype=fnp.float32))
-        final_means_list.append(fnp.asarray(final_mean, dtype=fnp.float32))
-        avg_variances.append(avg_var)
+        # The triple is always bound: flopscope's namespace `__exit__` returns
+        # False at runtime (never suppresses), but pyright reads the `-> bool`
+        # annotation conservatively.
+        all_means_list.append(fnp.asarray(all_means, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
+        final_means_list.append(fnp.asarray(final_mean, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
+        avg_variances.append(avg_var)  # pyright: ignore[reportPossiblyUnboundVariable]
         if progress is not None:
             progress({"phase": "sampling", "completed": i + 1, "total": n_mlps})
 

@@ -12,6 +12,7 @@ from whestbench.scoring import (
     make_contest,
     make_contest_from_bundle,
 )
+from whestbench.sdk import BaseEstimator
 
 
 def test_contest_spec_validates() -> None:
@@ -641,11 +642,11 @@ def test_make_contest_from_bundle_rejects_spec_mismatch() -> None:
 # --- evaluate_estimator error propagation --------------------------------
 
 
-class _RaisingEstimator:
+class _RaisingEstimator(BaseEstimator):
     def __init__(self, exc: Exception) -> None:
         self._exc = exc
 
-    def predict(self, mlp, budget):  # type: ignore[no-untyped-def]
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         raise self._exc
 
 
@@ -664,7 +665,7 @@ def test_evaluate_estimator_captures_traceback_and_error_code() -> None:
         assert entry["error_code"] == "RuntimeError"
         assert isinstance(entry["traceback"], str)
         assert "boom from predict" in entry["traceback"]
-    assert "RuntimeError" in entry["traceback"]
+        assert "RuntimeError" in entry["traceback"]
     assert result["primary_score"] == float("inf")
 
 
