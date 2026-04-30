@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
-import whest as we
+import flopscope.numpy as fnp
 
 from .domain import MLP
 
@@ -26,11 +26,11 @@ class BaseEstimator(ABC):
     """Estimator contract for participant implementations.
 
     Participants subclass this and implement ``predict`` to return
-    predicted means for all layers as a single ``(depth, width)`` whest array.
+    predicted means for all layers as a single ``(depth, width)`` flopscope array.
     """
 
     @abstractmethod
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         """Return predicted means for all layers, shape ``(depth, width)``."""
         raise NotImplementedError
 

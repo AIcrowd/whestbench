@@ -23,7 +23,7 @@ from typing import (
     overload,
 )
 
-import whest as we
+import flopscope.numpy as fnp
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
@@ -760,7 +760,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         type=float,
         default=None,
         metavar="SECONDS",
-        help="Time limit for non-whest operations per predict call (default: unlimited).",
+        help="Time limit for non-flopscope operations per predict call (default: unlimited).",
     )
     run_parser.add_argument(
         "--seed",
@@ -823,7 +823,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     profile_parser = subparsers.add_parser(
         "profile-simulation",
-        help="Benchmark whest simulation performance.",
+        help="Benchmark flopscope simulation performance.",
     )
     profile_parser.add_argument(
         "--preset",
@@ -892,7 +892,7 @@ class _RunnerEstimator(BaseEstimator):
     def __init__(self, runner: "Any") -> None:
         self._runner = runner
 
-    def predict(self, mlp: "Any", budget: int) -> we.ndarray:
+    def predict(self, mlp: "Any", budget: int) -> fnp.ndarray:
         return self._runner.predict(mlp, budget)
 
     def last_predict_stats(self) -> Optional[Dict[str, Any]]:

@@ -8,7 +8,8 @@ import traceback
 from pathlib import Path
 from typing import Optional
 
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 from .domain import MLP
 from .loader import load_estimator_from_path
@@ -17,7 +18,7 @@ from .sdk import BaseEstimator, SetupContext
 
 
 def _payload_to_mlp(payload: dict) -> MLP:
-    weights = [we.array(we.asarray(w, dtype=we.float32)) for w in payload["weights"]]
+    weights = [fnp.array(fnp.asarray(w, dtype=fnp.float32)) for w in payload["weights"]]
     mlp = MLP(
         width=int(payload["width"]),
         depth=int(payload["depth"]),
@@ -32,7 +33,7 @@ def _write_response(payload: dict) -> None:
     sys.stdout.flush()
 
 
-def _budget_payload(budget_ctx: we.BudgetContext) -> dict:
+def _budget_payload(budget_ctx: flops.BudgetContext) -> dict:
     return {
         "flop_budget": budget_ctx.flop_budget,
         "flops_used": budget_ctx.flops_used,
@@ -60,7 +61,7 @@ def _handle_predict(
         )
         return
 
-    budget_ctx = we.BudgetContext(
+    budget_ctx = flops.BudgetContext(
         flop_budget=budget,
         wall_time_limit_s=wall_time_limit_s,
         quiet=True,
@@ -70,7 +71,7 @@ def _handle_predict(
             predictions = estimator.predict(mlp, budget)
             flops_used = ctx.flops_used
         validated_predictions = validate_predictions(predictions, depth=mlp.depth, width=mlp.width)
-        arr = we.asarray(validated_predictions, dtype=we.float32)
+        arr = fnp.asarray(validated_predictions, dtype=fnp.float32)
         _write_response(
             {
                 "status": "ok",
@@ -82,7 +83,7 @@ def _handle_predict(
                 "budget_breakdown": _budget_payload(budget_ctx),
             }
         )
-    except we.BudgetExhaustedError:
+    except flops.BudgetExhaustedError:
         _write_response(
             {
                 "status": "budget_exhausted",
@@ -94,7 +95,7 @@ def _handle_predict(
                 "budget_breakdown": _budget_payload(budget_ctx),
             }
         )
-    except we.TimeExhaustedError:
+    except flops.TimeExhaustedError:
         _write_response(
             {
                 "status": "time_exhausted",

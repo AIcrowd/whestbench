@@ -13,9 +13,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-import whest as we
+import flopscope.numpy as fnp
 
-Weights = List[we.ndarray]
+Weights = List[fnp.ndarray]
 
 
 @dataclass(frozen=True)
