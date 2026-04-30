@@ -1,5 +1,5 @@
+import flopscope.numpy as fnp
 import pytest
-import whest as we
 
 from whestbench.generation import sample_mlp
 
@@ -17,26 +17,26 @@ def test_sample_mlp_weight_shapes() -> None:
     for w in mlp.weights:
         assert hasattr(w, "shape")
         assert tuple(w.shape) == (16, 16)
-        assert w.dtype == we.float32
+        assert w.dtype == fnp.float32
 
 
 def test_sample_mlp_he_init_scale() -> None:
     """Verify weights have approximately correct He-init variance."""
-    rng = we.random.default_rng(42)
+    rng = fnp.random.default_rng(42)
     width = 256
     mlp = sample_mlp(width=width, depth=10, rng=rng)
     expected_var = 2.0 / width
-    actual_var = we.var(we.concatenate([we.asarray(w).flatten() for w in mlp.weights]))
+    actual_var = fnp.var(fnp.concatenate([fnp.asarray(w).flatten() for w in mlp.weights]))
     assert abs(actual_var - expected_var) < 0.01 * expected_var
 
 
 def test_sample_mlp_reproducible_with_rng() -> None:
-    rng1 = we.random.default_rng(123)
-    rng2 = we.random.default_rng(123)
+    rng1 = fnp.random.default_rng(123)
+    rng2 = fnp.random.default_rng(123)
     mlp1 = sample_mlp(width=8, depth=2, rng=rng1)
     mlp2 = sample_mlp(width=8, depth=2, rng=rng2)
     for w1, w2 in zip(mlp1.weights, mlp2.weights):
-        we.testing.assert_array_equal(we.asarray(w1), we.asarray(w2))
+        fnp.testing.assert_array_equal(fnp.asarray(w1), fnp.asarray(w2))
 
 
 def test_sample_mlp_rejects_invalid_width() -> None:

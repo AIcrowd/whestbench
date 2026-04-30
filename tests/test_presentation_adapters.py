@@ -369,10 +369,10 @@ def test_build_profile_presentation_includes_correctness_and_timing_rows() -> No
     doc = build_profile_presentation(
         {
             "hardware": {"os": "Darwin", "machine": "arm64", "python_version": "3.14.3"},
-            "correctness": [{"backend": "whest", "passed": True, "error": ""}],
+            "correctness": [{"backend": "flopscope", "passed": True, "error": ""}],
             "timing": [
                 {
-                    "backend": "whest",
+                    "backend": "flopscope",
                     "dims": "256×4×10k",
                     "run_mlp": "0.0444s",
                     "sample_layer_statistics": "0.1135s",
@@ -391,4 +391,4 @@ def test_build_profile_presentation_includes_correctness_and_timing_rows() -> No
         if isinstance(section, TableSection) and section.title == "Detail"
     )
     assert detail.columns == ["Backend", "Dims", "run_mlp", "sample_layer_statistics"]
-    assert detail.rows == [["whest", "256×4×10k", "0.0444s", "0.1135s"]]
+    assert detail.rows == [["flopscope", "256×4×10k", "0.0444s", "0.1135s"]]

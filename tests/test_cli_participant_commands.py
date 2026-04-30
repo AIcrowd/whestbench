@@ -1155,12 +1155,13 @@ def test_run_json_output_includes_validation_details_for_shape_error(
     estimator.write_text(
         dedent(
             """
-            import whest as we
+            import flopscope as flops
+            import flopscope.numpy as fnp
             from whestbench import BaseEstimator
 
             class Estimator(BaseEstimator):
                 def predict(self, mlp, budget):
-                    return we.ones((mlp.width, mlp.depth), dtype=we.float32)
+                    return fnp.ones((mlp.width, mlp.depth), dtype=fnp.float32)
             """
         ).lstrip(),
         encoding="utf-8",
@@ -1191,12 +1192,13 @@ def test_run_plain_output_shows_validation_hint_details(
     estimator.write_text(
         dedent(
             """
-            import whest as we
+            import flopscope as flops
+            import flopscope.numpy as fnp
             from whestbench import BaseEstimator
 
             class Estimator(BaseEstimator):
                 def predict(self, mlp, budget):
-                    return we.ones((mlp.width, mlp.depth), dtype=we.float32)
+                    return fnp.ones((mlp.width, mlp.depth), dtype=fnp.float32)
             """
         ).lstrip(),
         encoding="utf-8",
@@ -1234,12 +1236,13 @@ def test_run_budget_exhausted_does_not_set_exit_1(
     estimator.write_text(
         dedent(
             """
-            import whest as we
+            import flopscope as flops
+            import flopscope.numpy as fnp
             from whestbench import BaseEstimator
 
             class Estimator(BaseEstimator):
                 def predict(self, mlp, budget):
-                    raise we.BudgetExhaustedError('test', flop_cost=0, flops_remaining=0)
+                    raise flops.BudgetExhaustedError('test', flop_cost=0, flops_remaining=0)
             """
         ).lstrip(),
         encoding="utf-8",
