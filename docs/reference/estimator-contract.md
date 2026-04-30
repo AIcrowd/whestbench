@@ -6,7 +6,7 @@ Use this page when you need exact estimator I/O requirements.
 
 ## Required interface
 
-`predict(self, mlp: MLP, budget: int) -> we.ndarray`
+`predict(self, mlp: MLP, budget: int) -> fnp.ndarray`
 
 Optional lifecycle hooks:
 
@@ -42,7 +42,8 @@ For traversal examples, see [Inspect and Traverse MLP Structure](../how-to/inspe
 
 ## FLOP tracking
 
-Your estimator must use whest primitives (`import whest as we`) for all numerical computation. whest tracks FLOP usage analytically. If the total FLOPs across your entire `predict` call exceed `flop_budget`, all predictions for that MLP are replaced with zero vectors and your MSE for that MLP is computed against zeros.
+Your estimator must use flopscope primitives (`import flopscope as flops
+import flopscope.numpy as fnp`) for all numerical computation. flopscope tracks FLOP usage analytically. If the total FLOPs across your entire `predict` call exceed `flop_budget`, all predictions for that MLP are replaced with zero vectors and your MSE for that MLP is computed against zeros.
 
 ## Failure semantics
 

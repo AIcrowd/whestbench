@@ -36,7 +36,7 @@ You can invoke `whest smoke-test`, see the built-in dashboard, and receive next-
 
 ## 🛠 Common first failure
 
-Symptom: `whest: command not found`
+Symptom: `flopscope: command not found`
 
 Fix: use the editable fallback invocation (`uv run --with-editable . whest smoke-test`) and confirm `uv` is on your `PATH`.
 
@@ -48,10 +48,10 @@ When `smoke-test` fails or behaves unexpectedly, `whest doctor` runs a one-scree
 whest doctor
 ```
 
-See [CLI Reference → `whest doctor`](../reference/cli-reference.md#whest-doctor) for flags (`--json`, `--strict`, `--no-rich`, `--debug`) and exit-code semantics.
+See [CLI Reference → `whest doctor`](../reference/cli-reference.md#flopscope-doctor) for flags (`--json`, `--strict`, `--no-rich`, `--debug`) and exit-code semantics.
 
 ## ➡️ Next step
 
 - [First Local Run](./first-local-run.md)
 - [CLI Reference](../reference/cli-reference.md)
-- [Whest Primer](../reference/whest-primer.md) — how FLOP tracking works under the hood
+- [Flopscope Primer](../reference/flopscope-primer.md) — how FLOP tracking works under the hood

@@ -13,14 +13,15 @@ Minimal structure:
 ```python
 from __future__ import annotations
 
-import whest as we
+import flopscope as flops
+import flopscope.numpy as fnp
 
 from whestbench import BaseEstimator, MLP
 
 
 class Estimator(BaseEstimator):
-    def predict(self, mlp: MLP, budget: int) -> we.ndarray:
-        return we.zeros((mlp.depth, mlp.width))
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
+        return fnp.zeros((mlp.depth, mlp.width))
 ```
 
 ## Expected outcome
