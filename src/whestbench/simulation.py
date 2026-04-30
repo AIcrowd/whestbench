@@ -95,7 +95,9 @@ def sample_layer_statistics(
     width = mlp.width
     depth = mlp.depth
     chunk_size = _pick_chunk_size(width)
-    rng = fnp.random.default_rng() if rng is None else rng
+    if rng is None:
+        rng = fnp.random.default_rng()
+    assert rng is not None  # narrows for pyright; flopscope's default_rng is untyped
 
     layer_sums = fnp.zeros((depth, width), dtype=fnp.float64)
     final_sum_sq = fnp.zeros(width, dtype=fnp.float64)

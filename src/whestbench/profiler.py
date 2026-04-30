@@ -857,6 +857,7 @@ def run_profile(
             pass
 
     # Pre-flight correctness check
+    correctness_task = None
     if progress_ctx is not None:
         correctness_task = progress_ctx.add_task("Correctness checks", total=1)
         progress_ctx.start()
@@ -873,7 +874,7 @@ def run_profile(
 
     if log_progress and emit_human_output:
         print("PASS" if cr.passed else f"FAIL: {cr.error}", flush=True)
-    if progress_ctx is not None:
+    if progress_ctx is not None and correctness_task is not None:
         progress_ctx.advance(correctness_task)
 
     # Timing sweep (only if correctness passed)

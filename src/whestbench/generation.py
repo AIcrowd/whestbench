@@ -22,7 +22,9 @@ def sample_mlp(width: int, depth: int, rng: Optional[fnp.random.Generator] = Non
         raise ValueError("width must be positive.")
     if depth <= 0:
         raise ValueError("depth must be positive.")
-    rng = rng or fnp.random.default_rng()
+    if rng is None:
+        rng = fnp.random.default_rng()
+    assert rng is not None  # narrows for pyright; flopscope's default_rng is untyped
     scale = float(fnp.sqrt(2.0 / width))
     weights = [
         fnp.array((rng.standard_normal((width, width)) * scale).astype(fnp.float32))

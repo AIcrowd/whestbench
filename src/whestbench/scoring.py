@@ -103,11 +103,14 @@ def make_contest(
         )
         if normalized_sampling is not None:
             sampling_breakdowns.append(normalized_sampling)
-        # Convert to flopscope arrays for ground truth storage
-        all_layer_targets.append(fnp.asarray(all_means, dtype=fnp.float32))
-        final_targets.append(fnp.asarray(final_mean, dtype=fnp.float32))
+        # Convert to flopscope arrays for ground truth storage.
+        # The triple is always bound: flopscope's namespace `__exit__` returns
+        # False at runtime (never suppresses), but pyright reads the `-> bool`
+        # annotation conservatively.
+        all_layer_targets.append(fnp.asarray(all_means, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
+        final_targets.append(fnp.asarray(final_mean, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
         mlps.append(mlp)
-        avg_variances.append(avg_var)
+        avg_variances.append(avg_var)  # pyright: ignore[reportPossiblyUnboundVariable]
         if on_mlp_done is not None:
             on_mlp_done(i + 1)
 

@@ -21,7 +21,7 @@ def test_base_estimator_requires_predict() -> None:
         pass
 
     with pytest.raises(TypeError):
-        IncompleteEstimator()
+        IncompleteEstimator()  # pyright: ignore[reportAbstractUsage]
 
 
 def test_base_estimator_default_setup_teardown() -> None:
