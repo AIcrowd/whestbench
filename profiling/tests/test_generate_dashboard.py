@@ -192,7 +192,7 @@ def test_fetch_cdn_libs_returns_dict():
 def test_generate_html_structure():
     html = generate_html(MULTI_CONFIG_DATA)
     assert "<!DOCTYPE html>" in html
-    assert "whest Profiling Dashboard" in html
+    assert "flopscope Profiling Dashboard" in html
     assert "window.__PROFILING_DATA__" in html
     assert "compute-small" in html
     assert "SpeedupHeatmap" in html or "App" in html
