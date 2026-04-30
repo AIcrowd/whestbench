@@ -45,10 +45,6 @@ ignore = ["E501"]
 [tool.pyright]
 pythonVersion = "3.10"
 typeCheckingMode = "standard"
-# flopscope re-exports its public API as `from flopscope._X import Y`
-# rather than `from flopscope._X import Y as Y`, which pyright treats as a
-# private-import access. Suppress the false positives here.
-reportPrivateImportUsage = "none"
 include = [
     "src",
     "tests",

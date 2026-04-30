@@ -112,7 +112,7 @@ wheels = [
 [[package]]
 name = "flopscope"
 version = "0.2.0"
-source = { git = "https://github.com/AIcrowd/flopscope.git#1c44b1d0cb03b740cfd0476821f287042cd1892e" }
+source = { git = "https://github.com/AIcrowd/flopscope.git#51f17a141848454ca766ae7b9b5f4dd6b1a7746c" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -121,7 +121,7 @@ dependencies = [
 [[package]]
 name = "flopscope-server"
 version = "0.1.0"
-source = { git = "https://github.com/AIcrowd/flopscope.git?subdirectory=flopscope-server#1c44b1d0cb03b740cfd0476821f287042cd1892e" }
+source = { git = "https://github.com/AIcrowd/flopscope.git?subdirectory=flopscope-server#51f17a141848454ca766ae7b9b5f4dd6b1a7746c" }
 dependencies = [
     { name = "flopscope" },
     { name = "msgpack" },

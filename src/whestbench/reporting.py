@@ -16,7 +16,7 @@ from typing import Any, Optional
 from rich import box
 from rich.align import Align
 from rich.columns import Columns
-from rich.console import Console, ConsoleRenderable, Group
+from rich.console import Console, ConsoleRenderable, Group, RenderableType
 from rich.panel import Panel
 from rich.progress_bar import ProgressBar
 from rich.table import Table
@@ -141,8 +141,8 @@ def _is_context_section(section: object) -> bool:
     }
 
 
-def _settled_section_renderables(doc: CommandPresentation) -> list[object]:
-    renderables: list[object] = []
+def _settled_section_renderables(doc: CommandPresentation) -> list[RenderableType]:
+    renderables: list[RenderableType] = []
     for section in doc.sections:
         if _is_context_section(section):
             continue
@@ -158,7 +158,7 @@ def _render_human_report_blocks(
     include_context: bool,
     include_epilogues: bool,
 ) -> str:
-    blocks: list[object] = [_report_header_block(doc.title)]
+    blocks: list[RenderableType] = [_report_header_block(doc.title)]
     if include_context:
         context_width = 80 if output_format == "plain" else None
         blocks.append(build_human_context_renderable(report, console_width=context_width))
