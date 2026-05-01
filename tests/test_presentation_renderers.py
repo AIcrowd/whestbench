@@ -274,6 +274,7 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
                 available=True,
                 total_flops="80",
                 tracked_time="0.020000s",
+                flopscope_overhead_time="0.005000s",
                 untracked_time="0.010000s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
@@ -282,6 +283,7 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="40",
                         tracked_time="0.020000s",
+                        flopscope_overhead_time="0.005000s",
                     )
                 ],
                 source_note="restored from dataset metadata for the MLPs used in this run.",
@@ -291,6 +293,7 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
                 available=True,
                 total_flops="90",
                 tracked_time="0.030000s",
+                flopscope_overhead_time="0.007500s",
                 untracked_time="0.010000s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
@@ -299,6 +302,7 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="45",
                         tracked_time="0.030000s",
+                        flopscope_overhead_time="0.007500s",
                     )
                 ],
                 gauge=BudgetBreakdownGauge(
@@ -379,6 +383,7 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                 available=True,
                 total_flops="1.33e+06",
                 tracked_time="0.000841s",
+                flopscope_overhead_time="0.000210s",
                 untracked_time="0.003194s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
@@ -387,6 +392,7 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="1.33e+06",
                         tracked_time="0.000841s",
+                        flopscope_overhead_time="0.000210s",
                     )
                 ],
             ),
@@ -395,6 +401,7 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                 available=True,
                 total_flops="4.84e+07",
                 tracked_time="0.005277s",
+                flopscope_overhead_time="0.001319s",
                 untracked_time="0.012066s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
@@ -403,6 +410,7 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="4.84e+07",
                         tracked_time="0.005277s",
+                        flopscope_overhead_time="0.001319s",
                     )
                 ],
                 gauge=BudgetBreakdownGauge(
@@ -437,6 +445,7 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
         assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
         assert "Total FLOPs [flops_used]" in rendered
         assert "Tracked Time [tracked_time_s]" in rendered
+        assert "Flopscope Overhead [flopscope_overhead_time_s]" in rendered
         assert "Untracked Time [untracked_time_s]" in rendered
         assert "aggregated across all evaluated MLPs" in rendered
         assert "Primary Score [primary_score]" in rendered
@@ -454,6 +463,7 @@ def test_budget_breakdown_rich_renderer_uses_centered_rich_tables() -> None:
         available=True,
         total_flops="1.33e+06",
         tracked_time="0.000841s",
+        flopscope_overhead_time="0.000210s",
         untracked_time="0.003194s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
@@ -462,6 +472,7 @@ def test_budget_breakdown_rich_renderer_uses_centered_rich_tables() -> None:
                 percent_of_section_flops="100.0%",
                 mean_flops_per_mlp="1.33e+06",
                 tracked_time="0.000841s",
+                flopscope_overhead_time="0.000210s",
             )
         ],
     )
@@ -485,6 +496,7 @@ def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
         available=True,
         total_flops="1.33e+06",
         tracked_time="0.000841s",
+        flopscope_overhead_time="0.000210s",
         untracked_time="0.003194s",
     )
 
@@ -499,6 +511,7 @@ def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
     first_label = label_cells[0]
     second_label = label_cells[1]
     third_label = label_cells[2]
+    fourth_label = label_cells[3]
 
     assert isinstance(first_label, Text)
     assert first_label.plain == "Total FLOPs [flops_used]"
@@ -513,8 +526,14 @@ def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
         "bold bright_white",
     ]
     assert isinstance(third_label, Text)
-    assert third_label.plain == "Untracked Time [untracked_time_s]"
+    assert third_label.plain == "Flopscope Overhead [flopscope_overhead_time_s]"
     assert [str(span.style) for span in third_label.spans] == [
+        "bold bright_yellow",
+        "bold bright_white",
+    ]
+    assert isinstance(fourth_label, Text)
+    assert fourth_label.plain == "Untracked Time [untracked_time_s]"
+    assert [str(span.style) for span in fourth_label.spans] == [
         "bold bright_green",
         "bold bright_white",
     ]
@@ -581,6 +600,7 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
         available=True,
         total_flops="4.84e+07",
         tracked_time="0.005277s",
+        flopscope_overhead_time="0.001319s",
         untracked_time="0.012066s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
@@ -589,6 +609,7 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
                 percent_of_section_flops="100.0%",
                 mean_flops_per_mlp="4.84e+07",
                 tracked_time="0.005277s",
+                flopscope_overhead_time="0.001319s",
             )
         ],
     )
@@ -616,6 +637,7 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
         assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
         assert "Total FLOPs [flops_used]" in rendered
         assert "Tracked Time [tracked_time_s]" in rendered
+        assert "Flopscope Overhead [flopscope_overhead_time_s]" in rendered
         assert "Untracked Time [untracked_time_s]" in rendered
         assert "Primary Score [primary_score]" in rendered
         assert "Secondary Score [secondary_score]" in rendered
@@ -628,6 +650,7 @@ def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
         available=True,
         total_flops="4.84e+07",
         tracked_time="0.005277s",
+        flopscope_overhead_time="0.001319s",
         untracked_time="0.012066s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
@@ -636,6 +659,7 @@ def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
                 percent_of_section_flops="100.0%",
                 mean_flops_per_mlp="4.84e+07",
                 tracked_time="0.005277s",
+                flopscope_overhead_time="0.001319s",
             )
         ],
     )
@@ -672,6 +696,7 @@ def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_te
         available=True,
         total_flops="123456789012345678901234567890",
         tracked_time="0.12345678901234567890s",
+        flopscope_overhead_time="0.030864s",
         untracked_time="0.98765432109876543210s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
@@ -680,6 +705,7 @@ def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_te
                 percent_of_section_flops="100.0000000000%",
                 mean_flops_per_mlp="12345678901234567890",
                 tracked_time="0.12345678901234567890s",
+                flopscope_overhead_time="0.030864s",
             )
         ],
     )

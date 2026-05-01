@@ -132,6 +132,7 @@ class BudgetBreakdownNamespaceRow:
     percent_of_section_flops: str
     mean_flops_per_mlp: str
     tracked_time: str
+    flopscope_overhead_time: str
 
 
 @dataclass(frozen=True)
@@ -158,6 +159,7 @@ class BudgetBreakdownSection:
     unavailable_message: str | None = None
     total_flops: str | None = None
     tracked_time: str | None = None
+    flopscope_overhead_time: str | None = None
     untracked_time: str | None = None
     namespace_rows: list[BudgetBreakdownNamespaceRow] = field(default_factory=list)
     gauge: BudgetBreakdownGauge | None = None

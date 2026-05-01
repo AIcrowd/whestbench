@@ -212,6 +212,7 @@ def _predict_stats_to_dict(stats: Any) -> Optional[Dict[str, Any]]:
         "flops_used",
         "wall_time_s",
         "tracked_time_s",
+        "flopscope_overhead_time_s",
         "untracked_time_s",
         "budget_breakdown",
     ):
@@ -249,6 +250,7 @@ def _normalize_sampling_budget_breakdown(
         "flops_remaining": int(raw.get("flops_remaining", 0)),
         "wall_time_s": float(raw.get("wall_time_s", 0.0) or 0.0),
         "tracked_time_s": float(raw.get("tracked_time_s", 0.0) or 0.0),
+        "flopscope_overhead_time_s": float(raw["flopscope_overhead_time_s"]),
         "untracked_time_s": float(raw.get("untracked_time_s", 0.0) or 0.0),
         "by_namespace": {},
     }
@@ -257,11 +259,18 @@ def _normalize_sampling_budget_breakdown(
         normalized_namespace = _normalize_sampling_namespace(namespace)
         merged_bucket = normalized["by_namespace"].setdefault(
             normalized_namespace,
-            {"flops_used": 0, "calls": 0, "tracked_time_s": 0.0, "operations": {}},
+            {
+                "flops_used": 0,
+                "calls": 0,
+                "tracked_time_s": 0.0,
+                "flopscope_overhead_time_s": 0.0,
+                "operations": {},
+            },
         )
         merged_bucket["flops_used"] += int(bucket.get("flops_used", 0))
         merged_bucket["calls"] += int(bucket.get("calls", 0))
         merged_bucket["tracked_time_s"] += float(bucket.get("tracked_time_s", 0.0) or 0.0)
+        merged_bucket["flopscope_overhead_time_s"] += float(bucket["flopscope_overhead_time_s"])
         for op_name, op_info in (bucket.get("operations") or {}).items():
             merged_op = merged_bucket["operations"].setdefault(
                 op_name, {"flop_cost": 0, "calls": 0, "duration": 0.0}
@@ -274,6 +283,7 @@ def _normalize_sampling_budget_breakdown(
             "flops_used": normalized["flops_used"],
             "calls": int(raw.get("calls", 0)),
             "tracked_time_s": normalized["tracked_time_s"],
+            "flopscope_overhead_time_s": normalized["flopscope_overhead_time_s"],
             "operations": dict(raw.get("operations", {})),
         }
     return normalized
@@ -290,6 +300,7 @@ def _normalize_estimator_budget_breakdown(
         "flops_remaining": int(raw.get("flops_remaining", 0)),
         "wall_time_s": float(raw.get("wall_time_s", 0.0) or 0.0),
         "tracked_time_s": float(raw.get("tracked_time_s", 0.0) or 0.0),
+        "flopscope_overhead_time_s": float(raw["flopscope_overhead_time_s"]),
         "untracked_time_s": float(raw.get("untracked_time_s", 0.0) or 0.0),
         "by_namespace": {},
     }
@@ -298,11 +309,18 @@ def _normalize_estimator_budget_breakdown(
         normalized_namespace = _normalize_estimator_namespace(namespace)
         merged_bucket = normalized["by_namespace"].setdefault(
             normalized_namespace,
-            {"flops_used": 0, "calls": 0, "tracked_time_s": 0.0, "operations": {}},
+            {
+                "flops_used": 0,
+                "calls": 0,
+                "tracked_time_s": 0.0,
+                "flopscope_overhead_time_s": 0.0,
+                "operations": {},
+            },
         )
         merged_bucket["flops_used"] += int(bucket.get("flops_used", 0))
         merged_bucket["calls"] += int(bucket.get("calls", 0))
         merged_bucket["tracked_time_s"] += float(bucket.get("tracked_time_s", 0.0) or 0.0)
+        merged_bucket["flopscope_overhead_time_s"] += float(bucket["flopscope_overhead_time_s"])
         for op_name, op_info in (bucket.get("operations") or {}).items():
             merged_op = merged_bucket["operations"].setdefault(
                 op_name, {"flop_cost": 0, "calls": 0, "duration": 0.0}
@@ -315,6 +333,7 @@ def _normalize_estimator_budget_breakdown(
             "flops_used": normalized["flops_used"],
             "calls": int(raw.get("calls", 0)),
             "tracked_time_s": normalized["tracked_time_s"],
+            "flopscope_overhead_time_s": normalized["flopscope_overhead_time_s"],
             "operations": dict(raw.get("operations", {})),
         }
     return normalized
@@ -331,6 +350,7 @@ def _aggregate_budget_breakdowns(
         "flops_remaining": 0,
         "wall_time_s": 0.0,
         "tracked_time_s": 0.0,
+        "flopscope_overhead_time_s": 0.0,
         "untracked_time_s": 0.0,
         "by_namespace": {},
     }
@@ -340,15 +360,23 @@ def _aggregate_budget_breakdowns(
         aggregate["flops_remaining"] += int(breakdown.get("flops_remaining", 0))
         aggregate["wall_time_s"] += float(breakdown.get("wall_time_s", 0.0) or 0.0)
         aggregate["tracked_time_s"] += float(breakdown.get("tracked_time_s", 0.0) or 0.0)
+        aggregate["flopscope_overhead_time_s"] += float(breakdown["flopscope_overhead_time_s"])
         aggregate["untracked_time_s"] += float(breakdown.get("untracked_time_s", 0.0) or 0.0)
         for namespace, bucket in (breakdown.get("by_namespace") or {}).items():
             merged = aggregate["by_namespace"].setdefault(
                 namespace,
-                {"flops_used": 0, "calls": 0, "tracked_time_s": 0.0, "operations": {}},
+                {
+                    "flops_used": 0,
+                    "calls": 0,
+                    "tracked_time_s": 0.0,
+                    "flopscope_overhead_time_s": 0.0,
+                    "operations": {},
+                },
             )
             merged["flops_used"] += int(bucket.get("flops_used", 0))
             merged["calls"] += int(bucket.get("calls", 0))
             merged["tracked_time_s"] += float(bucket.get("tracked_time_s", 0.0) or 0.0)
+            merged["flopscope_overhead_time_s"] += float(bucket["flopscope_overhead_time_s"])
             for op_name, op_info in (bucket.get("operations") or {}).items():
                 op_bucket = merged["operations"].setdefault(
                     op_name, {"flop_cost": 0, "calls": 0, "duration": 0.0}
@@ -478,6 +506,7 @@ def evaluate_estimator(
                     "untracked_time_exhausted": False,
                     "wall_time_s": 0.0,
                     "tracked_time_s": 0.0,
+                    "flopscope_overhead_time_s": 0.0,
                     "untracked_time_s": 0.0,
                     "breakdowns": {"estimator": None},
                 }
@@ -488,9 +517,11 @@ def evaluate_estimator(
                 on_mlp_scored(i + 1)
             continue
 
-        # Read timing after BudgetContext.__exit__ so wall_time_s is populated
+        # Read timing after BudgetContext.__exit__ so wall_time_s is populated.
+        # Decomposition (per flopscope#80): wall ≈ tracked + flopscope_overhead + untracked.
         wall_time_s = budget_ctx.wall_time_s or 0.0
         tracked_time_s = budget_ctx.total_tracked_time
+        flopscope_overhead_time_s = budget_ctx.flopscope_overhead_time
         untracked_time_s = budget_ctx.untracked_time or 0.0
 
         if (
@@ -538,6 +569,7 @@ def evaluate_estimator(
                 "untracked_time_exhausted": untracked_time_exhausted,
                 "wall_time_s": wall_time_s,
                 "tracked_time_s": tracked_time_s,
+                "flopscope_overhead_time_s": flopscope_overhead_time_s,
                 "untracked_time_s": untracked_time_s,
                 "breakdowns": {"estimator": normalized_breakdown},
             }

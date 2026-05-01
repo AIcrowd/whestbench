@@ -28,15 +28,18 @@ def _sample_report() -> dict:
                     "flops_used": 60,
                     "flops_remaining": 40,
                     "tracked_time_s": 0.015,
+                    "flopscope_overhead_time_s": 0.00375,
                     "untracked_time_s": 0.005,
                     "by_namespace": {
                         "sampling.sample_layer_statistics": {
                             "flops_used": 40,
                             "tracked_time_s": 0.01,
+                            "flopscope_overhead_time_s": 0.0025,
                         },
                         "sampling.draw_weights": {
                             "flops_used": 20,
                             "tracked_time_s": 0.005,
+                            "flopscope_overhead_time_s": 0.00125,
                         },
                     },
                 },
@@ -45,15 +48,18 @@ def _sample_report() -> dict:
                     "flops_used": 30,
                     "flops_remaining": 70,
                     "tracked_time_s": 0.01,
+                    "flopscope_overhead_time_s": 0.0025,
                     "untracked_time_s": 0.002,
                     "by_namespace": {
                         "estimator.phase": {
                             "flops_used": 18,
                             "tracked_time_s": 0.006,
+                            "flopscope_overhead_time_s": 0.0015,
                         },
                         "estimator.estimator-client": {
                             "flops_used": 12,
                             "tracked_time_s": 0.004,
+                            "flopscope_overhead_time_s": 0.001,
                         },
                     },
                 },
