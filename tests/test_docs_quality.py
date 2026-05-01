@@ -9,7 +9,7 @@ def _doc_len(doc):
 
 
 def _library_markdown_paths(repo_root):
-    paths = [repo_root / "README.md", repo_root / "tools/whestbench-explorer/README.md"]
+    paths = [repo_root / "README.md"]
     docs_root = repo_root / "docs"
     for path in sorted(docs_root.rglob("*.md")):
         rel = path.relative_to(repo_root).as_posix()
