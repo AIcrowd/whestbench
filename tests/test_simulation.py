@@ -1,6 +1,8 @@
 import flopscope as flops
 import flopscope.numpy as fnp
+import pytest
 
+import whestbench.simulation as simulation
 from whestbench.domain import MLP
 from whestbench.generation import sample_mlp
 from whestbench.simulation import (
@@ -85,3 +87,19 @@ def test_sample_layer_statistics_handles_large_sample_count() -> None:
     assert final_mean.shape == (8,)
     assert isinstance(avg_var, float)
     assert avg_var >= 0.0
+
+
+def test_sample_layer_statistics_reports_progress_once_per_chunk(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    mlp = _make_mlp(width=4, depth=1)
+    events: list[dict[str, int | str]] = []
+    monkeypatch.setattr(simulation, "_pick_chunk_size", lambda _width: 4)
+
+    sample_layer_statistics(mlp, n_samples=10, progress=events.append)
+
+    assert events == [
+        {"completed": 1, "total": 3, "unit": "chunks"},
+        {"completed": 2, "total": 3, "unit": "chunks"},
+        {"completed": 3, "total": 3, "unit": "chunks"},
+    ]

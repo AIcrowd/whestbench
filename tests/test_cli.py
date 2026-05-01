@@ -524,7 +524,7 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     assert "results" in captured.out
     assert observed["initial_finished"] == "n/a"
     assert observed["initial_duration"] is None
-    assert observed["total"] == 10
+    assert observed["total"] == 10 * cli.sample_layer_statistics_chunk_count(100, 100 * 100 * 256)
     assert observed["progress_event"] == {"completed": 1}
     assert observed["final_meta"]["run_finished_at_utc"] == "2026-03-01T00:00:03+00:00"
     assert observed["final_meta"]["run_duration_s"] == 3.0
@@ -597,6 +597,38 @@ def test_live_top_pane_scoring_task_hidden_through_generating_phase() -> None:
     assert scoring.started is False
 
 
+def test_live_top_pane_sampling_progress_tracks_chunks_and_mlp_label() -> None:
+    session = cli._LiveTopPaneSession(
+        {"run_config": {}, "run_meta": {}},
+        total=6,
+        n_mlps=2,
+        gen_label="Sampling Ground Truth",
+    )
+
+    session.on_progress(
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 2,
+            "total": 6,
+            "mlp_index": 1,
+            "n_mlps": 2,
+            "mlp_completed": 2,
+            "mlp_total": 3,
+            "unit": "chunks",
+        }
+    )
+
+    sampling = _find_task(session._progress, session._gen_task_id)
+    scoring = _find_task(session._progress, session._scoring_task_id)
+    assert sampling.description == "Sampling Ground Truth"
+    assert sampling.completed == 2
+    assert sampling.total == 6
+    assert sampling.fields["unit"] == "chunks"
+    assert sampling.fields["mlp_label"] == "MLP 1/2"
+    assert scoring.visible is False
+    assert scoring.started is False
+
+
 def test_live_top_pane_scoring_task_revealed_on_first_scoring_event() -> None:
     session = cli._LiveTopPaneSession({"run_config": {}, "run_meta": {}}, total=5, n_mlps=5)
     # Go through generating first, then first scoring event.
@@ -663,3 +695,121 @@ def test_progress_callback_scoring_task_starts_hidden_and_unstarted(
         assert scoring_task.visible is True
         assert scoring_task.started is True
         assert scoring_task.completed == 1
+
+
+def test_progress_callback_sampling_progress_tracks_chunks_and_mlp_label(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(cli, "rich_tqdm", object(), raising=False)
+    captured: dict[str, Any] = {}
+
+    class _FakeLive:
+        def __init__(self, *_a: Any, **_kw: Any) -> None:
+            pass
+
+        def start(self) -> None:
+            pass
+
+        def stop(self) -> None:
+            pass
+
+    monkeypatch.setattr(cli, "Live", _FakeLive)
+    original_progress_cls = cli.Progress
+
+    def _capture_progress(*args: Any, **kwargs: Any) -> Any:
+        progress = original_progress_cls(*args, **kwargs)
+        captured["progress"] = progress
+        return progress
+
+    monkeypatch.setattr(cli, "Progress", _capture_progress)
+
+    with cli._progress_callback(
+        total=6, n_mlps=2, gen_label="Sampling Ground Truth"
+    ) as on_progress:
+        progress = captured["progress"]
+        sampling_task, scoring_task = list(progress.tasks)
+        on_progress(
+            {
+                "phase": "sampling_ground_truth",
+                "completed": 4,
+                "total": 6,
+                "mlp_index": 2,
+                "n_mlps": 2,
+                "mlp_completed": 1,
+                "mlp_total": 3,
+                "unit": "chunks",
+            }
+        )
+
+        sampling_task = next(t for t in progress.tasks if t.id == sampling_task.id)
+        scoring_task = next(t for t in progress.tasks if t.id == scoring_task.id)
+        assert sampling_task.completed == 4
+        assert sampling_task.total == 6
+        assert sampling_task.fields["unit"] == "chunks"
+        assert sampling_task.fields["mlp_label"] == "MLP 2/2"
+        assert scoring_task.visible is False
+        assert scoring_task.started is False
+
+
+def test_plain_run_progress_logs_sampling_chunks_with_throttle(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    times = iter([0.0, 0.1, 0.2, 0.7])
+    monkeypatch.setattr(cli.time, "monotonic", lambda: next(times))
+    logger = cli._PlainRunProgressLogger(n_mlps=2, refresh_interval_s=0.5)
+
+    logger(
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 1,
+            "total": 6,
+            "mlp_index": 1,
+            "n_mlps": 2,
+            "mlp_completed": 1,
+            "mlp_total": 3,
+            "unit": "chunks",
+        }
+    )
+    logger(
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 2,
+            "total": 6,
+            "mlp_index": 1,
+            "n_mlps": 2,
+            "mlp_completed": 2,
+            "mlp_total": 3,
+            "unit": "chunks",
+        }
+    )
+    logger(
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 3,
+            "total": 6,
+            "mlp_index": 1,
+            "n_mlps": 2,
+            "mlp_completed": 3,
+            "mlp_total": 3,
+            "unit": "chunks",
+        }
+    )
+    logger(
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 6,
+            "total": 6,
+            "mlp_index": 2,
+            "n_mlps": 2,
+            "mlp_completed": 3,
+            "mlp_total": 3,
+            "unit": "chunks",
+        }
+    )
+
+    captured = capsys.readouterr()
+    assert captured.err.splitlines() == [
+        "[run] sampling_ground_truth: 1/6 chunks (MLP 1/2)",
+        "[run] sampling_ground_truth: 3/6 chunks (MLP 1/2)",
+        "[run] sampling_ground_truth: 6/6 chunks (MLP 2/2)",
+    ]

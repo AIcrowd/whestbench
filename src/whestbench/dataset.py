@@ -16,7 +16,7 @@ from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
 from .scoring import _normalize_sampling_budget_breakdown
-from .simulation import sample_layer_statistics
+from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_count
 
 SCHEMA_VERSION = "2.2"
 SEED_PROTOCOL_NAME = "whestbench_seedsequence_hierarchy"
@@ -80,13 +80,39 @@ def create_dataset(
     final_means_list: List[fnp.ndarray] = []
     avg_variances: List[float] = []
     sampling_budget_breakdowns: List[Dict[str, Any]] = []
+    chunks_per_mlp = sample_layer_statistics_chunk_count(width, n_samples)
+    total_sampling_chunks = n_mlps * chunks_per_mlp
     for i, mlp in enumerate(mlps):
         sample_stream = fnp.random.default_rng(stream_seed[2 * i + 1])
+
+        def _on_sampling_chunk(
+            event: Dict[str, Any], *, mlp_index: int = i + 1, chunk_offset: int = i * chunks_per_mlp
+        ) -> None:
+            if progress is None:
+                return
+            local_completed = int(event.get("completed", 0))
+            local_total = int(event.get("total", chunks_per_mlp))
+            progress(
+                {
+                    "phase": "sampling",
+                    "completed": chunk_offset + local_completed,
+                    "total": total_sampling_chunks,
+                    "mlp_index": mlp_index,
+                    "n_mlps": n_mlps,
+                    "mlp_completed": local_completed,
+                    "mlp_total": local_total,
+                    "unit": "chunks",
+                }
+            )
+
         with flops.BudgetContext(flop_budget=int(1e15), quiet=True) as sampling_budget:
             with flops.namespace("sampling"):
                 with flops.namespace("sample_layer_statistics"):
                     all_means, final_mean, avg_var = sample_layer_statistics(
-                        mlp, n_samples, rng=sample_stream
+                        mlp,
+                        n_samples,
+                        rng=sample_stream,
+                        progress=_on_sampling_chunk if progress is not None else None,
                     )
         normalized_sampling = _normalize_sampling_budget_breakdown(
             sampling_budget.summary_dict(by_namespace=True)
@@ -99,8 +125,6 @@ def create_dataset(
         all_means_list.append(fnp.asarray(all_means, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
         final_means_list.append(fnp.asarray(final_mean, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
         avg_variances.append(avg_var)  # pyright: ignore[reportPossiblyUnboundVariable]
-        if progress is not None:
-            progress({"phase": "sampling", "completed": i + 1, "total": n_mlps})
 
     all_layer_means = np.stack(all_means_list).astype(np.float32)
     final_means = np.stack(final_means_list).astype(np.float32)

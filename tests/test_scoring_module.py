@@ -5,6 +5,7 @@ import flopscope as flops
 import flopscope.numpy as fnp
 import pytest
 
+import whestbench.simulation as simulation
 from whestbench.domain import MLP
 from whestbench.scoring import (
     ContestSpec,
@@ -74,6 +75,85 @@ def test_make_contest_progress_callback_preserves_sampling_budget_breakdown() ->
     assert data.sampling_budget_breakdown is not None
     assert data.sampling_budget_breakdown["flops_used"] > 0
     assert "sampling.sample_layer_statistics" in data.sampling_budget_breakdown["by_namespace"]
+
+
+def test_make_contest_reports_global_sampling_chunk_progress(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen_mlp_done: list[int] = []
+    seen_sampling: list[dict[str, int | str]] = []
+    monkeypatch.setattr(simulation, "_pick_chunk_size", lambda _width: 4)
+    spec = ContestSpec(width=4, depth=1, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=10)
+
+    make_contest(
+        spec,
+        on_mlp_done=seen_mlp_done.append,
+        on_sampling_progress=seen_sampling.append,
+    )
+
+    assert seen_mlp_done == [1, 2]
+    assert seen_sampling == [
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 1,
+            "total": 6,
+            "mlp_index": 1,
+            "n_mlps": 2,
+            "mlp_completed": 1,
+            "mlp_total": 3,
+            "unit": "chunks",
+        },
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 2,
+            "total": 6,
+            "mlp_index": 1,
+            "n_mlps": 2,
+            "mlp_completed": 2,
+            "mlp_total": 3,
+            "unit": "chunks",
+        },
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 3,
+            "total": 6,
+            "mlp_index": 1,
+            "n_mlps": 2,
+            "mlp_completed": 3,
+            "mlp_total": 3,
+            "unit": "chunks",
+        },
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 4,
+            "total": 6,
+            "mlp_index": 2,
+            "n_mlps": 2,
+            "mlp_completed": 1,
+            "mlp_total": 3,
+            "unit": "chunks",
+        },
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 5,
+            "total": 6,
+            "mlp_index": 2,
+            "n_mlps": 2,
+            "mlp_completed": 2,
+            "mlp_total": 3,
+            "unit": "chunks",
+        },
+        {
+            "phase": "sampling_ground_truth",
+            "completed": 6,
+            "total": 6,
+            "mlp_index": 2,
+            "n_mlps": 2,
+            "mlp_completed": 3,
+            "mlp_total": 3,
+            "unit": "chunks",
+        },
+    ]
 
 
 def test_evaluate_estimator_with_zeros_estimator() -> None:

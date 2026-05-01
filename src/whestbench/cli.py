@@ -30,7 +30,6 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
     BarColumn,
-    MofNCompleteColumn,
     Progress,
     TextColumn,
     TimeElapsedColumn,
@@ -78,9 +77,11 @@ from .runner import (
 )
 from .scoring import ContestSpec, evaluate_estimator, make_contest, validate_predictions
 from .sdk import BaseEstimator, SetupContext
+from .simulation import sample_layer_statistics_chunk_count
 
 _DEFAULT_ESTIMATOR = CombinedEstimator()
 ProgressCallback = Callable[[Dict[str, Any]], None]
+_SAMPLING_PROGRESS_PHASE = "sampling_ground_truth"
 
 
 def _default_contest_spec() -> ContestSpec:
@@ -91,6 +92,75 @@ def _default_contest_spec() -> ContestSpec:
         flop_budget=100_000_000,
         ground_truth_samples=100 * 100 * 256,
     )
+
+
+def _is_first_progress_phase(phase: str) -> bool:
+    return phase in {"generating", _SAMPLING_PROGRESS_PHASE}
+
+
+def _mlp_label_from_event(event: Dict[str, Any]) -> str:
+    mlp_index = event.get("mlp_index")
+    n_mlps = event.get("n_mlps")
+    if isinstance(mlp_index, int) and isinstance(n_mlps, int):
+        return f"MLP {mlp_index}/{n_mlps}"
+    return ""
+
+
+def _run_progress_columns() -> tuple[Any, ...]:
+    return (
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(bar_width=None),
+        TextColumn("{task.completed:.0f}/{task.total:.0f} {task.fields[unit]}"),
+        TextColumn("{task.fields[mlp_label]}"),
+        TimeElapsedColumn(),
+    )
+
+
+class _PlainRunProgressLogger:
+    def __init__(self, *, n_mlps: int, refresh_interval_s: float = 0.5) -> None:
+        self._n_mlps = n_mlps
+        self._refresh_interval_s = refresh_interval_s
+        self._last_sampling_emit_at: Optional[float] = None
+        self._last_completed = {"generating": -1, _SAMPLING_PROGRESS_PHASE: -1, "scoring": -1}
+
+    def __call__(self, event: Dict[str, Any]) -> None:
+        phase = str(event.get("phase", "scoring"))
+        completed = int(event.get("completed", 0))
+        if completed == self._last_completed.get(phase):
+            return
+        self._last_completed[phase] = completed
+        total_value = event.get("total")
+        total = int(total_value) if isinstance(total_value, int) else self._n_mlps
+
+        if phase == _SAMPLING_PROGRESS_PHASE:
+            self._emit_sampling(event, completed=completed, total=total)
+            return
+
+        print(f"[run] {phase}: {completed}/{total}", file=sys.stderr)
+
+    def _emit_sampling(self, event: Dict[str, Any], *, completed: int, total: int) -> None:
+        now = time.monotonic()
+        mlp_completed = event.get("mlp_completed")
+        mlp_total = event.get("mlp_total")
+        force = completed >= total or (
+            isinstance(mlp_completed, int)
+            and isinstance(mlp_total, int)
+            and mlp_completed >= mlp_total
+        )
+        if (
+            self._last_sampling_emit_at is not None
+            and not force
+            and now - self._last_sampling_emit_at < self._refresh_interval_s
+        ):
+            return
+        self._last_sampling_emit_at = now
+        unit = str(event.get("unit") or "chunks")
+        mlp_label = _mlp_label_from_event(event)
+        suffix = f" ({mlp_label})" if mlp_label else ""
+        print(
+            f"[run] {_SAMPLING_PROGRESS_PHASE}: {completed}/{total} {unit}{suffix}",
+            file=sys.stderr,
+        )
 
 
 def _default_resource_limits() -> ResourceLimits:
@@ -348,18 +418,23 @@ class _LiveTopPaneSession:
         gen_label: str = "Generating MLPs",
     ) -> None:
         self._pre_report = pre_report
-        self._progress = Progress(
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(bar_width=None),
-            MofNCompleteColumn(),
-            TimeElapsedColumn(),
+        self._progress = Progress(*_run_progress_columns())
+        self._gen_task_id = self._progress.add_task(
+            gen_label,
+            total=total,
+            unit="chunks" if gen_label == "Sampling Ground Truth" else "mlp",
+            mlp_label="",
         )
-        self._gen_task_id = self._progress.add_task(gen_label, total=n_mlps)
         # Scoring task is added hidden and unstarted so its elapsed timer
         # doesn't tick during the generating phase. It is revealed and
         # started on the first "scoring" progress event.
         self._scoring_task_id = self._progress.add_task(
-            "Scoring", total=total, start=False, visible=False
+            "Scoring",
+            total=n_mlps,
+            start=False,
+            visible=False,
+            unit="eval",
+            mlp_label="",
         )
         self._scoring_started = False
         self._last_completed = {"generating": -1, "scoring": -1}
@@ -390,18 +465,21 @@ class _LiveTopPaneSession:
 
     def on_progress(self, event: Dict[str, Any]) -> None:
         phase = str(event.get("phase", "scoring"))
+        state_phase = "generating" if _is_first_progress_phase(phase) else phase
         completed = int(event.get("completed", 0))
-        if completed <= self._last_completed.get(phase, -1):
+        if completed <= self._last_completed.get(state_phase, -1):
             return
-        self._last_completed[phase] = completed
+        self._last_completed[state_phase] = completed
         total_value = event.get("total")
         force_refresh = False
-        if phase == "generating":
+        if _is_first_progress_phase(phase):
             total_update = int(total_value) if isinstance(total_value, int) else None
             self._progress.update(
                 self._gen_task_id,
                 completed=completed,
                 total=total_update,
+                unit=str(event.get("unit") or "mlp"),
+                mlp_label=_mlp_label_from_event(event),
                 refresh=False,
             )
             force_refresh = total_update is not None and completed >= total_update
@@ -479,9 +557,9 @@ def _progress_callback(
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", TqdmExperimentalWarning)
             gen_bar = classic_tqdm(
-                total=n_mlps,
+                total=total,
                 desc=gen_label,
-                unit="mlp",
+                unit="chunk" if gen_label == "Sampling Ground Truth" else "mlp",
                 file=sys.stdout,
                 position=0,
             )
@@ -494,7 +572,11 @@ def _progress_callback(
         def _on_progress(event: Dict[str, Any]) -> None:
             phase = str(event.get("phase", "scoring"))
             completed = int(event.get("completed", 0))
-            if phase == "generating":
+            if _is_first_progress_phase(phase):
+                if isinstance(event.get("total"), int):
+                    gen_bar.total = int(event["total"])
+                if event.get("unit") == "chunks":
+                    gen_bar.unit = "chunk"
                 delta = completed - state["gen"]
                 if delta > 0:
                     gen_bar.update(delta)
@@ -524,15 +606,17 @@ def _progress_callback(
             print()
         return
 
-    progress = Progress(
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(bar_width=None),
-        MofNCompleteColumn(),
-        TimeElapsedColumn(),
+    progress = Progress(*_run_progress_columns())
+    gen_task_id = progress.add_task(
+        gen_label,
+        total=total,
+        unit="chunks" if gen_label == "Sampling Ground Truth" else "mlp",
+        mlp_label="",
     )
-    gen_task_id = progress.add_task(gen_label, total=n_mlps)
     # Scoring task starts hidden and unstarted — revealed on first scoring event.
-    scoring_task_id = progress.add_task("Scoring", total=total, start=False, visible=False)
+    scoring_task_id = progress.add_task(
+        "Scoring", total=n_mlps, start=False, visible=False, unit="eval", mlp_label=""
+    )
     scoring_started = {"flag": False}
     state = {"generating": -1, "scoring": -1}
     refresh_state = {"last_at": 0.0}
@@ -553,18 +637,21 @@ def _progress_callback(
 
     def _on_progress(event: Dict[str, Any]) -> None:
         phase = str(event.get("phase", "scoring"))
+        state_phase = "generating" if _is_first_progress_phase(phase) else phase
         completed = int(event.get("completed", 0))
-        if completed <= state.get(phase, -1):
+        if completed <= state.get(state_phase, -1):
             return
-        state[phase] = completed
+        state[state_phase] = completed
         total_value = event.get("total")
         force_refresh = False
-        if phase == "generating":
+        if _is_first_progress_phase(phase):
             total_update = int(total_value) if isinstance(total_value, int) else None
             progress.update(
                 gen_task_id,
                 completed=completed,
                 total=total_update,
+                unit=str(event.get("unit") or "mlp"),
+                mlp_label=_mlp_label_from_event(event),
                 refresh=False,
             )
             force_refresh = total_update is not None and completed >= total_update
@@ -932,9 +1019,7 @@ def _run_estimator_with_runner(
     elif progress is not None:
         data = make_contest(
             spec,
-            on_mlp_done=lambda i: progress(
-                {"phase": "generating", "completed": i, "total": spec.n_mlps}
-            ),
+            on_sampling_progress=progress,
         )
     else:
         data = make_contest(spec)
@@ -1194,10 +1279,12 @@ def _main_participant(argv: "list[str]") -> int:
                     def _on_ds_progress(event: Dict[str, Any]) -> None:
                         phase = str(event.get("phase", ""))
                         completed = int(event.get("completed", 0))
+                        total_value = event.get("total")
+                        total = int(total_value) if isinstance(total_value, int) else None
                         if phase == "generating":
                             progress_bar.update(gen_task, completed=completed)
                         elif phase == "sampling":
-                            progress_bar.update(sample_task, completed=completed)
+                            progress_bar.update(sample_task, completed=completed, total=total)
 
                     with progress_bar:
                         out = create_dataset(
@@ -1352,14 +1439,23 @@ def _main_participant(argv: "list[str]") -> int:
                     estimator_class=metadata.class_name,
                     estimator_path=args.estimator,
                 )
-                total_units = n_mlps
+                total_units = (
+                    n_mlps
+                    if dataset_path is not None
+                    else n_mlps
+                    * sample_layer_statistics_chunk_count(
+                        contest_spec.width, contest_spec.ground_truth_samples
+                    )
+                )
                 _dataset_tip = (
                     "\n[bold bright_yellow]Tip:[/] Ground truth is recomputed on every run. "
                     "Consider creating and reusing a dataset:\n"
                     "   [cyan]whest create-dataset[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]-o[/] [yellow]my_dataset.npz[/]\n"
                     "   [cyan]whest run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]my_dataset.npz[/]\n"
                 )
-                gen_label = "Loading dataset" if dataset_path is not None else "Generating MLPs"
+                gen_label = (
+                    "Loading dataset" if dataset_path is not None else "Sampling Ground Truth"
+                )
                 if no_rich:
                     # Plain-text path: skip every Rich Live/progress display so
                     # breakpoints in predict() reach a clean terminal. Emit
@@ -1368,22 +1464,7 @@ def _main_participant(argv: "list[str]") -> int:
                     print(f"[run] estimator_class={metadata.class_name}", file=sys.stderr)
                     print(f"[run] estimator_path={args.estimator}", file=sys.stderr)
                     print(f"[run] n_mlps={n_mlps} gen_label={gen_label}", file=sys.stderr)
-                    _plain_state = {"gen": -1, "scoring": -1}
-
-                    def _plain_run_progress(event: Dict[str, Any]) -> None:
-                        phase = str(event.get("phase", "scoring"))
-                        completed = int(event.get("completed", 0))
-                        total_value = event.get("total")
-                        total = int(total_value) if isinstance(total_value, int) else n_mlps
-                        # Only print when the completed count changes, to
-                        # avoid flooding stderr with duplicates.
-                        key = "gen" if phase == "generating" else "scoring"
-                        if completed == _plain_state.get(key):
-                            return
-                        _plain_state[key] = completed
-                        print(f"[run] {phase}: {completed}/{total}", file=sys.stderr)
-
-                    score_kwargs["progress"] = _plain_run_progress
+                    score_kwargs["progress"] = _PlainRunProgressLogger(n_mlps=n_mlps)
                     report = _run_estimator_with_runner(runner, **score_kwargs)
                 elif rich_tqdm is None:
                     _print_human_startup(

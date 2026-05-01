@@ -13,7 +13,7 @@ from .domain import MLP
 from .generation import sample_mlp
 from .runner import RunnerError
 from .sdk import BaseEstimator
-from .simulation import sample_layer_statistics
+from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_count
 
 if TYPE_CHECKING:
     from .dataset import DatasetBundle
@@ -70,6 +70,8 @@ class ContestData:
 def make_contest(
     spec: ContestSpec,
     on_mlp_done: Optional[Callable[[int], None]] = None,
+    *,
+    on_sampling_progress: Optional[Callable[[Dict[str, Any]], None]] = None,
 ) -> ContestData:
     """Generate MLPs, compute ground truth, and collect sampling attribution."""
     spec.validate()
@@ -85,6 +87,8 @@ def make_contest(
     final_targets: List[fnp.ndarray] = []
     avg_variances: List[float] = []
     sampling_breakdowns: List[Dict[str, Any]] = []
+    chunks_per_mlp = sample_layer_statistics_chunk_count(spec.width, spec.ground_truth_samples)
+    total_chunks = spec.n_mlps * chunks_per_mlp
 
     for i in range(spec.n_mlps):
         mlp_rng = fnp.random.default_rng(stream_seeds[2 * i]) if spec_seed is not None else None
@@ -92,11 +96,35 @@ def make_contest(
             fnp.random.default_rng(stream_seeds[2 * i + 1]) if spec_seed is not None else None
         )
         mlp = sample_mlp(spec.width, spec.depth, mlp_rng)
+
+        def _on_sampling_chunk(
+            event: Dict[str, Any], *, mlp_index: int = i + 1, chunk_offset: int = i * chunks_per_mlp
+        ) -> None:
+            if on_sampling_progress is None:
+                return
+            local_completed = int(event.get("completed", 0))
+            local_total = int(event.get("total", chunks_per_mlp))
+            on_sampling_progress(
+                {
+                    "phase": "sampling_ground_truth",
+                    "completed": chunk_offset + local_completed,
+                    "total": total_chunks,
+                    "mlp_index": mlp_index,
+                    "n_mlps": spec.n_mlps,
+                    "mlp_completed": local_completed,
+                    "mlp_total": local_total,
+                    "unit": "chunks",
+                }
+            )
+
         with flops.BudgetContext(flop_budget=int(1e15), quiet=True) as sampling_budget:
             with flops.namespace("sampling"):
                 with flops.namespace("sample_layer_statistics"):
                     all_means, final_mean, avg_var = sample_layer_statistics(
-                        mlp, spec.ground_truth_samples, rng=sample_rng
+                        mlp,
+                        spec.ground_truth_samples,
+                        rng=sample_rng,
+                        progress=_on_sampling_chunk if on_sampling_progress is not None else None,
                     )
         normalized_sampling = _normalize_sampling_budget_breakdown(
             sampling_budget.summary_dict(by_namespace=True)
