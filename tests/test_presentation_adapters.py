@@ -64,13 +64,13 @@ def test_build_run_presentation_orders_breakdowns_before_final_score() -> None:
                 "breakdowns": {
                     "sampling": {
                         "flops_used": 80,
-                        "tracked_time_s": 0.02,
+                        "flopscope_backend_time_s": 0.02,
                         "flopscope_overhead_time_s": 0.005,
-                        "untracked_time_s": 0.01,
+                        "residual_wall_time_s": 0.01,
                         "by_namespace": {
                             "sampling.sample_layer_statistics": {
                                 "flops_used": 80,
-                                "tracked_time_s": 0.02,
+                                "flopscope_backend_time_s": 0.02,
                                 "flopscope_overhead_time_s": 0.005,
                             }
                         },
@@ -78,13 +78,13 @@ def test_build_run_presentation_orders_breakdowns_before_final_score() -> None:
                     "estimator": {
                         "flop_budget": 200,
                         "flops_used": 90,
-                        "tracked_time_s": 0.03,
+                        "flopscope_backend_time_s": 0.03,
                         "flopscope_overhead_time_s": 0.0075,
-                        "untracked_time_s": 0.01,
+                        "residual_wall_time_s": 0.01,
                         "by_namespace": {
                             "estimator.estimator-client": {
                                 "flops_used": 90,
-                                "tracked_time_s": 0.03,
+                                "flopscope_backend_time_s": 0.03,
                                 "flopscope_overhead_time_s": 0.0075,
                             }
                         },

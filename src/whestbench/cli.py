@@ -264,7 +264,7 @@ def run_default_report(
             "seed": spec.seed,
             "flop_budget": spec.flop_budget,
             "wall_time_limit_s": spec.wall_time_limit_s,
-            "untracked_time_limit_s": spec.untracked_time_limit_s,
+            "residual_wall_time_limit_s": spec.residual_wall_time_limit_s,
         },
     }
 
@@ -350,7 +350,7 @@ def _pre_run_report(
             "seed": contest_spec.seed,
             "flop_budget": int(contest_spec.flop_budget),
             "wall_time_limit_s": contest_spec.wall_time_limit_s,
-            "untracked_time_limit_s": contest_spec.untracked_time_limit_s,
+            "residual_wall_time_limit_s": contest_spec.residual_wall_time_limit_s,
             "profile_enabled": bool(profile),
             "estimator_class": estimator_class,
             "estimator_path": estimator_path,
@@ -845,7 +845,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Wall-clock time limit per predict call (default: unlimited).",
     )
     run_parser.add_argument(
-        "--untracked-time-limit",
+        "--residual-wall-time-limit",
+        dest="residual_wall_time_limit",
         type=float,
         default=None,
         metavar="SECONDS",
@@ -981,9 +982,9 @@ class _RunnerEstimator(BaseEstimator):
         return {
             "flops_used": getattr(stats, "flops_used", None),
             "wall_time_s": getattr(stats, "wall_time_s", None),
-            "tracked_time_s": getattr(stats, "tracked_time_s", None),
+            "flopscope_backend_time_s": getattr(stats, "flopscope_backend_time_s", None),
             "flopscope_overhead_time_s": getattr(stats, "flopscope_overhead_time_s", None),
-            "untracked_time_s": getattr(stats, "untracked_time_s", None),
+            "residual_wall_time_s": getattr(stats, "residual_wall_time_s", None),
             "budget_breakdown": getattr(stats, "budget_breakdown", None),
         }
 
@@ -1036,7 +1037,7 @@ def _run_estimator_with_runner(
         memory_limit_mb=spec.memory_limit_mb,
         flop_budget=spec.flop_budget,
         wall_time_limit_s=spec.wall_time_limit_s,
-        untracked_time_limit_s=spec.untracked_time_limit_s,
+        residual_wall_time_limit_s=spec.residual_wall_time_limit_s,
     )
 
     t0 = _time.time()
@@ -1074,7 +1075,7 @@ def _run_estimator_with_runner(
             "seed": spec.seed,
             "flop_budget": spec.flop_budget,
             "wall_time_limit_s": spec.wall_time_limit_s,
-            "untracked_time_limit_s": spec.untracked_time_limit_s,
+            "residual_wall_time_limit_s": spec.residual_wall_time_limit_s,
         },
     }
 
@@ -1387,7 +1388,7 @@ def _main_participant(argv: "list[str]") -> int:
                     ground_truth_samples=gt_samples,
                     seed=None,
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
-                    untracked_time_limit_s=getattr(args, "untracked_time_limit", None),
+                    residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
                 )
                 contest_data = make_contest_from_bundle(contest_spec, bundle, n_mlps)
             else:
@@ -1400,7 +1401,7 @@ def _main_participant(argv: "list[str]") -> int:
                     ground_truth_samples=gt_samples,
                     seed=run_seed,
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
-                    untracked_time_limit_s=getattr(args, "untracked_time_limit", None),
+                    residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
                 )
 
             score_kwargs: Dict[str, Any] = {
