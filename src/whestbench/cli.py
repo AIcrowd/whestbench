@@ -12,6 +12,7 @@ import warnings
 from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timezone
+from importlib.resources import files
 from pathlib import Path
 from typing import (
     Any,
@@ -596,7 +597,7 @@ def _write_init_template(target_dir: Path) -> "list[str]":
 
     estimator_file = target_dir / "estimator.py"
     if not estimator_file.exists():
-        template = Path(__file__).resolve().parent / "templates" / "estimator.py.tmpl"
+        template = files("whestbench") / "templates" / "estimator.py.tmpl"
         estimator_file.write_text(template.read_text(encoding="utf-8") + "\n", encoding="utf-8")
         created.append(str(estimator_file))
 

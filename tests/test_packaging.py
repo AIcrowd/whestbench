@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
+import subprocess
 import tarfile
+import zipfile
 from pathlib import Path
 from textwrap import dedent
 from typing import Dict
+
+import pytest
 
 from whestbench.packaging import package_submission
 
@@ -84,3 +89,26 @@ def test_optional_submission_yaml_and_approach_md_are_included_when_present(tmp_
     with tarfile.open(artifact, "r:gz") as archive:
         members = set(archive.getnames())
     assert {"requirements.txt", "submission.yaml", "APPROACH.md"} <= members
+
+
+def test_built_wheel_includes_estimator_template(tmp_path: Path) -> None:
+    # Editable installs have estimator.py.tmpl on disk regardless of
+    # package-data config, so they cannot catch the failure mode where
+    # the template is missing from the shipped wheel. Build the wheel
+    # from this checkout and assert the template lands inside it.
+    uv = shutil.which("uv")
+    if uv is None:
+        pytest.skip("uv not available — required to build the wheel")
+    repo_root = Path(__file__).resolve().parents[1]
+    subprocess.run(
+        [uv, "build", "--wheel", "--out-dir", str(tmp_path), str(repo_root)],
+        check=True,
+        capture_output=True,
+    )
+    wheels = list(tmp_path.glob("whestbench-*.whl"))
+    assert wheels, f"no wheel produced under {tmp_path}"
+    with zipfile.ZipFile(wheels[0]) as zf:
+        names = zf.namelist()
+    assert any(n.endswith("whestbench/templates/estimator.py.tmpl") for n in names), (
+        "estimator.py.tmpl missing from wheel; contents:\n  " + "\n  ".join(sorted(names))
+    )
