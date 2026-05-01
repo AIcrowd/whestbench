@@ -461,6 +461,7 @@ def _full_report(per_mlp: List[Dict[str, Any]], *, flop_budget: int = 100) -> Di
             "estimator": {
                 "flops_used": sum(float(entry.get("flops_used", 0.0) or 0.0) for entry in per_mlp),
                 "tracked_time_s": 0.0,
+                "flopscope_overhead_time_s": 0.0,
                 "untracked_time_s": 0.0,
                 "by_namespace": {},
             }
@@ -529,6 +530,7 @@ def test_gauge_and_over_budget_are_not_embedded_in_settled_human_output() -> Non
     report["results"]["breakdowns"]["sampling"] = {
         "flops_used": 30,
         "tracked_time_s": 0.001,
+        "flopscope_overhead_time_s": 0.00025,
         "untracked_time_s": 0.0,
         "by_namespace": {},
     }

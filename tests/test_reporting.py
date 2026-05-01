@@ -71,18 +71,21 @@ def _sample_report(
             "flops_remaining": 120,
             "wall_time_s": 0.03,
             "tracked_time_s": 0.02,
+            "flopscope_overhead_time_s": 0.005,
             "untracked_time_s": 0.01,
             "by_namespace": {
                 "sampling.sample_layer_statistics": {
                     "flops_used": 50,
                     "calls": 2,
                     "tracked_time_s": 0.012,
+                    "flopscope_overhead_time_s": 0.003,
                     "operations": {"add": {"flop_cost": 50, "calls": 2, "duration": 0.012}},
                 },
                 "sampling.draw_weights": {
                     "flops_used": 30,
                     "calls": 2,
                     "tracked_time_s": 0.008,
+                    "flopscope_overhead_time_s": 0.002,
                     "operations": {"mul": {"flop_cost": 30, "calls": 2, "duration": 0.008}},
                 },
             },
@@ -94,18 +97,21 @@ def _sample_report(
             "flops_remaining": 0,
             "wall_time_s": 0.05,
             "tracked_time_s": 0.03,
+            "flopscope_overhead_time_s": 0.0075,
             "untracked_time_s": 0.02,
             "by_namespace": {
                 "estimator.phase": {
                     "flops_used": 200,
                     "calls": 4,
                     "tracked_time_s": 0.02,
+                    "flopscope_overhead_time_s": 0.005,
                     "operations": {"add": {"flop_cost": 200, "calls": 4, "duration": 0.02}},
                 },
                 "estimator.estimator-client": {
                     "flops_used": 100,
                     "calls": 2,
                     "tracked_time_s": 0.01,
+                    "flopscope_overhead_time_s": 0.0025,
                     "operations": {"mul": {"flop_cost": 100, "calls": 2, "duration": 0.01}},
                 },
             },
@@ -327,6 +333,7 @@ def test_render_human_mode_matches_main_style_score_and_breakdown_information() 
     assert plain.index("Estimator Budget Breakdown") < plain.index("Final Score")
     assert "Total FLOPs [flops_used]" in plain
     assert "Tracked Time [tracked_time_s]" in plain
+    assert "Flopscope Overhead [flopscope_overhead_time_s]" in plain
     assert "Untracked Time [untracked_time_s]" in plain
     assert "aggregated across all evaluated MLPs" in plain
     assert "Primary Score [primary_score]" in plain
