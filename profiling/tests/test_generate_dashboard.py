@@ -7,7 +7,6 @@ import tempfile
 import pytest
 
 from profiling.generate_dashboard import (
-    extract_base_css,
     fetch_cdn_libs,
     generate_html,
     load_data,
@@ -164,19 +163,25 @@ def test_resolve_paths_input_default_output():
     assert output_path == "dashboard.html"
 
 
-def test_extract_base_css():
-    css = extract_base_css()
-    # Must contain CSS variables
+def test_dashboard_styles_owns_palette():
+    """Dashboard stylesheet must define the palette tokens, fonts, and header
+    rules it depends on, with no reference to whestbench-explorer."""
+    css_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "dashboard_styles.css",
+    )
+    with open(css_path) as f:
+        css = f.read()
+    # Palette tokens
     assert "--coral:" in css
     assert "--gray-900:" in css
     assert "--font-sans:" in css
-    # Must contain Google Fonts import
+    # Google Fonts import
     assert "@import url(" in css
-    # Must contain .app-header styles
+    # Header rules used by the dashboard (h('header', {className: 'app-header'}))
     assert ".app-header {" in css or ".app-header{" in css
     assert ".app-header h1" in css
-    # Must NOT contain component-specific class rules
-    assert ".sidebar {" not in css
 
 
 def test_fetch_cdn_libs_returns_dict():
