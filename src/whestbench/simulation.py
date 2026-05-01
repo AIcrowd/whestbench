@@ -7,7 +7,7 @@ per-layer outputs/means used by score computation.
 from __future__ import annotations
 
 import warnings
-from typing import List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import flopscope.numpy as fnp
 
@@ -58,10 +58,18 @@ def _pick_chunk_size(width: int) -> int:
     return max(1024, min(16384, 2**20 // width))
 
 
+def sample_layer_statistics_chunk_count(width: int, n_samples: int) -> int:
+    """Return how many chunks ``sample_layer_statistics`` will process."""
+    chunk_size = _pick_chunk_size(width)
+    return (n_samples + chunk_size - 1) // chunk_size
+
+
 def sample_layer_statistics(
     mlp: MLP,
     n_samples: int,
     rng: Optional[fnp.random.Generator] = None,
+    *,
+    progress: Optional[Callable[[Dict[str, Any]], None]] = None,
 ) -> Tuple[fnp.ndarray, fnp.ndarray, float]:
     """Estimate per-layer activation statistics via chunked Monte Carlo sampling.
 
@@ -82,6 +90,7 @@ def sample_layer_statistics(
             values give more precise estimates at the cost of compute time.
         rng: Optional NumPy-compatible random generator used for sampling inputs.
             If ``None`` a new generator is created once for the call.
+        progress: Optional callback invoked once per processed chunk.
 
     Returns:
         all_layer_means: ``(depth, width)`` float32 array — the mean
@@ -95,6 +104,7 @@ def sample_layer_statistics(
     width = mlp.width
     depth = mlp.depth
     chunk_size = _pick_chunk_size(width)
+    total_chunks = sample_layer_statistics_chunk_count(width, n_samples)
     if rng is None:
         rng = fnp.random.default_rng()
     assert rng is not None  # narrows for pyright; flopscope's default_rng is untyped
@@ -108,7 +118,7 @@ def sample_layer_statistics(
     # ReLU clips them, so the warnings are benign.
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=RuntimeWarning, message=".*matmul.*")
-        for start in range(0, n_samples, chunk_size):
+        for chunk_index, start in enumerate(range(0, n_samples, chunk_size), start=1):
             n = min(chunk_size, n_samples - start)
             x = fnp.array(rng.standard_normal((n, width), dtype=fnp.float32))
             for layer_idx, w in enumerate(mlp.weights):
@@ -118,6 +128,8 @@ def sample_layer_statistics(
             x_f64 = fnp.asarray(x, dtype=fnp.float64)
             final_sum_sq += fnp.sum(x_f64**2, axis=0)
             n_processed += n
+            if progress is not None:
+                progress({"completed": chunk_index, "total": total_chunks, "unit": "chunks"})
 
     layer_means = fnp.asarray(layer_sums / n_processed, dtype=fnp.float32)
     final_mean = layer_means[-1].copy()
