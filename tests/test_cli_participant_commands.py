@@ -646,13 +646,15 @@ def test_run_with_dataset_restores_sampling_breakdown_subset(
                 "flops_used": 10,
                 "flops_remaining": 990,
                 "wall_time_s": 0.01,
-                "tracked_time_s": 0.005,
+                "tracked_time_s": 0.004,
+                "flopscope_overhead_time_s": 0.001,
                 "untracked_time_s": 0.002,
                 "by_namespace": {
                     "sampling.sample_layer_statistics": {
                         "flops_used": 10,
                         "calls": 1,
-                        "tracked_time_s": 0.005,
+                        "tracked_time_s": 0.004,
+                        "flopscope_overhead_time_s": 0.001,
                         "operations": {},
                     }
                 },
@@ -662,13 +664,15 @@ def test_run_with_dataset_restores_sampling_breakdown_subset(
                 "flops_used": 20,
                 "flops_remaining": 980,
                 "wall_time_s": 0.02,
-                "tracked_time_s": 0.010,
+                "tracked_time_s": 0.008,
+                "flopscope_overhead_time_s": 0.002,
                 "untracked_time_s": 0.004,
                 "by_namespace": {
                     "sampling.sample_layer_statistics": {
                         "flops_used": 20,
                         "calls": 1,
-                        "tracked_time_s": 0.010,
+                        "tracked_time_s": 0.008,
+                        "flopscope_overhead_time_s": 0.002,
                         "operations": {},
                     }
                 },
@@ -678,13 +682,15 @@ def test_run_with_dataset_restores_sampling_breakdown_subset(
                 "flops_used": 30,
                 "flops_remaining": 970,
                 "wall_time_s": 0.03,
-                "tracked_time_s": 0.015,
+                "tracked_time_s": 0.012,
+                "flopscope_overhead_time_s": 0.003,
                 "untracked_time_s": 0.006,
                 "by_namespace": {
                     "sampling.sample_layer_statistics": {
                         "flops_used": 30,
                         "calls": 1,
-                        "tracked_time_s": 0.015,
+                        "tracked_time_s": 0.012,
+                        "flopscope_overhead_time_s": 0.003,
                         "operations": {},
                     }
                 },
@@ -1029,13 +1035,15 @@ def test_run_json_output_restores_dataset_sampling_breakdown(
                 "flops_used": 10,
                 "flops_remaining": 990,
                 "wall_time_s": 0.01,
-                "tracked_time_s": 0.005,
+                "tracked_time_s": 0.004,
+                "flopscope_overhead_time_s": 0.001,
                 "untracked_time_s": 0.002,
                 "by_namespace": {
                     "sampling.sample_layer_statistics": {
                         "flops_used": 10,
                         "calls": 1,
-                        "tracked_time_s": 0.005,
+                        "tracked_time_s": 0.004,
+                        "flopscope_overhead_time_s": 0.001,
                         "operations": {},
                     }
                 },
@@ -1045,13 +1053,15 @@ def test_run_json_output_restores_dataset_sampling_breakdown(
                 "flops_used": 20,
                 "flops_remaining": 980,
                 "wall_time_s": 0.02,
-                "tracked_time_s": 0.010,
+                "tracked_time_s": 0.008,
+                "flopscope_overhead_time_s": 0.002,
                 "untracked_time_s": 0.004,
                 "by_namespace": {
                     "sampling.sample_layer_statistics": {
                         "flops_used": 20,
                         "calls": 1,
-                        "tracked_time_s": 0.010,
+                        "tracked_time_s": 0.008,
+                        "flopscope_overhead_time_s": 0.002,
                         "operations": {},
                     }
                 },
@@ -1061,13 +1071,15 @@ def test_run_json_output_restores_dataset_sampling_breakdown(
                 "flops_used": 30,
                 "flops_remaining": 970,
                 "wall_time_s": 0.03,
-                "tracked_time_s": 0.015,
+                "tracked_time_s": 0.012,
+                "flopscope_overhead_time_s": 0.003,
                 "untracked_time_s": 0.006,
                 "by_namespace": {
                     "sampling.sample_layer_statistics": {
                         "flops_used": 30,
                         "calls": 1,
-                        "tracked_time_s": 0.015,
+                        "tracked_time_s": 0.012,
+                        "flopscope_overhead_time_s": 0.003,
                         "operations": {},
                     }
                 },

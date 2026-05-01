@@ -84,9 +84,11 @@ class RunnerError(RuntimeError):
 
 @dataclass(frozen=True)
 class PredictStats:
+    # wall_time_s ≈ tracked_time_s + flopscope_overhead_time_s + untracked_time_s
     flops_used: int
     wall_time_s: float
     tracked_time_s: float
+    flopscope_overhead_time_s: float
     untracked_time_s: float
     budget_breakdown: Optional[Dict[str, Any]] = None
 
@@ -324,6 +326,7 @@ class SubprocessRunner:
             flops_used=int(response.get("flops_used", 0)),
             wall_time_s=float(response.get("wall_time_s", 0.0) or 0.0),
             tracked_time_s=float(response.get("tracked_time_s", 0.0) or 0.0),
+            flopscope_overhead_time_s=float(response.get("flopscope_overhead_time_s", 0.0) or 0.0),
             untracked_time_s=float(response.get("untracked_time_s", 0.0) or 0.0),
             budget_breakdown=response.get("budget_breakdown"),
         )

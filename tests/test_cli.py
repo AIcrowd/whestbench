@@ -36,22 +36,26 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
                 "sampling": {
                     "flops_used": 100.0,
                     "tracked_time_s": 0.02,
+                    "flopscope_overhead_time_s": 0.005,
                     "untracked_time_s": 0.0,
                     "by_namespace": {
                         "sampling.sample_layer_statistics": {
                             "flops_used": 100.0,
                             "tracked_time_s": 0.02,
+                            "flopscope_overhead_time_s": 0.005,
                         }
                     },
                 },
                 "estimator": {
                     "flops_used": 40.0,
                     "tracked_time_s": 0.01,
+                    "flopscope_overhead_time_s": 0.0025,
                     "untracked_time_s": 0.0,
                     "by_namespace": {
                         "estimator.estimator-client": {
                             "flops_used": 40.0,
                             "tracked_time_s": 0.01,
+                            "flopscope_overhead_time_s": 0.0025,
                         }
                     },
                 },

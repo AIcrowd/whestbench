@@ -324,6 +324,7 @@ def _breakdown_section(
                 ),
                 mean_flops_per_mlp=fmt_flops(flops_used / n_mlps if n_mlps > 0 else 0.0),
                 tracked_time=_display_time_seconds(bucket.get("tracked_time_s", 0.0)),
+                flopscope_overhead_time=_display_time_seconds(bucket["flopscope_overhead_time_s"]),
             )
         )
 
@@ -368,6 +369,7 @@ def _breakdown_section(
         available=True,
         total_flops=fmt_flops(total_flops),
         tracked_time=_display_time_seconds(breakdown.get("tracked_time_s", 0.0)),
+        flopscope_overhead_time=_display_time_seconds(breakdown["flopscope_overhead_time_s"]),
         untracked_time=_display_time_seconds(breakdown.get("untracked_time_s", 0.0)),
         namespace_rows=namespace_rows,
         gauge=gauge,

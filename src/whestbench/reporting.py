@@ -892,6 +892,10 @@ def _breakdown_panel(
         f"{_as_float(breakdown.get('tracked_time_s', 0.0)):.6f}s",
     )
     summary.add_row(
+        _label_with_code("Flopscope Overhead", "flopscope_overhead_time_s", "bold bright_yellow"),
+        f"{_as_float(breakdown['flopscope_overhead_time_s']):.6f}s",
+    )
+    summary.add_row(
         _label_with_code("Untracked Time", "untracked_time_s", "bold bright_green"),
         f"{_as_float(breakdown.get('untracked_time_s', 0.0)):.6f}s",
     )
@@ -902,6 +906,7 @@ def _breakdown_panel(
     table.add_column("% of section flops", justify="right")
     table.add_column("mean flops / MLP", justify="right")
     table.add_column("tracked time", justify="right")
+    table.add_column("flopscope overhead", justify="right")
 
     for namespace, bucket in sorted(
         by_namespace.items(),
@@ -915,12 +920,14 @@ def _breakdown_panel(
         percent = (flops_used / total_flops * 100.0) if total_flops > 0.0 else 0.0
         mean_flops = flops_used / n_mlps if n_mlps > 0 else 0.0
         tracked_time_s = _as_float(bucket.get("tracked_time_s", 0.0))
+        overhead_time_s = _as_float(bucket["flopscope_overhead_time_s"])
         table.add_row(
             namespace_label,
             _fmt_flops(flops_used),
             f"{percent:.1f}%",
             _fmt_flops(mean_flops),
             f"{tracked_time_s:.6f}s",
+            f"{overhead_time_s:.6f}s",
         )
 
     body: "list[Any]" = []

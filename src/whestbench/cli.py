@@ -895,6 +895,7 @@ class _RunnerEstimator(BaseEstimator):
             "flops_used": getattr(stats, "flops_used", None),
             "wall_time_s": getattr(stats, "wall_time_s", None),
             "tracked_time_s": getattr(stats, "tracked_time_s", None),
+            "flopscope_overhead_time_s": getattr(stats, "flopscope_overhead_time_s", None),
             "untracked_time_s": getattr(stats, "untracked_time_s", None),
             "budget_breakdown": getattr(stats, "budget_breakdown", None),
         }
