@@ -39,9 +39,9 @@ def _budget_payload(budget_ctx: flops.BudgetContext) -> dict:
         "flops_used": budget_ctx.flops_used,
         "flops_remaining": budget_ctx.flops_remaining,
         "wall_time_s": budget_ctx.wall_time_s or 0.0,
-        "tracked_time_s": budget_ctx.total_tracked_time,
+        "flopscope_backend_time_s": budget_ctx.flopscope_backend_time,
         "flopscope_overhead_time_s": budget_ctx.flopscope_overhead_time,
-        "untracked_time_s": budget_ctx.untracked_time or 0.0,
+        "residual_wall_time_s": budget_ctx.residual_wall_time or 0.0,
         "by_namespace": budget_ctx.summary_dict(by_namespace=True).get("by_namespace", {}),
     }
 
@@ -79,9 +79,9 @@ def _handle_predict(
                 "predictions": arr.tolist(),
                 "flops_used": flops_used,
                 "wall_time_s": budget_ctx.wall_time_s or 0.0,
-                "tracked_time_s": budget_ctx.total_tracked_time,
+                "flopscope_backend_time_s": budget_ctx.flopscope_backend_time,
                 "flopscope_overhead_time_s": budget_ctx.flopscope_overhead_time,
-                "untracked_time_s": budget_ctx.untracked_time or 0.0,
+                "residual_wall_time_s": budget_ctx.residual_wall_time or 0.0,
                 "budget_breakdown": _budget_payload(budget_ctx),
             }
         )
@@ -92,9 +92,9 @@ def _handle_predict(
                 "error_message": "FLOP budget exceeded.",
                 "flops_used": budget_ctx.flops_used,
                 "wall_time_s": budget_ctx.wall_time_s or 0.0,
-                "tracked_time_s": budget_ctx.total_tracked_time,
+                "flopscope_backend_time_s": budget_ctx.flopscope_backend_time,
                 "flopscope_overhead_time_s": budget_ctx.flopscope_overhead_time,
-                "untracked_time_s": budget_ctx.untracked_time or 0.0,
+                "residual_wall_time_s": budget_ctx.residual_wall_time or 0.0,
                 "budget_breakdown": _budget_payload(budget_ctx),
             }
         )
@@ -105,9 +105,9 @@ def _handle_predict(
                 "error_message": "Wall-clock time limit exceeded.",
                 "flops_used": budget_ctx.flops_used,
                 "wall_time_s": budget_ctx.wall_time_s or 0.0,
-                "tracked_time_s": budget_ctx.total_tracked_time,
+                "flopscope_backend_time_s": budget_ctx.flopscope_backend_time,
                 "flopscope_overhead_time_s": budget_ctx.flopscope_overhead_time,
-                "untracked_time_s": budget_ctx.untracked_time or 0.0,
+                "residual_wall_time_s": budget_ctx.residual_wall_time or 0.0,
                 "budget_breakdown": _budget_payload(budget_ctx),
             }
         )

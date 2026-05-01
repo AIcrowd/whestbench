@@ -137,8 +137,10 @@ def _run_context_sections(report: dict[str, Any]) -> list[KeyValueSection]:
                     _display_value(run_config.get("wall_time_limit_s"), fallback="unlimited"),
                 ),
                 KeyValueRow(
-                    "Untracked Time Limit [untracked_time_limit_s]",
-                    _display_value(run_config.get("untracked_time_limit_s"), fallback="unlimited"),
+                    "Residual Wall Time Limit [residual_wall_time_limit_s]",
+                    _display_value(
+                        run_config.get("residual_wall_time_limit_s"), fallback="unlimited"
+                    ),
                 ),
             ],
         ),
@@ -323,7 +325,9 @@ def _breakdown_section(
                     f"{(flops_used / total_flops * 100.0):.1f}%" if total_flops > 0 else "0.0%"
                 ),
                 mean_flops_per_mlp=fmt_flops(flops_used / n_mlps if n_mlps > 0 else 0.0),
-                tracked_time=_display_time_seconds(bucket.get("tracked_time_s", 0.0)),
+                flopscope_backend_time=_display_time_seconds(
+                    bucket.get("flopscope_backend_time_s", 0.0)
+                ),
                 flopscope_overhead_time=_display_time_seconds(bucket["flopscope_overhead_time_s"]),
             )
         )
@@ -368,9 +372,11 @@ def _breakdown_section(
         title=title,
         available=True,
         total_flops=fmt_flops(total_flops),
-        tracked_time=_display_time_seconds(breakdown.get("tracked_time_s", 0.0)),
+        flopscope_backend_time=_display_time_seconds(
+            breakdown.get("flopscope_backend_time_s", 0.0)
+        ),
         flopscope_overhead_time=_display_time_seconds(breakdown["flopscope_overhead_time_s"]),
-        untracked_time=_display_time_seconds(breakdown.get("untracked_time_s", 0.0)),
+        residual_wall_time=_display_time_seconds(breakdown.get("residual_wall_time_s", 0.0)),
         namespace_rows=namespace_rows,
         gauge=gauge,
         over_budget_rows=over_budget_rows,

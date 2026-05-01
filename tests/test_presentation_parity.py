@@ -324,9 +324,9 @@ def test_shared_human_plain_output_has_no_ansi_sequences() -> None:
                     title="Estimator Budget Breakdown",
                     available=True,
                     total_flops="90",
-                    tracked_time="0.030000s",
+                    flopscope_backend_time="0.030000s",
                     flopscope_overhead_time="0.007500s",
-                    untracked_time="0.010000s",
+                    residual_wall_time="0.010000s",
                 )
             ),
             build_score_block(
@@ -355,16 +355,16 @@ def test_shared_human_plain_output_keeps_long_budget_and_score_sections_readable
                     title="Estimator Budget Breakdown",
                     available=True,
                     total_flops="123456789012345678901234567890",
-                    tracked_time="0.12345678901234567890s",
+                    flopscope_backend_time="0.12345678901234567890s",
                     flopscope_overhead_time="0.030864s",
-                    untracked_time="0.98765432109876543210s",
+                    residual_wall_time="0.98765432109876543210s",
                     namespace_rows=[
                         BudgetBreakdownNamespaceRow(
                             namespace="sampling.sample_layer_statistics.really_long_namespace",
                             total_flops="123456789012345678901234567890",
                             percent_of_section_flops="100.0000000000%",
                             mean_flops_per_mlp="12345678901234567890",
-                            tracked_time="0.12345678901234567890s",
+                            flopscope_backend_time="0.12345678901234567890s",
                             flopscope_overhead_time="0.030864s",
                         )
                     ],

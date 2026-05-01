@@ -19,7 +19,7 @@ def test_resource_limits_time_limits_default_none() -> None:
         setup_timeout_s=5.0, predict_timeout_s=30.0, memory_limit_mb=4096, flop_budget=100_000_000
     )
     assert limits.wall_time_limit_s is None
-    assert limits.untracked_time_limit_s is None
+    assert limits.residual_wall_time_limit_s is None
 
 
 def test_resource_limits_accepts_time_limits() -> None:
@@ -29,10 +29,10 @@ def test_resource_limits_accepts_time_limits() -> None:
         memory_limit_mb=4096,
         flop_budget=100_000_000,
         wall_time_limit_s=10.0,
-        untracked_time_limit_s=5.0,
+        residual_wall_time_limit_s=5.0,
     )
     assert limits.wall_time_limit_s == 10.0
-    assert limits.untracked_time_limit_s == 5.0
+    assert limits.residual_wall_time_limit_s == 5.0
 
 
 def test_resource_limits_rejects_nonpositive_wall_time_limit() -> None:
@@ -46,14 +46,14 @@ def test_resource_limits_rejects_nonpositive_wall_time_limit() -> None:
         )
 
 
-def test_resource_limits_rejects_nonpositive_untracked_time_limit() -> None:
+def test_resource_limits_rejects_nonpositive_residual_wall_time_limit() -> None:
     with pytest.raises(ValueError):
         ResourceLimits(
             setup_timeout_s=5.0,
             predict_timeout_s=30.0,
             memory_limit_mb=4096,
             flop_budget=100_000_000,
-            untracked_time_limit_s=-1.0,
+            residual_wall_time_limit_s=-1.0,
         )
 
 

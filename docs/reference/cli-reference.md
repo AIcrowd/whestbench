@@ -99,7 +99,7 @@ Key options:
 - `--runner local|subprocess|server|inprocess`
 - `--n-mlps <int>`
 - `--wall-time-limit <seconds>` — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`
-- `--untracked-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported
+- `--residual-wall-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported
 - `--detail raw|full`
 - `--seed <int>` — deterministic seed for `generate + sample` when `--dataset` is not set
 - `--profile`

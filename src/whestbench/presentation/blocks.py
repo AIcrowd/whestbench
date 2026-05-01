@@ -97,10 +97,10 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
             make_keyed_label("Total FLOPs", "flops_used", "bold bright_yellow"),
             Text(section.total_flops),
         )
-    if section.tracked_time is not None:
+    if section.flopscope_backend_time is not None:
         summary.add_row(
-            make_keyed_label("Tracked Time", "tracked_time_s", "bold bright_green"),
-            Text(section.tracked_time),
+            make_keyed_label("Flopscope Backend", "flopscope_backend_time_s", "bold bright_green"),
+            Text(section.flopscope_backend_time),
         )
     if section.flopscope_overhead_time is not None:
         summary.add_row(
@@ -109,10 +109,10 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
             ),
             Text(section.flopscope_overhead_time),
         )
-    if section.untracked_time is not None:
+    if section.residual_wall_time is not None:
         summary.add_row(
-            make_keyed_label("Untracked Time", "untracked_time_s", "bold bright_green"),
-            Text(section.untracked_time),
+            make_keyed_label("Residual Wall Time", "residual_wall_time_s", "bold bright_green"),
+            Text(section.residual_wall_time),
         )
     if summary.row_count:
         body.append(Align.center(summary))
@@ -140,7 +140,7 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
                 row.total_flops,
                 row.percent_of_section_flops,
                 row.mean_flops_per_mlp,
-                row.tracked_time,
+                row.flopscope_backend_time,
                 row.flopscope_overhead_time,
             )
         body.append(Align.center(table))
