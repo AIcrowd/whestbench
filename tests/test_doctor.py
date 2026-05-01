@@ -12,7 +12,6 @@ from whestbench.doctor import (
     check_cwd_writable,
     check_disk,
     check_install_mode,
-    check_node,
     check_python,
     check_uv,
 )
@@ -138,47 +137,6 @@ def test_check_install_mode_fail_when_not_installed() -> None:
     assert result["fix_hint"] and "uv sync" in result["fix_hint"]
 
 
-# --- check_node --------------------------------------------------------------
-
-
-def test_check_node_ok_when_on_path_and_version_resolvable() -> None:
-    fake_result = MagicMock()
-    fake_result.returncode = 0
-    fake_result.stdout = "v20.11.0\n"
-    with (
-        patch("shutil.which", return_value="/usr/local/bin/node"),
-        patch("subprocess.run", return_value=fake_result),
-    ):
-        result = check_node()
-    assert result["status"] == "ok"
-    assert result["name"] == "node_js"
-    assert "v20.11.0" in result["detail"]
-    assert result["fix_hint"] is None
-
-
-def test_check_node_warn_when_not_on_path() -> None:
-    with patch("shutil.which", return_value=None):
-        result = check_node()
-    assert result["status"] == "warn"
-    assert result["fix_hint"] and "nodejs.org" in result["fix_hint"]
-    assert "whest visualizer" in result["fix_hint"]
-
-
-def test_check_node_warn_when_subprocess_raises() -> None:
-    import subprocess
-
-    # Node is present on PATH but invoking it raises (e.g. TimeoutExpired,
-    # PermissionError, OSError). Exercise the `except Exception` branch.
-    with (
-        patch("shutil.which", return_value="/usr/local/bin/node"),
-        patch("subprocess.run", side_effect=subprocess.TimeoutExpired("node", 5)),
-    ):
-        result = check_node()
-    assert result["status"] == "warn"
-    assert "installed but 'node --version' failed" in result["detail"]
-    assert result["fix_hint"] and "Node.js" in result["fix_hint"]
-
-
 # --- check_blas --------------------------------------------------------------
 
 
@@ -265,17 +223,16 @@ def test_check_cwd_writable_fail_when_permission_error() -> None:
 # --- run_all -----------------------------------------------------------------
 
 
-def test_run_all_returns_seven_checks_in_stable_order() -> None:
+def test_run_all_returns_six_checks_in_stable_order() -> None:
     from whestbench.doctor import run_all
 
     checks = run_all()
-    assert len(checks) == 7
+    assert len(checks) == 6
     names = [c["name"] for c in checks]
     assert names == [
         "python_version",
         "uv",
         "install_mode",
-        "node_js",
         "blas_threads",
         "disk_space",
         "cwd_writable",
@@ -327,11 +284,11 @@ def _fixture_checks() -> "list[Check]":
             name="uv", label="uv on PATH", status="ok", detail="/opt/homebrew/bin/uv", fix_hint=None
         ),
         Check(
-            name="node_js",
-            label="Node.js on PATH",
+            name="install_mode",
+            label="whest install mode",
             status="warn",
-            detail="not found on PATH",
-            fix_hint="Install Node.js 20+ from https://nodejs.org",
+            detail="installed in non-editable mode",
+            fix_hint="Run 'uv sync' for editable mode.",
         ),
     ]
 
@@ -406,7 +363,6 @@ def _all_ok_checks() -> "list[Check]":
             "python_version",
             "uv",
             "install_mode",
-            "node_js",
             "blas_threads",
             "disk_space",
             "cwd_writable",
@@ -417,11 +373,11 @@ def _all_ok_checks() -> "list[Check]":
 def _one_warn_checks() -> "list[Check]":
     checks = _all_ok_checks()
     checks[3] = Check(
-        name="node_js",
-        label="Node.js on PATH",
+        name="blas_threads",
+        label="BLAS thread pool",
         status="warn",
-        detail="not on PATH",
-        fix_hint="Install Node.js 20+ from https://nodejs.org",
+        detail="threadpoolctl could not detect a pool",
+        fix_hint="Install or configure a BLAS implementation.",
     )
     return checks
 
@@ -461,7 +417,7 @@ def test_cli_doctor_json_emits_valid_shape(
     parsed = json.loads(out)
     assert parsed["overall"] == "warn"
     assert parsed["counts"]["warn"] == 1
-    assert parsed["counts"]["ok"] == 6
+    assert parsed["counts"]["ok"] == 5
 
 
 def test_cli_doctor_format_plain_output_has_no_ansi(

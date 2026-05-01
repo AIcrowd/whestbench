@@ -807,21 +807,6 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     package_parser.add_argument("--debug", action="store_true")
     add_output_format_arguments(package_parser)
 
-    visualizer_parser = subparsers.add_parser(
-        "visualizer",
-        help="Launch the interactive WhestBench Explorer in a browser.",
-    )
-    visualizer_parser.add_argument(
-        "--host", default="localhost", help="Bind address (default: localhost)."
-    )
-    visualizer_parser.add_argument(
-        "--port", type=int, default=5173, help="Port number (default: 5173)."
-    )
-    visualizer_parser.add_argument(
-        "--no-open", action="store_true", help="Don't auto-open browser."
-    )
-    visualizer_parser.add_argument("--debug", action="store_true")
-
     profile_parser = subparsers.add_parser(
         "profile-simulation",
         help="Benchmark flopscope simulation performance.",
@@ -1504,16 +1489,6 @@ def _main_participant(argv: "list[str]") -> int:
                     end="",
                 )
             return 0
-
-        if command == "visualizer":
-            from . import visualizer as _viz_mod
-
-            return _viz_mod.run_visualizer(
-                host=str(args.host),
-                port=int(args.port),
-                no_open=bool(args.no_open),
-                debug=bool(args.debug),
-            )
 
         if command == "doctor":
             from .doctor import _doctor_exit_code, run_all
