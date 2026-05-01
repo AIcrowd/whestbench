@@ -234,6 +234,24 @@ def test_init_format_plain_uses_shared_presenter_path(
     }
 
 
+def test_init_command_writes_real_estimator_template_from_package_data(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The other init tests monkeypatch _write_init_template, so they
+    # never exercise the actual estimator.py.tmpl read. This one runs
+    # the function for real to close that blindspot.
+    exit_code = cli.main(["init", str(tmp_path)])
+    capsys.readouterr()
+
+    assert exit_code == 0
+    estimator = tmp_path / "estimator.py"
+    assert estimator.is_file()
+    text = estimator.read_text(encoding="utf-8")
+    assert "class Estimator(BaseEstimator)" in text
+    assert "fnp.zeros" in text
+    assert (tmp_path / "requirements.txt").is_file()
+
+
 def test_create_dataset_command_renders_dataset_summary(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
