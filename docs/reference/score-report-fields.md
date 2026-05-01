@@ -41,11 +41,11 @@ Each entry in `per_mlp`:
 | `flops_used` | `int` | Total FLOPs used by your estimator for this MLP |
 | `budget_exhausted` | `bool` | Whether the estimator exceeded the FLOP budget (predictions zeroed if true) |
 | `time_exhausted` | `bool` | Whether the estimator exceeded the wall-clock limit for this MLP (predictions zeroed if true) |
-| `untracked_time_exhausted` | `bool` | Whether WhestBench judged non-flopscope time to exceed `untracked_time_limit_s` (predictions zeroed if true) |
+| `residual_wall_time_exhausted` | `bool` | Whether WhestBench judged non-flopscope time to exceed `residual_wall_time_limit_s` (predictions zeroed if true) |
 | `wall_time_s` | `float` | Total elapsed wall-clock time measured for this MLP's estimator context |
-| `tracked_time_s` | `float` | Wall time inside counted flopscope numpy kernels — the participant's actual numpy compute |
+| `flopscope_backend_time_s` | `float` | Wall time inside counted flopscope numpy kernels - the participant's actual numpy compute |
 | `flopscope_overhead_time_s` | `float` | Wall time inside flopscope's own dispatch code (wrapper preambles, FLOP bookkeeping, namespace push/pop). Framework cost, not participant cost. |
-| `untracked_time_s` | `float` | Wall time inside the predict context that is neither tracked numpy nor flopscope dispatch — i.e. participant Python (loops, control flow), GC, uninstrumented numpy |
+| `residual_wall_time_s` | `float` | Wall time inside the predict context that is neither flopscope backend execution nor flopscope dispatch - i.e. participant Python (loops, control flow), GC, uninstrumented numpy |
 | `final_mse` | `float` | MSE of your final-layer predictions vs ground truth |
 | `all_layer_mse` | `float` | MSE of your all-layer predictions vs ground truth |
 | `breakdowns` | `dict \| null` | Per-MLP breakdown container. Currently includes estimator-only data under `estimator`. Sampling is aggregate-only. |
@@ -70,12 +70,12 @@ For structured `error` objects, `error.details` includes:
 Every `predict()` call satisfies a strict three-bucket identity:
 
 ```
-wall_time_s ≈ tracked_time_s + flopscope_overhead_time_s + untracked_time_s
+wall_time_s = flopscope_backend_time_s + flopscope_overhead_time_s + residual_wall_time_s
 ```
 
-- `tracked_time_s` — numpy kernels actually crunching numbers via `flopscope.numpy.*`.
-- `flopscope_overhead_time_s` — flopscope's own dispatch (wrapper preambles, FLOP bookkeeping, namespace push/pop).
-- `untracked_time_s` — everything else inside the wall window: participant Python, GC, uninstrumented numpy.
+- `flopscope_backend_time_s` - numpy kernels actually crunching numbers via `flopscope.numpy.*`.
+- `flopscope_overhead_time_s` - flopscope's own dispatch (wrapper preambles, FLOP bookkeeping, namespace push/pop).
+- `residual_wall_time_s` - everything else inside the wall window: participant Python, GC, uninstrumented numpy.
 
 The decomposition holds at every level: per-MLP, aggregated across MLPs, and per namespace inside `breakdowns`.
 
@@ -97,9 +97,9 @@ Namespace normalization rules:
 
 Each breakdown summary also includes timing totals:
 
-- `tracked_time_s` - accumulated time inside counted flopscope operations
+- `flopscope_backend_time_s` - accumulated time inside counted flopscope operations
 - `flopscope_overhead_time_s` - accumulated time inside flopscope's own dispatch
-- `untracked_time_s` - everything else (participant Python, GC, uninstrumented numpy)
+- `residual_wall_time_s` - everything else (participant Python, GC, uninstrumented numpy)
 
 For `results.breakdowns.*`, those values are aggregated across all evaluated
 MLPs.
@@ -109,11 +109,11 @@ MLPs.
 - `final_mse` is your most actionable diagnostic — it directly drives `primary_score`.
 - `budget_exhausted` is the first thing to check if your score is unexpectedly high — exceeded budget means your predictions were zeroed.
 - `time_exhausted` means the estimator crossed the wall-clock limit configured through `wall_time_limit_s` / `--wall-time-limit`.
-- `untracked_time_exhausted` means the non-flopscope portion of execution crossed WhestBench's `untracked_time_limit_s` / `--untracked-time-limit`.
+- `residual_wall_time_exhausted` means the non-flopscope portion of execution crossed WhestBench's `residual_wall_time_limit_s` / `--residual-wall-time-limit`.
 - `flops_used` vs `flop_budget` shows how much headroom you have. If you are consistently near the cap, consider lighter methods.
-- High `tracked_time_s` relative to wall: numpy compute is the dominant cost. Healthy for a numpy-heavy estimator.
+- High `flopscope_backend_time_s` relative to wall: numpy compute is the dominant cost. Healthy for a numpy-heavy estimator.
 - High `flopscope_overhead_time_s` relative to wall: many small ops are paying the per-call dispatch tax. Consider batching with larger numpy primitives.
-- High `untracked_time_s` relative to wall: participant Python is the bottleneck (tight loops, per-element attribute access, calls into uninstrumented libraries). This is the bucket future versions of WhestBench will penalise on.
+- High `residual_wall_time_s` relative to wall: participant Python is the bottleneck (tight loops, per-element attribute access, calls into uninstrumented libraries). This is the bucket future versions of WhestBench will penalise on.
 - `primary_score` is raw MSE — compare across runs to see whether estimator changes are helping.
 
 ## Dataset traceability fields

@@ -273,16 +273,16 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
                 title="Sampling Budget Breakdown (Ground Truth)",
                 available=True,
                 total_flops="80",
-                tracked_time="0.020000s",
+                flopscope_backend_time="0.020000s",
                 flopscope_overhead_time="0.005000s",
-                untracked_time="0.010000s",
+                residual_wall_time="0.010000s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
                         namespace="sampling.sample_layer_statistics",
                         total_flops="80",
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="40",
-                        tracked_time="0.020000s",
+                        flopscope_backend_time="0.020000s",
                         flopscope_overhead_time="0.005000s",
                     )
                 ],
@@ -292,16 +292,16 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
                 title="Estimator Budget Breakdown",
                 available=True,
                 total_flops="90",
-                tracked_time="0.030000s",
+                flopscope_backend_time="0.030000s",
                 flopscope_overhead_time="0.007500s",
-                untracked_time="0.010000s",
+                residual_wall_time="0.010000s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
                         namespace="estimator.estimator-client",
                         total_flops="90",
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="45",
-                        tracked_time="0.030000s",
+                        flopscope_backend_time="0.030000s",
                         flopscope_overhead_time="0.007500s",
                     )
                 ],
@@ -382,16 +382,16 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                 title="Sampling Budget Breakdown (Ground Truth)",
                 available=True,
                 total_flops="1.33e+06",
-                tracked_time="0.000841s",
+                flopscope_backend_time="0.000841s",
                 flopscope_overhead_time="0.000210s",
-                untracked_time="0.003194s",
+                residual_wall_time="0.003194s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
                         namespace="sampling.sample_layer_statistics",
                         total_flops="1.33e+06",
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="1.33e+06",
-                        tracked_time="0.000841s",
+                        flopscope_backend_time="0.000841s",
                         flopscope_overhead_time="0.000210s",
                     )
                 ],
@@ -400,16 +400,16 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                 title="Estimator Budget Breakdown",
                 available=True,
                 total_flops="4.84e+07",
-                tracked_time="0.005277s",
+                flopscope_backend_time="0.005277s",
                 flopscope_overhead_time="0.001319s",
-                untracked_time="0.012066s",
+                residual_wall_time="0.012066s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
                         namespace="estimator.estimator-client",
                         total_flops="4.84e+07",
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="4.84e+07",
-                        tracked_time="0.005277s",
+                        flopscope_backend_time="0.005277s",
                         flopscope_overhead_time="0.001319s",
                     )
                 ],
@@ -444,9 +444,9 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
         )
         assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
         assert "Total FLOPs [flops_used]" in rendered
-        assert "Tracked Time [tracked_time_s]" in rendered
+        assert "Flopscope Backend [flopscope_backend_time_s]" in rendered
         assert "Flopscope Overhead [flopscope_overhead_time_s]" in rendered
-        assert "Untracked Time [untracked_time_s]" in rendered
+        assert "Residual Wall Time [residual_wall_time_s]" in rendered
         assert "aggregated across all evaluated MLPs" in rendered
         assert "Primary Score [primary_score]" in rendered
         assert "Secondary Score [secondary_score]" in rendered
@@ -462,16 +462,16 @@ def test_budget_breakdown_rich_renderer_uses_centered_rich_tables() -> None:
         title="Sampling Budget Breakdown (Ground Truth)",
         available=True,
         total_flops="1.33e+06",
-        tracked_time="0.000841s",
+        flopscope_backend_time="0.000841s",
         flopscope_overhead_time="0.000210s",
-        untracked_time="0.003194s",
+        residual_wall_time="0.003194s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
                 namespace="sampling.sample_layer_statistics",
                 total_flops="1.33e+06",
                 percent_of_section_flops="100.0%",
                 mean_flops_per_mlp="1.33e+06",
-                tracked_time="0.000841s",
+                flopscope_backend_time="0.000841s",
                 flopscope_overhead_time="0.000210s",
             )
         ],
@@ -495,9 +495,9 @@ def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
         title="Sampling Budget Breakdown (Ground Truth)",
         available=True,
         total_flops="1.33e+06",
-        tracked_time="0.000841s",
+        flopscope_backend_time="0.000841s",
         flopscope_overhead_time="0.000210s",
-        untracked_time="0.003194s",
+        residual_wall_time="0.003194s",
     )
 
     panel = build_section_renderables(section)[0]
@@ -520,7 +520,7 @@ def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
         "bold bright_white",
     ]
     assert isinstance(second_label, Text)
-    assert second_label.plain == "Tracked Time [tracked_time_s]"
+    assert second_label.plain == "Flopscope Backend [flopscope_backend_time_s]"
     assert [str(span.style) for span in second_label.spans] == [
         "bold bright_green",
         "bold bright_white",
@@ -532,7 +532,7 @@ def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
         "bold bright_white",
     ]
     assert isinstance(fourth_label, Text)
-    assert fourth_label.plain == "Untracked Time [untracked_time_s]"
+    assert fourth_label.plain == "Residual Wall Time [residual_wall_time_s]"
     assert [str(span.style) for span in fourth_label.spans] == [
         "bold bright_green",
         "bold bright_white",
@@ -599,16 +599,16 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
         title="Estimator Budget Breakdown",
         available=True,
         total_flops="4.84e+07",
-        tracked_time="0.005277s",
+        flopscope_backend_time="0.005277s",
         flopscope_overhead_time="0.001319s",
-        untracked_time="0.012066s",
+        residual_wall_time="0.012066s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
                 namespace="estimator.estimator-client",
                 total_flops="4.84e+07",
                 percent_of_section_flops="100.0%",
                 mean_flops_per_mlp="4.84e+07",
-                tracked_time="0.005277s",
+                flopscope_backend_time="0.005277s",
                 flopscope_overhead_time="0.001319s",
             )
         ],
@@ -636,9 +636,9 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
     for rendered in (rich, plain):
         assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
         assert "Total FLOPs [flops_used]" in rendered
-        assert "Tracked Time [tracked_time_s]" in rendered
+        assert "Flopscope Backend [flopscope_backend_time_s]" in rendered
         assert "Flopscope Overhead [flopscope_overhead_time_s]" in rendered
-        assert "Untracked Time [untracked_time_s]" in rendered
+        assert "Residual Wall Time [residual_wall_time_s]" in rendered
         assert "Primary Score [primary_score]" in rendered
         assert "Secondary Score [secondary_score]" in rendered
         assert "lower MSE is better" in rendered
@@ -649,16 +649,16 @@ def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
         title="Estimator Budget Breakdown",
         available=True,
         total_flops="4.84e+07",
-        tracked_time="0.005277s",
+        flopscope_backend_time="0.005277s",
         flopscope_overhead_time="0.001319s",
-        untracked_time="0.012066s",
+        residual_wall_time="0.012066s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
                 namespace="estimator.estimator-client",
                 total_flops="4.84e+07",
                 percent_of_section_flops="100.0%",
                 mean_flops_per_mlp="4.84e+07",
-                tracked_time="0.005277s",
+                flopscope_backend_time="0.005277s",
                 flopscope_overhead_time="0.001319s",
             )
         ],
@@ -695,16 +695,16 @@ def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_te
         title="Estimator Budget Breakdown",
         available=True,
         total_flops="123456789012345678901234567890",
-        tracked_time="0.12345678901234567890s",
+        flopscope_backend_time="0.12345678901234567890s",
         flopscope_overhead_time="0.030864s",
-        untracked_time="0.98765432109876543210s",
+        residual_wall_time="0.98765432109876543210s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
                 namespace="sampling.sample_layer_statistics.really_long_namespace",
                 total_flops="123456789012345678901234567890",
                 percent_of_section_flops="100.0000000000%",
                 mean_flops_per_mlp="12345678901234567890",
-                tracked_time="0.12345678901234567890s",
+                flopscope_backend_time="0.12345678901234567890s",
                 flopscope_overhead_time="0.030864s",
             )
         ],

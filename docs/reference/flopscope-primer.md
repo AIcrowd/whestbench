@@ -85,12 +85,12 @@ with flops.BudgetContext(flop_budget=10_000_000) as ctx:
 ```
 
 Both summaries also include four timing fields that satisfy a strict
-decomposition identity, `wall_time_s ≈ tracked_time_s + flopscope_overhead_time_s + untracked_time_s`:
+decomposition identity, `wall_time_s = flopscope_backend_time_s + flopscope_overhead_time_s + residual_wall_time_s`:
 
 - `wall_time_s`: total elapsed time in the context
-- `tracked_time_s`: time spent inside counted flopscope numpy kernels
+- `flopscope_backend_time_s`: time spent inside counted flopscope numpy kernels
 - `flopscope_overhead_time_s`: time spent inside flopscope's own dispatch (wrapper preambles, FLOP bookkeeping, namespace push/pop)
-- `untracked_time_s`: everything else — participant Python, GC, uninstrumented numpy
+- `residual_wall_time_s`: everything else - participant Python, GC, uninstrumented numpy
 
 This decomposition lets you see whether time is going to numpy compute, framework dispatch, or your own Python.
 
@@ -100,12 +100,12 @@ Flopscope itself only knows about `wall_time_limit_s` on `BudgetContext`.
 WhestBench adds two run-level knobs on top:
 
 - `--wall-time-limit`: passed through to the estimator's `BudgetContext`
-- `--untracked-time-limit`: enforced by WhestBench after `predict()` returns,
-  using the reported `untracked_time_s`. Because `untracked_time_s` no longer
+- `--residual-wall-time-limit`: enforced by WhestBench after `predict()` returns,
+  using the reported `residual_wall_time_s`. Because `residual_wall_time_s` no longer
   includes flopscope's own dispatch time, this gate measures only your
   Python work — not the framework's bookkeeping tax.
 
-So if you see `untracked_time_exhausted` in a report, that came from
+So if you see `residual_wall_time_exhausted` in a report, that came from
 WhestBench scoring logic, not from a `BudgetContext` parameter.
 
 ## Common Gotchas

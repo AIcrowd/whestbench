@@ -888,16 +888,16 @@ def _breakdown_panel(
         _fmt_flops(total_flops),
     )
     summary.add_row(
-        _label_with_code("Tracked Time", "tracked_time_s", "bold bright_green"),
-        f"{_as_float(breakdown.get('tracked_time_s', 0.0)):.6f}s",
+        _label_with_code("Flopscope Backend", "flopscope_backend_time_s", "bold bright_green"),
+        f"{_as_float(breakdown.get('flopscope_backend_time_s', 0.0)):.6f}s",
     )
     summary.add_row(
         _label_with_code("Flopscope Overhead", "flopscope_overhead_time_s", "bold bright_yellow"),
         f"{_as_float(breakdown['flopscope_overhead_time_s']):.6f}s",
     )
     summary.add_row(
-        _label_with_code("Untracked Time", "untracked_time_s", "bold bright_green"),
-        f"{_as_float(breakdown.get('untracked_time_s', 0.0)):.6f}s",
+        _label_with_code("Residual Wall Time", "residual_wall_time_s", "bold bright_green"),
+        f"{_as_float(breakdown.get('residual_wall_time_s', 0.0)):.6f}s",
     )
 
     table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold bright_white")
@@ -919,14 +919,14 @@ def _breakdown_panel(
         flops_used = _as_float(bucket.get("flops_used", 0.0))
         percent = (flops_used / total_flops * 100.0) if total_flops > 0.0 else 0.0
         mean_flops = flops_used / n_mlps if n_mlps > 0 else 0.0
-        tracked_time_s = _as_float(bucket.get("tracked_time_s", 0.0))
+        flopscope_backend_time_s = _as_float(bucket.get("flopscope_backend_time_s", 0.0))
         overhead_time_s = _as_float(bucket["flopscope_overhead_time_s"])
         table.add_row(
             namespace_label,
             _fmt_flops(flops_used),
             f"{percent:.1f}%",
             _fmt_flops(mean_flops),
-            f"{tracked_time_s:.6f}s",
+            f"{flopscope_backend_time_s:.6f}s",
             f"{overhead_time_s:.6f}s",
         )
 

@@ -195,7 +195,7 @@ def test_validate_predictions_rejects_nonfinite() -> None:
 def test_contest_spec_time_limits_default_none() -> None:
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=1000)
     assert spec.wall_time_limit_s is None
-    assert spec.untracked_time_limit_s is None
+    assert spec.residual_wall_time_limit_s is None
 
 
 def test_contest_spec_accepts_time_limits() -> None:
@@ -206,10 +206,10 @@ def test_contest_spec_accepts_time_limits() -> None:
         flop_budget=1_000_000,
         ground_truth_samples=1000,
         wall_time_limit_s=10.0,
-        untracked_time_limit_s=5.0,
+        residual_wall_time_limit_s=5.0,
     )
     assert spec.wall_time_limit_s == 10.0
-    assert spec.untracked_time_limit_s == 5.0
+    assert spec.residual_wall_time_limit_s == 5.0
     spec.validate()
 
 
@@ -225,15 +225,15 @@ def test_contest_spec_rejects_nonpositive_wall_time_limit() -> None:
         ).validate()
 
 
-def test_contest_spec_rejects_nonpositive_untracked_time_limit() -> None:
-    with pytest.raises(ValueError, match="untracked_time_limit_s"):
+def test_contest_spec_rejects_nonpositive_residual_wall_time_limit() -> None:
+    with pytest.raises(ValueError, match="residual_wall_time_limit_s"):
         ContestSpec(
             width=8,
             depth=2,
             n_mlps=2,
             flop_budget=1_000_000,
             ground_truth_samples=1000,
-            untracked_time_limit_s=-1.0,
+            residual_wall_time_limit_s=-1.0,
         ).validate()
 
 
@@ -279,7 +279,7 @@ def test_evaluate_estimator_catches_wall_time_exhaustion() -> None:
 
 
 def test_evaluate_estimator_catches_untracked_time_exhaustion() -> None:
-    """When untracked_time_limit_s is exceeded, predictions are zeroed with untracked_time_exhausted=True."""
+    """When residual_wall_time_limit_s is exceeded, predictions are zeroed with residual_wall_time_exhausted=True."""
     from whestbench.sdk import BaseEstimator
 
     class UntrackedTimeEstimator(BaseEstimator):
@@ -293,12 +293,12 @@ def test_evaluate_estimator_catches_untracked_time_exhaustion() -> None:
         n_mlps=1,
         flop_budget=100_000_000,
         ground_truth_samples=200,
-        untracked_time_limit_s=0.1,
+        residual_wall_time_limit_s=0.1,
     )
     data = make_contest(spec)
     result = evaluate_estimator(UntrackedTimeEstimator(), data)
     mlp_result = result["per_mlp"][0]
-    assert mlp_result.get("untracked_time_exhausted") is True
+    assert mlp_result.get("residual_wall_time_exhausted") is True
     assert mlp_result.get("budget_exhausted") is not True
 
 
@@ -317,22 +317,22 @@ def test_evaluate_estimator_reports_timing() -> None:
     result = evaluate_estimator(ZerosEstimator(), data)
     mlp_result = result["per_mlp"][0]
     assert "wall_time_s" in mlp_result
-    assert "tracked_time_s" in mlp_result
+    assert "flopscope_backend_time_s" in mlp_result
     assert "flopscope_overhead_time_s" in mlp_result
-    assert "untracked_time_s" in mlp_result
+    assert "residual_wall_time_s" in mlp_result
     assert mlp_result["wall_time_s"] >= 0.0
-    assert mlp_result["tracked_time_s"] >= 0.0
+    assert mlp_result["flopscope_backend_time_s"] >= 0.0
     assert mlp_result["flopscope_overhead_time_s"] >= 0.0
-    assert mlp_result["untracked_time_s"] >= 0.0
+    assert mlp_result["residual_wall_time_s"] >= 0.0
     # wall ≈ tracked + flopscope_overhead + untracked (per flopscope#80)
     decomposed = (
-        mlp_result["tracked_time_s"]
+        mlp_result["flopscope_backend_time_s"]
         + mlp_result["flopscope_overhead_time_s"]
-        + mlp_result["untracked_time_s"]
+        + mlp_result["residual_wall_time_s"]
     )
     assert decomposed == pytest.approx(mlp_result["wall_time_s"], abs=1e-3)
     assert mlp_result.get("time_exhausted") is False
-    assert mlp_result.get("untracked_time_exhausted") is False
+    assert mlp_result.get("residual_wall_time_exhausted") is False
 
 
 def test_evaluate_estimator_aggregates_flopscope_overhead_across_mlps() -> None:
@@ -451,24 +451,31 @@ def test_evaluate_estimator_prefers_runner_metadata_when_available() -> None:
             self._stats = {
                 "flops_used": 123,
                 "wall_time_s": 0.4,
-                "tracked_time_s": 0.25,
+                "flopscope_backend_time_s": 0.25,
                 "flopscope_overhead_time_s": 0.05,
-                "untracked_time_s": 0.1,
+                "residual_wall_time_s": 0.1,
                 "budget_breakdown": {
                     "flop_budget": 1000,
                     "flops_used": 123,
                     "flops_remaining": 877,
                     "wall_time_s": 0.4,
-                    "tracked_time_s": 0.25,
+                    "flopscope_backend_time_s": 0.25,
                     "flopscope_overhead_time_s": 0.05,
-                    "untracked_time_s": 0.1,
+                    "residual_wall_time_s": 0.1,
                     "by_namespace": {
                         "phase": {
                             "flops_used": 123,
                             "calls": 1,
-                            "tracked_time_s": 0.25,
+                            "flopscope_backend_time_s": 0.25,
                             "flopscope_overhead_time_s": 0.05,
-                            "operations": {"add": {"flop_cost": 123, "calls": 1, "duration": 0.3}},
+                            "operations": {
+                                "add": {
+                                    "flop_cost": 123,
+                                    "calls": 1,
+                                    "flopscope_backend_time_s": 0.3,
+                                    "flopscope_overhead_time_s": 0.0,
+                                }
+                            },
                         }
                     },
                 },
@@ -504,17 +511,17 @@ def test_evaluate_estimator_synthesizes_estimator_client_for_empty_namespace_bre
             return {
                 "flops_used": 17,
                 "wall_time_s": 0.2,
-                "tracked_time_s": 0.08,
+                "flopscope_backend_time_s": 0.08,
                 "flopscope_overhead_time_s": 0.02,
-                "untracked_time_s": 0.1,
+                "residual_wall_time_s": 0.1,
                 "budget_breakdown": {
                     "flop_budget": 100,
                     "flops_used": 17,
                     "flops_remaining": 83,
                     "wall_time_s": 0.2,
-                    "tracked_time_s": 0.08,
+                    "flopscope_backend_time_s": 0.08,
                     "flopscope_overhead_time_s": 0.02,
-                    "untracked_time_s": 0.1,
+                    "residual_wall_time_s": 0.1,
                     "by_namespace": {},
                     "operations": {},
                 },
@@ -541,31 +548,45 @@ def test_evaluate_estimator_merges_colliding_normalized_namespaces() -> None:
             return {
                 "flops_used": 30,
                 "wall_time_s": 0.2,
-                "tracked_time_s": 0.025,
+                "flopscope_backend_time_s": 0.025,
                 "flopscope_overhead_time_s": 0.005,
-                "untracked_time_s": 0.17,
+                "residual_wall_time_s": 0.17,
                 "budget_breakdown": {
                     "flop_budget": 100,
                     "flops_used": 30,
                     "flops_remaining": 70,
                     "wall_time_s": 0.2,
-                    "tracked_time_s": 0.025,
+                    "flopscope_backend_time_s": 0.025,
                     "flopscope_overhead_time_s": 0.005,
-                    "untracked_time_s": 0.17,
+                    "residual_wall_time_s": 0.17,
                     "by_namespace": {
                         None: {
                             "flops_used": 10,
                             "calls": 1,
-                            "tracked_time_s": 0.008,
+                            "flopscope_backend_time_s": 0.008,
                             "flopscope_overhead_time_s": 0.002,
-                            "operations": {"add": {"flop_cost": 10, "calls": 1, "duration": 0.01}},
+                            "operations": {
+                                "add": {
+                                    "flop_cost": 10,
+                                    "calls": 1,
+                                    "flopscope_backend_time_s": 0.01,
+                                    "flopscope_overhead_time_s": 0.0,
+                                }
+                            },
                         },
                         "estimator-client": {
                             "flops_used": 20,
                             "calls": 2,
-                            "tracked_time_s": 0.017,
+                            "flopscope_backend_time_s": 0.017,
                             "flopscope_overhead_time_s": 0.003,
-                            "operations": {"mul": {"flop_cost": 20, "calls": 2, "duration": 0.02}},
+                            "operations": {
+                                "mul": {
+                                    "flop_cost": 20,
+                                    "calls": 2,
+                                    "flopscope_backend_time_s": 0.02,
+                                    "flopscope_overhead_time_s": 0.0,
+                                }
+                            },
                         },
                     },
                 },
@@ -581,7 +602,7 @@ def test_evaluate_estimator_merges_colliding_normalized_namespaces() -> None:
     bucket = breakdown["by_namespace"]["estimator.estimator-client"]
     assert bucket["flops_used"] == 30
     assert bucket["calls"] == 3
-    assert bucket["tracked_time_s"] == pytest.approx(0.025)
+    assert bucket["flopscope_backend_time_s"] == pytest.approx(0.025)
     assert bucket["flopscope_overhead_time_s"] == pytest.approx(0.005)
     assert bucket["operations"]["add"]["flop_cost"] == 10
     assert bucket["operations"]["mul"]["flop_cost"] == 20
@@ -678,14 +699,14 @@ def test_make_contest_from_bundle_restores_sampling_breakdown_for_subset() -> No
                 "flops_used": 10,
                 "flops_remaining": 990,
                 "wall_time_s": 0.01,
-                "tracked_time_s": 0.004,
+                "flopscope_backend_time_s": 0.004,
                 "flopscope_overhead_time_s": 0.001,
-                "untracked_time_s": 0.002,
+                "residual_wall_time_s": 0.002,
                 "by_namespace": {
                     "sampling.sample_layer_statistics": {
                         "flops_used": 10,
                         "calls": 1,
-                        "tracked_time_s": 0.004,
+                        "flopscope_backend_time_s": 0.004,
                         "flopscope_overhead_time_s": 0.001,
                         "operations": {},
                     }
@@ -696,14 +717,14 @@ def test_make_contest_from_bundle_restores_sampling_breakdown_for_subset() -> No
                 "flops_used": 20,
                 "flops_remaining": 980,
                 "wall_time_s": 0.02,
-                "tracked_time_s": 0.008,
+                "flopscope_backend_time_s": 0.008,
                 "flopscope_overhead_time_s": 0.002,
-                "untracked_time_s": 0.004,
+                "residual_wall_time_s": 0.004,
                 "by_namespace": {
                     "sampling.sample_layer_statistics": {
                         "flops_used": 20,
                         "calls": 1,
-                        "tracked_time_s": 0.008,
+                        "flopscope_backend_time_s": 0.008,
                         "flopscope_overhead_time_s": 0.002,
                         "operations": {},
                     }
@@ -714,14 +735,14 @@ def test_make_contest_from_bundle_restores_sampling_breakdown_for_subset() -> No
                 "flops_used": 30,
                 "flops_remaining": 970,
                 "wall_time_s": 0.03,
-                "tracked_time_s": 0.012,
+                "flopscope_backend_time_s": 0.012,
                 "flopscope_overhead_time_s": 0.003,
-                "untracked_time_s": 0.006,
+                "residual_wall_time_s": 0.006,
                 "by_namespace": {
                     "sampling.sample_layer_statistics": {
                         "flops_used": 30,
                         "calls": 1,
-                        "tracked_time_s": 0.012,
+                        "flopscope_backend_time_s": 0.012,
                         "flopscope_overhead_time_s": 0.003,
                         "operations": {},
                     }
@@ -735,9 +756,9 @@ def test_make_contest_from_bundle_restores_sampling_breakdown_for_subset() -> No
 
     assert data.sampling_budget_breakdown is not None
     assert data.sampling_budget_breakdown["flops_used"] == 30
-    assert data.sampling_budget_breakdown["tracked_time_s"] == pytest.approx(0.012)
+    assert data.sampling_budget_breakdown["flopscope_backend_time_s"] == pytest.approx(0.012)
     assert data.sampling_budget_breakdown["flopscope_overhead_time_s"] == pytest.approx(0.003)
-    assert data.sampling_budget_breakdown["untracked_time_s"] == 0.006
+    assert data.sampling_budget_breakdown["residual_wall_time_s"] == 0.006
     assert (
         data.sampling_budget_breakdown["by_namespace"]["sampling.sample_layer_statistics"][
             "flops_used"

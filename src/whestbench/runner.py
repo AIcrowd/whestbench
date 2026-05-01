@@ -48,7 +48,7 @@ class ResourceLimits:
     flop_budget: int
     cpu_time_limit_s: Optional[float] = None
     wall_time_limit_s: Optional[float] = None
-    untracked_time_limit_s: Optional[float] = None
+    residual_wall_time_limit_s: Optional[float] = None
 
     def __post_init__(self) -> None:
         if self.setup_timeout_s <= 0:
@@ -63,8 +63,8 @@ class ResourceLimits:
             raise ValueError("cpu_time_limit_s must be positive when provided.")
         if self.wall_time_limit_s is not None and self.wall_time_limit_s <= 0:
             raise ValueError("wall_time_limit_s must be positive when provided.")
-        if self.untracked_time_limit_s is not None and self.untracked_time_limit_s <= 0:
-            raise ValueError("untracked_time_limit_s must be positive when provided.")
+        if self.residual_wall_time_limit_s is not None and self.residual_wall_time_limit_s <= 0:
+            raise ValueError("residual_wall_time_limit_s must be positive when provided.")
 
 
 @dataclass(frozen=True)
@@ -84,12 +84,12 @@ class RunnerError(RuntimeError):
 
 @dataclass(frozen=True)
 class PredictStats:
-    # wall_time_s ≈ tracked_time_s + flopscope_overhead_time_s + untracked_time_s
+    # wall_time_s = flopscope_backend_time_s + flopscope_overhead_time_s + residual_wall_time_s
     flops_used: int
     wall_time_s: float
-    tracked_time_s: float
+    flopscope_backend_time_s: float
     flopscope_overhead_time_s: float
-    untracked_time_s: float
+    residual_wall_time_s: float
     budget_breakdown: Optional[Dict[str, Any]] = None
 
 
@@ -325,9 +325,9 @@ class SubprocessRunner:
         self._last_predict_stats = PredictStats(
             flops_used=int(response.get("flops_used", 0)),
             wall_time_s=float(response.get("wall_time_s", 0.0) or 0.0),
-            tracked_time_s=float(response.get("tracked_time_s", 0.0) or 0.0),
+            flopscope_backend_time_s=float(response.get("flopscope_backend_time_s", 0.0) or 0.0),
             flopscope_overhead_time_s=float(response.get("flopscope_overhead_time_s", 0.0) or 0.0),
-            untracked_time_s=float(response.get("untracked_time_s", 0.0) or 0.0),
+            residual_wall_time_s=float(response.get("residual_wall_time_s", 0.0) or 0.0),
             budget_breakdown=response.get("budget_breakdown"),
         )
         if response.get("status") == "budget_exhausted":

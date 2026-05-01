@@ -27,18 +27,18 @@ def _sample_report() -> dict:
                     "flop_budget": 100,
                     "flops_used": 60,
                     "flops_remaining": 40,
-                    "tracked_time_s": 0.015,
+                    "flopscope_backend_time_s": 0.015,
                     "flopscope_overhead_time_s": 0.00375,
-                    "untracked_time_s": 0.005,
+                    "residual_wall_time_s": 0.005,
                     "by_namespace": {
                         "sampling.sample_layer_statistics": {
                             "flops_used": 40,
-                            "tracked_time_s": 0.01,
+                            "flopscope_backend_time_s": 0.01,
                             "flopscope_overhead_time_s": 0.0025,
                         },
                         "sampling.draw_weights": {
                             "flops_used": 20,
-                            "tracked_time_s": 0.005,
+                            "flopscope_backend_time_s": 0.005,
                             "flopscope_overhead_time_s": 0.00125,
                         },
                     },
@@ -47,18 +47,18 @@ def _sample_report() -> dict:
                     "flop_budget": 100,
                     "flops_used": 30,
                     "flops_remaining": 70,
-                    "tracked_time_s": 0.01,
+                    "flopscope_backend_time_s": 0.01,
                     "flopscope_overhead_time_s": 0.0025,
-                    "untracked_time_s": 0.002,
+                    "residual_wall_time_s": 0.002,
                     "by_namespace": {
                         "estimator.phase": {
                             "flops_used": 18,
-                            "tracked_time_s": 0.006,
+                            "flopscope_backend_time_s": 0.006,
                             "flopscope_overhead_time_s": 0.0015,
                         },
                         "estimator.estimator-client": {
                             "flops_used": 12,
-                            "tracked_time_s": 0.004,
+                            "flopscope_backend_time_s": 0.004,
                             "flopscope_overhead_time_s": 0.001,
                         },
                     },
@@ -304,9 +304,9 @@ def test_render_plain_text_report_includes_breakdown_sections_and_summary() -> N
     )
     assert "Total FLOPs [flops_used]" in rendered
     assert "60" in rendered
-    assert "Tracked Time [tracked_time_s]" in rendered
+    assert "Flopscope Backend [flopscope_backend_time_s]" in rendered
     assert "0.015000s" in rendered
-    assert "Untracked Time [untracked_time_s]" in rendered
+    assert "Residual Wall Time [residual_wall_time_s]" in rendered
     assert "0.005000s" in rendered
     assert "sampling.sample_layer_statistics" in rendered
     assert "sampling.draw_weights" in rendered
@@ -329,8 +329,8 @@ def test_render_plain_text_report_matches_main_style_score_and_breakdown_informa
     )
     assert rendered.index("Estimator Budget Breakdown") < rendered.index("Final Score")
     assert "Total FLOPs [flops_used]" in rendered
-    assert "Tracked Time [tracked_time_s]" in rendered
-    assert "Untracked Time [untracked_time_s]" in rendered
+    assert "Flopscope Backend [flopscope_backend_time_s]" in rendered
+    assert "Residual Wall Time [residual_wall_time_s]" in rendered
     assert "aggregated across all evaluated MLPs" in rendered
     assert "Primary Score [primary_score]" in rendered
     assert "Secondary Score [secondary_score]" in rendered
