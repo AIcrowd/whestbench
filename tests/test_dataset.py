@@ -2,7 +2,9 @@ import json
 
 import flopscope.numpy as fnp
 import numpy as np
+import pytest
 
+import whestbench.simulation as simulation
 from whestbench import hardware as hardware_mod
 from whestbench.dataset import create_dataset, load_dataset
 
@@ -82,6 +84,51 @@ def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
                 breakdown_a["by_namespace"][namespace]["flops_used"]
                 == breakdown_b["by_namespace"][namespace]["flops_used"]
             )
+
+
+def test_create_dataset_reports_sampling_chunk_progress(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    events: list[dict[str, int | str]] = []
+    monkeypatch.setattr(simulation, "_pick_chunk_size", lambda _width: 4)
+
+    create_dataset(
+        n_mlps=2,
+        n_samples=10,
+        width=4,
+        depth=1,
+        flop_budget=32,
+        seed=42,
+        output_path=tmp_path / "chunked_progress.npz",
+        progress=events.append,
+    )
+
+    generating = [event for event in events if event["phase"] == "generating"]
+    sampling = [event for event in events if event["phase"] == "sampling"]
+    assert generating == [
+        {"phase": "generating", "completed": 1, "total": 2},
+        {"phase": "generating", "completed": 2, "total": 2},
+    ]
+    assert sampling[0] == {
+        "phase": "sampling",
+        "completed": 1,
+        "total": 6,
+        "mlp_index": 1,
+        "n_mlps": 2,
+        "mlp_completed": 1,
+        "mlp_total": 3,
+        "unit": "chunks",
+    }
+    assert sampling[-1] == {
+        "phase": "sampling",
+        "completed": 6,
+        "total": 6,
+        "mlp_index": 2,
+        "n_mlps": 2,
+        "mlp_completed": 3,
+        "mlp_total": 3,
+        "unit": "chunks",
+    }
 
 
 def test_create_dataset_skips_hardware_fallback_probes_via_env(tmp_path, monkeypatch) -> None:

@@ -413,7 +413,8 @@ def test_run_command_human_mode_prints_startup_and_uses_progress_callback(
     assert exit_code == 0
     assert captured.err == ""
     assert "human report\n" in captured.out
-    assert observed["total"] == 2
+    assert observed["total"] == 2 * cli.sample_layer_statistics_chunk_count(100, 100 * 100 * 256)
+    assert observed["gen_label"] == "Sampling Ground Truth"
     assert observed["progress_opened"] is True
     assert observed["progress_closed"] is True
     assert callable(observed["scoring_progress_cb"])
