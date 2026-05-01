@@ -1,5 +1,89 @@
-/* profiling/dashboard_styles.css */
-/* Dashboard-specific styles — appended after whestbench-explorer base CSS */
+/* profiling/dashboard_styles.css
+   Self-contained dashboard styles. The palette tokens, fonts, resets, and
+   header rules below are owned here so the dashboard does not depend on any
+   external stylesheet. */
+
+/* ============================================
+   Base — palette, fonts, resets, header
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;1,14..32,400&family=Montserrat:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Core */
+  --coral:        #F0524D;
+  --coral-hover:  #EE403A;
+  --coral-hover:  #D23934;
+  --coral-pressed:#D23934;
+  --coral-light:  #FEF2F1;
+
+  /* Neutrals */
+  --white:    #FFFFFF;
+  --gray-50:  #F8F9F9;
+  --gray-100: #F1F3F5;
+  --gray-200: #D9DCDC;
+  --gray-400: #AAACAD;
+  --gray-600: #5D5F60;
+  --gray-900: #292C2D;
+
+  /* Semantic */
+  --success:  #23B761;
+  --warning:  #FA9E33;
+
+  /* Chart palette (from circuit gate colors) */
+  --chart-1:  #D1D5DB;  /* constant — light gray */
+  --chart-2:  #94A3B8;  /* linear — slate */
+  --chart-3:  #334155;  /* dark slate (mean = -1) */
+  --chart-4:  #F0524D;  /* product — coral */
+  --chart-5:  #F7A09D;  /* mixed — coral tint */
+
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-accent: 'Montserrat', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+
+  /* Layout */
+  --radius:    8px;
+  --radius-sm: 8px;
+  --radius-pill: 20px;
+  --sidebar-w: 280px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+body {
+  background: var(--gray-50);
+  color: var(--gray-900);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-header {
+  padding: 14px 28px;
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-header h1 {
+  font-family: var(--font-accent);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--gray-900);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ============================================
+   Dashboard rules
+   ============================================ */
 
 .dashboard { min-height: 100vh; background: var(--gray-50); }
 .dashboard > section + section { border-top: 1px solid var(--gray-200); }

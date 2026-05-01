@@ -166,51 +166,6 @@ def check_install_mode() -> Check:
     )
 
 
-# --- check_node --------------------------------------------------------------
-
-
-def check_node() -> Check:
-    import shutil
-    import subprocess
-
-    path = shutil.which("node")
-    if not path:
-        return Check(
-            name="node_js",
-            label="Node.js on PATH",
-            status="warn",
-            detail="not found on PATH",
-            fix_hint="Install Node.js 20+ from https://nodejs.org — required only for 'whest visualizer'.",
-        )
-
-    try:
-        result = subprocess.run(
-            [path, "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        version = result.stdout.strip() if result.returncode == 0 else ""
-    except Exception:
-        version = ""
-
-    if version:
-        return Check(
-            name="node_js",
-            label="Node.js on PATH",
-            status="ok",
-            detail=version,
-            fix_hint=None,
-        )
-    return Check(
-        name="node_js",
-        label="Node.js on PATH",
-        status="warn",
-        detail="installed but 'node --version' failed",
-        fix_hint="Check your Node.js installation.",
-    )
-
-
 # --- check_blas --------------------------------------------------------------
 
 
@@ -335,7 +290,6 @@ _CHECKS = (
     ("python_version", "Python version", check_python),
     ("uv", "uv on PATH", check_uv),
     ("install_mode", "whest install mode", check_install_mode),
-    ("node_js", "Node.js on PATH", check_node),
     ("blas_threads", "BLAS thread pool", check_blas),
     ("disk_space", "Free disk in CWD", check_disk),
     ("cwd_writable", "CWD writable", check_cwd_writable),

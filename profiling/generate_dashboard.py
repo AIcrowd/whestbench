@@ -57,48 +57,6 @@ def resolve_paths(args):
     return input_path, output_path
 
 
-def extract_base_css():
-    """Extract base CSS variables and resets from whestbench-explorer App.css."""
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    css_path = os.path.join(repo_root, "tools", "whestbench-explorer", "src", "App.css")
-    with open(css_path) as f:
-        full_css = f.read()
-
-    # Extract everything before the App Shell section
-    marker = "/* ──────────── App Shell ──────────── */"
-    idx = full_css.find(marker)
-    if idx == -1:
-        base = full_css[:2000]
-    else:
-        base = full_css[:idx]
-
-    # Also extract .app-header styles
-    header_start = full_css.find(".app-header {")
-    if header_start != -1:
-        header_section = ""
-        pos = header_start
-        brace_count = 0
-        blocks_found = 0
-        while pos < len(full_css) and blocks_found < 2:
-            if full_css[pos] == "{":
-                brace_count += 1
-            elif full_css[pos] == "}":
-                brace_count -= 1
-                if brace_count == 0:
-                    blocks_found += 1
-                    header_section = full_css[header_start : pos + 1]
-                    next_chunk = full_css[pos + 1 : pos + 50].strip()
-                    if next_chunk.startswith(".app-header h1"):
-                        header_start_h1 = full_css.find(".app-header h1", pos)
-                        pos2 = full_css.find("}", header_start_h1)
-                        header_section = full_css[header_start : pos2 + 1]
-                    break
-            pos += 1
-        base += "\n" + header_section
-
-    return base
-
-
 def fetch_cdn_libs(cache_dir=None):
     """Fetch CDN libraries, caching locally for subsequent runs."""
     if cache_dir is None:
@@ -144,8 +102,6 @@ def extract_backend_sources():
 
 def generate_html(data):
     """Generate complete self-contained HTML dashboard."""
-    base_css = extract_base_css()
-
     css_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard_styles.css")
     with open(css_path) as f:
         dashboard_css = f.read()
@@ -174,7 +130,6 @@ def generate_html(data):
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
 <style>
-{base_css}
 {dashboard_css}
 </style>
 </head>

@@ -505,69 +505,6 @@ def build_package_presentation(payload: dict[str, Any]) -> CommandPresentation:
     )
 
 
-def build_visualizer_ready_presentation(payload: dict[str, Any]) -> CommandPresentation:
-    host = str(payload.get("host") or "localhost")
-    port = payload.get("port")
-    port_text = str(port) if port not in {None, ""} else "5173"
-    url = str(payload.get("url") or "")
-    if not url:
-        browser_host = "localhost" if host == "0.0.0.0" else host
-        url = f"http://{browser_host}:{port_text}/"
-
-    return CommandPresentation(
-        command="visualizer",
-        status="success",
-        title="WhestBench Explorer",
-        sections=[
-            KeyValueSection(
-                title="Ready",
-                rows=[
-                    KeyValueRow("URL", url),
-                    KeyValueRow("Host", host),
-                    KeyValueRow("Port", port_text),
-                ],
-            )
-        ],
-        epilogue_messages=_non_empty_messages(
-            [
-                "Browser auto-open disabled." if payload.get("no_open") else "",
-                (
-                    "Dependencies were installed with npm ci before launch."
-                    if payload.get("ran_npm_ci")
-                    else ""
-                ),
-            ]
-        ),
-    )
-
-
-def build_visualizer_error_presentation(
-    title: str,
-    code: str,
-    message: str,
-    *,
-    details: str | None = None,
-    next_steps: list[str] | None = None,
-) -> CommandPresentation:
-    sections: list[ErrorSection | StepsSection] = [
-        ErrorSection(
-            title="Failure Details",
-            code=code,
-            message=message,
-            details={"stderr": details} if details else {},
-        )
-    ]
-    if next_steps:
-        sections.append(StepsSection(title="Next Steps", steps=list(next_steps)))
-
-    return CommandPresentation(
-        command="visualizer",
-        status="error",
-        title=title,
-        sections=sections,
-    )
-
-
 def build_profile_presentation(payload: dict[str, Any]) -> CommandPresentation:
     hardware = payload.get("hardware")
     correctness = payload.get("correctness")

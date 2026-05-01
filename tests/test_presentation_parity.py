@@ -13,8 +13,6 @@ from whestbench.presentation.adapters import (
     build_run_presentation,
     build_smoke_test_presentation,
     build_validate_presentation,
-    build_visualizer_error_presentation,
-    build_visualizer_ready_presentation,
 )
 from whestbench.presentation.blocks import build_budget_breakdown_block, build_score_block
 from whestbench.presentation.human import render_document
@@ -185,44 +183,6 @@ def test_parity_matrix_preserves_settled_information() -> None:
                 "Expected shape: [2, 4]",
                 "Got shape: [4, 2]",
                 "Use --debug to include a traceback.",
-            ],
-        ),
-        (
-            build_visualizer_ready_presentation(
-                {
-                    "url": "http://127.0.0.1:4173/",
-                    "host": "127.0.0.1",
-                    "port": 4173,
-                    "no_open": True,
-                    "ran_npm_ci": True,
-                }
-            ),
-            [
-                "WhestBench Explorer",
-                "Ready",
-                "http://127.0.0.1:4173/",
-                "127.0.0.1",
-                "4173",
-                "Browser auto-open disabled.",
-                "Dependencies were installed with npm ci before launch.",
-            ],
-        ),
-        (
-            build_visualizer_error_presentation(
-                "Missing Prerequisite",
-                "VISUALIZER_NODE_MISSING",
-                "node is not installed.",
-                next_steps=[
-                    "macOS: brew install node",
-                    "Ubuntu/Debian: sudo apt install nodejs npm",
-                ],
-            ),
-            [
-                "Missing Prerequisite",
-                "node is not installed.",
-                "Next Steps",
-                "macOS: brew install node",
-                "Ubuntu/Debian: sudo apt install nodejs npm",
             ],
         ),
         (

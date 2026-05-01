@@ -12,6 +12,8 @@ Library + CLI for the ARC Whitebox Estimation Challenge. Generates random ReLU M
 
 **👉 Start at the [whest-starterkit](https://github.com/AIcrowd/whest-starterkit).** That repo is the on-ramp: a working `estimator.py`, four worked examples, stage-by-stage walkthroughs from "just iterate locally" to "package a submission".
 
+For an interactive visualization of small random MLPs and estimator behavior, see the **[WhestBench Explorer](https://aicrowd.github.io/whestbench-explorer/)** — an in-browser companion that's optional but useful for building intuition.
+
 This repo is the underlying engine. You don't need to clone it directly.
 
 ## For library / CLI users
@@ -61,8 +63,7 @@ src/whestbench/
 ├── sdk.py                 ← Python SDK surface
 ├── simulation.py          ← Monte Carlo ground truth via flopscope
 ├── subprocess_worker.py   ← isolated estimator subprocess
-├── templates/             ← `whest init` template assets
-└── visualizer.py          ← `whest visualizer` launcher
+└── templates/             ← `whest init` template assets
 docs/
 ├── index.md               ← Library/CLI reference index
 └── reference/             ← cli-reference, estimator-contract, score-report-fields, ...

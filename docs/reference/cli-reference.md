@@ -19,7 +19,6 @@ Participant workflow commands:
 - `whest run`
 - `whest create-dataset`
 - `whest package`
-- `whest visualizer`
 - `whest profile-simulation`
 
 ## `whest smoke-test`
@@ -50,7 +49,7 @@ Key options:
 ### Severity model
 
 - `ok` — the check passed.
-- `warn` — the check found something worth knowing but not blocking. Examples: Node.js missing (only needed by `whest visualizer`), `uv` missing (safe to ignore if you installed via pip), less than 1 GiB free disk in the current directory.
+- `warn` — the check found something worth knowing but not blocking. Examples: `uv` missing (safe to ignore if you installed via pip), less than 1 GiB free disk in the current directory.
 - `fail` — the check found a genuine blocker. Examples: Python version below `requires-python`, `threadpoolctl` failed to import, cannot write to the working directory.
 
 ### Exit codes
@@ -171,25 +170,6 @@ Key options:
 - `--format rich|plain|json`
 - `--json` — alias for `--format json`
 - `--debug`
-
-## `whest visualizer`
-
-Launch the interactive WhestBench Explorer in a browser.
-
-```bash
-whest visualizer [--host HOST] [--port PORT] [--no-open] [--debug]
-```
-
-Checks for Node.js (>= 18), installs dependencies if needed, starts the Vite dev server, and auto-opens the browser.
-
-Key options:
-
-- `--host <address>` (default: `localhost`) — bind address, use `0.0.0.0` for remote access
-- `--port <number>` (default: `5173`) — port number
-- `--no-open` — suppress auto-open browser
-- `--debug` — show full npm/Vite output on errors
-
-On SSH/headless environments, browser auto-open is skipped automatically.
 
 ## `whest profile-simulation`
 
