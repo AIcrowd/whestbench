@@ -566,6 +566,40 @@ def test_agent_mode_flag_is_rejected() -> None:
     assert exc_info.value.code == 2
 
 
+@pytest.mark.parametrize(
+    ("typo", "suggestion"),
+    [
+        ("ru", "run"),
+        ("packaage", "package"),
+        ("validte", "validate"),
+    ],
+)
+def test_unknown_subcommand_suggests_close_match(
+    typo: str, suggestion: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main([typo])
+
+    captured = capsys.readouterr()
+
+    assert exc_info.value.code == 2
+    assert f"unknown command '{typo}'" in captured.err
+    assert f"did you mean '{suggestion}'?" in captured.err
+
+
+def test_unknown_subcommand_without_close_match_uses_argparse_error(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["zzzzzz"])
+
+    captured = capsys.readouterr()
+
+    assert exc_info.value.code == 2
+    assert "invalid choice: 'zzzzzz'" in captured.err
+    assert "did you mean" not in captured.err
+
+
 # --- Progress task visibility/start-state (Paul's "both timers tick" report) -
 
 
