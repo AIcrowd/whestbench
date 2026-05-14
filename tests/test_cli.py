@@ -524,7 +524,7 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     assert "results" in captured.out
     assert observed["initial_finished"] == "n/a"
     assert observed["initial_duration"] is None
-    assert observed["total"] == 10 * cli.sample_layer_statistics_chunk_count(100, 100 * 100 * 256)
+    assert observed["total"] == 10 * cli.sample_layer_statistics_chunk_count(256, 100 * 100 * 256)
     assert observed["progress_event"] == {"completed": 1}
     assert observed["final_meta"]["run_finished_at_utc"] == "2026-03-01T00:00:03+00:00"
     assert observed["final_meta"]["run_duration_s"] == 3.0
@@ -813,3 +813,22 @@ def test_plain_run_progress_logs_sampling_chunks_with_throttle(
         "[run] sampling_ground_truth: 3/6 chunks (MLP 1/2)",
         "[run] sampling_ground_truth: 6/6 chunks (MLP 2/2)",
     ]
+
+
+def test_default_contest_spec_matches_proposal():
+    """Default contest spec should match NeurIPS proposal: width=256, depth=8, flop_budget=3.4e10."""
+    from whestbench.cli import _default_contest_spec
+
+    spec = _default_contest_spec()
+    assert spec.width == 256
+    assert spec.depth == 8
+    assert spec.flop_budget == 34_000_000_000
+    assert spec.n_mlps == 10
+
+
+def test_default_resource_limits_matches_proposal():
+    """Default resource limits should mirror the contest spec flop_budget."""
+    from whestbench.cli import _default_resource_limits
+
+    limits = _default_resource_limits()
+    assert limits.flop_budget == 34_000_000_000

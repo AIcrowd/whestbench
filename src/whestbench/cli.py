@@ -86,10 +86,10 @@ _SAMPLING_PROGRESS_PHASE = "sampling_ground_truth"
 
 def _default_contest_spec() -> ContestSpec:
     return ContestSpec(
-        width=100,
-        depth=16,
+        width=256,
+        depth=8,
         n_mlps=10,
-        flop_budget=100_000_000,
+        flop_budget=34_000_000_000,
         ground_truth_samples=100 * 100 * 256,
     )
 
@@ -168,7 +168,7 @@ def _default_resource_limits() -> ResourceLimits:
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
         memory_limit_mb=4096,
-        flop_budget=100_000_000,
+        flop_budget=34_000_000_000,
         cpu_time_limit_s=None,
     )
 
@@ -215,8 +215,8 @@ def run_default_score(profile: bool = False) -> "Any":
 def _smoke_test_contest_spec() -> ContestSpec:
     """Lightweight spec for the smoke test — just checks plumbing, not accuracy."""
     return ContestSpec(
-        width=100,
-        depth=16,
+        width=64,
+        depth=2,
         n_mlps=3,
         flop_budget=10_000_000,
         ground_truth_samples=100 * 100 * 4,
@@ -819,7 +819,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="FLOP budget for estimator predict calls (default: 100_000_000).",
+        help=(
+            "Effective compute budget per MLP in FLOPs. Caps C_m = F_m + lambda*R_m "
+            "(analytical FLOPs plus charged residual wall time). Default: 34_000_000_000 (3.4e10)."
+        ),
     )
     run_parser.add_argument(
         "--n-samples",
