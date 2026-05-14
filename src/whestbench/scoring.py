@@ -561,12 +561,34 @@ def evaluate_estimator(
                 on_mlp_scored(i + 1)
             continue
 
-        # Read timing after BudgetContext.__exit__ so wall_time_s is populated.
-        # Decomposition: wall = backend + flopscope_overhead + residual.
-        wall_time_s = budget_ctx.wall_time_s or 0.0
-        flopscope_backend_time_s = budget_ctx.flopscope_backend_time
-        flopscope_overhead_time_s = budget_ctx.flopscope_overhead_time
-        residual_wall_time_s = budget_ctx.residual_wall_time or 0.0
+        # Read timing: prefer worker-reported stats (subprocess runner) over
+        # host budget_ctx (local runner). Under subprocess, the host's budget_ctx
+        # only wraps the IPC dispatch and its residual is dominated by JSON/pipe
+        # I/O, unrelated to the participant's actual residual time. The worker
+        # measures its own timing inside its own BudgetContext and reports via
+        # JSON; last_predict_stats() surfaces that on the runner-wrapped estimator.
+        # Under --runner local, last_predict_stats() returns None and we fall
+        # back to budget_ctx values, which are correct because the estimator
+        # ran in the same address space.
+        stats = _predict_stats_to_dict(
+            last_predict_stats() if callable(last_predict_stats) else None
+        )
+        if stats is not None:
+            wall_time_s = float(stats.get("wall_time_s", budget_ctx.wall_time_s or 0.0) or 0.0)
+            flopscope_backend_time_s = float(
+                stats.get("flopscope_backend_time_s", budget_ctx.flopscope_backend_time)
+            )
+            flopscope_overhead_time_s = float(
+                stats.get("flopscope_overhead_time_s", budget_ctx.flopscope_overhead_time)
+            )
+            residual_wall_time_s = float(
+                stats.get("residual_wall_time_s", budget_ctx.residual_wall_time or 0.0) or 0.0
+            )
+        else:
+            wall_time_s = budget_ctx.wall_time_s or 0.0
+            flopscope_backend_time_s = budget_ctx.flopscope_backend_time
+            flopscope_overhead_time_s = budget_ctx.flopscope_overhead_time
+            residual_wall_time_s = budget_ctx.residual_wall_time or 0.0
 
         if (
             not budget_exhausted
