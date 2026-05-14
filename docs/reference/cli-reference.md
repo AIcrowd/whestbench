@@ -98,6 +98,7 @@ Key options:
 - `--class <name>`
 - `--runner local|subprocess|server|inprocess`
 - `--n-mlps <int>`
+- `--flop-budget <int>` — cap on effective compute C_m = F_m + λ·R_m per MLP. Default: `34_000_000_000` (3.4e10).
 - `--wall-time-limit <seconds>` — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`
 - `--residual-wall-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported
 - `--detail raw|full`
@@ -144,7 +145,7 @@ Key options:
 - `--n-mlps <int>` (default: 10)
 - `--n-samples <int>` (default: 10000)
 - `--seed <int>` (optional, auto-generated if omitted)
-- `--width <int>`, `--depth <int>`, `--flop-budget <int>`
+- `--width <int>`, `--depth <int>`, `--flop-budget <int>` (default: `34_000_000_000` — caps effective compute C_m, not just analytical FLOPs)
 - `-o, --output <path>` (default: `eval_dataset.npz`)
 - `--format rich|plain|json`
 - `--json` — alias for `--format json`
