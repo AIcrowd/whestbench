@@ -18,6 +18,12 @@ from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_c
 if TYPE_CHECKING:
     from .dataset import DatasetBundle
 
+# FLOP-equivalent rate for residual wall time. Used in budget-adjusted scoring:
+#   effective compute C_m = F_m + LAMBDA_FLOPS_PER_SECOND * R_m
+# Where R_m is the residual wall-time bucket (NOT total wall, NOT flopscope dispatch).
+# Per the NeurIPS proposal, the initial rate is 10^10 FLOPs/second.
+LAMBDA_FLOPS_PER_SECOND: float = 1e10
+
 
 @dataclass
 class ContestSpec:
@@ -545,6 +551,7 @@ def evaluate_estimator(
                     "error_code": error_code,
                     "traceback": tb_text,
                     "flops_used": 0,
+                    "effective_compute": 0.0,
                     "budget_exhausted": False,
                     "time_exhausted": False,
                     "residual_wall_time_exhausted": False,
@@ -624,12 +631,17 @@ def evaluate_estimator(
         primary_scores.append(final_mse)
         secondary_scores.append(all_mse)
 
+        effective_compute = float(flops_used) + LAMBDA_FLOPS_PER_SECOND * float(
+            residual_wall_time_s
+        )
+
         per_mlp.append(
             {
                 "mlp_index": i,
                 "final_mse": final_mse,
                 "all_layer_mse": all_mse,
                 "flops_used": flops_used,
+                "effective_compute": effective_compute,
                 "budget_exhausted": budget_exhausted,
                 "time_exhausted": time_exhausted,
                 "residual_wall_time_exhausted": residual_wall_time_exhausted,
