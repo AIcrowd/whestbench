@@ -83,7 +83,7 @@ def make_contest(
     spec.validate()
     spec_seed = spec.seed
     stream_seeds: List[fnp.random.SeedSequence] = (
-        fnp.random.SeedSequence(int(spec_seed)).spawn(2 * spec.n_mlps)
+        fnp.random.SeedSequence(int(spec_seed)).spawn(3 * spec.n_mlps)
         if spec_seed is not None
         else []
     )
@@ -97,11 +97,14 @@ def make_contest(
     total_chunks = spec.n_mlps * chunks_per_mlp
 
     for i in range(spec.n_mlps):
-        mlp_rng = fnp.random.default_rng(stream_seeds[2 * i]) if spec_seed is not None else None
+        mlp_rng = fnp.random.default_rng(stream_seeds[3 * i]) if spec_seed is not None else None
         sample_rng = (
-            fnp.random.default_rng(stream_seeds[2 * i + 1]) if spec_seed is not None else None
+            fnp.random.default_rng(stream_seeds[3 * i + 1]) if spec_seed is not None else None
         )
-        mlp = sample_mlp(spec.width, spec.depth, mlp_rng)
+        estimator_seed = (
+            int(stream_seeds[3 * i + 2].generate_state(1)[0]) if spec_seed is not None else 0
+        )
+        mlp = sample_mlp(spec.width, spec.depth, mlp_rng, seed=estimator_seed)
 
         def _on_sampling_chunk(
             event: Dict[str, Any], *, mlp_index: int = i + 1, chunk_offset: int = i * chunks_per_mlp

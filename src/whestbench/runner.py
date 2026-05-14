@@ -114,6 +114,7 @@ def _mlp_to_payload(mlp: MLP) -> Dict[str, Any]:
         "width": int(mlp.width),
         "depth": int(mlp.depth),
         "weights": [w.tolist() for w in mlp.weights],
+        "seed": int(mlp.seed),
     }
 
 

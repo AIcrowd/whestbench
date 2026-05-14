@@ -26,11 +26,16 @@ class MLP:
         width: Number of neurons per layer.
         depth: Number of weight matrices (layers).
         weights: Ordered list of weight matrices, each shape ``(width, width)``.
+        seed: Per-MLP grader-supplied seed. Estimators using randomness should
+            seed off this so their submission reproduces under regrade. Derived
+            deterministically from ``ContestSpec.seed`` and the MLP index by
+            the evaluator; 0 when no spec seed is provided.
     """
 
     width: int
     depth: int
     weights: Weights
+    seed: int = 0
 
     def validate(self) -> None:
         """Validate MLP metadata and weight matrix shapes.
