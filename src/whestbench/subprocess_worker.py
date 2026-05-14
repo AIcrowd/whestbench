@@ -23,6 +23,7 @@ def _payload_to_mlp(payload: dict) -> MLP:
         width=int(payload["width"]),
         depth=int(payload["depth"]),
         weights=weights,
+        seed=int(payload.get("seed", 0)),
     )
     mlp.validate()
     return mlp
