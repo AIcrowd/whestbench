@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -30,6 +31,8 @@ try:
     import psutil  # pyright: ignore[reportMissingModuleSource]
 except ImportError:  # pragma: no cover
     psutil = None
+
+_LOGGER = logging.getLogger(__name__)
 
 RunnerStage = Literal["load", "setup", "predict", "validate", "package", "submit"]
 
@@ -131,6 +134,12 @@ class LocalRunner:
         self.close()
         self._limits = limits
         self._context = context
+        if limits.memory_limit_mb > 0:
+            _LOGGER.warning(
+                "memory_limit_mb=%d is advisory in --runner local: enforcement requires "
+                "--runner subprocess (uses RLIMIT_AS) or external sandboxing (cgroups).",
+                limits.memory_limit_mb,
+            )
         start_wall = time.time()
         estimator, _ = load_estimator_from_path(
             entrypoint.file_path, class_name=entrypoint.class_name
@@ -262,6 +271,7 @@ class SubprocessRunner:
                     "scratch_dir": context.scratch_dir,
                 },
                 "wall_time_limit_s": limits.wall_time_limit_s,
+                "memory_limit_mb": limits.memory_limit_mb,
             }
         )
         try:

@@ -156,6 +156,22 @@ def main() -> int:
                 entrypoint = request["entrypoint"]
                 ctx_payload = request["context"]
                 wall_time_limit_s = request.get("wall_time_limit_s")
+
+                # Enforce memory limit before loading participant code. If the
+                # platform doesn't expose RLIMIT_AS (e.g., Windows, some BSDs),
+                # write a warning to stderr; the host-side LocalRunner already warns.
+                memory_limit_mb = request.get("memory_limit_mb")
+                if memory_limit_mb is not None and memory_limit_mb > 0:
+                    try:
+                        import resource as _resource
+
+                        limit_bytes = int(memory_limit_mb) * 1024 * 1024
+                        _resource.setrlimit(_resource.RLIMIT_AS, (limit_bytes, limit_bytes))
+                    except (ImportError, ValueError, OSError, AttributeError) as e:
+                        sys.stderr.write(
+                            f"[worker] could not setrlimit RLIMIT_AS={memory_limit_mb}MB: {e}\n"
+                        )
+
                 estimator, _ = load_estimator_from_path(
                     Path(entrypoint["file_path"]),
                     class_name=entrypoint.get("class_name"),
