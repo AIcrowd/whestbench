@@ -30,6 +30,7 @@ Optional lifecycle hooks:
 | `MLP` | `width` | Number of neurons per layer |
 | `MLP` | `depth` | Number of weight matrices (layers) |
 | `MLP` | `weights` | Ordered weight matrices, each `(width, width)` |
+| `MLP` | `seed` | Per-MLP grader-supplied seed; use this to seed estimator-internal randomness for reproducibility under regrade. |
 
 For traversal examples, see [Inspect and Traverse MLP Structure](../how-to/inspect-mlp-structure.md).
 
@@ -47,11 +48,48 @@ import flopscope.numpy as fnp`) for all numerical computation. flopscope tracks 
 
 ## Failure semantics
 
-When validation fails (wrong shape, non-finite values), the affected prediction is treated as a **zero-filled row**. The scoring loop continues and produces a valid report -- errors are reflected as increased MSE rather than hard failures.
+When `predict()` cannot return a valid result — for any reason — the affected MLP is
+scored as if the estimator had returned a zero array, and the multiplier in the
+budget-adjusted score `s_m` is forced to `1.0` (no compute discount). Concretely:
 
-Validation failures now include structured diagnostics in report output under `results.per_mlp[i].error` as
-`{"message": ..., "details": ...}` with details describing `expected_shape`, `got_shape`,
-and actionable hints.
+- **FLOP budget exhausted** (`flopscope.BudgetExhaustedError`) → `Y_hat = 0`, `s_m = MSE(0, Y) * 1.0`
+- **Wall-time / residual-time budget exhausted** → same
+- **Combined-budget post-check** (`C_m = F_m + λ·R_m > B_m`) → same
+- **`predict()` raised an exception** (any subclass of `Exception`, including `MemoryError`,
+  `ValueError` from `validate_predictions`, custom estimator exceptions) → same
+- **Invalid output shape** (not `(depth, width)`) → same
+- **Non-finite values** (any `inf` or `NaN`) → same
+- **Subprocess worker hard-killed** (OOM, segfault, timeout, non-zero exit) → same
+
+The scoring loop continues across the remaining MLPs and produces a finite `primary_score`.
+Per-MLP diagnostic fields (`error`, `error_code`, `traceback`, `budget_exhausted`,
+`time_exhausted`, `residual_wall_time_exhausted`, `combined_budget_exhausted`) are preserved
+so failures remain debuggable.
+
+The "no compute discount on failure" rule (multiplier forced to 1.0) ensures that a failed
+run is strictly worse than a trivial-zero submission that succeeds (which receives the
+0.5 multiplier floor — the minimum discount).
+
+## Reproducibility under the grader seed
+
+If your estimator uses randomness — Monte Carlo sampling, randomized hashing,
+random projections, etc. — seed it from `mlp.seed`. The grader supplies a fixed
+per-MLP seed that is identical across all submissions for a given MLP, derived
+deterministically from the suite seed. Submissions that use unseeded randomness
+or their own seeds are NOT guaranteed to reproduce under regrade and may be
+disqualified for prize eligibility.
+
+Example:
+
+```python
+import flopscope.numpy as fnp
+
+def predict(self, mlp, budget):
+    rng = fnp.random.default_rng(mlp.seed)
+    # ... use rng for any internal randomness
+```
+
+If your estimator is deterministic (no internal randomness), you can ignore `mlp.seed`.
 
 ## Next step
 

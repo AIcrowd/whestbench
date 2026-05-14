@@ -26,7 +26,7 @@ Inside `results`:
 
 | Field | Description |
 |---|---|
-| `primary_score` | Leaderboard metric — final-layer MSE averaged across MLPs. Lower is better. |
+| `primary_score` | Budget-adjusted leaderboard metric — mean across MLPs of `s_m = final_mse × max(0.5, C_m / B_m)` for valid runs, or `final_mse × 1.0` for failed runs. Lower is better. |
 | `secondary_score` | All-layer MSE averaged across MLPs. Lower is better. |
 | `breakdowns` | Aggregate FLOP/time breakdowns keyed by section name. Includes `sampling` and `estimator`. |
 | `per_mlp` | Array of per-MLP detail records (see below) |
@@ -39,6 +39,9 @@ Each entry in `per_mlp`:
 |---|---|---|
 | `mlp_index` | `int` | Index of the MLP in the evaluation set |
 | `flops_used` | `int` | Total FLOPs used by your estimator for this MLP |
+| `effective_compute` | `float` | C_m = F_m + λ·R_m. Combined FLOP-equivalent compute used by the estimator. |
+| `budget_adjusted_score` | `float` | s_m. The per-MLP score that flows into `primary_score`. |
+| `combined_budget_exhausted` | `bool` | Whether the post-hoc check `C_m > B_m` fired (predictions zeroed if true). |
 | `budget_exhausted` | `bool` | Whether the estimator exceeded the FLOP budget (predictions zeroed if true) |
 | `time_exhausted` | `bool` | Whether the estimator exceeded the wall-clock limit for this MLP (predictions zeroed if true) |
 | `residual_wall_time_exhausted` | `bool` | Whether WhestBench judged non-flopscope time to exceed `residual_wall_time_limit_s` (predictions zeroed if true) |
@@ -104,6 +107,24 @@ Each breakdown summary also includes timing totals:
 For `results.breakdowns.*`, those values are aggregated across all evaluated
 MLPs.
 
+## Budget-adjusted scoring
+
+The leaderboard ranks submissions by `primary_score`, the suite mean of the
+budget-adjusted per-MLP score:
+
+```
+s_m = final_mse × max(0.5, C_m / B_m)   for valid runs
+s_m = final_mse × 1.0                    for failures (no compute discount)
+
+C_m = F_m + λ · R_m                      (effective compute, FLOPs and FLOP-equivalents)
+λ = 1e10 FLOPs/second                    (conversion rate; see flopscope-primer.md)
+```
+
+Where `F_m` is the analytical FLOPs counted by flopscope (`flops_used`), `R_m` is the
+residual wall-time bucket (`residual_wall_time_s` — neither flopscope-backend nor
+flopscope-overhead), and `B_m` is `flop_budget`. The `max(0.5, ...)` floor caps the
+discount at 2× so an arbitrarily cheap-but-wrong submission cannot dominate the ranking.
+
 ## Interpretation guide
 
 - `final_mse` is your most actionable diagnostic — it directly drives `primary_score`.
@@ -114,7 +135,11 @@ MLPs.
 - High `flopscope_backend_time_s` relative to wall: numpy compute is the dominant cost. Healthy for a numpy-heavy estimator.
 - High `flopscope_overhead_time_s` relative to wall: many small ops are paying the per-call dispatch tax. Consider batching with larger numpy primitives.
 - High `residual_wall_time_s` relative to wall: participant Python is the bottleneck (tight loops, per-element attribute access, calls into uninstrumented libraries). This is the bucket future versions of WhestBench will penalise on.
-- `primary_score` is raw MSE — compare across runs to see whether estimator changes are helping.
+- `primary_score` is the budget-adjusted suite mean and is always ≤ the raw `final_mse`
+  mean (the multiplier is at most 1.0 — it equals 1.0 at full budget use or on failures
+  and drops to 0.5 at the discount floor). A primary_score close to raw `final_mse`
+  means you used near-full budget; a primary_score close to half of raw `final_mse`
+  means you used under half the budget and got the maximum discount.
 
 ## Dataset traceability fields
 
