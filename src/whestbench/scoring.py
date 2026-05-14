@@ -550,8 +550,7 @@ def evaluate_estimator(
                 raise
             predictions = fnp.zeros((spec.depth, spec.width))
             # Prefer the traceback forwarded from a remote runner (subprocess
-            # worker) when available; otherwise capture the local chain, which
-            # includes the original estimator traceback via `raise ... from exc`.
+            # worker) when available; otherwise capture the local chain.
             tb_text: Optional[str] = None
             if isinstance(exc, RunnerError) and exc.detail.traceback:
                 tb_text = exc.detail.traceback
@@ -570,12 +569,29 @@ def evaluate_estimator(
             else:
                 error_code = exc.__class__.__name__
                 error_message = str(exc)
+
+            # Compute zero-prediction MSE against this MLP's targets.
+            pred_np = fnp.asarray(predictions, dtype=fnp.float32)
+            final_target = data.final_targets[i]
+            all_target = data.all_layer_targets[i]
+            final_mse_fail = float(fnp.mean((pred_np[-1] - final_target) ** 2))
+            all_mse_fail = float(fnp.mean((pred_np - all_target) ** 2))
+            s_m_fail = _compute_budget_adjusted_score(
+                mse_final=final_mse_fail,
+                effective_compute=0.0,
+                flop_budget=spec.flop_budget,
+                failure=True,
+            )
+
             per_mlp.append(
                 {
                     "mlp_index": i,
                     "error": error_message,
                     "error_code": error_code,
                     "traceback": tb_text,
+                    "final_mse": final_mse_fail,
+                    "all_layer_mse": all_mse_fail,
+                    "budget_adjusted_score": s_m_fail,
                     "flops_used": 0,
                     "effective_compute": 0.0,
                     "budget_exhausted": False,
@@ -588,8 +604,8 @@ def evaluate_estimator(
                     "breakdowns": {"estimator": None},
                 }
             )
-            primary_scores.append(float("inf"))
-            secondary_scores.append(float("inf"))
+            primary_scores.append(s_m_fail)
+            secondary_scores.append(all_mse_fail)
             if on_mlp_scored is not None:
                 on_mlp_scored(i + 1)
             continue

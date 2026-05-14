@@ -817,7 +817,12 @@ def test_evaluate_estimator_captures_traceback_and_error_code() -> None:
         assert isinstance(entry["traceback"], str)
         assert "boom from predict" in entry["traceback"]
         assert "RuntimeError" in entry["traceback"]
-    assert result["primary_score"] == float("inf")
+        # Failure routes to zero-prediction MSE * 1.0 (finite, never inf).
+        assert "budget_adjusted_score" in entry
+        assert entry["budget_adjusted_score"] != float("inf")
+    # Suite mean must be finite; failures no longer propagate inf.
+    assert result["primary_score"] != float("inf")
+    assert result["primary_score"] > 0.0
 
 
 def test_evaluate_estimator_records_validation_error_details() -> None:
