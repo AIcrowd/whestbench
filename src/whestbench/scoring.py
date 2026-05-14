@@ -597,6 +597,7 @@ def evaluate_estimator(
                     "budget_exhausted": False,
                     "time_exhausted": False,
                     "residual_wall_time_exhausted": False,
+                    "combined_budget_exhausted": False,
                     "wall_time_s": 0.0,
                     "flopscope_backend_time_s": 0.0,
                     "flopscope_overhead_time_s": 0.0,
@@ -658,6 +659,25 @@ def evaluate_estimator(
             predictions = fnp.zeros((spec.depth, spec.width))
             residual_wall_time_exhausted = True
 
+        effective_compute = float(flops_used) + LAMBDA_FLOPS_PER_SECOND * float(
+            residual_wall_time_s
+        )
+
+        # Post-hoc combined-budget check: C_m = F_m + lambda * R_m > B_m → zero out.
+        # The individual caps (flop_budget for F_m, residual_wall_time_limit_s for R_m)
+        # are generous on each axis; this catches the worst case where a participant
+        # uses near-B_m on both. Bounded waste of grader compute (up to ~2 B_m), with
+        # the participant scored as failure regardless.
+        combined_budget_exhausted = False
+        if (
+            not budget_exhausted
+            and not time_exhausted
+            and not residual_wall_time_exhausted
+            and effective_compute > spec.flop_budget
+        ):
+            predictions = fnp.zeros((spec.depth, spec.width))
+            combined_budget_exhausted = True
+
         # Convert predictions for MSE computation
         pred_np = fnp.asarray(predictions, dtype=fnp.float32)
 
@@ -670,14 +690,15 @@ def evaluate_estimator(
         all_target = data.all_layer_targets[i]
         all_mse = float(fnp.mean((pred_np - all_target) ** 2))
 
-        effective_compute = float(flops_used) + LAMBDA_FLOPS_PER_SECOND * float(
-            residual_wall_time_s
-        )
-
         # Budget-adjusted per-MLP score:
         #   s_m = final_mse * max(0.5, C_m / B_m)  for valid runs
         #   s_m = final_mse * 1.0                  for failures (Task 5 wires this for exceptions)
-        failure_flag = budget_exhausted or time_exhausted or residual_wall_time_exhausted
+        failure_flag = (
+            budget_exhausted
+            or time_exhausted
+            or residual_wall_time_exhausted
+            or combined_budget_exhausted
+        )
         budget_adjusted_score = _compute_budget_adjusted_score(
             mse_final=final_mse,
             effective_compute=effective_compute,
@@ -699,6 +720,7 @@ def evaluate_estimator(
                 "budget_exhausted": budget_exhausted,
                 "time_exhausted": time_exhausted,
                 "residual_wall_time_exhausted": residual_wall_time_exhausted,
+                "combined_budget_exhausted": combined_budget_exhausted,
                 "wall_time_s": wall_time_s,
                 "flopscope_backend_time_s": flopscope_backend_time_s,
                 "flopscope_overhead_time_s": flopscope_overhead_time_s,
