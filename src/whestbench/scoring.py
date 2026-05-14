@@ -437,6 +437,28 @@ def _aggregate_budget_breakdowns(
     return aggregate
 
 
+def _compute_budget_adjusted_score(
+    *, mse_final: float, effective_compute: float, flop_budget: int, failure: bool
+) -> float:
+    """Compute the per-MLP budget-adjusted score s_m.
+
+    For valid runs: s_m = mse_final * max(0.5, C_m / B_m).
+    For failures: s_m = mse_final * 1.0 (no compute discount).
+
+    The 0.5 floor on the success-path multiplier prevents an arbitrarily
+    cheap submission from dominating the ranking. The 1.0 multiplier on
+    failures ensures that a failed run is strictly worse than a trivial-zero
+    submission that succeeds (which gets the 0.5 floor).
+    """
+    if failure:
+        return float(mse_final)
+    if flop_budget <= 0:
+        return float(mse_final)
+    ratio = effective_compute / float(flop_budget)
+    multiplier = max(0.5, ratio)
+    return float(mse_final) * multiplier
+
+
 def evaluate_estimator(
     estimator: BaseEstimator,
     data: ContestData,
@@ -448,7 +470,11 @@ def evaluate_estimator(
 
     Each MLP prediction runs under a BudgetContext. If the FLOP budget,
     wall-time limit, or residual wall-time limit is exceeded, predictions are
-    zeroed and the violation is recorded. Score = pure MSE (lower is better).
+    zeroed and the violation is recorded. Score per MLP = final_mse *
+    max(0.5, C_m / B_m) for valid runs, where C_m = F_m + lambda * R_m. For
+    failure-flagged runs (FLOP/time/residual budget exhausted), the multiplier
+    is forced to 1.0. The aggregate primary_score is the arithmetic mean of
+    per-MLP scores. Lower is better.
 
     When ``fail_fast`` is True, unexpected predict-time exceptions are re-raised
     instead of being recorded and skipped.
@@ -628,18 +654,30 @@ def evaluate_estimator(
         all_target = data.all_layer_targets[i]
         all_mse = float(fnp.mean((pred_np - all_target) ** 2))
 
-        primary_scores.append(final_mse)
-        secondary_scores.append(all_mse)
-
         effective_compute = float(flops_used) + LAMBDA_FLOPS_PER_SECOND * float(
             residual_wall_time_s
         )
+
+        # Budget-adjusted per-MLP score:
+        #   s_m = final_mse * max(0.5, C_m / B_m)  for valid runs
+        #   s_m = final_mse * 1.0                  for failures (Task 5 wires this for exceptions)
+        failure_flag = budget_exhausted or time_exhausted or residual_wall_time_exhausted
+        budget_adjusted_score = _compute_budget_adjusted_score(
+            mse_final=final_mse,
+            effective_compute=effective_compute,
+            flop_budget=spec.flop_budget,
+            failure=failure_flag,
+        )
+
+        primary_scores.append(budget_adjusted_score)
+        secondary_scores.append(all_mse)
 
         per_mlp.append(
             {
                 "mlp_index": i,
                 "final_mse": final_mse,
                 "all_layer_mse": all_mse,
+                "budget_adjusted_score": budget_adjusted_score,
                 "flops_used": flops_used,
                 "effective_compute": effective_compute,
                 "budget_exhausted": budget_exhausted,
