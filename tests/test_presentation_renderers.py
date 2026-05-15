@@ -316,11 +316,14 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
                 over_budget_rows=[
                     BudgetBreakdownOverBudgetRow(
                         mlp_index=1,
+                        reason="BUDGET",
+                        metric_name="C_m",
+                        metric_value="120",
                         flops_used="120",
                         percent_of_budget="120%",
                     )
                 ],
-                over_budget_summary="1 of 2 MLPs exceeded the per-MLP FLOP cap",
+                over_budget_summary="1 of 2 MLPs failed (0 combined, 1 FLOP, 0 residual, 0 time, 0 error). All counted as failures.",
             ),
             KeyValueSection(
                 title="Final Score",
@@ -835,3 +838,80 @@ def test_score_block_renders_section_dividers():
     rendered = console.export_text()
     divider_count = rendered.count("─" * 8)
     assert divider_count >= 2, f"Expected ≥2 dividers, got {divider_count}"
+
+
+def test_budget_breakdown_renders_effective_compute_row():
+    from rich.console import Console
+
+    from whestbench.presentation.adapters import _breakdown_section
+    from whestbench.presentation.blocks import build_budget_breakdown_block
+
+    report = {
+        "run_config": {"flop_budget": 10_000_000_000, "n_mlps": 1},
+        "results": {
+            "per_mlp": [
+                {
+                    "flops_used": 1_000_000_000,
+                    "effective_compute": 6_000_000_000,
+                    "combined_budget_exhausted": False,
+                },
+            ],
+            "breakdowns": {
+                "estimator": {
+                    "flops_used": 1_000_000_000,
+                    "flopscope_backend_time_s": 0.1,
+                    "flopscope_overhead_time_s": 0.05,
+                    "residual_wall_time_s": 0.5,
+                    "by_namespace": {},
+                },
+            },
+        },
+    }
+    section = _breakdown_section(
+        report, breakdown_key="estimator", title="Estimator Budget Breakdown"
+    )
+    panel = build_budget_breakdown_block(section)
+    console = Console(record=True, color_system=None, no_color=True, width=140)
+    console.print(panel)
+    rendered = console.export_text()
+    assert "Effective Compute" in rendered
+    assert "effective_compute" in rendered
+
+
+def test_over_budget_table_renders_reason_column():
+    from rich.console import Console
+
+    from whestbench.presentation.adapters import _breakdown_section
+    from whestbench.presentation.blocks import build_budget_breakdown_block
+
+    report = {
+        "run_config": {"flop_budget": 10_000_000_000, "n_mlps": 1},
+        "results": {
+            "per_mlp": [
+                {
+                    "mlp_index": 0,
+                    "flops_used": 7_000_000_000,
+                    "effective_compute": 12_000_000_000,
+                    "combined_budget_exhausted": True,
+                },
+            ],
+            "breakdowns": {
+                "estimator": {
+                    "flops_used": 7_000_000_000,
+                    "flopscope_backend_time_s": 0.1,
+                    "flopscope_overhead_time_s": 0.05,
+                    "residual_wall_time_s": 0.5,
+                    "by_namespace": {},
+                },
+            },
+        },
+    }
+    section = _breakdown_section(
+        report, breakdown_key="estimator", title="Estimator Budget Breakdown"
+    )
+    panel = build_budget_breakdown_block(section)
+    console = Console(record=True, color_system=None, no_color=True, width=140)
+    console.print(panel)
+    rendered = console.export_text()
+    assert "reason" in rendered
+    assert "COMBINED" in rendered

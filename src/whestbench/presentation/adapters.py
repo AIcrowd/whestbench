@@ -361,10 +361,20 @@ def _breakdown_section(
     over_budget_rows: list[BudgetBreakdownOverBudgetRow] = []
     over_budget_summary: str | None = None
     over_budget_truncated_remainder: int | None = None
+    effective_compute_value: str | None = None
     if breakdown_key == "estimator":
+        per_mlp_list = results.get("per_mlp")
+        if isinstance(per_mlp_list, list):
+            cms = [
+                as_float(e.get("effective_compute", 0.0))
+                for e in per_mlp_list
+                if isinstance(e, dict)
+            ]
+            if cms:
+                effective_compute_value = fmt_flops(sum(cms))
         state = compute_gauge_state(report)
         gauge = BudgetBreakdownGauge(
-            label="Estimator FLOPs",
+            label="Effective Compute",
             bar=gauge_bar_fragment(state.mean_utilization),
             overflow=state.state_name == "catastrophic",
             percent_of_budget=f"{int(state.mean_utilization * 100)}%",
@@ -377,6 +387,9 @@ def _breakdown_section(
         over_budget_rows = [
             BudgetBreakdownOverBudgetRow(
                 mlp_index=row.mlp_index,
+                reason=row.reason,
+                metric_name=row.metric_name,
+                metric_value=row.metric_value,
                 flops_used=fmt_flops(row.flops_used),
                 percent_of_budget=(
                     f"{row.pct_of_budget}%" if row.pct_of_budget is not None else None
@@ -387,16 +400,24 @@ def _breakdown_section(
         if selection.is_truncated:
             over_budget_truncated_remainder = selection.busted_count - len(selection.rows)
         if selection.busted_count > 0:
+            rc = selection.reason_counts
+            parts = [
+                f"{rc['COMBINED']} combined",
+                f"{rc['BUDGET']} FLOP",
+                f"{rc['RESIDUAL']} residual",
+                f"{rc['TIME']} time",
+                f"{rc['ERROR']} error",
+            ]
             over_budget_summary = (
-                f"All {selection.n_mlps} MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed"
-                if selection.is_all_busted
-                else f"{selection.busted_count} of {selection.n_mlps} MLPs exceeded the per-MLP FLOP cap"
+                f"{selection.busted_count} of {selection.n_mlps} MLPs failed ({', '.join(parts)}). "
+                f"All counted as failures."
             )
 
     return BudgetBreakdownSection(
         title=title,
         available=True,
         total_flops=fmt_flops(total_flops),
+        effective_compute=effective_compute_value,
         flopscope_backend_time=_display_time_seconds(
             breakdown.get("flopscope_backend_time_s", 0.0)
         ),

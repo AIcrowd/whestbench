@@ -118,6 +118,11 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
             make_keyed_label("Total FLOPs", "flops_used", "bold bright_yellow"),
             Text(section.total_flops),
         )
+    if section.effective_compute is not None:
+        summary.add_row(
+            make_keyed_label("Effective Compute", "effective_compute", "bold bright_yellow"),
+            Text(section.effective_compute),
+        )
     if section.flopscope_backend_time is not None:
         summary.add_row(
             make_keyed_label("Flopscope Backend", "flopscope_backend_time_s", "bold bright_green"),
@@ -165,6 +170,33 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
                 row.flopscope_overhead_time,
             )
         body.append(Align.center(table))
+
+    if section.over_budget_rows:
+        ob_table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold bright_white")
+        ob_table.add_column("MLP")
+        ob_table.add_column("reason")
+        ob_table.add_column("value")
+        ob_table.add_column("% of B_m", justify="right")
+        for row in section.over_budget_rows:
+            ob_table.add_row(
+                str(row.mlp_index),
+                row.reason,
+                f"{row.metric_name} = {row.metric_value}",
+                row.percent_of_budget or "—",
+            )
+        body.append(Align.center(ob_table))
+
+    if section.over_budget_summary:
+        body.append(Text(section.over_budget_summary))
+
+    if section.over_budget_truncated_remainder:
+        body.append(
+            Text(
+                f"... and {section.over_budget_truncated_remainder} more over budget — "
+                "run with --format json for the full list",
+                style="dim",
+            )
+        )
 
     footer_note = section.footer_note or "aggregated across all evaluated MLPs"
     if footer_note:

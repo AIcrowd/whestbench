@@ -58,18 +58,29 @@ def compute_gauge_state(report: dict[str, Any]) -> GaugeState:
         flop_budget = 0
     has_budget = flop_budget > 0
 
-    flops_used = [as_float(entry.get("flops_used", 0.0)) for entry in per_mlp]
-    mean_flops = sum(flops_used) / len(flops_used) if flops_used else 0.0
-    mean_utilization = mean_flops / flop_budget if has_budget else 0.0
-    any_busted = any(bool(entry.get("budget_exhausted", False)) for entry in per_mlp)
+    # Mean utilization is computed from effective_compute (C_m), not flops_used (F_m).
+    effective_computes = [as_float(entry.get("effective_compute", 0.0)) for entry in per_mlp]
+    mean_compute = sum(effective_computes) / len(effective_computes) if effective_computes else 0.0
+    mean_utilization = mean_compute / flop_budget if has_budget else 0.0
+
+    flag_keys = (
+        "budget_exhausted",
+        "time_exhausted",
+        "residual_wall_time_exhausted",
+        "combined_budget_exhausted",
+    )
+    any_busted = any(
+        bool(entry.get("error_code")) or any(bool(entry.get(k)) for k in flag_keys)
+        for entry in per_mlp
+    )
 
     if any_busted and has_budget:
-        worst_flops = max(
-            as_float(entry.get("flops_used", 0.0))
+        worst_cm = max(
+            as_float(entry.get("effective_compute", 0.0))
             for entry in per_mlp
-            if bool(entry.get("budget_exhausted", False))
+            if any(bool(entry.get(k)) for k in flag_keys) or bool(entry.get("error_code"))
         )
-        worst_mlp_pct: Optional[int] = int(worst_flops * 100 // flop_budget)
+        worst_mlp_pct: Optional[int] = int(worst_cm * 100 // flop_budget)
     else:
         worst_mlp_pct = None
 
@@ -95,6 +106,9 @@ def compute_gauge_state(report: dict[str, Any]) -> GaugeState:
 @dataclass(frozen=True)
 class OverBudgetRow:
     mlp_index: int
+    reason: str  # "COMBINED" | "BUDGET" | "RESIDUAL" | "TIME" | "ERROR"
+    metric_name: str  # "C_m" | "F_m" | "R_m" | "wall" | "error"
+    metric_value: str  # e.g. "4.08e+10", "3.40e+10", "4.2s"
     flops_used: float
     pct_of_budget: Optional[int]
 
@@ -106,6 +120,7 @@ class OverBudgetSelection:
     n_mlps: int
     is_truncated: bool
     is_all_busted: bool
+    reason_counts: dict[str, int]
 
 
 def select_top_over_budget(report: dict[str, Any], *, top_n: int = 5) -> OverBudgetSelection:
@@ -120,37 +135,72 @@ def select_top_over_budget(report: dict[str, Any], *, top_n: int = 5) -> OverBud
     except (TypeError, ValueError):
         flop_budget = 0
 
-    busted = [entry for entry in per_mlp if bool(entry.get("budget_exhausted", False))]
+    def _reason_for(entry: dict[str, Any]) -> Optional[str]:
+        if entry.get("combined_budget_exhausted"):
+            return "COMBINED"
+        if entry.get("budget_exhausted"):
+            return "BUDGET"
+        if entry.get("residual_wall_time_exhausted"):
+            return "RESIDUAL"
+        if entry.get("time_exhausted"):
+            return "TIME"
+        if entry.get("error_code"):
+            return "ERROR"
+        return None
 
-    def _overage(entry: dict[str, Any]) -> float:
-        flops = as_float(entry.get("flops_used", 0.0))
-        if flop_budget > 0:
-            return flops / flop_budget
-        return flops
+    def _metric_for(entry: dict[str, Any], reason: str) -> tuple[str, str]:
+        if reason in ("COMBINED", "BUDGET"):
+            cm = as_float(entry.get("effective_compute", 0.0))
+            return ("C_m", fmt_flops(cm))
+        if reason == "RESIDUAL":
+            rt = as_float(entry.get("residual_wall_time_s", 0.0))
+            return ("R_m", f"{rt:.3f}s")
+        if reason == "TIME":
+            wt = as_float(entry.get("wall_time_s", 0.0))
+            return ("wall", f"{wt:.3f}s")
+        if reason == "ERROR":
+            return ("error", str(entry.get("error_code") or "ERROR"))
+        return ("?", "?")
 
-    sorted_busted = sorted(
-        busted,
-        key=lambda entry: (-_overage(entry), int(entry.get("mlp_index", 0))),
-    )
-    rows_to_show = sorted_busted if len(busted) <= top_n + 1 else sorted_busted[:top_n]
+    def _sort_key(entry: dict[str, Any]) -> tuple[float, int]:
+        cm = as_float(entry.get("effective_compute", 0.0))
+        ratio = (cm / flop_budget) if flop_budget > 0 else 0.0
+        return (-ratio, int(entry.get("mlp_index", 0)))
 
-    rows = [
-        OverBudgetRow(
-            mlp_index=int(entry.get("mlp_index", 0)),
-            flops_used=as_float(entry.get("flops_used", 0.0)),
-            pct_of_budget=(
-                int(as_float(entry.get("flops_used", 0.0)) * 100 // flop_budget)
-                if flop_budget > 0
-                else None
-            ),
+    failed: list[tuple[dict[str, Any], str]] = []
+    for entry in per_mlp:
+        reason = _reason_for(entry)
+        if reason is not None:
+            failed.append((entry, reason))
+
+    sorted_failed = sorted(failed, key=lambda pair: _sort_key(pair[0]))
+    rows_to_show = sorted_failed if len(sorted_failed) <= top_n + 1 else sorted_failed[:top_n]
+
+    rows = []
+    for entry, reason in rows_to_show:
+        metric_name, metric_value = _metric_for(entry, reason)
+        cm = as_float(entry.get("effective_compute", 0.0))
+        rows.append(
+            OverBudgetRow(
+                mlp_index=int(entry.get("mlp_index", 0)),
+                reason=reason,
+                metric_name=metric_name,
+                metric_value=metric_value,
+                flops_used=as_float(entry.get("flops_used", 0.0)),
+                pct_of_budget=(int(cm * 100 // flop_budget) if flop_budget > 0 else None),
+            )
         )
-        for entry in rows_to_show
-    ]
-    busted_count = len(busted)
+
+    reason_counts = {"COMBINED": 0, "BUDGET": 0, "RESIDUAL": 0, "TIME": 0, "ERROR": 0}
+    for _, reason in failed:
+        reason_counts[reason] += 1
+
+    busted_count = len(failed)
     return OverBudgetSelection(
         rows=rows,
         busted_count=busted_count,
         n_mlps=n_mlps,
         is_truncated=busted_count > len(rows),
         is_all_busted=busted_count > 0 and busted_count == n_mlps,
+        reason_counts=reason_counts,
     )
