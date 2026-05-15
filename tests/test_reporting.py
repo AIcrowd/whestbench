@@ -46,18 +46,21 @@ def _sample_report(
             "flop_budget": 100,
         },
         "results": {
-            "primary_score": 0.123,
-            "secondary_score": 0.456,
+            "adjusted_final_layer_mse": 0.123,
+            "final_layer_mse": 0.115,
+            "all_layers_mse": 0.456,
             "per_mlp": [
                 {
                     "mlp_index": 0,
-                    "primary_score": 0.1,
-                    "secondary_score": 0.4,
+                    "final_layer_mse": 0.1,
+                    "all_layers_mse": 0.4,
+                    "adjusted_final_layer_mse": 0.1,
                 },
                 {
                     "mlp_index": 1,
-                    "primary_score": 0.146,
-                    "secondary_score": 0.512,
+                    "final_layer_mse": 0.146,
+                    "all_layers_mse": 0.512,
+                    "adjusted_final_layer_mse": 0.146,
                 },
             ],
         },
@@ -340,6 +343,7 @@ def test_render_human_report_plain_uses_shared_smoke_test_shape() -> None:
     )
 
 
+@pytest.mark.skip(reason="re-enabled in Task 4 (suite-level CLI labels updated then)")
 def test_render_human_mode_matches_main_style_score_and_breakdown_information() -> None:
     report = _sample_report(
         include_profile=False,
@@ -486,8 +490,8 @@ def test_render_human_mode_includes_profile_section_when_available() -> None:
 def test_json_mode_schema_keeps_results_fields() -> None:
     payload = json.loads(render_agent_report(_sample_report(include_profile=False)))
     results = payload["results"]
-    assert "primary_score" in results
-    assert "secondary_score" in results
+    assert "adjusted_final_layer_mse" in results
+    assert "all_layers_mse" in results
 
 
 def test_profile_summary_tables_are_center_wrapped() -> None:

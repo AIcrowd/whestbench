@@ -476,8 +476,8 @@ def evaluate_estimator(
     zeroed and the violation is recorded. Score per MLP = final_layer_mse *
     max(0.5, C_m / B_m) for valid runs, where C_m = F_m + lambda * R_m. For
     failure-flagged runs (FLOP/time/residual budget exhausted), the multiplier
-    is forced to 1.0. The aggregate primary_score is the arithmetic mean of
-    per-MLP scores. Lower is better.
+    is forced to 1.0. The aggregate adjusted_final_layer_mse is the arithmetic
+    mean of per-MLP scores. Lower is better.
 
     When ``fail_fast`` is True, unexpected predict-time exceptions are re-raised
     instead of being recorded and skipped.
@@ -736,11 +736,20 @@ def evaluate_estimator(
             on_mlp_scored(i + 1)
 
     aggregate_breakdown = _aggregate_budget_breakdowns(normalized_breakdowns)
+    # Aggregate the new raw final-layer MSE list across MLPs.
+    raw_final_layer_mses = [
+        float(entry["final_layer_mse"])
+        for entry in per_mlp
+        if isinstance(entry, dict) and "final_layer_mse" in entry
+    ]
     return {
-        "primary_score": float(fnp.mean(fnp.asarray(primary_scores)))
+        "adjusted_final_layer_mse": float(fnp.mean(fnp.asarray(primary_scores)))
         if primary_scores
         else float("inf"),
-        "secondary_score": float(fnp.mean(fnp.asarray(secondary_scores)))
+        "final_layer_mse": float(fnp.mean(fnp.asarray(raw_final_layer_mses)))
+        if raw_final_layer_mses
+        else float("inf"),
+        "all_layers_mse": float(fnp.mean(fnp.asarray(secondary_scores)))
         if secondary_scores
         else float("inf"),
         "per_mlp": per_mlp,

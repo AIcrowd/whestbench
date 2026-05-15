@@ -206,7 +206,7 @@ def run_default_score(profile: bool = False) -> "Any":
     spec = _default_contest_spec()
     data = make_contest(spec)
     result = evaluate_estimator(_DEFAULT_ESTIMATOR, data)
-    score = result["primary_score"]
+    score = result["adjusted_final_layer_mse"]
     if profile:
         return score, list(result.get("per_mlp", []))
     return score
