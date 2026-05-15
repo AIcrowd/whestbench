@@ -182,33 +182,58 @@ def _score_section(report: dict[str, Any]) -> TableSection:
     results = report.get("results")
     if not isinstance(results, dict):
         results = {}
+
+    PRIMARY_ANNOTATION = "  ← primary score"
+
     rows = [
-        ["Primary Score [primary_score]", _display_metric_value(results.get("primary_score"))],
+        # Accuracy metrics
         [
-            "Secondary Score [secondary_score]",
-            _display_metric_value(results.get("secondary_score")),
+            "Adjusted Final-Layer MSE [adjusted_final_layer_mse]",
+            _display_metric_value(results.get("adjusted_final_layer_mse")) + PRIMARY_ANNOTATION,
+        ],
+        [
+            "Raw Final-Layer MSE [final_layer_mse]",
+            _display_metric_value(results.get("final_layer_mse")),
+        ],
+        [
+            "All-Layers MSE [all_layers_mse]",
+            _display_metric_value(results.get("all_layers_mse")),
+        ],
+        # Range metrics
+        [
+            "Best MLP [best_mlp_adjusted_final_layer_mse]",
+            _display_metric_value(results.get("best_mlp_adjusted_final_layer_mse")),
+        ],
+        [
+            "Worst MLP [worst_mlp_adjusted_final_layer_mse]",
+            _display_metric_value(results.get("worst_mlp_adjusted_final_layer_mse")),
+        ],
+        # Efficiency metrics
+        [
+            "Mean Score Multiplier [mean_score_multiplier]",
+            _display_metric_value(results.get("mean_score_multiplier")),
+        ],
+        [
+            "Mean Compute Utilization [mean_compute_utilization]",
+            _display_metric_value(results.get("mean_compute_utilization")),
+        ],
+        [
+            "Failed MLPs [n_failed_mlps]",
+            f"{int(results.get('n_failed_mlps') or 0)} of {len(results.get('per_mlp')) if isinstance(results.get('per_mlp'), list) else 0}",
         ],
     ]
-    per_mlp = results.get("per_mlp")
-    if isinstance(per_mlp, list) and per_mlp:
-        mlp_primaries = [
-            as_float(entry.get("final_mse", 0.0)) for entry in per_mlp if isinstance(entry, dict)
-        ]
-        if mlp_primaries:
-            rows.extend(
-                [
-                    ["Best MLP Score [best_mlp_score]", _display_metric_value(min(mlp_primaries))],
-                    [
-                        "Worst MLP Score [worst_mlp_score]",
-                        _display_metric_value(max(mlp_primaries)),
-                    ],
-                ]
-            )
+
+    subtitle = (
+        "lower is better; "
+        "adjusted_final_layer_mse = final_layer_mse × max(0.5, C_m/B_m); "
+        "failure → × 1.0"
+    )
+
     return TableSection(
         title="Final Score",
         columns=["metric", "value"],
         rows=rows,
-        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+        subtitle=subtitle,
         align_center=True,
         border_style="bright_cyan",
     )

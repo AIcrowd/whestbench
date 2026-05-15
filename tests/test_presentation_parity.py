@@ -74,7 +74,17 @@ def _sample_run_report() -> dict[str, object]:
             "depth": 2,
             "flop_budget": 100,
         },
-        "results": {"primary_score": 0.42, "secondary_score": 0.55, "per_mlp": []},
+        "results": {
+            "adjusted_final_layer_mse": 0.42,
+            "final_layer_mse": 0.38,
+            "all_layers_mse": 0.55,
+            "best_mlp_adjusted_final_layer_mse": 0.38,
+            "worst_mlp_adjusted_final_layer_mse": 0.46,
+            "mean_score_multiplier": 1.0,
+            "mean_compute_utilization": 0.75,
+            "n_failed_mlps": 0,
+            "per_mlp": [],
+        },
     }
 
 
@@ -107,7 +117,7 @@ def test_parity_matrix_preserves_settled_information() -> None:
                 "Darwin",
                 "Apple M4",
                 "3.13.7",
-                "Primary Score",
+                "Adjusted Final-Layer MSE",
                 "0.42",
                 "Use --format json for JSON output when calling from automated agents or UIs.",
                 "Use --show-diagnostic-plots to include diagnostic plot panes.",
@@ -124,8 +134,14 @@ def test_parity_matrix_preserves_settled_information() -> None:
                         "flop_budget": 10_000_000,
                     },
                     "results": {
-                        "primary_score": 0.42,
-                        "secondary_score": 0.55,
+                        "adjusted_final_layer_mse": 0.42,
+                        "final_layer_mse": 0.38,
+                        "all_layers_mse": 0.55,
+                        "best_mlp_adjusted_final_layer_mse": 0.38,
+                        "worst_mlp_adjusted_final_layer_mse": 0.46,
+                        "mean_score_multiplier": 1.0,
+                        "mean_compute_utilization": 0.75,
+                        "n_failed_mlps": 0,
                         "per_mlp": [],
                     },
                 },
@@ -333,7 +349,12 @@ def test_shared_human_plain_output_has_no_ansi_sequences() -> None:
                 TableSection(
                     title="Final Score",
                     columns=["metric", "value"],
-                    rows=[["Primary Score [primary_score]", "0.123"]],
+                    rows=[
+                        [
+                            "Adjusted Final-Layer MSE [adjusted_final_layer_mse]",
+                            "0.123  ← primary score",
+                        ]
+                    ],
                 )
             ),
         ],
@@ -374,10 +395,15 @@ def test_shared_human_plain_output_keeps_long_budget_and_score_sections_readable
                 TableSection(
                     title="Final Score",
                     columns=["metric", "value"],
-                    rows=[["Primary Score [primary_score]", "0.123456789012345678901234567890"]],
+                    rows=[
+                        [
+                            "Adjusted Final-Layer MSE [adjusted_final_layer_mse]",
+                            "0.123456789012345678901234567890  ← primary score",
+                        ]
+                    ],
                     subtitle=(
-                        "lower MSE is better; primary score = mean across MLPs of "
-                        "final-layer MSE and this subtitle should not be truncated"
+                        "lower is better; adjusted_final_layer_mse = final_layer_mse × max(0.5, C_m/B_m); "
+                        "failure → × 1.0 and this subtitle should not be truncated"
                     ),
                 )
             ),
@@ -390,7 +416,7 @@ def test_shared_human_plain_output_keeps_long_budget_and_score_sections_readable
         "WhestBench Report",
         "Estimator Budget Breakdown",
         "Final Score",
-        "lower MSE is better",
+        "lower is better",
     ):
         assert text in plain
     assert "metric | value" not in plain

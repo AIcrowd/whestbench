@@ -32,10 +32,14 @@ def make_keyed_label(human: str, code: str, style: str) -> Text:
 
 def _score_value_markup(metric: str, value: str) -> str:
     value_styles = {
-        "Primary Score [primary_score]": "bold bright_green",
-        "Secondary Score [secondary_score]": "cyan",
-        "Best MLP Score [best_mlp_score]": "green",
-        "Worst MLP Score [worst_mlp_score]": "yellow",
+        "Adjusted Final-Layer MSE [adjusted_final_layer_mse]": "bold bright_green",
+        "Raw Final-Layer MSE [final_layer_mse]": "cyan",
+        "All-Layers MSE [all_layers_mse]": "cyan",
+        "Best MLP [best_mlp_adjusted_final_layer_mse]": "green",
+        "Worst MLP [worst_mlp_adjusted_final_layer_mse]": "yellow",
+        "Mean Score Multiplier [mean_score_multiplier]": "bright_white",
+        "Mean Compute Utilization [mean_compute_utilization]": "bright_white",
+        "Failed MLPs [n_failed_mlps]": "bright_white",
     }
     style = value_styles.get(metric)
     if style is None:
@@ -49,22 +53,39 @@ def build_score_block(section: TableSection) -> Panel:
     table.add_column("value", justify="right")
 
     metric_labels = {
-        "Primary Score [primary_score]": make_keyed_label(
-            "Primary Score", "primary_score", "bold bright_green"
+        "Adjusted Final-Layer MSE [adjusted_final_layer_mse]": make_keyed_label(
+            "Adjusted Final-Layer MSE", "adjusted_final_layer_mse", "bold bright_green"
         ),
-        "Secondary Score [secondary_score]": make_keyed_label(
-            "Secondary Score", "secondary_score", "bold bright_cyan"
+        "Raw Final-Layer MSE [final_layer_mse]": make_keyed_label(
+            "Raw Final-Layer MSE", "final_layer_mse", "bold cyan"
         ),
-        "Best MLP Score [best_mlp_score]": make_keyed_label(
-            "Best MLP Score", "best_mlp_score", "bold green"
+        "All-Layers MSE [all_layers_mse]": make_keyed_label(
+            "All-Layers MSE", "all_layers_mse", "bold cyan"
         ),
-        "Worst MLP Score [worst_mlp_score]": make_keyed_label(
-            "Worst MLP Score", "worst_mlp_score", "bold yellow"
+        "Best MLP [best_mlp_adjusted_final_layer_mse]": make_keyed_label(
+            "Best MLP", "best_mlp_adjusted_final_layer_mse", "bold green"
+        ),
+        "Worst MLP [worst_mlp_adjusted_final_layer_mse]": make_keyed_label(
+            "Worst MLP", "worst_mlp_adjusted_final_layer_mse", "bold yellow"
+        ),
+        "Mean Score Multiplier [mean_score_multiplier]": make_keyed_label(
+            "Mean Score Multiplier", "mean_score_multiplier", "bold bright_white"
+        ),
+        "Mean Compute Utilization [mean_compute_utilization]": make_keyed_label(
+            "Mean Compute Utilization", "mean_compute_utilization", "bold bright_white"
+        ),
+        "Failed MLPs [n_failed_mlps]": make_keyed_label(
+            "Failed MLPs", "n_failed_mlps", "bold bright_white"
         ),
     }
 
-    for metric, value in section.rows:
+    # Section dividers: insert visual separators after row 3 (accuracy → range)
+    # and after row 5 (range → efficiency). Rows are 1-indexed in this loop.
+    DIVIDER_AFTER_ROWS = {3, 5}
+    for idx, (metric, value) in enumerate(section.rows, start=1):
         table.add_row(metric_labels.get(metric, Text(metric)), _score_value_markup(metric, value))
+        if idx in DIVIDER_AFTER_ROWS and idx < len(section.rows):
+            table.add_row(Text("─" * 8, style="dim"), Text("─" * 8, style="dim"))
 
     panel_kwargs: dict[str, Any] = {
         "title": escape(section.title),

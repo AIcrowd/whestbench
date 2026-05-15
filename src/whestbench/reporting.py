@@ -581,41 +581,76 @@ def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
 
 def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     results = report.get("results", {})
-    primary_score = _as_float(results.get("adjusted_final_layer_mse", 0.0))
-    secondary_score = _as_float(results.get("all_layers_mse", 0.0))
     summary = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
     summary.add_column("metric")
     summary.add_column("value", justify="right")
+
+    PRIMARY_ANNOTATION = "  ← primary score"
+
+    # Accuracy metrics
+    adjusted_mse = _as_float(results.get("adjusted_final_layer_mse", 0.0))
     summary.add_row(
-        _label_with_code("Primary Score", "primary_score", "bold bright_green"),
-        f"[bold bright_green]{_fmt_float(primary_score, 8)}[/]",
+        _label_with_code(
+            "Adjusted Final-Layer MSE", "adjusted_final_layer_mse", "bold bright_green"
+        ),
+        f"[bold bright_green]{_fmt_float(adjusted_mse, 8)}[/]{PRIMARY_ANNOTATION}",
     )
+    raw_mse = _as_float(results.get("final_layer_mse", 0.0))
     summary.add_row(
-        _label_with_code("Secondary Score", "secondary_score", "bold bright_cyan"),
-        f"[cyan]{_fmt_float(secondary_score, 8)}[/]",
+        _label_with_code("Raw Final-Layer MSE", "final_layer_mse", "bold cyan"),
+        f"[cyan]{_fmt_float(raw_mse, 8)}[/]",
+    )
+    all_layers_mse = _as_float(results.get("all_layers_mse", 0.0))
+    summary.add_row(
+        _label_with_code("All-Layers MSE", "all_layers_mse", "bold cyan"),
+        f"[cyan]{_fmt_float(all_layers_mse, 8)}[/]",
     )
 
+    # Range metrics divider
+    summary.add_row(Text("─" * 8, style="dim"), Text("─" * 8, style="dim"))
+
+    best_mse = _as_float(results.get("best_mlp_adjusted_final_layer_mse", 0.0))
+    summary.add_row(
+        _label_with_code("Best MLP", "best_mlp_adjusted_final_layer_mse", "bold green"),
+        f"[green]{_fmt_float(best_mse, 8)}[/]",
+    )
+    worst_mse = _as_float(results.get("worst_mlp_adjusted_final_layer_mse", 0.0))
+    summary.add_row(
+        _label_with_code("Worst MLP", "worst_mlp_adjusted_final_layer_mse", "bold yellow"),
+        f"[yellow]{_fmt_float(worst_mse, 8)}[/]",
+    )
+
+    # Efficiency metrics divider
+    summary.add_row(Text("─" * 8, style="dim"), Text("─" * 8, style="dim"))
+
+    mean_sm = _as_float(results.get("mean_score_multiplier", 0.0))
+    summary.add_row(
+        _label_with_code("Mean Score Multiplier", "mean_score_multiplier", "bold bright_white"),
+        f"[bright_white]{_fmt_float(mean_sm, 8)}[/]",
+    )
+    mean_cu = _as_float(results.get("mean_compute_utilization", 0.0))
+    summary.add_row(
+        _label_with_code(
+            "Mean Compute Utilization", "mean_compute_utilization", "bold bright_white"
+        ),
+        f"[bright_white]{_fmt_float(mean_cu, 8)}[/]",
+    )
     per_mlp = results.get("per_mlp", [])
-    if isinstance(per_mlp, list) and per_mlp:
-        mlp_primaries = [
-            _as_float(entry.get("final_layer_mse", 0.0))
-            for entry in per_mlp
-            if isinstance(entry, dict)
-        ]
-        if mlp_primaries:
-            summary.add_row(
-                _label_with_code("Best MLP Score", "best_mlp_score", "bold green"),
-                f"[green]{_fmt_float(min(mlp_primaries), 8)}[/]",
-            )
-            summary.add_row(
-                _label_with_code("Worst MLP Score", "worst_mlp_score", "bold yellow"),
-                f"[yellow]{_fmt_float(max(mlp_primaries), 8)}[/]",
-            )
+    n_failed = int(results.get("n_failed_mlps", 0) or 0)
+    n_total = len(per_mlp) if isinstance(per_mlp, list) else 0
+    summary.add_row(
+        _label_with_code("Failed MLPs", "n_failed_mlps", "bold bright_white"),
+        f"[bright_white]{n_failed} of {n_total}[/]",
+    )
 
     return Panel(
         Align.center(summary),
         title="Final Score",
-        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+        subtitle=(
+            "lower is better; "
+            "adjusted_final_layer_mse = final_layer_mse × max(0.5, C_m/B_m); "
+            "failure → × 1.0"
+        ),
         subtitle_align="left",
         border_style="bright_cyan",
     )
