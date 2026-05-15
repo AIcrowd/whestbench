@@ -581,8 +581,8 @@ def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
 
 def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     results = report.get("results", {})
-    primary_score = _as_float(results.get("primary_score", 0.0))
-    secondary_score = _as_float(results.get("secondary_score", 0.0))
+    primary_score = _as_float(results.get("adjusted_final_layer_mse", 0.0))
+    secondary_score = _as_float(results.get("all_layers_mse", 0.0))
     summary = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
     summary.add_column("metric")
     summary.add_column("value", justify="right")
@@ -598,7 +598,9 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     per_mlp = results.get("per_mlp", [])
     if isinstance(per_mlp, list) and per_mlp:
         mlp_primaries = [
-            _as_float(entry.get("final_mse", 0.0)) for entry in per_mlp if isinstance(entry, dict)
+            _as_float(entry.get("final_layer_mse", 0.0))
+            for entry in per_mlp
+            if isinstance(entry, dict)
         ]
         if mlp_primaries:
             summary.add_row(
