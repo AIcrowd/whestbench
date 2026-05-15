@@ -348,8 +348,8 @@ def test_render_human_mode_matches_main_style_score_and_breakdown_information() 
     )
     results = cast("dict[str, Any]", report["results"])
     results["per_mlp"] = [
-        {"mlp_index": 0, "final_mse": 0.1},
-        {"mlp_index": 1, "final_mse": 0.146},
+        {"mlp_index": 0, "final_layer_mse": 0.1},
+        {"mlp_index": 1, "final_layer_mse": 0.146},
     ]
 
     rendered = render_human_report(report)

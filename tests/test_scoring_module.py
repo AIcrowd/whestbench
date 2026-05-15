@@ -818,8 +818,8 @@ def test_evaluate_estimator_captures_traceback_and_error_code() -> None:
         assert "boom from predict" in entry["traceback"]
         assert "RuntimeError" in entry["traceback"]
         # Failure routes to zero-prediction MSE * 1.0 (finite, never inf).
-        assert "budget_adjusted_score" in entry
-        assert entry["budget_adjusted_score"] != float("inf")
+        assert "adjusted_final_layer_mse" in entry
+        assert entry["adjusted_final_layer_mse"] != float("inf")
     # Suite mean must be finite; failures no longer propagate inf.
     assert result["primary_score"] != float("inf")
     assert result["primary_score"] > 0.0
@@ -876,3 +876,40 @@ def test_evaluate_estimator_fail_fast_re_raises() -> None:
 
     with pytest.raises(RuntimeError, match="abort here"):
         evaluate_estimator(estimator, data, fail_fast=True)
+
+
+def test_per_mlp_record_uses_new_score_key_names():
+    """Per-MLP record must use the new key names: final_layer_mse, all_layers_mse, adjusted_final_layer_mse."""
+    import flopscope.numpy as fnp
+
+    from whestbench.domain import MLP
+    from whestbench.scoring import ContestData, ContestSpec, evaluate_estimator
+    from whestbench.sdk import BaseEstimator
+
+    class _Z(BaseEstimator):
+        def predict(self, mlp, budget):
+            return fnp.zeros((mlp.depth, mlp.width))
+
+    width, depth = 4, 2
+    weights = [fnp.array(fnp.zeros((width, width), dtype=fnp.float32)) for _ in range(depth)]
+    mlp = MLP(width=width, depth=depth, weights=weights)
+    target = fnp.zeros((depth, width), dtype=fnp.float32)
+    data = ContestData(
+        spec=ContestSpec(
+            width=width, depth=depth, n_mlps=1, flop_budget=10_000_000_000, ground_truth_samples=100
+        ),
+        mlps=[mlp],
+        all_layer_targets=[target],
+        final_targets=[target[-1]],
+        avg_variances=[0.0],
+    )
+    result = evaluate_estimator(_Z(), data)
+    pm = result["per_mlp"][0]
+    # New keys present
+    assert "final_layer_mse" in pm
+    assert "all_layers_mse" in pm
+    assert "adjusted_final_layer_mse" in pm
+    # Old keys absent
+    assert "final_mse" not in pm
+    assert "all_layer_mse" not in pm
+    assert "budget_adjusted_score" not in pm

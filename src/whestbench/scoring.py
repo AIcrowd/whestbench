@@ -473,7 +473,7 @@ def evaluate_estimator(
 
     Each MLP prediction runs under a BudgetContext. If the FLOP budget,
     wall-time limit, or residual wall-time limit is exceeded, predictions are
-    zeroed and the violation is recorded. Score per MLP = final_mse *
+    zeroed and the violation is recorded. Score per MLP = final_layer_mse *
     max(0.5, C_m / B_m) for valid runs, where C_m = F_m + lambda * R_m. For
     failure-flagged runs (FLOP/time/residual budget exhausted), the multiplier
     is forced to 1.0. The aggregate primary_score is the arithmetic mean of
@@ -577,10 +577,10 @@ def evaluate_estimator(
             pred_np = fnp.asarray(predictions, dtype=fnp.float32)
             final_target = data.final_targets[i]
             all_target = data.all_layer_targets[i]
-            final_mse_fail = float(fnp.mean((pred_np[-1] - final_target) ** 2))
-            all_mse_fail = float(fnp.mean((pred_np - all_target) ** 2))
+            final_layer_mse_fail = float(fnp.mean((pred_np[-1] - final_target) ** 2))
+            all_layers_mse_fail = float(fnp.mean((pred_np - all_target) ** 2))
             s_m_fail = _compute_budget_adjusted_score(
-                mse_final=final_mse_fail,
+                mse_final=final_layer_mse_fail,
                 effective_compute=0.0,
                 flop_budget=spec.flop_budget,
                 failure=True,
@@ -592,9 +592,9 @@ def evaluate_estimator(
                     "error": error_message,
                     "error_code": error_code,
                     "traceback": tb_text,
-                    "final_mse": final_mse_fail,
-                    "all_layer_mse": all_mse_fail,
-                    "budget_adjusted_score": s_m_fail,
+                    "final_layer_mse": final_layer_mse_fail,
+                    "all_layers_mse": all_layers_mse_fail,
+                    "adjusted_final_layer_mse": s_m_fail,
                     "flops_used": 0,
                     "effective_compute": 0.0,
                     "budget_exhausted": False,
@@ -609,7 +609,7 @@ def evaluate_estimator(
                 }
             )
             primary_scores.append(s_m_fail)
-            secondary_scores.append(all_mse_fail)
+            secondary_scores.append(all_layers_mse_fail)
             if on_mlp_scored is not None:
                 on_mlp_scored(i + 1)
             continue
@@ -687,37 +687,37 @@ def evaluate_estimator(
         # Primary score: final layer MSE
         final_pred = pred_np[-1]
         final_target = data.final_targets[i]
-        final_mse = float(fnp.mean((final_pred - final_target) ** 2))
+        final_layer_mse = float(fnp.mean((final_pred - final_target) ** 2))
 
         # Secondary score: all layers MSE
         all_target = data.all_layer_targets[i]
-        all_mse = float(fnp.mean((pred_np - all_target) ** 2))
+        all_layers_mse = float(fnp.mean((pred_np - all_target) ** 2))
 
         # Budget-adjusted per-MLP score:
-        #   s_m = final_mse * max(0.5, C_m / B_m)  for valid runs
-        #   s_m = final_mse * 1.0                  for failures (Task 5 wires this for exceptions)
+        #   s_m = final_layer_mse * max(0.5, C_m / B_m)  for valid runs
+        #   s_m = final_layer_mse * 1.0                  for failures (Task 5 wires this for exceptions)
         failure_flag = (
             budget_exhausted
             or time_exhausted
             or residual_wall_time_exhausted
             or combined_budget_exhausted
         )
-        budget_adjusted_score = _compute_budget_adjusted_score(
-            mse_final=final_mse,
+        adjusted_final_layer_mse = _compute_budget_adjusted_score(
+            mse_final=final_layer_mse,
             effective_compute=effective_compute,
             flop_budget=spec.flop_budget,
             failure=failure_flag,
         )
 
-        primary_scores.append(budget_adjusted_score)
-        secondary_scores.append(all_mse)
+        primary_scores.append(adjusted_final_layer_mse)
+        secondary_scores.append(all_layers_mse)
 
         per_mlp.append(
             {
                 "mlp_index": i,
-                "final_mse": final_mse,
-                "all_layer_mse": all_mse,
-                "budget_adjusted_score": budget_adjusted_score,
+                "final_layer_mse": final_layer_mse,
+                "all_layers_mse": all_layers_mse,
+                "adjusted_final_layer_mse": adjusted_final_layer_mse,
                 "flops_used": flops_used,
                 "effective_compute": effective_compute,
                 "budget_exhausted": budget_exhausted,
