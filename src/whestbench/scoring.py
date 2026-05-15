@@ -742,6 +742,62 @@ def evaluate_estimator(
         for entry in per_mlp
         if isinstance(entry, dict) and "final_layer_mse" in entry
     ]
+
+    # Per-MLP value lists for new aggregates.
+    adjusted_values = [
+        float(entry["adjusted_final_layer_mse"])
+        for entry in per_mlp
+        if isinstance(entry, dict) and "adjusted_final_layer_mse" in entry
+    ]
+    effective_computes = [
+        float(entry.get("effective_compute", 0.0)) for entry in per_mlp if isinstance(entry, dict)
+    ]
+
+    # Per-MLP multiplier: 1.0 on failure; else max(0.5, C_m / B_m).
+    flag_keys = (
+        "budget_exhausted",
+        "time_exhausted",
+        "residual_wall_time_exhausted",
+        "combined_budget_exhausted",
+    )
+
+    def _is_failed_entry(e: Dict[str, Any]) -> bool:
+        return bool(e.get("error_code")) or any(bool(e.get(k)) for k in flag_keys)
+
+    multipliers: List[float] = []
+    utilizations: List[float] = []
+    for entry in per_mlp:
+        if not isinstance(entry, dict):
+            continue
+        b = spec.flop_budget
+        cm = float(entry.get("effective_compute", 0.0))
+        u = (cm / float(b)) if b > 0 else 0.0
+        utilizations.append(u)
+        if _is_failed_entry(entry):
+            multipliers.append(1.0)
+        else:
+            multipliers.append(max(0.5, u))
+
+    n_failed = sum(1 for entry in per_mlp if isinstance(entry, dict) and _is_failed_entry(entry))
+
+    failure_breakdown = {
+        "budget_exhausted": sum(
+            1 for e in per_mlp if isinstance(e, dict) and bool(e.get("budget_exhausted"))
+        ),
+        "time_exhausted": sum(
+            1 for e in per_mlp if isinstance(e, dict) and bool(e.get("time_exhausted"))
+        ),
+        "residual_wall_time_exhausted": sum(
+            1
+            for e in per_mlp
+            if isinstance(e, dict) and bool(e.get("residual_wall_time_exhausted"))
+        ),
+        "combined_budget_exhausted": sum(
+            1 for e in per_mlp if isinstance(e, dict) and bool(e.get("combined_budget_exhausted"))
+        ),
+        "error": sum(1 for e in per_mlp if isinstance(e, dict) and bool(e.get("error_code"))),
+    }
+
     return {
         "adjusted_final_layer_mse": float(fnp.mean(fnp.asarray(primary_scores)))
         if primary_scores
@@ -752,6 +808,21 @@ def evaluate_estimator(
         "all_layers_mse": float(fnp.mean(fnp.asarray(secondary_scores)))
         if secondary_scores
         else float("inf"),
+        "best_mlp_adjusted_final_layer_mse": min(adjusted_values)
+        if adjusted_values
+        else float("inf"),
+        "worst_mlp_adjusted_final_layer_mse": max(adjusted_values)
+        if adjusted_values
+        else float("inf"),
+        "mean_score_multiplier": (sum(multipliers) / len(multipliers)) if multipliers else 1.0,
+        "mean_compute_utilization": (sum(utilizations) / len(utilizations))
+        if utilizations
+        else 0.0,
+        "n_failed_mlps": n_failed,
+        "mean_effective_compute": (sum(effective_computes) / len(effective_computes))
+        if effective_computes
+        else 0.0,
+        "failure_breakdown": failure_breakdown,
         "per_mlp": per_mlp,
         "breakdowns": {
             "sampling": data.sampling_budget_breakdown,
