@@ -343,7 +343,6 @@ def test_render_human_report_plain_uses_shared_smoke_test_shape() -> None:
     )
 
 
-@pytest.mark.skip(reason="re-enabled in Task 4 (suite-level CLI labels updated then)")
 def test_render_human_mode_matches_main_style_score_and_breakdown_information() -> None:
     report = _sample_report(
         include_profile=False,
@@ -352,8 +351,8 @@ def test_render_human_mode_matches_main_style_score_and_breakdown_information() 
     )
     results = cast("dict[str, Any]", report["results"])
     results["per_mlp"] = [
-        {"mlp_index": 0, "final_layer_mse": 0.1},
-        {"mlp_index": 1, "final_layer_mse": 0.146},
+        {"mlp_index": 0, "adjusted_final_layer_mse": 0.1},
+        {"mlp_index": 1, "adjusted_final_layer_mse": 0.146},
     ]
 
     rendered = render_human_report(report)
@@ -368,11 +367,12 @@ def test_render_human_mode_matches_main_style_score_and_breakdown_information() 
     assert "Flopscope Overhead [flopscope_overhead_time_s]" in plain
     assert "Residual Wall Time [residual_wall_time_s]" in plain
     assert "aggregated across all evaluated MLPs" in plain
-    assert "Primary Score [primary_score]" in plain
-    assert "Secondary Score [secondary_score]" in plain
-    assert "Best MLP Score [best_mlp_score]" in plain
-    assert "Worst MLP Score [worst_mlp_score]" in plain
-    assert "lower MSE is better; primary score = mean across MLPs of final-layer MSE" in plain
+    assert "Adjusted Final-Layer MSE" in plain
+    assert "adjusted_final_layer_mse" in plain
+    assert "All-Layers MSE [all_layers_mse]" in plain
+    assert "best_mlp_adjusted_final_layer_mse" in plain
+    assert "worst_mlp_adjusted_final_layer_mse" in plain
+    assert "max(0.5, C_m/" in plain
     assert "Estimator FLOPs" not in plain
 
 

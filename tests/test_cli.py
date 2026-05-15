@@ -30,8 +30,14 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
             "profile_enabled": profile_enabled,
         },
         "results": {
-            "primary_score": 0.42,
-            "secondary_score": 0.55,
+            "adjusted_final_layer_mse": 0.42,
+            "final_layer_mse": 0.38,
+            "all_layers_mse": 0.55,
+            "best_mlp_adjusted_final_layer_mse": 0.38,
+            "worst_mlp_adjusted_final_layer_mse": 0.46,
+            "mean_score_multiplier": 1.0,
+            "mean_compute_utilization": 0.75,
+            "n_failed_mlps": 0,
             "breakdowns": {
                 "sampling": {
                     "flops_used": 100.0,
@@ -175,7 +181,7 @@ def test_smoke_test_rich_output_includes_dashboard_and_onboarding(
     assert "WhestBench Report" in plain
     assert "Run Context" in plain
     assert "Final Score" in plain
-    assert "Primary Score" in plain
+    assert "Adjusted Final-Layer MSE" in plain
     assert "Next Steps" in plain
     assert "whest init ./my-estimator" in plain
     assert "Create starter files you can edit." in plain
@@ -545,7 +551,7 @@ def test_smoke_test_json_flag_returns_machine_readable_report(
     assert exit_code == 0
     payload = json.loads(captured.out)
     assert payload["mode"] == "agent"
-    assert payload["results"]["primary_score"] == 0.42
+    assert payload["results"]["adjusted_final_layer_mse"] == 0.42
 
 
 def test_no_subcommand_is_rejected() -> None:
