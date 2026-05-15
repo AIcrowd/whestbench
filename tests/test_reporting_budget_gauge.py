@@ -603,3 +603,45 @@ def test_render_agent_report_unchanged_when_gauge_inputs_present() -> None:
 
     assert parsed == snapshot
     assert report == snapshot  # no mutation side-effect
+
+
+# --- New presentation.breakdowns API tests -----------------------------------
+
+
+def test_gauge_state_uses_effective_compute_for_utilization():
+    """Gauge utilization is computed from effective_compute, not flops_used."""
+    from whestbench.presentation.breakdowns import compute_gauge_state
+
+    report = {
+        "run_config": {"flop_budget": 10_000_000_000},
+        "results": {
+            "per_mlp": [
+                # F_m = 1e9, but C_m = 6e9 due to residual.
+                {"flops_used": 1_000_000_000, "effective_compute": 6_000_000_000},
+            ],
+        },
+    }
+    state = compute_gauge_state(report)
+    # If gauge used flops_used, utilization would be 0.10. With effective_compute, 0.60.
+    assert state.mean_utilization == pytest.approx(0.6)
+
+
+def test_gauge_state_busted_detection_includes_all_failure_flags():
+    """An MLP with only combined_budget_exhausted=True must register as busted."""
+    from whestbench.presentation.breakdowns import compute_gauge_state
+
+    report = {
+        "run_config": {"flop_budget": 10_000_000_000},
+        "results": {
+            "per_mlp": [
+                {
+                    "flops_used": 1_000_000_000,
+                    "effective_compute": 12_000_000_000,
+                    "combined_budget_exhausted": True,
+                    "budget_exhausted": False,
+                },
+            ],
+        },
+    }
+    state = compute_gauge_state(report)
+    assert state.any_busted is True
