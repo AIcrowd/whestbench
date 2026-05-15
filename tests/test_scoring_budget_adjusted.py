@@ -89,8 +89,8 @@ def test_s_m_applies_max_floor_multiplier(ratio: float, expected_multiplier: flo
     expected_mse_final = 7.5  # mean of target_final**2 with prediction = 0
     expected_s_m = expected_mse_final * expected_multiplier
 
-    assert per_mlp["final_mse"] == pytest.approx(expected_mse_final, abs=1e-5)
-    assert per_mlp["budget_adjusted_score"] == pytest.approx(expected_s_m, abs=1e-5)
+    assert per_mlp["final_layer_mse"] == pytest.approx(expected_mse_final, abs=1e-5)
+    assert per_mlp["adjusted_final_layer_mse"] == pytest.approx(expected_s_m, abs=1e-5)
     # Aggregate primary_score is now the budget-adjusted suite mean.
     assert result["primary_score"] == pytest.approx(expected_s_m, abs=1e-5)
 
@@ -110,7 +110,7 @@ def test_primary_score_is_budget_adjusted_not_raw_mse():
         )
     )
     result = evaluate_estimator(estimator, data)
-    raw_mse = result["per_mlp"][0]["final_mse"]
+    raw_mse = result["per_mlp"][0]["final_layer_mse"]
     primary = result["primary_score"]
     # Below the floor → multiplier = 0.5, so primary should be raw / 2.
     assert primary == pytest.approx(raw_mse * 0.5, abs=1e-5)

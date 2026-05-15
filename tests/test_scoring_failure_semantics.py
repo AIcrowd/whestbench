@@ -67,7 +67,7 @@ def test_generic_exception_routes_to_zero_pred_mse():
     result = evaluate_estimator(_ExceptionEstimator(), data)
     per_mlp = result["per_mlp"][0]
     assert per_mlp.get("error_code") == "RuntimeError"
-    assert per_mlp["budget_adjusted_score"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
+    assert per_mlp["adjusted_final_layer_mse"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
     assert result["primary_score"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
     # Critical: suite mean must be finite, not inf.
     assert result["primary_score"] != float("inf")
@@ -78,7 +78,7 @@ def test_invalid_shape_routes_to_zero_pred_mse():
     data = _make_data()
     result = evaluate_estimator(_WrongShapeEstimator(), data)
     per_mlp = result["per_mlp"][0]
-    assert per_mlp["budget_adjusted_score"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
+    assert per_mlp["adjusted_final_layer_mse"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
     assert result["primary_score"] != float("inf")
 
 
@@ -87,7 +87,7 @@ def test_non_finite_values_route_to_zero_pred_mse():
     data = _make_data()
     result = evaluate_estimator(_NonFiniteEstimator(), data)
     per_mlp = result["per_mlp"][0]
-    assert per_mlp["budget_adjusted_score"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
+    assert per_mlp["adjusted_final_layer_mse"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
     assert result["primary_score"] != float("inf")
 
 
@@ -96,7 +96,7 @@ def test_runner_error_routes_to_zero_pred_mse():
     data = _make_data()
     result = evaluate_estimator(_RunnerErrorEstimator(), data)
     per_mlp = result["per_mlp"][0]
-    assert per_mlp["budget_adjusted_score"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
+    assert per_mlp["adjusted_final_layer_mse"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
     assert result["primary_score"] != float("inf")
 
 
@@ -115,10 +115,10 @@ def test_one_failure_does_not_propagate_inf_to_suite_mean():
 
     result = evaluate_estimator(_MixedEstimator(), data)
     assert result["primary_score"] != float("inf")
-    assert result["per_mlp"][0]["budget_adjusted_score"] == pytest.approx(
+    assert result["per_mlp"][0]["adjusted_final_layer_mse"] == pytest.approx(
         EXPECTED_ZERO_PRED_MSE * 0.5, abs=1e-5
     )
-    assert result["per_mlp"][1]["budget_adjusted_score"] == pytest.approx(
+    assert result["per_mlp"][1]["adjusted_final_layer_mse"] == pytest.approx(
         EXPECTED_ZERO_PRED_MSE * 1.0, abs=1e-5
     )
     assert result["primary_score"] == pytest.approx(
