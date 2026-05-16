@@ -70,6 +70,15 @@ The "no compute discount on failure" rule (multiplier forced to 1.0) ensures tha
 run is strictly worse than a trivial-zero submission that succeeds (which receives the
 0.5 multiplier floor — the minimum discount).
 
+## Memory limit
+
+`ContestSpec.memory_limit_mb` (default `4096`) bounds the address space available to your estimator. Enforcement depends on the runner:
+
+- **`--runner subprocess`** (used by the grader): the worker calls `resource.setrlimit(RLIMIT_AS, ...)` before importing your estimator module. Any allocation that would exceed the cap raises `MemoryError` inside `predict()`, which routes through the failure path described above (zero-prediction MSE × 1.0).
+- **`--runner local`**: the limit is advisory only. WhestBench cannot safely call `setrlimit` on the CLI process itself. The runner emits a single warning at start (`"memory_limit_mb=… is advisory in --runner local: enforcement requires --runner subprocess (uses RLIMIT_AS) or external sandboxing (cgroups)."`) and continues without enforcement. Use `--runner subprocess` if you want the limit actually enforced locally.
+
+Platforms without `RLIMIT_AS` (Windows, some BSDs) log a warning to the worker's stderr and continue without enforcement. The grader's evaluation environment is Linux, where enforcement is reliable.
+
 ## Reproducibility under the grader seed
 
 If your estimator uses randomness — Monte Carlo sampling, randomized hashing,
