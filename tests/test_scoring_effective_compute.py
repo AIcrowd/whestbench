@@ -44,9 +44,9 @@ def _make_data(width: int = 4, depth: int = 2) -> ContestData:
     )
 
 
-def test_lambda_constant_is_1e10():
-    """Module-level conversion rate must equal 10^10 FLOPs/second per the proposal."""
-    assert LAMBDA_FLOPS_PER_SECOND == 1e10
+def test_lambda_constant_is_1e11():
+    """Module-level conversion rate must equal 10^11 FLOPs/second per the proposal."""
+    assert LAMBDA_FLOPS_PER_SECOND == 1e11
 
 
 def test_effective_compute_combines_flops_and_residual():
@@ -54,7 +54,7 @@ def test_effective_compute_combines_flops_and_residual():
     data = _make_data()
     flops_used = 1_000_000_000  # 1e9
     residual_s = 0.5
-    expected_c_m = flops_used + LAMBDA_FLOPS_PER_SECOND * residual_s  # 1e9 + 5e9 = 6e9
+    expected_c_m = flops_used + LAMBDA_FLOPS_PER_SECOND * residual_s  # 1e9 + 5e10 = 5.1e10
     estimator = _StatsEstimator(
         PredictStats(
             flops_used=flops_used,

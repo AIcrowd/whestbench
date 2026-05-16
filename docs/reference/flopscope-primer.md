@@ -127,7 +127,7 @@ C_m = F_m + λ · R_m
   `residual_wall_time_s` = `wall_time_s − flopscope_backend_time_s − flopscope_overhead_time_s`.
   This is participant Python (loops, control flow), GC pauses, and uninstrumented numpy.
   It explicitly **excludes** flopscope's own dispatch overhead (the second bucket).
-- `λ` = 1e10 FLOPs/second. This rate is fixed for the initial competition round.
+- `λ` = 1e11 FLOPs/second. This rate is fixed for the initial competition round.
 
 The combined `C_m` is capped at `B_m = flop_budget`. If `C_m > B_m`, the MLP is marked
 `combined_budget_exhausted` and the prediction is replaced with zeros.

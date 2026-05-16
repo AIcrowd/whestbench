@@ -55,7 +55,7 @@ def test_combined_budget_exhausted_when_c_m_exceeds_b_m():
     flop_budget = 10_000_000_000  # 1e10
     # Pick F = 0.7 B_m, R s.t. lambda*R = 0.5 B_m. Sum = 1.2 B_m > B_m → over.
     f_m = int(0.7 * flop_budget)  # 7e9
-    r_m = (0.5 * flop_budget) / LAMBDA_FLOPS_PER_SECOND  # 0.5e10 / 1e10 = 0.5 sec
+    r_m = (0.5 * flop_budget) / LAMBDA_FLOPS_PER_SECOND  # 0.5e10 / 1e11 = 0.05 sec
     estimator = _StatsEstimator(
         PredictStats(
             flops_used=f_m,
@@ -79,7 +79,7 @@ def test_combined_budget_not_triggered_when_c_m_within_budget():
     """C_m <= B_m must NOT trigger combined_budget_exhausted."""
     flop_budget = 10_000_000_000
     f_m = int(0.5 * flop_budget)
-    r_m = (0.3 * flop_budget) / LAMBDA_FLOPS_PER_SECOND  # 0.3 sec
+    r_m = (0.3 * flop_budget) / LAMBDA_FLOPS_PER_SECOND  # 0.03 sec
     # C_m = 0.5 + 0.3 = 0.8 B_m, within budget.
     estimator = _StatsEstimator(
         PredictStats(
