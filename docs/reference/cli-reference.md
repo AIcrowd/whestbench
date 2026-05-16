@@ -145,7 +145,9 @@ Key options:
 - `--n-mlps <int>` (default: 10)
 - `--n-samples <int>` (default: 10000)
 - `--seed <int>` (optional, auto-generated if omitted)
-- `--width <int>`, `--depth <int>`, `--flop-budget <int>` (default: `34_000_000_000` — caps effective compute C_m, not just analytical FLOPs)
+- `--width <int>` (default: `256`) — neuron count per layer of the generated MLPs.
+- `--depth <int>` (default: `8`) — number of weight matrices per MLP.
+- `--flop-budget <int>` (default: `34_000_000_000`) — caps effective compute `C_m = F_m + λ·R_m` (not just analytical FLOPs). See [flopscope-primer.md](./flopscope-primer.md) for the formula.
 - `-o, --output <path>` (default: `eval_dataset.npz`)
 - `--format rich|plain|json`
 - `--json` — alias for `--format json`

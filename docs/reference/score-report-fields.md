@@ -160,6 +160,13 @@ When using `whest run --dataset`, the report includes `run_config.dataset`:
 | `sha256` | SHA-256 hash of the file for integrity |
 | `seed` | RNG seed used to generate the dataset |
 | `n_mlps` | Number of MLPs in the dataset |
+| `seed_protocol` | Object with `name` and `version`. WhestBench currently requires `version = "2.0"`. |
+
+### Dataset format compatibility
+
+The `.npz` files produced by `whest create-dataset` carry a `seed_protocol.version` in their embedded metadata. WhestBench refuses to load datasets at any other version: loading a v1.0 dataset raises `ValueError("Incompatible dataset seed_protocol version: file has '1.0', this whestbench requires '2.0'. Re-bake the dataset with `whest create-dataset`.")`.
+
+The v2.0 format adds a per-MLP `seed` (stored as the `mlp_seeds` array in the `.npz`) that is exposed to estimators via `mlp.seed` — see [estimator-contract.md](./estimator-contract.md) for how to consume it. Auto-migration is intentionally not implemented because the v1.0 spawn protocol (2 streams per MLP) cannot produce a deterministic third stream; re-baking from the original spec seed is the only correct path.
 
 ## Next step
 
