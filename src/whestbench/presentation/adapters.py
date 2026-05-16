@@ -229,7 +229,7 @@ def _score_section(report: dict[str, Any]) -> TableSection:
 
     subtitle = (
         "lower is better; "
-        "adjusted_final_layer_mse = final_layer_mse × max(0.5, C_m/B_m); "
+        "adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m); "
         "failure → × 1.0"
     )
 

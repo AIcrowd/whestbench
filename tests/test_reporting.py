@@ -372,7 +372,7 @@ def test_render_human_mode_matches_main_style_score_and_breakdown_information() 
     assert "All-Layers MSE [all_layers_mse]" in plain
     assert "best_mlp_adjusted_final_layer_mse" in plain
     assert "worst_mlp_adjusted_final_layer_mse" in plain
-    assert "max(0.5, C_m/" in plain
+    assert "max(0.1, C_m/" in plain
     assert "Estimator FLOPs" not in plain
 
 

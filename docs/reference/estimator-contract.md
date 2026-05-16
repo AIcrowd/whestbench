@@ -68,7 +68,7 @@ so failures remain debuggable.
 
 The "no compute discount on failure" rule (multiplier forced to 1.0) ensures that a failed
 run is strictly worse than a trivial-zero submission that succeeds (which receives the
-0.5 multiplier floor — the minimum discount).
+0.1 multiplier floor — the minimum discount, a factor-of-ten cap).
 
 ## Memory limit
 

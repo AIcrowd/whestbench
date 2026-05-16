@@ -95,5 +95,5 @@ def test_combined_budget_not_triggered_when_c_m_within_budget():
     per_mlp = result["per_mlp"][0]
 
     assert per_mlp["combined_budget_exhausted"] is False
-    # Valid run → multiplier = max(0.5, 0.8) = 0.8
+    # Valid run → multiplier = max(0.1, 0.8) = 0.8
     assert per_mlp["adjusted_final_layer_mse"] == pytest.approx(7.5 * 0.8, abs=1e-5)

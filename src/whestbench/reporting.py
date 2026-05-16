@@ -648,7 +648,7 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
         title="Final Score",
         subtitle=(
             "lower is better; "
-            "adjusted_final_layer_mse = final_layer_mse × max(0.5, C_m/B_m); "
+            "adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m); "
             "failure → × 1.0"
         ),
         subtitle_align="left",
