@@ -89,7 +89,7 @@ def _default_contest_spec() -> ContestSpec:
         width=256,
         depth=8,
         n_mlps=10,
-        flop_budget=34_000_000_000,
+        flop_budget=17_000_000_000,
         ground_truth_samples=100 * 100 * 256,
     )
 
@@ -168,7 +168,7 @@ def _default_resource_limits() -> ResourceLimits:
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
         memory_limit_mb=4096,
-        flop_budget=34_000_000_000,
+        flop_budget=17_000_000_000,
         cpu_time_limit_s=None,
     )
 
@@ -821,7 +821,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help=(
             "Effective compute budget per MLP in FLOPs. Caps C_m = F_m + lambda*R_m "
-            "(analytical FLOPs plus charged residual wall time). Default: 34_000_000_000 (3.4e10)."
+            "(analytical FLOPs plus charged residual wall time). Default: 17_000_000_000 (1.7e10)."
         ),
     )
     run_parser.add_argument(
