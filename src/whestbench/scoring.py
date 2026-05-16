@@ -21,8 +21,8 @@ if TYPE_CHECKING:
 # FLOP-equivalent rate for residual wall time. Used in budget-adjusted scoring:
 #   effective compute C_m = F_m + LAMBDA_FLOPS_PER_SECOND * R_m
 # Where R_m is the residual wall-time bucket (NOT total wall, NOT flopscope dispatch).
-# Per the NeurIPS proposal, the initial rate is 10^10 FLOPs/second.
-LAMBDA_FLOPS_PER_SECOND: float = 1e10
+# Per the NeurIPS proposal, the initial rate is 10^11 FLOPs/second.
+LAMBDA_FLOPS_PER_SECOND: float = 1e11
 
 
 @dataclass

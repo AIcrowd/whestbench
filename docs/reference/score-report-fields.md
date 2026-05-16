@@ -125,7 +125,7 @@ adjusted_final_layer_mse = final_layer_mse × max(0.5, C_m / B_m)   for valid ru
 adjusted_final_layer_mse = final_layer_mse × 1.0                    for failures (no compute discount)
 
 C_m = F_m + λ · R_m                      (effective compute, FLOPs and FLOP-equivalents)
-λ = 1e10 FLOPs/second                    (conversion rate; see flopscope-primer.md)
+λ = 1e11 FLOPs/second                    (conversion rate; see flopscope-primer.md)
 ```
 
 Where `F_m` is the analytical FLOPs counted by flopscope (`flops_used`), `R_m` is the
