@@ -76,7 +76,7 @@ def test_best_and_worst_mlp_adjusted_final_layer_mse_present():
 
 
 def test_mean_score_multiplier_at_floor_for_zero_compute():
-    """C_m = 0 → multiplier clamped to 0.5."""
+    """C_m = 0 → multiplier clamped to 0.1."""
     data = _make_data()
     estimator = _StatsEstimator(
         PredictStats(
@@ -88,7 +88,7 @@ def test_mean_score_multiplier_at_floor_for_zero_compute():
         )
     )
     result = evaluate_estimator(estimator, data)
-    assert result["mean_score_multiplier"] == pytest.approx(0.5)
+    assert result["mean_score_multiplier"] == pytest.approx(0.1)
 
 
 def test_mean_compute_utilization_unclamped():

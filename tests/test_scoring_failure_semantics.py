@@ -116,11 +116,11 @@ def test_one_failure_does_not_propagate_inf_to_suite_mean():
     result = evaluate_estimator(_MixedEstimator(), data)
     assert result["adjusted_final_layer_mse"] != float("inf")
     assert result["per_mlp"][0]["adjusted_final_layer_mse"] == pytest.approx(
-        EXPECTED_ZERO_PRED_MSE * 0.5, abs=1e-5
+        EXPECTED_ZERO_PRED_MSE * 0.1, abs=1e-5
     )
     assert result["per_mlp"][1]["adjusted_final_layer_mse"] == pytest.approx(
         EXPECTED_ZERO_PRED_MSE * 1.0, abs=1e-5
     )
     assert result["adjusted_final_layer_mse"] == pytest.approx(
-        (EXPECTED_ZERO_PRED_MSE * 0.5 + EXPECTED_ZERO_PRED_MSE * 1.0) / 2.0, abs=1e-5
+        (EXPECTED_ZERO_PRED_MSE * 0.1 + EXPECTED_ZERO_PRED_MSE * 1.0) / 2.0, abs=1e-5
     )

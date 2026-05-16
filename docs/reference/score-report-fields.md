@@ -26,12 +26,12 @@ Inside `results`:
 
 | Field | Description |
 |---|---|
-| `adjusted_final_layer_mse` | Budget-adjusted leaderboard metric — suite mean of per-MLP `adjusted_final_layer_mse = final_layer_mse × max(0.5, C_m/B_m)`; failure → × 1.0. Lower is better. |
+| `adjusted_final_layer_mse` | Budget-adjusted leaderboard metric — suite mean of per-MLP `adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m)`; failure → × 1.0. Lower is better. |
 | `all_layers_mse` | Raw all-layers MSE averaged across MLPs (no budget multiplier). Diagnostic — reveals where approximation error accumulates. |
 | `final_layer_mse` | Raw final-layer MSE averaged across MLPs (no multiplier). |
 | `best_mlp_adjusted_final_layer_mse` | Minimum per-MLP `adjusted_final_layer_mse`. |
 | `worst_mlp_adjusted_final_layer_mse` | Maximum per-MLP `adjusted_final_layer_mse`. |
-| `mean_score_multiplier` | Mean of per-MLP `max(0.5, C_m/B_m)` (1.0 on failure). Bounded [0.5, 1.0]. |
+| `mean_score_multiplier` | Mean of per-MLP `max(0.1, C_m/B_m)` (1.0 on failure). Bounded [0.1, 1.0]. |
 | `mean_compute_utilization` | Mean of per-MLP `C_m/B_m`, unclamped — can exceed 1.0 when an MLP busted the cap. |
 | `n_failed_mlps` | Count of MLPs with any failure flag or `error_code` set. |
 | `mean_effective_compute` | Mean of per-MLP `effective_compute`. |
@@ -121,7 +121,7 @@ The leaderboard ranks submissions by `adjusted_final_layer_mse`, the suite mean 
 budget-adjusted per-MLP score:
 
 ```
-adjusted_final_layer_mse = final_layer_mse × max(0.5, C_m / B_m)   for valid runs
+adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m / B_m)   for valid runs
 adjusted_final_layer_mse = final_layer_mse × 1.0                    for failures (no compute discount)
 
 C_m = F_m + λ · R_m                      (effective compute, FLOPs and FLOP-equivalents)
@@ -130,8 +130,8 @@ C_m = F_m + λ · R_m                      (effective compute, FLOPs and FLOP-eq
 
 Where `F_m` is the analytical FLOPs counted by flopscope (`flops_used`), `R_m` is the
 residual wall-time bucket (`residual_wall_time_s` — neither flopscope-backend nor
-flopscope-overhead), and `B_m` is `flop_budget`. The `max(0.5, ...)` floor caps the
-discount at 2× so an arbitrarily cheap-but-wrong submission cannot dominate the ranking.
+flopscope-overhead), and `B_m` is `flop_budget`. The `max(0.1, ...)` floor caps the
+discount at 10× so an arbitrarily cheap-but-wrong submission cannot dominate the ranking.
 
 ## Interpretation guide
 
@@ -145,9 +145,9 @@ discount at 2× so an arbitrarily cheap-but-wrong submission cannot dominate the
 - High `residual_wall_time_s` relative to wall: participant Python is the bottleneck (tight loops, per-element attribute access, calls into uninstrumented libraries). This is the bucket future versions of WhestBench will penalise on.
 - `adjusted_final_layer_mse` is the budget-adjusted leaderboard metric and is always ≤ the raw `final_layer_mse`
   mean (the multiplier is at most 1.0 — it equals 1.0 at full budget use or on failures
-  and drops to 0.5 at the discount floor). A value close to raw `final_layer_mse`
-  means you used near-full budget; a value close to half of raw `final_layer_mse`
-  means you used under half the budget and got the maximum discount.
+  and drops to 0.1 at the discount floor — a factor-of-ten cap). A value close to raw `final_layer_mse`
+  means you used near-full budget; a value close to one-tenth of raw `final_layer_mse`
+  means you used ≤10% of the budget and got the maximum discount.
 - `all_layers_mse` is a diagnostic aggregate with no budget multiplier. Use it to understand where approximation error accumulates across all layers, not just the final layer.
 
 ## Dataset traceability fields

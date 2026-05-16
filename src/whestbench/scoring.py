@@ -445,20 +445,21 @@ def _compute_budget_adjusted_score(
 ) -> float:
     """Compute the per-MLP budget-adjusted score s_m.
 
-    For valid runs: s_m = mse_final * max(0.5, C_m / B_m).
+    For valid runs: s_m = mse_final * max(0.1, C_m / B_m).
     For failures: s_m = mse_final * 1.0 (no compute discount).
 
-    The 0.5 floor on the success-path multiplier prevents an arbitrarily
-    cheap submission from dominating the ranking. The 1.0 multiplier on
-    failures ensures that a failed run is strictly worse than a trivial-zero
-    submission that succeeds (which gets the 0.5 floor).
+    The 0.1 floor on the success-path multiplier (factor-of-ten cap)
+    prevents an arbitrarily cheap submission from dominating the ranking.
+    The 1.0 multiplier on failures ensures that a failed run is strictly
+    worse than a trivial-zero submission that succeeds (which gets the
+    0.1 floor — i.e. failure is 10× worse than the cheapest success).
     """
     if failure:
         return float(mse_final)
     if flop_budget <= 0:
         return float(mse_final)
     ratio = effective_compute / float(flop_budget)
-    multiplier = max(0.5, ratio)
+    multiplier = max(0.1, ratio)
     return float(mse_final) * multiplier
 
 
@@ -474,7 +475,7 @@ def evaluate_estimator(
     Each MLP prediction runs under a BudgetContext. If the FLOP budget,
     wall-time limit, or residual wall-time limit is exceeded, predictions are
     zeroed and the violation is recorded. Score per MLP = final_layer_mse *
-    max(0.5, C_m / B_m) for valid runs, where C_m = F_m + lambda * R_m. For
+    max(0.1, C_m / B_m) for valid runs, where C_m = F_m + lambda * R_m. For
     failure-flagged runs (FLOP/time/residual budget exhausted), the multiplier
     is forced to 1.0. The aggregate adjusted_final_layer_mse is the arithmetic
     mean of per-MLP scores. Lower is better.
@@ -694,7 +695,7 @@ def evaluate_estimator(
         all_layers_mse = float(fnp.mean((pred_np - all_target) ** 2))
 
         # Budget-adjusted per-MLP score:
-        #   s_m = final_layer_mse * max(0.5, C_m / B_m)  for valid runs
+        #   s_m = final_layer_mse * max(0.1, C_m / B_m)  for valid runs
         #   s_m = final_layer_mse * 1.0                  for failures (Task 5 wires this for exceptions)
         failure_flag = (
             budget_exhausted
@@ -753,7 +754,7 @@ def evaluate_estimator(
         float(entry.get("effective_compute", 0.0)) for entry in per_mlp if isinstance(entry, dict)
     ]
 
-    # Per-MLP multiplier: 1.0 on failure; else max(0.5, C_m / B_m).
+    # Per-MLP multiplier: 1.0 on failure; else max(0.1, C_m / B_m).
     flag_keys = (
         "budget_exhausted",
         "time_exhausted",
@@ -776,7 +777,7 @@ def evaluate_estimator(
         if _is_failed_entry(entry):
             multipliers.append(1.0)
         else:
-            multipliers.append(max(0.5, u))
+            multipliers.append(max(0.1, u))
 
     n_failed = sum(1 for entry in per_mlp if isinstance(entry, dict) and _is_failed_entry(entry))
 
