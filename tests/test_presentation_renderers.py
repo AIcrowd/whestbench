@@ -870,6 +870,7 @@ def test_budget_breakdown_renders_effective_compute_row():
     section = _breakdown_section(
         report, breakdown_key="estimator", title="Estimator Budget Breakdown"
     )
+    assert section is not None
     panel = build_budget_breakdown_block(section)
     console = Console(record=True, color_system=None, no_color=True, width=140)
     console.print(panel)
@@ -909,6 +910,7 @@ def test_over_budget_table_renders_reason_column():
     section = _breakdown_section(
         report, breakdown_key="estimator", title="Estimator Budget Breakdown"
     )
+    assert section is not None
     panel = build_budget_breakdown_block(section)
     console = Console(record=True, color_system=None, no_color=True, width=140)
     console.print(panel)
