@@ -183,6 +183,7 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
         ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
         ["Failed MLPs [n_failed_mlps]", "0 of 2"],
     ]
+    assert score.subtitle is not None
     assert "max(0.5, C_m/B_m)" in score.subtitle
     assert "lower is better" in score.subtitle
 
@@ -335,6 +336,7 @@ def test_score_section_uses_new_score_key_names_and_subtitle():
     }
     section = _score_section(report)
     # Subtitle describes new scoring formula
+    assert section.subtitle is not None
     assert "s_m" in section.subtitle or "max(0.5" in section.subtitle
     assert "final_layer_mse" in section.subtitle or "C_m" in section.subtitle
 

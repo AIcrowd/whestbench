@@ -185,6 +185,10 @@ def _score_section(report: dict[str, Any]) -> TableSection:
 
     PRIMARY_ANNOTATION = "  ← primary score"
 
+    per_mlp_raw = results.get("per_mlp")
+    n_mlps = len(per_mlp_raw) if isinstance(per_mlp_raw, list) else 0
+    n_failed = int(results.get("n_failed_mlps") or 0)
+
     rows = [
         # Accuracy metrics
         [
@@ -219,7 +223,7 @@ def _score_section(report: dict[str, Any]) -> TableSection:
         ],
         [
             "Failed MLPs [n_failed_mlps]",
-            f"{int(results.get('n_failed_mlps') or 0)} of {len(results.get('per_mlp')) if isinstance(results.get('per_mlp'), list) else 0}",
+            f"{n_failed} of {n_mlps}",
         ],
     ]
 
