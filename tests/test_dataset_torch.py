@@ -1,5 +1,8 @@
 """Tests for the torch-backed dataset path. Skipped if torch is not installed."""
 
+from pathlib import Path
+
+import numpy as np
 import pytest
 
 torch = pytest.importorskip("torch")
@@ -134,3 +137,112 @@ def test_auto_chunk_size_cuda_clamps_high(monkeypatch: pytest.MonkeyPatch) -> No
     # Huge free memory → clamps to maximum 1<<20
     monkeypatch.setattr(torch.cuda, "mem_get_info", lambda: (80 * 1024**3, 80 * 1024**3))
     assert _auto_chunk_size(device="cuda", width=4, mlps_per_batch=1) == (1 << 20)
+
+
+from whestbench.dataset import load_dataset  # noqa: E402
+from whestbench.dataset_torch import create_dataset_torch  # noqa: E402
+
+
+def test_create_dataset_torch_roundtrip_cpu(tmp_path: Path) -> None:
+    out = create_dataset_torch(
+        n_mlps=2,
+        n_samples=128,
+        width=8,
+        depth=2,
+        flop_budget=32,
+        seed=42,
+        output_path=tmp_path / "torch_cpu.npz",
+        device="cpu",
+    )
+    bundle = load_dataset(out)
+    assert bundle.n_mlps == 2
+    assert bundle.all_layer_means.shape == (2, 2, 8)
+    assert bundle.final_means.shape == (2, 8)
+    assert len(bundle.avg_variances) == 2
+    assert bundle.sampling_budget_breakdowns is not None
+    assert len(bundle.sampling_budget_breakdowns) == 2
+    assert bundle.sampling_budget_breakdowns[0]["flops_used"] > 0
+
+
+def test_create_dataset_torch_metadata_includes_backend_info(tmp_path: Path) -> None:
+    out = create_dataset_torch(
+        n_mlps=1,
+        n_samples=64,
+        width=4,
+        depth=2,
+        flop_budget=32,
+        seed=42,
+        output_path=tmp_path / "torch_meta.npz",
+        device="cpu",
+    )
+    bundle = load_dataset(out)
+    assert bundle.metadata["schema_version"] == "2.3"
+    assert bundle.metadata["backend"] == "torch"
+    assert bundle.metadata["device"] == "cpu"
+    assert "torch_version" in bundle.metadata
+    assert "mlps_per_batch" in bundle.metadata
+    assert "chunk_size" in bundle.metadata
+
+
+def test_create_dataset_torch_is_deterministic_with_same_seed(tmp_path: Path) -> None:
+    out_a = create_dataset_torch(
+        n_mlps=2,
+        n_samples=128,
+        width=4,
+        depth=2,
+        flop_budget=32,
+        seed=42,
+        output_path=tmp_path / "torch_det_a.npz",
+        device="cpu",
+    )
+    out_b = create_dataset_torch(
+        n_mlps=2,
+        n_samples=128,
+        width=4,
+        depth=2,
+        flop_budget=32,
+        seed=42,
+        output_path=tmp_path / "torch_det_b.npz",
+        device="cpu",
+    )
+    bundle_a = load_dataset(out_a)
+    bundle_b = load_dataset(out_b)
+
+    np.testing.assert_array_equal(bundle_a.all_layer_means, bundle_b.all_layer_means)
+    np.testing.assert_array_equal(bundle_a.final_means, bundle_b.final_means)
+    assert bundle_a.avg_variances == bundle_b.avg_variances
+
+
+def test_create_dataset_torch_statistically_matches_cpu_path(tmp_path: Path) -> None:
+    """Means produced by torch path agree with flopscope CPU path within MC noise."""
+    from whestbench.dataset import create_dataset
+
+    common_kwargs: dict[str, object] = {
+        "n_mlps": 2,
+        "n_samples": 100_000,
+        "width": 4,
+        "depth": 2,
+        "flop_budget": 32,
+        "seed": 42,
+    }
+    out_cpu = create_dataset(**common_kwargs, output_path=tmp_path / "cpu.npz")
+    out_torch = create_dataset_torch(
+        **common_kwargs, output_path=tmp_path / "torch.npz", device="cpu"
+    )
+
+    bundle_cpu = load_dataset(out_cpu)
+    bundle_torch = load_dataset(out_torch)
+
+    # Weights are generated the same way (numpy RNG), so should be identical:
+    np.testing.assert_array_equal(
+        load_dataset(out_cpu).all_layer_means.shape,
+        load_dataset(out_torch).all_layer_means.shape,
+    )
+    # Means agree within 5σ of MC noise (~5/sqrt(N) ≈ 0.016 at N=100K):
+    tol = 5.0 / (common_kwargs["n_samples"] ** 0.5)
+    np.testing.assert_allclose(
+        bundle_cpu.final_means,
+        bundle_torch.final_means,
+        atol=tol,
+        err_msg="Torch final_means diverge from CPU beyond MC noise tolerance",
+    )
