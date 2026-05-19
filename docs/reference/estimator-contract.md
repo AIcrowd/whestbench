@@ -72,12 +72,18 @@ run is strictly worse than a trivial-zero submission that succeeds (which receiv
 
 ## Memory limit
 
-`ContestSpec.memory_limit_mb` (default `4096`) bounds the address space available to your estimator. Enforcement depends on the runner:
+`ContestSpec.memory_limit_mb` (default `65_536`, i.e. 64 GB — matches the Phase 1 grader allocation) bounds the address space available to your estimator. Enforcement depends on the runner:
 
 - **`--runner subprocess`** (used by the grader): the worker calls `resource.setrlimit(RLIMIT_AS, ...)` before importing your estimator module. Any allocation that would exceed the cap raises `MemoryError` inside `predict()`, which routes through the failure path described above (zero-prediction MSE × 1.0).
 - **`--runner local`**: the limit is advisory only. WhestBench cannot safely call `setrlimit` on the CLI process itself. The runner emits a single warning at start (`"memory_limit_mb=… is advisory in --runner local: enforcement requires --runner subprocess (uses RLIMIT_AS) or external sandboxing (cgroups)."`) and continues without enforcement. Use `--runner subprocess` if you want the limit actually enforced locally.
 
 Platforms without `RLIMIT_AS` (Windows, some BSDs) log a warning to the worker's stderr and continue without enforcement. The grader's evaluation environment is Linux, where enforcement is reliable.
+
+## Wall-clock cap
+
+`ContestSpec.wall_time_limit_s` (default `60.0` seconds — matches the Phase 1 grader cap) is an operational backstop on per-MLP `predict()` execution. If a single `predict()` call's elapsed wall-clock time exceeds the cap, the estimator's prediction is replaced with zeros and the MLP is scored through the failure path (zero-prediction MSE × 1.0, no compute discount). This is intentionally generous — the primary compute constraint is the effective FLOP budget `C_m = F_m + λ·R_m`; the wall-clock cap only catches stalled or runaway submissions.
+
+The CLI flag `--wall-time-limit SECONDS` accepts a positive float. To disable the cap programmatically, construct your own `ContestSpec` with `wall_time_limit_s=None`.
 
 ## Reproducibility under the grader seed
 

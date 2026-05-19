@@ -192,9 +192,11 @@ def test_validate_predictions_rejects_nonfinite() -> None:
         validate_predictions(arr, depth=2, width=4)
 
 
-def test_contest_spec_time_limits_default_none() -> None:
+def test_contest_spec_time_limits_defaults() -> None:
+    """wall_time_limit_s defaults to 60.0 (operational backstop matching Phase 1 grader cap);
+    residual_wall_time_limit_s defaults to None (no engine-side cap)."""
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=1000)
-    assert spec.wall_time_limit_s is None
+    assert spec.wall_time_limit_s == 60.0
     assert spec.residual_wall_time_limit_s is None
 
 

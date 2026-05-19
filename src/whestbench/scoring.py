@@ -36,8 +36,8 @@ class ContestSpec:
     ground_truth_samples: int
     setup_timeout_s: float = 5.0
     predict_timeout_s: float = 30.0
-    memory_limit_mb: int = 4096
-    wall_time_limit_s: Optional[float] = None
+    memory_limit_mb: int = 65_536
+    wall_time_limit_s: Optional[float] = 60.0
     residual_wall_time_limit_s: Optional[float] = None
     seed: Optional[int] = None
 

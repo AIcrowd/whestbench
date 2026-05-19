@@ -99,7 +99,7 @@ Key options:
 - `--runner local|subprocess|server|inprocess`
 - `--n-mlps <int>`
 - `--flop-budget <int>` — cap on effective compute C_m = F_m + λ·R_m per MLP. Default: `17_000_000_000` (1.7e10).
-- `--wall-time-limit <seconds>` — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`
+- `--wall-time-limit <seconds>` (default: `60.0`) — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`. Operational backstop matching the Phase 1 grader cap; the primary compute constraint is `--flop-budget`.
 - `--residual-wall-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported
 - `--detail raw|full`
 - `--seed <int>` — deterministic seed for `generate + sample` when `--dataset` is not set

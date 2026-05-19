@@ -50,7 +50,7 @@ class ResourceLimits:
     memory_limit_mb: int
     flop_budget: int
     cpu_time_limit_s: Optional[float] = None
-    wall_time_limit_s: Optional[float] = None
+    wall_time_limit_s: Optional[float] = 60.0
     residual_wall_time_limit_s: Optional[float] = None
 
     def __post_init__(self) -> None:
