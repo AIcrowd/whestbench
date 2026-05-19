@@ -209,7 +209,7 @@ def render_smoke_test_next_steps(report: "dict[str, Any]", *, debug: bool = Fals
     section_title = next_steps.title if next_steps is not None else "Next Steps"
     body_items: "list[Text]" = [
         Text("We are all set! Welcome onboard", style="bold bright_green"),
-        Text("Run these steps:", style="bold bright_white"),
+        Text("Run these steps:", style="bold"),
         Text(),
     ]
     for purpose_line, step in zip(purpose_lines, structured_steps):
@@ -581,7 +581,7 @@ def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
 
 def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     results = report.get("results", {})
-    summary = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
+    summary = Table(box=box.SIMPLE_HEAVY, header_style="bold")
     summary.add_column("metric")
     summary.add_column("value", justify="right")
 
@@ -625,22 +625,20 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
 
     mean_sm = _as_float(results.get("mean_score_multiplier", 0.0))
     summary.add_row(
-        _label_with_code("Mean Score Multiplier", "mean_score_multiplier", "bold bright_white"),
-        f"[bright_white]{_fmt_float(mean_sm, 8)}[/]",
+        _label_with_code("Mean Score Multiplier", "mean_score_multiplier", "bold"),
+        _fmt_float(mean_sm, 8),
     )
     mean_cu = _as_float(results.get("mean_compute_utilization", 0.0))
     summary.add_row(
-        _label_with_code(
-            "Mean Compute Utilization", "mean_compute_utilization", "bold bright_white"
-        ),
-        f"[bright_white]{_fmt_float(mean_cu, 8)}[/]",
+        _label_with_code("Mean Compute Utilization", "mean_compute_utilization", "bold"),
+        _fmt_float(mean_cu, 8),
     )
     per_mlp = results.get("per_mlp", [])
     n_failed = int(results.get("n_failed_mlps", 0) or 0)
     n_total = len(per_mlp) if isinstance(per_mlp, list) else 0
     summary.add_row(
-        _label_with_code("Failed MLPs", "n_failed_mlps", "bold bright_white"),
-        f"[bright_white]{n_failed} of {n_total}[/]",
+        _label_with_code("Failed MLPs", "n_failed_mlps", "bold"),
+        f"{n_failed} of {n_total}",
     )
 
     return Panel(
@@ -914,7 +912,7 @@ def _breakdown_panel(
         )
 
     summary = Table(box=box.SIMPLE_HEAVY, show_header=False)
-    summary.add_column("field", style="bold bright_white")
+    summary.add_column("field", style="bold")
     summary.add_column("value")
     summary.add_row(
         _label_with_code("Total FLOPs", "flops_used", "bold bright_yellow"),
@@ -933,8 +931,8 @@ def _breakdown_panel(
         f"{_as_float(breakdown.get('residual_wall_time_s', 0.0)):.6f}s",
     )
 
-    table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold bright_white")
-    table.add_column("namespace", style="bold bright_white", no_wrap=False)
+    table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold")
+    table.add_column("namespace", style="bold", no_wrap=False)
     table.add_column("total flops", justify="right")
     table.add_column("% of section flops", justify="right")
     table.add_column("mean flops / MLP", justify="right")
@@ -1017,7 +1015,7 @@ def _render_profile_section(
     ]
 
     summary = Table(box=box.SIMPLE_HEAVY, show_header=False)
-    summary.add_column("field", style="bold bright_white")
+    summary.add_column("field", style="bold")
     summary.add_column("value")
     summary.add_row(
         _label_with_code("Estimator Calls", "calls", "bold bright_magenta"),
@@ -1040,7 +1038,7 @@ def _render_profile_section(
         f"[bright_magenta]{_fmt_float(max(peak) if peak else 0.0, 2)}[/]",
     )
 
-    dist = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
+    dist = Table(box=box.SIMPLE_HEAVY, header_style="bold")
     dist.add_column("metric", style="bold white")
     dist.add_column("p05", justify="right")
     dist.add_column("p95", justify="right")
@@ -1180,7 +1178,7 @@ def _make_plot_panel(
         body,
         title=title,
         box=box.ROUNDED,
-        border_style="bright_white",
+        border_style="dim",
         title_align="left",
         expand=False,
     )
@@ -1353,7 +1351,7 @@ def _context_key_style(key: str) -> str:
         return "bold bright_yellow"
     if key.endswith("_s"):
         return "bold bright_green"
-    return "bold bright_white"
+    return "bold"
 
 
 def _render_context_label(label: str) -> Text:
@@ -1365,13 +1363,13 @@ def _render_context_label(label: str) -> Text:
     human = label[:start].rstrip()
     code = label[start + 1 : end]
     text = Text(human + " ", style=_context_key_style(code))
-    text.append(f"[{code}]", style="bold bright_white")
+    text.append(f"[{code}]", style="bold")
     return text
 
 
 def _label_with_code(human: str, code: str, style: str) -> Text:
     text = Text(human + " ", style=style)
-    text.append(f"[{code}]", style="bold bright_white")
+    text.append(f"[{code}]", style="bold")
     return text
 
 
@@ -1384,7 +1382,9 @@ def _rich_style_for_plot_color(color: str) -> str:
         "red+": "bright_red",
         "blue+": "bright_blue",
     }
-    return mapping.get(color, "bright_white")
+    # Fallback for unmapped plot colours: terminal default foreground rather
+    # than `bright_white`, which is invisible on light backgrounds.
+    return mapping.get(color, "default")
 
 
 def _mean_series(series_list: Sequence[Sequence[float]]) -> "list[float]":

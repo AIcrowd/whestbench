@@ -528,25 +528,25 @@ def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
     assert first_label.plain == "Total FLOPs [flops_used]"
     assert [str(span.style) for span in first_label.spans] == [
         "bold bright_yellow",
-        "bold bright_white",
+        "dim",
     ]
     assert isinstance(second_label, Text)
     assert second_label.plain == "Flopscope Backend [flopscope_backend_time_s]"
     assert [str(span.style) for span in second_label.spans] == [
         "bold bright_green",
-        "bold bright_white",
+        "dim",
     ]
     assert isinstance(third_label, Text)
     assert third_label.plain == "Flopscope Overhead [flopscope_overhead_time_s]"
     assert [str(span.style) for span in third_label.spans] == [
         "bold bright_yellow",
-        "bold bright_white",
+        "dim",
     ]
     assert isinstance(fourth_label, Text)
     assert fourth_label.plain == "Residual Wall Time [residual_wall_time_s]"
     assert [str(span.style) for span in fourth_label.spans] == [
         "bold bright_green",
-        "bold bright_white",
+        "dim",
     ]
 
 
@@ -587,32 +587,32 @@ def test_final_score_rich_renderer_uses_new_color_coding() -> None:
     assert metric_cells[0].plain == "Adjusted Final-Layer Score [adjusted_final_layer_score]"
     assert [str(span.style) for span in metric_cells[0].spans] == [
         "bold bright_green",
-        "bold bright_white",
+        "dim",
     ]
     assert isinstance(metric_cells[1], Text)
     assert metric_cells[1].plain == "Raw Final-Layer MSE [final_layer_mse]"
     assert [str(span.style) for span in metric_cells[1].spans] == [
         "bold cyan",
-        "bold bright_white",
+        "dim",
     ]
     assert isinstance(metric_cells[2], Text)
     assert metric_cells[2].plain == "All-Layers MSE [all_layers_mse]"
     assert [str(span.style) for span in metric_cells[2].spans] == [
         "bold cyan",
-        "bold bright_white",
+        "dim",
     ]
     # Index 3 is a divider row (Text("────────"))
     assert isinstance(metric_cells[4], Text)
     assert metric_cells[4].plain == "Best MLP [best_mlp_adjusted_final_layer_score]"
     assert [str(span.style) for span in metric_cells[4].spans] == [
         "bold green",
-        "bold bright_white",
+        "dim",
     ]
     assert isinstance(metric_cells[5], Text)
     assert metric_cells[5].plain == "Worst MLP [worst_mlp_adjusted_final_layer_score]"
     assert [str(span.style) for span in metric_cells[5].spans] == [
         "bold yellow",
-        "bold bright_white",
+        "dim",
     ]
 
     assert value_cells[0] == "[bold bright_green]0.01329615  ← primary score[/]"
