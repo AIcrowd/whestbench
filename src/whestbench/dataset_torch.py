@@ -115,3 +115,46 @@ def _synthesize_sampling_breakdown(
             }
         },
     }
+
+
+def _resolve_device(device: str) -> str:
+    """Resolve a user-facing device string to a concrete torch device kind.
+
+    Args:
+        device: One of "auto", "cuda", "mps", "cpu".
+
+    Returns:
+        A concrete device kind: "cuda", "mps", or "cpu". Never "auto".
+
+    Raises:
+        ValueError: If device is not one of the accepted values.
+        RuntimeError: If an explicit device is requested but unavailable.
+    """
+    import torch  # local import: torch is an optional dep
+
+    if device == "auto":
+        if torch.cuda.is_available():
+            return "cuda"
+        if torch.backends.mps.is_available():
+            return "mps"
+        return "cpu"
+    if device == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError(
+                "CUDA requested but torch.cuda.is_available() is False. "
+                "Either CUDA is not installed, or torch was built without "
+                "CUDA support. For dev without a GPU, use device='cpu'. "
+                "Install: pip install whestbench[gpu]"
+            )
+        return "cuda"
+    if device == "mps":
+        if not torch.backends.mps.is_available():
+            raise RuntimeError(
+                "MPS requested but torch.backends.mps.is_available() is False. "
+                "MPS is only supported on Apple Silicon with macOS 12.3+. "
+                "For dev elsewhere, use device='cpu'."
+            )
+        return "mps"
+    if device == "cpu":
+        return "cpu"
+    raise ValueError(f"device must be one of 'auto', 'cuda', 'mps', 'cpu'; got {device!r}")
