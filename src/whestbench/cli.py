@@ -90,7 +90,7 @@ def _default_contest_spec() -> ContestSpec:
         width=256,
         depth=8,
         n_mlps=10,
-        flop_budget=17_000_000_000,
+        flop_budget=68_000_000_000,
         ground_truth_samples=100 * 100 * 256,
     )
 
@@ -169,7 +169,7 @@ def _default_resource_limits() -> ResourceLimits:
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
         memory_limit_mb=65_536,
-        flop_budget=17_000_000_000,
+        flop_budget=68_000_000_000,
         cpu_time_limit_s=None,
         wall_time_limit_s=60.0,
     )
@@ -217,7 +217,7 @@ def run_default_score(profile: bool = False) -> "Any":
 def _smoke_test_contest_spec() -> ContestSpec:
     """Lightweight spec for the smoke test.
 
-    Matches the competition shape (width=256, depth=8, flop_budget=1.7e10
+    Matches the competition shape (width=256, depth=8, flop_budget=6.8e10
     per ContestSpec defaults) so participants exercising the smoke path
     hit the same code paths as the real grader. Only n_mlps and
     ground_truth_samples are scaled down so the smoke runs in well under
@@ -231,7 +231,7 @@ def _smoke_test_contest_spec() -> ContestSpec:
         width=256,
         depth=8,
         n_mlps=3,
-        flop_budget=17_000_000_000,
+        flop_budget=68_000_000_000,
         ground_truth_samples=10_000,
     )
 
@@ -849,7 +849,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help=(
             "Effective compute budget per MLP in FLOPs. Caps C_m = F_m + lambda*R_m "
-            "(analytical FLOPs plus charged residual wall time). Default: 17_000_000_000 (1.7e10)."
+            "(analytical FLOPs plus charged residual wall time). Default: 68_000_000_000 (6.8e10)."
         ),
     )
     run_parser.add_argument(
