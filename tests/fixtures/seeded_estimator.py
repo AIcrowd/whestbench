@@ -13,7 +13,6 @@ import os
 from pathlib import Path
 
 import flopscope.numpy as fnp
-import numpy as np
 
 from whestbench.sdk import BaseEstimator, SetupContext
 
@@ -21,7 +20,7 @@ from whestbench.sdk import BaseEstimator, SetupContext
 class Estimator(BaseEstimator):
     def setup(self, context: SetupContext) -> None:
         # Build a Generator the same way the docs recommend.
-        rng = np.random.default_rng(context.seed)
+        rng = fnp.random.default_rng(context.seed)
         # First draw — anything deterministic given the seed will do.
         sample = rng.normal(size=(3,))
         record_path = os.environ.get("WHEST_TEST_RECORD_FILE")

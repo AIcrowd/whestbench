@@ -116,16 +116,16 @@ projection basis, jittering initial weights, choosing random hyperparameters),
 seed it from `ctx.seed` inside `setup()`. When the grader passes `--seed`, the same value is forwarded to `ctx.seed` for every MLP in the run; participants running locally can pass `--seed` themselves to reproduce a given setup.
 
 ```python
-import numpy as np
+import flopscope.numpy as fnp
 
 def setup(self, ctx: SetupContext) -> None:
-    self.setup_rng = np.random.default_rng(ctx.seed)
+    self.setup_rng = fnp.random.default_rng(ctx.seed)
     # ... use self.setup_rng for any one-time random work
 ```
 
-Do **not** call `np.random.seed(ctx.seed)` — that mutates the process-global
-RNG and breaks composability with other libraries. Use
-`np.random.default_rng(ctx.seed)` to get an isolated `Generator`.
+Do **not** call `fnp.random.seed(ctx.seed)` (or `np.random.seed(ctx.seed)`) —
+that mutates the process-global RNG and breaks composability with other
+libraries. Use `fnp.random.default_rng(ctx.seed)` to get an isolated `Generator`.
 
 `ctx.seed` defaults to `0` when no `--seed` was passed; estimators that don't
 read it are unaffected. The seed is recorded in the run output under
