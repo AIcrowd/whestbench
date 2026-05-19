@@ -39,6 +39,18 @@ whest doctor
 
 See `docs/reference/cli-reference.md` for the full command surface.
 
+### Optional GPU backend
+
+For baking large ground-truth datasets (`n_samples ≥ 10⁸`), install the torch
+backend extra:
+
+```bash
+pip install whestbench[gpu]
+```
+
+Then use `whest create-dataset --device auto -o data.npz`. See [GPU Dataset
+Generation](docs/how-to/gpu-dataset-generation.md) for details.
+
 ## Repository layout
 
 ```
