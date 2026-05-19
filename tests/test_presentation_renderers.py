@@ -440,7 +440,7 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                     ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
                     ["Failed MLPs [n_failed_mlps]", "0 of 1"],
                 ],
-                subtitle="lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
+                subtitle="per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)",
             ),
         ],
     )
@@ -463,8 +463,7 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
         assert "All-Layers MSE [all_layers_mse]" in rendered
         assert "best_mlp_adjusted_final_layer_score" in rendered
         assert "worst_mlp_adjusted_final_layer_score" in rendered
-        assert "lower is better" in rendered
-        assert "max(0.1, C_m/" in rendered
+        assert "max(0.1, effective_compute/flop_budget)" in rendered
         assert "Estimator FLOPs" not in rendered
 
 
@@ -567,7 +566,7 @@ def test_final_score_rich_renderer_uses_new_color_coding() -> None:
             ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
             ["Failed MLPs [n_failed_mlps]", "0 of 3"],
         ],
-        subtitle="lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
+        subtitle="per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)",
         align_center=True,
         border_style="bright_cyan",
     )
@@ -657,7 +656,7 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
             ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
             ["Failed MLPs [n_failed_mlps]", "0 of 1"],
         ],
-        subtitle="lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
+        subtitle="per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)",
     )
 
     blocks = [
@@ -678,7 +677,7 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
         assert "Residual Wall Time [residual_wall_time_s]" in rendered
         assert "Adjusted Final-Layer Score" in rendered
         assert "adjusted_final_layer_score" in rendered
-        assert "lower is better" in rendered
+        assert "final_layer_mse" in rendered
 
 
 def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
@@ -716,7 +715,7 @@ def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
             ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
             ["Failed MLPs [n_failed_mlps]", "0 of 1"],
         ],
-        subtitle="lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
+        subtitle="per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)",
     )
 
     plain = render_document(
@@ -765,8 +764,8 @@ def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_te
             ]
         ],
         subtitle=(
-            "lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); "
-            "failure → × 1.0 and this subtitle should not be truncated"
+            "per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)"
+            " — this subtitle is intentionally long to verify rendering does not truncate"
         ),
     )
 
@@ -784,7 +783,7 @@ def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_te
         "WhestBench Report",
         "Estimator Budget Breakdown",
         "Final Score",
-        "lower is better",
+        "final_layer_mse",
     ):
         assert text in plain
     assert "metric | value" not in plain

@@ -184,8 +184,8 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
         ["Failed MLPs [n_failed_mlps]", "0 of 2", ""],
     ]
     assert score.subtitle is not None
-    assert "max(0.1, C_m/B_m)" in score.subtitle
-    assert "lower is better" in score.subtitle
+    assert "final_layer_mse" in score.subtitle
+    assert "effective_compute/flop_budget" in score.subtitle
 
 
 def test_build_run_presentation_marks_dataset_sampling_breakdown_as_unavailable() -> None:
@@ -335,10 +335,13 @@ def test_score_section_uses_new_score_key_names_and_subtitle():
         }
     }
     section = _score_section(report)
-    # Subtitle describes new scoring formula
+    # Subtitle spells out the scoring formula using the JSON keys readers can
+    # map directly to visible rows (final_layer_mse in this panel,
+    # effective_compute / flop_budget in the Estimator Budget Breakdown panel).
     assert section.subtitle is not None
-    assert "s_m" in section.subtitle or "max(0.1" in section.subtitle
-    assert "final_layer_mse" in section.subtitle or "C_m" in section.subtitle
+    assert "final_layer_mse" in section.subtitle
+    assert "effective_compute/flop_budget" in section.subtitle
+    assert "max(0.1," in section.subtitle
 
     # Row labels reference the new key codes
     metric_labels = [row[0] for row in section.rows]
