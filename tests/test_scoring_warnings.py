@@ -96,3 +96,36 @@ def test_fail_fast_reraises_budget_exhausted() -> None:
     data = _make_tiny_data(n_mlps=2)
     with pytest.raises(flops.BudgetExhaustedError):
         evaluate_estimator(_HungryEstimator(), data, fail_fast=True)
+
+
+class _SlowEstimator(BaseEstimator):
+    """Estimator that always exhausts the wall-clock budget immediately."""
+
+    def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
+        raise flops.TimeExhaustedError("test", elapsed_s=999.0, limit_s=1.0)
+
+
+def test_time_exhaustion_emits_warning() -> None:
+    """evaluate_estimator emits TimeExhaustionWarning on TimeExhaustedError."""
+    data = _make_tiny_data(n_mlps=2)
+    with pytest.warns(TimeExhaustionWarning) as records:
+        result = evaluate_estimator(_SlowEstimator(), data)
+
+    assert len(records) == 2
+    msgs = [str(r.message) for r in records]
+    assert all("exhausted wall-clock budget" in m for m in msgs)
+    assert all("estimator output set to zeros" in m for m in msgs)
+    # The two warnings reference MLP 0 and MLP 1 respectively.
+    assert any("MLP 0" in m for m in msgs)
+    assert any("MLP 1" in m for m in msgs)
+    for entry in result["per_mlp"]:
+        assert entry["time_exhausted"] is True
+        assert isinstance(entry["traceback"], str)
+        assert "TimeExhaustedError" in entry["traceback"]
+
+
+def test_fail_fast_reraises_time_exhausted() -> None:
+    """Under fail_fast=True, TimeExhaustedError propagates."""
+    data = _make_tiny_data(n_mlps=2)
+    with pytest.raises(flops.TimeExhaustedError):
+        evaluate_estimator(_SlowEstimator(), data, fail_fast=True)
