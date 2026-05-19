@@ -25,6 +25,18 @@ if TYPE_CHECKING:
 LAMBDA_FLOPS_PER_SECOND: float = 1e11
 
 
+class ScoringExhaustionWarning(UserWarning):
+    """Base class for budget/time exhaustion warnings raised during scoring."""
+
+
+class BudgetExhaustionWarning(ScoringExhaustionWarning):
+    """Raised when an estimator exhausts its FLOP budget on a single MLP."""
+
+
+class TimeExhaustionWarning(ScoringExhaustionWarning):
+    """Raised when an estimator exhausts its wall-clock budget on a single MLP."""
+
+
 @dataclass
 class ContestSpec:
     """Evaluator configuration for one scoring run."""
