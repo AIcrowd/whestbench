@@ -1626,7 +1626,7 @@ def _main_participant(argv: "list[str]") -> int:
                     width=ds_meta["width"],
                     depth=ds_meta["depth"],
                     n_mlps=n_mlps,
-                    flop_budget=ds_meta.get("flop_budget", flop_budget),
+                    flop_budget=flop_budget,
                     ground_truth_samples=gt_samples,
                     seed=run_seed,
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
