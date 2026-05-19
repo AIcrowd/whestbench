@@ -1333,18 +1333,17 @@ def test_create_dataset_cli_with_device_cpu_uses_torch_path(
 def test_create_dataset_cli_max_threads_with_device_errors(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with pytest.raises(SystemExit) as exc_info:
-        cli.main(
-            [
-                "create-dataset",
-                "--device",
-                "cpu",
-                "--max-threads",
-                "4",
-                "-o",
-                "/tmp/should_not_be_created.npz",
-            ]
-        )
-    assert exc_info.value.code != 0
+    exit_code = cli.main(
+        [
+            "create-dataset",
+            "--device",
+            "cpu",
+            "--max-threads",
+            "4",
+            "-o",
+            "/tmp/should_not_be_created.npz",
+        ]
+    )
+    assert exit_code == 2
     captured = capsys.readouterr()
     assert "--max-threads cannot be combined with --device" in captured.err
