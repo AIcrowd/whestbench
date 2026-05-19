@@ -174,11 +174,11 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
     ]
     assert score.columns == ["metric", "value", "note"]
     assert score.rows == [
-        ["Adjusted Final-Layer MSE [adjusted_final_layer_mse]", "0.12345679", "← primary score"],
-        ["Raw Final-Layer MSE [final_layer_mse]", "0.11500000", ""],
-        ["All-Layers MSE [all_layers_mse]", "0.45678912", ""],
-        ["Best MLP [best_mlp_adjusted_final_layer_mse]", "0.10000000", ""],
-        ["Worst MLP [worst_mlp_adjusted_final_layer_mse]", "0.20000000", ""],
+        ["Adjusted Final-Layer MSE [adjusted_final_layer_mse]", "1.23e-01", "← primary score"],
+        ["Raw Final-Layer MSE [final_layer_mse]", "1.15e-01", ""],
+        ["All-Layers MSE [all_layers_mse]", "4.57e-01", ""],
+        ["Best MLP [best_mlp_adjusted_final_layer_mse]", "1.00e-01", ""],
+        ["Worst MLP [worst_mlp_adjusted_final_layer_mse]", "2.00e-01", ""],
         ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000", ""],
         ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000", ""],
         ["Failed MLPs [n_failed_mlps]", "0 of 2", ""],

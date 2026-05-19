@@ -118,7 +118,7 @@ def test_parity_matrix_preserves_settled_information() -> None:
                 "Apple M4",
                 "3.13.7",
                 "Adjusted Final-Layer MSE",
-                "0.42",
+                "4.20e-01",  # sci-notation rendering of 0.42
                 "Use --format json for JSON output when calling from automated agents or UIs.",
                 "Use --show-diagnostic-plots to include diagnostic plot panes.",
             ],
