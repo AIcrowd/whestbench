@@ -644,7 +644,7 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     return Panel(
         Align.center(summary),
         title="Final Score",
-        subtitle=("lower is better; s_m = mse × max(0.1, C_m/B_m); failure → × 1.0"),
+        subtitle=("per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)"),
         subtitle_align="left",
         border_style="bright_cyan",
     )

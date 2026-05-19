@@ -402,8 +402,8 @@ def test_shared_human_plain_output_keeps_long_budget_and_score_sections_readable
                         ]
                     ],
                     subtitle=(
-                        "lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); "
-                        "failure → × 1.0 and this subtitle should not be truncated"
+                        "per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)"
+                        " — this subtitle is intentionally long to verify rendering does not truncate"
                     ),
                 )
             ),
@@ -416,7 +416,7 @@ def test_shared_human_plain_output_keeps_long_budget_and_score_sections_readable
         "WhestBench Report",
         "Estimator Budget Breakdown",
         "Final Score",
-        "lower is better",
+        "final_layer_mse",
     ):
         assert text in plain
     assert "metric | value" not in plain
