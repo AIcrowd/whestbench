@@ -102,7 +102,11 @@ Key options:
 - `--wall-time-limit <seconds>` (default: `60.0`) — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`. Operational backstop matching the Phase 1 grader cap; the primary compute constraint is `--flop-budget`.
 - `--residual-wall-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported
 - `--detail raw|full`
-- `--seed <int>` — deterministic seed for `generate + sample` when `--dataset` is not set
+- `--seed <int>` — random seed for the run.
+  - Without `--dataset`: seeds both MLP generation and estimator setup (`ctx.seed`).
+  - With `--dataset`: MLP seeds come from the dataset; this flag seeds estimator setup (`ctx.seed`) only.
+  Default: `0` (`ctx.seed = 0`; estimator setup is deterministic but without a run-specific seed).
+  See [estimator-contract.md](estimator-contract.md) for the `ctx.seed` reproducibility contract.
 - `--profile`
 - `--show-diagnostic-plots`
 - `--format rich|plain|json` — choose styled terminal output, plain log-friendly output, or JSON. Defaults to `rich` on TTYs and `plain` otherwise.

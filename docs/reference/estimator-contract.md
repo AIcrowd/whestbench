@@ -22,6 +22,7 @@ Optional lifecycle hooks:
 | `flop_budget` | `int` | FLOP cap for the estimator |
 | `api_version` | `str` | Contract version string |
 | `scratch_dir` | `str \| None` | Optional writable directory for caching |
+| `seed` | `int` | Per-run seed from `--seed` (default `0`). Use in `setup()` to reproduce one-time random initialisation. See [Setup-time reproducibility](#setup-time-reproducibility). |
 
 ## Input object quick reference
 
@@ -87,6 +88,8 @@ The CLI flag `--wall-time-limit SECONDS` accepts a positive float. To disable th
 
 ## Reproducibility under the grader seed
 
+### Predict-time reproducibility
+
 If your estimator uses randomness — Monte Carlo sampling, randomized hashing,
 random projections, etc. — seed it from `mlp.seed`. The grader supplies a fixed
 per-MLP seed that is identical across all submissions for a given MLP, derived
@@ -105,6 +108,37 @@ def predict(self, mlp, budget):
 ```
 
 If your estimator is deterministic (no internal randomness), you can ignore `mlp.seed`.
+
+### Setup-time reproducibility
+
+If your estimator does randomized one-time setup (e.g., sampling a random
+projection basis, jittering initial weights, choosing random hyperparameters),
+seed it from `ctx.seed` inside `setup()`. When the grader passes `--seed`, the same value is forwarded to `ctx.seed` for every MLP in the run; participants running locally can pass `--seed` themselves to reproduce a given setup.
+
+```python
+import numpy as np
+
+def setup(self, ctx: SetupContext) -> None:
+    self.setup_rng = np.random.default_rng(ctx.seed)
+    # ... use self.setup_rng for any one-time random work
+```
+
+Do **not** call `np.random.seed(ctx.seed)` — that mutates the process-global
+RNG and breaks composability with other libraries. Use
+`np.random.default_rng(ctx.seed)` to get an isolated `Generator`.
+
+`ctx.seed` defaults to `0` when no `--seed` was passed; estimators that don't
+read it are unaffected. The seed is recorded in the run output under
+`run_config.seed` for audit-trail purposes — a reviewer can read it from a
+participant's JSON output and re-run with `--seed N` to reproduce the
+participant's setup state. See [score-report-fields.md](score-report-fields.md)
+for the `run_config.seed` field.
+
+`ctx.seed` and `mlp.seed` are independent: `mlp.seed` controls per-MLP
+randomness inside `predict()`, `ctx.seed` controls one-time setup. With
+`--dataset`, the dataset supplies `mlp.seed` values (baked at the dataset's
+own seed) while `--seed` controls `ctx.seed` only. See
+[cli-reference.md](cli-reference.md) for the `--seed` flag semantics.
 
 ## Next step
 
