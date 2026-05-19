@@ -12,9 +12,18 @@ Typical report sections include:
 - `mode`
 - `run_meta`
 - `run_config`
-- `run_config.seed` (present when `whest run --seed` is provided)
+- `run_config.seed` (always present; `null` when `--seed` is not provided)
 - `run_config.dataset` (present when `--dataset` is used)
 - `results`
+
+## Run configuration fields
+
+`run_config` records the parameters that governed the run:
+
+| Field | Description |
+|---|---|
+| `seed` | The `--seed` value passed at the CLI, or `null` when `--seed` is omitted. When set, it determines both MLP generation (without `--dataset`) and `SetupContext.seed` for the participant's `setup()` call. When `null`, `ctx.seed` defaults to `0`. See [estimator-contract.md](estimator-contract.md) for the reproducibility contract and [cli-reference.md](cli-reference.md) for `--seed` flag semantics. |
+| `dataset` | Present when `--dataset` is used. See [Dataset traceability fields](#dataset-traceability-fields) below. |
 
 ## Host metadata
 
@@ -177,5 +186,5 @@ The v2.0 format adds a per-MLP `seed` (stored as the `mlp_seeds` array in the `.
 
 ## Next step
 
-- [Scoring Model](../concepts/scoring-model.md)
 - [CLI Reference](./cli-reference.md)
+- [Scoring Model](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/concepts/scoring-model.md) (in the starter kit)
