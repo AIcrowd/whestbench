@@ -183,7 +183,11 @@ def _score_section(report: dict[str, Any]) -> TableSection:
     if not isinstance(results, dict):
         results = {}
 
-    PRIMARY_ANNOTATION = "  ← primary score"
+    # The note column is empty for every row except the primary one. Putting
+    # the "← primary score" annotation in its own column keeps the value
+    # column right-aligned across all rows (otherwise the longer "value +
+    # annotation" cell on the primary row would push the value leftward).
+    PRIMARY_ANNOTATION = "← primary score"
 
     per_mlp_raw = results.get("per_mlp")
     n_mlps = len(per_mlp_raw) if isinstance(per_mlp_raw, list) else 0
@@ -193,37 +197,45 @@ def _score_section(report: dict[str, Any]) -> TableSection:
         # Accuracy metrics
         [
             "Adjusted Final-Layer MSE [adjusted_final_layer_mse]",
-            _display_metric_value(results.get("adjusted_final_layer_mse")) + PRIMARY_ANNOTATION,
+            _display_metric_value(results.get("adjusted_final_layer_mse")),
+            PRIMARY_ANNOTATION,
         ],
         [
             "Raw Final-Layer MSE [final_layer_mse]",
             _display_metric_value(results.get("final_layer_mse")),
+            "",
         ],
         [
             "All-Layers MSE [all_layers_mse]",
             _display_metric_value(results.get("all_layers_mse")),
+            "",
         ],
         # Range metrics
         [
             "Best MLP [best_mlp_adjusted_final_layer_mse]",
             _display_metric_value(results.get("best_mlp_adjusted_final_layer_mse")),
+            "",
         ],
         [
             "Worst MLP [worst_mlp_adjusted_final_layer_mse]",
             _display_metric_value(results.get("worst_mlp_adjusted_final_layer_mse")),
+            "",
         ],
         # Efficiency metrics
         [
             "Mean Score Multiplier [mean_score_multiplier]",
             _display_metric_value(results.get("mean_score_multiplier")),
+            "",
         ],
         [
             "Mean Compute Utilization [mean_compute_utilization]",
             _display_metric_value(results.get("mean_compute_utilization")),
+            "",
         ],
         [
             "Failed MLPs [n_failed_mlps]",
             f"{n_failed} of {n_mlps}",
+            "",
         ],
     ]
 
@@ -235,7 +247,7 @@ def _score_section(report: dict[str, Any]) -> TableSection:
 
     return TableSection(
         title="Final Score",
-        columns=["metric", "value"],
+        columns=["metric", "value", "note"],
         rows=rows,
         subtitle=subtitle,
         align_center=True,

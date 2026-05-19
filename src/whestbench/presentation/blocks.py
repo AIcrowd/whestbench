@@ -51,6 +51,12 @@ def build_score_block(section: TableSection) -> Panel:
     table = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
     table.add_column("metric")
     table.add_column("value", justify="right")
+    # Note column carries the "← primary score" annotation on the adjusted row;
+    # it's empty on every other row. Kept as a separate left-aligned column so
+    # the value column stays uniformly right-aligned across all rows.
+    has_note_column = len(section.columns) >= 3
+    if has_note_column:
+        table.add_column("", justify="left", no_wrap=True)
 
     metric_labels = {
         "Adjusted Final-Layer MSE [adjusted_final_layer_mse]": make_keyed_label(
@@ -82,10 +88,22 @@ def build_score_block(section: TableSection) -> Panel:
     # Section dividers: insert visual separators after row 3 (accuracy → range)
     # and after row 5 (range → efficiency). Rows are 1-indexed in this loop.
     DIVIDER_AFTER_ROWS = {3, 5}
-    for idx, (metric, value) in enumerate(section.rows, start=1):
-        table.add_row(metric_labels.get(metric, Text(metric)), _score_value_markup(metric, value))
+    divider_cell = Text("─" * 8, style="dim")
+    for idx, row in enumerate(section.rows, start=1):
+        metric = row[0]
+        value = row[1]
+        note = row[2] if has_note_column and len(row) >= 3 else ""
+        cells = [metric_labels.get(metric, Text(metric)), _score_value_markup(metric, value)]
+        if has_note_column:
+            # The annotation is dim italic so the value remains the headline; the
+            # arrow draws the eye without competing visually with the score.
+            cells.append(Text(note, style="dim italic") if note else Text(""))
+        table.add_row(*cells)
         if idx in DIVIDER_AFTER_ROWS and idx < len(section.rows):
-            table.add_row(Text("─" * 8, style="dim"), Text("─" * 8, style="dim"))
+            divider_cells = [divider_cell, divider_cell]
+            if has_note_column:
+                divider_cells.append(Text(""))
+            table.add_row(*divider_cells)
 
     panel_kwargs: dict[str, Any] = {
         "title": escape(section.title),
@@ -230,7 +248,7 @@ def build_section_renderables(section: object) -> list[RenderableType]:
         return [Panel(table, title=escape(section.title))]
 
     if isinstance(section, TableSection):
-        if section.title == "Final Score" and section.columns == ["metric", "value"]:
+        if section.title == "Final Score" and section.columns[:2] == ["metric", "value"]:
             return [build_score_block(section)]
         table = Table(show_header=True)
         for column in section.columns:

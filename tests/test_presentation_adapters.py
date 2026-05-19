@@ -172,16 +172,16 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
         "Started [run_started_at_utc]",
         "Finished [run_finished_at_utc]",
     ]
-    assert score.columns == ["metric", "value"]
+    assert score.columns == ["metric", "value", "note"]
     assert score.rows == [
-        ["Adjusted Final-Layer MSE [adjusted_final_layer_mse]", "0.12345679  ← primary score"],
-        ["Raw Final-Layer MSE [final_layer_mse]", "0.11500000"],
-        ["All-Layers MSE [all_layers_mse]", "0.45678912"],
-        ["Best MLP [best_mlp_adjusted_final_layer_mse]", "0.10000000"],
-        ["Worst MLP [worst_mlp_adjusted_final_layer_mse]", "0.20000000"],
-        ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000"],
-        ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
-        ["Failed MLPs [n_failed_mlps]", "0 of 2"],
+        ["Adjusted Final-Layer MSE [adjusted_final_layer_mse]", "0.12345679", "← primary score"],
+        ["Raw Final-Layer MSE [final_layer_mse]", "0.11500000", ""],
+        ["All-Layers MSE [all_layers_mse]", "0.45678912", ""],
+        ["Best MLP [best_mlp_adjusted_final_layer_mse]", "0.10000000", ""],
+        ["Worst MLP [worst_mlp_adjusted_final_layer_mse]", "0.20000000", ""],
+        ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000", ""],
+        ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000", ""],
+        ["Failed MLPs [n_failed_mlps]", "0 of 2", ""],
     ]
     assert score.subtitle is not None
     assert "max(0.1, C_m/B_m)" in score.subtitle
