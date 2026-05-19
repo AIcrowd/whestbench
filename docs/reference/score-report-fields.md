@@ -69,14 +69,14 @@ Each entry in `per_mlp`:
 | `final_layer_mse` | `float` | MSE of your final-layer predictions vs ground truth |
 | `all_layers_mse` | `float` | MSE of your all-layer predictions vs ground truth |
 | `breakdowns` | `dict \| null` | Per-MLP breakdown container. Currently includes estimator-only data under `estimator`. Sampling is aggregate-only. |
+| `traceback` | `str \| null` | Non-null when this MLP's run did not produce real predictions — captures the Python traceback for either an estimator exception or a budget/time exhaustion. `null` on clean runs. For subprocess/server runners, the traceback is forwarded from the worker. |
 
-If the estimator raised an error, the entry also includes:
+When the estimator raised an unhandled exception (not budget/time exhaustion), the entry also includes:
 
 | Field | Type | Description |
 |---|---|---|
 | `error` | `str` \| `dict` | Legacy string message, or structured object: `{"message": str, "details": object}` |
 | `error_code` | `str` | Stable identifier: `PREDICT_ERROR` for a `RunnerError`, or the Python exception class name otherwise |
-| `traceback` | `str \| null` | Formatted traceback string for the failure. Forwarded from the subprocess worker when `--runner subprocess`/`server` is used; captured locally otherwise. |
 
 For structured `error` objects, `error.details` includes:
 
