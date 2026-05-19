@@ -135,10 +135,10 @@ discount at 10× so an arbitrarily cheap-but-wrong submission cannot dominate th
 
 > **Why "score" not "MSE"?** Once `final_layer_mse` is multiplied by the budget
 > factor `max(0.1, C_m/B_m)`, the result is no longer a mean-squared-error between
-> predictions and targets — it is a derived ranking score. The NeurIPS proposal
-> calls this `s_m`, the "budget-adjusted leaderboard score". The `_score` suffix in
-> `adjusted_final_layer_score` reflects this; the raw diagnostics `final_layer_mse`
-> and `all_layers_mse` keep the `_mse` suffix because they remain genuine MSEs.
+> predictions and targets — it is a derived ranking score (denoted `s_m`). The
+> `_score` suffix in `adjusted_final_layer_score` reflects this; the raw
+> diagnostics `final_layer_mse` and `all_layers_mse` keep the `_mse` suffix because
+> they remain genuine MSEs.
 
 ## Interpretation guide
 
