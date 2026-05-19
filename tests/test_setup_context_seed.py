@@ -584,3 +584,38 @@ class Estimator(BaseEstimator):
         f"Expected run_config.seed to be null when --seed is omitted; got "
         f"{report['run_config'].get('seed')!r}"
     )
+
+
+def test_validate_subcommand_accepts_seed_flag(tmp_path):
+    """`whest validate --seed 7` should not raise on the --seed flag."""
+    import subprocess
+
+    fixture = tmp_path / "noop_estimator.py"
+    fixture.write_text("""
+from whestbench.sdk import BaseEstimator
+import flopscope.numpy as fnp
+
+class Estimator(BaseEstimator):
+    def predict(self, mlp, budget):
+        return fnp.zeros((mlp.depth, mlp.width))
+""")
+
+    result = subprocess.run(
+        [
+            "uv",
+            "run",
+            "whest",
+            "validate",
+            "--estimator",
+            str(fixture),
+            "--seed",
+            "7",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, (
+        f"whest validate --seed 7 should be accepted; got returncode "
+        f"{result.returncode}, stderr: {result.stderr}"
+    )

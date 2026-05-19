@@ -105,7 +105,7 @@ Key options:
 - `--seed <int>` — random seed for the run.
   - Without `--dataset`: seeds both MLP generation and estimator setup (`ctx.seed`).
   - With `--dataset`: MLP seeds come from the dataset; this flag seeds estimator setup (`ctx.seed`) only.
-  Default: `0` (`ctx.seed = 0`; estimator setup is deterministic but without a run-specific seed).
+  Default: omitted (`ctx.seed` defaults to 0; `run_config.seed` is `null` in the JSON output).
   See [estimator-contract.md](estimator-contract.md) for the `ctx.seed` reproducibility contract.
 - `--profile`
 - `--show-diagnostic-plots`

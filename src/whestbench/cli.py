@@ -712,9 +712,16 @@ def _run_validate_checks(
     estimator_path: "Any",
     *,
     class_name: Optional[str] = None,
+    seed: Optional[int] = None,
 ) -> Dict[str, Any]:
     estimator, metadata = load_estimator_from_path(estimator_path, class_name=class_name)
-    context = SetupContext(width=4, depth=2, flop_budget=100, api_version="1.0", seed=0)
+    context = SetupContext(
+        width=4,
+        depth=2,
+        flop_budget=100,
+        api_version="1.0",
+        seed=seed if seed is not None else 0,
+    )
     mlp = sample_mlp(width=4, depth=2)
     checks: list[dict[str, str]] = []
     try:
@@ -746,8 +753,9 @@ def validate_submission_entrypoint(
     estimator_path: "Any",
     *,
     class_name: Optional[str] = None,
+    seed: Optional[int] = None,
 ) -> Dict[str, Any]:
-    result = _run_validate_checks(estimator_path, class_name=class_name)
+    result = _run_validate_checks(estimator_path, class_name=class_name, seed=seed)
     return {
         "ok": result["ok"],
         "class_name": result["class_name"],
@@ -796,6 +804,12 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Path to estimator.py (see https://github.com/AIcrowd/whest-starterkit for starter files).",
     )
     validate_parser.add_argument("--class", dest="class_name")
+    validate_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Random seed for the validation run. Seeds estimator setup via ctx.seed. Default: omitted (ctx.seed = 0).",
+    )
     validate_parser.add_argument("--debug", action="store_true")
     add_output_format_arguments(validate_parser)
 
@@ -874,8 +888,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help=(
             "Random seed for the run. Without --dataset, seeds both MLP generation "
             "and estimator setup. With --dataset, MLP seeds come from the dataset; "
-            "this flag seeds estimator setup only. Default: 0 (ctx.seed = 0; "
-            "estimator setup is deterministic but without a run-specific seed)."
+            "this flag seeds estimator setup only. Default: omitted "
+            "(ctx.seed defaults to 0; run_config.seed is null in the JSON output)."
         ),
     )
     run_parser.add_argument(
@@ -1254,11 +1268,16 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "validate":
+            validate_seed: Optional[int] = getattr(args, "seed", None)
             if json_output:
-                payload = validate_submission_entrypoint(args.estimator, class_name=args.class_name)
+                payload = validate_submission_entrypoint(
+                    args.estimator, class_name=args.class_name, seed=validate_seed
+                )
                 print(json.dumps(payload, indent=2))
             else:
-                result = _run_validate_checks(args.estimator, class_name=args.class_name)
+                result = _run_validate_checks(
+                    args.estimator, class_name=args.class_name, seed=validate_seed
+                )
                 doc = build_validate_presentation(result)
                 print(
                     render_command_presentation(
