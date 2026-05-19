@@ -211,18 +211,26 @@ def validate_predictions(predictions: fnp.ndarray, *, depth: int, width: int) ->
     shape = tuple(predictions.shape) if hasattr(predictions, "shape") else ()
     expected_shape = (depth, width)
     if shape != expected_shape:
-        hint = (
-            "Returned predictions appear to be transposed: expected (depth, width), got (width, depth)."
-            if shape == (width, depth)
-            else "Predictions must be a 2D array with shape (depth, width)."
-        )
+        if shape == (width, depth):
+            hint = (
+                "Returned predictions appear to be transposed (got width-first instead "
+                "of depth-first). Stack per-layer mean vectors with "
+                "`fnp.stack(rows, axis=0)` where each row has shape (width,)."
+            )
+        else:
+            hint = (
+                "Predictions must be a 2D array of shape (depth, width). Stack per-layer "
+                "mean vectors with `fnp.stack(rows, axis=0)` where each row has shape (width,)."
+            )
         details = {
             "expected_shape": list(expected_shape),
             "got_shape": list(shape),
             "cause_hints": [hint],
             "hint": hint,
         }
-        exc = ValueError(f"Predictions must have shape ({depth}, {width}), got {shape}.")
+        exc = ValueError(
+            f"Predictions must have shape (depth={depth}, width={width}); got shape={shape}."
+        )
         setattr(exc, "details", details)
         raise exc
     pred_np = fnp.asarray(predictions, dtype=fnp.float32)

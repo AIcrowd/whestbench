@@ -183,6 +183,39 @@ def test_validate_predictions_rejects_wrong_shape() -> None:
         validate_predictions(fnp.zeros((3, 4), dtype=fnp.float32), depth=2, width=4)
 
 
+def test_validate_predictions_rejects_rank_mismatch() -> None:
+    """A non-(depth, width) return that isn't a transposition hits the generic hint."""
+    from whestbench.scoring import validate_predictions
+
+    bad = fnp.zeros((8,), dtype=fnp.float32)  # rank 1 — not transposed, not correct
+    with pytest.raises(ValueError, match="shape") as exc_info:
+        validate_predictions(bad, depth=8, width=256)
+    details = getattr(exc_info.value, "details", None)
+    assert isinstance(details, dict)
+    assert details["got_shape"] == [8]
+    assert details["expected_shape"] == [8, 256]
+    # Generic hint, NOT the transposed-specific one.
+    assert "transposed" not in details["hint"]
+    assert "fnp.stack(rows, axis=0)" in details["hint"]
+
+
+def test_validate_predictions_transposed_hint_mentions_fnp_stack() -> None:
+    """A transposed (width, depth) return surfaces the transposed hint with the fnp.stack fix."""
+    from whestbench.scoring import validate_predictions
+
+    bad = fnp.zeros((256, 8), dtype=fnp.float32)  # transposed: (width, depth)
+    with pytest.raises(ValueError, match="shape") as exc_info:
+        validate_predictions(bad, depth=8, width=256)
+    details = getattr(exc_info.value, "details", None)
+    assert isinstance(details, dict)
+    # Error message labels the axes.
+    assert "depth=8" in str(exc_info.value)
+    assert "width=256" in str(exc_info.value)
+    # Hint identifies transposition AND includes the copy-pastable fix.
+    assert "transposed" in details["hint"]
+    assert "fnp.stack(rows, axis=0)" in details["hint"]
+
+
 def test_validate_predictions_rejects_nonfinite() -> None:
     from whestbench.scoring import validate_predictions
 
