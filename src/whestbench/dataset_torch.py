@@ -17,12 +17,20 @@ def _synthesize_sampling_breakdown(
     depth: int,
     n_samples: int,
     wall_time_s: float,
+    flop_budget: int,
 ) -> Dict[str, Any]:
     """Closed-form analog of flopscope's BudgetContext.summary_dict for the torch path.
 
     The torch path computes outside flopscope's instrumentation, so this helper
     synthesizes the same dict shape using analytical FLOP counts. Verified
     against flopscope's actual count by test_closed_form_matches_flopscope_count.
+
+    Output shape mirrors flopscope's normalized output exactly:
+    - Top-level keys: flop_budget, flops_used, flops_remaining, wall_time_s,
+      flopscope_backend_time_s, flopscope_overhead_time_s, residual_wall_time_s,
+      by_namespace.
+    - by_namespace is a FLAT dict keyed by dot-notation strings (e.g.
+      "sampling.sample_layer_statistics"), NOT nested dicts.
 
     Formula derivation (matched exactly against flopscope's operation-level accounting):
 
@@ -87,18 +95,23 @@ def _synthesize_sampling_breakdown(
         + mean_reduction
     )
 
+    flops_remaining = max(0, flop_budget - total)
+
     return {
+        "flop_budget": flop_budget,
         "flops_used": total,
+        "flops_remaining": flops_remaining,
         "wall_time_s": wall_time_s,
         "flopscope_backend_time_s": 0.0,
         "flopscope_overhead_time_s": 0.0,
         "residual_wall_time_s": wall_time_s,
         "by_namespace": {
-            "sampling": {
+            "sampling.sample_layer_statistics": {
                 "flops_used": total,
-                "by_namespace": {
-                    "sample_layer_statistics": {"flops_used": total},
-                },
+                "calls": 0,
+                "flopscope_backend_time_s": 0.0,
+                "flopscope_overhead_time_s": 0.0,
+                "operations": {},
             }
         },
     }
