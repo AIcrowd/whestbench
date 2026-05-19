@@ -560,6 +560,9 @@ def evaluate_estimator(
                 stacklevel=2,
             )
         except flops.TimeExhaustedError:
+            if fail_fast:
+                raise
+            exhaustion_traceback = _tb.format_exc()
             predictions = fnp.zeros((spec.depth, spec.width))
             time_exhausted = True
             stats = _predict_stats_to_dict(
@@ -573,6 +576,15 @@ def evaluate_estimator(
             normalized_breakdown = _normalize_estimator_budget_breakdown(raw_breakdown)
             if normalized_breakdown is not None:
                 normalized_breakdowns.append(normalized_breakdown)
+            elapsed_s = float(budget_ctx.wall_time_s or 0.0)
+            warnings.warn(
+                f"MLP {i} (depth={spec.depth}, width={spec.width}) exhausted "
+                f"wall-clock budget after {elapsed_s:.2f}s "
+                f"(limit={spec.wall_time_limit_s:.2f}s); "
+                f"estimator output set to zeros.",
+                TimeExhaustionWarning,
+                stacklevel=2,
+            )
         except Exception as exc:
             if fail_fast:
                 raise
