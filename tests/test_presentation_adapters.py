@@ -138,11 +138,17 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
                 "flop_budget": 100,
             },
             "results": {
-                "primary_score": 0.123456789,
-                "secondary_score": 0.456789123,
+                "adjusted_final_layer_score": 0.123456789,
+                "final_layer_mse": 0.115,
+                "all_layers_mse": 0.456789123,
+                "best_mlp_adjusted_final_layer_score": 0.1,
+                "worst_mlp_adjusted_final_layer_score": 0.2,
+                "mean_score_multiplier": 0.9,
+                "mean_compute_utilization": 0.5,
+                "n_failed_mlps": 0,
                 "per_mlp": [
-                    {"mlp_index": 0, "final_mse": 0.1},
-                    {"mlp_index": 1, "final_mse": 0.2},
+                    {"mlp_index": 0, "adjusted_final_layer_score": 0.1},
+                    {"mlp_index": 1, "adjusted_final_layer_score": 0.2},
                 ],
             },
         },
@@ -166,16 +172,20 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
         "Started [run_started_at_utc]",
         "Finished [run_finished_at_utc]",
     ]
-    assert score.columns == ["metric", "value"]
+    assert score.columns == ["metric", "value", "note"]
     assert score.rows == [
-        ["Primary Score [primary_score]", "0.12345679"],
-        ["Secondary Score [secondary_score]", "0.45678912"],
-        ["Best MLP Score [best_mlp_score]", "0.10000000"],
-        ["Worst MLP Score [worst_mlp_score]", "0.20000000"],
+        ["Adjusted Final-Layer Score [adjusted_final_layer_score]", "1.23e-01", "← primary score"],
+        ["Raw Final-Layer MSE [final_layer_mse]", "1.15e-01", ""],
+        ["All-Layers MSE [all_layers_mse]", "4.57e-01", ""],
+        ["Best MLP [best_mlp_adjusted_final_layer_score]", "1.00e-01", ""],
+        ["Worst MLP [worst_mlp_adjusted_final_layer_score]", "2.00e-01", ""],
+        ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000", ""],
+        ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000", ""],
+        ["Failed MLPs [n_failed_mlps]", "0 of 2", ""],
     ]
-    assert (
-        score.subtitle == "lower MSE is better; primary score = mean across MLPs of final-layer MSE"
-    )
+    assert score.subtitle is not None
+    assert "final_layer_mse" in score.subtitle
+    assert "effective_compute/flop_budget" in score.subtitle
 
 
 def test_build_run_presentation_marks_dataset_sampling_breakdown_as_unavailable() -> None:
@@ -304,6 +314,48 @@ def test_build_package_presentation_includes_artifact_path() -> None:
     assert [(row.label, row.value) for row in artifact.rows] == [("Path", "/tmp/submission.tar.gz")]
 
 
+def test_score_section_uses_new_score_key_names_and_subtitle():
+    from whestbench.presentation.adapters import _score_section
+
+    report = {
+        "results": {
+            "adjusted_final_layer_score": 0.245,
+            "final_layer_mse": 0.220,
+            "all_layers_mse": 0.178,
+            "best_mlp_adjusted_final_layer_score": 0.00001956,
+            "worst_mlp_adjusted_final_layer_score": 0.73648548,
+            "mean_score_multiplier": 0.78,
+            "mean_compute_utilization": 0.62,
+            "n_failed_mlps": 1,
+            "per_mlp": [
+                {"adjusted_final_layer_score": 0.00001956},
+                {"adjusted_final_layer_score": 0.5},
+                {"adjusted_final_layer_score": 0.73648548},
+            ],
+        }
+    }
+    section = _score_section(report)
+    # Subtitle spells out the scoring formula using the JSON keys readers can
+    # map directly to visible rows (final_layer_mse in this panel,
+    # effective_compute / flop_budget in the Estimator Budget Breakdown panel).
+    assert section.subtitle is not None
+    assert "final_layer_mse" in section.subtitle
+    assert "effective_compute/flop_budget" in section.subtitle
+    assert "max(0.1," in section.subtitle
+
+    # Row labels reference the new key codes
+    metric_labels = [row[0] for row in section.rows]
+    joined = " | ".join(metric_labels)
+    assert "adjusted_final_layer_score" in joined
+    assert "final_layer_mse" in joined
+    assert "all_layers_mse" in joined
+    assert "mean_score_multiplier" in joined
+    assert "mean_compute_utilization" in joined
+    assert "n_failed_mlps" in joined
+    assert "best_mlp_adjusted_final_layer_score" in joined
+    assert "worst_mlp_adjusted_final_layer_score" in joined
+
+
 def test_build_profile_presentation_includes_correctness_and_timing_rows() -> None:
     doc = build_profile_presentation(
         {
@@ -331,3 +383,26 @@ def test_build_profile_presentation_includes_correctness_and_timing_rows() -> No
     )
     assert detail.columns == ["Backend", "Dims", "run_mlp", "sample_layer_statistics"]
     assert detail.rows == [["flopscope", "256×4×10k", "0.0444s", "0.1135s"]]
+
+
+def test_score_section_handles_null_n_failed_and_per_mlp():
+    """A report with null n_failed_mlps or null per_mlp must not crash _score_section."""
+    from whestbench.presentation.adapters import _score_section
+
+    report = {
+        "results": {
+            "adjusted_final_layer_score": 0.245,
+            "final_layer_mse": 0.220,
+            "all_layers_mse": 0.178,
+            "best_mlp_adjusted_final_layer_score": 0.0,
+            "worst_mlp_adjusted_final_layer_score": 1.0,
+            "mean_score_multiplier": 0.5,
+            "mean_compute_utilization": 0.0,
+            "n_failed_mlps": None,
+            "per_mlp": None,
+        }
+    }
+    section = _score_section(report)
+    # Find the Failed MLPs row
+    failed_row = next(r for r in section.rows if r[0] == "Failed MLPs [n_failed_mlps]")
+    assert failed_row[1] == "0 of 0"

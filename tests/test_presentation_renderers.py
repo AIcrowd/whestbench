@@ -316,11 +316,14 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
                 over_budget_rows=[
                     BudgetBreakdownOverBudgetRow(
                         mlp_index=1,
+                        reason="BUDGET",
+                        metric_name="C_m",
+                        metric_value="120",
                         flops_used="120",
                         percent_of_budget="120%",
                     )
                 ],
-                over_budget_summary="1 of 2 MLPs exceeded the per-MLP FLOP cap",
+                over_budget_summary="1 of 2 MLPs failed (0 combined, 1 FLOP, 0 residual, 0 time, 0 error). All counted as failures.",
             ),
             KeyValueSection(
                 title="Final Score",
@@ -425,12 +428,19 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                 title="Final Score",
                 columns=["metric", "value"],
                 rows=[
-                    ["Primary Score [primary_score]", "0.01329615"],
-                    ["Secondary Score [secondary_score]", "0.03770037"],
-                    ["Best MLP Score [best_mlp_score]", "0.01329615"],
-                    ["Worst MLP Score [worst_mlp_score]", "0.01329615"],
+                    [
+                        "Adjusted Final-Layer Score [adjusted_final_layer_score]",
+                        "0.01329615  ← primary score",
+                    ],
+                    ["Raw Final-Layer MSE [final_layer_mse]", "0.01200000"],
+                    ["All-Layers MSE [all_layers_mse]", "0.03770037"],
+                    ["Best MLP [best_mlp_adjusted_final_layer_score]", "0.01329615"],
+                    ["Worst MLP [worst_mlp_adjusted_final_layer_score]", "0.01329615"],
+                    ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000"],
+                    ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
+                    ["Failed MLPs [n_failed_mlps]", "0 of 1"],
                 ],
-                subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+                subtitle="per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)",
             ),
         ],
     )
@@ -448,12 +458,12 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
         assert "Flopscope Overhead [flopscope_overhead_time_s]" in rendered
         assert "Residual Wall Time [residual_wall_time_s]" in rendered
         assert "aggregated across all evaluated MLPs" in rendered
-        assert "Primary Score [primary_score]" in rendered
-        assert "Secondary Score [secondary_score]" in rendered
-        assert "Best MLP Score [best_mlp_score]" in rendered
-        assert "Worst MLP Score [worst_mlp_score]" in rendered
-        assert "lower MSE is better" in rendered
-        assert "primary score = mean across MLPs" in rendered
+        assert "Adjusted Final-Layer Score" in rendered
+        assert "adjusted_final_layer_score" in rendered
+        assert "All-Layers MSE [all_layers_mse]" in rendered
+        assert "best_mlp_adjusted_final_layer_score" in rendered
+        assert "worst_mlp_adjusted_final_layer_score" in rendered
+        assert "max(0.1, effective_compute/flop_budget)" in rendered
         assert "Estimator FLOPs" not in rendered
 
 
@@ -517,39 +527,46 @@ def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
     assert first_label.plain == "Total FLOPs [flops_used]"
     assert [str(span.style) for span in first_label.spans] == [
         "bold bright_yellow",
-        "bold bright_white",
+        "dim",
     ]
     assert isinstance(second_label, Text)
     assert second_label.plain == "Flopscope Backend [flopscope_backend_time_s]"
     assert [str(span.style) for span in second_label.spans] == [
         "bold bright_green",
-        "bold bright_white",
+        "dim",
     ]
     assert isinstance(third_label, Text)
     assert third_label.plain == "Flopscope Overhead [flopscope_overhead_time_s]"
     assert [str(span.style) for span in third_label.spans] == [
         "bold bright_yellow",
-        "bold bright_white",
+        "dim",
     ]
     assert isinstance(fourth_label, Text)
     assert fourth_label.plain == "Residual Wall Time [residual_wall_time_s]"
     assert [str(span.style) for span in fourth_label.spans] == [
         "bold bright_green",
-        "bold bright_white",
+        "dim",
     ]
 
 
-def test_final_score_rich_renderer_keeps_old_color_coding() -> None:
+def test_final_score_rich_renderer_uses_new_color_coding() -> None:
     section = TableSection(
         title="Final Score",
         columns=["metric", "value"],
         rows=[
-            ["Primary Score [primary_score]", "0.01329615"],
-            ["Secondary Score [secondary_score]", "0.03770037"],
-            ["Best MLP Score [best_mlp_score]", "0.01329615"],
-            ["Worst MLP Score [worst_mlp_score]", "0.01329615"],
+            [
+                "Adjusted Final-Layer Score [adjusted_final_layer_score]",
+                "0.01329615  ← primary score",
+            ],
+            ["Raw Final-Layer MSE [final_layer_mse]", "0.01200000"],
+            ["All-Layers MSE [all_layers_mse]", "0.03770037"],
+            ["Best MLP [best_mlp_adjusted_final_layer_score]", "0.01329615"],
+            ["Worst MLP [worst_mlp_adjusted_final_layer_score]", "0.01329615"],
+            ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000"],
+            ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
+            ["Failed MLPs [n_failed_mlps]", "0 of 3"],
         ],
-        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+        subtitle="per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)",
         align_center=True,
         border_style="bright_cyan",
     )
@@ -560,38 +577,48 @@ def test_final_score_rich_renderer_keeps_old_color_coding() -> None:
     assert isinstance(panel.renderable.renderable, Table)
     table = panel.renderable.renderable
 
+    # With dividers, the table has 10 rows: 8 data + 2 divider rows.
+    # Data rows are at indices 0, 1, 2, 4, 5, 7, 8, 9 (with dividers at 3 and 6).
     metric_cells = table.columns[0]._cells
     value_cells = table.columns[1]._cells
 
     assert isinstance(metric_cells[0], Text)
-    assert metric_cells[0].plain == "Primary Score [primary_score]"
+    assert metric_cells[0].plain == "Adjusted Final-Layer Score [adjusted_final_layer_score]"
     assert [str(span.style) for span in metric_cells[0].spans] == [
         "bold bright_green",
-        "bold bright_white",
+        "dim",
     ]
     assert isinstance(metric_cells[1], Text)
-    assert metric_cells[1].plain == "Secondary Score [secondary_score]"
+    assert metric_cells[1].plain == "Raw Final-Layer MSE [final_layer_mse]"
     assert [str(span.style) for span in metric_cells[1].spans] == [
-        "bold bright_cyan",
-        "bold bright_white",
+        "bold cyan",
+        "dim",
     ]
     assert isinstance(metric_cells[2], Text)
-    assert metric_cells[2].plain == "Best MLP Score [best_mlp_score]"
+    assert metric_cells[2].plain == "All-Layers MSE [all_layers_mse]"
     assert [str(span.style) for span in metric_cells[2].spans] == [
-        "bold green",
-        "bold bright_white",
+        "bold cyan",
+        "dim",
     ]
-    assert isinstance(metric_cells[3], Text)
-    assert metric_cells[3].plain == "Worst MLP Score [worst_mlp_score]"
-    assert [str(span.style) for span in metric_cells[3].spans] == [
+    # Index 3 is a divider row (Text("────────"))
+    assert isinstance(metric_cells[4], Text)
+    assert metric_cells[4].plain == "Best MLP [best_mlp_adjusted_final_layer_score]"
+    assert [str(span.style) for span in metric_cells[4].spans] == [
+        "bold green",
+        "dim",
+    ]
+    assert isinstance(metric_cells[5], Text)
+    assert metric_cells[5].plain == "Worst MLP [worst_mlp_adjusted_final_layer_score]"
+    assert [str(span.style) for span in metric_cells[5].spans] == [
         "bold yellow",
-        "bold bright_white",
+        "dim",
     ]
 
-    assert value_cells[0] == "[bold bright_green]0.01329615[/]"
-    assert value_cells[1] == "[cyan]0.03770037[/]"
-    assert value_cells[2] == "[green]0.01329615[/]"
-    assert value_cells[3] == "[yellow]0.01329615[/]"
+    assert value_cells[0] == "[bold bright_green]0.01329615  ← primary score[/]"
+    assert value_cells[1] == "[cyan]0.01200000[/]"
+    assert value_cells[2] == "[cyan]0.03770037[/]"
+    assert value_cells[4] == "[green]0.01329615[/]"
+    assert value_cells[5] == "[yellow]0.01329615[/]"
 
 
 def test_shared_human_document_renders_budget_before_final_score_in_rich_and_plain() -> None:
@@ -617,10 +644,19 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
         title="Final Score",
         columns=["metric", "value"],
         rows=[
-            ["Primary Score [primary_score]", "0.01329615"],
-            ["Secondary Score [secondary_score]", "0.03770037"],
+            [
+                "Adjusted Final-Layer Score [adjusted_final_layer_score]",
+                "0.01329615  ← primary score",
+            ],
+            ["Raw Final-Layer MSE [final_layer_mse]", "0.01200000"],
+            ["All-Layers MSE [all_layers_mse]", "0.03770037"],
+            ["Best MLP [best_mlp_adjusted_final_layer_score]", "0.01329615"],
+            ["Worst MLP [worst_mlp_adjusted_final_layer_score]", "0.01329615"],
+            ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000"],
+            ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
+            ["Failed MLPs [n_failed_mlps]", "0 of 1"],
         ],
-        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+        subtitle="per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)",
     )
 
     blocks = [
@@ -639,9 +675,9 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
         assert "Flopscope Backend [flopscope_backend_time_s]" in rendered
         assert "Flopscope Overhead [flopscope_overhead_time_s]" in rendered
         assert "Residual Wall Time [residual_wall_time_s]" in rendered
-        assert "Primary Score [primary_score]" in rendered
-        assert "Secondary Score [secondary_score]" in rendered
-        assert "lower MSE is better" in rendered
+        assert "Adjusted Final-Layer Score" in rendered
+        assert "adjusted_final_layer_score" in rendered
+        assert "final_layer_mse" in rendered
 
 
 def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
@@ -667,10 +703,19 @@ def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
         title="Final Score",
         columns=["metric", "value"],
         rows=[
-            ["Primary Score [primary_score]", "0.01329615"],
-            ["Secondary Score [secondary_score]", "0.03770037"],
+            [
+                "Adjusted Final-Layer Score [adjusted_final_layer_score]",
+                "0.01329615  ← primary score",
+            ],
+            ["Raw Final-Layer MSE [final_layer_mse]", "0.01200000"],
+            ["All-Layers MSE [all_layers_mse]", "0.03770037"],
+            ["Best MLP [best_mlp_adjusted_final_layer_score]", "0.01329615"],
+            ["Worst MLP [worst_mlp_adjusted_final_layer_score]", "0.01329615"],
+            ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000"],
+            ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
+            ["Failed MLPs [n_failed_mlps]", "0 of 1"],
         ],
-        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+        subtitle="per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)",
     )
 
     plain = render_document(
@@ -712,10 +757,15 @@ def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_te
     score_section = TableSection(
         title="Final Score",
         columns=["metric", "value"],
-        rows=[["Primary Score [primary_score]", "0.123456789012345678901234567890"]],
+        rows=[
+            [
+                "Adjusted Final-Layer Score [adjusted_final_layer_score]",
+                "0.123456789012345678901234567890  ← primary score",
+            ]
+        ],
         subtitle=(
-            "lower MSE is better; primary score = mean across MLPs of final-layer "
-            "MSE and this subtitle should not be truncated"
+            "per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)"
+            " — this subtitle is intentionally long to verify rendering does not truncate"
         ),
     )
 
@@ -733,9 +783,145 @@ def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_te
         "WhestBench Report",
         "Estimator Budget Breakdown",
         "Final Score",
-        "lower MSE is better",
+        "final_layer_mse",
     ):
         assert text in plain
     assert "metric | value" not in plain
     assert "namespace | total flops" not in plain
     assert max(len(line) for line in plain.splitlines()) < 200
+
+
+def test_score_block_renders_primary_score_annotation():
+    """The adjusted-MSE row's value cell carries the '← primary score' annotation."""
+    from rich.console import Console
+
+    from whestbench.presentation.adapters import _score_section
+    from whestbench.presentation.blocks import build_score_block
+
+    report = {
+        "results": {
+            "adjusted_final_layer_score": 0.245,
+            "final_layer_mse": 0.220,
+            "all_layers_mse": 0.178,
+            "best_mlp_adjusted_final_layer_score": 0.0,
+            "worst_mlp_adjusted_final_layer_score": 1.0,
+            "mean_score_multiplier": 0.78,
+            "mean_compute_utilization": 0.62,
+            "n_failed_mlps": 0,
+            "per_mlp": [{"adjusted_final_layer_score": 0.245}],
+        }
+    }
+    section = _score_section(report)
+    panel = build_score_block(section)
+    console = Console(record=True, color_system=None, no_color=True, width=120)
+    console.print(panel)
+    rendered = console.export_text()
+    assert "← primary score" in rendered
+
+
+def test_score_block_renders_section_dividers():
+    """Section dividers separate accuracy / range / efficiency groups."""
+    from rich.console import Console
+
+    from whestbench.presentation.adapters import _score_section
+    from whestbench.presentation.blocks import build_score_block
+
+    report = {
+        "results": {
+            "adjusted_final_layer_score": 0.245,
+            "final_layer_mse": 0.220,
+            "all_layers_mse": 0.178,
+            "best_mlp_adjusted_final_layer_score": 0.0,
+            "worst_mlp_adjusted_final_layer_score": 1.0,
+            "mean_score_multiplier": 0.78,
+            "mean_compute_utilization": 0.62,
+            "n_failed_mlps": 0,
+            "per_mlp": [{"adjusted_final_layer_score": 0.245}],
+        }
+    }
+    section = _score_section(report)
+    panel = build_score_block(section)
+    console = Console(record=True, color_system=None, no_color=True, width=120)
+    console.print(panel)
+    rendered = console.export_text()
+    divider_count = rendered.count("─" * 8)
+    assert divider_count >= 2, f"Expected ≥2 dividers, got {divider_count}"
+
+
+def test_budget_breakdown_renders_effective_compute_row():
+    from rich.console import Console
+
+    from whestbench.presentation.adapters import _breakdown_section
+    from whestbench.presentation.blocks import build_budget_breakdown_block
+
+    report = {
+        "run_config": {"flop_budget": 10_000_000_000, "n_mlps": 1},
+        "results": {
+            "per_mlp": [
+                {
+                    "flops_used": 1_000_000_000,
+                    "effective_compute": 6_000_000_000,
+                    "combined_budget_exhausted": False,
+                },
+            ],
+            "breakdowns": {
+                "estimator": {
+                    "flops_used": 1_000_000_000,
+                    "flopscope_backend_time_s": 0.1,
+                    "flopscope_overhead_time_s": 0.05,
+                    "residual_wall_time_s": 0.5,
+                    "by_namespace": {},
+                },
+            },
+        },
+    }
+    section = _breakdown_section(
+        report, breakdown_key="estimator", title="Estimator Budget Breakdown"
+    )
+    assert section is not None
+    panel = build_budget_breakdown_block(section)
+    console = Console(record=True, color_system=None, no_color=True, width=140)
+    console.print(panel)
+    rendered = console.export_text()
+    assert "Effective Compute" in rendered
+    assert "effective_compute" in rendered
+
+
+def test_over_budget_table_renders_reason_column():
+    from rich.console import Console
+
+    from whestbench.presentation.adapters import _breakdown_section
+    from whestbench.presentation.blocks import build_budget_breakdown_block
+
+    report = {
+        "run_config": {"flop_budget": 10_000_000_000, "n_mlps": 1},
+        "results": {
+            "per_mlp": [
+                {
+                    "mlp_index": 0,
+                    "flops_used": 7_000_000_000,
+                    "effective_compute": 12_000_000_000,
+                    "combined_budget_exhausted": True,
+                },
+            ],
+            "breakdowns": {
+                "estimator": {
+                    "flops_used": 7_000_000_000,
+                    "flopscope_backend_time_s": 0.1,
+                    "flopscope_overhead_time_s": 0.05,
+                    "residual_wall_time_s": 0.5,
+                    "by_namespace": {},
+                },
+            },
+        },
+    }
+    section = _breakdown_section(
+        report, breakdown_key="estimator", title="Estimator Budget Breakdown"
+    )
+    assert section is not None
+    panel = build_budget_breakdown_block(section)
+    console = Console(record=True, color_system=None, no_color=True, width=140)
+    console.print(panel)
+    rendered = console.export_text()
+    assert "reason" in rendered
+    assert "COMBINED" in rendered

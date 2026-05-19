@@ -113,6 +113,30 @@ If you see `residual_wall_time_exhausted`, that came from WhestBench scoring
 logic comparing Flopscope's measured `residual_wall_time_s` with the configured
 `--residual-wall-time-limit`.
 
+## Residual wall-time charging (lambda)
+
+WhestBench's effective compute budget combines analytical FLOPs and residual wall time
+via a conversion rate `λ` (`LAMBDA_FLOPS_PER_SECOND` in `whestbench.scoring`):
+
+```
+C_m = F_m + λ · R_m
+```
+
+- `F_m` = analytical FLOPs counted by flopscope (`flops_used`)
+- `R_m` = residual wall time — the third bucket of the time decomposition. Specifically,
+  `residual_wall_time_s` = `wall_time_s − flopscope_backend_time_s − flopscope_overhead_time_s`.
+  This is participant Python (loops, control flow), GC pauses, and uninstrumented numpy.
+  It explicitly **excludes** flopscope's own dispatch overhead (the second bucket).
+- `λ` = 1e11 FLOPs/second. This rate is fixed for the initial competition round.
+
+The combined `C_m` is capped at `B_m = flop_budget`. If `C_m > B_m`, the MLP is marked
+`combined_budget_exhausted` and the prediction is replaced with zeros.
+
+Why charge non-flopscope time at all? It lets participants use any Python they like —
+not just flopscope-instrumented operations — but holds them accountable for that work
+in the compute budget. Pure-flopscope solutions get the entire budget for analytical
+work; pure-Python solutions trade some FLOP headroom for residual time.
+
 ## Common Gotchas
 
 **numpy arrays still count FLOPs.** Since `fnp.ndarray` is backed by numpy, a raw numpy array passed to flopscope operations will still be tracked. Use `fnp.array()` or `fnp.asarray()` to convert explicitly.

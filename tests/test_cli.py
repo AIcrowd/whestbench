@@ -30,8 +30,14 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
             "profile_enabled": profile_enabled,
         },
         "results": {
-            "primary_score": 0.42,
-            "secondary_score": 0.55,
+            "adjusted_final_layer_score": 0.42,
+            "final_layer_mse": 0.38,
+            "all_layers_mse": 0.55,
+            "best_mlp_adjusted_final_layer_score": 0.38,
+            "worst_mlp_adjusted_final_layer_score": 0.46,
+            "mean_score_multiplier": 1.0,
+            "mean_compute_utilization": 0.75,
+            "n_failed_mlps": 0,
             "breakdowns": {
                 "sampling": {
                     "flops_used": 100.0,
@@ -175,7 +181,7 @@ def test_smoke_test_rich_output_includes_dashboard_and_onboarding(
     assert "WhestBench Report" in plain
     assert "Run Context" in plain
     assert "Final Score" in plain
-    assert "Primary Score" in plain
+    assert "Adjusted Final-Layer Score" in plain
     assert "Next Steps" in plain
     assert "whest init ./my-estimator" in plain
     assert "Create starter files you can edit." in plain
@@ -524,7 +530,7 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     assert "results" in captured.out
     assert observed["initial_finished"] == "n/a"
     assert observed["initial_duration"] is None
-    assert observed["total"] == 10 * cli.sample_layer_statistics_chunk_count(100, 100 * 100 * 256)
+    assert observed["total"] == 10 * cli.sample_layer_statistics_chunk_count(256, 100 * 100 * 256)
     assert observed["progress_event"] == {"completed": 1}
     assert observed["final_meta"]["run_finished_at_utc"] == "2026-03-01T00:00:03+00:00"
     assert observed["final_meta"]["run_duration_s"] == 3.0
@@ -545,7 +551,7 @@ def test_smoke_test_json_flag_returns_machine_readable_report(
     assert exit_code == 0
     payload = json.loads(captured.out)
     assert payload["mode"] == "agent"
-    assert payload["results"]["primary_score"] == 0.42
+    assert payload["results"]["adjusted_final_layer_score"] == 0.42
 
 
 def test_no_subcommand_is_rejected() -> None:
@@ -813,3 +819,22 @@ def test_plain_run_progress_logs_sampling_chunks_with_throttle(
         "[run] sampling_ground_truth: 3/6 chunks (MLP 1/2)",
         "[run] sampling_ground_truth: 6/6 chunks (MLP 2/2)",
     ]
+
+
+def test_default_contest_spec_matches_proposal():
+    """Default contest spec should match NeurIPS proposal: width=256, depth=8, flop_budget=1.7e10."""
+    from whestbench.cli import _default_contest_spec
+
+    spec = _default_contest_spec()
+    assert spec.width == 256
+    assert spec.depth == 8
+    assert spec.flop_budget == 17_000_000_000
+    assert spec.n_mlps == 10
+
+
+def test_default_resource_limits_matches_proposal():
+    """Default resource limits should mirror the contest spec flop_budget."""
+    from whestbench.cli import _default_resource_limits
+
+    limits = _default_resource_limits()
+    assert limits.flop_budget == 17_000_000_000

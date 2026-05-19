@@ -26,8 +26,16 @@ Inside `results`:
 
 | Field | Description |
 |---|---|
-| `primary_score` | Leaderboard metric — final-layer MSE averaged across MLPs. Lower is better. |
-| `secondary_score` | All-layer MSE averaged across MLPs. Lower is better. |
+| `adjusted_final_layer_score` | Budget-adjusted leaderboard metric — suite mean of per-MLP `adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m)`; failure → × 1.0. Lower is better. |
+| `all_layers_mse` | Raw all-layers MSE averaged across MLPs (no budget multiplier). Diagnostic — reveals where approximation error accumulates. |
+| `final_layer_mse` | Raw final-layer MSE averaged across MLPs (no multiplier). |
+| `best_mlp_adjusted_final_layer_score` | Minimum per-MLP `adjusted_final_layer_score`. |
+| `worst_mlp_adjusted_final_layer_score` | Maximum per-MLP `adjusted_final_layer_score`. |
+| `mean_score_multiplier` | Mean of per-MLP `max(0.1, C_m/B_m)` (1.0 on failure). Bounded [0.1, 1.0]. |
+| `mean_compute_utilization` | Mean of per-MLP `C_m/B_m`, unclamped — can exceed 1.0 when an MLP busted the cap. |
+| `n_failed_mlps` | Count of MLPs with any failure flag or `error_code` set. |
+| `mean_effective_compute` | Mean of per-MLP `effective_compute`. |
+| `failure_breakdown` | Dict with independent counts per failure flag: `budget_exhausted`, `time_exhausted`, `residual_wall_time_exhausted`, `combined_budget_exhausted`, `error`. Sums can exceed `n_failed_mlps` because one MLP can carry multiple flags. |
 | `breakdowns` | Aggregate FLOP/time breakdowns keyed by section name. Includes `sampling` and `estimator`. |
 | `per_mlp` | Array of per-MLP detail records (see below) |
 
@@ -39,6 +47,9 @@ Each entry in `per_mlp`:
 |---|---|---|
 | `mlp_index` | `int` | Index of the MLP in the evaluation set |
 | `flops_used` | `int` | Total FLOPs used by your estimator for this MLP |
+| `effective_compute` | `float` | C_m = F_m + λ·R_m. Combined FLOP-equivalent compute used by the estimator. |
+| `adjusted_final_layer_score` | `float` | s_m. The per-MLP budget-adjusted score that flows into the suite mean. |
+| `combined_budget_exhausted` | `bool` | Whether the post-hoc check `C_m > B_m` fired (predictions zeroed if true). |
 | `budget_exhausted` | `bool` | Whether the estimator exceeded the FLOP budget (predictions zeroed if true) |
 | `time_exhausted` | `bool` | Whether the estimator exceeded the wall-clock limit for this MLP (predictions zeroed if true) |
 | `residual_wall_time_exhausted` | `bool` | Whether WhestBench judged non-flopscope time to exceed `residual_wall_time_limit_s` (predictions zeroed if true) |
@@ -46,8 +57,8 @@ Each entry in `per_mlp`:
 | `flopscope_backend_time_s` | `float` | Wall time inside counted flopscope numpy kernels - the participant's actual numpy compute |
 | `flopscope_overhead_time_s` | `float` | Wall time inside flopscope's own dispatch code (wrapper preambles, FLOP bookkeeping, namespace push/pop). Framework cost, not participant cost. |
 | `residual_wall_time_s` | `float` | Wall time inside the predict context that is neither flopscope backend execution nor flopscope dispatch - i.e. participant Python (loops, control flow), GC, uninstrumented numpy |
-| `final_mse` | `float` | MSE of your final-layer predictions vs ground truth |
-| `all_layer_mse` | `float` | MSE of your all-layer predictions vs ground truth |
+| `final_layer_mse` | `float` | MSE of your final-layer predictions vs ground truth |
+| `all_layers_mse` | `float` | MSE of your all-layer predictions vs ground truth |
 | `breakdowns` | `dict \| null` | Per-MLP breakdown container. Currently includes estimator-only data under `estimator`. Sampling is aggregate-only. |
 
 If the estimator raised an error, the entry also includes:
@@ -104,9 +115,34 @@ Each breakdown summary also includes timing totals:
 For `results.breakdowns.*`, those values are aggregated across all evaluated
 MLPs.
 
+## Budget-adjusted scoring
+
+The leaderboard ranks submissions by `adjusted_final_layer_score`, the suite mean of the
+budget-adjusted per-MLP score:
+
+```
+adjusted_final_layer_score = final_layer_mse × max(0.1, C_m / B_m)   for valid runs
+adjusted_final_layer_score = final_layer_mse × 1.0                    for failures (no compute discount)
+
+C_m = F_m + λ · R_m                      (effective compute, FLOPs and FLOP-equivalents)
+λ = 1e11 FLOPs/second                    (conversion rate; see flopscope-primer.md)
+```
+
+Where `F_m` is the analytical FLOPs counted by flopscope (`flops_used`), `R_m` is the
+residual wall-time bucket (`residual_wall_time_s` — neither flopscope-backend nor
+flopscope-overhead), and `B_m` is `flop_budget`. The `max(0.1, ...)` floor caps the
+discount at 10× so an arbitrarily cheap-but-wrong submission cannot dominate the ranking.
+
+> **Why "score" not "MSE"?** Once `final_layer_mse` is multiplied by the budget
+> factor `max(0.1, C_m/B_m)`, the result is no longer a mean-squared-error between
+> predictions and targets — it is a derived ranking score (denoted `s_m`). The
+> `_score` suffix in `adjusted_final_layer_score` reflects this; the raw
+> diagnostics `final_layer_mse` and `all_layers_mse` keep the `_mse` suffix because
+> they remain genuine MSEs.
+
 ## Interpretation guide
 
-- `final_mse` is your most actionable diagnostic — it directly drives `primary_score`.
+- `final_layer_mse` is your most actionable diagnostic — it directly drives `adjusted_final_layer_score`.
 - `budget_exhausted` is the first thing to check if your score is unexpectedly high — exceeded budget means your predictions were zeroed.
 - `time_exhausted` means the estimator crossed the wall-clock limit configured through `wall_time_limit_s` / `--wall-time-limit`.
 - `residual_wall_time_exhausted` means the non-flopscope portion of execution crossed WhestBench's `residual_wall_time_limit_s` / `--residual-wall-time-limit`.
@@ -114,7 +150,12 @@ MLPs.
 - High `flopscope_backend_time_s` relative to wall: numpy compute is the dominant cost. Healthy for a numpy-heavy estimator.
 - High `flopscope_overhead_time_s` relative to wall: many small ops are paying the per-call dispatch tax. Consider batching with larger numpy primitives.
 - High `residual_wall_time_s` relative to wall: participant Python is the bottleneck (tight loops, per-element attribute access, calls into uninstrumented libraries). This is the bucket future versions of WhestBench will penalise on.
-- `primary_score` is raw MSE — compare across runs to see whether estimator changes are helping.
+- `adjusted_final_layer_score` is the budget-adjusted leaderboard metric and is always ≤ the raw `final_layer_mse`
+  mean (the multiplier is at most 1.0 — it equals 1.0 at full budget use or on failures
+  and drops to 0.1 at the discount floor — a factor-of-ten cap). A value close to raw `final_layer_mse`
+  means you used near-full budget; a value close to one-tenth of raw `final_layer_mse`
+  means you used ≤10% of the budget and got the maximum discount.
+- `all_layers_mse` is a diagnostic aggregate with no budget multiplier. Use it to understand where approximation error accumulates across all layers, not just the final layer.
 
 ## Dataset traceability fields
 
@@ -126,6 +167,13 @@ When using `whest run --dataset`, the report includes `run_config.dataset`:
 | `sha256` | SHA-256 hash of the file for integrity |
 | `seed` | RNG seed used to generate the dataset |
 | `n_mlps` | Number of MLPs in the dataset |
+| `seed_protocol` | Object with `name` and `version`. WhestBench currently requires `version = "2.0"`. |
+
+### Dataset format compatibility
+
+The `.npz` files produced by `whest create-dataset` carry a `seed_protocol.version` in their embedded metadata. WhestBench refuses to load datasets at any other version: loading a v1.0 dataset raises `ValueError("Incompatible dataset seed_protocol version: file has '1.0', this whestbench requires '2.0'. Re-bake the dataset with `whest create-dataset`.")`.
+
+The v2.0 format adds a per-MLP `seed` (stored as the `mlp_seeds` array in the `.npz`) that is exposed to estimators via `mlp.seed` — see [estimator-contract.md](./estimator-contract.md) for how to consume it. Auto-migration is intentionally not implemented because the v1.0 spawn protocol (2 streams per MLP) cannot produce a deterministic third stream; re-baking from the original spec seed is the only correct path.
 
 ## Next step
 

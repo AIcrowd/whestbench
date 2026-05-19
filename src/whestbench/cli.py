@@ -86,10 +86,10 @@ _SAMPLING_PROGRESS_PHASE = "sampling_ground_truth"
 
 def _default_contest_spec() -> ContestSpec:
     return ContestSpec(
-        width=100,
-        depth=16,
+        width=256,
+        depth=8,
         n_mlps=10,
-        flop_budget=100_000_000,
+        flop_budget=17_000_000_000,
         ground_truth_samples=100 * 100 * 256,
     )
 
@@ -167,9 +167,10 @@ def _default_resource_limits() -> ResourceLimits:
     return ResourceLimits(
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
-        memory_limit_mb=4096,
-        flop_budget=100_000_000,
+        memory_limit_mb=65_536,
+        flop_budget=17_000_000_000,
         cpu_time_limit_s=None,
+        wall_time_limit_s=60.0,
     )
 
 
@@ -206,20 +207,31 @@ def run_default_score(profile: bool = False) -> "Any":
     spec = _default_contest_spec()
     data = make_contest(spec)
     result = evaluate_estimator(_DEFAULT_ESTIMATOR, data)
-    score = result["primary_score"]
+    score = result["adjusted_final_layer_score"]
     if profile:
         return score, list(result.get("per_mlp", []))
     return score
 
 
 def _smoke_test_contest_spec() -> ContestSpec:
-    """Lightweight spec for the smoke test — just checks plumbing, not accuracy."""
+    """Lightweight spec for the smoke test.
+
+    Matches the competition shape (width=256, depth=8, flop_budget=1.7e10
+    per ContestSpec defaults) so participants exercising the smoke path
+    hit the same code paths as the real grader. Only n_mlps and
+    ground_truth_samples are scaled down so the smoke runs in well under
+    a second — accuracy of the resulting score is not meaningful, this is
+    a plumbing check.
+
+    Local timing on a typical dev box: ~0.2s total (ground truth ~0.15s,
+    evaluation ~0.03s, CombinedEstimator ~3% budget utilization).
+    """
     return ContestSpec(
-        width=100,
-        depth=16,
+        width=256,
+        depth=8,
         n_mlps=3,
-        flop_budget=10_000_000,
-        ground_truth_samples=100 * 100 * 4,
+        flop_budget=17_000_000_000,
+        ground_truth_samples=10_000,
     )
 
 
@@ -819,7 +831,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="FLOP budget for estimator predict calls (default: 100_000_000).",
+        help=(
+            "Effective compute budget per MLP in FLOPs. Caps C_m = F_m + lambda*R_m "
+            "(analytical FLOPs plus charged residual wall time). Default: 17_000_000_000 (1.7e10)."
+        ),
     )
     run_parser.add_argument(
         "--n-samples",
@@ -840,9 +855,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--wall-time-limit",
         type=float,
-        default=None,
+        default=60.0,
         metavar="SECONDS",
-        help="Wall-clock time limit per predict call (default: unlimited).",
+        help="Wall-clock time limit per predict call (default: 60.0 seconds).",
     )
     run_parser.add_argument(
         "--residual-wall-time-limit",

@@ -18,6 +18,12 @@ from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_c
 if TYPE_CHECKING:
     from .dataset import DatasetBundle
 
+# FLOP-equivalent rate for residual wall time. Used in budget-adjusted scoring:
+#   effective compute C_m = F_m + LAMBDA_FLOPS_PER_SECOND * R_m
+# Where R_m is the residual wall-time bucket (NOT total wall, NOT flopscope dispatch).
+# Per the NeurIPS proposal, the initial rate is 10^11 FLOPs/second.
+LAMBDA_FLOPS_PER_SECOND: float = 1e11
+
 
 @dataclass
 class ContestSpec:
@@ -30,8 +36,8 @@ class ContestSpec:
     ground_truth_samples: int
     setup_timeout_s: float = 5.0
     predict_timeout_s: float = 30.0
-    memory_limit_mb: int = 4096
-    wall_time_limit_s: Optional[float] = None
+    memory_limit_mb: int = 65_536
+    wall_time_limit_s: Optional[float] = 60.0
     residual_wall_time_limit_s: Optional[float] = None
     seed: Optional[int] = None
 
@@ -77,7 +83,7 @@ def make_contest(
     spec.validate()
     spec_seed = spec.seed
     stream_seeds: List[fnp.random.SeedSequence] = (
-        fnp.random.SeedSequence(int(spec_seed)).spawn(2 * spec.n_mlps)
+        fnp.random.SeedSequence(int(spec_seed)).spawn(3 * spec.n_mlps)
         if spec_seed is not None
         else []
     )
@@ -91,11 +97,14 @@ def make_contest(
     total_chunks = spec.n_mlps * chunks_per_mlp
 
     for i in range(spec.n_mlps):
-        mlp_rng = fnp.random.default_rng(stream_seeds[2 * i]) if spec_seed is not None else None
+        mlp_rng = fnp.random.default_rng(stream_seeds[3 * i]) if spec_seed is not None else None
         sample_rng = (
-            fnp.random.default_rng(stream_seeds[2 * i + 1]) if spec_seed is not None else None
+            fnp.random.default_rng(stream_seeds[3 * i + 1]) if spec_seed is not None else None
         )
-        mlp = sample_mlp(spec.width, spec.depth, mlp_rng)
+        estimator_seed = (
+            int(stream_seeds[3 * i + 2].generate_state(1)[0]) if spec_seed is not None else 0
+        )
+        mlp = sample_mlp(spec.width, spec.depth, mlp_rng, seed=estimator_seed)
 
         def _on_sampling_chunk(
             event: Dict[str, Any], *, mlp_index: int = i + 1, chunk_offset: int = i * chunks_per_mlp
@@ -431,6 +440,29 @@ def _aggregate_budget_breakdowns(
     return aggregate
 
 
+def _compute_budget_adjusted_score(
+    *, mse_final: float, effective_compute: float, flop_budget: int, failure: bool
+) -> float:
+    """Compute the per-MLP budget-adjusted score s_m.
+
+    For valid runs: s_m = mse_final * max(0.1, C_m / B_m).
+    For failures: s_m = mse_final * 1.0 (no compute discount).
+
+    The 0.1 floor on the success-path multiplier (factor-of-ten cap)
+    prevents an arbitrarily cheap submission from dominating the ranking.
+    The 1.0 multiplier on failures ensures that a failed run is strictly
+    worse than a trivial-zero submission that succeeds (which gets the
+    0.1 floor — i.e. failure is 10× worse than the cheapest success).
+    """
+    if failure:
+        return float(mse_final)
+    if flop_budget <= 0:
+        return float(mse_final)
+    ratio = effective_compute / float(flop_budget)
+    multiplier = max(0.1, ratio)
+    return float(mse_final) * multiplier
+
+
 def evaluate_estimator(
     estimator: BaseEstimator,
     data: ContestData,
@@ -442,7 +474,11 @@ def evaluate_estimator(
 
     Each MLP prediction runs under a BudgetContext. If the FLOP budget,
     wall-time limit, or residual wall-time limit is exceeded, predictions are
-    zeroed and the violation is recorded. Score = pure MSE (lower is better).
+    zeroed and the violation is recorded. Score per MLP = final_layer_mse *
+    max(0.1, C_m / B_m) for valid runs, where C_m = F_m + lambda * R_m. For
+    failure-flagged runs (FLOP/time/residual budget exhausted), the multiplier
+    is forced to 1.0. The aggregate adjusted_final_layer_score is the arithmetic
+    mean of per-MLP scores. Lower is better.
 
     When ``fail_fast`` is True, unexpected predict-time exceptions are re-raised
     instead of being recorded and skipped.
@@ -518,8 +554,7 @@ def evaluate_estimator(
                 raise
             predictions = fnp.zeros((spec.depth, spec.width))
             # Prefer the traceback forwarded from a remote runner (subprocess
-            # worker) when available; otherwise capture the local chain, which
-            # includes the original estimator traceback via `raise ... from exc`.
+            # worker) when available; otherwise capture the local chain.
             tb_text: Optional[str] = None
             if isinstance(exc, RunnerError) and exc.detail.traceback:
                 tb_text = exc.detail.traceback
@@ -538,16 +573,35 @@ def evaluate_estimator(
             else:
                 error_code = exc.__class__.__name__
                 error_message = str(exc)
+
+            # Compute zero-prediction MSE against this MLP's targets.
+            pred_np = fnp.asarray(predictions, dtype=fnp.float32)
+            final_target = data.final_targets[i]
+            all_target = data.all_layer_targets[i]
+            final_layer_mse_fail = float(fnp.mean((pred_np[-1] - final_target) ** 2))
+            all_layers_mse_fail = float(fnp.mean((pred_np - all_target) ** 2))
+            s_m_fail = _compute_budget_adjusted_score(
+                mse_final=final_layer_mse_fail,
+                effective_compute=0.0,
+                flop_budget=spec.flop_budget,
+                failure=True,
+            )
+
             per_mlp.append(
                 {
                     "mlp_index": i,
                     "error": error_message,
                     "error_code": error_code,
                     "traceback": tb_text,
+                    "final_layer_mse": final_layer_mse_fail,
+                    "all_layers_mse": all_layers_mse_fail,
+                    "adjusted_final_layer_score": s_m_fail,
                     "flops_used": 0,
+                    "effective_compute": 0.0,
                     "budget_exhausted": False,
                     "time_exhausted": False,
                     "residual_wall_time_exhausted": False,
+                    "combined_budget_exhausted": False,
                     "wall_time_s": 0.0,
                     "flopscope_backend_time_s": 0.0,
                     "flopscope_overhead_time_s": 0.0,
@@ -555,18 +609,40 @@ def evaluate_estimator(
                     "breakdowns": {"estimator": None},
                 }
             )
-            primary_scores.append(float("inf"))
-            secondary_scores.append(float("inf"))
+            primary_scores.append(s_m_fail)
+            secondary_scores.append(all_layers_mse_fail)
             if on_mlp_scored is not None:
                 on_mlp_scored(i + 1)
             continue
 
-        # Read timing after BudgetContext.__exit__ so wall_time_s is populated.
-        # Decomposition: wall = backend + flopscope_overhead + residual.
-        wall_time_s = budget_ctx.wall_time_s or 0.0
-        flopscope_backend_time_s = budget_ctx.flopscope_backend_time
-        flopscope_overhead_time_s = budget_ctx.flopscope_overhead_time
-        residual_wall_time_s = budget_ctx.residual_wall_time or 0.0
+        # Read timing: prefer worker-reported stats (subprocess runner) over
+        # host budget_ctx (local runner). Under subprocess, the host's budget_ctx
+        # only wraps the IPC dispatch and its residual is dominated by JSON/pipe
+        # I/O, unrelated to the participant's actual residual time. The worker
+        # measures its own timing inside its own BudgetContext and reports via
+        # JSON; last_predict_stats() surfaces that on the runner-wrapped estimator.
+        # Under --runner local, last_predict_stats() returns None and we fall
+        # back to budget_ctx values, which are correct because the estimator
+        # ran in the same address space.
+        stats = _predict_stats_to_dict(
+            last_predict_stats() if callable(last_predict_stats) else None
+        )
+        if stats is not None:
+            wall_time_s = float(stats.get("wall_time_s", budget_ctx.wall_time_s or 0.0) or 0.0)
+            flopscope_backend_time_s = float(
+                stats.get("flopscope_backend_time_s", budget_ctx.flopscope_backend_time)
+            )
+            flopscope_overhead_time_s = float(
+                stats.get("flopscope_overhead_time_s", budget_ctx.flopscope_overhead_time)
+            )
+            residual_wall_time_s = float(
+                stats.get("residual_wall_time_s", budget_ctx.residual_wall_time or 0.0) or 0.0
+            )
+        else:
+            wall_time_s = budget_ctx.wall_time_s or 0.0
+            flopscope_backend_time_s = budget_ctx.flopscope_backend_time
+            flopscope_overhead_time_s = budget_ctx.flopscope_overhead_time
+            residual_wall_time_s = budget_ctx.residual_wall_time or 0.0
 
         if (
             not budget_exhausted
@@ -587,30 +663,68 @@ def evaluate_estimator(
             predictions = fnp.zeros((spec.depth, spec.width))
             residual_wall_time_exhausted = True
 
+        effective_compute = float(flops_used) + LAMBDA_FLOPS_PER_SECOND * float(
+            residual_wall_time_s
+        )
+
+        # Post-hoc combined-budget check: C_m = F_m + lambda * R_m > B_m → zero out.
+        # The individual caps (flop_budget for F_m, residual_wall_time_limit_s for R_m)
+        # are generous on each axis; this catches the worst case where a participant
+        # uses near-B_m on both. Bounded waste of grader compute (up to ~2 B_m), with
+        # the participant scored as failure regardless.
+        combined_budget_exhausted = False
+        if (
+            not budget_exhausted
+            and not time_exhausted
+            and not residual_wall_time_exhausted
+            and effective_compute > spec.flop_budget
+        ):
+            predictions = fnp.zeros((spec.depth, spec.width))
+            combined_budget_exhausted = True
+
         # Convert predictions for MSE computation
         pred_np = fnp.asarray(predictions, dtype=fnp.float32)
 
         # Primary score: final layer MSE
         final_pred = pred_np[-1]
         final_target = data.final_targets[i]
-        final_mse = float(fnp.mean((final_pred - final_target) ** 2))
+        final_layer_mse = float(fnp.mean((final_pred - final_target) ** 2))
 
         # Secondary score: all layers MSE
         all_target = data.all_layer_targets[i]
-        all_mse = float(fnp.mean((pred_np - all_target) ** 2))
+        all_layers_mse = float(fnp.mean((pred_np - all_target) ** 2))
 
-        primary_scores.append(final_mse)
-        secondary_scores.append(all_mse)
+        # Budget-adjusted per-MLP score:
+        #   s_m = final_layer_mse * max(0.1, C_m / B_m)  for valid runs
+        #   s_m = final_layer_mse * 1.0                  for failures (Task 5 wires this for exceptions)
+        failure_flag = (
+            budget_exhausted
+            or time_exhausted
+            or residual_wall_time_exhausted
+            or combined_budget_exhausted
+        )
+        adjusted_final_layer_score = _compute_budget_adjusted_score(
+            mse_final=final_layer_mse,
+            effective_compute=effective_compute,
+            flop_budget=spec.flop_budget,
+            failure=failure_flag,
+        )
+
+        primary_scores.append(adjusted_final_layer_score)
+        secondary_scores.append(all_layers_mse)
 
         per_mlp.append(
             {
                 "mlp_index": i,
-                "final_mse": final_mse,
-                "all_layer_mse": all_mse,
+                "final_layer_mse": final_layer_mse,
+                "all_layers_mse": all_layers_mse,
+                "adjusted_final_layer_score": adjusted_final_layer_score,
                 "flops_used": flops_used,
+                "effective_compute": effective_compute,
                 "budget_exhausted": budget_exhausted,
                 "time_exhausted": time_exhausted,
                 "residual_wall_time_exhausted": residual_wall_time_exhausted,
+                "combined_budget_exhausted": combined_budget_exhausted,
                 "wall_time_s": wall_time_s,
                 "flopscope_backend_time_s": flopscope_backend_time_s,
                 "flopscope_overhead_time_s": flopscope_overhead_time_s,
@@ -623,13 +737,93 @@ def evaluate_estimator(
             on_mlp_scored(i + 1)
 
     aggregate_breakdown = _aggregate_budget_breakdowns(normalized_breakdowns)
+    # Aggregate the new raw final-layer MSE list across MLPs.
+    raw_final_layer_mses = [
+        float(entry["final_layer_mse"])
+        for entry in per_mlp
+        if isinstance(entry, dict) and "final_layer_mse" in entry
+    ]
+
+    # Per-MLP value lists for new aggregates.
+    adjusted_values = [
+        float(entry["adjusted_final_layer_score"])
+        for entry in per_mlp
+        if isinstance(entry, dict) and "adjusted_final_layer_score" in entry
+    ]
+    effective_computes = [
+        float(entry.get("effective_compute", 0.0)) for entry in per_mlp if isinstance(entry, dict)
+    ]
+
+    # Per-MLP multiplier: 1.0 on failure; else max(0.1, C_m / B_m).
+    flag_keys = (
+        "budget_exhausted",
+        "time_exhausted",
+        "residual_wall_time_exhausted",
+        "combined_budget_exhausted",
+    )
+
+    def _is_failed_entry(e: Dict[str, Any]) -> bool:
+        return bool(e.get("error_code")) or any(bool(e.get(k)) for k in flag_keys)
+
+    multipliers: List[float] = []
+    utilizations: List[float] = []
+    for entry in per_mlp:
+        if not isinstance(entry, dict):
+            continue
+        b = spec.flop_budget
+        cm = float(entry.get("effective_compute", 0.0))
+        u = (cm / float(b)) if b > 0 else 0.0
+        utilizations.append(u)
+        if _is_failed_entry(entry):
+            multipliers.append(1.0)
+        else:
+            multipliers.append(max(0.1, u))
+
+    n_failed = sum(1 for entry in per_mlp if isinstance(entry, dict) and _is_failed_entry(entry))
+
+    failure_breakdown = {
+        "budget_exhausted": sum(
+            1 for e in per_mlp if isinstance(e, dict) and bool(e.get("budget_exhausted"))
+        ),
+        "time_exhausted": sum(
+            1 for e in per_mlp if isinstance(e, dict) and bool(e.get("time_exhausted"))
+        ),
+        "residual_wall_time_exhausted": sum(
+            1
+            for e in per_mlp
+            if isinstance(e, dict) and bool(e.get("residual_wall_time_exhausted"))
+        ),
+        "combined_budget_exhausted": sum(
+            1 for e in per_mlp if isinstance(e, dict) and bool(e.get("combined_budget_exhausted"))
+        ),
+        "error": sum(1 for e in per_mlp if isinstance(e, dict) and bool(e.get("error_code"))),
+    }
+
     return {
-        "primary_score": float(fnp.mean(fnp.asarray(primary_scores)))
+        "adjusted_final_layer_score": float(fnp.mean(fnp.asarray(primary_scores)))
         if primary_scores
         else float("inf"),
-        "secondary_score": float(fnp.mean(fnp.asarray(secondary_scores)))
+        "final_layer_mse": float(fnp.mean(fnp.asarray(raw_final_layer_mses)))
+        if raw_final_layer_mses
+        else float("inf"),
+        "all_layers_mse": float(fnp.mean(fnp.asarray(secondary_scores)))
         if secondary_scores
         else float("inf"),
+        "best_mlp_adjusted_final_layer_score": min(adjusted_values)
+        if adjusted_values
+        else float("inf"),
+        "worst_mlp_adjusted_final_layer_score": max(adjusted_values)
+        if adjusted_values
+        else float("inf"),
+        "mean_score_multiplier": (sum(multipliers) / len(multipliers)) if multipliers else 1.0,
+        "mean_compute_utilization": (sum(utilizations) / len(utilizations))
+        if utilizations
+        else 0.0,
+        "n_failed_mlps": n_failed,
+        "mean_effective_compute": (sum(effective_computes) / len(effective_computes))
+        if effective_computes
+        else 0.0,
+        "failure_breakdown": failure_breakdown,
         "per_mlp": per_mlp,
         "breakdowns": {
             "sampling": data.sampling_budget_breakdown,

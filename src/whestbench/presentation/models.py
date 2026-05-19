@@ -148,6 +148,9 @@ class BudgetBreakdownGauge:
 @dataclass(frozen=True)
 class BudgetBreakdownOverBudgetRow:
     mlp_index: int
+    reason: str
+    metric_name: str
+    metric_value: str
     flops_used: str
     percent_of_budget: str | None = None
 
@@ -158,6 +161,7 @@ class BudgetBreakdownSection:
     available: bool
     unavailable_message: str | None = None
     total_flops: str | None = None
+    effective_compute: str | None = None
     flopscope_backend_time: str | None = None
     flopscope_overhead_time: str | None = None
     residual_wall_time: str | None = None

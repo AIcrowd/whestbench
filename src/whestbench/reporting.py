@@ -209,7 +209,7 @@ def render_smoke_test_next_steps(report: "dict[str, Any]", *, debug: bool = Fals
     section_title = next_steps.title if next_steps is not None else "Next Steps"
     body_items: "list[Text]" = [
         Text("We are all set! Welcome onboard", style="bold bright_green"),
-        Text("Run these steps:", style="bold bright_white"),
+        Text("Run these steps:", style="bold"),
         Text(),
     ]
     for purpose_line, step in zip(purpose_lines, structured_steps):
@@ -581,39 +581,70 @@ def _hardware_runtime_panel(report: "dict[str, Any]") -> Panel:
 
 def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     results = report.get("results", {})
-    primary_score = _as_float(results.get("primary_score", 0.0))
-    secondary_score = _as_float(results.get("secondary_score", 0.0))
-    summary = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
+    summary = Table(box=box.SIMPLE_HEAVY, header_style="bold")
     summary.add_column("metric")
     summary.add_column("value", justify="right")
+
+    PRIMARY_ANNOTATION = "  ← primary score"
+
+    # Accuracy metrics
+    adjusted_score = _as_float(results.get("adjusted_final_layer_score", 0.0))
     summary.add_row(
-        _label_with_code("Primary Score", "primary_score", "bold bright_green"),
-        f"[bold bright_green]{_fmt_float(primary_score, 8)}[/]",
+        _label_with_code(
+            "Adjusted Final-Layer Score", "adjusted_final_layer_score", "bold bright_green"
+        ),
+        f"[bold bright_green]{_fmt_float(adjusted_score, 8)}[/]{PRIMARY_ANNOTATION}",
     )
+    raw_mse = _as_float(results.get("final_layer_mse", 0.0))
     summary.add_row(
-        _label_with_code("Secondary Score", "secondary_score", "bold bright_cyan"),
-        f"[cyan]{_fmt_float(secondary_score, 8)}[/]",
+        _label_with_code("Raw Final-Layer MSE", "final_layer_mse", "bold cyan"),
+        f"[cyan]{_fmt_float(raw_mse, 8)}[/]",
+    )
+    all_layers_mse = _as_float(results.get("all_layers_mse", 0.0))
+    summary.add_row(
+        _label_with_code("All-Layers MSE", "all_layers_mse", "bold cyan"),
+        f"[cyan]{_fmt_float(all_layers_mse, 8)}[/]",
     )
 
+    # Range metrics divider
+    summary.add_row(Text("─" * 8, style="dim"), Text("─" * 8, style="dim"))
+
+    best_score = _as_float(results.get("best_mlp_adjusted_final_layer_score", 0.0))
+    summary.add_row(
+        _label_with_code("Best MLP", "best_mlp_adjusted_final_layer_score", "bold green"),
+        f"[green]{_fmt_float(best_score, 8)}[/]",
+    )
+    worst_score = _as_float(results.get("worst_mlp_adjusted_final_layer_score", 0.0))
+    summary.add_row(
+        _label_with_code("Worst MLP", "worst_mlp_adjusted_final_layer_score", "bold yellow"),
+        f"[yellow]{_fmt_float(worst_score, 8)}[/]",
+    )
+
+    # Efficiency metrics divider
+    summary.add_row(Text("─" * 8, style="dim"), Text("─" * 8, style="dim"))
+
+    mean_sm = _as_float(results.get("mean_score_multiplier", 0.0))
+    summary.add_row(
+        _label_with_code("Mean Score Multiplier", "mean_score_multiplier", "bold"),
+        _fmt_float(mean_sm, 8),
+    )
+    mean_cu = _as_float(results.get("mean_compute_utilization", 0.0))
+    summary.add_row(
+        _label_with_code("Mean Compute Utilization", "mean_compute_utilization", "bold"),
+        _fmt_float(mean_cu, 8),
+    )
     per_mlp = results.get("per_mlp", [])
-    if isinstance(per_mlp, list) and per_mlp:
-        mlp_primaries = [
-            _as_float(entry.get("final_mse", 0.0)) for entry in per_mlp if isinstance(entry, dict)
-        ]
-        if mlp_primaries:
-            summary.add_row(
-                _label_with_code("Best MLP Score", "best_mlp_score", "bold green"),
-                f"[green]{_fmt_float(min(mlp_primaries), 8)}[/]",
-            )
-            summary.add_row(
-                _label_with_code("Worst MLP Score", "worst_mlp_score", "bold yellow"),
-                f"[yellow]{_fmt_float(max(mlp_primaries), 8)}[/]",
-            )
+    n_failed = int(results.get("n_failed_mlps", 0) or 0)
+    n_total = len(per_mlp) if isinstance(per_mlp, list) else 0
+    summary.add_row(
+        _label_with_code("Failed MLPs", "n_failed_mlps", "bold"),
+        f"{n_failed} of {n_total}",
+    )
 
     return Panel(
         Align.center(summary),
         title="Final Score",
-        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+        subtitle=("per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)"),
         subtitle_align="left",
         border_style="bright_cyan",
     )
@@ -881,7 +912,7 @@ def _breakdown_panel(
         )
 
     summary = Table(box=box.SIMPLE_HEAVY, show_header=False)
-    summary.add_column("field", style="bold bright_white")
+    summary.add_column("field", style="bold")
     summary.add_column("value")
     summary.add_row(
         _label_with_code("Total FLOPs", "flops_used", "bold bright_yellow"),
@@ -900,8 +931,8 @@ def _breakdown_panel(
         f"{_as_float(breakdown.get('residual_wall_time_s', 0.0)):.6f}s",
     )
 
-    table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold bright_white")
-    table.add_column("namespace", style="bold bright_white", no_wrap=False)
+    table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold")
+    table.add_column("namespace", style="bold", no_wrap=False)
     table.add_column("total flops", justify="right")
     table.add_column("% of section flops", justify="right")
     table.add_column("mean flops / MLP", justify="right")
@@ -984,7 +1015,7 @@ def _render_profile_section(
     ]
 
     summary = Table(box=box.SIMPLE_HEAVY, show_header=False)
-    summary.add_column("field", style="bold bright_white")
+    summary.add_column("field", style="bold")
     summary.add_column("value")
     summary.add_row(
         _label_with_code("Estimator Calls", "calls", "bold bright_magenta"),
@@ -1007,7 +1038,7 @@ def _render_profile_section(
         f"[bright_magenta]{_fmt_float(max(peak) if peak else 0.0, 2)}[/]",
     )
 
-    dist = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
+    dist = Table(box=box.SIMPLE_HEAVY, header_style="bold")
     dist.add_column("metric", style="bold white")
     dist.add_column("p05", justify="right")
     dist.add_column("p95", justify="right")
@@ -1147,7 +1178,7 @@ def _make_plot_panel(
         body,
         title=title,
         box=box.ROUNDED,
-        border_style="bright_white",
+        border_style="dim",
         title_align="left",
         expand=False,
     )
@@ -1320,7 +1351,7 @@ def _context_key_style(key: str) -> str:
         return "bold bright_yellow"
     if key.endswith("_s"):
         return "bold bright_green"
-    return "bold bright_white"
+    return "bold"
 
 
 def _render_context_label(label: str) -> Text:
@@ -1332,13 +1363,13 @@ def _render_context_label(label: str) -> Text:
     human = label[:start].rstrip()
     code = label[start + 1 : end]
     text = Text(human + " ", style=_context_key_style(code))
-    text.append(f"[{code}]", style="bold bright_white")
+    text.append(f"[{code}]", style="bold")
     return text
 
 
 def _label_with_code(human: str, code: str, style: str) -> Text:
     text = Text(human + " ", style=style)
-    text.append(f"[{code}]", style="bold bright_white")
+    text.append(f"[{code}]", style="bold")
     return text
 
 
@@ -1351,7 +1382,9 @@ def _rich_style_for_plot_color(color: str) -> str:
         "red+": "bright_red",
         "blue+": "bright_blue",
     }
-    return mapping.get(color, "bright_white")
+    # Fallback for unmapped plot colours: terminal default foreground rather
+    # than `bright_white`, which is invisible on light backgrounds.
+    return mapping.get(color, "default")
 
 
 def _mean_series(series_list: Sequence[Sequence[float]]) -> "list[float]":

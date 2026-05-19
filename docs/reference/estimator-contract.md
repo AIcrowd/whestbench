@@ -30,6 +30,7 @@ Optional lifecycle hooks:
 | `MLP` | `width` | Number of neurons per layer |
 | `MLP` | `depth` | Number of weight matrices (layers) |
 | `MLP` | `weights` | Ordered weight matrices, each `(width, width)` |
+| `MLP` | `seed` | Per-MLP grader-supplied seed; use this to seed estimator-internal randomness for reproducibility under regrade. |
 
 For traversal examples, see [Inspect and Traverse MLP Structure](../how-to/inspect-mlp-structure.md).
 
@@ -47,11 +48,63 @@ import flopscope.numpy as fnp`) for all numerical computation. flopscope tracks 
 
 ## Failure semantics
 
-When validation fails (wrong shape, non-finite values), the affected prediction is treated as a **zero-filled row**. The scoring loop continues and produces a valid report -- errors are reflected as increased MSE rather than hard failures.
+When `predict()` cannot return a valid result — for any reason — the affected MLP is
+scored as if the estimator had returned a zero array, and the multiplier in the
+budget-adjusted score `s_m` is forced to `1.0` (no compute discount). Concretely:
 
-Validation failures now include structured diagnostics in report output under `results.per_mlp[i].error` as
-`{"message": ..., "details": ...}` with details describing `expected_shape`, `got_shape`,
-and actionable hints.
+- **FLOP budget exhausted** (`flopscope.BudgetExhaustedError`) → `Y_hat = 0`, `s_m = MSE(0, Y) * 1.0`
+- **Wall-time / residual-time budget exhausted** → same
+- **Combined-budget post-check** (`C_m = F_m + λ·R_m > B_m`) → same
+- **`predict()` raised an exception** (any subclass of `Exception`, including `MemoryError`,
+  `ValueError` from `validate_predictions`, custom estimator exceptions) → same
+- **Invalid output shape** (not `(depth, width)`) → same
+- **Non-finite values** (any `inf` or `NaN`) → same
+- **Subprocess worker hard-killed** (OOM, segfault, timeout, non-zero exit) → same
+
+The scoring loop continues across the remaining MLPs and produces a finite `adjusted_final_layer_score`.
+Per-MLP diagnostic fields (`error`, `error_code`, `traceback`, `budget_exhausted`,
+`time_exhausted`, `residual_wall_time_exhausted`, `combined_budget_exhausted`) are preserved
+so failures remain debuggable.
+
+The "no compute discount on failure" rule (multiplier forced to 1.0) ensures that a failed
+run is strictly worse than a trivial-zero submission that succeeds (which receives the
+0.1 multiplier floor — the minimum discount, a factor-of-ten cap).
+
+## Memory limit
+
+`ContestSpec.memory_limit_mb` (default `65_536`, i.e. 64 GB — matches the Phase 1 grader allocation) bounds the address space available to your estimator. Enforcement depends on the runner:
+
+- **`--runner subprocess`** (used by the grader): the worker calls `resource.setrlimit(RLIMIT_AS, ...)` before importing your estimator module. Any allocation that would exceed the cap raises `MemoryError` inside `predict()`, which routes through the failure path described above (zero-prediction MSE × 1.0).
+- **`--runner local`**: the limit is advisory only. WhestBench cannot safely call `setrlimit` on the CLI process itself. The runner emits a single warning at start (`"memory_limit_mb=… is advisory in --runner local: enforcement requires --runner subprocess (uses RLIMIT_AS) or external sandboxing (cgroups)."`) and continues without enforcement. Use `--runner subprocess` if you want the limit actually enforced locally.
+
+Platforms without `RLIMIT_AS` (Windows, some BSDs) log a warning to the worker's stderr and continue without enforcement. The grader's evaluation environment is Linux, where enforcement is reliable.
+
+## Wall-clock cap
+
+`ContestSpec.wall_time_limit_s` (default `60.0` seconds — matches the Phase 1 grader cap) is an operational backstop on per-MLP `predict()` execution. If a single `predict()` call's elapsed wall-clock time exceeds the cap, the estimator's prediction is replaced with zeros and the MLP is scored through the failure path (zero-prediction MSE × 1.0, no compute discount). This is intentionally generous — the primary compute constraint is the effective FLOP budget `C_m = F_m + λ·R_m`; the wall-clock cap only catches stalled or runaway submissions.
+
+The CLI flag `--wall-time-limit SECONDS` accepts a positive float. To disable the cap programmatically, construct your own `ContestSpec` with `wall_time_limit_s=None`.
+
+## Reproducibility under the grader seed
+
+If your estimator uses randomness — Monte Carlo sampling, randomized hashing,
+random projections, etc. — seed it from `mlp.seed`. The grader supplies a fixed
+per-MLP seed that is identical across all submissions for a given MLP, derived
+deterministically from the suite seed. Submissions that use unseeded randomness
+or their own seeds are NOT guaranteed to reproduce under regrade and may be
+disqualified for prize eligibility.
+
+Example:
+
+```python
+import flopscope.numpy as fnp
+
+def predict(self, mlp, budget):
+    rng = fnp.random.default_rng(mlp.seed)
+    # ... use rng for any internal randomness
+```
+
+If your estimator is deterministic (no internal randomness), you can ignore `mlp.seed`.
 
 ## Next step
 
