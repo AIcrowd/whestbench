@@ -1326,11 +1326,6 @@ def _main_participant(argv: "list[str]") -> int:
                             TimeElapsedColumn,
                         )
 
-                        rich_available = True
-                    except ImportError:
-                        rich_available = False
-
-                    if rich_available:
                         progress_bar = Progress(
                             SpinnerColumn(),
                             TextColumn("[progress.description]{task.description}"),
@@ -1365,7 +1360,7 @@ def _main_participant(argv: "list[str]") -> int:
                                 progress=_on_ds_progress,
                                 device=args.device,
                             )
-                    else:
+                    except ImportError:
                         out = create_dataset_torch(
                             n_mlps=n_mlps_ds,
                             n_samples=int(args.n_samples),

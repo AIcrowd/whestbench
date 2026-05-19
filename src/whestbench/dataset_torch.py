@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false
 """Torch-backed variant of create_dataset for GPU acceleration on large bakes.
 
 This module is a power-user drop-in alternative to whestbench.dataset.create_dataset
