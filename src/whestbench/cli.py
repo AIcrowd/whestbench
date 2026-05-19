@@ -714,7 +714,7 @@ def _run_validate_checks(
     class_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     estimator, metadata = load_estimator_from_path(estimator_path, class_name=class_name)
-    context = SetupContext(width=4, depth=2, flop_budget=100, api_version="1.0")
+    context = SetupContext(width=4, depth=2, flop_budget=100, api_version="1.0", seed=0)
     mlp = sample_mlp(width=4, depth=2)
     checks: list[dict[str, str]] = []
     try:
@@ -871,7 +871,12 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--seed",
         type=int,
         default=None,
-        help="Seed for deterministic MLP generation and ground-truth sampling (no-dataset runs only).",
+        help=(
+            "Random seed for the run. Without --dataset, seeds both MLP generation "
+            "and estimator setup. With --dataset, MLP seeds come from the dataset; "
+            "this flag seeds estimator setup only. Default: 0 (ctx.seed = 0; "
+            "estimator setup is deterministic but without a run-specific seed)."
+        ),
     )
     run_parser.add_argument(
         "--max-threads",
@@ -1045,6 +1050,7 @@ def _run_estimator_with_runner(
         depth=spec.depth,
         flop_budget=spec.flop_budget,
         api_version="1.0",
+        seed=spec.seed if spec.seed is not None else 0,
     )
     limits = ResourceLimits(
         setup_timeout_s=spec.setup_timeout_s,
@@ -1374,9 +1380,6 @@ def _main_participant(argv: "list[str]") -> int:
             contest_data = None
             bundle = None
             ds_meta: Dict[str, Any] = {}
-            if getattr(args, "dataset", None) is not None and run_seed is not None:
-                raise ValueError("--seed is only valid when --dataset is not provided.")
-
             if dataset_path is not None:
                 from .scoring import make_contest_from_bundle
 
@@ -1401,7 +1404,7 @@ def _main_participant(argv: "list[str]") -> int:
                     n_mlps=n_mlps,
                     flop_budget=ds_meta.get("flop_budget", flop_budget),
                     ground_truth_samples=gt_samples,
-                    seed=None,
+                    seed=run_seed,
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
                     residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
                 )
