@@ -167,9 +167,10 @@ def _default_resource_limits() -> ResourceLimits:
     return ResourceLimits(
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
-        memory_limit_mb=4096,
+        memory_limit_mb=65_536,
         flop_budget=17_000_000_000,
         cpu_time_limit_s=None,
+        wall_time_limit_s=60.0,
     )
 
 
@@ -843,9 +844,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--wall-time-limit",
         type=float,
-        default=None,
+        default=60.0,
         metavar="SECONDS",
-        help="Wall-clock time limit per predict call (default: unlimited).",
+        help="Wall-clock time limit per predict call (default: 60.0 seconds).",
     )
     run_parser.add_argument(
         "--residual-wall-time-limit",
