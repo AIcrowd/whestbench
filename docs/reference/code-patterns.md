@@ -125,7 +125,7 @@ alpha = mu_pre / sigma_pre
 E_relu = mu_pre * norm_cdf(alpha) + sigma_pre * norm_pdf(alpha)
 ```
 
-See [`MeanPropagationEstimator`](../../src/whestbench/estimators.py) (in `src/whestbench/estimators.py`) for a complete reference implementation using these patterns.
+See [`02_mean_propagation.py`](https://github.com/AIcrowd/whest-starterkit/blob/main/examples/02_mean_propagation.py) (in the starter kit) for a complete worked example using these patterns.
 
 ### Per-neuron variance propagation (diagonal)
 
