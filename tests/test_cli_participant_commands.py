@@ -1246,10 +1246,16 @@ def test_run_plain_output_shows_validation_hint_details(
     assert "Code" in out
     assert "Message" in out
     assert "ValueError" in out
-    assert "Predictions must have shape (2, 4), got (4, 2)." in out
+    # Labelled axes in the human-readable message (issue #12). Rich may wrap
+    # the long message across multiple lines inside the table cell, so check
+    # the key fragments rather than the whole line verbatim.
+    assert "Predictions must have shape (depth=2, width=4); got" in out
+    assert "shape=(4, 2)" in out
     assert "Expected shape: [2, 4]" in out
     assert "Got shape: [4, 2]" in out
     assert "Hint:" in out
+    # Copy-pastable fnp.stack idiom appears in the hint surface (issue #12).
+    assert "fnp.stack(rows, axis=0)" in out
     assert "'message':" not in out
 
 
