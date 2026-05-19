@@ -61,6 +61,11 @@ def create_dataset_torch(
             Same as create_dataset(). See whestbench.dataset for full semantics.
         device: "auto" | "cuda" | "mps" | "cpu". "auto" resolves cuda > mps > cpu.
             Explicit values error if unavailable (no silent CPU fallback).
+            Note: bitwise reproducibility on CUDA additionally requires the
+            caller to set torch.backends.cudnn.deterministic = True. This
+            function does not set that flag — on CUDA, run-to-run output is
+            deterministic in practice for the matmul/sum kernels used here,
+            but not formally guaranteed by torch.
         mlps_per_batch: How many MLPs to process in parallel on device.
             None (default) auto-tunes to min(n_mlps, 16).
         chunk_size: Samples per chunk on device. None (default) is memory-aware
