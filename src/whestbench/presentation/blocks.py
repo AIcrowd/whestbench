@@ -32,11 +32,11 @@ def make_keyed_label(human: str, code: str, style: str) -> Text:
 
 def _score_value_markup(metric: str, value: str) -> str:
     value_styles = {
-        "Adjusted Final-Layer MSE [adjusted_final_layer_mse]": "bold bright_green",
+        "Adjusted Final-Layer Score [adjusted_final_layer_score]": "bold bright_green",
         "Raw Final-Layer MSE [final_layer_mse]": "cyan",
         "All-Layers MSE [all_layers_mse]": "cyan",
-        "Best MLP [best_mlp_adjusted_final_layer_mse]": "green",
-        "Worst MLP [worst_mlp_adjusted_final_layer_mse]": "yellow",
+        "Best MLP [best_mlp_adjusted_final_layer_score]": "green",
+        "Worst MLP [worst_mlp_adjusted_final_layer_score]": "yellow",
         "Mean Score Multiplier [mean_score_multiplier]": "bright_white",
         "Mean Compute Utilization [mean_compute_utilization]": "bright_white",
         "Failed MLPs [n_failed_mlps]": "bright_white",
@@ -59,8 +59,8 @@ def build_score_block(section: TableSection) -> Panel:
         table.add_column("", justify="left", no_wrap=True)
 
     metric_labels = {
-        "Adjusted Final-Layer MSE [adjusted_final_layer_mse]": make_keyed_label(
-            "Adjusted Final-Layer MSE", "adjusted_final_layer_mse", "bold bright_green"
+        "Adjusted Final-Layer Score [adjusted_final_layer_score]": make_keyed_label(
+            "Adjusted Final-Layer Score", "adjusted_final_layer_score", "bold bright_green"
         ),
         "Raw Final-Layer MSE [final_layer_mse]": make_keyed_label(
             "Raw Final-Layer MSE", "final_layer_mse", "bold cyan"
@@ -68,11 +68,11 @@ def build_score_block(section: TableSection) -> Panel:
         "All-Layers MSE [all_layers_mse]": make_keyed_label(
             "All-Layers MSE", "all_layers_mse", "bold cyan"
         ),
-        "Best MLP [best_mlp_adjusted_final_layer_mse]": make_keyed_label(
-            "Best MLP", "best_mlp_adjusted_final_layer_mse", "bold green"
+        "Best MLP [best_mlp_adjusted_final_layer_score]": make_keyed_label(
+            "Best MLP", "best_mlp_adjusted_final_layer_score", "bold green"
         ),
-        "Worst MLP [worst_mlp_adjusted_final_layer_mse]": make_keyed_label(
-            "Worst MLP", "worst_mlp_adjusted_final_layer_mse", "bold yellow"
+        "Worst MLP [worst_mlp_adjusted_final_layer_score]": make_keyed_label(
+            "Worst MLP", "worst_mlp_adjusted_final_layer_score", "bold yellow"
         ),
         "Mean Score Multiplier [mean_score_multiplier]": make_keyed_label(
             "Mean Score Multiplier", "mean_score_multiplier", "bold bright_white"

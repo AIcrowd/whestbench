@@ -58,7 +58,7 @@ def _make_data(
     )
 
 
-def test_best_and_worst_mlp_adjusted_final_layer_mse_present():
+def test_best_and_worst_mlp_adjusted_final_layer_score_present():
     data = _make_data()
     estimator = _StatsEstimator(
         PredictStats(
@@ -70,9 +70,9 @@ def test_best_and_worst_mlp_adjusted_final_layer_mse_present():
         )
     )
     result = evaluate_estimator(estimator, data)
-    s_m = result["per_mlp"][0]["adjusted_final_layer_mse"]
-    assert result["best_mlp_adjusted_final_layer_mse"] == pytest.approx(s_m)
-    assert result["worst_mlp_adjusted_final_layer_mse"] == pytest.approx(s_m)
+    s_m = result["per_mlp"][0]["adjusted_final_layer_score"]
+    assert result["best_mlp_adjusted_final_layer_score"] == pytest.approx(s_m)
+    assert result["worst_mlp_adjusted_final_layer_score"] == pytest.approx(s_m)
 
 
 def test_mean_score_multiplier_at_floor_for_zero_compute():

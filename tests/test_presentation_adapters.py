@@ -138,17 +138,17 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
                 "flop_budget": 100,
             },
             "results": {
-                "adjusted_final_layer_mse": 0.123456789,
+                "adjusted_final_layer_score": 0.123456789,
                 "final_layer_mse": 0.115,
                 "all_layers_mse": 0.456789123,
-                "best_mlp_adjusted_final_layer_mse": 0.1,
-                "worst_mlp_adjusted_final_layer_mse": 0.2,
+                "best_mlp_adjusted_final_layer_score": 0.1,
+                "worst_mlp_adjusted_final_layer_score": 0.2,
                 "mean_score_multiplier": 0.9,
                 "mean_compute_utilization": 0.5,
                 "n_failed_mlps": 0,
                 "per_mlp": [
-                    {"mlp_index": 0, "adjusted_final_layer_mse": 0.1},
-                    {"mlp_index": 1, "adjusted_final_layer_mse": 0.2},
+                    {"mlp_index": 0, "adjusted_final_layer_score": 0.1},
+                    {"mlp_index": 1, "adjusted_final_layer_score": 0.2},
                 ],
             },
         },
@@ -174,11 +174,11 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
     ]
     assert score.columns == ["metric", "value", "note"]
     assert score.rows == [
-        ["Adjusted Final-Layer MSE [adjusted_final_layer_mse]", "1.23e-01", "← primary score"],
+        ["Adjusted Final-Layer Score [adjusted_final_layer_score]", "1.23e-01", "← primary score"],
         ["Raw Final-Layer MSE [final_layer_mse]", "1.15e-01", ""],
         ["All-Layers MSE [all_layers_mse]", "4.57e-01", ""],
-        ["Best MLP [best_mlp_adjusted_final_layer_mse]", "1.00e-01", ""],
-        ["Worst MLP [worst_mlp_adjusted_final_layer_mse]", "2.00e-01", ""],
+        ["Best MLP [best_mlp_adjusted_final_layer_score]", "1.00e-01", ""],
+        ["Worst MLP [worst_mlp_adjusted_final_layer_score]", "2.00e-01", ""],
         ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000", ""],
         ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000", ""],
         ["Failed MLPs [n_failed_mlps]", "0 of 2", ""],
@@ -319,18 +319,18 @@ def test_score_section_uses_new_score_key_names_and_subtitle():
 
     report = {
         "results": {
-            "adjusted_final_layer_mse": 0.245,
+            "adjusted_final_layer_score": 0.245,
             "final_layer_mse": 0.220,
             "all_layers_mse": 0.178,
-            "best_mlp_adjusted_final_layer_mse": 0.00001956,
-            "worst_mlp_adjusted_final_layer_mse": 0.73648548,
+            "best_mlp_adjusted_final_layer_score": 0.00001956,
+            "worst_mlp_adjusted_final_layer_score": 0.73648548,
             "mean_score_multiplier": 0.78,
             "mean_compute_utilization": 0.62,
             "n_failed_mlps": 1,
             "per_mlp": [
-                {"adjusted_final_layer_mse": 0.00001956},
-                {"adjusted_final_layer_mse": 0.5},
-                {"adjusted_final_layer_mse": 0.73648548},
+                {"adjusted_final_layer_score": 0.00001956},
+                {"adjusted_final_layer_score": 0.5},
+                {"adjusted_final_layer_score": 0.73648548},
             ],
         }
     }
@@ -343,14 +343,14 @@ def test_score_section_uses_new_score_key_names_and_subtitle():
     # Row labels reference the new key codes
     metric_labels = [row[0] for row in section.rows]
     joined = " | ".join(metric_labels)
-    assert "adjusted_final_layer_mse" in joined
+    assert "adjusted_final_layer_score" in joined
     assert "final_layer_mse" in joined
     assert "all_layers_mse" in joined
     assert "mean_score_multiplier" in joined
     assert "mean_compute_utilization" in joined
     assert "n_failed_mlps" in joined
-    assert "best_mlp_adjusted_final_layer_mse" in joined
-    assert "worst_mlp_adjusted_final_layer_mse" in joined
+    assert "best_mlp_adjusted_final_layer_score" in joined
+    assert "worst_mlp_adjusted_final_layer_score" in joined
 
 
 def test_build_profile_presentation_includes_correctness_and_timing_rows() -> None:
@@ -388,11 +388,11 @@ def test_score_section_handles_null_n_failed_and_per_mlp():
 
     report = {
         "results": {
-            "adjusted_final_layer_mse": 0.245,
+            "adjusted_final_layer_score": 0.245,
             "final_layer_mse": 0.220,
             "all_layers_mse": 0.178,
-            "best_mlp_adjusted_final_layer_mse": 0.0,
-            "worst_mlp_adjusted_final_layer_mse": 1.0,
+            "best_mlp_adjusted_final_layer_score": 0.0,
+            "worst_mlp_adjusted_final_layer_score": 1.0,
             "mean_score_multiplier": 0.5,
             "mean_compute_utilization": 0.0,
             "n_failed_mlps": None,

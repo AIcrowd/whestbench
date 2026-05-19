@@ -26,11 +26,11 @@ Inside `results`:
 
 | Field | Description |
 |---|---|
-| `adjusted_final_layer_mse` | Budget-adjusted leaderboard metric — suite mean of per-MLP `adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m)`; failure → × 1.0. Lower is better. |
+| `adjusted_final_layer_score` | Budget-adjusted leaderboard metric — suite mean of per-MLP `adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m)`; failure → × 1.0. Lower is better. |
 | `all_layers_mse` | Raw all-layers MSE averaged across MLPs (no budget multiplier). Diagnostic — reveals where approximation error accumulates. |
 | `final_layer_mse` | Raw final-layer MSE averaged across MLPs (no multiplier). |
-| `best_mlp_adjusted_final_layer_mse` | Minimum per-MLP `adjusted_final_layer_mse`. |
-| `worst_mlp_adjusted_final_layer_mse` | Maximum per-MLP `adjusted_final_layer_mse`. |
+| `best_mlp_adjusted_final_layer_score` | Minimum per-MLP `adjusted_final_layer_score`. |
+| `worst_mlp_adjusted_final_layer_score` | Maximum per-MLP `adjusted_final_layer_score`. |
 | `mean_score_multiplier` | Mean of per-MLP `max(0.1, C_m/B_m)` (1.0 on failure). Bounded [0.1, 1.0]. |
 | `mean_compute_utilization` | Mean of per-MLP `C_m/B_m`, unclamped — can exceed 1.0 when an MLP busted the cap. |
 | `n_failed_mlps` | Count of MLPs with any failure flag or `error_code` set. |
@@ -48,7 +48,7 @@ Each entry in `per_mlp`:
 | `mlp_index` | `int` | Index of the MLP in the evaluation set |
 | `flops_used` | `int` | Total FLOPs used by your estimator for this MLP |
 | `effective_compute` | `float` | C_m = F_m + λ·R_m. Combined FLOP-equivalent compute used by the estimator. |
-| `adjusted_final_layer_mse` | `float` | s_m. The per-MLP budget-adjusted score that flows into the suite mean. |
+| `adjusted_final_layer_score` | `float` | s_m. The per-MLP budget-adjusted score that flows into the suite mean. |
 | `combined_budget_exhausted` | `bool` | Whether the post-hoc check `C_m > B_m` fired (predictions zeroed if true). |
 | `budget_exhausted` | `bool` | Whether the estimator exceeded the FLOP budget (predictions zeroed if true) |
 | `time_exhausted` | `bool` | Whether the estimator exceeded the wall-clock limit for this MLP (predictions zeroed if true) |
@@ -117,12 +117,12 @@ MLPs.
 
 ## Budget-adjusted scoring
 
-The leaderboard ranks submissions by `adjusted_final_layer_mse`, the suite mean of the
+The leaderboard ranks submissions by `adjusted_final_layer_score`, the suite mean of the
 budget-adjusted per-MLP score:
 
 ```
-adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m / B_m)   for valid runs
-adjusted_final_layer_mse = final_layer_mse × 1.0                    for failures (no compute discount)
+adjusted_final_layer_score = final_layer_mse × max(0.1, C_m / B_m)   for valid runs
+adjusted_final_layer_score = final_layer_mse × 1.0                    for failures (no compute discount)
 
 C_m = F_m + λ · R_m                      (effective compute, FLOPs and FLOP-equivalents)
 λ = 1e11 FLOPs/second                    (conversion rate; see flopscope-primer.md)
@@ -133,9 +133,16 @@ residual wall-time bucket (`residual_wall_time_s` — neither flopscope-backend 
 flopscope-overhead), and `B_m` is `flop_budget`. The `max(0.1, ...)` floor caps the
 discount at 10× so an arbitrarily cheap-but-wrong submission cannot dominate the ranking.
 
+> **Why "score" not "MSE"?** Once `final_layer_mse` is multiplied by the budget
+> factor `max(0.1, C_m/B_m)`, the result is no longer a mean-squared-error between
+> predictions and targets — it is a derived ranking score. The NeurIPS proposal
+> calls this `s_m`, the "budget-adjusted leaderboard score". The `_score` suffix in
+> `adjusted_final_layer_score` reflects this; the raw diagnostics `final_layer_mse`
+> and `all_layers_mse` keep the `_mse` suffix because they remain genuine MSEs.
+
 ## Interpretation guide
 
-- `final_layer_mse` is your most actionable diagnostic — it directly drives `adjusted_final_layer_mse`.
+- `final_layer_mse` is your most actionable diagnostic — it directly drives `adjusted_final_layer_score`.
 - `budget_exhausted` is the first thing to check if your score is unexpectedly high — exceeded budget means your predictions were zeroed.
 - `time_exhausted` means the estimator crossed the wall-clock limit configured through `wall_time_limit_s` / `--wall-time-limit`.
 - `residual_wall_time_exhausted` means the non-flopscope portion of execution crossed WhestBench's `residual_wall_time_limit_s` / `--residual-wall-time-limit`.
@@ -143,7 +150,7 @@ discount at 10× so an arbitrarily cheap-but-wrong submission cannot dominate th
 - High `flopscope_backend_time_s` relative to wall: numpy compute is the dominant cost. Healthy for a numpy-heavy estimator.
 - High `flopscope_overhead_time_s` relative to wall: many small ops are paying the per-call dispatch tax. Consider batching with larger numpy primitives.
 - High `residual_wall_time_s` relative to wall: participant Python is the bottleneck (tight loops, per-element attribute access, calls into uninstrumented libraries). This is the bucket future versions of WhestBench will penalise on.
-- `adjusted_final_layer_mse` is the budget-adjusted leaderboard metric and is always ≤ the raw `final_layer_mse`
+- `adjusted_final_layer_score` is the budget-adjusted leaderboard metric and is always ≤ the raw `final_layer_mse`
   mean (the multiplier is at most 1.0 — it equals 1.0 at full budget use or on failures
   and drops to 0.1 at the discount floor — a factor-of-ten cap). A value close to raw `final_layer_mse`
   means you used near-full budget; a value close to one-tenth of raw `final_layer_mse`

@@ -91,13 +91,13 @@ def test_s_m_applies_max_floor_multiplier(ratio: float, expected_multiplier: flo
     expected_s_m = expected_mse_final * expected_multiplier
 
     assert per_mlp["final_layer_mse"] == pytest.approx(expected_mse_final, abs=1e-5)
-    assert per_mlp["adjusted_final_layer_mse"] == pytest.approx(expected_s_m, abs=1e-5)
-    # Aggregate adjusted_final_layer_mse is the budget-adjusted suite mean.
-    assert result["adjusted_final_layer_mse"] == pytest.approx(expected_s_m, abs=1e-5)
+    assert per_mlp["adjusted_final_layer_score"] == pytest.approx(expected_s_m, abs=1e-5)
+    # Aggregate adjusted_final_layer_score is the budget-adjusted suite mean.
+    assert result["adjusted_final_layer_score"] == pytest.approx(expected_s_m, abs=1e-5)
 
 
-def test_adjusted_final_layer_mse_is_budget_adjusted_not_raw_mse():
-    """adjusted_final_layer_mse must be the suite mean of s_m, not raw final_mse."""
+def test_adjusted_final_layer_score_is_budget_adjusted_not_raw_mse():
+    """adjusted_final_layer_score must be the suite mean of s_m, not raw final_mse."""
     flop_budget = 10_000_000_000
     data = _make_data_with_nontrivial_target(flop_budget=flop_budget)
     # Use 5% of the budget → multiplier should hit the 0.1 floor.
@@ -112,7 +112,7 @@ def test_adjusted_final_layer_mse_is_budget_adjusted_not_raw_mse():
     )
     result = evaluate_estimator(estimator, data)
     raw_mse = result["per_mlp"][0]["final_layer_mse"]
-    adjusted = result["adjusted_final_layer_mse"]
+    adjusted = result["adjusted_final_layer_score"]
     # Below the floor → multiplier = 0.1, so adjusted should be raw / 10.
     assert adjusted == pytest.approx(raw_mse * 0.1, abs=1e-5)
     assert adjusted < raw_mse  # Verifies discount is being applied.

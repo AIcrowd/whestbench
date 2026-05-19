@@ -213,8 +213,8 @@ def _score_section(report: dict[str, Any]) -> TableSection:
         # Accuracy metrics — MSE values use scientific notation to handle the
         # wide dynamic range estimators produce (e.g. 5e-6 vs 7e-1).
         [
-            "Adjusted Final-Layer MSE [adjusted_final_layer_mse]",
-            _display_mse_value(results.get("adjusted_final_layer_mse")),
+            "Adjusted Final-Layer Score [adjusted_final_layer_score]",
+            _display_mse_value(results.get("adjusted_final_layer_score")),
             PRIMARY_ANNOTATION,
         ],
         [
@@ -229,13 +229,13 @@ def _score_section(report: dict[str, Any]) -> TableSection:
         ],
         # Range metrics — also MSE-valued, same formatting.
         [
-            "Best MLP [best_mlp_adjusted_final_layer_mse]",
-            _display_mse_value(results.get("best_mlp_adjusted_final_layer_mse")),
+            "Best MLP [best_mlp_adjusted_final_layer_score]",
+            _display_mse_value(results.get("best_mlp_adjusted_final_layer_score")),
             "",
         ],
         [
-            "Worst MLP [worst_mlp_adjusted_final_layer_mse]",
-            _display_mse_value(results.get("worst_mlp_adjusted_final_layer_mse")),
+            "Worst MLP [worst_mlp_adjusted_final_layer_score]",
+            _display_mse_value(results.get("worst_mlp_adjusted_final_layer_score")),
             "",
         ],
         # Efficiency metrics
@@ -256,11 +256,7 @@ def _score_section(report: dict[str, Any]) -> TableSection:
         ],
     ]
 
-    subtitle = (
-        "lower is better; "
-        "adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m); "
-        "failure → × 1.0"
-    )
+    subtitle = "lower is better; s_m = mse × max(0.1, C_m/B_m); failure → × 1.0"
 
     return TableSection(
         title="Final Score",

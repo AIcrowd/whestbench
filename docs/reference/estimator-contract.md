@@ -61,7 +61,7 @@ budget-adjusted score `s_m` is forced to `1.0` (no compute discount). Concretely
 - **Non-finite values** (any `inf` or `NaN`) → same
 - **Subprocess worker hard-killed** (OOM, segfault, timeout, non-zero exit) → same
 
-The scoring loop continues across the remaining MLPs and produces a finite `adjusted_final_layer_mse`.
+The scoring loop continues across the remaining MLPs and produces a finite `adjusted_final_layer_score`.
 Per-MLP diagnostic fields (`error`, `error_code`, `traceback`, `budget_exhausted`,
 `time_exhausted`, `residual_wall_time_exhausted`, `combined_budget_exhausted`) are preserved
 so failures remain debuggable.
