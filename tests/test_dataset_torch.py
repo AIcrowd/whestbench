@@ -247,3 +247,51 @@ def test_create_dataset_torch_statistically_matches_cpu_path(tmp_path: Path) -> 
         atol=tol,
         err_msg="Torch final_means diverge from CPU beyond MC noise tolerance",
     )
+
+
+def test_mini_batch_correctness_uneven_n_mlps(tmp_path: Path) -> None:
+    """n_mlps=7 with mlps_per_batch=3 → 3 batches (3+3+1); all MLPs processed."""
+    out = create_dataset_torch(
+        n_mlps=7,
+        n_samples=64,
+        width=4,
+        depth=2,
+        flop_budget=32,
+        seed=42,
+        output_path=tmp_path / "uneven.npz",
+        device="cpu",
+        mlps_per_batch=3,
+    )
+    bundle = load_dataset(out)
+    assert bundle.n_mlps == 7
+    assert bundle.all_layer_means.shape == (7, 2, 4)
+    assert bundle.final_means.shape == (7, 4)
+    assert len(bundle.avg_variances) == 7
+    assert bundle.sampling_budget_breakdowns is not None
+    assert len(bundle.sampling_budget_breakdowns) == 7
+
+    # Each MLP must have a distinct seed (from the SeedSequence protocol):
+    seeds = [m.seed for m in bundle.mlps]
+    assert len(set(seeds)) == 7
+
+
+def test_mini_batch_equivalence_to_single_batch(tmp_path: Path) -> None:
+    """Splitting into mini-batches must produce the same output as one big batch."""
+    common: dict[str, object] = {
+        "n_mlps": 4,
+        "n_samples": 128,
+        "width": 4,
+        "depth": 2,
+        "flop_budget": 32,
+        "seed": 42,
+        "device": "cpu",
+    }
+    out_big = create_dataset_torch(**common, output_path=tmp_path / "big.npz", mlps_per_batch=4)
+    out_small = create_dataset_torch(**common, output_path=tmp_path / "small.npz", mlps_per_batch=1)
+
+    bundle_big = load_dataset(out_big)
+    bundle_small = load_dataset(out_small)
+
+    np.testing.assert_array_equal(bundle_big.all_layer_means, bundle_small.all_layer_means)
+    np.testing.assert_array_equal(bundle_big.final_means, bundle_small.final_means)
+    assert bundle_big.avg_variances == bundle_small.avg_variances
