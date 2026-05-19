@@ -157,7 +157,7 @@ Key options:
 - `--json` — alias for `--format json`
 - `--debug`
 
-See [Use Evaluation Datasets](../how-to/use-evaluation-datasets.md) for usage patterns.
+See [Use Evaluation Datasets](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/use-evaluation-datasets.md) (in the starter kit) for usage patterns.
 
 ## `whest package`
 
@@ -217,5 +217,5 @@ whest profile-simulation --preset exhaustive --output profile_results.json
 ## ➡️ Next step
 
 - [Score Report Fields](./score-report-fields.md)
-- [Inspect and Traverse MLP Structure](../how-to/inspect-mlp-structure.md)
-- [Validate, Run, and Package](../how-to/validate-run-package.md)
+- [Inspect and Traverse MLP Structure](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/inspect-mlp-structure.md) (in the starter kit)
+- [Validate, Run, and Package](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/validate-run-package.md) (in the starter kit)

@@ -33,7 +33,7 @@ Optional lifecycle hooks:
 | `MLP` | `weights` | Ordered weight matrices, each `(width, width)` |
 | `MLP` | `seed` | Per-MLP grader-supplied seed; use this to seed estimator-internal randomness for reproducibility under regrade. |
 
-For traversal examples, see [Inspect and Traverse MLP Structure](../how-to/inspect-mlp-structure.md).
+For traversal examples, see [Inspect and Traverse MLP Structure](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/inspect-mlp-structure.md) (in the starter kit).
 
 ## Output requirements per `predict` call
 
@@ -142,5 +142,5 @@ own seed) while `--seed` controls `ctx.seed` only. See
 
 ## Next step
 
-- [Write an Estimator](../how-to/write-an-estimator.md)
-- [Common Participant Errors](../troubleshooting/common-participant-errors.md)
+- [Write an Estimator](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/write-an-estimator.md) (in the starter kit)
+- [Common Participant Errors](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/troubleshooting/common-participant-errors.md) (in the starter kit)
