@@ -186,5 +186,5 @@ The v2.0 format adds a per-MLP `seed` (stored as the `mlp_seeds` array in the `.
 
 ## Next step
 
-- [Scoring Model](../concepts/scoring-model.md)
 - [CLI Reference](./cli-reference.md)
+- [Scoring Model](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/concepts/scoring-model.md) (in the starter kit)
