@@ -46,18 +46,21 @@ def _sample_report(
             "flop_budget": 100,
         },
         "results": {
-            "primary_score": 0.123,
-            "secondary_score": 0.456,
+            "adjusted_final_layer_score": 0.123,
+            "final_layer_mse": 0.115,
+            "all_layers_mse": 0.456,
             "per_mlp": [
                 {
                     "mlp_index": 0,
-                    "primary_score": 0.1,
-                    "secondary_score": 0.4,
+                    "final_layer_mse": 0.1,
+                    "all_layers_mse": 0.4,
+                    "adjusted_final_layer_score": 0.1,
                 },
                 {
                     "mlp_index": 1,
-                    "primary_score": 0.146,
-                    "secondary_score": 0.512,
+                    "final_layer_mse": 0.146,
+                    "all_layers_mse": 0.512,
+                    "adjusted_final_layer_score": 0.146,
                 },
             ],
         },
@@ -348,8 +351,8 @@ def test_render_human_mode_matches_main_style_score_and_breakdown_information() 
     )
     results = cast("dict[str, Any]", report["results"])
     results["per_mlp"] = [
-        {"mlp_index": 0, "final_mse": 0.1},
-        {"mlp_index": 1, "final_mse": 0.146},
+        {"mlp_index": 0, "adjusted_final_layer_score": 0.1},
+        {"mlp_index": 1, "adjusted_final_layer_score": 0.146},
     ]
 
     rendered = render_human_report(report)
@@ -364,11 +367,12 @@ def test_render_human_mode_matches_main_style_score_and_breakdown_information() 
     assert "Flopscope Overhead [flopscope_overhead_time_s]" in plain
     assert "Residual Wall Time [residual_wall_time_s]" in plain
     assert "aggregated across all evaluated MLPs" in plain
-    assert "Primary Score [primary_score]" in plain
-    assert "Secondary Score [secondary_score]" in plain
-    assert "Best MLP Score [best_mlp_score]" in plain
-    assert "Worst MLP Score [worst_mlp_score]" in plain
-    assert "lower MSE is better; primary score = mean across MLPs of final-layer MSE" in plain
+    assert "Adjusted Final-Layer Score" in plain
+    assert "adjusted_final_layer_score" in plain
+    assert "All-Layers MSE [all_layers_mse]" in plain
+    assert "best_mlp_adjusted_final_layer_score" in plain
+    assert "worst_mlp_adjusted_final_layer_score" in plain
+    assert "max(0.1, effective_compute/flop_budget)" in plain
     assert "Estimator FLOPs" not in plain
 
 
@@ -486,8 +490,8 @@ def test_render_human_mode_includes_profile_section_when_available() -> None:
 def test_json_mode_schema_keeps_results_fields() -> None:
     payload = json.loads(render_agent_report(_sample_report(include_profile=False)))
     results = payload["results"]
-    assert "primary_score" in results
-    assert "secondary_score" in results
+    assert "adjusted_final_layer_score" in results
+    assert "all_layers_mse" in results
 
 
 def test_profile_summary_tables_are_center_wrapped() -> None:

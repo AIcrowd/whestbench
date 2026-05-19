@@ -20,7 +20,7 @@ from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_c
 
 SCHEMA_VERSION = "2.2"
 SEED_PROTOCOL_NAME = "whestbench_seedsequence_hierarchy"
-SEED_PROTOCOL_VERSION = "1.0"
+SEED_PROTOCOL_VERSION = "2.0"
 
 
 def dataset_file_hash(path: "Path | str") -> str:
@@ -63,12 +63,13 @@ def create_dataset(
     seed_sequence = (
         fnp.random.SeedSequence() if seed is None else fnp.random.SeedSequence(int(seed))
     )
-    stream_seed = seed_sequence.spawn(2 * n_mlps)
+    stream_seed = seed_sequence.spawn(3 * n_mlps)
 
     mlps: List[MLP] = []
     for i in range(n_mlps):
-        weight_stream = fnp.random.default_rng(stream_seed[2 * i])
-        mlps.append(sample_mlp(width, depth, weight_stream))
+        weight_stream = fnp.random.default_rng(stream_seed[3 * i])
+        estimator_seed_i = int(stream_seed[3 * i + 2].generate_state(1)[0])
+        mlps.append(sample_mlp(width, depth, weight_stream, seed=estimator_seed_i))
         if progress is not None:
             progress({"phase": "generating", "completed": i + 1, "total": n_mlps})
 
@@ -83,7 +84,7 @@ def create_dataset(
     chunks_per_mlp = sample_layer_statistics_chunk_count(width, n_samples)
     total_sampling_chunks = n_mlps * chunks_per_mlp
     for i, mlp in enumerate(mlps):
-        sample_stream = fnp.random.default_rng(stream_seed[2 * i + 1])
+        sample_stream = fnp.random.default_rng(stream_seed[3 * i + 1])
 
         def _on_sampling_chunk(
             event: Dict[str, Any], *, mlp_index: int = i + 1, chunk_offset: int = i * chunks_per_mlp
@@ -146,6 +147,8 @@ def create_dataset(
         "hardware": collect_hardware_fingerprint(),
     }
 
+    mlp_seeds = np.array([m.seed for m in mlps], dtype=np.int64)
+
     np.savez(
         output_path,
         metadata=np.array(json.dumps(metadata)),
@@ -154,6 +157,7 @@ def create_dataset(
         final_means=final_means,
         avg_variances=np.array(avg_variances, dtype=np.float64),
         sampling_budget_breakdowns=np.array(json.dumps(sampling_budget_breakdowns)),
+        mlp_seeds=mlp_seeds,
     )
     return output_path
 
@@ -165,6 +169,15 @@ def load_dataset(path: "Path | str") -> DatasetBundle:
 
     if "schema_version" not in metadata:
         raise ValueError("Invalid dataset: missing schema_version.")
+
+    seed_proto = metadata.get("seed_protocol") or {}
+    protocol_version = str(seed_proto.get("version", "")) if isinstance(seed_proto, dict) else ""
+    if protocol_version and protocol_version != SEED_PROTOCOL_VERSION:
+        raise ValueError(
+            f"Incompatible dataset seed_protocol version: file has {protocol_version!r}, "
+            f"this whestbench requires {SEED_PROTOCOL_VERSION!r}. "
+            f"Re-bake the dataset with `whest create-dataset`."
+        )
 
     weights_array = data["weights"].astype(np.float32)
     all_layer_means = data["all_layer_means"].astype(np.float32)
@@ -182,10 +195,21 @@ def load_dataset(path: "Path | str") -> DatasetBundle:
     depth = int(weights_array.shape[1])
     width = int(weights_array.shape[2])
 
+    if "mlp_seeds" in data.files:
+        mlp_seeds = data["mlp_seeds"].astype(np.int64).tolist()
+    elif protocol_version == SEED_PROTOCOL_VERSION:
+        raise ValueError(
+            "Dataset is at SEED_PROTOCOL_VERSION='2.0' but missing 'mlp_seeds' array; "
+            "the file appears corrupted. Re-bake with `whest create-dataset`."
+        )
+    else:
+        # Legacy datasets pre-dating seed_protocol carry no per-MLP seeds; default to 0.
+        mlp_seeds = [0] * n_mlps
+
     mlps: List[MLP] = []
     for i in range(n_mlps):
         layer_weights = [fnp.array(weights_array[i, j]) for j in range(depth)]
-        mlp = MLP(width=width, depth=depth, weights=layer_weights)
+        mlp = MLP(width=width, depth=depth, weights=layer_weights, seed=int(mlp_seeds[i]))
         mlp.validate()
         mlps.append(mlp)
 

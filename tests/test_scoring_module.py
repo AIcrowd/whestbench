@@ -170,10 +170,10 @@ def test_evaluate_estimator_with_zeros_estimator() -> None:
     data = make_contest(spec)
     result = evaluate_estimator(ZerosEstimator(), data)
     assert isinstance(result, dict)
-    assert "primary_score" in result
-    assert "secondary_score" in result
-    assert fnp.isfinite(result["primary_score"])
-    assert fnp.isfinite(result["secondary_score"])
+    assert "adjusted_final_layer_score" in result
+    assert "all_layers_mse" in result
+    assert fnp.isfinite(result["adjusted_final_layer_score"])
+    assert fnp.isfinite(result["all_layers_mse"])
 
 
 def test_validate_predictions_rejects_wrong_shape() -> None:
@@ -192,9 +192,11 @@ def test_validate_predictions_rejects_nonfinite() -> None:
         validate_predictions(arr, depth=2, width=4)
 
 
-def test_contest_spec_time_limits_default_none() -> None:
+def test_contest_spec_time_limits_defaults() -> None:
+    """wall_time_limit_s defaults to 60.0 (operational backstop matching Phase 1 grader cap);
+    residual_wall_time_limit_s defaults to None (no engine-side cap)."""
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=1000)
-    assert spec.wall_time_limit_s is None
+    assert spec.wall_time_limit_s == 60.0
     assert spec.residual_wall_time_limit_s is None
 
 
@@ -817,7 +819,12 @@ def test_evaluate_estimator_captures_traceback_and_error_code() -> None:
         assert isinstance(entry["traceback"], str)
         assert "boom from predict" in entry["traceback"]
         assert "RuntimeError" in entry["traceback"]
-    assert result["primary_score"] == float("inf")
+        # Failure routes to zero-prediction MSE * 1.0 (finite, never inf).
+        assert "adjusted_final_layer_score" in entry
+        assert entry["adjusted_final_layer_score"] != float("inf")
+    # Suite mean must be finite; failures no longer propagate inf.
+    assert result["adjusted_final_layer_score"] != float("inf")
+    assert result["adjusted_final_layer_score"] > 0.0
 
 
 def test_evaluate_estimator_records_validation_error_details() -> None:
@@ -871,3 +878,76 @@ def test_evaluate_estimator_fail_fast_re_raises() -> None:
 
     with pytest.raises(RuntimeError, match="abort here"):
         evaluate_estimator(estimator, data, fail_fast=True)
+
+
+def test_suite_result_uses_new_score_key_names():
+    """Suite-level result must use adjusted_final_layer_score / final_layer_mse / all_layers_mse."""
+    import flopscope.numpy as fnp
+
+    from whestbench.domain import MLP
+    from whestbench.scoring import ContestData, ContestSpec, evaluate_estimator
+    from whestbench.sdk import BaseEstimator
+
+    class _Z(BaseEstimator):
+        def predict(self, mlp, budget):
+            return fnp.zeros((mlp.depth, mlp.width))
+
+    width, depth = 4, 2
+    weights = [fnp.array(fnp.zeros((width, width), dtype=fnp.float32)) for _ in range(depth)]
+    mlp = MLP(width=width, depth=depth, weights=weights)
+    final_t = fnp.array([1.0, 2.0, 3.0, 4.0], dtype=fnp.float32)
+    all_t = fnp.array([[0.5, 1.0, 1.5, 2.0], [1.0, 2.0, 3.0, 4.0]], dtype=fnp.float32)
+    data = ContestData(
+        spec=ContestSpec(
+            width=width, depth=depth, n_mlps=1, flop_budget=10_000_000_000, ground_truth_samples=100
+        ),
+        mlps=[mlp],
+        all_layer_targets=[all_t],
+        final_targets=[final_t],
+        avg_variances=[0.0],
+    )
+    result = evaluate_estimator(_Z(), data)
+    # New keys present
+    assert "adjusted_final_layer_score" in result
+    assert "final_layer_mse" in result
+    assert "all_layers_mse" in result
+    # Old keys absent
+    assert "primary_score" not in result
+    assert "secondary_score" not in result
+
+
+def test_per_mlp_record_uses_new_score_key_names():
+    """Per-MLP record must use the new key names: final_layer_mse, all_layers_mse, adjusted_final_layer_score."""
+    import flopscope.numpy as fnp
+
+    from whestbench.domain import MLP
+    from whestbench.scoring import ContestData, ContestSpec, evaluate_estimator
+    from whestbench.sdk import BaseEstimator
+
+    class _Z(BaseEstimator):
+        def predict(self, mlp, budget):
+            return fnp.zeros((mlp.depth, mlp.width))
+
+    width, depth = 4, 2
+    weights = [fnp.array(fnp.zeros((width, width), dtype=fnp.float32)) for _ in range(depth)]
+    mlp = MLP(width=width, depth=depth, weights=weights)
+    target = fnp.zeros((depth, width), dtype=fnp.float32)
+    data = ContestData(
+        spec=ContestSpec(
+            width=width, depth=depth, n_mlps=1, flop_budget=10_000_000_000, ground_truth_samples=100
+        ),
+        mlps=[mlp],
+        all_layer_targets=[target],
+        final_targets=[target[-1]],
+        avg_variances=[0.0],
+    )
+    result = evaluate_estimator(_Z(), data)
+    pm = result["per_mlp"][0]
+    # New keys present
+    assert "final_layer_mse" in pm
+    assert "all_layers_mse" in pm
+    assert "adjusted_final_layer_score" in pm
+    # Old keys absent
+    assert "final_mse" not in pm
+    assert "all_layer_mse" not in pm
+    assert "budget_adjusted_score" not in pm

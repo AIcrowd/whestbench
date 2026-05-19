@@ -10,6 +10,11 @@ where mu_pre = w^T mu, sigma_pre^2 = w^T Sigma w, Phi is the normal CDF,
 and phi is the normal PDF.
 """
 
+# Reference baselines in this module are deterministic given the MLP weights
+# and budget — they do not consume randomness in predict(). Estimators that
+# DO use Monte Carlo sampling or other randomness should seed from `mlp.seed`
+# to ensure their submission reproduces under the grader's regrade.
+
 from __future__ import annotations
 
 from typing import Optional

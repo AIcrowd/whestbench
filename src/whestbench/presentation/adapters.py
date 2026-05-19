@@ -95,6 +95,22 @@ def _display_metric_value(value: Any, *, decimals: int = 8) -> str:
         return str(value)
 
 
+def _display_mse_value(value: Any) -> str:
+    """Format an MSE-style value in scientific notation (e.g. 3.14e-05).
+
+    MSE values typically span many orders of magnitude across estimators and
+    are easier to compare in scientific form. Three significant figures in
+    the mantissa is enough to distinguish leaderboard-relevant differences
+    without taking too much horizontal space.
+    """
+    if value in {None, ""}:
+        return "n/a"
+    try:
+        return f"{float(value):.2e}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
 def _run_context_sections(report: dict[str, Any]) -> list[KeyValueSection]:
     run_config = report.get("run_config")
     if not isinstance(run_config, dict):
@@ -182,33 +198,71 @@ def _score_section(report: dict[str, Any]) -> TableSection:
     results = report.get("results")
     if not isinstance(results, dict):
         results = {}
+
+    # The note column is empty for every row except the primary one. Putting
+    # the "← primary score" annotation in its own column keeps the value
+    # column right-aligned across all rows (otherwise the longer "value +
+    # annotation" cell on the primary row would push the value leftward).
+    PRIMARY_ANNOTATION = "← primary score"
+
+    per_mlp_raw = results.get("per_mlp")
+    n_mlps = len(per_mlp_raw) if isinstance(per_mlp_raw, list) else 0
+    n_failed = int(results.get("n_failed_mlps") or 0)
+
     rows = [
-        ["Primary Score [primary_score]", _display_metric_value(results.get("primary_score"))],
+        # Accuracy metrics — MSE values use scientific notation to handle the
+        # wide dynamic range estimators produce (e.g. 5e-6 vs 7e-1).
         [
-            "Secondary Score [secondary_score]",
-            _display_metric_value(results.get("secondary_score")),
+            "Adjusted Final-Layer Score [adjusted_final_layer_score]",
+            _display_mse_value(results.get("adjusted_final_layer_score")),
+            PRIMARY_ANNOTATION,
+        ],
+        [
+            "Raw Final-Layer MSE [final_layer_mse]",
+            _display_mse_value(results.get("final_layer_mse")),
+            "",
+        ],
+        [
+            "All-Layers MSE [all_layers_mse]",
+            _display_mse_value(results.get("all_layers_mse")),
+            "",
+        ],
+        # Range metrics — also MSE-valued, same formatting.
+        [
+            "Best MLP [best_mlp_adjusted_final_layer_score]",
+            _display_mse_value(results.get("best_mlp_adjusted_final_layer_score")),
+            "",
+        ],
+        [
+            "Worst MLP [worst_mlp_adjusted_final_layer_score]",
+            _display_mse_value(results.get("worst_mlp_adjusted_final_layer_score")),
+            "",
+        ],
+        # Efficiency metrics
+        [
+            "Mean Score Multiplier [mean_score_multiplier]",
+            _display_metric_value(results.get("mean_score_multiplier")),
+            "",
+        ],
+        [
+            "Mean Compute Utilization [mean_compute_utilization]",
+            _display_metric_value(results.get("mean_compute_utilization")),
+            "",
+        ],
+        [
+            "Failed MLPs [n_failed_mlps]",
+            f"{n_failed} of {n_mlps}",
+            "",
         ],
     ]
-    per_mlp = results.get("per_mlp")
-    if isinstance(per_mlp, list) and per_mlp:
-        mlp_primaries = [
-            as_float(entry.get("final_mse", 0.0)) for entry in per_mlp if isinstance(entry, dict)
-        ]
-        if mlp_primaries:
-            rows.extend(
-                [
-                    ["Best MLP Score [best_mlp_score]", _display_metric_value(min(mlp_primaries))],
-                    [
-                        "Worst MLP Score [worst_mlp_score]",
-                        _display_metric_value(max(mlp_primaries)),
-                    ],
-                ]
-            )
+
+    subtitle = "per-MLP score = final_layer_mse × max(0.1, effective_compute/flop_budget)"
+
     return TableSection(
         title="Final Score",
-        columns=["metric", "value"],
+        columns=["metric", "value", "note"],
         rows=rows,
-        subtitle="lower MSE is better; primary score = mean across MLPs of final-layer MSE",
+        subtitle=subtitle,
         align_center=True,
         border_style="bright_cyan",
     )
@@ -336,10 +390,20 @@ def _breakdown_section(
     over_budget_rows: list[BudgetBreakdownOverBudgetRow] = []
     over_budget_summary: str | None = None
     over_budget_truncated_remainder: int | None = None
+    effective_compute_value: str | None = None
     if breakdown_key == "estimator":
+        per_mlp_list = results.get("per_mlp")
+        if isinstance(per_mlp_list, list):
+            cms = [
+                as_float(e.get("effective_compute", 0.0))
+                for e in per_mlp_list
+                if isinstance(e, dict)
+            ]
+            if cms:
+                effective_compute_value = fmt_flops(sum(cms))
         state = compute_gauge_state(report)
         gauge = BudgetBreakdownGauge(
-            label="Estimator FLOPs",
+            label="Effective Compute",
             bar=gauge_bar_fragment(state.mean_utilization),
             overflow=state.state_name == "catastrophic",
             percent_of_budget=f"{int(state.mean_utilization * 100)}%",
@@ -352,6 +416,9 @@ def _breakdown_section(
         over_budget_rows = [
             BudgetBreakdownOverBudgetRow(
                 mlp_index=row.mlp_index,
+                reason=row.reason,
+                metric_name=row.metric_name,
+                metric_value=row.metric_value,
                 flops_used=fmt_flops(row.flops_used),
                 percent_of_budget=(
                     f"{row.pct_of_budget}%" if row.pct_of_budget is not None else None
@@ -362,16 +429,24 @@ def _breakdown_section(
         if selection.is_truncated:
             over_budget_truncated_remainder = selection.busted_count - len(selection.rows)
         if selection.busted_count > 0:
+            rc = selection.reason_counts
+            parts = [
+                f"{rc['COMBINED']} combined",
+                f"{rc['BUDGET']} FLOP",
+                f"{rc['RESIDUAL']} residual",
+                f"{rc['TIME']} time",
+                f"{rc['ERROR']} error",
+            ]
             over_budget_summary = (
-                f"All {selection.n_mlps} MLPs exceeded the per-MLP FLOP cap — predictions entirely zeroed"
-                if selection.is_all_busted
-                else f"{selection.busted_count} of {selection.n_mlps} MLPs exceeded the per-MLP FLOP cap"
+                f"{selection.busted_count} of {selection.n_mlps} MLPs failed ({', '.join(parts)}). "
+                f"All counted as failures."
             )
 
     return BudgetBreakdownSection(
         title=title,
         available=True,
         total_flops=fmt_flops(total_flops),
+        effective_compute=effective_compute_value,
         flopscope_backend_time=_display_time_seconds(
             breakdown.get("flopscope_backend_time_s", 0.0)
         ),

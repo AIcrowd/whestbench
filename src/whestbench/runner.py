@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -31,6 +32,8 @@ try:
 except ImportError:  # pragma: no cover
     psutil = None
 
+_LOGGER = logging.getLogger(__name__)
+
 RunnerStage = Literal["load", "setup", "predict", "validate", "package", "submit"]
 
 
@@ -47,7 +50,7 @@ class ResourceLimits:
     memory_limit_mb: int
     flop_budget: int
     cpu_time_limit_s: Optional[float] = None
-    wall_time_limit_s: Optional[float] = None
+    wall_time_limit_s: Optional[float] = 60.0
     residual_wall_time_limit_s: Optional[float] = None
 
     def __post_init__(self) -> None:
@@ -111,6 +114,7 @@ def _mlp_to_payload(mlp: MLP) -> Dict[str, Any]:
         "width": int(mlp.width),
         "depth": int(mlp.depth),
         "weights": [w.tolist() for w in mlp.weights],
+        "seed": int(mlp.seed),
     }
 
 
@@ -131,6 +135,12 @@ class LocalRunner:
         self.close()
         self._limits = limits
         self._context = context
+        if limits.memory_limit_mb > 0:
+            _LOGGER.warning(
+                "memory_limit_mb=%d is advisory in --runner local: enforcement requires "
+                "--runner subprocess (uses RLIMIT_AS) or external sandboxing (cgroups).",
+                limits.memory_limit_mb,
+            )
         start_wall = time.time()
         estimator, _ = load_estimator_from_path(
             entrypoint.file_path, class_name=entrypoint.class_name
@@ -262,6 +272,7 @@ class SubprocessRunner:
                     "scratch_dir": context.scratch_dir,
                 },
                 "wall_time_limit_s": limits.wall_time_limit_s,
+                "memory_limit_mb": limits.memory_limit_mb,
             }
         )
         try:
