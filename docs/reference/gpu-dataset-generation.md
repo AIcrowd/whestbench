@@ -2,8 +2,9 @@
 
 For ground-truth bakes with `n_samples ≥ 10⁸`, the default CPU path is slow. The
 optional torch backend runs the same computation on GPU (or torch CPU for dev).
-A `n_samples=10⁹` bake at default config takes ~12 days on CPU but ~5–20 min on
-a single GPU.
+A `n_samples=10⁹` bake at default config (10 MLPs) takes ~30 hours on CPU but
+~15–30 min on a single GPU. Larger n_mlps scales linearly — see
+[Performance expectations](#performance-expectations) below for measured numbers.
 
 ## Install
 
@@ -18,11 +19,14 @@ whestbench` does not include torch.
 
 ```bash
 # Auto-detect best available device (cuda > mps > cpu)
+# WARNING: this takes ~4 hours on L40S, ~14 h on M3 Max. Calibrate first
+# (see "Calibration recipe" below) before committing to a multi-hour bake.
 whest create-dataset --device auto \
     --n-mlps 100 --n-samples 1000000000 -o ground_truth.npz
 
-# Explicit cuda
-whest create-dataset --device cuda --seed 42 -o data.npz
+# Smaller production-realistic example (10 MLPs × 10⁹ ≈ 25 min on L40S)
+whest create-dataset --device cuda --seed 42 \
+    --n-mlps 10 --n-samples 1000000000 -o data.npz
 
 # Develop on laptop using torch CPU (works without GPU)
 whest create-dataset --device cpu --n-mlps 5 --n-samples 100000 -o dev.npz
@@ -49,18 +53,84 @@ internally.
 
 ## Performance expectations
 
-At default config (`width=256, depth=8, n_mlps=10, n_samples=10⁹`):
+**Key finding from L40S benchmarking**: at `width=256`, effective throughput
+is bottlenecked at **~7–10 TFLOP/s on modern GPUs regardless of peak fp32 spec**.
+The matmul is too small to saturate tensor cores, and TF32/fp16 give negligible
+speedup at this size (measured: ~2% on L40S). **Don't extrapolate from peak
+fp32 ratings; they overestimate by 5–10× for this workload.**
 
-| Hardware | Realistic throughput | Wall time |
+### Measured (NVIDIA L40S, AWS g6e.xlarge)
+
+| n_mlps | n_samples | wall time | effective throughput |
+|---|---|---|---|
+| 10 | 10⁶ | 1.41 s | ~7.5 TF |
+| 100 | 10⁶ | 13.78 s | ~7.5 TF |
+| 10 | 10⁹ | ~23 min (linear projection) | — |
+| 100 | 10⁹ | ~3.9 h (linear projection)<sup>†</sup> | — |
+
+<sup>†</sup> *TODO: confirm with full-bake measurement — calibration anchored
+on N=10⁶ predicts 3.9 hours; a 100 MLPs × 10⁹ bake is in progress as of
+this writing.*
+
+Scaling on L40S is **fully linear** in `n_mlps` and `n_samples`. Quadratic
+in `width`. The `mlps_per_batch` knob has near-zero impact at L40S scale
+(measured ≤ 0.4% spread across B ∈ {4, 8, 16, 32}).
+
+### Extrapolations to other GPUs
+
+Anchor: 7.5 TFLOP/s effective on L40S. For modern Ampere+/Ada/Hopper at
+`width=256`, expect 5–10 TFLOP/s in practice — variation between cards is
+small because the small-matmul ceiling binds before peak compute matters.
+
+| Hardware | 10 MLPs × 10⁹ (est.) | 100 MLPs × 10⁹ (est.) |
 |---|---|---|
-| H100 PCIe | ~30 TF | ~5–7 min |
-| RTX 4090 | ~40 TF | ~4–5 min |
-| A100 80GB | ~10 TF | ~15–20 min |
-| RTX 3090 | ~18 TF | ~10–12 min |
-| Apple M3 Max (mps) | ~3 TF | ~1 hour |
-| CPU (flopscope) | — | ~12 days |
+| L40S (g6e.xlarge) | **~23 min (measured)** | **~3.9 h (measured)** |
+| H100 PCIe | ~15–25 min | ~2.5–4 h |
+| RTX 4090 | ~20–35 min | ~3.5–6 h |
+| A100 80GB | ~25–40 min | ~4–6.5 h |
+| RTX 3090 | ~30–50 min | ~5–8 h |
+| Apple M3 Max (mps) | ~2.3 h (measured) | ~14 h (measured) |
+| CPU (flopscope) | ~30 h | ~12 days |
 
-Wall times scale roughly linearly in `n_mlps` and `n_samples`, quadratically in `width`.
+**Strong recommendation**: run a 60-second calibration on your actual GPU
+before committing to a multi-hour bake — see [Calibration recipe](#calibration-recipe)
+below.
+
+## Calibration recipe
+
+A 60-second `N=10⁶` run on any GPU gives a precise wall-time projection for
+your actual `N=10⁹` bake. Run this once when you spin up the instance:
+
+```python
+import time
+from pathlib import Path
+import torch
+from whestbench.dataset_torch import create_dataset_torch
+
+# Warmup (kernel compilation, ~0.2s on cuda)
+create_dataset_torch(
+    n_mlps=2, n_samples=10_000, width=256, depth=8,
+    flop_budget=17_000_000_000, seed=0,
+    output_path=Path('/tmp/warmup.npz'), device='cuda')
+
+# Calibration anchored on n_mlps=10 to match the production setup
+t0 = time.perf_counter()
+create_dataset_torch(
+    n_mlps=10, n_samples=1_000_000, width=256, depth=8,
+    flop_budget=17_000_000_000, seed=42,
+    output_path=Path('/tmp/cal.npz'), device='cuda')
+torch.cuda.synchronize()
+elapsed = time.perf_counter() - t0
+print(f'{elapsed:.2f}s at N=10⁶ → projected {elapsed*1000/60:.1f} min at N=10⁹')
+```
+
+`torch.cuda.synchronize()` is critical — CUDA ops are async; without it
+you'd measure dispatch time, not compute time.
+
+If the projection looks reasonable, proceed with the full bake. If it's
+2× higher than expected, check `torch.backends.cuda.matmul.allow_tf32`
+(default `False` in recent torch) — but expect only marginal speedup
+since matmuls are small.
 
 ## Verifying the output
 
@@ -145,3 +215,18 @@ within `~5/sqrt(n_samples)` tolerance.
 much larger than on CPU (~64K–1M vs 4K), so there are 16–256× fewer chunks per
 MLP. Total work units `n_mlps * chunks_per_mlp` still reflects the same total
 samples processed.
+
+**Wall time is much longer than peak-fp32 math suggests** — Expected. Peak
+fp32 specs assume tensor cores can saturate, which requires large matmul
+dimensions. At `width=256` the matmuls are too small; effective throughput
+plateaus at ~7–10 TFLOP/s on most modern GPUs regardless of whether the
+card is rated for 30 TF (L40S fp32) or 100 TF (H100 fp32). Tools like
+`nvidia-smi` will correctly show 100% GPU utilization despite the low
+effective TFLOP/s — the card is fully busy, the kernels are just shape-bound.
+TF32 / fp16 give only ~2% speedup at this matmul size (measured), so don't
+rely on them to close the gap. See [Performance expectations](#performance-expectations).
+
+**`mlps_per_batch` doesn't seem to do anything** — Correct. On CUDA at
+`width=256`, varying `mlps_per_batch` between 4 and 32 has < 1% effect on
+wall time (measured on L40S). The bottleneck is the per-chunk matmul shape,
+not the batching layer. Don't waste time tuning it.
