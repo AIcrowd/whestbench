@@ -24,22 +24,28 @@ from .models import (
 
 
 def make_keyed_label(human: str, code: str, style: str) -> Text:
+    # The bracketed [code] tag is metadata subordinate to the human label.
+    # `dim` (SGR 2 faint) reduces the terminal foreground colour rather than
+    # using a fixed palette slot, so it stays legible against both light and
+    # dark backgrounds.
     text = Text()
     text.append(human + " ", style=style)
-    text.append(f"[{code}]", style="bold bright_white")
+    text.append(f"[{code}]", style="dim")
     return text
 
 
 def _score_value_markup(metric: str, value: str) -> str:
+    # Only the rows with semantic colour (accuracy / range) carry markup. The
+    # efficiency rows (multiplier / utilization / failed) render in terminal
+    # default foreground so they stay legible on both light and dark themes —
+    # `bright_white` is a fixed palette slot that becomes invisible on light
+    # backgrounds.
     value_styles = {
         "Adjusted Final-Layer Score [adjusted_final_layer_score]": "bold bright_green",
         "Raw Final-Layer MSE [final_layer_mse]": "cyan",
         "All-Layers MSE [all_layers_mse]": "cyan",
         "Best MLP [best_mlp_adjusted_final_layer_score]": "green",
         "Worst MLP [worst_mlp_adjusted_final_layer_score]": "yellow",
-        "Mean Score Multiplier [mean_score_multiplier]": "bright_white",
-        "Mean Compute Utilization [mean_compute_utilization]": "bright_white",
-        "Failed MLPs [n_failed_mlps]": "bright_white",
     }
     style = value_styles.get(metric)
     if style is None:
@@ -48,7 +54,7 @@ def _score_value_markup(metric: str, value: str) -> str:
 
 
 def build_score_block(section: TableSection) -> Panel:
-    table = Table(box=box.SIMPLE_HEAVY, header_style="bold bright_white")
+    table = Table(box=box.SIMPLE_HEAVY, header_style="bold")
     table.add_column("metric")
     table.add_column("value", justify="right")
     # Note column carries the "← primary score" annotation on the adjusted row;
@@ -75,14 +81,12 @@ def build_score_block(section: TableSection) -> Panel:
             "Worst MLP", "worst_mlp_adjusted_final_layer_score", "bold yellow"
         ),
         "Mean Score Multiplier [mean_score_multiplier]": make_keyed_label(
-            "Mean Score Multiplier", "mean_score_multiplier", "bold bright_white"
+            "Mean Score Multiplier", "mean_score_multiplier", "bold"
         ),
         "Mean Compute Utilization [mean_compute_utilization]": make_keyed_label(
-            "Mean Compute Utilization", "mean_compute_utilization", "bold bright_white"
+            "Mean Compute Utilization", "mean_compute_utilization", "bold"
         ),
-        "Failed MLPs [n_failed_mlps]": make_keyed_label(
-            "Failed MLPs", "n_failed_mlps", "bold bright_white"
-        ),
+        "Failed MLPs [n_failed_mlps]": make_keyed_label("Failed MLPs", "n_failed_mlps", "bold"),
     }
 
     # Section dividers: insert visual separators after row 3 (accuracy → range)
@@ -162,14 +166,14 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
         body.append(Align.center(summary))
 
     if section.namespace_rows:
-        table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold bright_white")
+        table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold")
         max_namespace_width = max(
             len("namespace"),
             *(len(row.namespace) for row in section.namespace_rows),
         )
         table.add_column(
             "namespace",
-            style="bold bright_white",
+            style="bold",
             no_wrap=True,
             min_width=max_namespace_width,
         )
@@ -190,7 +194,7 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
         body.append(Align.center(table))
 
     if section.over_budget_rows:
-        ob_table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold bright_white")
+        ob_table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold")
         ob_table.add_column("MLP")
         ob_table.add_column("reason")
         ob_table.add_column("value")
