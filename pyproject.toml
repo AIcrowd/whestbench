@@ -24,6 +24,9 @@ dependencies = [
 whest = "whestbench.cli:main"
 whestbench = "whestbench.cli:main"
 
+[project.optional-dependencies]
+gpu = ["torch>=2.1"]
+
 [dependency-groups]
 dev = [
     "pytest>=8.2.0",
