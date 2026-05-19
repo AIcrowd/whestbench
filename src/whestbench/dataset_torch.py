@@ -181,7 +181,7 @@ def create_dataset_torch(
 
         layer_means_np = layer_means_batch.detach().to("cpu").numpy().astype(np.float32)
         final_means_np = final_means_batch.detach().to("cpu").numpy().astype(np.float32)
-        avg_var_np = avg_var_batch.detach().to("cpu").numpy()
+        avg_var_np = avg_var_batch.detach().to("cpu").numpy().astype(np.float64)
 
         for b in range(batch_size):
             all_means_list.append(layer_means_np[b])
