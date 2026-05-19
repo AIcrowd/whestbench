@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import os
 import sys
@@ -89,7 +90,7 @@ def _default_contest_spec() -> ContestSpec:
         width=256,
         depth=8,
         n_mlps=10,
-        flop_budget=17_000_000_000,
+        flop_budget=68_000_000_000,
         ground_truth_samples=100 * 100 * 256,
     )
 
@@ -168,7 +169,7 @@ def _default_resource_limits() -> ResourceLimits:
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
         memory_limit_mb=65_536,
-        flop_budget=17_000_000_000,
+        flop_budget=68_000_000_000,
         cpu_time_limit_s=None,
         wall_time_limit_s=60.0,
     )
@@ -216,7 +217,7 @@ def run_default_score(profile: bool = False) -> "Any":
 def _smoke_test_contest_spec() -> ContestSpec:
     """Lightweight spec for the smoke test.
 
-    Matches the competition shape (width=256, depth=8, flop_budget=1.7e10
+    Matches the competition shape (width=256, depth=8, flop_budget=6.8e10
     per ContestSpec defaults) so participants exercising the smoke path
     hit the same code paths as the real grader. Only n_mlps and
     ground_truth_samples are scaled down so the smoke runs in well under
@@ -230,7 +231,7 @@ def _smoke_test_contest_spec() -> ContestSpec:
         width=256,
         depth=8,
         n_mlps=3,
-        flop_budget=17_000_000_000,
+        flop_budget=68_000_000_000,
         ground_truth_samples=10_000,
     )
 
@@ -766,9 +767,10 @@ def validate_submission_entrypoint(
 
 def _build_participant_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
+        prog="whest",
         description=(
             "Participant-first WhestBench CLI. Starter examples live in https://github.com/AIcrowd/whest-starterkit."
-        )
+        ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -847,7 +849,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help=(
             "Effective compute budget per MLP in FLOPs. Caps C_m = F_m + lambda*R_m "
-            "(analytical FLOPs plus charged residual wall time). Default: 17_000_000_000 (1.7e10)."
+            "(analytical FLOPs plus charged residual wall time). Default: 68_000_000_000 (6.8e10)."
         ),
     )
     run_parser.add_argument(
@@ -1031,6 +1033,87 @@ class _RunnerEstimator(BaseEstimator):
         }
 
 
+@contextmanager
+def _route_scoring_warnings(*, output_format: str) -> Iterator[None]:
+    """Route ScoringExhaustionWarnings appropriately for the current output mode.
+
+    - json: suppress entirely (stdout must be pure JSON, stderr must stay quiet).
+    - rich/plain: route through rich.get_console().log() so warnings render above
+      any active Live region without flicker. Falls back to default formatting
+      for non-exhaustion warnings.
+    """
+    from .scoring import ScoringExhaustionWarning
+
+    if output_format == "json":
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ScoringExhaustionWarning)
+            yield
+        return
+
+    from rich import get_console as _get_console
+
+    console = _get_console()
+    original_showwarning = warnings.showwarning
+
+    def _routed(
+        message: Any,
+        category: type[Warning],
+        filename: str,
+        lineno: int,
+        file: Any = None,
+        line: Any = None,
+    ) -> None:
+        if isinstance(message, ScoringExhaustionWarning):
+            console.log(f"[yellow]⚠[/]  {message}")
+        else:
+            original_showwarning(message, category, filename, lineno, file, line)
+
+    warnings.showwarning = _routed
+    try:
+        yield
+    finally:
+        warnings.showwarning = original_showwarning
+
+
+def _emit_exhaustion_summary(results: Dict[str, Any], *, output_format: str) -> None:
+    """If any MLP exhausted budget or time, print a one-line summary to stderr.
+
+    Suppressed for --json mode (caller's responsibility to check).
+    """
+    per_mlp = results.get("per_mlp") or []
+    total = len(per_mlp)
+    if total == 0:
+        return
+    budget_n = sum(
+        1 for entry in per_mlp if isinstance(entry, dict) and bool(entry.get("budget_exhausted"))
+    )
+    time_n = sum(
+        1 for entry in per_mlp if isinstance(entry, dict) and bool(entry.get("time_exhausted"))
+    )
+    if budget_n == 0 and time_n == 0:
+        return
+
+    exhausted_total = budget_n + time_n
+    parts = []
+    if budget_n:
+        parts.append(f"{budget_n} FLOP")
+    if time_n:
+        parts.append(f"{time_n} time")
+    breakdown = " and ".join(parts) if parts else ""
+    msg = (
+        f"{exhausted_total} of {total} MLPs exhausted budget ({breakdown}). "
+        f"Pass --fail-fast to stop on first exhaustion; per-MLP tracebacks are "
+        f"in the JSON output."
+    )
+
+    if output_format == "rich":
+        from rich import get_console
+
+        get_console().log(f"[yellow]{msg}[/]")
+    else:
+        print(msg, file=sys.stderr)
+
+
 def _run_estimator_with_runner(
     runner: "Any",
     *,
@@ -1039,6 +1122,7 @@ def _run_estimator_with_runner(
     n_mlps: int,
     profile: bool,
     detail: str,
+    output_format: str,
     progress: Optional[ProgressCallback] = None,
     contest_data: "Optional[Any]" = None,
     fail_fast: bool = False,
@@ -1087,20 +1171,25 @@ def _run_estimator_with_runner(
     runner.start(entrypoint, context, limits)
 
     try:
-        results = evaluate_estimator(
-            _RunnerEstimator(runner),
-            data,
-            on_mlp_scored=lambda i: (
-                progress({"phase": "scoring", "completed": i, "total": n_mlps})
-                if progress is not None
-                else None
-            ),
-            fail_fast=fail_fast,
-        )
+        with _route_scoring_warnings(output_format=output_format):
+            results = evaluate_estimator(
+                _RunnerEstimator(runner),
+                data,
+                on_mlp_scored=lambda i: (
+                    progress({"phase": "scoring", "completed": i, "total": n_mlps})
+                    if progress is not None
+                    else None
+                ),
+                fail_fast=fail_fast,
+            )
     finally:
         runner.close()
 
     elapsed = _time.time() - t0
+
+    if output_format != "json":
+        _emit_exhaustion_summary(results, output_format=output_format)
+
     return {
         "schema_version": "1.0",
         "mode": "human",
@@ -1124,7 +1213,21 @@ def _run_estimator_with_runner(
 
 
 def _main_participant(argv: "list[str]") -> int:
-    args = _build_participant_parser().parse_args(argv)
+    parser = _build_participant_parser()
+    if argv and not argv[0].startswith("-"):
+        commands = next(
+            (
+                tuple(action.choices)
+                for action in parser._actions
+                if isinstance(action, argparse._SubParsersAction)
+            ),
+            (),
+        )
+        if argv[0] not in commands:
+            matches = difflib.get_close_matches(argv[0], commands, n=1)
+            if matches:
+                parser.error(f"unknown command '{argv[0]}'. did you mean '{matches[0]}'?")
+    args = parser.parse_args(argv)
     command = str(args.command)
     stdout_is_tty = bool(getattr(sys.stdout, "isatty", lambda: False)())
     output_format = resolve_output_format(
@@ -1549,6 +1652,7 @@ def _main_participant(argv: "list[str]") -> int:
                 "n_mlps": n_mlps,
                 "profile": bool(args.profile),
                 "detail": str(args.detail),
+                "output_format": output_format,
                 "contest_data": contest_data,
                 "fail_fast": bool(getattr(args, "fail_fast", False)),
             }
