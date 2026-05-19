@@ -98,7 +98,7 @@ Key options:
 - `--class <name>`
 - `--runner local|subprocess|server|inprocess`
 - `--n-mlps <int>`
-- `--flop-budget <int>` — cap on effective compute C_m = F_m + λ·R_m per MLP. Default: `17_000_000_000` (1.7e10).
+- `--flop-budget <int>` — cap on effective compute C_m = F_m + λ·R_m per MLP. Default: `68_000_000_000` (6.8e10).
 - `--wall-time-limit <seconds>` (default: `60.0`) — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`. Operational backstop matching the Phase 1 grader cap; the primary compute constraint is `--flop-budget`.
 - `--residual-wall-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported
 - `--detail raw|full`
@@ -151,7 +151,7 @@ Key options:
 - `--seed <int>` (optional, auto-generated if omitted)
 - `--width <int>` (default: `256`) — neuron count per layer of the generated MLPs.
 - `--depth <int>` (default: `8`) — number of weight matrices per MLP.
-- `--flop-budget <int>` (default: `17_000_000_000`) — caps effective compute `C_m = F_m + λ·R_m` (not just analytical FLOPs). See [flopscope-primer.md](./flopscope-primer.md) for the formula.
+- `--flop-budget <int>` (default: `68_000_000_000`) — caps effective compute `C_m = F_m + λ·R_m` (not just analytical FLOPs). See [flopscope-primer.md](./flopscope-primer.md) for the formula.
 - `-o, --output <path>` (default: `eval_dataset.npz`)
 - `--format rich|plain|json`
 - `--json` — alias for `--format json`
