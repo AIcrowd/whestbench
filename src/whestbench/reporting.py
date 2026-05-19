@@ -588,12 +588,12 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     PRIMARY_ANNOTATION = "  ← primary score"
 
     # Accuracy metrics
-    adjusted_mse = _as_float(results.get("adjusted_final_layer_mse", 0.0))
+    adjusted_score = _as_float(results.get("adjusted_final_layer_score", 0.0))
     summary.add_row(
         _label_with_code(
-            "Adjusted Final-Layer MSE", "adjusted_final_layer_mse", "bold bright_green"
+            "Adjusted Final-Layer Score", "adjusted_final_layer_score", "bold bright_green"
         ),
-        f"[bold bright_green]{_fmt_float(adjusted_mse, 8)}[/]{PRIMARY_ANNOTATION}",
+        f"[bold bright_green]{_fmt_float(adjusted_score, 8)}[/]{PRIMARY_ANNOTATION}",
     )
     raw_mse = _as_float(results.get("final_layer_mse", 0.0))
     summary.add_row(
@@ -609,15 +609,15 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     # Range metrics divider
     summary.add_row(Text("─" * 8, style="dim"), Text("─" * 8, style="dim"))
 
-    best_mse = _as_float(results.get("best_mlp_adjusted_final_layer_mse", 0.0))
+    best_score = _as_float(results.get("best_mlp_adjusted_final_layer_score", 0.0))
     summary.add_row(
-        _label_with_code("Best MLP", "best_mlp_adjusted_final_layer_mse", "bold green"),
-        f"[green]{_fmt_float(best_mse, 8)}[/]",
+        _label_with_code("Best MLP", "best_mlp_adjusted_final_layer_score", "bold green"),
+        f"[green]{_fmt_float(best_score, 8)}[/]",
     )
-    worst_mse = _as_float(results.get("worst_mlp_adjusted_final_layer_mse", 0.0))
+    worst_score = _as_float(results.get("worst_mlp_adjusted_final_layer_score", 0.0))
     summary.add_row(
-        _label_with_code("Worst MLP", "worst_mlp_adjusted_final_layer_mse", "bold yellow"),
-        f"[yellow]{_fmt_float(worst_mse, 8)}[/]",
+        _label_with_code("Worst MLP", "worst_mlp_adjusted_final_layer_score", "bold yellow"),
+        f"[yellow]{_fmt_float(worst_score, 8)}[/]",
     )
 
     # Efficiency metrics divider
@@ -646,11 +646,7 @@ def _score_summary_panel(report: "dict[str, Any]") -> Panel:
     return Panel(
         Align.center(summary),
         title="Final Score",
-        subtitle=(
-            "lower is better; "
-            "adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m); "
-            "failure → × 1.0"
-        ),
+        subtitle=("lower is better; s_m = mse × max(0.1, C_m/B_m); failure → × 1.0"),
         subtitle_align="left",
         border_style="bright_cyan",
     )

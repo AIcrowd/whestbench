@@ -19,11 +19,11 @@ def _sample_report() -> dict:
             "flop_budget": 40000,
         },
         "results": {
-            "adjusted_final_layer_mse": 0.42,
+            "adjusted_final_layer_score": 0.42,
             "final_layer_mse": 0.38,
             "all_layers_mse": 0.55,
-            "best_mlp_adjusted_final_layer_mse": 0.38,
-            "worst_mlp_adjusted_final_layer_mse": 0.46,
+            "best_mlp_adjusted_final_layer_score": 0.38,
+            "worst_mlp_adjusted_final_layer_score": 0.46,
             "mean_score_multiplier": 1.0,
             "mean_compute_utilization": 0.75,
             "n_failed_mlps": 0,
@@ -107,8 +107,8 @@ def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
     assert exit_code == 0
     assert "Rich dashboard unavailable (rich boom)" in captured.err
     assert "WhestBench Report" in captured.out
-    assert "Adjusted Final-Layer MSE" in captured.out
-    assert "adjusted_final_layer_mse" in captured.out
+    assert "Adjusted Final-Layer Score" in captured.out
+    assert "adjusted_final_layer_score" in captured.out
     assert "4.20e-01" in captured.out  # sci-notation rendering of 0.42
 
 
@@ -193,8 +193,8 @@ def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
     assert "Rich dashboard unavailable (render failed)" in captured.err
     assert "WhestBench Report" in captured.out
     assert "Final Score" in captured.out
-    assert "Adjusted Final-Layer MSE" in captured.out
-    assert "adjusted_final_layer_mse" in captured.out
+    assert "Adjusted Final-Layer Score" in captured.out
+    assert "adjusted_final_layer_score" in captured.out
     assert "4.20e-01" in captured.out  # sci-notation rendering of 0.42
 
 
@@ -326,8 +326,8 @@ def test_render_plain_text_report_includes_breakdown_sections_and_summary() -> N
 def test_render_plain_text_report_matches_main_style_score_and_breakdown_information() -> None:
     report = _sample_report()
     report["results"]["per_mlp"] = [
-        {"mlp_index": 0, "adjusted_final_layer_mse": 0.4},
-        {"mlp_index": 1, "adjusted_final_layer_mse": 0.44},
+        {"mlp_index": 0, "adjusted_final_layer_score": 0.4},
+        {"mlp_index": 1, "adjusted_final_layer_score": 0.44},
     ]
 
     rendered = cli._render_plain_text_report(report)
@@ -340,11 +340,11 @@ def test_render_plain_text_report_matches_main_style_score_and_breakdown_informa
     assert "Flopscope Backend [flopscope_backend_time_s]" in rendered
     assert "Residual Wall Time [residual_wall_time_s]" in rendered
     assert "aggregated across all evaluated MLPs" in rendered
-    assert "Adjusted Final-Layer MSE" in rendered
-    assert "adjusted_final_layer_mse" in rendered
+    assert "Adjusted Final-Layer Score" in rendered
+    assert "adjusted_final_layer_score" in rendered
     assert "All-Layers MSE [all_layers_mse]" in rendered
-    assert "best_mlp_adjusted_final_layer_mse" in rendered
-    assert "worst_mlp_adjusted_final_layer_mse" in rendered
+    assert "best_mlp_adjusted_final_layer_score" in rendered
+    assert "worst_mlp_adjusted_final_layer_score" in rendered
     assert "Estimator FLOPs" not in rendered
 
 

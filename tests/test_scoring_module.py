@@ -170,9 +170,9 @@ def test_evaluate_estimator_with_zeros_estimator() -> None:
     data = make_contest(spec)
     result = evaluate_estimator(ZerosEstimator(), data)
     assert isinstance(result, dict)
-    assert "adjusted_final_layer_mse" in result
+    assert "adjusted_final_layer_score" in result
     assert "all_layers_mse" in result
-    assert fnp.isfinite(result["adjusted_final_layer_mse"])
+    assert fnp.isfinite(result["adjusted_final_layer_score"])
     assert fnp.isfinite(result["all_layers_mse"])
 
 
@@ -820,11 +820,11 @@ def test_evaluate_estimator_captures_traceback_and_error_code() -> None:
         assert "boom from predict" in entry["traceback"]
         assert "RuntimeError" in entry["traceback"]
         # Failure routes to zero-prediction MSE * 1.0 (finite, never inf).
-        assert "adjusted_final_layer_mse" in entry
-        assert entry["adjusted_final_layer_mse"] != float("inf")
+        assert "adjusted_final_layer_score" in entry
+        assert entry["adjusted_final_layer_score"] != float("inf")
     # Suite mean must be finite; failures no longer propagate inf.
-    assert result["adjusted_final_layer_mse"] != float("inf")
-    assert result["adjusted_final_layer_mse"] > 0.0
+    assert result["adjusted_final_layer_score"] != float("inf")
+    assert result["adjusted_final_layer_score"] > 0.0
 
 
 def test_evaluate_estimator_records_validation_error_details() -> None:
@@ -881,7 +881,7 @@ def test_evaluate_estimator_fail_fast_re_raises() -> None:
 
 
 def test_suite_result_uses_new_score_key_names():
-    """Suite-level result must use adjusted_final_layer_mse / final_layer_mse / all_layers_mse."""
+    """Suite-level result must use adjusted_final_layer_score / final_layer_mse / all_layers_mse."""
     import flopscope.numpy as fnp
 
     from whestbench.domain import MLP
@@ -908,7 +908,7 @@ def test_suite_result_uses_new_score_key_names():
     )
     result = evaluate_estimator(_Z(), data)
     # New keys present
-    assert "adjusted_final_layer_mse" in result
+    assert "adjusted_final_layer_score" in result
     assert "final_layer_mse" in result
     assert "all_layers_mse" in result
     # Old keys absent
@@ -917,7 +917,7 @@ def test_suite_result_uses_new_score_key_names():
 
 
 def test_per_mlp_record_uses_new_score_key_names():
-    """Per-MLP record must use the new key names: final_layer_mse, all_layers_mse, adjusted_final_layer_mse."""
+    """Per-MLP record must use the new key names: final_layer_mse, all_layers_mse, adjusted_final_layer_score."""
     import flopscope.numpy as fnp
 
     from whestbench.domain import MLP
@@ -946,7 +946,7 @@ def test_per_mlp_record_uses_new_score_key_names():
     # New keys present
     assert "final_layer_mse" in pm
     assert "all_layers_mse" in pm
-    assert "adjusted_final_layer_mse" in pm
+    assert "adjusted_final_layer_score" in pm
     # Old keys absent
     assert "final_mse" not in pm
     assert "all_layer_mse" not in pm

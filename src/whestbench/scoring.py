@@ -477,7 +477,7 @@ def evaluate_estimator(
     zeroed and the violation is recorded. Score per MLP = final_layer_mse *
     max(0.1, C_m / B_m) for valid runs, where C_m = F_m + lambda * R_m. For
     failure-flagged runs (FLOP/time/residual budget exhausted), the multiplier
-    is forced to 1.0. The aggregate adjusted_final_layer_mse is the arithmetic
+    is forced to 1.0. The aggregate adjusted_final_layer_score is the arithmetic
     mean of per-MLP scores. Lower is better.
 
     When ``fail_fast`` is True, unexpected predict-time exceptions are re-raised
@@ -595,7 +595,7 @@ def evaluate_estimator(
                     "traceback": tb_text,
                     "final_layer_mse": final_layer_mse_fail,
                     "all_layers_mse": all_layers_mse_fail,
-                    "adjusted_final_layer_mse": s_m_fail,
+                    "adjusted_final_layer_score": s_m_fail,
                     "flops_used": 0,
                     "effective_compute": 0.0,
                     "budget_exhausted": False,
@@ -703,14 +703,14 @@ def evaluate_estimator(
             or residual_wall_time_exhausted
             or combined_budget_exhausted
         )
-        adjusted_final_layer_mse = _compute_budget_adjusted_score(
+        adjusted_final_layer_score = _compute_budget_adjusted_score(
             mse_final=final_layer_mse,
             effective_compute=effective_compute,
             flop_budget=spec.flop_budget,
             failure=failure_flag,
         )
 
-        primary_scores.append(adjusted_final_layer_mse)
+        primary_scores.append(adjusted_final_layer_score)
         secondary_scores.append(all_layers_mse)
 
         per_mlp.append(
@@ -718,7 +718,7 @@ def evaluate_estimator(
                 "mlp_index": i,
                 "final_layer_mse": final_layer_mse,
                 "all_layers_mse": all_layers_mse,
-                "adjusted_final_layer_mse": adjusted_final_layer_mse,
+                "adjusted_final_layer_score": adjusted_final_layer_score,
                 "flops_used": flops_used,
                 "effective_compute": effective_compute,
                 "budget_exhausted": budget_exhausted,
@@ -746,9 +746,9 @@ def evaluate_estimator(
 
     # Per-MLP value lists for new aggregates.
     adjusted_values = [
-        float(entry["adjusted_final_layer_mse"])
+        float(entry["adjusted_final_layer_score"])
         for entry in per_mlp
-        if isinstance(entry, dict) and "adjusted_final_layer_mse" in entry
+        if isinstance(entry, dict) and "adjusted_final_layer_score" in entry
     ]
     effective_computes = [
         float(entry.get("effective_compute", 0.0)) for entry in per_mlp if isinstance(entry, dict)
@@ -800,7 +800,7 @@ def evaluate_estimator(
     }
 
     return {
-        "adjusted_final_layer_mse": float(fnp.mean(fnp.asarray(primary_scores)))
+        "adjusted_final_layer_score": float(fnp.mean(fnp.asarray(primary_scores)))
         if primary_scores
         else float("inf"),
         "final_layer_mse": float(fnp.mean(fnp.asarray(raw_final_layer_mses)))
@@ -809,10 +809,10 @@ def evaluate_estimator(
         "all_layers_mse": float(fnp.mean(fnp.asarray(secondary_scores)))
         if secondary_scores
         else float("inf"),
-        "best_mlp_adjusted_final_layer_mse": min(adjusted_values)
+        "best_mlp_adjusted_final_layer_score": min(adjusted_values)
         if adjusted_values
         else float("inf"),
-        "worst_mlp_adjusted_final_layer_mse": max(adjusted_values)
+        "worst_mlp_adjusted_final_layer_score": max(adjusted_values)
         if adjusted_values
         else float("inf"),
         "mean_score_multiplier": (sum(multipliers) / len(multipliers)) if multipliers else 1.0,

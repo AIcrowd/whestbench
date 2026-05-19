@@ -429,18 +429,18 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                 columns=["metric", "value"],
                 rows=[
                     [
-                        "Adjusted Final-Layer MSE [adjusted_final_layer_mse]",
+                        "Adjusted Final-Layer Score [adjusted_final_layer_score]",
                         "0.01329615  ← primary score",
                     ],
                     ["Raw Final-Layer MSE [final_layer_mse]", "0.01200000"],
                     ["All-Layers MSE [all_layers_mse]", "0.03770037"],
-                    ["Best MLP [best_mlp_adjusted_final_layer_mse]", "0.01329615"],
-                    ["Worst MLP [worst_mlp_adjusted_final_layer_mse]", "0.01329615"],
+                    ["Best MLP [best_mlp_adjusted_final_layer_score]", "0.01329615"],
+                    ["Worst MLP [worst_mlp_adjusted_final_layer_score]", "0.01329615"],
                     ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000"],
                     ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
                     ["Failed MLPs [n_failed_mlps]", "0 of 1"],
                 ],
-                subtitle="lower is better; adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
+                subtitle="lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
             ),
         ],
     )
@@ -458,11 +458,11 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
         assert "Flopscope Overhead [flopscope_overhead_time_s]" in rendered
         assert "Residual Wall Time [residual_wall_time_s]" in rendered
         assert "aggregated across all evaluated MLPs" in rendered
-        assert "Adjusted Final-Layer MSE" in rendered
-        assert "adjusted_final_layer_mse" in rendered
+        assert "Adjusted Final-Layer Score" in rendered
+        assert "adjusted_final_layer_score" in rendered
         assert "All-Layers MSE [all_layers_mse]" in rendered
-        assert "best_mlp_adjusted_final_layer_mse" in rendered
-        assert "worst_mlp_adjusted_final_layer_mse" in rendered
+        assert "best_mlp_adjusted_final_layer_score" in rendered
+        assert "worst_mlp_adjusted_final_layer_score" in rendered
         assert "lower is better" in rendered
         assert "max(0.1, C_m/" in rendered
         assert "Estimator FLOPs" not in rendered
@@ -555,16 +555,19 @@ def test_final_score_rich_renderer_uses_new_color_coding() -> None:
         title="Final Score",
         columns=["metric", "value"],
         rows=[
-            ["Adjusted Final-Layer MSE [adjusted_final_layer_mse]", "0.01329615  ← primary score"],
+            [
+                "Adjusted Final-Layer Score [adjusted_final_layer_score]",
+                "0.01329615  ← primary score",
+            ],
             ["Raw Final-Layer MSE [final_layer_mse]", "0.01200000"],
             ["All-Layers MSE [all_layers_mse]", "0.03770037"],
-            ["Best MLP [best_mlp_adjusted_final_layer_mse]", "0.01329615"],
-            ["Worst MLP [worst_mlp_adjusted_final_layer_mse]", "0.01329615"],
+            ["Best MLP [best_mlp_adjusted_final_layer_score]", "0.01329615"],
+            ["Worst MLP [worst_mlp_adjusted_final_layer_score]", "0.01329615"],
             ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000"],
             ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
             ["Failed MLPs [n_failed_mlps]", "0 of 3"],
         ],
-        subtitle="lower is better; adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
+        subtitle="lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
         align_center=True,
         border_style="bright_cyan",
     )
@@ -581,7 +584,7 @@ def test_final_score_rich_renderer_uses_new_color_coding() -> None:
     value_cells = table.columns[1]._cells
 
     assert isinstance(metric_cells[0], Text)
-    assert metric_cells[0].plain == "Adjusted Final-Layer MSE [adjusted_final_layer_mse]"
+    assert metric_cells[0].plain == "Adjusted Final-Layer Score [adjusted_final_layer_score]"
     assert [str(span.style) for span in metric_cells[0].spans] == [
         "bold bright_green",
         "bold bright_white",
@@ -600,13 +603,13 @@ def test_final_score_rich_renderer_uses_new_color_coding() -> None:
     ]
     # Index 3 is a divider row (Text("────────"))
     assert isinstance(metric_cells[4], Text)
-    assert metric_cells[4].plain == "Best MLP [best_mlp_adjusted_final_layer_mse]"
+    assert metric_cells[4].plain == "Best MLP [best_mlp_adjusted_final_layer_score]"
     assert [str(span.style) for span in metric_cells[4].spans] == [
         "bold green",
         "bold bright_white",
     ]
     assert isinstance(metric_cells[5], Text)
-    assert metric_cells[5].plain == "Worst MLP [worst_mlp_adjusted_final_layer_mse]"
+    assert metric_cells[5].plain == "Worst MLP [worst_mlp_adjusted_final_layer_score]"
     assert [str(span.style) for span in metric_cells[5].spans] == [
         "bold yellow",
         "bold bright_white",
@@ -642,16 +645,19 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
         title="Final Score",
         columns=["metric", "value"],
         rows=[
-            ["Adjusted Final-Layer MSE [adjusted_final_layer_mse]", "0.01329615  ← primary score"],
+            [
+                "Adjusted Final-Layer Score [adjusted_final_layer_score]",
+                "0.01329615  ← primary score",
+            ],
             ["Raw Final-Layer MSE [final_layer_mse]", "0.01200000"],
             ["All-Layers MSE [all_layers_mse]", "0.03770037"],
-            ["Best MLP [best_mlp_adjusted_final_layer_mse]", "0.01329615"],
-            ["Worst MLP [worst_mlp_adjusted_final_layer_mse]", "0.01329615"],
+            ["Best MLP [best_mlp_adjusted_final_layer_score]", "0.01329615"],
+            ["Worst MLP [worst_mlp_adjusted_final_layer_score]", "0.01329615"],
             ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000"],
             ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
             ["Failed MLPs [n_failed_mlps]", "0 of 1"],
         ],
-        subtitle="lower is better; adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
+        subtitle="lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
     )
 
     blocks = [
@@ -670,8 +676,8 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
         assert "Flopscope Backend [flopscope_backend_time_s]" in rendered
         assert "Flopscope Overhead [flopscope_overhead_time_s]" in rendered
         assert "Residual Wall Time [residual_wall_time_s]" in rendered
-        assert "Adjusted Final-Layer MSE" in rendered
-        assert "adjusted_final_layer_mse" in rendered
+        assert "Adjusted Final-Layer Score" in rendered
+        assert "adjusted_final_layer_score" in rendered
         assert "lower is better" in rendered
 
 
@@ -698,16 +704,19 @@ def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
         title="Final Score",
         columns=["metric", "value"],
         rows=[
-            ["Adjusted Final-Layer MSE [adjusted_final_layer_mse]", "0.01329615  ← primary score"],
+            [
+                "Adjusted Final-Layer Score [adjusted_final_layer_score]",
+                "0.01329615  ← primary score",
+            ],
             ["Raw Final-Layer MSE [final_layer_mse]", "0.01200000"],
             ["All-Layers MSE [all_layers_mse]", "0.03770037"],
-            ["Best MLP [best_mlp_adjusted_final_layer_mse]", "0.01329615"],
-            ["Worst MLP [worst_mlp_adjusted_final_layer_mse]", "0.01329615"],
+            ["Best MLP [best_mlp_adjusted_final_layer_score]", "0.01329615"],
+            ["Worst MLP [worst_mlp_adjusted_final_layer_score]", "0.01329615"],
             ["Mean Score Multiplier [mean_score_multiplier]", "0.90000000"],
             ["Mean Compute Utilization [mean_compute_utilization]", "0.50000000"],
             ["Failed MLPs [n_failed_mlps]", "0 of 1"],
         ],
-        subtitle="lower is better; adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
+        subtitle="lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); failure → × 1.0",
     )
 
     plain = render_document(
@@ -751,12 +760,12 @@ def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_te
         columns=["metric", "value"],
         rows=[
             [
-                "Adjusted Final-Layer MSE [adjusted_final_layer_mse]",
+                "Adjusted Final-Layer Score [adjusted_final_layer_score]",
                 "0.123456789012345678901234567890  ← primary score",
             ]
         ],
         subtitle=(
-            "lower is better; adjusted_final_layer_mse = final_layer_mse × max(0.1, C_m/B_m); "
+            "lower is better; adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m); "
             "failure → × 1.0 and this subtitle should not be truncated"
         ),
     )
@@ -792,15 +801,15 @@ def test_score_block_renders_primary_score_annotation():
 
     report = {
         "results": {
-            "adjusted_final_layer_mse": 0.245,
+            "adjusted_final_layer_score": 0.245,
             "final_layer_mse": 0.220,
             "all_layers_mse": 0.178,
-            "best_mlp_adjusted_final_layer_mse": 0.0,
-            "worst_mlp_adjusted_final_layer_mse": 1.0,
+            "best_mlp_adjusted_final_layer_score": 0.0,
+            "worst_mlp_adjusted_final_layer_score": 1.0,
             "mean_score_multiplier": 0.78,
             "mean_compute_utilization": 0.62,
             "n_failed_mlps": 0,
-            "per_mlp": [{"adjusted_final_layer_mse": 0.245}],
+            "per_mlp": [{"adjusted_final_layer_score": 0.245}],
         }
     }
     section = _score_section(report)
@@ -820,15 +829,15 @@ def test_score_block_renders_section_dividers():
 
     report = {
         "results": {
-            "adjusted_final_layer_mse": 0.245,
+            "adjusted_final_layer_score": 0.245,
             "final_layer_mse": 0.220,
             "all_layers_mse": 0.178,
-            "best_mlp_adjusted_final_layer_mse": 0.0,
-            "worst_mlp_adjusted_final_layer_mse": 1.0,
+            "best_mlp_adjusted_final_layer_score": 0.0,
+            "worst_mlp_adjusted_final_layer_score": 1.0,
             "mean_score_multiplier": 0.78,
             "mean_compute_utilization": 0.62,
             "n_failed_mlps": 0,
-            "per_mlp": [{"adjusted_final_layer_mse": 0.245}],
+            "per_mlp": [{"adjusted_final_layer_score": 0.245}],
         }
     }
     section = _score_section(report)

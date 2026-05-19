@@ -72,7 +72,7 @@ def test_combined_budget_exhausted_when_c_m_exceeds_b_m():
     assert per_mlp["combined_budget_exhausted"] is True
     # Failure → s_m = MSE(0, Y) * 1.0
     EXPECTED_ZERO_PRED_MSE = 7.5
-    assert per_mlp["adjusted_final_layer_mse"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
+    assert per_mlp["adjusted_final_layer_score"] == pytest.approx(EXPECTED_ZERO_PRED_MSE, abs=1e-5)
 
 
 def test_combined_budget_not_triggered_when_c_m_within_budget():
@@ -96,4 +96,4 @@ def test_combined_budget_not_triggered_when_c_m_within_budget():
 
     assert per_mlp["combined_budget_exhausted"] is False
     # Valid run → multiplier = max(0.1, 0.8) = 0.8
-    assert per_mlp["adjusted_final_layer_mse"] == pytest.approx(7.5 * 0.8, abs=1e-5)
+    assert per_mlp["adjusted_final_layer_score"] == pytest.approx(7.5 * 0.8, abs=1e-5)

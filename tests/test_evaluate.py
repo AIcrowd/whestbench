@@ -82,11 +82,11 @@ def test_evaluate_estimator_returns_mse_scores() -> None:
 
     estimator = _SimpleEstimator()
     result = evaluate_estimator(estimator, data)
-    assert "adjusted_final_layer_mse" in result
+    assert "adjusted_final_layer_score" in result
     assert "all_layers_mse" in result
     assert "per_mlp" in result
-    assert isinstance(result["adjusted_final_layer_mse"], float)
-    assert result["adjusted_final_layer_mse"] >= 0.0
+    assert isinstance(result["adjusted_final_layer_score"], float)
+    assert result["adjusted_final_layer_score"] >= 0.0
     assert "flops_used" in result["per_mlp"][0]
 
 
@@ -105,5 +105,5 @@ def test_evaluate_estimator_handles_error_gracefully() -> None:
             raise RuntimeError("intentional error")
 
     result = evaluate_estimator(_BadEstimator(), data)
-    assert "adjusted_final_layer_mse" in result
+    assert "adjusted_final_layer_score" in result
     assert result["per_mlp"][0].get("error") is not None
