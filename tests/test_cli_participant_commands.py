@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 
 import whestbench.cli as cli
+from whestbench import ScoringExhaustionWarning
 
 
 def _sample_report() -> dict:
@@ -1254,9 +1255,15 @@ def test_run_plain_output_shows_validation_hint_details(
 
 
 def test_run_budget_exhausted_does_not_set_exit_1(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    recwarn: pytest.WarningsRecorder,
 ) -> None:
-    """Budget exhaustion is a legitimate scoring outcome, not an error.
+    """Budget exhaustion is a legitimate scoring outcome that is surfaced via a
+    traceback in the per-MLP JSON entry; without --fail-fast the run still
+    completes cleanly with exit code 0. In --json mode, the
+    ScoringExhaustionWarning is suppressed at emission so nothing leaks
+    to stderr or to warning recorders.
 
     Uses a trivially tiny budget and a predict that raises
     BudgetExhaustedError directly (no real FLOP loop), so the test stays
@@ -1288,3 +1295,14 @@ def test_run_budget_exhausted_does_not_set_exit_1(
     per_mlp = payload["results"]["per_mlp"]
     assert all("error" not in entry for entry in per_mlp)
     assert all(entry["budget_exhausted"] for entry in per_mlp)
+    # NEW: traceback captured per exhausted MLP.
+    assert all(
+        isinstance(entry.get("traceback"), str) and "BudgetExhaustedError" in entry["traceback"]
+        for entry in per_mlp
+    )
+    # NEW: --json mode suppresses ScoringExhaustionWarning at emission, so it
+    # never reaches stderr or any warnings recorder.
+    exhaustion_warnings = [
+        w for w in recwarn.list if issubclass(w.category, ScoringExhaustionWarning)
+    ]
+    assert exhaustion_warnings == [], [str(w.message) for w in exhaustion_warnings]
