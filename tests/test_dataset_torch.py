@@ -374,3 +374,8 @@ def test_mps_smoke_roundtrip(tmp_path: Path) -> None:
     assert bundle.n_mlps == 2
     assert bundle.metadata["device"] == "mps"
     assert "mps_device_name" in bundle.metadata
+    # Sanity check: avg_variances should be non-negative
+    assert all(v >= 0 for v in bundle.avg_variances)
+    # FLOP count should be positive
+    assert bundle.sampling_budget_breakdowns is not None
+    assert bundle.sampling_budget_breakdowns[0]["flops_used"] > 0
