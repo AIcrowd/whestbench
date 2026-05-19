@@ -1046,6 +1046,45 @@ def _route_scoring_warnings(*, output_format: str) -> Iterator[None]:
         warnings.showwarning = original_showwarning
 
 
+def _emit_exhaustion_summary(results: Dict[str, Any], *, output_format: str) -> None:
+    """If any MLP exhausted budget or time, print a one-line summary to stderr.
+
+    Suppressed for --json mode (caller's responsibility to check).
+    """
+    per_mlp = results.get("per_mlp") or []
+    total = len(per_mlp)
+    if total == 0:
+        return
+    budget_n = sum(
+        1 for entry in per_mlp if isinstance(entry, dict) and bool(entry.get("budget_exhausted"))
+    )
+    time_n = sum(
+        1 for entry in per_mlp if isinstance(entry, dict) and bool(entry.get("time_exhausted"))
+    )
+    if budget_n == 0 and time_n == 0:
+        return
+
+    exhausted_total = budget_n + time_n
+    parts = []
+    if budget_n:
+        parts.append(f"{budget_n} FLOP")
+    if time_n:
+        parts.append(f"{time_n} time")
+    breakdown = " and ".join(parts) if parts else ""
+    msg = (
+        f"{exhausted_total} of {total} MLPs exhausted budget ({breakdown}). "
+        f"Pass --fail-fast to stop on first exhaustion; per-MLP tracebacks are "
+        f"in the JSON output."
+    )
+
+    if output_format == "rich":
+        from rich import get_console
+
+        get_console().log(f"[yellow]{msg}[/]")
+    else:
+        print(msg, file=sys.stderr)
+
+
 def _run_estimator_with_runner(
     runner: "Any",
     *,
@@ -1117,6 +1156,10 @@ def _run_estimator_with_runner(
         runner.close()
 
     elapsed = _time.time() - t0
+
+    if output_format != "json":
+        _emit_exhaustion_summary(results, output_format=output_format)
+
     return {
         "schema_version": "1.0",
         "mode": "human",
