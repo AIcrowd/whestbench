@@ -16,16 +16,17 @@
 ## Source map
 
 - `src/whestbench/cli.py` — `whest` / `whestbench` entry point
-- `src/whestbench/domain.py` — `MLP`, `SetupContext`, scoring contracts
-- `src/whestbench/estimators.py` — `BaseEstimator` + reference impls
+- `src/whestbench/sdk.py` — `BaseEstimator`, `SetupContext` (the participant contract)
+- `src/whestbench/domain.py` — `MLP`, `validate_predictions`
+- `src/whestbench/estimators.py` — reference estimator implementations (`MeanPropagationEstimator`, `CovariancePropagationEstimator`, `CombinedEstimator`)
 - `src/whestbench/generation.py` — `sample_mlp`
 - `src/whestbench/simulation.py` — Monte Carlo ground truth via flopscope
 - `src/whestbench/scoring.py` — `evaluate_estimator`, `ContestSpec`
 - `src/whestbench/reporting.py` — Rich score report
-- `src/whestbench/protocol.py` — server-runner JSON protocol
+- `src/whestbench/protocol.py` — subprocess-runner JSON protocol
 
 ## Releases
 
-See [`RELEASING.md`](RELEASING.md).
+See the [GitHub Releases page](https://github.com/AIcrowd/whestbench/releases).
 
 Underlying FLOP-counting library: [`AIcrowd/flopscope`](https://github.com/AIcrowd/flopscope).
