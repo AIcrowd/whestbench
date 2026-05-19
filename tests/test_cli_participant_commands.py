@@ -1354,6 +1354,37 @@ def test_run_budget_exhausted_does_not_set_exit_1(
     assert exhaustion_warnings == [], [str(w.message) for w in exhaustion_warnings]
 
 
+def test_plain_mode_emits_summary_line(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """In plain mode, after the run a one-line summary names the number of
+    MLPs that exhausted budget.
+    """
+    estimator = tmp_path / "hungry.py"
+    estimator.write_text(
+        dedent(
+            """
+            import flopscope as flops
+            from whestbench import BaseEstimator
+
+            class Estimator(BaseEstimator):
+                def predict(self, mlp, budget):
+                    raise flops.BudgetExhaustedError('test', flop_cost=0, flops_remaining=0)
+            """
+        ).lstrip(),
+        encoding="utf-8",
+    )
+    dataset = tmp_path / "ds.npz"
+    _write_tiny_dataset(dataset, n_mlps=3)
+
+    # _tiny_run_argv already sets --format plain.
+    exit_code = cli.main(_tiny_run_argv(estimator, dataset))
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    # The summary line names the count of exhausted MLPs.
+    # It's printed to stderr in plain mode by _emit_exhaustion_summary.
+    assert "3 of 3 MLPs exhausted" in captured.err, captured.err
+
+
 def test_fail_fast_exits_nonzero_on_budget_exhaustion(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
