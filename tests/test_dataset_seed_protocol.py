@@ -26,7 +26,6 @@ def test_dataset_roundtrip_persists_mlp_seeds(tmp_path):
         n_samples=100,
         width=8,
         depth=2,
-        flop_budget=1_000_000_000,
         seed=42,
         output_path=out,
     )
@@ -46,7 +45,6 @@ def test_dataset_create_reproduces_same_seeds(tmp_path):
             n_samples=100,
             width=8,
             depth=2,
-            flop_budget=1_000_000_000,
             seed=99,
             output_path=path,
         )
