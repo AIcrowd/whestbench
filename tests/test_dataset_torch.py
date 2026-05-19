@@ -295,3 +295,35 @@ def test_mini_batch_equivalence_to_single_batch(tmp_path: Path) -> None:
     np.testing.assert_array_equal(bundle_big.all_layer_means, bundle_small.all_layer_means)
     np.testing.assert_array_equal(bundle_big.final_means, bundle_small.final_means)
     assert bundle_big.avg_variances == bundle_small.avg_variances
+
+
+def test_progress_events_have_expected_schema(tmp_path: Path) -> None:
+    events: list[dict] = []
+    create_dataset_torch(
+        n_mlps=2,
+        n_samples=128,
+        width=4,
+        depth=2,
+        flop_budget=32,
+        seed=42,
+        output_path=tmp_path / "progress.npz",
+        device="cpu",
+        progress=events.append,
+        chunk_size=64,
+    )
+
+    generating = [e for e in events if e.get("phase") == "generating"]
+    sampling = [e for e in events if e.get("phase") == "sampling"]
+
+    # Generating phase: one event per MLP
+    assert len(generating) == 2
+    assert generating[-1] == {"phase": "generating", "completed": 2, "total": 2}
+
+    # Sampling phase: each event has the required keys
+    assert len(sampling) >= 1
+    last = sampling[-1]
+    assert last["phase"] == "sampling"
+    assert last["unit"] == "chunks"
+    assert last["completed"] == last["total"]  # final event reports completion
+    assert "mlp_index_range" in last
+    assert last["n_mlps"] == 2
