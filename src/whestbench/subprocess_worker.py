@@ -187,6 +187,7 @@ def main() -> int:
                         if ctx_payload.get("scratch_dir") is not None
                         else None
                     ),
+                    seed=int(ctx_payload.get("seed", 0)),
                 )
                 estimator.setup(context)
                 _write_response({"status": "ok"})
