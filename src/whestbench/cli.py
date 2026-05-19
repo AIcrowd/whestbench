@@ -1025,6 +1025,87 @@ class _RunnerEstimator(BaseEstimator):
         }
 
 
+@contextmanager
+def _route_scoring_warnings(*, output_format: str) -> Iterator[None]:
+    """Route ScoringExhaustionWarnings appropriately for the current output mode.
+
+    - json: suppress entirely (stdout must be pure JSON, stderr must stay quiet).
+    - rich/plain: route through rich.get_console().log() so warnings render above
+      any active Live region without flicker. Falls back to default formatting
+      for non-exhaustion warnings.
+    """
+    from .scoring import ScoringExhaustionWarning
+
+    if output_format == "json":
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ScoringExhaustionWarning)
+            yield
+        return
+
+    from rich import get_console as _get_console
+
+    console = _get_console()
+    original_showwarning = warnings.showwarning
+
+    def _routed(
+        message: Any,
+        category: type[Warning],
+        filename: str,
+        lineno: int,
+        file: Any = None,
+        line: Any = None,
+    ) -> None:
+        if isinstance(message, ScoringExhaustionWarning):
+            console.log(f"[yellow]⚠[/]  {message}")
+        else:
+            original_showwarning(message, category, filename, lineno, file, line)
+
+    warnings.showwarning = _routed
+    try:
+        yield
+    finally:
+        warnings.showwarning = original_showwarning
+
+
+def _emit_exhaustion_summary(results: Dict[str, Any], *, output_format: str) -> None:
+    """If any MLP exhausted budget or time, print a one-line summary to stderr.
+
+    Suppressed for --json mode (caller's responsibility to check).
+    """
+    per_mlp = results.get("per_mlp") or []
+    total = len(per_mlp)
+    if total == 0:
+        return
+    budget_n = sum(
+        1 for entry in per_mlp if isinstance(entry, dict) and bool(entry.get("budget_exhausted"))
+    )
+    time_n = sum(
+        1 for entry in per_mlp if isinstance(entry, dict) and bool(entry.get("time_exhausted"))
+    )
+    if budget_n == 0 and time_n == 0:
+        return
+
+    exhausted_total = budget_n + time_n
+    parts = []
+    if budget_n:
+        parts.append(f"{budget_n} FLOP")
+    if time_n:
+        parts.append(f"{time_n} time")
+    breakdown = " and ".join(parts) if parts else ""
+    msg = (
+        f"{exhausted_total} of {total} MLPs exhausted budget ({breakdown}). "
+        f"Pass --fail-fast to stop on first exhaustion; per-MLP tracebacks are "
+        f"in the JSON output."
+    )
+
+    if output_format == "rich":
+        from rich import get_console
+
+        get_console().log(f"[yellow]{msg}[/]")
+    else:
+        print(msg, file=sys.stderr)
+
+
 def _run_estimator_with_runner(
     runner: "Any",
     *,
@@ -1033,6 +1114,7 @@ def _run_estimator_with_runner(
     n_mlps: int,
     profile: bool,
     detail: str,
+    output_format: str,
     progress: Optional[ProgressCallback] = None,
     contest_data: "Optional[Any]" = None,
     fail_fast: bool = False,
@@ -1081,20 +1163,25 @@ def _run_estimator_with_runner(
     runner.start(entrypoint, context, limits)
 
     try:
-        results = evaluate_estimator(
-            _RunnerEstimator(runner),
-            data,
-            on_mlp_scored=lambda i: (
-                progress({"phase": "scoring", "completed": i, "total": n_mlps})
-                if progress is not None
-                else None
-            ),
-            fail_fast=fail_fast,
-        )
+        with _route_scoring_warnings(output_format=output_format):
+            results = evaluate_estimator(
+                _RunnerEstimator(runner),
+                data,
+                on_mlp_scored=lambda i: (
+                    progress({"phase": "scoring", "completed": i, "total": n_mlps})
+                    if progress is not None
+                    else None
+                ),
+                fail_fast=fail_fast,
+            )
     finally:
         runner.close()
 
     elapsed = _time.time() - t0
+
+    if output_format != "json":
+        _emit_exhaustion_summary(results, output_format=output_format)
+
     return {
         "schema_version": "1.0",
         "mode": "human",
@@ -1463,6 +1550,7 @@ def _main_participant(argv: "list[str]") -> int:
                 "n_mlps": n_mlps,
                 "profile": bool(args.profile),
                 "detail": str(args.detail),
+                "output_format": output_format,
                 "contest_data": contest_data,
                 "fail_fast": bool(getattr(args, "fail_fast", False)),
             }

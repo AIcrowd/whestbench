@@ -18,7 +18,7 @@ from .hardware import collect_hardware_fingerprint
 from .scoring import _normalize_sampling_budget_breakdown
 from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_count
 
-SCHEMA_VERSION = "2.2"
+SCHEMA_VERSION = "2.3"
 SEED_PROTOCOL_NAME = "whestbench_seedsequence_hierarchy"
 SEED_PROTOCOL_VERSION = "2.0"
 
@@ -132,6 +132,7 @@ def create_dataset(
 
     metadata: Dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
+        "backend": "flopscope",
         "seed_protocol": {
             "name": SEED_PROTOCOL_NAME,
             "version": SEED_PROTOCOL_VERSION,

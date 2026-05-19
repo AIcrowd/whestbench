@@ -159,6 +159,16 @@ Key options:
 
 See [Use Evaluation Datasets](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/use-evaluation-datasets.md) (in the starter kit) for usage patterns.
 
+### GPU / torch backend (optional, for large datasets)
+
+Pass `--device auto|cuda|mps|cpu` to use a torch-backed implementation. See
+[GPU Dataset Generation](../how-to/gpu-dataset-generation.md) for the full
+guide. Requires `pip install whestbench[gpu]`. With `--device`, `--max-threads`
+is rejected — torch manages threading internally. Output schema is identical
+to the default path.
+
+- `--device <name>` — `auto` (resolves cuda > mps > cpu), `cuda`, `mps`, or `cpu`. Default omitted = flopscope path.
+
 ## `whest package`
 
 Build a submission artifact.
