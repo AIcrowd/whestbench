@@ -15,7 +15,6 @@ def test_create_and_load_roundtrip(tmp_path) -> None:
         n_samples=50,
         width=8,
         depth=2,
-        flop_budget=32,
         seed=42,
         output_path=tmp_path / "test.npz",
     )
@@ -38,6 +37,8 @@ def test_create_and_load_roundtrip(tmp_path) -> None:
         mlp.validate()
         assert mlp.width == 8
         assert mlp.depth == 2
+    assert bundle.metadata["schema_version"] == "2.3"
+    assert "flop_budget" not in bundle.metadata
 
 
 def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
@@ -46,7 +47,6 @@ def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
         n_samples=64,
         width=8,
         depth=2,
-        flop_budget=32,
         seed=1234,
         output_path=tmp_path / "seeded_a.npz",
     )
@@ -55,7 +55,6 @@ def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
         n_samples=64,
         width=8,
         depth=2,
-        flop_budget=32,
         seed=1234,
         output_path=tmp_path / "seeded_b.npz",
     )
@@ -100,7 +99,6 @@ def test_create_dataset_reports_sampling_chunk_progress(
         n_samples=10,
         width=4,
         depth=1,
-        flop_budget=32,
         seed=42,
         output_path=tmp_path / "chunked_progress.npz",
         progress=events.append,
@@ -152,7 +150,6 @@ def test_create_dataset_skips_hardware_fallback_probes_via_env(tmp_path, monkeyp
         n_samples=8,
         width=4,
         depth=2,
-        flop_budget=32,
         seed=7,
         output_path=tmp_path / "skip_fallbacks.npz",
     )
