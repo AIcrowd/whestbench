@@ -327,3 +327,50 @@ def test_progress_events_have_expected_schema(tmp_path: Path) -> None:
     assert last["completed"] == last["total"]  # final event reports completion
     assert "mlp_index_range" in last
     assert last["n_mlps"] == 2
+
+
+require_cuda = pytest.mark.skipif(
+    not torch.cuda.is_available(),
+    reason="CUDA not available",
+)
+require_mps = pytest.mark.skipif(
+    not torch.backends.mps.is_available(),
+    reason="MPS not available",
+)
+
+
+@require_cuda
+def test_cuda_smoke_roundtrip(tmp_path: Path) -> None:
+    out = create_dataset_torch(
+        n_mlps=2,
+        n_samples=256,
+        width=8,
+        depth=2,
+        flop_budget=32,
+        seed=42,
+        output_path=tmp_path / "cuda_smoke.npz",
+        device="cuda",
+    )
+    bundle = load_dataset(out)
+    assert bundle.n_mlps == 2
+    assert bundle.metadata["device"] == "cuda"
+    assert "cuda_device_name" in bundle.metadata
+    assert "cuda_device_capability" in bundle.metadata
+
+
+@require_mps
+def test_mps_smoke_roundtrip(tmp_path: Path) -> None:
+    out = create_dataset_torch(
+        n_mlps=2,
+        n_samples=256,
+        width=8,
+        depth=2,
+        flop_budget=32,
+        seed=42,
+        output_path=tmp_path / "mps_smoke.npz",
+        device="mps",
+    )
+    bundle = load_dataset(out)
+    assert bundle.n_mlps == 2
+    assert bundle.metadata["device"] == "mps"
+    assert "mps_device_name" in bundle.metadata
