@@ -109,7 +109,7 @@ def test_smoke_test_falls_back_to_plain_text_when_rich_render_fails(monkeypatch,
     assert "WhestBench Report" in captured.out
     assert "Adjusted Final-Layer MSE" in captured.out
     assert "adjusted_final_layer_mse" in captured.out
-    assert "0.42000000" in captured.out
+    assert "4.20e-01" in captured.out  # sci-notation rendering of 0.42
 
 
 def test_smoke_test_plain_output_includes_next_steps_and_json_tip(monkeypatch, capsys) -> None:
@@ -195,7 +195,7 @@ def test_participant_run_falls_back_to_plain_text_when_rich_render_fails(
     assert "Final Score" in captured.out
     assert "Adjusted Final-Layer MSE" in captured.out
     assert "adjusted_final_layer_mse" in captured.out
-    assert "0.42000000" in captured.out
+    assert "4.20e-01" in captured.out  # sci-notation rendering of 0.42
 
 
 def test_participant_run_rich_fallback_does_not_duplicate_pre_run_context(

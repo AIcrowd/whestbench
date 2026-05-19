@@ -95,6 +95,22 @@ def _display_metric_value(value: Any, *, decimals: int = 8) -> str:
         return str(value)
 
 
+def _display_mse_value(value: Any) -> str:
+    """Format an MSE-style value in scientific notation (e.g. 3.14e-05).
+
+    MSE values typically span many orders of magnitude across estimators and
+    are easier to compare in scientific form. Three significant figures in
+    the mantissa is enough to distinguish leaderboard-relevant differences
+    without taking too much horizontal space.
+    """
+    if value in {None, ""}:
+        return "n/a"
+    try:
+        return f"{float(value):.2e}"
+    except (TypeError, ValueError):
+        return str(value)
+
+
 def _run_context_sections(report: dict[str, Any]) -> list[KeyValueSection]:
     run_config = report.get("run_config")
     if not isinstance(run_config, dict):
@@ -194,31 +210,32 @@ def _score_section(report: dict[str, Any]) -> TableSection:
     n_failed = int(results.get("n_failed_mlps") or 0)
 
     rows = [
-        # Accuracy metrics
+        # Accuracy metrics — MSE values use scientific notation to handle the
+        # wide dynamic range estimators produce (e.g. 5e-6 vs 7e-1).
         [
             "Adjusted Final-Layer MSE [adjusted_final_layer_mse]",
-            _display_metric_value(results.get("adjusted_final_layer_mse")),
+            _display_mse_value(results.get("adjusted_final_layer_mse")),
             PRIMARY_ANNOTATION,
         ],
         [
             "Raw Final-Layer MSE [final_layer_mse]",
-            _display_metric_value(results.get("final_layer_mse")),
+            _display_mse_value(results.get("final_layer_mse")),
             "",
         ],
         [
             "All-Layers MSE [all_layers_mse]",
-            _display_metric_value(results.get("all_layers_mse")),
+            _display_mse_value(results.get("all_layers_mse")),
             "",
         ],
-        # Range metrics
+        # Range metrics — also MSE-valued, same formatting.
         [
             "Best MLP [best_mlp_adjusted_final_layer_mse]",
-            _display_metric_value(results.get("best_mlp_adjusted_final_layer_mse")),
+            _display_mse_value(results.get("best_mlp_adjusted_final_layer_mse")),
             "",
         ],
         [
             "Worst MLP [worst_mlp_adjusted_final_layer_mse]",
-            _display_metric_value(results.get("worst_mlp_adjusted_final_layer_mse")),
+            _display_mse_value(results.get("worst_mlp_adjusted_final_layer_mse")),
             "",
         ],
         # Efficiency metrics
