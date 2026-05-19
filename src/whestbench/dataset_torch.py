@@ -158,3 +158,25 @@ def _resolve_device(device: str) -> str:
     if device == "cpu":
         return "cpu"
     raise ValueError(f"device must be one of 'auto', 'cuda', 'mps', 'cpu'; got {device!r}")
+
+
+def _auto_mlps_per_batch(*, n_mlps: int) -> int:
+    """Default mlps_per_batch: cap at 16 to bound GPU memory growth."""
+    return min(n_mlps, 16)
+
+
+def _auto_chunk_size(*, device: str, width: int, mlps_per_batch: int) -> int:
+    """Default chunk_size.
+
+    On cuda: targets ~25% of free GPU memory for the activations tensor,
+    clamped to [65536, 1<<20]. On mps/cpu: fixed 65536 (good balance of
+    kernel-launch amortization and memory).
+    """
+    if device != "cuda":
+        return 65536
+    import torch  # local
+
+    free_bytes, _ = torch.cuda.mem_get_info()
+    target_bytes = min(2 * 1024**3, free_bytes // 4)
+    size = target_bytes // (mlps_per_batch * width * 4)
+    return max(65536, min(1 << 20, int(size)))

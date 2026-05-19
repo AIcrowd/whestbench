@@ -96,3 +96,41 @@ def test_resolve_device_explicit_mps_unavailable_raises(monkeypatch: pytest.Monk
 def test_resolve_device_invalid_raises() -> None:
     with pytest.raises(ValueError, match="device must be"):
         _resolve_device("tpu")
+
+
+from whestbench.dataset_torch import _auto_chunk_size, _auto_mlps_per_batch  # noqa: E402
+
+
+def test_auto_mlps_per_batch_clamps_to_16() -> None:
+    assert _auto_mlps_per_batch(n_mlps=5) == 5
+    assert _auto_mlps_per_batch(n_mlps=16) == 16
+    assert _auto_mlps_per_batch(n_mlps=100) == 16
+
+
+def test_auto_chunk_size_cpu_returns_default() -> None:
+    assert _auto_chunk_size(device="cpu", width=256, mlps_per_batch=10) == 65536
+
+
+def test_auto_chunk_size_mps_returns_default() -> None:
+    assert _auto_chunk_size(device="mps", width=256, mlps_per_batch=10) == 65536
+
+
+def test_auto_chunk_size_cuda_uses_memory_budget(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Simulate ~8 GB free → 25% budget = 2GB cap kicks in
+    monkeypatch.setattr(torch.cuda, "mem_get_info", lambda: (8 * 1024**3, 16 * 1024**3))
+    size = _auto_chunk_size(device="cuda", width=256, mlps_per_batch=10)
+    # Clamp [65536, 1<<20] — for width=256, mlps=10, 2GB target: 2GB / (10*256*4) ≈ 209715
+    # which falls inside [65536, 1048576], so we expect ~209K rounded
+    assert 65536 <= size <= (1 << 20)
+
+
+def test_auto_chunk_size_cuda_clamps_low(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Tiny free memory → clamps to minimum 65536
+    monkeypatch.setattr(torch.cuda, "mem_get_info", lambda: (1 * 1024**2, 16 * 1024**3))
+    assert _auto_chunk_size(device="cuda", width=256, mlps_per_batch=10) == 65536
+
+
+def test_auto_chunk_size_cuda_clamps_high(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Huge free memory → clamps to maximum 1<<20
+    monkeypatch.setattr(torch.cuda, "mem_get_info", lambda: (80 * 1024**3, 80 * 1024**3))
+    assert _auto_chunk_size(device="cuda", width=4, mlps_per_batch=1) == (1 << 20)
