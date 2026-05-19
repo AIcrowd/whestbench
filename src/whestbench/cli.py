@@ -83,16 +83,6 @@ from .simulation import sample_layer_statistics_chunk_count
 _DEFAULT_ESTIMATOR = CombinedEstimator()
 ProgressCallback = Callable[[Dict[str, Any]], None]
 _SAMPLING_PROGRESS_PHASE = "sampling_ground_truth"
-_PARTICIPANT_COMMANDS = (
-    "smoke-test",
-    "init",
-    "validate",
-    "run",
-    "create-dataset",
-    "package",
-    "profile-simulation",
-    "doctor",
-)
 
 
 def _default_contest_spec() -> ContestSpec:
@@ -1094,10 +1084,19 @@ def _run_estimator_with_runner(
 
 def _main_participant(argv: "list[str]") -> int:
     parser = _build_participant_parser()
-    if argv and not argv[0].startswith("-") and argv[0] not in _PARTICIPANT_COMMANDS:
-        matches = difflib.get_close_matches(argv[0], _PARTICIPANT_COMMANDS, n=1)
-        if matches:
-            parser.error(f"unknown command '{argv[0]}'. did you mean '{matches[0]}'?")
+    if argv and not argv[0].startswith("-"):
+        commands = next(
+            (
+                tuple(action.choices)
+                for action in parser._actions
+                if isinstance(action, argparse._SubParsersAction)
+            ),
+            (),
+        )
+        if argv[0] not in commands:
+            matches = difflib.get_close_matches(argv[0], commands, n=1)
+            if matches:
+                parser.error(f"unknown command '{argv[0]}'. did you mean '{matches[0]}'?")
     args = parser.parse_args(argv)
     command = str(args.command)
     stdout_is_tty = bool(getattr(sys.stdout, "isatty", lambda: False)())
