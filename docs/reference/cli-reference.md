@@ -102,7 +102,11 @@ Key options:
 - `--wall-time-limit <seconds>` (default: `60.0`) — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`. Operational backstop matching the Phase 1 grader cap; the primary compute constraint is `--flop-budget`.
 - `--residual-wall-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported
 - `--detail raw|full`
-- `--seed <int>` — deterministic seed for `generate + sample` when `--dataset` is not set
+- `--seed <int>` — random seed for the run.
+  - Without `--dataset`: seeds both MLP generation and estimator setup (`ctx.seed`).
+  - With `--dataset`: MLP seeds come from the dataset; this flag seeds estimator setup (`ctx.seed`) only.
+  Default: omitted (`ctx.seed` defaults to 0; `run_config.seed` is `null` in the JSON output).
+  See [estimator-contract.md](estimator-contract.md) for the `ctx.seed` reproducibility contract.
 - `--profile`
 - `--show-diagnostic-plots`
 - `--format rich|plain|json` — choose styled terminal output, plain log-friendly output, or JSON. Defaults to `rich` on TTYs and `plain` otherwise.
@@ -153,7 +157,7 @@ Key options:
 - `--json` — alias for `--format json`
 - `--debug`
 
-See [Use Evaluation Datasets](../how-to/use-evaluation-datasets.md) for usage patterns.
+See [Use Evaluation Datasets](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/use-evaluation-datasets.md) (in the starter kit) for usage patterns.
 
 ### GPU / torch backend (optional, for large datasets)
 
@@ -223,5 +227,5 @@ whest profile-simulation --preset exhaustive --output profile_results.json
 ## ➡️ Next step
 
 - [Score Report Fields](./score-report-fields.md)
-- [Inspect and Traverse MLP Structure](../how-to/inspect-mlp-structure.md)
-- [Validate, Run, and Package](../how-to/validate-run-package.md)
+- [Inspect and Traverse MLP Structure](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/inspect-mlp-structure.md) (in the starter kit)
+- [Validate, Run, and Package](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/validate-run-package.md) (in the starter kit)

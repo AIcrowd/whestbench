@@ -20,6 +20,14 @@ class SetupContext:
     flop_budget: int
     api_version: str
     scratch_dir: Optional[str] = None
+    seed: int = 0
+    """Run-level seed for setup-time randomness.
+
+    Same value across all MLPs in a single run. ``0`` when ``--seed`` was not
+    passed. Participants seed their setup-time RNG via
+    ``np.random.default_rng(ctx.seed)``. See
+    docs/reference/estimator-contract.md for the reproducibility contract.
+    """
 
 
 class BaseEstimator(ABC):
