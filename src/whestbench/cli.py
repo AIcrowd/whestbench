@@ -909,7 +909,6 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     create_ds_parser.add_argument("--n-samples", type=int, default=10000)
     create_ds_parser.add_argument("--width", type=int, default=None)
     create_ds_parser.add_argument("--depth", type=int, default=None)
-    create_ds_parser.add_argument("--flop-budget", type=int, default=None)
     create_ds_parser.add_argument("--seed", type=int, default=None)
     create_ds_parser.add_argument("-o", "--output", default="eval_dataset.npz")
     create_ds_parser.add_argument("--debug", action="store_true")
@@ -1412,7 +1411,6 @@ def _main_participant(argv: "list[str]") -> int:
             contest = _default_contest_spec()
             ds_width = args.width or contest.width
             ds_depth = args.depth or contest.depth
-            ds_flop_budget = args.flop_budget or contest.flop_budget
             n_mlps_ds = int(args.n_mlps)
 
             if args.device is not None:
@@ -1538,7 +1536,6 @@ def _main_participant(argv: "list[str]") -> int:
                             n_samples=int(args.n_samples),
                             width=ds_width,
                             depth=ds_depth,
-                            flop_budget=ds_flop_budget,
                             seed=getattr(args, "seed", None),
                             output_path=Path(args.output),
                             progress=_on_ds_progress,
@@ -1549,7 +1546,6 @@ def _main_participant(argv: "list[str]") -> int:
                         n_samples=int(args.n_samples),
                         width=ds_width,
                         depth=ds_depth,
-                        flop_budget=ds_flop_budget,
                         seed=getattr(args, "seed", None),
                         output_path=Path(args.output),
                     )
@@ -1559,7 +1555,6 @@ def _main_participant(argv: "list[str]") -> int:
                     n_samples=int(args.n_samples),
                     width=ds_width,
                     depth=ds_depth,
-                    flop_budget=ds_flop_budget,
                     seed=getattr(args, "seed", None),
                     output_path=Path(args.output),
                 )

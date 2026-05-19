@@ -53,7 +53,6 @@ def create_dataset(
     n_samples: int,
     width: int,
     depth: int,
-    flop_budget: int,
     seed: Optional[int] = None,
     output_path: "Path | str",
     progress: Optional[Any] = None,
@@ -144,7 +143,6 @@ def create_dataset(
         "n_samples": n_samples,
         "width": width,
         "depth": depth,
-        "flop_budget": flop_budget,
         "hardware": collect_hardware_fingerprint(),
     }
 
