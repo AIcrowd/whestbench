@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false
 """Torch port of sample_layer_statistics for GPU/CPU torch execution.
 
 Mirrors src/whestbench/simulation.py:sample_layer_statistics but operates on

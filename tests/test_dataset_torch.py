@@ -1,6 +1,8 @@
 """Tests for the torch-backed dataset path. Skipped if torch is not installed."""
 
+# pyright: reportMissingImports=false
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -10,7 +12,7 @@ torch = pytest.importorskip("torch")
 from whestbench._simulation_torch import sample_layer_statistics_torch  # noqa: E402
 
 
-def _seed_torch_generator(seed: int, device: str) -> "torch.Generator":
+def _seed_torch_generator(seed: int, device: str) -> Any:
     g = torch.Generator(device=device)
     g.manual_seed(seed)
     return g
@@ -217,7 +219,7 @@ def test_create_dataset_torch_statistically_matches_cpu_path(tmp_path: Path) -> 
     """Means produced by torch path agree with flopscope CPU path within MC noise."""
     from whestbench.dataset import create_dataset
 
-    common_kwargs: dict[str, object] = {
+    common_kwargs: dict[str, Any] = {
         "n_mlps": 2,
         "n_samples": 100_000,
         "width": 4,
@@ -277,7 +279,7 @@ def test_mini_batch_correctness_uneven_n_mlps(tmp_path: Path) -> None:
 
 def test_mini_batch_equivalence_to_single_batch(tmp_path: Path) -> None:
     """Splitting into mini-batches must produce the same output as one big batch."""
-    common: dict[str, object] = {
+    common: dict[str, Any] = {
         "n_mlps": 4,
         "n_samples": 128,
         "width": 4,
