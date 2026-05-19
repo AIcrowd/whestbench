@@ -11,10 +11,7 @@
 - [Score report fields](reference/score-report-fields.md)
 - [Code patterns (flopscope cheat sheet)](reference/code-patterns.md)
 - [Flopscope primer (BudgetContext, FLOP costs)](reference/flopscope-primer.md)
-
-## How-to guides
-
-- [Generating large datasets on GPU](how-to/gpu-dataset-generation.md)
+- [Generating large datasets on GPU](reference/gpu-dataset-generation.md)
 
 ## Source map
 
