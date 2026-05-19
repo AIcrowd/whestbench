@@ -214,12 +214,18 @@ def run_default_score(profile: bool = False) -> "Any":
 
 
 def _smoke_test_contest_spec() -> ContestSpec:
-    """Lightweight spec for the smoke test — just checks plumbing, not accuracy."""
+    """Lightweight spec for the smoke test — just checks plumbing, not accuracy.
+
+    flop_budget = 5e9 gives ~50ms of residual headroom at lambda=1e11, which
+    comfortably absorbs CombinedEstimator's first-call numpy warmup (~10-15ms
+    on a typical dev box). Smoke is for plumbing; the per-MLP cap here is not
+    meant to reflect competition tightness.
+    """
     return ContestSpec(
         width=64,
         depth=2,
         n_mlps=3,
-        flop_budget=10_000_000,
+        flop_budget=5_000_000_000,
         ground_truth_samples=100 * 100 * 4,
     )
 
