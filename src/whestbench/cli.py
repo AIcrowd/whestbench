@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import os
 import sys
@@ -766,9 +767,10 @@ def validate_submission_entrypoint(
 
 def _build_participant_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
+        prog="whest",
         description=(
             "Participant-first WhestBench CLI. Starter examples live in https://github.com/AIcrowd/whest-starterkit."
-        )
+        ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -1116,7 +1118,21 @@ def _run_estimator_with_runner(
 
 
 def _main_participant(argv: "list[str]") -> int:
-    args = _build_participant_parser().parse_args(argv)
+    parser = _build_participant_parser()
+    if argv and not argv[0].startswith("-"):
+        commands = next(
+            (
+                tuple(action.choices)
+                for action in parser._actions
+                if isinstance(action, argparse._SubParsersAction)
+            ),
+            (),
+        )
+        if argv[0] not in commands:
+            matches = difflib.get_close_matches(argv[0], commands, n=1)
+            if matches:
+                parser.error(f"unknown command '{argv[0]}'. did you mean '{matches[0]}'?")
+    args = parser.parse_args(argv)
     command = str(args.command)
     stdout_is_tty = bool(getattr(sys.stdout, "isatty", lambda: False)())
     output_format = resolve_output_format(
