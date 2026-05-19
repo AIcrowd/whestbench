@@ -233,12 +233,13 @@ def test_create_dataset_torch_statistically_matches_cpu_path(tmp_path: Path) -> 
     bundle_cpu = load_dataset(out_cpu)
     bundle_torch = load_dataset(out_torch)
 
-    # Weights are generated the same way (numpy RNG), so should be identical:
-    np.testing.assert_array_equal(
-        load_dataset(out_cpu).all_layer_means.shape,
-        load_dataset(out_torch).all_layer_means.shape,
-    )
-    # Means agree within 5σ of MC noise (~5/sqrt(N) ≈ 0.016 at N=100K):
+    # Shapes must agree (weights are generated identically via numpy RNG):
+    assert bundle_cpu.all_layer_means.shape == bundle_torch.all_layer_means.shape
+    # final_means agree within 5σ of MC noise — σ ≈ 1/sqrt(N), tol = 5σ.
+    # If this ever flakes, do NOT silently widen the tolerance — investigate
+    # whether the torch hot loop is producing biased output or the seed
+    # protocol has drifted. The 5σ bound at N=100K is generous enough to
+    # absorb legitimate RNG variance between numpy PCG64 and torch Philox.
     tol = 5.0 / (common_kwargs["n_samples"] ** 0.5)
     np.testing.assert_allclose(
         bundle_cpu.final_means,
