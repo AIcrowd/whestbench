@@ -125,7 +125,7 @@ alpha = mu_pre / sigma_pre
 E_relu = mu_pre * norm_cdf(alpha) + sigma_pre * norm_pdf(alpha)
 ```
 
-See [`examples/estimators/mean_propagation.py`](../../examples/estimators/mean_propagation.py) for a complete working estimator using these patterns.
+See [`02_mean_propagation.py`](https://github.com/AIcrowd/whest-starterkit/blob/main/examples/02_mean_propagation.py) (in the starter kit) for a complete worked example using these patterns.
 
 ### Per-neuron variance propagation (diagonal)
 
@@ -139,6 +139,6 @@ var_pre = (w * w).T @ var
 
 ## Next step
 
-- [Manage Your FLOP Budget](../how-to/manage-flop-budget.md)
-- [Algorithm Ideas](../how-to/algorithm-ideas.md)
 - [Estimator Contract](./estimator-contract.md)
+- [Manage Your FLOP Budget](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/manage-flop-budget.md) (in the starter kit)
+- [Algorithm Ideas](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/algorithm-ideas.md) (in the starter kit)
