@@ -1254,6 +1254,52 @@ def test_run_plain_output_shows_validation_hint_details(
     assert "'message':" not in out
 
 
+def test_json_mode_silences_exhaustion_warning(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    recwarn: pytest.WarningsRecorder,
+) -> None:
+    """In --json mode, the CLI must install warnings.catch_warnings() +
+    simplefilter('ignore', ScoringExhaustionWarning) around the scoring call.
+    The warning is silenced at emission: stdout stays pure JSON, no
+    ScoringExhaustionWarning reaches the warnings recorder, and per-MLP
+    entries still carry the traceback.
+    """
+    estimator = tmp_path / "hungry.py"
+    estimator.write_text(
+        dedent(
+            """
+            import flopscope as flops
+            from whestbench import BaseEstimator
+
+            class Estimator(BaseEstimator):
+                def predict(self, mlp, budget):
+                    raise flops.BudgetExhaustedError('test', flop_cost=0, flops_remaining=0)
+            """
+        ).lstrip(),
+        encoding="utf-8",
+    )
+    dataset = tmp_path / "ds.npz"
+    _write_tiny_dataset(dataset)
+
+    exit_code = cli.main(_tiny_run_argv(estimator, dataset) + ["--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0, captured.err
+    # stdout is pure JSON.
+    payload = json.loads(captured.out)
+    # No exhaustion warnings recorded (CLI suppressed them at emission).
+    exhaustion_warnings = [
+        w for w in recwarn.list if issubclass(w.category, ScoringExhaustionWarning)
+    ]
+    assert exhaustion_warnings == [], [str(w.message) for w in exhaustion_warnings]
+    # Tracebacks still present in per-MLP entries.
+    for entry in payload["results"]["per_mlp"]:
+        assert entry["budget_exhausted"] is True
+        assert isinstance(entry["traceback"], str)
+        assert "BudgetExhaustedError" in entry["traceback"]
+
+
 def test_run_budget_exhausted_does_not_set_exit_1(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
