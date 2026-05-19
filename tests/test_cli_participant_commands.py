@@ -1352,3 +1352,36 @@ def test_run_budget_exhausted_does_not_set_exit_1(
         w for w in recwarn.list if issubclass(w.category, ScoringExhaustionWarning)
     ]
     assert exhaustion_warnings == [], [str(w.message) for w in exhaustion_warnings]
+
+
+def test_fail_fast_exits_nonzero_on_budget_exhaustion(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """With --fail-fast, BudgetExhaustedError propagates: nonzero exit and
+    traceback on stderr.
+    """
+    estimator = tmp_path / "hungry.py"
+    estimator.write_text(
+        dedent(
+            """
+            import flopscope as flops
+            from whestbench import BaseEstimator
+
+            class Estimator(BaseEstimator):
+                def predict(self, mlp, budget):
+                    raise flops.BudgetExhaustedError('test', flop_cost=0, flops_remaining=0)
+            """
+        ).lstrip(),
+        encoding="utf-8",
+    )
+    dataset = tmp_path / "ds.npz"
+    _write_tiny_dataset(dataset)
+
+    exit_code = cli.main(_tiny_run_argv(estimator, dataset) + ["--fail-fast", "--debug"])
+    captured = capsys.readouterr()
+
+    assert exit_code != 0
+    # The CLI renders the error panel (including traceback under --debug) to
+    # stdout; combine both to be resilient to future output-routing changes.
+    combined = captured.out + captured.err
+    assert "BudgetExhaustedError" in combined
