@@ -1279,7 +1279,7 @@ def _main_participant(argv: "list[str]") -> int:
                     "(torch backend manages threading internally)",
                     file=sys.stderr,
                 )
-                sys.exit(2)
+                return 2
 
             contest = _default_contest_spec()
             ds_width = args.width or contest.width
