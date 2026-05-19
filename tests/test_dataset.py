@@ -31,6 +31,9 @@ def test_create_and_load_roundtrip(tmp_path) -> None:
     assert (
         "sampling.sample_layer_statistics" in bundle.sampling_budget_breakdowns[0]["by_namespace"]
     )
+    # New assertions for backend tag + schema bump:
+    assert bundle.metadata["schema_version"] == "2.3"
+    assert bundle.metadata["backend"] == "flopscope"
     for mlp in bundle.mlps:
         mlp.validate()
         assert mlp.width == 8
