@@ -30,15 +30,14 @@ def test_create_and_load_roundtrip(tmp_path) -> None:
     assert (
         "sampling.sample_layer_statistics" in bundle.sampling_budget_breakdowns[0]["by_namespace"]
     )
-    # New assertions for backend tag + schema bump:
+    # New assertions for backend tag + schema bump + #23 flop_budget removal:
     assert bundle.metadata["schema_version"] == "2.3"
     assert bundle.metadata["backend"] == "flopscope"
+    assert "flop_budget" not in bundle.metadata
     for mlp in bundle.mlps:
         mlp.validate()
         assert mlp.width == 8
         assert mlp.depth == 2
-    assert bundle.metadata["schema_version"] == "2.3"
-    assert "flop_budget" not in bundle.metadata
 
 
 def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
