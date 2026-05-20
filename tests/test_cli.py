@@ -572,6 +572,40 @@ def test_agent_mode_flag_is_rejected() -> None:
     assert exc_info.value.code == 2
 
 
+@pytest.mark.parametrize(
+    ("typo", "suggestion"),
+    [
+        ("ru", "run"),
+        ("packaage", "package"),
+        ("validte", "validate"),
+    ],
+)
+def test_unknown_subcommand_suggests_close_match(
+    typo: str, suggestion: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main([typo])
+
+    captured = capsys.readouterr()
+
+    assert exc_info.value.code == 2
+    assert f"unknown command '{typo}'" in captured.err
+    assert f"did you mean '{suggestion}'?" in captured.err
+
+
+def test_unknown_subcommand_without_close_match_uses_argparse_error(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["zzzzzz"])
+
+    captured = capsys.readouterr()
+
+    assert exc_info.value.code == 2
+    assert "invalid choice: 'zzzzzz'" in captured.err
+    assert "did you mean" not in captured.err
+
+
 # --- Progress task visibility/start-state (Paul's "both timers tick" report) -
 
 
@@ -822,13 +856,13 @@ def test_plain_run_progress_logs_sampling_chunks_with_throttle(
 
 
 def test_default_contest_spec_matches_proposal():
-    """Default contest spec should match NeurIPS proposal: width=256, depth=8, flop_budget=1.7e10."""
+    """Default contest spec should match NeurIPS proposal: width=256, depth=8, flop_budget=6.8e10."""
     from whestbench.cli import _default_contest_spec
 
     spec = _default_contest_spec()
     assert spec.width == 256
     assert spec.depth == 8
-    assert spec.flop_budget == 17_000_000_000
+    assert spec.flop_budget == 68_000_000_000
     assert spec.n_mlps == 10
 
 
@@ -837,4 +871,4 @@ def test_default_resource_limits_matches_proposal():
     from whestbench.cli import _default_resource_limits
 
     limits = _default_resource_limits()
-    assert limits.flop_budget == 17_000_000_000
+    assert limits.flop_budget == 68_000_000_000
