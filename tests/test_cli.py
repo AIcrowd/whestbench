@@ -511,7 +511,7 @@ def test_run_flop_budget_overrides_stale_dataset_metadata(
         dataset_path,
         metadata=np.array(json.dumps(fake_metadata)),
         weights=rng.standard_normal((n_mlps, depth, width, width)).astype(np.float32),
-        all_layer_means=np.zeros((n_mlps, depth + 1, width), dtype=np.float32),
+        all_layer_means=np.zeros((n_mlps, depth, width), dtype=np.float32),
         final_means=np.zeros((n_mlps, width), dtype=np.float32),
         avg_variances=np.ones(n_mlps, dtype=np.float64),
         sampling_budget_breakdowns=np.array(json.dumps([])),
