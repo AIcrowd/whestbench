@@ -49,7 +49,7 @@ pip install whestbench[gpu]
 ```
 
 Then use `whest create-dataset --device auto -o data.npz`. See [GPU Dataset
-Generation](docs/how-to/gpu-dataset-generation.md) for details.
+Generation](docs/reference/gpu-dataset-generation.md) for details.
 
 ## Repository layout
 

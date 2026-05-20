@@ -1422,3 +1422,62 @@ def test_fail_fast_exits_nonzero_on_budget_exhaustion(
     # stdout; combine both to be resilient to future output-routing changes.
     combined = captured.out + captured.err
     assert "BudgetExhaustedError" in combined
+
+
+def test_create_dataset_cli_with_device_cpu_uses_torch_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    pytest.importorskip("torch")
+
+    output_path = tmp_path / "torch_cli.npz"
+    exit_code = cli.main(
+        [
+            "create-dataset",
+            "--n-mlps",
+            "1",
+            "--n-samples",
+            "16",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--flop-budget",
+            "32",
+            "--device",
+            "cpu",
+            "-o",
+            str(output_path),
+            "--json",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert json.loads(captured.out)["ok"] is True
+
+    # Verify the actual file was written by the torch path
+    from whestbench.dataset import load_dataset
+
+    bundle = load_dataset(output_path)
+    assert bundle.metadata["backend"] == "torch"
+    assert bundle.metadata["device"] == "cpu"
+
+
+def test_create_dataset_cli_max_threads_with_device_errors(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = cli.main(
+        [
+            "create-dataset",
+            "--device",
+            "cpu",
+            "--max-threads",
+            "4",
+            "-o",
+            "/tmp/should_not_be_created.npz",
+        ]
+    )
+    assert exit_code == 2
+    captured = capsys.readouterr()
+    assert "--max-threads cannot be combined with --device" in captured.err

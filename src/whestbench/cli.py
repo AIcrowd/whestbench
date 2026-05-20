@@ -921,6 +921,14 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Limit BLAS to at most N CPU threads.",
     )
+    create_ds_parser.add_argument(
+        "--device",
+        default=None,
+        choices=["auto", "cuda", "mps", "cpu"],
+        help="Use torch-backed implementation on this device. "
+        "Default (omitted) uses the flopscope CPU path. "
+        "Requires `pip install whestbench[gpu]`.",
+    )
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
     package_parser.add_argument("--estimator", required=True)
@@ -1393,11 +1401,105 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "create-dataset":
+            if args.device is not None and args.max_threads is not None:
+                print(
+                    "error: --max-threads cannot be combined with --device "
+                    "(torch backend manages threading internally)",
+                    file=sys.stderr,
+                )
+                return 2
+
             contest = _default_contest_spec()
             ds_width = args.width or contest.width
             ds_depth = args.depth or contest.depth
             ds_flop_budget = args.flop_budget or contest.flop_budget
             n_mlps_ds = int(args.n_mlps)
+
+            if args.device is not None:
+                from whestbench.dataset_torch import create_dataset_torch
+
+                if output_format == "rich":
+                    try:
+                        from rich.progress import (
+                            BarColumn,
+                            MofNCompleteColumn,
+                            Progress,
+                            SpinnerColumn,
+                            TextColumn,
+                            TimeElapsedColumn,
+                        )
+
+                        progress_bar = Progress(
+                            SpinnerColumn(),
+                            TextColumn("[progress.description]{task.description}"),
+                            BarColumn(bar_width=None),
+                            MofNCompleteColumn(),
+                            TimeElapsedColumn(),
+                        )
+                        gen_task = progress_bar.add_task("Generating MLPs", total=n_mlps_ds)
+                        sample_task = progress_bar.add_task(
+                            "Sampling ground truth (torch)", total=n_mlps_ds
+                        )
+
+                        def _on_ds_progress(event: Dict[str, Any]) -> None:
+                            phase = str(event.get("phase", ""))
+                            completed = int(event.get("completed", 0))
+                            total_value = event.get("total")
+                            total = int(total_value) if isinstance(total_value, int) else None
+                            if phase == "generating":
+                                progress_bar.update(gen_task, completed=completed)
+                            elif phase == "sampling":
+                                progress_bar.update(sample_task, completed=completed, total=total)
+
+                        with progress_bar:
+                            out = create_dataset_torch(
+                                n_mlps=n_mlps_ds,
+                                n_samples=int(args.n_samples),
+                                width=ds_width,
+                                depth=ds_depth,
+                                flop_budget=ds_flop_budget,
+                                seed=getattr(args, "seed", None),
+                                output_path=Path(args.output),
+                                progress=_on_ds_progress,
+                                device=args.device,
+                            )
+                    except ImportError:
+                        out = create_dataset_torch(
+                            n_mlps=n_mlps_ds,
+                            n_samples=int(args.n_samples),
+                            width=ds_width,
+                            depth=ds_depth,
+                            flop_budget=ds_flop_budget,
+                            seed=getattr(args, "seed", None),
+                            output_path=Path(args.output),
+                            device=args.device,
+                        )
+                else:
+                    out = create_dataset_torch(
+                        n_mlps=n_mlps_ds,
+                        n_samples=int(args.n_samples),
+                        width=ds_width,
+                        depth=ds_depth,
+                        flop_budget=ds_flop_budget,
+                        seed=getattr(args, "seed", None),
+                        output_path=Path(args.output),
+                        device=args.device,
+                    )
+
+                payload = {"ok": True, "path": str(out)}
+                if json_output:
+                    print(json.dumps(payload, indent=2))
+                else:
+                    doc = build_create_dataset_presentation(payload)
+                    print(
+                        render_command_presentation(
+                            doc,
+                            output_format=output_format,
+                            force_terminal=stdout_is_tty,
+                        ),
+                        end="",
+                    )
+                return 0
 
             if output_format == "rich":
                 try:
