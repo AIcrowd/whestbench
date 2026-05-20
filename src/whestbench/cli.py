@@ -873,8 +873,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="N",
         help=(
-            "Effective compute budget per MLP in FLOPs. Caps C_m = F_m + lambda*R_m "
-            "(analytical FLOPs plus charged residual wall time). Default: 68_000_000_000 (6.8e10)."
+            "Effective compute budget per MLP in FLOPs. Caps "
+            "C_m = F_m + lambda*R_m (analytical FLOPs plus charged residual "
+            "wall time). Always honored; any flop_budget stored in "
+            "--dataset's metadata is ignored. "
+            "Default: 68_000_000_000 (6.8e10)."
         ),
     )
     run_parser.add_argument(
