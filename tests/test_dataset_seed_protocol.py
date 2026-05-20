@@ -60,7 +60,7 @@ def test_loading_v1_0_dataset_fails_with_clear_message(tmp_path):
     # Synthesize a minimal v1.0-looking .npz by writing the metadata directly.
     out = tmp_path / "v1.npz"
     metadata = {
-        "schema_version": "2.2",
+        "schema_version": "2.1",
         "seed_protocol": {
             "name": "whestbench_seedsequence_hierarchy",
             "version": "1.0",
