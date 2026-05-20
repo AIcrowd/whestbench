@@ -85,6 +85,31 @@ ProgressCallback = Callable[[Dict[str, Any]], None]
 _SAMPLING_PROGRESS_PHASE = "sampling_ground_truth"
 
 
+class _RemovedFlopBudgetAction(argparse.Action):
+    """Reject `whest create-dataset --flop-budget`, which used to stamp
+    a now-removed `flop_budget` field into dataset metadata. Points the
+    user at the live runtime flag.
+
+    The flag was removed in schema 2.3 (issue #23). Keeping this action
+    indefinitely costs nothing and improves the UX for anyone landing
+    here from a stale doc or LLM-suggested command.
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        kwargs.setdefault("nargs", "?")
+        kwargs.setdefault("default", argparse.SUPPRESS)
+        kwargs.setdefault("help", argparse.SUPPRESS)
+        super().__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        parser.error(
+            "--flop-budget is no longer accepted on 'create-dataset'. "
+            "The FLOP budget is a run-time parameter; pass it to "
+            "'whest run --flop-budget' instead. Ground truth in the "
+            "dataset is independent of the FLOP budget."
+        )
+
+
 def _default_contest_spec() -> ContestSpec:
     return ContestSpec(
         width=256,
@@ -848,8 +873,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="N",
         help=(
-            "Effective compute budget per MLP in FLOPs. Caps C_m = F_m + lambda*R_m "
-            "(analytical FLOPs plus charged residual wall time). Default: 68_000_000_000 (6.8e10)."
+            "Effective compute budget per MLP in FLOPs. Caps "
+            "C_m = F_m + lambda*R_m (analytical FLOPs plus charged residual "
+            "wall time). Always honored; any flop_budget stored in "
+            "--dataset's metadata is ignored. "
+            "Default: 68_000_000_000 (6.8e10)."
         ),
     )
     run_parser.add_argument(
@@ -909,7 +937,6 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     create_ds_parser.add_argument("--n-samples", type=int, default=10000)
     create_ds_parser.add_argument("--width", type=int, default=None)
     create_ds_parser.add_argument("--depth", type=int, default=None)
-    create_ds_parser.add_argument("--flop-budget", type=int, default=None)
     create_ds_parser.add_argument("--seed", type=int, default=None)
     create_ds_parser.add_argument("-o", "--output", default="eval_dataset.npz")
     create_ds_parser.add_argument("--debug", action="store_true")
@@ -928,6 +955,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Use torch-backed implementation on this device. "
         "Default (omitted) uses the flopscope CPU path. "
         "Requires `pip install whestbench[gpu]`.",
+    )
+    create_ds_parser.add_argument(
+        "--flop-budget",
+        action=_RemovedFlopBudgetAction,
     )
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
@@ -1412,7 +1443,6 @@ def _main_participant(argv: "list[str]") -> int:
             contest = _default_contest_spec()
             ds_width = args.width or contest.width
             ds_depth = args.depth or contest.depth
-            ds_flop_budget = args.flop_budget or contest.flop_budget
             n_mlps_ds = int(args.n_mlps)
 
             if args.device is not None:
@@ -1457,7 +1487,6 @@ def _main_participant(argv: "list[str]") -> int:
                                 n_samples=int(args.n_samples),
                                 width=ds_width,
                                 depth=ds_depth,
-                                flop_budget=ds_flop_budget,
                                 seed=getattr(args, "seed", None),
                                 output_path=Path(args.output),
                                 progress=_on_ds_progress,
@@ -1469,7 +1498,6 @@ def _main_participant(argv: "list[str]") -> int:
                             n_samples=int(args.n_samples),
                             width=ds_width,
                             depth=ds_depth,
-                            flop_budget=ds_flop_budget,
                             seed=getattr(args, "seed", None),
                             output_path=Path(args.output),
                             device=args.device,
@@ -1480,7 +1508,6 @@ def _main_participant(argv: "list[str]") -> int:
                         n_samples=int(args.n_samples),
                         width=ds_width,
                         depth=ds_depth,
-                        flop_budget=ds_flop_budget,
                         seed=getattr(args, "seed", None),
                         output_path=Path(args.output),
                         device=args.device,
@@ -1538,7 +1565,6 @@ def _main_participant(argv: "list[str]") -> int:
                             n_samples=int(args.n_samples),
                             width=ds_width,
                             depth=ds_depth,
-                            flop_budget=ds_flop_budget,
                             seed=getattr(args, "seed", None),
                             output_path=Path(args.output),
                             progress=_on_ds_progress,
@@ -1549,7 +1575,6 @@ def _main_participant(argv: "list[str]") -> int:
                         n_samples=int(args.n_samples),
                         width=ds_width,
                         depth=ds_depth,
-                        flop_budget=ds_flop_budget,
                         seed=getattr(args, "seed", None),
                         output_path=Path(args.output),
                     )
@@ -1559,7 +1584,6 @@ def _main_participant(argv: "list[str]") -> int:
                     n_samples=int(args.n_samples),
                     width=ds_width,
                     depth=ds_depth,
-                    flop_budget=ds_flop_budget,
                     seed=getattr(args, "seed", None),
                     output_path=Path(args.output),
                 )
@@ -1626,7 +1650,7 @@ def _main_participant(argv: "list[str]") -> int:
                     width=ds_meta["width"],
                     depth=ds_meta["depth"],
                     n_mlps=n_mlps,
-                    flop_budget=ds_meta.get("flop_budget", flop_budget),
+                    flop_budget=flop_budget,
                     ground_truth_samples=gt_samples,
                     seed=run_seed,
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),

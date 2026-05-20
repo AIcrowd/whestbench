@@ -40,7 +40,6 @@ def create_dataset_torch(
     n_samples: int,
     width: int,
     depth: int,
-    flop_budget: int,
     seed: Optional[int] = None,
     output_path: "Path | str",
     progress: Optional[Callable[[Dict[str, Any]], None]] = None,
@@ -58,7 +57,7 @@ def create_dataset_torch(
     same seed: per-neuron means agree within ~3e-5 at N=1e9 (MC noise).
 
     Args:
-        n_mlps, n_samples, width, depth, flop_budget, seed, output_path, progress:
+        n_mlps, n_samples, width, depth, seed, output_path, progress:
             Same as create_dataset(). See whestbench.dataset for full semantics.
         device: "auto" | "cuda" | "mps" | "cpu". "auto" resolves cuda > mps > cpu.
             Explicit values error if unavailable (no silent CPU fallback).
@@ -206,7 +205,6 @@ def create_dataset_torch(
         "n_samples": n_samples,
         "width": width,
         "depth": depth,
-        "flop_budget": flop_budget,
         "hardware": collect_hardware_fingerprint(),
         "torch_version": torch.__version__,
         "device": resolved_device,
