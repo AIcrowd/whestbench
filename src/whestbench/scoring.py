@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import traceback as _tb
+import warnings
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
@@ -23,6 +24,18 @@ if TYPE_CHECKING:
 # Where R_m is the residual wall-time bucket (NOT total wall, NOT flopscope dispatch).
 # Per the NeurIPS proposal, the initial rate is 10^11 FLOPs/second.
 LAMBDA_FLOPS_PER_SECOND: float = 1e11
+
+
+class ScoringExhaustionWarning(UserWarning):
+    """Base class for budget/time exhaustion warnings raised during scoring."""
+
+
+class BudgetExhaustionWarning(ScoringExhaustionWarning):
+    """Raised when an estimator exhausts its FLOP budget on a single MLP."""
+
+
+class TimeExhaustionWarning(ScoringExhaustionWarning):
+    """Raised when an estimator exhausts its wall-clock budget on a single MLP."""
 
 
 @dataclass
@@ -211,18 +224,26 @@ def validate_predictions(predictions: fnp.ndarray, *, depth: int, width: int) ->
     shape = tuple(predictions.shape) if hasattr(predictions, "shape") else ()
     expected_shape = (depth, width)
     if shape != expected_shape:
-        hint = (
-            "Returned predictions appear to be transposed: expected (depth, width), got (width, depth)."
-            if shape == (width, depth)
-            else "Predictions must be a 2D array with shape (depth, width)."
-        )
+        if shape == (width, depth):
+            hint = (
+                "Returned predictions appear to be transposed (got width-first instead "
+                "of depth-first). Stack per-layer mean vectors with "
+                "`fnp.stack(rows, axis=0)` where each row has shape (width,)."
+            )
+        else:
+            hint = (
+                "Predictions must be a 2D array of shape (depth, width). Stack per-layer "
+                "mean vectors with `fnp.stack(rows, axis=0)` where each row has shape (width,)."
+            )
         details = {
             "expected_shape": list(expected_shape),
             "got_shape": list(shape),
             "cause_hints": [hint],
             "hint": hint,
         }
-        exc = ValueError(f"Predictions must have shape ({depth}, {width}), got {shape}.")
+        exc = ValueError(
+            f"Predictions must have shape (depth={depth}, width={width}); got shape={shape}."
+        )
         setattr(exc, "details", details)
         raise exc
     pred_np = fnp.asarray(predictions, dtype=fnp.float32)
@@ -497,6 +518,7 @@ def evaluate_estimator(
         residual_wall_time_exhausted = False
         raw_breakdown: Optional[Dict[str, Any]] = None
         normalized_breakdown: Optional[Dict[str, Any]] = None
+        exhaustion_traceback: Optional[str] = None
 
         budget_ctx = flops.BudgetContext(
             flop_budget=spec.flop_budget,
@@ -521,6 +543,9 @@ def evaluate_estimator(
             if normalized_breakdown is not None:
                 normalized_breakdowns.append(normalized_breakdown)
         except flops.BudgetExhaustedError:
+            if fail_fast:
+                raise
+            exhaustion_traceback = _tb.format_exc()
             predictions = fnp.zeros((spec.depth, spec.width))
             budget_exhausted = True
             stats = _predict_stats_to_dict(
@@ -535,7 +560,17 @@ def evaluate_estimator(
             flops_used = flops_used or spec.flop_budget
             if normalized_breakdown is not None:
                 normalized_breakdowns.append(normalized_breakdown)
+            warnings.warn(
+                f"MLP {i} (depth={spec.depth}, width={spec.width}) exhausted FLOP "
+                f"budget after {flops_used:,} FLOPs (budget={spec.flop_budget:,}); "
+                f"estimator output set to zeros.",
+                BudgetExhaustionWarning,
+                stacklevel=2,
+            )
         except flops.TimeExhaustedError:
+            if fail_fast:
+                raise
+            exhaustion_traceback = _tb.format_exc()
             predictions = fnp.zeros((spec.depth, spec.width))
             time_exhausted = True
             stats = _predict_stats_to_dict(
@@ -549,6 +584,15 @@ def evaluate_estimator(
             normalized_breakdown = _normalize_estimator_budget_breakdown(raw_breakdown)
             if normalized_breakdown is not None:
                 normalized_breakdowns.append(normalized_breakdown)
+            elapsed_s = float(budget_ctx.wall_time_s or 0.0)
+            warnings.warn(
+                f"MLP {i} (depth={spec.depth}, width={spec.width}) exhausted "
+                f"wall-clock budget after {elapsed_s:.2f}s "
+                f"(limit={spec.wall_time_limit_s:.2f}s); "
+                f"estimator output set to zeros.",
+                TimeExhaustionWarning,
+                stacklevel=2,
+            )
         except Exception as exc:
             if fail_fast:
                 raise
@@ -730,6 +774,7 @@ def evaluate_estimator(
                 "flopscope_overhead_time_s": flopscope_overhead_time_s,
                 "residual_wall_time_s": residual_wall_time_s,
                 "breakdowns": {"estimator": normalized_breakdown},
+                "traceback": exhaustion_traceback,
             }
         )
 
