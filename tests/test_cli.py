@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import re
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pytest
 
 import whestbench.cli as cli
@@ -467,6 +469,113 @@ def test_run_server_alias_is_subprocess(monkeypatch: pytest.MonkeyPatch) -> None
 
     assert exit_code == 0
     assert observed.get("runner") == "SubprocessRunner"
+
+
+def test_run_flop_budget_overrides_stale_dataset_metadata(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Regression test for AIcrowd/whestbench#23.
+
+    `whest run --flop-budget Y --dataset X` must always use Y for the
+    ContestSpec, regardless of any flop_budget stored in X's metadata.
+    """
+    from whestbench.dataset import (
+        SCHEMA_VERSION,
+        SEED_PROTOCOL_NAME,
+        SEED_PROTOCOL_VERSION,
+    )
+
+    STALE_BUDGET = 999
+    USER_BUDGET = 12_345
+
+    width, depth, n_mlps = 4, 2, 1
+    fake_metadata = {
+        "schema_version": SCHEMA_VERSION,
+        "seed_protocol": {
+            "name": SEED_PROTOCOL_NAME,
+            "version": SEED_PROTOCOL_VERSION,
+            "seeded": True,
+        },
+        "created_at_utc": "2026-01-01T00:00:00+00:00",
+        "seed": 42,
+        "n_mlps": n_mlps,
+        "n_samples": 64,
+        "width": width,
+        "depth": depth,
+        "flop_budget": STALE_BUDGET,  # the stale field whose value must NOT win
+        "hardware": {},
+    }
+    rng = np.random.default_rng(0)
+    dataset_path = tmp_path / "stale.npz"
+    np.savez(
+        dataset_path,
+        metadata=np.array(json.dumps(fake_metadata)),
+        weights=rng.standard_normal((n_mlps, depth, width, width)).astype(np.float32),
+        all_layer_means=np.zeros((n_mlps, depth, width), dtype=np.float32),
+        final_means=np.zeros((n_mlps, width), dtype=np.float32),
+        avg_variances=np.ones(n_mlps, dtype=np.float64),
+        sampling_budget_breakdowns=np.array(json.dumps([])),
+        mlp_seeds=np.array([0], dtype=np.int64),
+    )
+
+    observed: dict[str, Any] = {}
+
+    def fake_run_estimator_with_runner(*_args: Any, **kwargs: Any) -> dict:
+        observed["flop_budget"] = kwargs["contest_spec"].flop_budget
+        return _sample_report(profile_enabled=False, detail="raw")
+
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run_estimator_with_runner)
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--dataset",
+            str(dataset_path),
+            "--flop-budget",
+            str(USER_BUDGET),
+        ]
+    )
+
+    assert exit_code == 0
+    assert observed["flop_budget"] == USER_BUDGET, (
+        f"Expected --flop-budget={USER_BUDGET} to win over dataset's "
+        f"stored {STALE_BUDGET}, got {observed['flop_budget']}"
+    )
+
+
+def test_create_dataset_flop_budget_flag_is_rejected_with_migration_hint(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    """`whest create-dataset --flop-budget X` must exit non-zero and
+    point the user at `whest run --flop-budget` (issue #23)."""
+    with pytest.raises(SystemExit) as excinfo:
+        cli.main(
+            [
+                "create-dataset",
+                "--n-mlps",
+                "1",
+                "--n-samples",
+                "8",
+                "-o",
+                str(tmp_path / "out.npz"),
+                "--flop-budget",
+                "1000",
+            ]
+        )
+
+    assert excinfo.value.code == 2
+    captured = capsys.readouterr()
+    assert "--flop-budget" in captured.err
+    assert "no longer accepted" in captured.err
+    assert "whest run --flop-budget" in captured.err
 
 
 def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
