@@ -20,7 +20,6 @@ def test_closed_form_matches_flopscope_count(tmp_path) -> None:
         n_samples=n_samples,
         width=width,
         depth=depth,
-        flop_budget=32,  # this is the SCORING budget, not the sampling budget
         seed=42,
         output_path=tmp_path / "flopscope_baseline.npz",
     )
