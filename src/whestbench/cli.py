@@ -85,6 +85,31 @@ ProgressCallback = Callable[[Dict[str, Any]], None]
 _SAMPLING_PROGRESS_PHASE = "sampling_ground_truth"
 
 
+class _RemovedFlopBudgetAction(argparse.Action):
+    """Reject `whest create-dataset --flop-budget`, which used to stamp
+    a now-removed `flop_budget` field into dataset metadata. Points the
+    user at the live runtime flag.
+
+    The flag was removed in schema 2.3 (issue #23). Keeping this action
+    indefinitely costs nothing and improves the UX for anyone landing
+    here from a stale doc or LLM-suggested command.
+    """
+
+    def __init__(self, option_strings, dest, **kwargs):
+        kwargs.setdefault("nargs", "?")
+        kwargs.setdefault("default", argparse.SUPPRESS)
+        kwargs.setdefault("help", argparse.SUPPRESS)
+        super().__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        parser.error(
+            "--flop-budget is no longer accepted on 'create-dataset'. "
+            "The FLOP budget is a run-time parameter; pass it to "
+            "'whest run --flop-budget' instead. Ground truth in the "
+            "dataset is independent of the FLOP budget."
+        )
+
+
 def _default_contest_spec() -> ContestSpec:
     return ContestSpec(
         width=256,
@@ -927,6 +952,10 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Use torch-backed implementation on this device. "
         "Default (omitted) uses the flopscope CPU path. "
         "Requires `pip install whestbench[gpu]`.",
+    )
+    create_ds_parser.add_argument(
+        "--flop-budget",
+        action=_RemovedFlopBudgetAction,
     )
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")

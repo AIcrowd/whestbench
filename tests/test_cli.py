@@ -551,6 +551,33 @@ def test_run_flop_budget_overrides_stale_dataset_metadata(
     )
 
 
+def test_create_dataset_flop_budget_flag_is_rejected_with_migration_hint(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    """`whest create-dataset --flop-budget X` must exit non-zero and
+    point the user at `whest run --flop-budget` (issue #23)."""
+    with pytest.raises(SystemExit) as excinfo:
+        cli.main(
+            [
+                "create-dataset",
+                "--n-mlps",
+                "1",
+                "--n-samples",
+                "8",
+                "-o",
+                str(tmp_path / "out.npz"),
+                "--flop-budget",
+                "1000",
+            ]
+        )
+
+    assert excinfo.value.code == 2
+    captured = capsys.readouterr()
+    assert "--flop-budget" in captured.err
+    assert "no longer accepted" in captured.err
+    assert "whest run --flop-budget" in captured.err
+
+
 def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
