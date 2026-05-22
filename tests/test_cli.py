@@ -16,7 +16,7 @@ from whestbench.runner import RunnerError, RunnerErrorDetail
 
 def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
     report: dict = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "mode": "human",
         "detail": detail,
         "run_meta": {
@@ -35,6 +35,7 @@ def _sample_report(*, profile_enabled: bool, detail: str) -> dict:
             "adjusted_final_layer_score": 0.42,
             "final_layer_mse": 0.38,
             "all_layers_mse": 0.55,
+            "per_layer_mse": [0.6, 0.65, 0.38],
             "best_mlp_adjusted_final_layer_score": 0.38,
             "worst_mlp_adjusted_final_layer_score": 0.46,
             "mean_score_multiplier": 1.0,

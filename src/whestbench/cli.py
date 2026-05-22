@@ -309,7 +309,7 @@ def run_default_report(
     if progress is not None:
         progress({"phase": "scoring", "completed": spec.n_mlps, "total": spec.n_mlps})
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "mode": "human",
         "results": result,
         "run_meta": {
@@ -395,7 +395,7 @@ def _pre_run_report(
     estimator_path: str,
 ) -> Dict[str, Any]:
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "mode": "human",
         "detail": detail,
         "run_meta": {
@@ -1245,7 +1245,7 @@ def _run_estimator_with_runner(
         _emit_exhaustion_summary(results, output_format=output_format)
 
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "mode": "human",
         "results": results,
         "run_meta": {
