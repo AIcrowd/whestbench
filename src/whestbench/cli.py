@@ -127,9 +127,32 @@ def _is_first_progress_phase(phase: str) -> bool:
 def _mlp_label_from_event(event: Dict[str, Any]) -> str:
     mlp_index = event.get("mlp_index")
     n_mlps = event.get("n_mlps")
+    mlp_name = event.get("mlp_name")
     if isinstance(mlp_index, int) and isinstance(n_mlps, int):
+        if isinstance(mlp_name, str) and mlp_name:
+            return f"MLP {mlp_name} ({mlp_index}/{n_mlps})"
         return f"MLP {mlp_index}/{n_mlps}"
     return ""
+
+
+def _read_mlp_names(path: "Path | str") -> "list[str]":
+    """Read just the `mlp_names` array from a baked .npz.
+
+    Used by `whest create-dataset` to surface the generated names in its
+    presentation payload (both human-readable and JSON) without needing to
+    re-decode the much larger weights array. Returns `[]` for missing files
+    (e.g. when `create_dataset` is monkeypatched in tests) or legacy bakes
+    without the `mlp_names` array.
+    """
+    import numpy as _np
+
+    try:
+        with _np.load(str(path), allow_pickle=False) as data:
+            if "mlp_names" not in data.files:
+                return []
+            return [str(s) for s in data["mlp_names"].tolist()]
+    except (FileNotFoundError, OSError):
+        return []
 
 
 def _run_progress_columns() -> tuple[Any, ...]:
@@ -1513,7 +1536,7 @@ def _main_participant(argv: "list[str]") -> int:
                         device=args.device,
                     )
 
-                payload = {"ok": True, "path": str(out)}
+                payload = {"ok": True, "path": str(out), "mlp_names": _read_mlp_names(out)}
                 if json_output:
                     print(json.dumps(payload, indent=2))
                 else:
@@ -1587,7 +1610,7 @@ def _main_participant(argv: "list[str]") -> int:
                     seed=getattr(args, "seed", None),
                     output_path=Path(args.output),
                 )
-            payload = {"ok": True, "path": str(out)}
+            payload = {"ok": True, "path": str(out), "mlp_names": _read_mlp_names(out)}
             if json_output:
                 print(json.dumps(payload, indent=2))
             else:

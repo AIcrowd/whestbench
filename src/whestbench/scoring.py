@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import traceback as _tb
 import warnings
 from dataclasses import dataclass
@@ -12,6 +13,7 @@ import flopscope.numpy as fnp
 
 from .domain import MLP
 from .generation import sample_mlp
+from .naming import assign_unique_names
 from .runner import RunnerError
 from .sdk import BaseEstimator
 from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_count
@@ -109,18 +111,27 @@ def make_contest(
     chunks_per_mlp = sample_layer_statistics_chunk_count(spec.width, spec.ground_truth_samples)
     total_chunks = spec.n_mlps * chunks_per_mlp
 
+    # Pre-compute names so progress events for the first MLP already carry one.
+    estimator_seeds_precomputed = [
+        int(stream_seeds[3 * i + 2].generate_state(1)[0]) if spec_seed is not None else 0
+        for i in range(spec.n_mlps)
+    ]
+    mlp_names_precomputed = assign_unique_names(estimator_seeds_precomputed)
+
     for i in range(spec.n_mlps):
         mlp_rng = fnp.random.default_rng(stream_seeds[3 * i]) if spec_seed is not None else None
         sample_rng = (
             fnp.random.default_rng(stream_seeds[3 * i + 1]) if spec_seed is not None else None
         )
-        estimator_seed = (
-            int(stream_seeds[3 * i + 2].generate_state(1)[0]) if spec_seed is not None else 0
-        )
+        estimator_seed = estimator_seeds_precomputed[i]
         mlp = sample_mlp(spec.width, spec.depth, mlp_rng, seed=estimator_seed)
 
         def _on_sampling_chunk(
-            event: Dict[str, Any], *, mlp_index: int = i + 1, chunk_offset: int = i * chunks_per_mlp
+            event: Dict[str, Any],
+            *,
+            mlp_index: int = i + 1,
+            mlp_name: str = mlp_names_precomputed[i],
+            chunk_offset: int = i * chunks_per_mlp,
         ) -> None:
             if on_sampling_progress is None:
                 return
@@ -132,6 +143,7 @@ def make_contest(
                     "completed": chunk_offset + local_completed,
                     "total": total_chunks,
                     "mlp_index": mlp_index,
+                    "mlp_name": mlp_name,
                     "n_mlps": spec.n_mlps,
                     "mlp_completed": local_completed,
                     "mlp_total": local_total,
@@ -163,6 +175,13 @@ def make_contest(
         avg_variances.append(avg_var)  # pyright: ignore[reportPossiblyUnboundVariable]
         if on_mlp_done is not None:
             on_mlp_done(i + 1)
+
+    # Attach deterministic human-readable names. Names are a pure function of
+    # `mlp.seed` so this live path produces the same name list as a baked
+    # dataset at the same `--seed` — see `whestbench.naming` and
+    # `tests/test_dataset_torch.py::test_torch_and_cpu_backends_produce_identical_names_at_same_seed`.
+    mlp_names = assign_unique_names([m.seed for m in mlps])
+    mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, mlp_names)]
 
     return ContestData(
         spec=spec,
@@ -634,6 +653,7 @@ def evaluate_estimator(
             per_mlp.append(
                 {
                     "mlp_index": i,
+                    "mlp_name": data.mlps[i].name,
                     "error": error_message,
                     "error_code": error_code,
                     "traceback": tb_text,
@@ -760,6 +780,7 @@ def evaluate_estimator(
         per_mlp.append(
             {
                 "mlp_index": i,
+                "mlp_name": data.mlps[i].name,
                 "final_layer_mse": final_layer_mse,
                 "all_layers_mse": all_layers_mse,
                 "adjusted_final_layer_score": adjusted_final_layer_score,

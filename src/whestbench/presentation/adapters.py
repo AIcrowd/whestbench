@@ -287,6 +287,7 @@ def _extract_run_error_entry(entry: dict[str, Any], *, debug: bool) -> RunErrorE
         message=message,
         details=details,
         traceback=str(traceback) if traceback else None,
+        mlp_name=str(entry.get("mlp_name", "") or ""),
     )
 
 
@@ -561,16 +562,28 @@ def build_init_presentation(payload: dict[str, Any]) -> CommandPresentation:
 
 
 def build_create_dataset_presentation(payload: dict[str, Any]) -> CommandPresentation:
+    sections: list[Any] = [
+        KeyValueSection(
+            title="Dataset",
+            rows=[KeyValueRow("Path", _display_value(payload.get("path")))],
+        )
+    ]
+    mlp_names = payload.get("mlp_names")
+    if isinstance(mlp_names, list) and mlp_names:
+        # Show up to the first 5 names; collapse the rest into a summary line.
+        preview_count = 5
+        preview = [str(n) for n in mlp_names[:preview_count]]
+        rows = [KeyValueRow(f"MLP {i}", name) for i, name in enumerate(preview)]
+        remainder = len(mlp_names) - len(preview)
+        if remainder > 0:
+            rows.append(KeyValueRow("...", f"and {remainder} more"))
+        rows.append(KeyValueRow("Total", str(len(mlp_names))))
+        sections.append(KeyValueSection(title="MLP Names", rows=rows))
     return CommandPresentation(
         command="create-dataset",
         status="success",
         title="Dataset Created",
-        sections=[
-            KeyValueSection(
-                title="Dataset",
-                rows=[KeyValueRow("Path", _display_value(payload.get("path")))],
-            )
-        ],
+        sections=sections,
     )
 
 

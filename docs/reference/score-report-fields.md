@@ -55,6 +55,7 @@ Each entry in `per_mlp`:
 | Field | Type | Description |
 |---|---|---|
 | `mlp_index` | `int` | Index of the MLP in the evaluation set |
+| `mlp_name` | `str` | Human-readable slug for this MLP (e.g. `"danielle-johnson"`). Same value as `mlps[i].name` on the corresponding `MLP`; derived deterministically from `mlp_index`'s per-MLP seed. Use it as a stable label in your own logs and dashboards. |
 | `flops_used` | `int` | Total FLOPs used by your estimator for this MLP |
 | `effective_compute` | `float` | C_m = F_m + λ·R_m. Combined FLOP-equivalent compute used by the estimator. |
 | `adjusted_final_layer_score` | `float` | s_m. The per-MLP budget-adjusted score that flows into the suite mean. |
@@ -183,6 +184,8 @@ When using `whest run --dataset`, the report includes `run_config.dataset`:
 The `.npz` files produced by `whest create-dataset` carry a `seed_protocol.version` in their embedded metadata. WhestBench refuses to load datasets at any other version: loading a v1.0 dataset raises `ValueError("Incompatible dataset seed_protocol version: file has '1.0', this whestbench requires '2.0'. Re-bake the dataset with `whest create-dataset`.")`.
 
 The v2.0 format adds a per-MLP `seed` (stored as the `mlp_seeds` array in the `.npz`) that is exposed to estimators via `mlp.seed` — see [estimator-contract.md](./estimator-contract.md) for how to consume it. Auto-migration is intentionally not implemented because the v1.0 spawn protocol (2 streams per MLP) cannot produce a deterministic third stream; re-baking from the original spec seed is the only correct path.
+
+Schema 2.4 added the per-MLP `name` slug (stored as the `mlp_names` array in the `.npz`). It is a pure function of `mlp_seeds` at the WhestBench release's pinned `faker` version, so loading a 2.3 file under 2.4 code transparently synthesizes the same names a fresh 2.4 bake would produce — no re-bake required. See [estimator-contract.md](./estimator-contract.md) for the `mlp.name` field exposed to estimators.
 
 ## Next step
 

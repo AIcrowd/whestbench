@@ -33,7 +33,15 @@ whest create-dataset --device cpu --n-mlps 5 --n-samples 100000 -o dev.npz
 ```
 
 The output `.npz` is read by `whestbench.dataset.load_dataset()` unchanged —
-the array schema is identical to a default (flopscope) dataset.
+the array schema is identical to a default (flopscope) dataset, including the
+2.4 `mlp_names` field. Both backends produce identical name lists at the same
+`--seed`, since names are a pure function of `mlp.seed` (see `whestbench.naming`).
+
+> The seed → name mapping is stable across machines as long as the installed
+> `faker` version matches the pin in `pyproject.toml`. Bumping `faker` is a
+> deliberate operation; the lock-down test in `tests/test_naming.py` trips when
+> faker's wordlists change, and reference datasets must be re-baked alongside
+> the version bump.
 
 ## Device selection
 

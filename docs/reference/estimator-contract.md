@@ -32,6 +32,7 @@ Optional lifecycle hooks:
 | `MLP` | `depth` | Number of weight matrices (layers) |
 | `MLP` | `weights` | Ordered weight matrices, each `(width, width)` |
 | `MLP` | `seed` | Per-MLP grader-supplied seed; use this to seed estimator-internal randomness for reproducibility under regrade. |
+| `MLP` | `name` | Human-readable slug like `"danielle-johnson"` derived deterministically from `seed`. Stable across runs and CPU/GPU backends at the WhestBench release's pinned `faker` version. Useful for log lines and error messages; safe to ignore. Empty string only when an `MLP` is constructed outside an evaluator bake path. |
 
 For traversal examples, see [Inspect and Traverse MLP Structure](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/inspect-mlp-structure.md) (in the starter kit).
 

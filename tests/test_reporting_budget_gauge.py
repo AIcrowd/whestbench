@@ -52,6 +52,7 @@ def _mlp(
     flops_used: float,
     budget_exhausted: bool = False,
     error: Optional[str] = None,
+    mlp_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     entry: Dict[str, Any] = {
         "mlp_index": i,
@@ -61,6 +62,8 @@ def _mlp(
     if error is not None:
         entry["error"] = error
         entry["error_code"] = "ESTIMATOR_RUNTIME_ERROR"
+    if mlp_name is not None:
+        entry["mlp_name"] = mlp_name
     return entry
 
 
@@ -162,8 +165,8 @@ def test_gauge_state_ignores_errored_entries_for_bust_check() -> None:
 # --- _select_top_over_budget ------------------------------------------------
 
 
-def _busted(i: int, flops: float) -> Dict[str, Any]:
-    return _mlp(i, flops_used=flops, budget_exhausted=True)
+def _busted(i: int, flops: float, *, mlp_name: Optional[str] = None) -> Dict[str, Any]:
+    return _mlp(i, flops_used=flops, budget_exhausted=True, mlp_name=mlp_name)
 
 
 def test_select_over_budget_empty_when_no_busts() -> None:
@@ -431,6 +434,38 @@ def test_panel_excludes_errored_mlps() -> None:
     plain = _strip_ansi(out)
     assert "MLP #1" in plain
     assert "MLP #0" not in plain
+
+
+def test_panel_renders_mlp_name_when_present_and_falls_back_to_index() -> None:
+    """Over-budget rows show `MLP {name} (#{idx})` when mlp_name is in the entry,
+    and `MLP #{idx}` (legacy format) when it isn't.
+
+    Both reports get rendered, since legacy callers (pre-2.4) won't carry the
+    field; the panel must remain readable for them.
+    """
+    report = _report(
+        flop_budget=100,
+        per_mlp=[_busted(0, 150.0, mlp_name="danielle-johnson")],
+    )
+    out = _render_panel_out(report)
+    plain = _strip_ansi(out)
+    assert "danielle-johnson" in plain
+    assert "#0" in plain  # index still shown for disambiguation
+
+    # No-name legacy path:
+    legacy = _report(flop_budget=100, per_mlp=[_busted(0, 150.0)])
+    plain_legacy = _strip_ansi(_render_panel_out(legacy))
+    assert "MLP #0" in plain_legacy
+
+
+def test_over_budget_row_carries_mlp_name() -> None:
+    """`OverBudgetRow.mlp_name` is populated from `entry["mlp_name"]`."""
+    report = _report(
+        flop_budget=100,
+        per_mlp=[_busted(2, 200.0, mlp_name="hannah-perez")],
+    )
+    sel = _select_top_over_budget(report)
+    assert sel.rows[0].mlp_name == "hannah-perez"
 
 
 def test_panel_flop_budget_zero_shows_dashes_for_pct() -> None:
