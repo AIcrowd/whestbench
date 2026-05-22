@@ -1456,8 +1456,6 @@ def test_create_dataset_cli_with_device_cpu_uses_torch_path(
             "4",
             "--depth",
             "2",
-            "--flop-budget",
-            "32",
             "--device",
             "cpu",
             "-o",
