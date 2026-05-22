@@ -176,7 +176,7 @@ def test_create_dataset_torch_metadata_includes_backend_info(tmp_path: Path) -> 
         device="cpu",
     )
     bundle = load_dataset(out)
-    assert bundle.metadata["schema_version"] == "2.3"
+    assert bundle.metadata["schema_version"] == "2.4"
     assert bundle.metadata["backend"] == "torch"
     assert bundle.metadata["device"] == "cpu"
     assert "torch_version" in bundle.metadata
@@ -244,6 +244,58 @@ def test_create_dataset_torch_statistically_matches_cpu_path(tmp_path: Path) -> 
         atol=tol,
         err_msg="Torch final_means diverge from CPU beyond MC noise tolerance",
     )
+
+
+def test_torch_and_cpu_backends_produce_identical_names_at_same_seed(tmp_path: Path) -> None:
+    """Names are derived from mlp.seed, and both backends produce identical seed lists
+    at the same `--seed`. Therefore name lists must be exactly equal — not just
+    statistically — across backends. A drift here would mean the seed protocol
+    diverged between backends and is a release-blocker.
+    """
+    from whestbench.dataset import create_dataset
+
+    common: dict[str, Any] = {
+        "n_mlps": 4,
+        "n_samples": 256,
+        "width": 4,
+        "depth": 2,
+        "seed": 42,
+    }
+    out_cpu = create_dataset(**common, output_path=tmp_path / "cpu_names.npz")
+    out_torch = create_dataset_torch(
+        **common, output_path=tmp_path / "torch_names.npz", device="cpu"
+    )
+
+    names_cpu = [m.name for m in load_dataset(out_cpu).mlps]
+    names_torch = [m.name for m in load_dataset(out_torch).mlps]
+
+    assert names_cpu == names_torch
+    assert all(names_cpu)  # no empty strings on either side
+
+
+def test_create_dataset_torch_writes_mlp_names_to_npz(tmp_path: Path) -> None:
+    """A torch-baked .npz must carry the `mlp_names` array directly.
+
+    Without this assertion, the torch path could rely on the loader's
+    legacy-fallback synthesis to fill names in — which works but means the file
+    claims schema 2.4 while lacking the 2.4 field. Other tooling that reads the
+    .npz directly (`np.load(path)['mlp_names']`) would silently break.
+    """
+    out = create_dataset_torch(
+        n_mlps=3,
+        n_samples=64,
+        width=4,
+        depth=2,
+        seed=42,
+        output_path=tmp_path / "torch_names_in_npz.npz",
+        device="cpu",
+    )
+    with np.load(out, allow_pickle=False) as data:
+        assert "mlp_names" in data.files
+        assert data["mlp_names"].shape == (3,)
+        # Slug-shaped strings, all non-empty.
+        for s in data["mlp_names"]:
+            assert s and "-" in str(s)
 
 
 def test_mini_batch_correctness_uneven_n_mlps(tmp_path: Path) -> None:

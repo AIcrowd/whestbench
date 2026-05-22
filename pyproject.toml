@@ -13,6 +13,7 @@ name = "whestbench"
 version = "0.2.0"
 requires-python = ">=3.10"
 dependencies = [
+    "faker~=37.0",
     "flopscope @ git+https://github.com/AIcrowd/flopscope.git",
     "plotext",
     "rich",

@@ -312,15 +312,23 @@ def build_section_renderables(section: object) -> list[RenderableType]:
         table.add_column("Code")
         table.add_column("Message")
         for entry in section.entries:
-            table.add_row(str(entry.mlp_index), entry.code, entry.message)
+            label = (
+                f"{entry.mlp_name} (#{entry.mlp_index})" if entry.mlp_name else str(entry.mlp_index)
+            )
+            table.add_row(label, entry.code, entry.message)
         children: list[RenderableType] = [Text(section.summary, style="bold red"), table]
         for entry in section.entries:
+            entry_label = (
+                f"MLP {entry.mlp_name} (#{entry.mlp_index})"
+                if entry.mlp_name
+                else f"MLP {entry.mlp_index}"
+            )
             detail_lines = format_error_detail_lines(entry.details)
             if detail_lines:
                 children.append(
                     Panel(
                         Text("\n".join(detail_lines)),
-                        title=f"MLP {entry.mlp_index} Details",
+                        title=f"{entry_label} Details",
                         border_style="red",
                     )
                 )
@@ -328,7 +336,7 @@ def build_section_renderables(section: object) -> list[RenderableType]:
                 children.append(
                     Panel(
                         Text(entry.traceback.rstrip("\n"), style="dim"),
-                        title=f"Traceback — MLP {entry.mlp_index}",
+                        title=f"Traceback — {entry_label}",
                         border_style="red",
                     )
                 )

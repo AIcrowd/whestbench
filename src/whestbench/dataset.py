@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -15,10 +16,14 @@ import numpy as np  # needed for np.savez, np.load (file I/O)
 from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
+from .naming import assign_unique_names
 from .scoring import _normalize_sampling_budget_breakdown
 from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_count
 
-SCHEMA_VERSION = "2.3"
+# 2.4 added the `mlp_names` array (per-MLP human-readable slug, see
+# `whestbench.naming`). Names are a pure function of `mlp_seeds`, so 2.3
+# files load cleanly by synthesizing names on the fly.
+SCHEMA_VERSION = "2.4"
 SEED_PROTOCOL_NAME = "whestbench_seedsequence_hierarchy"
 SEED_PROTOCOL_VERSION = "2.0"
 
@@ -72,6 +77,12 @@ def create_dataset(
         if progress is not None:
             progress({"phase": "generating", "completed": i + 1, "total": n_mlps})
 
+    # Attach deterministic human-readable names derived from each MLP's seed.
+    # Names are a pure function of `mlp.seed`, so they reproduce across runs
+    # and across CPU/GPU backends at the pinned faker version.
+    mlp_names_list = assign_unique_names([m.seed for m in mlps])
+    mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, mlp_names_list)]
+
     # Pack weight matrices: shape (n_mlps, depth, width, width)
     weights_array = np.stack([np.stack(mlp.weights) for mlp in mlps]).astype(np.float32)
 
@@ -86,7 +97,11 @@ def create_dataset(
         sample_stream = fnp.random.default_rng(stream_seed[3 * i + 1])
 
         def _on_sampling_chunk(
-            event: Dict[str, Any], *, mlp_index: int = i + 1, chunk_offset: int = i * chunks_per_mlp
+            event: Dict[str, Any],
+            *,
+            mlp_index: int = i + 1,
+            mlp_name: str = mlps[i].name,
+            chunk_offset: int = i * chunks_per_mlp,
         ) -> None:
             if progress is None:
                 return
@@ -98,6 +113,7 @@ def create_dataset(
                     "completed": chunk_offset + local_completed,
                     "total": total_sampling_chunks,
                     "mlp_index": mlp_index,
+                    "mlp_name": mlp_name,
                     "n_mlps": n_mlps,
                     "mlp_completed": local_completed,
                     "mlp_total": local_total,
@@ -147,6 +163,9 @@ def create_dataset(
     }
 
     mlp_seeds = np.array([m.seed for m in mlps], dtype=np.int64)
+    # U64 is comfortably above the longest realistic slug (faker names are
+    # generally < 20 chars; collision suffixes add a few more).
+    mlp_names_array = np.array([m.name for m in mlps], dtype="U64")
 
     np.savez(
         output_path,
@@ -157,6 +176,7 @@ def create_dataset(
         avg_variances=np.array(avg_variances, dtype=np.float64),
         sampling_budget_breakdowns=np.array(json.dumps(sampling_budget_breakdowns)),
         mlp_seeds=mlp_seeds,
+        mlp_names=mlp_names_array,
     )
     return output_path
 
@@ -205,10 +225,25 @@ def load_dataset(path: "Path | str") -> DatasetBundle:
         # Legacy datasets pre-dating seed_protocol carry no per-MLP seeds; default to 0.
         mlp_seeds = [0] * n_mlps
 
+    # Schema 2.4 introduced per-MLP names. For older files (no `mlp_names`),
+    # synthesize from `mlp_seeds` — names are a pure function of seed, so the
+    # synthesized values match what a fresh 2.4 bake of the same seeds would
+    # produce. No separate "placeholder" fallback.
+    if "mlp_names" in data.files:
+        mlp_names = [str(s) for s in data["mlp_names"].tolist()]
+    else:
+        mlp_names = assign_unique_names(list(mlp_seeds))
+
     mlps: List[MLP] = []
     for i in range(n_mlps):
         layer_weights = [fnp.array(weights_array[i, j]) for j in range(depth)]
-        mlp = MLP(width=width, depth=depth, weights=layer_weights, seed=int(mlp_seeds[i]))
+        mlp = MLP(
+            width=width,
+            depth=depth,
+            weights=layer_weights,
+            seed=int(mlp_seeds[i]),
+            name=mlp_names[i],
+        )
         mlp.validate()
         mlps.append(mlp)
 

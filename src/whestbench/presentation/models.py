@@ -115,6 +115,9 @@ class RunErrorEntry:
     message: str
     details: dict[str, Any] = field(default_factory=dict)
     traceback: str | None = None
+    # Human-readable slug from `per_mlp[i]["mlp_name"]`. Empty string for legacy
+    # reports without the field; renderers fall back to `MLP {mlp_index}` then.
+    mlp_name: str = ""
 
 
 @dataclass(frozen=True)
