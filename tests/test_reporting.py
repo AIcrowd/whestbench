@@ -31,7 +31,7 @@ def _sample_report(
     include_estimator_breakdown: bool = False,
 ) -> "dict[str, Any]":
     report: "dict[str, Any]" = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "mode": "agent",
         "detail": "raw",
         "run_meta": {
@@ -49,17 +49,20 @@ def _sample_report(
             "adjusted_final_layer_score": 0.123,
             "final_layer_mse": 0.115,
             "all_layers_mse": 0.456,
+            "per_layer_mse": [0.4, 0.4, 0.4],
             "per_mlp": [
                 {
                     "mlp_index": 0,
                     "final_layer_mse": 0.1,
                     "all_layers_mse": 0.4,
+                    "per_layer_mse": [0.4, 0.4, 0.4],
                     "adjusted_final_layer_score": 0.1,
                 },
                 {
                     "mlp_index": 1,
                     "final_layer_mse": 0.146,
                     "all_layers_mse": 0.512,
+                    "per_layer_mse": [0.4, 0.6, 0.146],
                     "adjusted_final_layer_score": 0.146,
                 },
             ],

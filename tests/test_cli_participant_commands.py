@@ -15,7 +15,7 @@ from whestbench import ScoringExhaustionWarning
 
 def _sample_report() -> dict:
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "mode": "agent",
         "detail": "raw",
         "run_meta": {

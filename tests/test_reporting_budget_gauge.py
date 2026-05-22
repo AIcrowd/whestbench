@@ -502,7 +502,7 @@ def _full_report(per_mlp: List[Dict[str, Any]], *, flop_budget: int = 100) -> Di
             }
         }
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "mode": "human",
         "detail": "raw",
         "run_meta": {

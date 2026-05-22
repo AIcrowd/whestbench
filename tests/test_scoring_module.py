@@ -1053,3 +1053,80 @@ def test_per_mlp_record_uses_new_score_key_names():
     assert "final_mse" not in pm
     assert "all_layer_mse" not in pm
     assert "budget_adjusted_score" not in pm
+
+
+def test_per_layer_mse_present_on_success_and_satisfies_identities() -> None:
+    """Each per-MLP entry carries a list-of-floats per_layer_mse with length = depth.
+    Identities: per_layer_mse[-1] == final_layer_mse and mean(per_layer_mse) == all_layers_mse.
+    """
+
+    class ZerosEstimator(BaseEstimator):
+        def predict(self, mlp, budget):
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
+
+    spec = ContestSpec(
+        width=8, depth=3, n_mlps=2, flop_budget=100_000_000, ground_truth_samples=200
+    )
+    data = make_contest(spec)
+    result = evaluate_estimator(ZerosEstimator(), data)
+
+    for entry in result["per_mlp"]:
+        per_layer = entry["per_layer_mse"]
+        assert isinstance(per_layer, list)
+        assert len(per_layer) == spec.depth
+        assert all(isinstance(x, float) for x in per_layer)
+        assert per_layer[-1] == pytest.approx(entry["final_layer_mse"], rel=1e-5, abs=1e-7)
+        assert sum(per_layer) / len(per_layer) == pytest.approx(
+            entry["all_layers_mse"], rel=1e-5, abs=1e-7
+        )
+
+    top = result["per_layer_mse"]
+    assert isinstance(top, list)
+    assert len(top) == spec.depth
+    expected_top = [
+        sum(entry["per_layer_mse"][k] for entry in result["per_mlp"]) / len(result["per_mlp"])
+        for k in range(spec.depth)
+    ]
+    for got, want in zip(top, expected_top):
+        assert got == pytest.approx(want, rel=1e-5, abs=1e-7)
+
+
+def test_per_layer_mse_present_on_failure_path() -> None:
+    """The failure branch (estimator raises) still emits per_layer_mse of length depth."""
+    spec = ContestSpec(width=4, depth=3, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
+    data = make_contest(spec)
+    estimator = _RaisingEstimator(RuntimeError("boom"))
+
+    result = evaluate_estimator(estimator, data)
+
+    for entry in result["per_mlp"]:
+        per_layer = entry["per_layer_mse"]
+        assert isinstance(per_layer, list)
+        assert len(per_layer) == spec.depth
+        assert per_layer[-1] == pytest.approx(entry["final_layer_mse"], rel=1e-5, abs=1e-7)
+        assert sum(per_layer) / len(per_layer) == pytest.approx(
+            entry["all_layers_mse"], rel=1e-5, abs=1e-7
+        )
+
+    assert len(result["per_layer_mse"]) == spec.depth
+
+
+def test_per_layer_mse_aggregate_falls_back_to_inf_when_per_mlp_empty() -> None:
+    """The top-level aggregate keeps the length=depth invariant on an empty per_mlp."""
+    from whestbench.scoring import ContestData
+
+    spec = ContestSpec(width=4, depth=3, n_mlps=1, flop_budget=1_000_000, ground_truth_samples=100)
+    data = ContestData(
+        spec=spec,
+        mlps=[],
+        all_layer_targets=[],
+        final_targets=[],
+        avg_variances=[],
+    )
+
+    class _Z(BaseEstimator):
+        def predict(self, mlp, budget):
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
+
+    result = evaluate_estimator(_Z(), data)
+    assert result["per_layer_mse"] == [float("inf")] * spec.depth

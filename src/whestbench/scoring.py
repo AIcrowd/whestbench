@@ -643,6 +643,7 @@ def evaluate_estimator(
             all_target = data.all_layer_targets[i]
             final_layer_mse_fail = float(fnp.mean((pred_np[-1] - final_target) ** 2))
             all_layers_mse_fail = float(fnp.mean((pred_np - all_target) ** 2))
+            per_layer_mse_fail = [float(x) for x in fnp.mean((pred_np - all_target) ** 2, axis=1)]
             s_m_fail = _compute_budget_adjusted_score(
                 mse_final=final_layer_mse_fail,
                 effective_compute=0.0,
@@ -659,6 +660,7 @@ def evaluate_estimator(
                     "traceback": tb_text,
                     "final_layer_mse": final_layer_mse_fail,
                     "all_layers_mse": all_layers_mse_fail,
+                    "per_layer_mse": per_layer_mse_fail,
                     "adjusted_final_layer_score": s_m_fail,
                     "flops_used": 0,
                     "effective_compute": 0.0,
@@ -758,6 +760,11 @@ def evaluate_estimator(
         all_target = data.all_layer_targets[i]
         all_layers_mse = float(fnp.mean((pred_np - all_target) ** 2))
 
+        # Per-layer MSE: collapse only the width axis. By construction,
+        # per_layer_mse[-1] == final_layer_mse and mean(per_layer_mse) == all_layers_mse
+        # under uniform per-layer width.
+        per_layer_mse = [float(x) for x in fnp.mean((pred_np - all_target) ** 2, axis=1)]
+
         # Budget-adjusted per-MLP score:
         #   s_m = final_layer_mse * max(0.1, C_m / B_m)  for valid runs
         #   s_m = final_layer_mse * 1.0                  for failures (Task 5 wires this for exceptions)
@@ -783,6 +790,7 @@ def evaluate_estimator(
                 "mlp_name": data.mlps[i].name,
                 "final_layer_mse": final_layer_mse,
                 "all_layers_mse": all_layers_mse,
+                "per_layer_mse": per_layer_mse,
                 "adjusted_final_layer_score": adjusted_final_layer_score,
                 "flops_used": flops_used,
                 "effective_compute": effective_compute,
@@ -809,6 +817,19 @@ def evaluate_estimator(
         for entry in per_mlp
         if isinstance(entry, dict) and "final_layer_mse" in entry
     ]
+
+    # Per-layer MSE aggregate across MLPs: elementwise mean of per-MLP lists.
+    per_layer_mse_lists = [
+        entry["per_layer_mse"]
+        for entry in per_mlp
+        if isinstance(entry, dict) and "per_layer_mse" in entry
+    ]
+    if per_layer_mse_lists:
+        aggregated_per_layer_mse = [
+            float(x) for x in fnp.mean(fnp.asarray(per_layer_mse_lists, dtype=fnp.float32), axis=0)
+        ]
+    else:
+        aggregated_per_layer_mse = [float("inf")] * spec.depth
 
     # Per-MLP value lists for new aggregates.
     adjusted_values = [
@@ -875,6 +896,7 @@ def evaluate_estimator(
         "all_layers_mse": float(fnp.mean(fnp.asarray(secondary_scores)))
         if secondary_scores
         else float("inf"),
+        "per_layer_mse": aggregated_per_layer_mse,
         "best_mlp_adjusted_final_layer_score": min(adjusted_values)
         if adjusted_values
         else float("inf"),

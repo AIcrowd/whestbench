@@ -38,6 +38,7 @@ Inside `results`:
 | `adjusted_final_layer_score` | Budget-adjusted leaderboard metric — suite mean of per-MLP `adjusted_final_layer_score = final_layer_mse × max(0.1, C_m/B_m)`; failure → × 1.0. Lower is better. |
 | `all_layers_mse` | Raw all-layers MSE averaged across MLPs (no budget multiplier). Diagnostic — reveals where approximation error accumulates. |
 | `final_layer_mse` | Raw final-layer MSE averaged across MLPs (no multiplier). |
+| `per_layer_mse` | Per-layer MSE averaged across MLPs. `list[float]` of length `depth`. The last element equals `final_layer_mse` and the list mean equals `all_layers_mse`. Diagnostic only, no budget multiplier. |
 | `best_mlp_adjusted_final_layer_score` | Minimum per-MLP `adjusted_final_layer_score`. |
 | `worst_mlp_adjusted_final_layer_score` | Maximum per-MLP `adjusted_final_layer_score`. |
 | `mean_score_multiplier` | Mean of per-MLP `max(0.1, C_m/B_m)` (1.0 on failure). Bounded [0.1, 1.0]. |
@@ -69,6 +70,7 @@ Each entry in `per_mlp`:
 | `residual_wall_time_s` | `float` | Wall time inside the predict context that is neither flopscope backend execution nor flopscope dispatch - i.e. participant Python (loops, control flow), GC, uninstrumented numpy |
 | `final_layer_mse` | `float` | MSE of your final-layer predictions vs ground truth |
 | `all_layers_mse` | `float` | MSE of your all-layer predictions vs ground truth |
+| `per_layer_mse` | `list[float]` | Per-layer MSE for this MLP. Length equals `depth`. `per_layer_mse[-1] == final_layer_mse` and `mean(per_layer_mse) == all_layers_mse` within float precision. |
 | `breakdowns` | `dict \| null` | Per-MLP breakdown container. Currently includes estimator-only data under `estimator`. Sampling is aggregate-only. |
 | `traceback` | `str \| null` | Non-null when this MLP's run did not produce real predictions — captures the Python traceback for either an estimator exception or a budget/time exhaustion. `null` on clean runs. For subprocess/server runners, the traceback is forwarded from the worker. |
 
@@ -166,6 +168,7 @@ discount at 10× so an arbitrarily cheap-but-wrong submission cannot dominate th
   means you used near-full budget; a value close to one-tenth of raw `final_layer_mse`
   means you used ≤10% of the budget and got the maximum discount.
 - `all_layers_mse` is a diagnostic aggregate with no budget multiplier. Use it to understand where approximation error accumulates across all layers, not just the final layer.
+- `per_layer_mse` decomposes `all_layers_mse` layer-by-layer (length = `depth`). Useful for spotting which layers your estimator struggles on — e.g. early layers vs. final layer. By construction `per_layer_mse[-1] == final_layer_mse` and `mean(per_layer_mse) == all_layers_mse` (within float precision).
 
 ## Dataset traceability fields
 
