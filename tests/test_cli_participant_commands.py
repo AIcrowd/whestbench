@@ -274,13 +274,16 @@ def test_create_dataset_command_renders_dataset_summary(
 
 
 def test_create_dataset_json_shape_stays_stable(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
 ) -> None:
-    output_path = Path("/tmp/eval_dataset.npz")
-    monkeypatch.setattr(
-        "whestbench.dataset.create_dataset",
-        lambda **_kwargs: output_path,
-    )
+    # Use tmp_path (not a hardcoded /tmp path) so a leftover real dataset from
+    # local dogfooding can't pollute the assertion via `_read_mlp_names`. Patch
+    # `whestbench.cli.create_dataset` (the bound name the CLI actually uses) so
+    # we don't actually bake a file under tmp_path either.
+    output_path = tmp_path / "eval_dataset.npz"
+    monkeypatch.setattr(cli, "create_dataset", lambda **_kwargs: output_path)
 
     exit_code = cli.main(
         ["create-dataset", "--n-mlps", "2", "--n-samples", "5", "-o", str(output_path), "--json"]
@@ -288,7 +291,14 @@ def test_create_dataset_json_shape_stays_stable(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert json.loads(captured.out) == {"ok": True, "path": str(output_path)}
+    # Schema 2.4 added `mlp_names` to the JSON shape. When create_dataset is
+    # monkeypatched (no file actually written), `_read_mlp_names` returns
+    # `[]` — keeping the key present and the type stable for downstream tools.
+    assert json.loads(captured.out) == {
+        "ok": True,
+        "path": str(output_path),
+        "mlp_names": [],
+    }
 
 
 def test_package_command_renders_artifact_summary(
@@ -1249,8 +1259,11 @@ def test_run_plain_output_shows_validation_hint_details(
     assert "ValueError" in out
     # Labelled axes in the human-readable message (issue #12). Rich may wrap
     # the long message across multiple lines inside the table cell, so check
-    # the key fragments rather than the whole line verbatim.
-    assert "Predictions must have shape (depth=2, width=4); got" in out
+    # the key fragments rather than the whole line verbatim. The 2.4 mlp_name
+    # column made the message column narrower, so the wrap point can fall
+    # mid-string — check the two halves separately.
+    assert "Predictions must have shape (depth=2," in out
+    assert "width=4); got" in out
     assert "shape=(4, 2)" in out
     assert "Expected shape: [2, 4]" in out
     assert "Got shape: [4, 2]" in out

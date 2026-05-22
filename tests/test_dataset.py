@@ -31,13 +31,15 @@ def test_create_and_load_roundtrip(tmp_path) -> None:
         "sampling.sample_layer_statistics" in bundle.sampling_budget_breakdowns[0]["by_namespace"]
     )
     # New assertions for backend tag + schema bump + #23 flop_budget removal:
-    assert bundle.metadata["schema_version"] == "2.3"
+    assert bundle.metadata["schema_version"] == "2.4"
     assert bundle.metadata["backend"] == "flopscope"
     assert "flop_budget" not in bundle.metadata
     for mlp in bundle.mlps:
         mlp.validate()
         assert mlp.width == 8
         assert mlp.depth == 2
+        # 2.4 datasets carry a non-empty, slug-shaped name on every MLP.
+        assert mlp.name and "-" in mlp.name
 
 
 def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
@@ -114,6 +116,7 @@ def test_create_dataset_reports_sampling_chunk_progress(
         "completed": 1,
         "total": 6,
         "mlp_index": 1,
+        "mlp_name": "kathleen-munoz",
         "n_mlps": 2,
         "mlp_completed": 1,
         "mlp_total": 3,
@@ -124,6 +127,7 @@ def test_create_dataset_reports_sampling_chunk_progress(
         "completed": 6,
         "total": 6,
         "mlp_index": 2,
+        "mlp_name": "sheri-nguyen",
         "n_mlps": 2,
         "mlp_completed": 3,
         "mlp_total": 3,
@@ -192,3 +196,105 @@ def test_load_dataset_accepts_older_files_without_sampling_breakdowns(tmp_path) 
 
     assert bundle.n_mlps == 2
     assert bundle.sampling_budget_breakdowns is None
+
+
+# ---------------------------------------------------------------------------
+# 2.4 schema: per-MLP human-readable names
+# ---------------------------------------------------------------------------
+
+
+def test_create_dataset_persists_mlp_names_matching_seed_assignment(tmp_path) -> None:
+    """`mlp.name` after load matches `assign_unique_names([m.seed for m in mlps])`."""
+    from whestbench.naming import assign_unique_names
+
+    out = create_dataset(
+        n_mlps=3,
+        n_samples=32,
+        width=4,
+        depth=2,
+        seed=2024,
+        output_path=tmp_path / "named.npz",
+    )
+    bundle = load_dataset(out)
+
+    expected = assign_unique_names([m.seed for m in bundle.mlps])
+    assert [m.name for m in bundle.mlps] == expected
+    # And every name is slug-shaped.
+    for m in bundle.mlps:
+        assert m.name
+        assert m.name.islower()
+        assert "-" in m.name
+
+
+def test_create_dataset_names_reproduce_at_same_seed(tmp_path) -> None:
+    """Two bakes at the same `--seed` produce identical name lists."""
+    out_a = create_dataset(
+        n_mlps=4,
+        n_samples=32,
+        width=4,
+        depth=2,
+        seed=7777,
+        output_path=tmp_path / "a.npz",
+    )
+    out_b = create_dataset(
+        n_mlps=4,
+        n_samples=32,
+        width=4,
+        depth=2,
+        seed=7777,
+        output_path=tmp_path / "b.npz",
+    )
+    names_a = [m.name for m in load_dataset(out_a).mlps]
+    names_b = [m.name for m in load_dataset(out_b).mlps]
+    assert names_a == names_b
+    assert all(names_a)  # no empty strings
+
+
+def test_load_legacy_2_3_dataset_synthesizes_names_from_seeds(tmp_path) -> None:
+    """Loading a 2.3 .npz without `mlp_names` synthesizes them from `mlp_seeds`.
+
+    The synthesized names match what a fresh 2.4 bake would produce at the same
+    per-MLP seeds — i.e. there is no separate "placeholder" fallback. This
+    preserves the invariant that name is a pure function of seed.
+    """
+    from whestbench.naming import assign_unique_names
+
+    path = tmp_path / "legacy_2_3.npz"
+    rng = np.random.default_rng(0)
+    weights = rng.standard_normal((3, 2, 4, 4)).astype(np.float32)
+    all_layer_means = rng.standard_normal((3, 2, 4)).astype(np.float32)
+    final_means = rng.standard_normal((3, 4)).astype(np.float32)
+    avg_variances = np.ones(3, dtype=np.float64)
+    mlp_seeds = np.array([1001, 1002, 1003], dtype=np.int64)
+    metadata = {
+        "schema_version": "2.3",
+        "backend": "flopscope",
+        "seed_protocol": {
+            "name": "whestbench_seedsequence_hierarchy",
+            "version": "2.0",
+            "seeded": True,
+        },
+        "created_at_utc": "2026-04-19T00:00:00+00:00",
+        "seed": 0,
+        "n_mlps": 3,
+        "n_samples": 16,
+        "width": 4,
+        "depth": 2,
+        "hardware": {},
+    }
+    np.savez(
+        path,
+        metadata=np.array(json.dumps(metadata)),
+        weights=weights,
+        all_layer_means=all_layer_means,
+        final_means=final_means,
+        avg_variances=avg_variances,
+        sampling_budget_breakdowns=np.array(json.dumps([])),
+        mlp_seeds=mlp_seeds,
+    )
+
+    bundle = load_dataset(path)
+
+    expected = assign_unique_names(mlp_seeds.tolist())
+    assert [m.name for m in bundle.mlps] == expected
+    assert all(m.name for m in bundle.mlps)
