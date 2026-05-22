@@ -299,6 +299,35 @@ def test_build_create_dataset_presentation_includes_dataset_path() -> None:
     assert [(row.label, row.value) for row in dataset.rows] == [("Path", "/tmp/eval_dataset.npz")]
 
 
+def test_build_create_dataset_presentation_shows_first_five_names_and_total() -> None:
+    """When mlp_names is in the payload, the doc gets a second KeyValueSection
+    that previews the first 5 names and reports the total. For payloads with
+    more than 5 names, an `...` row caps the preview.
+    """
+    names = [f"alpha-{i:02d}" for i in range(8)]
+    doc = build_create_dataset_presentation(
+        {"ok": True, "path": "/tmp/big.npz", "mlp_names": names}
+    )
+
+    names_section = next(
+        section
+        for section in doc.sections
+        if isinstance(section, KeyValueSection) and section.title == "MLP Names"
+    )
+    rows = [(row.label, row.value) for row in names_section.rows]
+    # First five names appear by index, then an "...and N more" capper, then "Total".
+    assert rows[:5] == [(f"MLP {i}", f"alpha-{i:02d}") for i in range(5)]
+    assert ("...", "and 3 more") in rows
+    assert ("Total", "8") in rows
+
+
+def test_build_create_dataset_presentation_omits_names_section_when_absent() -> None:
+    """Legacy payloads without `mlp_names` should not gain a names section."""
+    doc = build_create_dataset_presentation({"ok": True, "path": "/tmp/legacy.npz"})
+    titles = [s.title for s in doc.sections if isinstance(s, KeyValueSection)]
+    assert "MLP Names" not in titles
+
+
 def test_build_package_presentation_includes_artifact_path() -> None:
     doc = build_package_presentation({"ok": True, "artifact_path": "/tmp/submission.tar.gz"})
 

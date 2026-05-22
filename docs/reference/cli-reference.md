@@ -158,6 +158,18 @@ Key options:
 - `--json` — alias for `--format json`
 - `--debug`
 
+### Output
+
+Schema 2.4 stamps every MLP in the dataset with a deterministic, human-readable name (e.g. `danielle-johnson`) derived from its per-MLP seed. Names appear:
+
+- on the loaded `MLP` object as `mlp.name` (see [estimator-contract.md](./estimator-contract.md))
+- in each `per_mlp` entry of a `whest run` score report as `mlp_name` (see [score-report-fields.md](./score-report-fields.md))
+- in the JSON payload printed by `whest create-dataset --json` (key: `mlp_names`)
+- in the human-readable output of `whest create-dataset`, which now previews the first five names plus a total
+- in over-budget and error panels of `whest run`'s output, replacing the bare `MLP #<idx>` label with `MLP <name> (#<idx>)`
+
+Same `--seed` produces identical names across CPU and GPU bakes, and across machines, at the WhestBench release's pinned `faker` version.
+
 See [Use Evaluation Datasets](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/use-evaluation-datasets.md) (in the starter kit) for usage patterns.
 
 ### GPU / torch backend (optional, for large datasets)

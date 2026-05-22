@@ -8,6 +8,7 @@ Torch is an optional dependency: install via `pip install whestbench[gpu]`.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import math
 import platform
@@ -22,6 +23,7 @@ import numpy as np
 from .dataset import SCHEMA_VERSION, SEED_PROTOCOL_NAME, SEED_PROTOCOL_VERSION
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
+from .naming import assign_unique_names
 
 
 def _require_torch() -> "Any":
@@ -103,6 +105,11 @@ def create_dataset_torch(
         if progress is not None:
             progress({"phase": "generating", "completed": i + 1, "total": n_mlps})
 
+    # Attach deterministic names — mirrors create_dataset() so both backends
+    # produce identical name lists at the same `--seed`.
+    mlp_names = assign_unique_names([m.seed for m in mlps])
+    mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, mlp_names)]
+
     weights_array = np.stack([np.stack(mlp.weights) for mlp in mlps]).astype(np.float32)
 
     # Phase 2: sampling on device, batched across MLPs
@@ -131,12 +138,14 @@ def create_dataset_torch(
             generators.append(gen)
 
         weights_slice = weights_device[batch_start:batch_end]
+        batch_names = [m.name for m in mlps[batch_start:batch_end]]
 
         def _on_chunk(
             event: Dict[str, Any],
             *,
             batch_start_local: int = batch_start,
             batch_size_local: int = batch_size,
+            batch_names_local: List[str] = batch_names,
         ) -> None:
             if progress is None:
                 return
@@ -151,6 +160,7 @@ def create_dataset_torch(
                         batch_start_local + 1,
                         batch_start_local + batch_size_local,
                     ),
+                    "mlp_names_range": list(batch_names_local),
                     "n_mlps": n_mlps,
                     "unit": "chunks",
                 }
@@ -218,6 +228,7 @@ def create_dataset_torch(
         metadata["mps_device_name"] = platform.processor() or "Apple Silicon"
 
     mlp_seeds = np.array([m.seed for m in mlps], dtype=np.int64)
+    mlp_names_array = np.array([m.name for m in mlps], dtype="U64")
 
     np.savez(
         output_path,
@@ -228,6 +239,7 @@ def create_dataset_torch(
         avg_variances=np.array(avg_variances, dtype=np.float64),
         sampling_budget_breakdowns=np.array(json.dumps(sampling_budget_breakdowns)),
         mlp_seeds=mlp_seeds,
+        mlp_names=mlp_names_array,
     )
     return output_path
 

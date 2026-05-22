@@ -471,6 +471,9 @@ class OverBudgetRow:
     mlp_index: int
     flops_used: float
     pct_of_budget: Optional[int]  # None iff flop_budget <= 0
+    # Human-readable slug from `per_mlp[i]["mlp_name"]`. Empty string for legacy
+    # reports without the field — rendering falls back to `MLP #{idx}` then.
+    mlp_name: str = ""
 
 
 @dataclass(frozen=True)
@@ -534,6 +537,7 @@ def _select_top_over_budget(report: "dict[str, Any]", *, top_n: int = 5) -> Over
                 mlp_index=int(entry.get("mlp_index", 0)),
                 flops_used=flops,
                 pct_of_budget=pct,
+                mlp_name=str(entry.get("mlp_name", "") or ""),
             )
         )
 
@@ -753,7 +757,13 @@ def _over_budget_renderable(report: "dict[str, Any]") -> Optional[Group]:
     for row in sel.rows:
         pct_label = f"{row.pct_of_budget}%" if row.pct_of_budget is not None else "--%"
         line = Text()
-        line.append(f"MLP #{row.mlp_index:<4}", style="red")
+        # New-style label uses the human-readable name; legacy reports without
+        # a name fall back to `MLP #{idx}` for backward compatibility.
+        if row.mlp_name:
+            label = f"MLP {row.mlp_name} (#{row.mlp_index})"
+        else:
+            label = f"MLP #{row.mlp_index:<4}"
+        line.append(f"{label:<28}", style="red")
         line.append("  ")
         line.append(f"{_fmt_flops(row.flops_used):>9} FLOPs", style="red")
         line.append("  ")
@@ -826,7 +836,9 @@ def _render_errors_section(
     table.add_column("Code", style="bright_red")
     table.add_column("Message")
     for entry in failures:
-        idx = str(entry.get("mlp_index", "?"))
+        idx = entry.get("mlp_index", "?")
+        name = str(entry.get("mlp_name", "") or "")
+        label = f"{name} (#{idx})" if name else str(idx)
         code = str(entry.get("error_code") or "UNKNOWN")
         raw_error = entry.get("error")
         if isinstance(raw_error, dict):
@@ -837,7 +849,7 @@ def _render_errors_section(
             message = ""
         else:
             message = str(raw_error)
-        table.add_row(idx, code, message)
+        table.add_row(label, code, message)
 
     children: list[Any] = [
         Text(f"{len(failures)} of {total} MLP(s) raised during predict.", style="bold red"),
@@ -848,9 +860,12 @@ def _render_errors_section(
             tb_text = entry.get("traceback")
             if not tb_text:
                 continue
+            idx = entry.get("mlp_index", "?")
+            name = str(entry.get("mlp_name", "") or "")
+            label = f"MLP {name} (#{idx})" if name else f"MLP {idx}"
             tb_block = Panel(
                 Text(str(tb_text).rstrip(), style="dim"),
-                title=f"Traceback — MLP {entry.get('mlp_index', '?')}",
+                title=f"Traceback — {label}",
                 title_align="left",
                 border_style="red",
                 expand=True,

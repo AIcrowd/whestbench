@@ -91,6 +91,10 @@ def test_make_contest_reports_global_sampling_chunk_progress(
         on_sampling_progress=seen_sampling.append,
     )
 
+    # With no `--seed`, every MLP has seed=0 → assign_unique_names collides
+    # them in order: "megan-chang" then "megan-chang-2".
+    name_a = "megan-chang"
+    name_b = "megan-chang-2"
     assert seen_mlp_done == [1, 2]
     assert seen_sampling == [
         {
@@ -98,6 +102,7 @@ def test_make_contest_reports_global_sampling_chunk_progress(
             "completed": 1,
             "total": 6,
             "mlp_index": 1,
+            "mlp_name": name_a,
             "n_mlps": 2,
             "mlp_completed": 1,
             "mlp_total": 3,
@@ -108,6 +113,7 @@ def test_make_contest_reports_global_sampling_chunk_progress(
             "completed": 2,
             "total": 6,
             "mlp_index": 1,
+            "mlp_name": name_a,
             "n_mlps": 2,
             "mlp_completed": 2,
             "mlp_total": 3,
@@ -118,6 +124,7 @@ def test_make_contest_reports_global_sampling_chunk_progress(
             "completed": 3,
             "total": 6,
             "mlp_index": 1,
+            "mlp_name": name_a,
             "n_mlps": 2,
             "mlp_completed": 3,
             "mlp_total": 3,
@@ -128,6 +135,7 @@ def test_make_contest_reports_global_sampling_chunk_progress(
             "completed": 4,
             "total": 6,
             "mlp_index": 2,
+            "mlp_name": name_b,
             "n_mlps": 2,
             "mlp_completed": 1,
             "mlp_total": 3,
@@ -138,6 +146,7 @@ def test_make_contest_reports_global_sampling_chunk_progress(
             "completed": 5,
             "total": 6,
             "mlp_index": 2,
+            "mlp_name": name_b,
             "n_mlps": 2,
             "mlp_completed": 2,
             "mlp_total": 3,
@@ -148,12 +157,72 @@ def test_make_contest_reports_global_sampling_chunk_progress(
             "completed": 6,
             "total": 6,
             "mlp_index": 2,
+            "mlp_name": name_b,
             "n_mlps": 2,
             "mlp_completed": 3,
             "mlp_total": 3,
             "unit": "chunks",
         },
     ]
+
+
+def test_make_contest_assigns_deterministic_mlp_names() -> None:
+    """MLPs returned by make_contest carry slug-shaped names derived from their seeds."""
+    from whestbench.naming import assign_unique_names
+
+    spec = ContestSpec(
+        width=8, depth=2, n_mlps=3, flop_budget=1_000_000, ground_truth_samples=64, seed=2024
+    )
+    data = make_contest(spec)
+
+    expected = assign_unique_names([m.seed for m in data.mlps])
+    assert [m.name for m in data.mlps] == expected
+    for m in data.mlps:
+        assert m.name
+        assert "-" in m.name
+
+
+def test_evaluate_estimator_per_mlp_includes_mlp_name() -> None:
+    """Each per_mlp record must carry an `mlp_name` field matching the MLP's name."""
+    from whestbench.sdk import BaseEstimator
+
+    class ZerosEstimator(BaseEstimator):
+        def predict(self, mlp, budget):
+            return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)
+
+    spec = ContestSpec(
+        width=8, depth=2, n_mlps=2, flop_budget=100_000_000, ground_truth_samples=200, seed=42
+    )
+    data = make_contest(spec)
+    result = evaluate_estimator(ZerosEstimator(), data)
+
+    per_mlp = result["per_mlp"]
+    assert len(per_mlp) == 2
+    for i, entry in enumerate(per_mlp):
+        assert entry["mlp_name"] == data.mlps[i].name
+
+
+def test_evaluate_estimator_per_mlp_name_on_failure_path() -> None:
+    """The failure path (predict raised) must also include `mlp_name`.
+
+    Without this, error rendering loses the readable label exactly where it's
+    most useful — when debugging a crash.
+    """
+    from whestbench.sdk import BaseEstimator
+
+    class RaisingEstimator(BaseEstimator):
+        def predict(self, mlp, budget):
+            raise RuntimeError("boom")
+
+    spec = ContestSpec(
+        width=8, depth=2, n_mlps=1, flop_budget=100_000_000, ground_truth_samples=200, seed=42
+    )
+    data = make_contest(spec)
+    result = evaluate_estimator(RaisingEstimator(), data)
+
+    entry = result["per_mlp"][0]
+    assert entry.get("error_code")  # confirmed failure path
+    assert entry["mlp_name"] == data.mlps[0].name
 
 
 def test_evaluate_estimator_with_zeros_estimator() -> None:

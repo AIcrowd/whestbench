@@ -30,12 +30,19 @@ class MLP:
             seed off this so their submission reproduces under regrade. Derived
             deterministically from ``ContestSpec.seed`` and the MLP index by
             the evaluator; 0 when no spec seed is provided.
+        name: Human-readable per-MLP slug like ``"danielle-johnson"``. Stable
+            across runs and backends at the WhestBench release's pinned
+            ``faker`` version (see ``whestbench.naming``). Empty string when
+            the MLP is constructed outside an evaluator bake path (e.g. in
+            unit tests). Estimators may read it for log lines; the leakage
+            surface is nil because it is a pure function of ``seed``.
     """
 
     width: int
     depth: int
     weights: Weights
     seed: int = 0
+    name: str = ""
 
     def validate(self) -> None:
         """Validate MLP metadata and weight matrix shapes.
