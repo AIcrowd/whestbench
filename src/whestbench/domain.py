@@ -11,7 +11,7 @@ All evaluator code assumes these objects pass validation before use.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
+from typing import Any, List
 
 import flopscope.numpy as fnp
 
@@ -68,7 +68,7 @@ class MLP:
                 )
 
     @classmethod
-    def from_row(cls, row: "dict") -> "MLP":
+    def from_row(cls, row: "Any") -> "MLP":
         """Build an MLP from a datasets.Dataset row.
 
         `row` is a dict from datasets.Dataset indexing (e.g. ds[i]). It must
