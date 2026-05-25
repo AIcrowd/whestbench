@@ -88,25 +88,45 @@ Each row is one MLP. Eight columns:
 | `mlp_id` | `int32` | 0-based index of this MLP within the dataset (the absolute index across all parallel-bake slices). |
 | `mlp_name` | `string` | Stable, deterministic human-readable slug like `"danielle-johnson"`, derived from `mlp_seed` via the [`faker`](https://faker.readthedocs.io/) library. Useful for log lines; carries no information beyond `mlp_seed`. |
 | `mlp_seed` | `int64` | Seed an estimator should consume if it uses randomness (e.g. Monte Carlo). Per-MLP, derived from the contest seed; passed to `predict(mlp: MLP, budget: int)` as `mlp.seed`. |
-| `weights` | `float32[depth, width, width]` | The MLP's layer weight matrices. The network has no biases and uses ReLU activations. Layer `l` computes `h_l(x) = max(0, W_l @ h_{l-1}(x))`. Weights are drawn i.i.d. from `N(0, 2/width)` (He initialization) at bake time. |
-| `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over many independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`, where `N = n_samples` (see the metadata table below). Computed by direct Monte Carlo. **This is what your estimator predicts.** |
-| `final_means` | `float32[width]` | The last row of `all_layer_means` — i.e. `E[h_{depth}(x)_j]` for each output neuron `j`. Materialised as its own column because the **primary scoring metric** (`final_layer_mse`) only looks at this row. |
-| `avg_variance` | `float64` | The mean across the final-layer neurons of the per-neuron output variance: `(1/width) Σ_j Var[h_{depth}(x)_j]`. A single scalar per MLP. Used as a normaliser in budget-adjusted scoring so that networks with naturally low output variance don't dominate the MSE rankings. |
+| `weights` | `float32[depth, width, width]` | The MLP's layer weight matrices. The network has **no biases** and **no separate linear output layer** — every weight matrix is followed by a ReLU. Layer `l` computes `h_l(x) = max(0, W_l @ h_{l-1}(x))`. Weights are drawn i.i.d. from `N(0, 2/width)` (He initialization) at bake time. |
+| `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over **N = {{ '{:,}'.format(metadata.n_samples) }}** independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`. Computed by direct Monte Carlo. **This is what your estimator predicts.** |
+| `final_means` | `float32[width]` | The last row of `all_layer_means` — i.e. `E[h_{depth}(x)_j]` for each output neuron `j`, again over N = {{ '{:,}'.format(metadata.n_samples) }} samples. Materialised as its own column because the **primary scoring metric** (`final_layer_mse`) only looks at this row. |
+| `avg_variance` | `float64` | Per-MLP mean of the per-neuron output variance at the final layer: `(1/width) Σ_j Var[h_{depth}(x)_j]`. A single scalar per MLP, computed alongside the means over the same Monte Carlo draws. Shipped as **diagnostic provenance** — useful for normalising your own MSE locally or as input to variance-aware estimators. **Not** consumed by the active leaderboard score (the score is `mse_final · max(0.1, C_m / B_m)`; see "Your task" below). |
 | `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting for the bake that produced the ground truth for **this** row — useful as provenance. **Not** related to the estimator's FLOP budget at evaluation time. Decode with `json.loads(...)`. |
 
 ## Your task as a participant
 
-You implement a class with a `predict(mlp: MLP, budget: int) -> ndarray[depth, width]` method that returns your estimate of `all_layer_means` for the given MLP. The harness gives you the weights and a strict FLOP budget, with FLOPs tracked precisely by the [`flopscope`](https://github.com/AIcrowd/flopscope) library — go over the budget and your predictions are zeroed out for that MLP.
+You implement a class with a `predict(mlp: MLP, budget: int) -> ndarray[depth, width]` method that returns your estimate of `all_layer_means` for the given MLP. The harness gives you the weights and a strict per-MLP FLOP budget `B_m` — **B_m = 6.8 × 10¹⁰** for the initial competition configuration (roughly 6.5 × 10⁴ Monte Carlo forward passes' worth of compute).
 
-Your **primary score** is final-layer MSE — your prediction's last row vs. `final_means` — multiplied by `max(0.1, effective_compute / flop_budget)` so that staying well under budget pays off. All-layers MSE and a per-MLP breakdown ship in the result for diagnostics. See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked end-to-end example.
+Your spend is tracked as **effective compute**:
+
+```
+C_m = F_m + λ · R_m
+```
+
+where `F_m` is analytical FLOPs counted by [`flopscope`](https://github.com/AIcrowd/flopscope), `R_m` is residual wall-clock time spent in uninstrumented code, and `λ ≈ 7.7 × 10¹¹` FLOPs/s is a per-phase conversion rate that prices wall time at twice the bare-numpy MLP throughput on the grading hardware. Going outside `flopscope` is allowed; you just pay for it.
+
+Your **primary score** is final-layer MSE — your prediction's last row vs. `final_means` — multiplied by a budget-adjusted factor:
+
+```
+s_m = mse_final · max(0.1, C_m / B_m)
+```
+
+so that staying well under budget pays off (down to a factor-of-ten cap). The **earlier-layer rows** (`all_layer_means[0..depth-2]`) are a **diagnostic** — they show where approximation error accumulates across layers but do not enter the primary leaderboard score.
+
+If your estimator goes over budget, raises, returns non-finite or wrong-shape output, or trips an operational guard (per-MLP wall-clock cap, memory cap), the grader **zeros your prediction for that MLP AND forces the multiplier to 1.0** — no compute discount on failed runs. Other MLPs in the suite are unaffected.
+
+See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked end-to-end example, plus baselines for Monte Carlo sampling, mean propagation, covariance propagation, and a budget-aware combined estimator.
 
 ## How the ground truth was made
 
+> **Monte Carlo with N = {{ '{:,}'.format(metadata.n_samples) }} samples per MLP.** Every entry in `all_layer_means` and `final_means` is the empirical mean over this many independent standard-Gaussian input draws. The production WhestBench 2026 release uses **N = 10⁹**, which gives standard errors on the order of `1/√N ≈ 3×10⁻⁵` per neuron — well below any meaningful estimator gap.
+
 **Input distribution.** Every Monte Carlo sample is a fresh `x ~ N(0, I)` of shape `(width,)`. The same input is forward-propagated through all `depth` layers in one pass, so the per-layer means at indices `[0..depth-1]` share the same input draws.
 
-**Estimator.** Sums of post-ReLU activations are accumulated in `float64` for numerical stability, then divided by `n_samples` at the end and downcast to `float32`. The final-layer variance scalar comes from `E[h²] - (E[h])²` over the same `n_samples` draws.
+**Estimator.** Sums of post-ReLU activations are accumulated in `float64` for numerical stability, then divided by N at the end and downcast to `float32`. The final-layer variance scalar (`avg_variance`) comes from `E[h²] - (E[h])²` over the same N draws.
 
-**Compute.** Sampling is chunked so memory stays bounded (`~4MB` per chunk on the flopscope CPU backend; tunable on the torch GPU backend via `chunk_size`). The two backends produce *statistically* equivalent output (means agree within `~3e-5` at `n_samples = 1e9`); the flopscope path is bit-exact run-to-run at the same seed.
+**Compute.** Sampling is chunked so memory stays bounded (`~4MB` per chunk on the flopscope CPU backend; tunable on the torch GPU backend via `chunk_size`). The two backends produce *statistically* equivalent output (means agree within `~3×10⁻⁵` at N = 10⁹); the flopscope path is additionally bit-exact run-to-run at the same seed.
 
 ## Dataset summary
 
@@ -116,7 +136,7 @@ Your **primary score** is final-layer MSE — your prediction's last row vs. `fi
 | MLPs | {{ ds_size }} |
 | Width | {{ metadata.width }} |
 | Depth | {{ metadata.depth }} |
-| Samples per MLP | {{ '{:,}'.format(metadata.n_samples) }} |
+| Monte Carlo samples per MLP (N) | **{{ '{:,}'.format(metadata.n_samples) }}** |
 | Schema version | {{ metadata.schema_version }} |
 | Seed protocol | `{{ metadata.seed_protocol.name }}` v{{ metadata.seed_protocol.version }} |
 
