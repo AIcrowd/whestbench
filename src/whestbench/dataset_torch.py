@@ -15,12 +15,22 @@ import platform
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import flopscope.numpy as fnp
 import numpy as np
+from datasets import Dataset
 
-from .dataset import SCHEMA_VERSION, SEED_PROTOCOL_NAME, SEED_PROTOCOL_VERSION
+from .dataset import _resolve_mlp_range
+from .dataset_io import (
+    DEFAULT_SPLIT,
+    SCHEMA_FORMAT,
+    SCHEMA_VERSION,
+    SEED_PROTOCOL_NAME,
+    SEED_PROTOCOL_VERSION,
+    make_features,
+    write_dataset_dir,
+)
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
 from .naming import assign_unique_names
@@ -44,6 +54,8 @@ def create_dataset_torch(
     depth: int,
     seed: Optional[int] = None,
     output_path: "Path | str",
+    split: str = DEFAULT_SPLIT,
+    mlp_range: Optional[Tuple[int, int]] = None,
     progress: Optional[Callable[[Dict[str, Any]], None]] = None,
     device: str = "auto",
     mlps_per_batch: Optional[int] = None,
@@ -52,8 +64,9 @@ def create_dataset_torch(
     """Torch-backed analog of whestbench.dataset.create_dataset.
 
     Drop-in for create_dataset() at the same kwargs. Generates MLPs with the same
-    seed protocol and produces an .npz with the same array layout. Output metadata
-    self-identifies via backend="torch" and includes device/torch_version provenance.
+    seed protocol and writes a schema-3.0 Parquet+sidecar dataset directory. Output
+    metadata self-identifies via backend="torch" and includes device/torch_version
+    provenance.
 
     Statistical (not bitwise) equivalence with the flopscope CPU path holds at the
     same seed: per-neuron means agree within ~3e-5 at N=1e9 (MC noise).
@@ -74,14 +87,15 @@ def create_dataset_torch(
             on cuda; fixed 65536 on mps/cpu.
 
     Returns:
-        Path to the written .npz.
+        Path to the written dataset directory.
     """
     torch = _require_torch()
 
     output_path = Path(output_path)
+    start, end = _resolve_mlp_range(n_mlps, mlp_range)
     resolved_device = _resolve_device(device)
     resolved_mlps_per_batch = (
-        _auto_mlps_per_batch(n_mlps=n_mlps) if mlps_per_batch is None else int(mlps_per_batch)
+        _auto_mlps_per_batch(n_mlps=end - start) if mlps_per_batch is None else int(mlps_per_batch)
     )
     resolved_chunk_size = (
         _auto_chunk_size(
@@ -98,17 +112,19 @@ def create_dataset_torch(
 
     # Phase 1: generate MLPs on CPU (same protocol as create_dataset())
     mlps = []
-    for i in range(n_mlps):
+    for slice_idx, i in enumerate(range(start, end)):
         weight_stream = fnp.random.default_rng(stream_seed[3 * i])
         estimator_seed_i = int(stream_seed[3 * i + 2].generate_state(1)[0])
         mlps.append(sample_mlp(width, depth, weight_stream, seed=estimator_seed_i))
         if progress is not None:
-            progress({"phase": "generating", "completed": i + 1, "total": n_mlps})
+            progress({"phase": "generating", "completed": slice_idx + 1, "total": end - start})
 
-    # Attach deterministic names — mirrors create_dataset() so both backends
-    # produce identical name lists at the same `--seed`.
-    mlp_names = assign_unique_names([m.seed for m in mlps])
-    mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, mlp_names)]
+    # Names from ALL logical seeds (so slice's names equal slice of single-host bake).
+    # Mirrors create_dataset() so both backends produce identical name lists at same `--seed`.
+    all_logical_seeds = [int(stream_seed[3 * i + 2].generate_state(1)[0]) for i in range(n_mlps)]
+    all_names = assign_unique_names(all_logical_seeds)
+    slice_names = all_names[start:end]
+    mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, slice_names)]
 
     weights_array = np.stack([np.stack(mlp.weights) for mlp in mlps]).astype(np.float32)
 
@@ -117,51 +133,54 @@ def create_dataset_torch(
 
     weights_device = torch.from_numpy(weights_array).to(resolved_device)
     chunks_per_mlp = math.ceil(n_samples / resolved_chunk_size)
-    total_sampling_chunks = n_mlps * chunks_per_mlp
+    slice_size = end - start
+    total_sampling_chunks = slice_size * chunks_per_mlp
 
     all_means_list: List[np.ndarray] = []
     final_means_list: List[np.ndarray] = []
     avg_variances: List[float] = []
     sampling_budget_breakdowns: List[Dict[str, Any]] = []
 
-    batch_starts = list(range(0, n_mlps, resolved_mlps_per_batch))
-    for batch_start in batch_starts:
-        batch_end = min(batch_start + resolved_mlps_per_batch, n_mlps)
-        batch_size = batch_end - batch_start
+    batch_starts = list(range(0, slice_size, resolved_mlps_per_batch))
+    for batch_start_local in batch_starts:
+        batch_end_local = min(batch_start_local + resolved_mlps_per_batch, slice_size)
+        batch_size = batch_end_local - batch_start_local
 
-        # Per-MLP torch generators seeded from the SeedSequence stream
+        # Per-MLP torch generators seeded from the SeedSequence stream.
+        # Use logical indices (i = batch_start_local + start) for stream_seed access.
         generators = []
-        for i in range(batch_start, batch_end):
+        for local_idx in range(batch_start_local, batch_end_local):
+            i = local_idx + start  # logical index into stream_seed
             torch_seed = int(stream_seed[3 * i + 1].generate_state(1)[0])
             gen = torch.Generator(device=resolved_device)
             gen.manual_seed(torch_seed)
             generators.append(gen)
 
-        weights_slice = weights_device[batch_start:batch_end]
-        batch_names = [m.name for m in mlps[batch_start:batch_end]]
+        weights_slice = weights_device[batch_start_local:batch_end_local]
+        batch_names = [m.name for m in mlps[batch_start_local:batch_end_local]]
 
         def _on_chunk(
             event: Dict[str, Any],
             *,
-            batch_start_local: int = batch_start,
+            _batch_start_local: int = batch_start_local,
             batch_size_local: int = batch_size,
             batch_names_local: List[str] = batch_names,
         ) -> None:
             if progress is None:
                 return
             local_completed = int(event.get("completed", 0))
-            completed = batch_start_local * chunks_per_mlp + local_completed * batch_size_local
+            completed = _batch_start_local * chunks_per_mlp + local_completed * batch_size_local
             progress(
                 {
                     "phase": "sampling",
                     "completed": completed,
                     "total": total_sampling_chunks,
                     "mlp_index_range": (
-                        batch_start_local + 1,
-                        batch_start_local + batch_size_local,
+                        _batch_start_local + 1,
+                        _batch_start_local + batch_size_local,
                     ),
                     "mlp_names_range": list(batch_names_local),
-                    "n_mlps": n_mlps,
+                    "n_mlps": end - start,
                     "unit": "chunks",
                 }
             )
@@ -203,6 +222,7 @@ def create_dataset_torch(
 
     metadata: Dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
+        "format": SCHEMA_FORMAT,
         "backend": "torch",
         "seed_protocol": {
             "name": SEED_PROTOCOL_NAME,
@@ -211,7 +231,7 @@ def create_dataset_torch(
         },
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "seed": int(seed_sequence.entropy),
-        "n_mlps": n_mlps,
+        "n_mlps": end - start,
         "n_samples": n_samples,
         "width": width,
         "depth": depth,
@@ -227,20 +247,27 @@ def create_dataset_torch(
     elif resolved_device == "mps":
         metadata["mps_device_name"] = platform.processor() or "Apple Silicon"
 
-    mlp_seeds = np.array([m.seed for m in mlps], dtype=np.int64)
-    mlp_names_array = np.array([m.name for m in mlps], dtype="U64")
+    is_partial = (start, end) != (0, n_mlps)
+    if is_partial:
+        metadata["is_partial"] = True
+        metadata["mlp_range"] = [start, end]
+        metadata["total_n_mlps"] = n_mlps
 
-    np.savez(
-        output_path,
-        metadata=np.array(json.dumps(metadata)),
-        weights=weights_array,
-        all_layer_means=all_layer_means,
-        final_means=final_means,
-        avg_variances=np.array(avg_variances, dtype=np.float64),
-        sampling_budget_breakdowns=np.array(json.dumps(sampling_budget_breakdowns)),
-        mlp_seeds=mlp_seeds,
-        mlp_names=mlp_names_array,
+    ds = Dataset.from_dict(
+        {
+            "mlp_id": list(range(start, end)),
+            "mlp_name": [m.name for m in mlps],
+            "mlp_seed": [int(m.seed) for m in mlps],
+            "weights": weights_array,
+            "all_layer_means": all_layer_means,
+            "final_means": final_means,
+            "avg_variance": avg_variances,
+            "sampling_budget_breakdown": [json.dumps(b) for b in sampling_budget_breakdowns],
+        },
+        features=make_features(width=width, depth=depth),
     )
+
+    write_dataset_dir(ds, output_dir=output_path, split=split, metadata=metadata)
     return output_path
 
 
@@ -274,12 +301,15 @@ def _synthesize_sampling_breakdown(
       - standard_normal((n, width)):  16 FLOPs/element * n * width
         (flopscope counts RNG generation at 16 FLOPs/element, not 1)
       - array cast to fnp:             1 FLOPs/element * n * width
-      - matmul (n,w)@(w,w) per layer:  n * w^2 per layer
+      - matmul (n,w)@(w,w) per layer:  n * w * (2*w - 1) per layer
+        (BLAS MAC convention: w multiplies + (w-1) additions per output element;
+        flopscope upgraded from `n * w^2` to this in their 2026 accounting)
       - maximum (ReLU) per layer:      n * w per layer      (1 FLOP/element)
-      - sum along axis=0 per layer:    n * w per layer      (input size, per flopscope docs)
+      - sum along axis=0 per layer:    (n - 1) * w per layer
+        (actual additions, not input size; flopscope upgraded from `n * w` to this)
       - power x_f64**2:               16 FLOPs/element * n * width
         (flopscope charges power at 16 FLOPs/element, unlike x*x which is 1)
-      - sum for final_sum_sq:          n * width            (input size)
+      - sum for final_sum_sq:          (n - 1) * width      (actual additions)
 
     Per-chunk ops (scale with n_chunks):
       - add layer_sums += per layer:   width per layer per chunk
@@ -299,11 +329,13 @@ def _synthesize_sampling_breakdown(
     # Per-sample costs
     standard_normal = 16 * n_samples * width
     array_cast = n_samples * width
-    matmul = depth * n_samples * width * width
+    # BLAS MAC convention: (n, w) @ (w, w) costs n * w * (2*w - 1) per call.
+    matmul = depth * n_samples * width * (2 * width - 1)
     relu = depth * n_samples * width
-    sum_layer = depth * n_samples * width
+    # sum along axis=0 on (n, w): (n - 1) actual additions per output column.
+    sum_layer = depth * (n_samples - 1) * width
     power_sq = 16 * n_samples * width
-    sum_sq = n_samples * width
+    sum_sq = (n_samples - 1) * width
 
     # Per-chunk costs
     add_costs = n_chunks * (depth * width + width)

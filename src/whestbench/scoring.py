@@ -19,7 +19,7 @@ from .sdk import BaseEstimator
 from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_count
 
 if TYPE_CHECKING:
-    from .dataset import DatasetBundle
+    import datasets as hf_datasets
 
 # FLOP-equivalent rate for residual wall time. Used in budget-adjusted scoring:
 #   effective compute C_m = F_m + LAMBDA_FLOPS_PER_SECOND * R_m
@@ -193,36 +193,40 @@ def make_contest(
     )
 
 
-def make_contest_from_bundle(
+def make_contest_from_dataset(
     spec: ContestSpec,
-    bundle: "DatasetBundle",
+    ds: "hf_datasets.Dataset",
     n_mlps: int,
 ) -> ContestData:
-    """Build ContestData from a precomputed dataset bundle.
+    """Build ContestData from a precomputed datasets.Dataset.
 
-    Takes the first ``n_mlps`` entries from the bundle's MLPs and targets.
-    Ground truth is not recomputed. Sampling attribution is restored from the
-    dataset when available and aggregated across the first ``n_mlps`` entries.
+    Takes the first ``n_mlps`` rows from the dataset. Ground truth is not
+    recomputed. Sampling attribution is restored from the dataset and
+    aggregated across the first ``n_mlps`` entries.
 
-    Raises ``ValueError`` if ``n_mlps`` is not in ``[1, bundle.n_mlps]`` or if
-    ``spec`` is inconsistent with the bundle's width/depth.
+    Raises ``ValueError`` if ``n_mlps`` is not in ``[1, len(ds)]`` or if
+    ``spec`` is inconsistent with the dataset's width/depth.
     """
+    import json as _json
+
+    ds_size = len(ds)
     if n_mlps <= 0:
         raise ValueError("n_mlps must be positive.")
-    if n_mlps > bundle.n_mlps:
-        raise ValueError(
-            f"n_mlps={n_mlps} exceeds bundle size {bundle.n_mlps}; clamp before calling."
-        )
+    if n_mlps > ds_size:
+        raise ValueError(f"n_mlps={n_mlps} exceeds dataset size {ds_size}; clamp before calling.")
     spec.validate()
     if spec.n_mlps != n_mlps:
         raise ValueError(f"spec.n_mlps ({spec.n_mlps}) must equal n_mlps ({n_mlps}).")
 
-    mlps = list(bundle.mlps[:n_mlps])
+    mlps = [MLP.from_row(row) for row in ds.select(range(n_mlps))]
     all_layer_targets = [
-        fnp.asarray(bundle.all_layer_means[i], dtype=fnp.float32) for i in range(n_mlps)
+        fnp.asarray(ds[i]["all_layer_means"], dtype=fnp.float32) for i in range(n_mlps)
     ]
-    final_targets = [fnp.asarray(bundle.final_means[i], dtype=fnp.float32) for i in range(n_mlps)]
-    avg_variances = list(bundle.avg_variances[:n_mlps])
+    final_targets = [fnp.asarray(ds[i]["final_means"], dtype=fnp.float32) for i in range(n_mlps)]
+    avg_variances = [ds[i]["avg_variance"] for i in range(n_mlps)]
+
+    raw_breakdowns = ds["sampling_budget_breakdown"][:n_mlps]
+    breakdowns = [_json.loads(b) if isinstance(b, str) else b for b in raw_breakdowns]
 
     return ContestData(
         spec=spec,
@@ -230,11 +234,7 @@ def make_contest_from_bundle(
         all_layer_targets=all_layer_targets,
         final_targets=final_targets,
         avg_variances=avg_variances,
-        sampling_budget_breakdown=_aggregate_budget_breakdowns(
-            list(bundle.sampling_budget_breakdowns[:n_mlps])
-            if isinstance(bundle.sampling_budget_breakdowns, list)
-            else []
-        ),
+        sampling_budget_breakdown=_aggregate_budget_breakdowns(breakdowns),
     )
 
 

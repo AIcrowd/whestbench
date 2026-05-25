@@ -1,5 +1,4 @@
 import time
-from dataclasses import replace
 
 import flopscope as flops
 import flopscope.numpy as fnp
@@ -11,7 +10,7 @@ from whestbench.scoring import (
     ContestSpec,
     evaluate_estimator,
     make_contest,
-    make_contest_from_bundle,
+    make_contest_from_dataset,
 )
 from whestbench.sdk import BaseEstimator
 
@@ -733,130 +732,172 @@ def test_evaluate_estimator_preserves_partial_breakdown_on_budget_exhaustion() -
     )
 
 
-# --- make_contest_from_bundle ---------------------------------------------
+# --- make_contest_from_dataset ---------------------------------------------
 
 
-def _build_bundle_from_contest(n_mlps: int = 4, width: int = 8, depth: int = 2):
-    """Use make_contest to create MLPs/targets, wrap them in a DatasetBundle."""
-    from whestbench.dataset import DatasetBundle
+def _build_dataset_from_contest(n_mlps: int = 4, width: int = 8, depth: int = 2):
+    """Use make_contest to create MLPs/targets, write to a tmp Dataset."""
+    import json
+
+    import numpy as np
+    from datasets import Dataset
+
+    from whestbench.dataset import _METADATA_BY_DS
+    from whestbench.dataset_io import make_features
 
     spec = ContestSpec(
         width=width, depth=depth, n_mlps=n_mlps, flop_budget=1_000_000, ground_truth_samples=100
     )
     data = make_contest(spec)
-    all_layer_means = fnp.stack([fnp.asarray(t) for t in data.all_layer_targets]).astype(
-        fnp.float32
+    all_layer_means = np.stack([np.asarray(t, dtype=np.float32) for t in data.all_layer_targets])
+    final_means = np.stack([np.asarray(t, dtype=np.float32) for t in data.final_targets])
+    weights = np.stack(
+        [np.stack([np.asarray(w, dtype=np.float32) for w in mlp.weights]) for mlp in data.mlps]
     )
-    final_means = fnp.stack([fnp.asarray(t) for t in data.final_targets]).astype(fnp.float32)
-    return DatasetBundle(
-        metadata={"width": width, "depth": depth, "n_mlps": n_mlps},
-        mlps=list(data.mlps),
-        all_layer_means=all_layer_means,
-        final_means=final_means,
-        avg_variances=list(data.avg_variances),
-        sampling_budget_breakdowns=None,
+    ds = Dataset.from_dict(
+        {
+            "mlp_id": list(range(n_mlps)),
+            "mlp_name": [m.name or "" for m in data.mlps],
+            "mlp_seed": [int(m.seed) for m in data.mlps],
+            "weights": weights,
+            "all_layer_means": all_layer_means,
+            "final_means": final_means,
+            "avg_variance": list(data.avg_variances),
+            "sampling_budget_breakdown": [
+                json.dumps(
+                    {
+                        "flop_budget": 1_000_000_000_000_000,
+                        "flops_used": 0,
+                        "flops_remaining": 1_000_000_000_000_000,
+                        "wall_time_s": 0.0,
+                        "flopscope_backend_time_s": 0.0,
+                        "flopscope_overhead_time_s": 0.0,
+                        "residual_wall_time_s": 0.0,
+                        "by_namespace": {},
+                    }
+                )
+                for _ in range(n_mlps)
+            ],
+        },
+        features=make_features(width=width, depth=depth),
     )
+    _METADATA_BY_DS[ds] = {"width": width, "depth": depth, "n_mlps": n_mlps}
+    return ds
 
 
-def test_make_contest_from_bundle_returns_full_bundle() -> None:
+def test_make_contest_from_dataset_returns_full_dataset() -> None:
     import numpy as np
 
-    bundle = _build_bundle_from_contest(n_mlps=3)
+    ds = _build_dataset_from_contest(n_mlps=3)
     spec = ContestSpec(width=8, depth=2, n_mlps=3, flop_budget=1_000_000, ground_truth_samples=100)
-    data = make_contest_from_bundle(spec, bundle, n_mlps=3)
+    data = make_contest_from_dataset(spec, ds, n_mlps=3)
 
     assert len(data.mlps) == 3
     assert len(data.all_layer_targets) == 3
     assert len(data.final_targets) == 3
     assert len(data.avg_variances) == 3
-    assert data.sampling_budget_breakdown is None
-    # MLP identity preserved: bundle MLPs are passed through, not regenerated.
-    for bundled, picked in zip(bundle.mlps, data.mlps):
-        assert picked is bundled
-    # Targets equal bundle contents element-wise.
+    # Targets equal dataset contents element-wise.
     for i in range(3):
-        assert np.allclose(np.asarray(data.all_layer_targets[i]), bundle.all_layer_means[i])
-        assert np.allclose(np.asarray(data.final_targets[i]), bundle.final_means[i])
+        assert np.allclose(np.asarray(data.all_layer_targets[i]), ds[i]["all_layer_means"])
+        assert np.allclose(np.asarray(data.final_targets[i]), ds[i]["final_means"])
 
 
-def test_make_contest_from_bundle_subsets_first_n() -> None:
+def test_make_contest_from_dataset_subsets_first_n() -> None:
     import numpy as np
 
-    bundle = _build_bundle_from_contest(n_mlps=5)
+    ds = _build_dataset_from_contest(n_mlps=5)
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
-    data = make_contest_from_bundle(spec, bundle, n_mlps=2)
+    data = make_contest_from_dataset(spec, ds, n_mlps=2)
 
     assert len(data.mlps) == 2
-    # First two, not some other slice.
-    assert data.mlps[0] is bundle.mlps[0]
-    assert data.mlps[1] is bundle.mlps[1]
-    assert np.allclose(np.asarray(data.final_targets[0]), bundle.final_means[0])
-    assert np.allclose(np.asarray(data.final_targets[1]), bundle.final_means[1])
+    assert np.allclose(np.asarray(data.final_targets[0]), ds[0]["final_means"])
+    assert np.allclose(np.asarray(data.final_targets[1]), ds[1]["final_means"])
 
 
-def test_make_contest_from_bundle_restores_sampling_breakdown_for_subset() -> None:
-    bundle = replace(
-        _build_bundle_from_contest(n_mlps=3),
-        sampling_budget_breakdowns=[
-            {
-                "flop_budget": 1000,
-                "flops_used": 10,
-                "flops_remaining": 990,
-                "wall_time_s": 0.01,
-                "flopscope_backend_time_s": 0.004,
-                "flopscope_overhead_time_s": 0.001,
-                "residual_wall_time_s": 0.002,
-                "by_namespace": {
-                    "sampling.sample_layer_statistics": {
-                        "flops_used": 10,
-                        "calls": 1,
-                        "flopscope_backend_time_s": 0.004,
-                        "flopscope_overhead_time_s": 0.001,
-                        "operations": {},
-                    }
-                },
+def test_make_contest_from_dataset_restores_sampling_breakdown_for_subset() -> None:
+    import json
+
+    from datasets import Dataset
+
+    from whestbench.dataset import _METADATA_BY_DS
+    from whestbench.dataset_io import make_features
+
+    width, depth, n_mlps = 8, 2, 3
+    breakdowns = [
+        {
+            "flop_budget": 1000,
+            "flops_used": 10,
+            "flops_remaining": 990,
+            "wall_time_s": 0.01,
+            "flopscope_backend_time_s": 0.004,
+            "flopscope_overhead_time_s": 0.001,
+            "residual_wall_time_s": 0.002,
+            "by_namespace": {
+                "sampling.sample_layer_statistics": {
+                    "flops_used": 10,
+                    "calls": 1,
+                    "flopscope_backend_time_s": 0.004,
+                    "flopscope_overhead_time_s": 0.001,
+                    "operations": {},
+                }
             },
-            {
-                "flop_budget": 1000,
-                "flops_used": 20,
-                "flops_remaining": 980,
-                "wall_time_s": 0.02,
-                "flopscope_backend_time_s": 0.008,
-                "flopscope_overhead_time_s": 0.002,
-                "residual_wall_time_s": 0.004,
-                "by_namespace": {
-                    "sampling.sample_layer_statistics": {
-                        "flops_used": 20,
-                        "calls": 1,
-                        "flopscope_backend_time_s": 0.008,
-                        "flopscope_overhead_time_s": 0.002,
-                        "operations": {},
-                    }
-                },
+        },
+        {
+            "flop_budget": 1000,
+            "flops_used": 20,
+            "flops_remaining": 980,
+            "wall_time_s": 0.02,
+            "flopscope_backend_time_s": 0.008,
+            "flopscope_overhead_time_s": 0.002,
+            "residual_wall_time_s": 0.004,
+            "by_namespace": {
+                "sampling.sample_layer_statistics": {
+                    "flops_used": 20,
+                    "calls": 1,
+                    "flopscope_backend_time_s": 0.008,
+                    "flopscope_overhead_time_s": 0.002,
+                    "operations": {},
+                }
             },
-            {
-                "flop_budget": 1000,
-                "flops_used": 30,
-                "flops_remaining": 970,
-                "wall_time_s": 0.03,
-                "flopscope_backend_time_s": 0.012,
-                "flopscope_overhead_time_s": 0.003,
-                "residual_wall_time_s": 0.006,
-                "by_namespace": {
-                    "sampling.sample_layer_statistics": {
-                        "flops_used": 30,
-                        "calls": 1,
-                        "flopscope_backend_time_s": 0.012,
-                        "flopscope_overhead_time_s": 0.003,
-                        "operations": {},
-                    }
-                },
+        },
+        {
+            "flop_budget": 1000,
+            "flops_used": 30,
+            "flops_remaining": 970,
+            "wall_time_s": 0.03,
+            "flopscope_backend_time_s": 0.012,
+            "flopscope_overhead_time_s": 0.003,
+            "residual_wall_time_s": 0.006,
+            "by_namespace": {
+                "sampling.sample_layer_statistics": {
+                    "flops_used": 30,
+                    "calls": 1,
+                    "flopscope_backend_time_s": 0.012,
+                    "flopscope_overhead_time_s": 0.003,
+                    "operations": {},
+                }
             },
-        ],
+        },
+    ]
+    base_ds = _build_dataset_from_contest(n_mlps=n_mlps, width=width, depth=depth)
+    # Re-create with real breakdowns
+    ds = Dataset.from_dict(
+        {
+            "mlp_id": base_ds["mlp_id"],
+            "mlp_name": base_ds["mlp_name"],
+            "mlp_seed": base_ds["mlp_seed"],
+            "weights": [base_ds[i]["weights"] for i in range(n_mlps)],
+            "all_layer_means": [base_ds[i]["all_layer_means"] for i in range(n_mlps)],
+            "final_means": [base_ds[i]["final_means"] for i in range(n_mlps)],
+            "avg_variance": base_ds["avg_variance"],
+            "sampling_budget_breakdown": [json.dumps(b) for b in breakdowns],
+        },
+        features=make_features(width=width, depth=depth),
     )
+    _METADATA_BY_DS[ds] = {"width": width, "depth": depth, "n_mlps": n_mlps}
 
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
-    data = make_contest_from_bundle(spec, bundle, n_mlps=2)
+    data = make_contest_from_dataset(spec, ds, n_mlps=2)
 
     assert data.sampling_budget_breakdown is not None
     assert data.sampling_budget_breakdown["flops_used"] == 30
@@ -871,27 +912,27 @@ def test_make_contest_from_bundle_restores_sampling_breakdown_for_subset() -> No
     )
 
 
-def test_make_contest_from_bundle_rejects_oversize() -> None:
-    bundle = _build_bundle_from_contest(n_mlps=2)
+def test_make_contest_from_dataset_rejects_oversize() -> None:
+    ds = _build_dataset_from_contest(n_mlps=2)
     spec = ContestSpec(width=8, depth=2, n_mlps=5, flop_budget=1_000_000, ground_truth_samples=100)
-    with pytest.raises(ValueError, match="exceeds bundle size"):
-        make_contest_from_bundle(spec, bundle, n_mlps=5)
+    with pytest.raises(ValueError, match="exceeds dataset size"):
+        make_contest_from_dataset(spec, ds, n_mlps=5)
 
 
-def test_make_contest_from_bundle_rejects_non_positive() -> None:
-    bundle = _build_bundle_from_contest(n_mlps=2)
+def test_make_contest_from_dataset_rejects_non_positive() -> None:
+    ds = _build_dataset_from_contest(n_mlps=2)
     # spec.validate() rejects n_mlps<=0 before we even get there, so build a
     # valid spec and call with n_mlps=0 directly.
     spec = ContestSpec(width=8, depth=2, n_mlps=1, flop_budget=1_000_000, ground_truth_samples=100)
     with pytest.raises(ValueError, match="n_mlps must be positive"):
-        make_contest_from_bundle(spec, bundle, n_mlps=0)
+        make_contest_from_dataset(spec, ds, n_mlps=0)
 
 
-def test_make_contest_from_bundle_rejects_spec_mismatch() -> None:
-    bundle = _build_bundle_from_contest(n_mlps=3)
+def test_make_contest_from_dataset_rejects_spec_mismatch() -> None:
+    ds = _build_dataset_from_contest(n_mlps=3)
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
     with pytest.raises(ValueError, match="spec.n_mlps"):
-        make_contest_from_bundle(spec, bundle, n_mlps=3)
+        make_contest_from_dataset(spec, ds, n_mlps=3)
 
 
 # --- evaluate_estimator error propagation --------------------------------

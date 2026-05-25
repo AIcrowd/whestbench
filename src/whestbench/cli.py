@@ -43,14 +43,14 @@ try:
 except Exception:  # pragma: no cover - optional at runtime
     rich_tqdm = None
 
-from .dataset import create_dataset, dataset_file_hash, load_dataset
+from .dataset import metadata as _wb_metadata
+from .dataset_io import metadata_file_hash as _metadata_file_hash
 from .estimators import CombinedEstimator
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
 from .loader import load_estimator_from_path, resolve_estimator_class_metadata
 from .packaging import package_submission
 from .presentation.adapters import (
-    build_create_dataset_presentation,
     build_error_presentation,
     build_init_presentation,
     build_package_presentation,
@@ -133,26 +133,6 @@ def _mlp_label_from_event(event: Dict[str, Any]) -> str:
             return f"MLP {mlp_name} ({mlp_index}/{n_mlps})"
         return f"MLP {mlp_index}/{n_mlps}"
     return ""
-
-
-def _read_mlp_names(path: "Path | str") -> "list[str]":
-    """Read just the `mlp_names` array from a baked .npz.
-
-    Used by `whest create-dataset` to surface the generated names in its
-    presentation payload (both human-readable and JSON) without needing to
-    re-decode the much larger weights array. Returns `[]` for missing files
-    (e.g. when `create_dataset` is monkeypatched in tests) or legacy bakes
-    without the `mlp_names` array.
-    """
-    import numpy as _np
-
-    try:
-        with _np.load(str(path), allow_pickle=False) as data:
-            if "mlp_names" not in data.files:
-                return []
-            return [str(s) for s in data["mlp_names"].tolist()]
-    except (FileNotFoundError, OSError):
-        return []
 
 
 def _run_progress_columns() -> tuple[Any, ...]:
@@ -888,7 +868,14 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--show-diagnostic-plots", action="store_true")
     add_output_format_arguments(run_parser)
     run_parser.add_argument(
-        "--dataset", default=None, help="Path to pre-created dataset .npz file."
+        "--dataset",
+        default=None,
+        help="Path to a baked dataset directory, or hf://owner/repo[@revision] for HF Hub.",
+    )
+    run_parser.add_argument(
+        "--revision",
+        default=None,
+        help="HF Hub revision (tag or commit SHA) for --dataset.",
     )
     run_parser.add_argument(
         "--flop-budget",
@@ -953,36 +940,66 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Limit BLAS to at most N CPU threads.",
     )
 
-    create_ds_parser = subparsers.add_parser(
-        "create-dataset", help="Pre-create evaluation dataset."
-    )
-    create_ds_parser.add_argument("--n-mlps", type=int, default=10)
-    create_ds_parser.add_argument("--n-samples", type=int, default=10000)
+    # Deprecated: redirect to `whest dataset bake`
+    create_ds_parser = subparsers.add_parser("create-dataset", help=argparse.SUPPRESS)
+    create_ds_parser.add_argument("--n-mlps", type=int, default=None)
+    create_ds_parser.add_argument("--n-samples", type=int, default=None)
     create_ds_parser.add_argument("--width", type=int, default=None)
     create_ds_parser.add_argument("--depth", type=int, default=None)
     create_ds_parser.add_argument("--seed", type=int, default=None)
-    create_ds_parser.add_argument("-o", "--output", default="eval_dataset.npz")
+    create_ds_parser.add_argument("-o", "--output", "--output-path", default=None)
     create_ds_parser.add_argument("--debug", action="store_true")
+    create_ds_parser.add_argument("--max-threads", type=int, default=None)
+    create_ds_parser.add_argument("--device", default=None, choices=["auto", "cuda", "mps", "cpu"])
+    create_ds_parser.add_argument("--flop-budget", action=_RemovedFlopBudgetAction)
     add_output_format_arguments(create_ds_parser)
-    create_ds_parser.add_argument(
-        "--max-threads",
-        type=int,
-        default=None,
-        metavar="N",
-        help="Limit BLAS to at most N CPU threads.",
+
+    # ----- whest dataset {bake,push,pull,merge,inspect} -----
+    dataset_parser = subparsers.add_parser(
+        "dataset", help="Dataset bake/publish/load/merge/inspect commands."
     )
-    create_ds_parser.add_argument(
-        "--device",
-        default=None,
-        choices=["auto", "cuda", "mps", "cpu"],
-        help="Use torch-backed implementation on this device. "
-        "Default (omitted) uses the flopscope CPU path. "
-        "Requires `pip install whestbench[gpu]`.",
+    dataset_sub = dataset_parser.add_subparsers(dest="dataset_cmd", required=True)
+
+    bake_p = dataset_sub.add_parser("bake", help="Bake a new dataset to a directory.")
+    bake_p.add_argument(
+        "--n-mlps", type=int, required=True, help="Total number of MLPs in the logical dataset."
     )
-    create_ds_parser.add_argument(
-        "--flop-budget",
-        action=_RemovedFlopBudgetAction,
+    bake_p.add_argument("--n-samples", type=int, required=True)
+    bake_p.add_argument("--width", type=int, required=True)
+    bake_p.add_argument("--depth", type=int, required=True)
+    bake_p.add_argument("--seed", type=int, default=None)
+    bake_p.add_argument("--split", default="public", choices=["public", "holdout"])
+    bake_p.add_argument("--output", required=True, help="Output directory (must not exist).")
+    bake_p.add_argument("--torch", action="store_true", help="Use GPU/torch backend.")
+    bake_p.add_argument("--device", default="auto", choices=["auto", "cuda", "mps", "cpu"])
+    bake_p.add_argument("--mlps-per-batch", type=int, default=None)
+    bake_p.add_argument("--chunk-size", type=int, default=None)
+    bake_p.add_argument("--slice", dest="slice_spec", help="K/N — this slice K of N (0-indexed).")
+    bake_p.add_argument(
+        "--mlp-range", dest="mlp_range_str", help="START-END (inclusive on both ends), e.g. 0-249."
     )
+
+    push_p = dataset_sub.add_parser("push", help="Upload a baked dataset to HF Hub.")
+    push_p.add_argument("local_dir")
+    push_p.add_argument("--repo", required=True, help="HF repo id (org/name).")
+    push_p.add_argument("--tag", default=None, help="Optional git tag (e.g. v1).")
+    push_p.add_argument("--private", action="store_true")
+    push_p.add_argument("--token", default=None)
+    push_p.add_argument("--message", default=None)
+
+    pull_p = dataset_sub.add_parser("pull", help="Download a dataset from HF Hub.")
+    pull_p.add_argument("repo_id")
+    pull_p.add_argument("--revision", default=None)
+    pull_p.add_argument("--output", required=True)
+    pull_p.add_argument("--token", default=None)
+
+    merge_p = dataset_sub.add_parser("merge", help="Merge partial bakes into one dataset.")
+    merge_p.add_argument("inputs", nargs="+", help="Partial dataset directories.")
+    merge_p.add_argument("--output", required=True)
+
+    inspect_p = dataset_sub.add_parser("inspect", help="Print dataset metadata.")
+    inspect_p.add_argument("source", help="Local dir or HF repo id.")
+    inspect_p.add_argument("--revision", default=None)
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
     package_parser.add_argument("--estimator", required=True)
@@ -1057,6 +1074,176 @@ def _normalize_runner_name(raw_runner: str) -> str:
     if raw_runner == "inprocess":
         return "local"
     return raw_runner
+
+
+def _parse_mlp_range_cli(arg, *, slice_spec, n_mlps):
+    """Convert CLI --mlp-range or --slice flag to (start, end) exclusive-end."""
+    if arg is not None and slice_spec is not None:
+        raise SystemExit("Use either --mlp-range or --slice, not both.")
+    if arg is not None:
+        try:
+            start_s, end_s = arg.split("-")
+            start, end_incl = int(start_s), int(end_s)
+        except (ValueError, TypeError):
+            raise SystemExit(f"--mlp-range must be START-END (inclusive), got {arg!r}")
+        return (start, end_incl + 1)
+    if slice_spec is not None:
+        try:
+            k_s, n_s = slice_spec.split("/")
+            k, n = int(k_s), int(n_s)
+        except (ValueError, TypeError):
+            raise SystemExit(f"--slice must be K/N, got {slice_spec!r}")
+        if not (0 <= k < n):
+            raise SystemExit(f"--slice K/N requires 0 <= K < N, got {slice_spec!r}")
+        start = k * n_mlps // n
+        end = (k + 1) * n_mlps // n
+        return (start, end)
+    return None
+
+
+def _resolve_dataset_arg(arg, *, revision):
+    """Resolve ``--dataset`` argument to (repo_or_path, revision, is_local).
+
+    Accepts:
+        - Local path: starts with ./, /, ~/, Windows drive letter, or exists on disk
+        - hf:// URL: e.g. "hf://owner/repo@v1" or "hf://owner/repo"
+        - "owner/repo" with --revision flag explicitly set
+
+    Bare "owner/repo" without --revision is rejected to force explicit pinning.
+    """
+    from pathlib import Path
+
+    if arg.startswith("hf://"):
+        body = arg[len("hf://") :]
+        if "@" in body:
+            repo, rev = body.split("@", 1)
+            return (repo, rev, False)
+        return (body, None, False)
+
+    if arg.startswith(("./", "/", "~/")) or Path(arg).exists() or (len(arg) >= 2 and arg[1] == ":"):
+        return (arg, revision, True)
+
+    if "/" in arg:
+        if revision is None:
+            raise SystemExit(
+                f"--dataset {arg!r} looks like an HF Hub repo but no revision is "
+                f"pinned. Either pass --revision <tag> or use hf://{arg}@<tag>."
+            )
+        return (arg, revision, False)
+
+    raise SystemExit(f"--dataset {arg!r} not recognized as local path or HF repo.")
+
+
+def _dispatch_dataset_command(args) -> int:
+    import json as _json
+    from pathlib import Path as _Path
+
+    sub = args.dataset_cmd
+    if sub == "bake":
+        from .dataset import create_dataset as _create_dataset
+
+        mlp_range = _parse_mlp_range_cli(
+            args.mlp_range_str,
+            slice_spec=args.slice_spec,
+            n_mlps=args.n_mlps,
+        )
+        if args.torch:
+            from .dataset_torch import create_dataset_torch
+
+            create_dataset_torch(
+                n_mlps=args.n_mlps,
+                n_samples=args.n_samples,
+                width=args.width,
+                depth=args.depth,
+                seed=args.seed,
+                output_path=args.output,
+                split=args.split,
+                mlp_range=mlp_range,
+                device=args.device,
+                mlps_per_batch=args.mlps_per_batch,
+                chunk_size=args.chunk_size,
+            )
+        else:
+            _create_dataset(
+                n_mlps=args.n_mlps,
+                n_samples=args.n_samples,
+                width=args.width,
+                depth=args.depth,
+                seed=args.seed,
+                output_path=args.output,
+                split=args.split,
+                mlp_range=mlp_range,
+            )
+        print(f"Baked dataset to {args.output}")
+        return 0
+
+    if sub == "push":
+        from .hub import publish_dataset
+
+        sha = publish_dataset(
+            args.local_dir,
+            repo_id=args.repo,
+            tag=args.tag,
+            token=args.token,
+            commit_message=args.message,
+            private=args.private,
+        )
+        print(f"Uploaded to {args.repo}; commit {sha}" + (f"; tag {args.tag}" if args.tag else ""))
+        return 0
+
+    if sub == "pull":
+        from huggingface_hub import snapshot_download
+
+        snapshot_download(
+            repo_id=args.repo_id,
+            repo_type="dataset",
+            revision=args.revision,
+            local_dir=args.output,
+            token=args.token,
+        )
+        print(f"Pulled {args.repo_id}@{args.revision or 'main'} to {args.output}")
+        return 0
+
+    if sub == "merge":
+        from .dataset_io import merge_datasets
+
+        merge_datasets([_Path(p) for p in args.inputs], output_dir=_Path(args.output))
+        print(f"Merged {len(args.inputs)} partials to {args.output}")
+        return 0
+
+    if sub == "inspect":
+        from .dataset_io import read_metadata
+
+        src = args.source
+        if _Path(src).exists():
+            md = read_metadata(src)
+        else:
+            from huggingface_hub import hf_hub_download
+
+            md_path = hf_hub_download(
+                repo_id=src, filename="metadata.json", repo_type="dataset", revision=args.revision
+            )
+            md = _json.loads(_Path(md_path).read_text())
+        print("WhestBench dataset")
+        for key in (
+            "schema_version",
+            "format",
+            "backend",
+            "seed",
+            "n_mlps",
+            "n_samples",
+            "width",
+            "depth",
+            "created_at_utc",
+            "device",
+            "cuda_device_name",
+        ):
+            if key in md:
+                print(f"  {key}: {md[key]}")
+        return 0
+
+    print("Unknown dataset subcommand. Try --help.", file=sys.stderr)
+    return 2
 
 
 class _RunnerEstimator(BaseEstimator):
@@ -1455,175 +1642,16 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "create-dataset":
-            if args.device is not None and args.max_threads is not None:
-                print(
-                    "error: --max-threads cannot be combined with --device "
-                    "(torch backend manages threading internally)",
-                    file=sys.stderr,
-                )
-                return 2
+            print(
+                "ERROR: `whest create-dataset` has been replaced by `whest dataset bake`.\n"
+                "  See: whest dataset bake --help\n"
+                "  Migration: same args but --output-path FILE.npz becomes --output DIR/",
+                file=sys.stderr,
+            )
+            return 2
 
-            contest = _default_contest_spec()
-            ds_width = args.width or contest.width
-            ds_depth = args.depth or contest.depth
-            n_mlps_ds = int(args.n_mlps)
-
-            if args.device is not None:
-                from whestbench.dataset_torch import create_dataset_torch
-
-                if output_format == "rich":
-                    try:
-                        from rich.progress import (
-                            BarColumn,
-                            MofNCompleteColumn,
-                            Progress,
-                            SpinnerColumn,
-                            TextColumn,
-                            TimeElapsedColumn,
-                        )
-
-                        progress_bar = Progress(
-                            SpinnerColumn(),
-                            TextColumn("[progress.description]{task.description}"),
-                            BarColumn(bar_width=None),
-                            MofNCompleteColumn(),
-                            TimeElapsedColumn(),
-                        )
-                        gen_task = progress_bar.add_task("Generating MLPs", total=n_mlps_ds)
-                        sample_task = progress_bar.add_task(
-                            "Sampling ground truth (torch)", total=n_mlps_ds
-                        )
-
-                        def _on_ds_progress(event: Dict[str, Any]) -> None:
-                            phase = str(event.get("phase", ""))
-                            completed = int(event.get("completed", 0))
-                            total_value = event.get("total")
-                            total = int(total_value) if isinstance(total_value, int) else None
-                            if phase == "generating":
-                                progress_bar.update(gen_task, completed=completed)
-                            elif phase == "sampling":
-                                progress_bar.update(sample_task, completed=completed, total=total)
-
-                        with progress_bar:
-                            out = create_dataset_torch(
-                                n_mlps=n_mlps_ds,
-                                n_samples=int(args.n_samples),
-                                width=ds_width,
-                                depth=ds_depth,
-                                seed=getattr(args, "seed", None),
-                                output_path=Path(args.output),
-                                progress=_on_ds_progress,
-                                device=args.device,
-                            )
-                    except ImportError:
-                        out = create_dataset_torch(
-                            n_mlps=n_mlps_ds,
-                            n_samples=int(args.n_samples),
-                            width=ds_width,
-                            depth=ds_depth,
-                            seed=getattr(args, "seed", None),
-                            output_path=Path(args.output),
-                            device=args.device,
-                        )
-                else:
-                    out = create_dataset_torch(
-                        n_mlps=n_mlps_ds,
-                        n_samples=int(args.n_samples),
-                        width=ds_width,
-                        depth=ds_depth,
-                        seed=getattr(args, "seed", None),
-                        output_path=Path(args.output),
-                        device=args.device,
-                    )
-
-                payload = {"ok": True, "path": str(out), "mlp_names": _read_mlp_names(out)}
-                if json_output:
-                    print(json.dumps(payload, indent=2))
-                else:
-                    doc = build_create_dataset_presentation(payload)
-                    print(
-                        render_command_presentation(
-                            doc,
-                            output_format=output_format,
-                            force_terminal=stdout_is_tty,
-                        ),
-                        end="",
-                    )
-                return 0
-
-            if output_format == "rich":
-                try:
-                    from rich.progress import (
-                        BarColumn,
-                        MofNCompleteColumn,
-                        Progress,
-                        SpinnerColumn,
-                        TextColumn,
-                        TimeElapsedColumn,
-                    )
-
-                    progress_bar = Progress(
-                        SpinnerColumn(),
-                        TextColumn("[progress.description]{task.description}"),
-                        BarColumn(bar_width=None),
-                        MofNCompleteColumn(),
-                        TimeElapsedColumn(),
-                    )
-                    gen_task = progress_bar.add_task("Generating MLPs", total=n_mlps_ds)
-                    sample_task = progress_bar.add_task("Sampling ground truth", total=n_mlps_ds)
-
-                    def _on_ds_progress(event: Dict[str, Any]) -> None:
-                        phase = str(event.get("phase", ""))
-                        completed = int(event.get("completed", 0))
-                        total_value = event.get("total")
-                        total = int(total_value) if isinstance(total_value, int) else None
-                        if phase == "generating":
-                            progress_bar.update(gen_task, completed=completed)
-                        elif phase == "sampling":
-                            progress_bar.update(sample_task, completed=completed, total=total)
-
-                    with progress_bar:
-                        out = create_dataset(
-                            n_mlps=n_mlps_ds,
-                            n_samples=int(args.n_samples),
-                            width=ds_width,
-                            depth=ds_depth,
-                            seed=getattr(args, "seed", None),
-                            output_path=Path(args.output),
-                            progress=_on_ds_progress,
-                        )
-                except ImportError:
-                    out = create_dataset(
-                        n_mlps=n_mlps_ds,
-                        n_samples=int(args.n_samples),
-                        width=ds_width,
-                        depth=ds_depth,
-                        seed=getattr(args, "seed", None),
-                        output_path=Path(args.output),
-                    )
-            else:
-                out = create_dataset(
-                    n_mlps=n_mlps_ds,
-                    n_samples=int(args.n_samples),
-                    width=ds_width,
-                    depth=ds_depth,
-                    seed=getattr(args, "seed", None),
-                    output_path=Path(args.output),
-                )
-            payload = {"ok": True, "path": str(out), "mlp_names": _read_mlp_names(out)}
-            if json_output:
-                print(json.dumps(payload, indent=2))
-            else:
-                doc = build_create_dataset_presentation(payload)
-                print(
-                    render_command_presentation(
-                        doc,
-                        output_format=output_format,
-                        force_terminal=stdout_is_tty,
-                    ),
-                    end="",
-                )
-            return 0
+        if command == "dataset":
+            return _dispatch_dataset_command(args)
 
         if command == "run":
             normalized_runner = _normalize_runner_name(str(args.runner))
@@ -1649,23 +1677,27 @@ def _main_participant(argv: "list[str]") -> int:
             # --- Dataset loading & n_mlps resolution ---
             dataset_path: Optional[str] = getattr(args, "dataset", None)
             contest_data = None
-            bundle = None
             ds_meta: Dict[str, Any] = {}
             if dataset_path is not None:
-                from .scoring import make_contest_from_bundle
+                from .dataset import load_dataset as _wb_load_dataset
+                from .scoring import make_contest_from_dataset
 
-                bundle = load_dataset(dataset_path)
-                ds_meta = bundle.metadata
+                repo_or_path, rev, _is_local = _resolve_dataset_arg(
+                    dataset_path, revision=getattr(args, "revision", None)
+                )
+                ds = _wb_load_dataset(repo_or_path, revision=rev)
+                ds_meta = _wb_metadata(ds)
+                ds_n_mlps = len(ds)
 
                 if user_n_mlps is None:
-                    n_mlps = bundle.n_mlps
-                elif user_n_mlps > bundle.n_mlps:
+                    n_mlps = ds_n_mlps
+                elif user_n_mlps > ds_n_mlps:
                     print(
                         f"Warning: --n-mlps={user_n_mlps} exceeds dataset size "
-                        f"({bundle.n_mlps}); using {bundle.n_mlps}.",
+                        f"({ds_n_mlps}); using {ds_n_mlps}.",
                         file=sys.stderr,
                     )
-                    n_mlps = bundle.n_mlps
+                    n_mlps = ds_n_mlps
                 else:
                     n_mlps = user_n_mlps
 
@@ -1679,7 +1711,7 @@ def _main_participant(argv: "list[str]") -> int:
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
                     residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
                 )
-                contest_data = make_contest_from_bundle(contest_spec, bundle, n_mlps)
+                contest_data = make_contest_from_dataset(contest_spec, ds, n_mlps)
             else:
                 n_mlps = user_n_mlps if user_n_mlps is not None else 10
                 contest_spec = ContestSpec(
@@ -1713,7 +1745,7 @@ def _main_participant(argv: "list[str]") -> int:
                 if dataset_path is not None:
                     report.setdefault("run_config", {})["dataset"] = {
                         "path": str(Path(dataset_path).resolve()),
-                        "sha256": dataset_file_hash(dataset_path),
+                        "sha256": _metadata_file_hash(dataset_path),
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
@@ -1740,9 +1772,9 @@ def _main_participant(argv: "list[str]") -> int:
                 )
                 _dataset_tip = (
                     "\n[bold bright_yellow]Tip:[/] Ground truth is recomputed on every run. "
-                    "Consider creating and reusing a dataset:\n"
-                    "   [cyan]whest create-dataset[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]-o[/] [yellow]my_dataset.npz[/]\n"
-                    "   [cyan]whest run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]my_dataset.npz[/]\n"
+                    "Consider baking and reusing a dataset:\n"
+                    "   [cyan]whest dataset bake[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]--width[/] [yellow]256[/] [green]--depth[/] [yellow]8[/] [green]--output[/] [yellow]./my-eval[/]\n"
+                    "   [cyan]whest run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]./my-eval[/]\n"
                 )
                 gen_label = (
                     "Loading dataset" if dataset_path is not None else "Sampling Ground Truth"
@@ -1786,7 +1818,7 @@ def _main_participant(argv: "list[str]") -> int:
                 if dataset_path is not None:
                     report.setdefault("run_config", {})["dataset"] = {
                         "path": str(Path(dataset_path).resolve()),
-                        "sha256": dataset_file_hash(dataset_path),
+                        "sha256": _metadata_file_hash(dataset_path),
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }

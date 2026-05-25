@@ -4,11 +4,12 @@
 
 Use this page for exact command syntax and key flags.
 
-## Environment toggles
+## Environment variables
 
 - `WHEST_SKIP_HARDWARE_FALLBACK_PROBES=1` — skip OS-native fallback probes when collecting `run_meta.host` or dataset `metadata.hardware`. Cheap fields and `psutil`-backed fields are still collected; fallback-backed fields may remain `null`.
+- `HF_TOKEN` — HuggingFace Hub authentication token. Used by `whest dataset push`, `whest dataset pull`, and `whest run --dataset hf://...` as a fallback when `--token` is not provided.
 
-## Entry commands
+## Commands
 
 Participant workflow commands:
 
@@ -17,9 +18,11 @@ Participant workflow commands:
 - `whest init`
 - `whest validate`
 - `whest run`
-- `whest create-dataset`
+- `whest dataset` (bake / push / pull / merge / inspect)
 - `whest package`
 - `whest profile-simulation`
+
+> **Migration note:** `whest create-dataset` is replaced by `whest dataset bake`. Running `whest create-dataset` prints a redirect and exits.
 
 ## `whest smoke-test`
 
@@ -85,7 +88,7 @@ whest validate --estimator <path> [--class <name>] [--format rich|plain|json] [-
 
 ## `whest run`
 
-Run local scoring with participant estimator.
+Run local scoring with a participant estimator.
 
 ```bash
 whest run --estimator <path> [options]
@@ -95,12 +98,12 @@ Default behavior: `whest run --estimator <path>` is equivalent to `--runner loca
 
 Key options:
 
-- `--class <name>`
+- `--class <name>` — estimator class name (if the module exports more than one).
 - `--runner local|subprocess|server|inprocess`
-- `--n-mlps <int>`
+- `--n-mlps <int>` — number of MLPs to evaluate. Default: 10 without `--dataset`; full dataset size with `--dataset`. Clamped to dataset size when `--dataset` is set.
 - `--flop-budget <int>` — cap on effective compute C_m = F_m + λ·R_m per MLP. Default: `68_000_000_000` (6.8e10). Always honored; any `flop_budget` stored in `--dataset`'s metadata is ignored.
 - `--wall-time-limit <seconds>` (default: `60.0`) — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`. Operational backstop matching the Phase 1 grader cap; the primary compute constraint is `--flop-budget`.
-- `--residual-wall-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported
+- `--residual-wall-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported.
 - `--detail raw|full`
 - `--seed <int>` — random seed for the run.
   - Without `--dataset`: seeds both MLP generation and estimator setup (`ctx.seed`).
@@ -110,10 +113,17 @@ Key options:
 - `--profile`
 - `--show-diagnostic-plots`
 - `--format rich|plain|json` — choose styled terminal output, plain log-friendly output, or JSON. Defaults to `rich` on TTYs and `plain` otherwise.
-- `--json` — alias for `--format json`
-- `--dataset <path>` — use pre-created dataset `.npz` file
-- `--debug` — include estimator tracebacks in the report's "Estimator Errors" panel (works with any runner).
-- `--fail-fast` — stop on the first estimator error and let the raw Python traceback propagate (combine with `--debug` to show it).
+- `--json` — alias for `--format json`.
+- `--dataset <path>` — dataset source. Accepts:
+  - Local directory: `./my-eval` or `/abs/path/my-eval`
+  - HF Hub with inline revision: `hf://owner/repo@v1` or `hf://aicrowd/arc-whestbench-2026@v1`
+  - HF Hub with `--revision` flag: `aicrowd/arc-whestbench-2026 --revision v1`
+  Bare `owner/repo` without `--revision` is rejected (revision must be explicit).
+- `--revision <tag>` — HF Hub git tag or commit SHA for `--dataset`. Ignored for local paths.
+- `--n-samples <int>` — ground truth samples per MLP when generating on-the-fly (without `--dataset`). Default: `width*width*256`.
+- `--debug` — include estimator tracebacks in the report's "Estimator Errors" panel.
+- `--fail-fast` — stop on the first estimator error and let the raw Python traceback propagate. Combine with `--debug` to show it.
+- `--max-threads <N>` — limit BLAS to at most N CPU threads.
 
 Recommended debug sequence:
 
@@ -122,6 +132,21 @@ whest run --estimator ./path/to/estimator.py
 whest run --estimator ./path/to/estimator.py --debug
 whest run --estimator ./path/to/estimator.py --debug --fail-fast
 whest run --estimator ./path/to/estimator.py --runner local --format plain   # for pdb.set_trace() / breakpoint()
+```
+
+### Using a pre-baked dataset
+
+```bash
+# Local directory (schema 3.0)
+whest run --estimator ./estimator.py --dataset ./my-eval
+
+# HF Hub with inline revision (preferred)
+whest run --estimator ./estimator.py --dataset hf://aicrowd/arc-whestbench-2026@v1
+
+# HF Hub with separate --revision flag
+whest run --estimator ./estimator.py \
+    --dataset aicrowd/arc-whestbench-2026 \
+    --revision v1
 ```
 
 ### Exit codes
@@ -136,51 +161,224 @@ Runner mode tradeoff:
 - `server`: legacy alias for `subprocess`.
 - `inprocess`: alias for `local`.
 
-## `whest create-dataset`
+## `whest dataset`
 
-Pre-create an evaluation dataset for reuse across runs.
-
-> `--flop-budget` was removed in schema 2.3. The FLOP budget is a run-time parameter — set it via `whest run --flop-budget`. Ground truth in the dataset is independent of the FLOP budget.
+Dataset management commands. All subcommands share the `whest dataset <sub>` prefix.
 
 ```bash
-whest create-dataset [options] -o <output-path>
+whest dataset {bake,push,pull,merge,inspect} ...
 ```
 
-Key options:
+### `whest dataset bake`
 
-- `--n-mlps <int>` (default: 10)
-- `--n-samples <int>` (default: 10000)
-- `--seed <int>` (optional, auto-generated if omitted)
-- `--width <int>` (default: `256`) — neuron count per layer of the generated MLPs.
-- `--depth <int>` (default: `8`) — number of weight matrices per MLP.
-- `-o, --output <path>` (default: `eval_dataset.npz`)
-- `--format rich|plain|json`
-- `--json` — alias for `--format json`
-- `--debug`
+Bake a new evaluation dataset to a local directory.
 
-### Output
+```bash
+whest dataset bake \
+    --n-mlps N --n-samples N --width W --depth D [--seed S] \
+    [--split public|holdout] \
+    --output DIR \
+    [--torch] [--device auto|cuda|mps|cpu] \
+    [--mlps-per-batch N] [--chunk-size N] \
+    [--slice K/N | --mlp-range START-END]
+```
 
-Schema 2.4 stamps every MLP in the dataset with a deterministic, human-readable name (e.g. `danielle-johnson`) derived from its per-MLP seed. Names appear:
+Required options:
 
-- on the loaded `MLP` object as `mlp.name` (see [estimator-contract.md](./estimator-contract.md))
-- in each `per_mlp` entry of a `whest run` score report as `mlp_name` (see [score-report-fields.md](./score-report-fields.md))
-- in the JSON payload printed by `whest create-dataset --json` (key: `mlp_names`)
-- in the human-readable output of `whest create-dataset`, which now previews the first five names plus a total
-- in over-budget and error panels of `whest run`'s output, replacing the bare `MLP #<idx>` label with `MLP <name> (#<idx>)`
+- `--n-mlps <int>` — total number of MLPs in the logical dataset.
+- `--n-samples <int>` — ground-truth samples per MLP. Larger values give lower-noise ground truth. Default for on-the-fly runs is `width*width*256` (~16.7M for 256-wide).
+- `--width <int>` — neuron count per layer.
+- `--depth <int>` — number of weight matrices per MLP.
+- `--output <dir>` — output directory (must not exist).
 
-Same `--seed` produces identical names across CPU and GPU bakes, and across machines, at the WhestBench release's pinned `faker` version.
+Key optional options:
 
-See [Use Evaluation Datasets](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/use-evaluation-datasets.md) (in the starter kit) for usage patterns.
+- `--seed <int>` — reproducibility seed. Auto-generated if omitted; printed on completion.
+- `--split public|holdout` — dataset split name. Default: `public`.
+- `--torch` — use the GPU/torch backend (requires `pip install whestbench[gpu]`). See [GPU Dataset Generation](./gpu-dataset-generation.md).
+- `--device auto|cuda|mps|cpu` — device when `--torch` is active. `auto` resolves `cuda > mps > cpu`.
+- `--mlps-per-batch <int>` — torch backend: MLPs processed in parallel on device.
+- `--chunk-size <int>` — torch backend: samples per chunk per step.
+- `--slice K/N` — bake only the K-th slice of N total slices (0-indexed). Produces a partial dataset. Combine with `whest dataset merge` to assemble the full dataset. Example: `--slice 0/4` for the first of four workers.
+- `--mlp-range START-END` — bake only MLP indices [START, END] inclusive (both ends). Alternative to `--slice` for irregular splits.
 
-### GPU / torch backend (optional, for large datasets)
+**Bit-equivalence guarantee:** a worker baking `--slice K/N` produces rows that are bitwise identical to the corresponding rows of a single-host bake with the same `--seed` and `--n-mlps`.
 
-Pass `--device auto|cuda|mps|cpu` to use a torch-backed implementation. See
-[GPU Dataset Generation](./gpu-dataset-generation.md) for the full guide.
-Requires `pip install whestbench[gpu]`. With `--device`, `--max-threads` is
-rejected — torch manages threading internally. Output schema is identical to
-the default path.
+Output is a directory with:
+```
+<output>/
+├── data/<split>-00000-of-00001.parquet
+├── metadata.json
+└── README.md
+```
 
-- `--device <name>` — `auto` (resolves cuda > mps > cpu), `cuda`, `mps`, or `cpu`. Default omitted = flopscope path.
+### Example
+
+```bash
+# Full bake (10 MLPs, 10M samples each)
+whest dataset bake \
+    --n-mlps 10 --n-samples 10_000_000 \
+    --width 256 --depth 8 \
+    --seed 42 \
+    --output ./my-eval
+
+# Partial bake (slice 0 of 4)
+whest dataset bake \
+    --n-mlps 100 --n-samples 1_000_000_000 \
+    --width 256 --depth 8 \
+    --seed 42 \
+    --slice 0/4 \
+    --output ./partial-0
+
+# GPU bake
+whest dataset bake \
+    --n-mlps 100 --n-samples 1_000_000_000 \
+    --width 256 --depth 8 \
+    --seed 42 --torch --device auto \
+    --output ./gpu-eval
+```
+
+### `whest dataset inspect`
+
+Print metadata from a local directory or a HF Hub repo.
+
+```bash
+whest dataset inspect <DIR_OR_REPO_ID> [--revision REV]
+```
+
+Arguments:
+
+- `DIR_OR_REPO_ID` — local dataset directory, or HF Hub repo id (e.g. `aicrowd/arc-whestbench-2026`).
+- `--revision <tag>` — HF Hub git tag or commit SHA (for remote repos).
+
+### Example
+
+```bash
+# Local
+whest dataset inspect ./my-eval
+
+# Remote
+whest dataset inspect aicrowd/arc-whestbench-2026 --revision v1
+```
+
+Output prints key metadata fields: `schema_version`, `format`, `backend`, `seed`, `n_mlps`, `n_samples`, `width`, `depth`, `created_at_utc`, and device provenance for torch bakes.
+
+### `whest dataset push`
+
+Upload a baked dataset directory to HuggingFace Hub. Requires `HF_TOKEN` set in the environment or `--token`.
+
+```bash
+whest dataset push <LOCAL_DIR> \
+    --repo REPO_ID \
+    [--tag TAG] \
+    [--private] \
+    [--token TOKEN] \
+    [--message MSG]
+```
+
+Arguments:
+
+- `LOCAL_DIR` — local directory produced by `whest dataset bake` or `whest dataset merge`.
+- `--repo <repo_id>` — HF Hub repo id, e.g. `aicrowd/arc-whestbench-2026`.
+- `--tag <tag>` — optional git tag to create on the uploaded commit (e.g. `v1`). Recommended for versioning.
+- `--private` — create the repo as private if it doesn't exist yet.
+- `--token <token>` — HF Hub write token. Falls back to `HF_TOKEN` env var, then the `huggingface-cli login` cache.
+- `--message <msg>` — commit message for the HF Hub upload.
+
+### Example
+
+```bash
+# Publish with a version tag
+whest dataset push ./my-eval \
+    --repo aicrowd/arc-whestbench-2026 \
+    --tag v1 \
+    --message "Bake: 10 MLPs, seed=42"
+
+# Private repo
+whest dataset push ./my-eval \
+    --repo aicrowd/arc-whestbench-2026-holdout \
+    --tag v1 \
+    --private
+```
+
+### `whest dataset pull`
+
+Download a dataset from HuggingFace Hub to a local directory.
+
+```bash
+whest dataset pull <REPO_ID> \
+    [--revision REV] \
+    --output DIR \
+    [--token TOKEN]
+```
+
+Arguments:
+
+- `REPO_ID` — HF Hub repo id (e.g. `aicrowd/arc-whestbench-2026`).
+- `--revision <tag>` — HF Hub git tag or commit SHA. Default: `main`.
+- `--output <dir>` — local destination directory.
+- `--token <token>` — HF Hub token for private repos. Falls back to `HF_TOKEN` env var.
+
+### Example
+
+```bash
+whest dataset pull aicrowd/arc-whestbench-2026 \
+    --revision v1 \
+    --output ./eval-v1
+```
+
+### `whest dataset merge`
+
+Merge partial bakes (produced with `--slice` or `--mlp-range`) into a single canonical dataset.
+
+```bash
+whest dataset merge <DIR> [<DIR>...] --output <DIR>
+```
+
+Arguments:
+
+- `<DIR>...` — two or more partial dataset directories.
+- `--output <dir>` — destination for the merged dataset (must not exist).
+
+All partial datasets must share the same `--seed`, `--n-mlps`, `--n-samples`, `--width`, `--depth`, and `--backend`. Their `mlp_range` values must together cover `[0, total_n_mlps)` exactly once (no gaps, no overlaps).
+
+The merged result is bit-equivalent to a single-host bake with the same parameters.
+
+### Example
+
+```bash
+# After baking 4 slices on separate workers:
+whest dataset merge \
+    ./partial-0 ./partial-1 ./partial-2 ./partial-3 \
+    --output ./final-eval
+```
+
+## End-to-end example (bake → inspect → push → pull → run)
+
+```bash
+# 1. Bake
+whest dataset bake \
+    --n-mlps 10 --n-samples 10_000_000 \
+    --width 256 --depth 8 --seed 42 \
+    --output ./my-eval
+
+# 2. Inspect locally
+whest dataset inspect ./my-eval
+
+# 3. Publish
+export HF_TOKEN=hf_...
+whest dataset push ./my-eval \
+    --repo aicrowd/arc-whestbench-2026 \
+    --tag v1
+
+# 4. Pull on another machine
+whest dataset pull aicrowd/arc-whestbench-2026 \
+    --revision v1 --output ./local-copy
+
+# 5. Run evaluation
+whest run --estimator ./estimator.py \
+    --dataset hf://aicrowd/arc-whestbench-2026@v1
+```
 
 ## `whest package`
 
@@ -220,10 +418,10 @@ Key options:
   - `super-quick` — 1 width (256), 1 depth (4), 10 000 samples. Sub-second, for testing the debug loop.
   - `quick` — 1 width (256), 2 depths (4, 128), 2 sample counts (10 000, 100 000). Finishes in seconds.
   - `standard` — 2 widths (64, 256), 3 depths (4, 32, 128), 2 sample counts (10 000, 100 000). Under a minute.
-- `exhaustive` — 2 widths (64, 256), 3 depths (4, 32, 128), 3 sample counts (10 000, 100 000, 1 000 000). Thorough but slow.
+  - `exhaustive` — 2 widths (64, 256), 3 depths (4, 32, 128), 3 sample counts (10 000, 100 000, 1 000 000). Thorough but slow.
 - `--output <path>` — save a JSON report with correctness results and FLOP accounting data.
 - `--format rich|plain|json` — choose styled terminal output, plain log-friendly output, or JSON. Defaults to `rich` on TTYs and `plain` otherwise.
-- `--json` — alias for `--format json`
+- `--json` — alias for `--format json`.
 - `--debug` — show full tracebacks on errors.
 - `--verbose` — show full tables with all columns and raw data.
 
@@ -237,8 +435,10 @@ whest profile-simulation --preset quick
 whest profile-simulation --preset exhaustive --output profile_results.json
 ```
 
-## ➡️ Next step
+## Next step
 
+- [Dataset Format](./dataset-format.md) — schema 3.0 specification
 - [Score Report Fields](./score-report-fields.md)
+- [GPU Dataset Generation](./gpu-dataset-generation.md)
 - [Inspect and Traverse MLP Structure](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/inspect-mlp-structure.md) (in the starter kit)
 - [Validate, Run, and Package](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/validate-run-package.md) (in the starter kit)

@@ -39,6 +39,44 @@ whest doctor
 
 See `docs/reference/cli-reference.md` for the full command surface.
 
+### Using evaluation datasets (schema 3.0)
+
+Datasets are HuggingFace Hub repositories — Parquet files + metadata sidecar. Use
+the published evaluation dataset directly, or bake your own:
+
+```python
+# Use the published evaluation dataset
+from datasets import load_dataset
+import whestbench
+
+ds = load_dataset(
+    "aicrowd/arc-whestbench-2026",
+    revision="v1",
+    split="public",
+)
+
+# Or bake your own (schema 3.0 directory output)
+# $ whest dataset bake --n-mlps 8 --n-samples 1_000_000 --width 256 --depth 8 \
+#       --seed 42 --output ./my-eval
+
+# Iterate as MLP instances (same interface as on-the-fly sampling)
+for mlp in whestbench.iter_mlps(ds):
+    y_pred = my_estimator.predict(mlp)
+```
+
+Run evaluation against a published or local dataset:
+
+```bash
+# HF Hub (pinned revision required)
+whest run --estimator ./estimator.py \
+    --dataset hf://aicrowd/arc-whestbench-2026@v1
+
+# Local directory
+whest run --estimator ./estimator.py --dataset ./my-eval
+```
+
+See `docs/reference/dataset-format.md` for the schema 3.0 specification.
+
 ### Optional GPU backend
 
 For baking large ground-truth datasets (`n_samples ≥ 10⁸`), install the torch
@@ -48,8 +86,10 @@ backend extra:
 pip install whestbench[gpu]
 ```
 
-Then use `whest create-dataset --device auto -o data.npz`. See [GPU Dataset
-Generation](docs/reference/gpu-dataset-generation.md) for details.
+Then use `whest dataset bake --torch --device auto ...`. See
+[GPU Dataset Generation](docs/reference/gpu-dataset-generation.md) for details.
+For parallel baking across multiple GPUs, see
+[Parallel bake](docs/how-to/parallel-bake.md).
 
 ## Repository layout
 
@@ -58,12 +98,15 @@ src/whestbench/
 ├── __init__.py            ← public API surface
 ├── cli.py                 ← `whest`/`whestbench` entry point
 ├── concurrency.py         ← parallel execution helpers
-├── dataset.py             ← evaluation dataset I/O
+├── dataset.py             ← evaluation dataset I/O (schema 3.0 bake + load)
+├── dataset_io.py          ← Parquet+sidecar on-disk I/O, merge
+├── dataset_torch.py       ← GPU/torch backend for dataset baking
 ├── doctor.py              ← `whest doctor` environment checks
 ├── domain.py              ← MLP, SetupContext, scoring spec
 ├── estimators.py          ← BaseEstimator + reference impls (mean/cov/combined)
 ├── generation.py          ← sample_mlp
 ├── hardware.py            ← hardware probing
+├── hub.py                 ← publish_dataset (HF Hub upload)
 ├── loader.py              ← estimator module loading
 ├── packaging.py           ← submission packaging
 ├── presentation/          ← Rich rendering helpers
@@ -75,10 +118,11 @@ src/whestbench/
 ├── sdk.py                 ← Python SDK surface
 ├── simulation.py          ← Monte Carlo ground truth via flopscope
 ├── subprocess_worker.py   ← isolated estimator subprocess
-└── templates/             ← `whest init` template assets
+└── templates/             ← `whest init` + dataset card Jinja2 templates
 docs/
 ├── index.md               ← Library/CLI reference index
-└── reference/             ← cli-reference, estimator-contract, score-report-fields, ...
+├── how-to/                ← Task walkthroughs (publish-to-hf-hub, parallel-bake)
+└── reference/             ← cli-reference, dataset-format, estimator-contract, ...
 ```
 
 ## Releases
