@@ -1165,27 +1165,33 @@ def _dispatch_dataset_command(args) -> int:
             slice_spec=args.slice_spec,
             n_mlps=args.n_mlps,
         )
-        kwargs = dict(
-            n_mlps=args.n_mlps,
-            n_samples=args.n_samples,
-            width=args.width,
-            depth=args.depth,
-            seed=args.seed,
-            output_path=args.output,
-            split=args.split,
-            mlp_range=mlp_range,
-        )
         if args.torch:
             from .dataset_torch import create_dataset_torch
 
             create_dataset_torch(
-                **kwargs,
+                n_mlps=args.n_mlps,
+                n_samples=args.n_samples,
+                width=args.width,
+                depth=args.depth,
+                seed=args.seed,
+                output_path=args.output,
+                split=args.split,
+                mlp_range=mlp_range,
                 device=args.device,
                 mlps_per_batch=args.mlps_per_batch,
                 chunk_size=args.chunk_size,
             )
         else:
-            _create_dataset(**kwargs)
+            _create_dataset(
+                n_mlps=args.n_mlps,
+                n_samples=args.n_samples,
+                width=args.width,
+                depth=args.depth,
+                seed=args.seed,
+                output_path=args.output,
+                split=args.split,
+                mlp_range=mlp_range,
+            )
         print(f"Baked dataset to {args.output}")
         return 0
 
