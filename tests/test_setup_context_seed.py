@@ -153,13 +153,14 @@ def test_seed_flag_allowed_alongside_dataset(tmp_path):
     import subprocess
 
     # First, bake a tiny dataset.
-    dataset_path = tmp_path / "ds.npz"
+    dataset_path = tmp_path / "ds"
     bake = subprocess.run(
         [
             "uv",
             "run",
             "whest",
-            "create-dataset",
+            "dataset",
+            "bake",
             "--n-mlps",
             "1",
             "--width",
@@ -177,7 +178,7 @@ def test_seed_flag_allowed_alongside_dataset(tmp_path):
         text=True,
         timeout=120,
     )
-    assert bake.returncode == 0, f"create-dataset failed: {bake.stderr}"
+    assert bake.returncode == 0, f"dataset bake failed: {bake.stderr}"
     assert dataset_path.exists()
 
     # Now run with both --seed AND --dataset. Previously this raised.
@@ -429,13 +430,14 @@ class Estimator(BaseEstimator):
 """)
 
     # Bake a tiny dataset at --seed 1.
-    dataset_path = tmp_path / "ds.npz"
+    dataset_path = tmp_path / "ds"
     bake = subprocess.run(
         [
             "uv",
             "run",
             "whest",
-            "create-dataset",
+            "dataset",
+            "bake",
             "--n-mlps",
             "1",
             "--width",
@@ -453,7 +455,7 @@ class Estimator(BaseEstimator):
         text=True,
         timeout=120,
     )
-    assert bake.returncode == 0, f"create-dataset failed: {bake.stderr}"
+    assert bake.returncode == 0, f"dataset bake failed: {bake.stderr}"
 
     # Run with --dataset (mlp.seed from dataset) AND --seed 42 (ctx.seed = 42).
     # NOTE: This test uses --runner local intentionally because the inline

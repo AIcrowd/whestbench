@@ -253,24 +253,15 @@ def test_init_command_writes_real_estimator_template_from_package_data(
     assert (tmp_path / "requirements.txt").is_file()
 
 
-def test_create_dataset_command_renders_dataset_summary(
+def test_create_dataset_command_emits_redirect(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    output_path = Path("/tmp/eval_dataset.npz")
-    monkeypatch.setattr(
-        "whestbench.dataset.create_dataset",
-        lambda **_kwargs: output_path,
-    )
-
     exit_code = cli.main(
-        ["create-dataset", "--n-mlps", "2", "--n-samples", "5", "-o", str(output_path)]
+        ["create-dataset", "--n-mlps", "2", "--n-samples", "5", "-o", "/tmp/x.npz"]
     )
     captured = capsys.readouterr()
-
-    assert exit_code == 0
-    assert "Dataset Created" in captured.out
-    assert "Dataset" in captured.out
-    assert str(output_path) in captured.out
+    assert exit_code != 0
+    assert "whest dataset bake" in (captured.err + captured.out)
 
 
 def test_create_dataset_json_shape_stays_stable(
@@ -278,27 +269,19 @@ def test_create_dataset_json_shape_stays_stable(
     capsys: pytest.CaptureFixture[str],
     tmp_path: Path,
 ) -> None:
-    # Use tmp_path (not a hardcoded /tmp path) so a leftover real dataset from
-    # local dogfooding can't pollute the assertion via `_read_mlp_names`. Patch
-    # `whestbench.cli.create_dataset` (the bound name the CLI actually uses) so
-    # we don't actually bake a file under tmp_path either.
+    # `create-dataset` is now deprecated — it always emits a redirect and returns
+    # nonzero regardless of flags. This test verifies the redirect fires even
+    # when --json is passed (the old contract for JSON shape is superseded by
+    # `whest dataset bake`).
     output_path = tmp_path / "eval_dataset.npz"
-    monkeypatch.setattr(cli, "create_dataset", lambda **_kwargs: output_path)
 
     exit_code = cli.main(
         ["create-dataset", "--n-mlps", "2", "--n-samples", "5", "-o", str(output_path), "--json"]
     )
     captured = capsys.readouterr()
 
-    assert exit_code == 0
-    # Schema 2.4 added `mlp_names` to the JSON shape. When create_dataset is
-    # monkeypatched (no file actually written), `_read_mlp_names` returns
-    # `[]` — keeping the key present and the type stable for downstream tools.
-    assert json.loads(captured.out) == {
-        "ok": True,
-        "path": str(output_path),
-        "mlp_names": [],
-    }
+    assert exit_code != 0
+    assert "whest dataset bake" in (captured.err + captured.out)
 
 
 def test_package_command_renders_artifact_summary(
@@ -1449,13 +1432,13 @@ def test_fail_fast_exits_nonzero_on_budget_exhaustion(
     assert "BudgetExhaustedError" in combined
 
 
-def test_create_dataset_cli_with_device_cpu_uses_torch_path(
+def test_create_dataset_cli_with_device_cpu_emits_redirect(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    pytest.importorskip("torch")
-
+    # `create-dataset` is deprecated; all invocations now redirect to
+    # `whest dataset bake` regardless of the flags passed.
     output_path = tmp_path / "torch_cli"
     exit_code = cli.main(
         [
@@ -1476,22 +1459,14 @@ def test_create_dataset_cli_with_device_cpu_uses_torch_path(
         ]
     )
     captured = capsys.readouterr()
-    assert exit_code == 0
-    assert json.loads(captured.out)["ok"] is True
-
-    # Verify the actual dataset was written by the torch path
-    from whestbench.dataset import load_dataset
-    from whestbench.dataset import metadata as _wb_metadata
-
-    ds = load_dataset(output_path)
-    md = _wb_metadata(ds)
-    assert md["backend"] == "torch"
-    assert md["device"] == "cpu"
+    assert exit_code != 0
+    assert "whest dataset bake" in (captured.err + captured.out)
 
 
-def test_create_dataset_cli_max_threads_with_device_errors(
+def test_create_dataset_cli_max_threads_with_device_emits_redirect(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
+    # `create-dataset` is deprecated; redirect fires before any flag validation.
     exit_code = cli.main(
         [
             "create-dataset",
@@ -1503,6 +1478,6 @@ def test_create_dataset_cli_max_threads_with_device_errors(
             "/tmp/should_not_be_created.npz",
         ]
     )
-    assert exit_code == 2
+    assert exit_code != 0
     captured = capsys.readouterr()
-    assert "--max-threads cannot be combined with --device" in captured.err
+    assert "whest dataset bake" in (captured.err + captured.out)
