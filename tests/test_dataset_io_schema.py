@@ -75,3 +75,85 @@ def test_make_features_final_means_is_sequence_of_width():
     assert isinstance(final.feature, Value)  # pyright: ignore[reportAttributeAccessIssue]
     assert final.feature.dtype == "float32"  # pyright: ignore[reportAttributeAccessIssue]
     assert final.length == 5  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def test_validate_split_name_accepts_canonical_names():
+    from whestbench.dataset_io import _validate_split_name
+
+    for name in ("public", "holdout", "my-split", "round-1-eval", "x"):
+        assert _validate_split_name(name) == name
+
+
+def test_validate_split_name_rejects_empty_string():
+    import pytest
+
+    from whestbench.dataset_io import _validate_split_name
+
+    with pytest.raises(ValueError, match="empty"):
+        _validate_split_name("")
+
+
+def test_validate_split_name_rejects_uppercase():
+    import pytest
+
+    from whestbench.dataset_io import _validate_split_name
+
+    with pytest.raises(ValueError, match=r"\[a-z\]\[a-z0-9\]\*"):
+        _validate_split_name("Public")
+
+
+def test_validate_split_name_rejects_underscore():
+    import pytest
+
+    from whestbench.dataset_io import _validate_split_name
+
+    with pytest.raises(ValueError, match=r"\[a-z\]\[a-z0-9\]\*"):
+        _validate_split_name("my_split")
+
+
+def test_validate_split_name_rejects_leading_digit():
+    import pytest
+
+    from whestbench.dataset_io import _validate_split_name
+
+    with pytest.raises(ValueError, match=r"\[a-z\]\[a-z0-9\]\*"):
+        _validate_split_name("1-split")
+
+
+def test_validate_split_name_rejects_whitespace_and_special_chars():
+    import pytest
+
+    from whestbench.dataset_io import _validate_split_name
+
+    for bad in ("with space", "with.dot", "with/slash", "with\ttab"):
+        with pytest.raises(ValueError):
+            _validate_split_name(bad)
+
+
+def test_validate_split_name_rejects_trailing_hyphen():
+    import pytest
+
+    from whestbench.dataset_io import _validate_split_name
+
+    for bad in ("a-", "round-1-", "public-"):
+        with pytest.raises(ValueError):
+            _validate_split_name(bad)
+
+
+def test_validate_split_name_rejects_consecutive_hyphens():
+    import pytest
+
+    from whestbench.dataset_io import _validate_split_name
+
+    for bad in ("a--b", "round--1", "x--y--z"):
+        with pytest.raises(ValueError):
+            _validate_split_name(bad)
+
+
+def test_validate_split_name_rejects_digit_only():
+    import pytest
+
+    from whestbench.dataset_io import _validate_split_name
+
+    with pytest.raises(ValueError, match=r"\[a-z\]\[a-z0-9\]\*"):
+        _validate_split_name("123")

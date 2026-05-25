@@ -44,6 +44,7 @@ except Exception:  # pragma: no cover - optional at runtime
     rich_tqdm = None
 
 from .dataset import metadata as _wb_metadata
+from .dataset_io import _validate_split_name
 from .dataset_io import metadata_file_hash as _metadata_file_hash
 from .estimators import CombinedEstimator
 from .generation import sample_mlp
@@ -968,7 +969,19 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     bake_p.add_argument("--width", type=int, required=True)
     bake_p.add_argument("--depth", type=int, required=True)
     bake_p.add_argument("--seed", type=int, default=None)
-    bake_p.add_argument("--split", default="public", choices=["public", "holdout"])
+
+    def _split_name_arg(value: str) -> str:
+        try:
+            return _validate_split_name(value)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(str(exc)) from exc
+
+    bake_p.add_argument(
+        "--split",
+        default="public",
+        type=_split_name_arg,
+        help="Split name. Must match [a-z][a-z0-9-]* (HF Hub split-name convention).",
+    )
     bake_p.add_argument("--output", required=True, help="Output directory (must not exist).")
     bake_p.add_argument("--torch", action="store_true", help="Use GPU/torch backend.")
     bake_p.add_argument("--device", default="auto", choices=["auto", "cuda", "mps", "cpu"])

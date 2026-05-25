@@ -13,6 +13,7 @@ helpers for reading/writing this layout.
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from importlib.resources import files
 from pathlib import Path
@@ -34,6 +35,29 @@ HOLDOUT_SPLIT = "holdout"
 PARQUET_SUBDIR = "data"
 METADATA_FILE = "metadata.json"
 README_FILE = "README.md"
+
+_SPLIT_NAME_RE = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
+
+
+def _validate_split_name(name: str) -> str:
+    """Validate that a split name conforms to the HF Hub convention.
+
+    Allowed: a lowercase ASCII letter, optionally followed by lowercase ASCII
+    letters, digits, and single hyphens. Every hyphen must be flanked by
+    alphanumeric characters — no leading, trailing, or consecutive hyphens.
+
+    Rejects empty strings, uppercase, underscores, whitespace, dots,
+    leading/trailing/consecutive hyphens, and other punctuation.
+    """
+    if not isinstance(name, str) or name == "":
+        raise ValueError("split name must be a non-empty string")
+    if not _SPLIT_NAME_RE.match(name):
+        raise ValueError(
+            f"split name {name!r} does not match [a-z][a-z0-9]*(-[a-z0-9]+)* "
+            f"(HF Hub split-name convention: lowercase ASCII, digits, single "
+            f"hyphens between alphanumeric runs)."
+        )
+    return name
 
 
 def write_dataset_dir(
