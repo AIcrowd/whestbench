@@ -220,3 +220,77 @@ def test_old_create_dataset_emits_redirect(tmp_path: Path):
     )
     assert res.returncode != 0
     assert "whest dataset bake" in (res.stderr + res.stdout)
+
+
+def test_whest_dataset_bake_with_arbitrary_split_name(tmp_path: Path):
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "2",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--seed",
+        "1",
+        "--split",
+        "my-custom-split",
+        "--output",
+        str(out),
+    )
+    assert res.returncode == 0, res.stderr
+    assert (out / "data" / "my-custom-split-00000-of-00001.parquet").is_file()
+
+
+def test_whest_dataset_bake_rejects_uppercase_split(tmp_path: Path):
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "2",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--seed",
+        "1",
+        "--split",
+        "Public",
+        "--output",
+        str(out),
+    )
+    assert res.returncode != 0
+    combined = (res.stderr + res.stdout).lower()
+    assert "[a-z][a-z0-9]" in combined or "convention" in combined
+
+
+def test_whest_dataset_bake_rejects_underscore_split(tmp_path: Path):
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "2",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--seed",
+        "1",
+        "--split",
+        "my_split",
+        "--output",
+        str(out),
+    )
+    assert res.returncode != 0
+    combined = (res.stderr + res.stdout).lower()
+    assert "[a-z][a-z0-9]" in combined or "convention" in combined
