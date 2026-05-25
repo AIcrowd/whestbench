@@ -72,17 +72,28 @@ def test_readme_includes_logo_at_top():
     assert logo_pos < title_pos
 
 
-def test_readme_includes_aicrowd_organiser_line():
-    """An 'Organised by AIcrowd' line with the AIcrowd logo must appear under the Whest logo."""
+def test_readme_includes_organizer_line():
+    """An 'Organized by: ARC, AIcrowd' line must appear under the Whest logo."""
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
-    assert "Organised by" in out
-    assert "avatars.githubusercontent.com/u/44522764" in out  # AIcrowd GH avatar
+    assert "Organized by:" in out
+    assert "Alignment Research Center (ARC)" in out
+    assert "AIcrowd" in out
+    # ARC links to alignment.org; AIcrowd links to aicrowd.com
+    assert 'href="https://www.alignment.org/"' in out
+    assert 'href="https://www.aicrowd.com/"' in out
+
     body = out.split("\n---\n", 1)[1]
-    # AIcrowd line sits between Whest logo and title
+    # Organizer line sits between Whest logo and title
     whest_pos = body.find("logo.png")
-    aicrowd_pos = body.find("Organised by")
+    org_pos = body.find("Organized by:")
     title_pos = body.find("# ")
-    assert whest_pos < aicrowd_pos < title_pos
+    assert whest_pos < org_pos < title_pos
+
+
+def test_readme_challenge_badge_uses_aicrowd_brand_color():
+    """The Challenge Page badge color is the AIcrowd brand red (#F0524D)."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    assert "img.shields.io/badge/AIcrowd-Challenge_Page-f0524d" in out
 
 
 def test_readme_includes_title():
