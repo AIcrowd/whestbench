@@ -12,7 +12,11 @@ helpers for reading/writing this layout.
 
 from __future__ import annotations
 
-from datasets import Array2D, Array3D, Features, Sequence, Value
+import json
+from pathlib import Path
+from typing import Any, Dict
+
+from datasets import Array2D, Array3D, Dataset, Features, Sequence, Value
 
 SCHEMA_VERSION = "3.0"
 SCHEMA_FORMAT = "hf-datasets-parquet"
@@ -25,6 +29,52 @@ HOLDOUT_SPLIT = "holdout"
 PARQUET_SUBDIR = "data"
 METADATA_FILE = "metadata.json"
 README_FILE = "README.md"
+
+
+def write_dataset_dir(
+    ds: Dataset,
+    *,
+    output_dir: "Path | str",
+    split: str,
+    metadata: Dict[str, Any],
+    num_shards: int = 1,
+) -> Path:
+    """Write a Dataset to <output_dir> in the canonical 3-file layout.
+
+    Layout:
+        <output_dir>/
+        ├── data/<split>-NNNNN-of-MMMMM.parquet
+        ├── metadata.json
+        └── README.md
+
+    Raises FileExistsError if output_dir already exists.
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=False)
+    data_dir = output_dir / PARQUET_SUBDIR
+    data_dir.mkdir()
+
+    if num_shards != 1:
+        raise NotImplementedError("multi-shard writes not implemented in schema 3.0")
+
+    parquet_path = data_dir / f"{split}-00000-of-00001.parquet"
+    ds.to_parquet(str(parquet_path))
+
+    (output_dir / METADATA_FILE).write_text(json.dumps(metadata, indent=2))
+    (output_dir / README_FILE).write_text(generate_readme(metadata, split=split, ds_size=len(ds)))
+    return output_dir
+
+
+def generate_readme(
+    metadata: Dict[str, Any],
+    *,
+    split: str,
+    ds_size: int,
+    repo_id: "str | None" = None,
+    revision: "str | None" = None,
+) -> str:
+    """Placeholder; replaced by Jinja template in Task 5."""
+    return f"# {metadata.get('pretty_name', 'WhestBench Dataset')}\n\nSplit: `{split}`, MLPs: {ds_size}\n"
 
 
 def make_features(*, width: int, depth: int) -> Features:
