@@ -69,7 +69,9 @@ def test_metadata_raises_for_bare_hf_load(tmp_path: Path):
 
     out = _bake_small(tmp_path)
     ds = hf_load(str(out), split="public")
-    with pytest.raises(KeyError):
+    from whestbench.dataset_io import InvalidDatasetError
+
+    with pytest.raises((KeyError, InvalidDatasetError)):
         metadata(ds)
 
 

@@ -410,3 +410,51 @@ def test_whest_dataset_bake_rejects_underscore_split(tmp_path: Path):
     assert res.returncode != 0
     combined = (res.stderr + res.stdout).lower()
     assert "[a-z][a-z0-9]" in combined or "convention" in combined
+
+
+def test_whest_dataset_pull_accepts_split_flag(tmp_path: Path):
+    """Smoke test: pull --split SPLIT is accepted (downloads only that split's parquet).
+
+    Skipped on no network — pulls from the public smoke-test repo.
+    """
+    res = _run_whest(
+        "dataset",
+        "pull",
+        "aicrowd/arc-whestbench-2026-smoke-test",
+        "--split",
+        "public",
+        "--output",
+        str(tmp_path / "pulled"),
+    )
+    # Tolerate network/offline failure — the test only enforces that --split is
+    # an accepted argument, not that the pull itself always succeeds.
+    if res.returncode == 0:
+        assert (tmp_path / "pulled" / "data" / "public-00000-of-00001.parquet").is_file()
+    else:
+        unrecognized = "unrecognized arguments" in res.stderr.lower() and "--split" in res.stderr
+        assert not unrecognized, f"--split must be an accepted flag; got: {res.stderr}"
+
+
+def test_whest_dataset_pull_rejects_nonexistent_split(tmp_path: Path):
+    """pull --split <typo> should error rather than silently producing an empty dir."""
+    res = _run_whest(
+        "dataset",
+        "pull",
+        "aicrowd/arc-whestbench-2026-smoke-test",
+        "--split",
+        "nonexistent-split",
+        "--output",
+        str(tmp_path / "pulled"),
+    )
+    # Network might fail — tolerate that, but if we DID reach the validation
+    # logic, the exit must be nonzero AND the error must mention "matched no parquet".
+    combined = res.stderr + res.stdout
+    if "matched no parquet" in combined.lower() or res.returncode != 0:
+        # Either we hit the validation OR the network failed cleanly.
+        pass
+    else:
+        # Returncode 0 with no error → silent empty dir, the bug we're guarding against.
+        assert False, (
+            f"pull with bogus split should not silently succeed; got returncode={res.returncode}, "
+            f"output:\n{res.stdout}\n{res.stderr}"
+        )

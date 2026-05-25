@@ -7,7 +7,10 @@ import json
 import weakref
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from datasets import DatasetDict
 
 import flopscope as flops
 import flopscope.numpy as fnp
@@ -33,9 +36,31 @@ from .naming import assign_unique_names
 from .scoring import _normalize_sampling_budget_breakdown
 from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_count
 
-# Metadata side-channel: associates a Dataset with its metadata.json contents
-# without mutating the Dataset object itself.
+# Metadata side-channel: associates a Dataset/DatasetDict with its
+# metadata.json contents without mutating the object itself.
+#
+# Dataset is hashable -> use a WeakKeyDictionary.
+# DatasetDict inherits from dict (unhashable) but IS weakref-able -> use an
+# id()-keyed plain dict with a weakref finalizer for cleanup.
 _METADATA_BY_DS: "weakref.WeakKeyDictionary[Dataset, Dict[str, Any]]" = weakref.WeakKeyDictionary()
+_METADATA_BY_DSD: "Dict[int, Dict[str, Any]]" = {}  # keyed by id(DatasetDict)
+_DSD_REFS: "Dict[int, weakref.ref]" = {}  # keeps finalizer alive
+
+
+def _register_dsd_metadata(dsd: "DatasetDict", md: "Dict[str, Any]") -> None:
+    """Store metadata for a DatasetDict, cleaning up when the object is GC'd."""
+    oid = id(dsd)
+    _METADATA_BY_DSD[oid] = md
+
+    def _cleanup(ref: "weakref.ref", _oid: int = oid) -> None:
+        _METADATA_BY_DSD.pop(_oid, None)
+        _DSD_REFS.pop(_oid, None)
+
+    _DSD_REFS[oid] = weakref.ref(dsd, _cleanup)
+
+
+def _get_dsd_metadata(dsd: "DatasetDict") -> "Dict[str, Any] | None":
+    return _METADATA_BY_DSD.get(id(dsd))
 
 
 def _resolve_mlp_range(n_mlps: int, mlp_range: Optional[Tuple[int, int]]) -> Tuple[int, int]:
@@ -200,33 +225,44 @@ def load_dataset(
     path_or_repo: "Path | str",
     *,
     revision: Optional[str] = None,
-    split: str = DEFAULT_SPLIT,
+    split: Optional[str] = None,
     token: Optional[str] = None,
-) -> Dataset:
+) -> "Dataset | DatasetDict":
     """Load a whestbench dataset from a local directory or HF Hub repo.
 
-    Returns a datasets.Dataset (the canonical in-memory type).
-    Validates metadata.json's schema_version and seed_protocol; refuses to
-    load partial datasets (run `whest dataset merge` first).
-    Use whestbench.metadata(ds) to access the validated metadata dict.
+    Returns `Dataset` for single-split datasets, and when `split=` is provided
+    for either single- or multi-split. Returns `DatasetDict` for multi-split
+    datasets when `split=` is not provided.
+
+    Metadata is attached via a weakref side-channel (accessible through
+    `whestbench.metadata()`):
+    - Dataset (single-split or split-selected): the single-split-shaped metadata.
+    - DatasetDict (multi-split, no split=): the full multi-split metadata with
+      the `splits:` dict.
+    - Each member Dataset inside a DatasetDict: the merged single-split-shaped
+      metadata for that split.
 
     Args:
         path_or_repo: Local directory path, or HF Hub repo id (e.g.
             "aicrowd/arc-whestbench-2026").
         revision: HF Hub git tag or commit SHA. Ignored for local paths.
-        split: Split name (default "public"; holdout repos use "holdout").
+        split: Optional split name. Required for multi-split datasets unless
+            you want a DatasetDict; defaults to "public" for single-split
+            datasets (preserves prior behavior).
         token: HF Hub auth token. Falls back to HF auth cache.
 
     Raises:
-        InvalidDatasetError: if metadata.json is missing/malformed/partial,
-            or if path is a file (e.g. legacy .npz).
+        InvalidDatasetError: missing/malformed/partial metadata, or unknown
+            split name for a multi-split dataset.
     """
     import datasets as hf_datasets
+    from datasets import DatasetDict
 
     path_or_repo_str = str(path_or_repo)
     local_candidate = Path(path_or_repo_str)
     is_local = local_candidate.exists()
 
+    # Materialise metadata.json regardless of source.
     if is_local:
         if local_candidate.is_file():
             raise InvalidDatasetError(
@@ -235,10 +271,7 @@ def load_dataset(
                 f"with `whest dataset bake`."
             )
         md = read_metadata(local_candidate)
-        validate_metadata(md)
-        ds = hf_datasets.load_dataset(str(local_candidate), split=split)
     else:
-        # HF Hub
         from huggingface_hub import hf_hub_download
 
         metadata_path = hf_hub_download(
@@ -249,37 +282,124 @@ def load_dataset(
             token=token,
         )
         md = json.loads(Path(metadata_path).read_text())
-        validate_metadata(md)
-        ds = hf_datasets.load_dataset(
-            path_or_repo_str,
-            revision=revision,
-            split=split,
-            token=token,
-        )
 
+    validate_metadata(md, allow_partial=False)
+
+    loader_path = str(local_candidate) if is_local else path_or_repo_str
+    hf_kwargs: Dict[str, Any] = {} if is_local else {"revision": revision, "token": token}
+
+    if "splits" in md:
+        # Multi-split path.
+        available_splits = sorted(md["splits"].keys())
+        if split is not None:
+            if split not in available_splits:
+                raise InvalidDatasetError(
+                    f"split {split!r} not in {{{', '.join(repr(s) for s in available_splits)}}}"
+                )
+            ds = hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
+            _METADATA_BY_DS[ds] = _merge_metadata_for_split(md, split)
+            return ds
+        dsd = DatasetDict()
+        for name in available_splits:
+            member = hf_datasets.load_dataset(loader_path, split=name, **hf_kwargs)
+            _METADATA_BY_DS[member] = _merge_metadata_for_split(md, name)
+            dsd[name] = member
+        _register_dsd_metadata(dsd, md)
+        return dsd
+
+    # Single-split path. Preserve prior behavior: default split = "public".
+    effective_split = split if split is not None else DEFAULT_SPLIT
+    ds = hf_datasets.load_dataset(loader_path, split=effective_split, **hf_kwargs)
     _METADATA_BY_DS[ds] = md
     return ds
 
 
-def metadata(ds: Dataset) -> Dict[str, Any]:
-    """Return the metadata.json dict for a Dataset loaded via whestbench.load_dataset.
+def _merge_metadata_for_split(md: Dict[str, Any], split: str) -> Dict[str, Any]:
+    """Project a multi-split metadata dict into a single-split-shaped dict.
 
-    Raises KeyError if `ds` was loaded directly via datasets.load_dataset(...).
+    Returns a new dict with top-level common fields plus the requested split's
+    per-split fields (n_mlps, seed, etc.) promoted to top level. The `splits:`
+    key is dropped.
     """
-    if ds not in _METADATA_BY_DS:
-        raise KeyError(
-            "Dataset has no whestbench metadata attached. Load via "
-            "whestbench.load_dataset(...) instead of datasets.load_dataset(...)."
+    merged: Dict[str, Any] = {k: v for k, v in md.items() if k != "splits"}
+    merged.update(md["splits"][split])
+    return merged
+
+
+def metadata(
+    ds_or_dsd: "Dataset | DatasetDict",
+    *,
+    split: "str | None" = None,
+) -> Dict[str, Any]:
+    """Return the metadata.json contents attached to a Dataset or DatasetDict.
+
+    For a DatasetDict (multi-split, no split= at load time): returns the full
+    multi-split metadata dict (with `splits:`). Pass `split="X"` to get a
+    single-split-shaped merged dict for split X.
+
+    For a Dataset (single-split or `load_dataset(..., split=X)`): returns the
+    single-split-shaped metadata. `split=` is rejected with a TypeError — the
+    Dataset's split is fixed at load time and cannot be re-selected here.
+
+    Raises:
+        InvalidDatasetError: if no metadata is attached, or if `split=` names
+            a split that's not in the DatasetDict.
+        TypeError: if `split=` is passed for a Dataset.
+    """
+    from datasets import DatasetDict
+
+    if isinstance(ds_or_dsd, DatasetDict):
+        md = _get_dsd_metadata(ds_or_dsd)
+        if md is None:
+            raise InvalidDatasetError(
+                "no metadata is attached to this DatasetDict; "
+                "did you load it via whestbench.load_dataset(...)?"
+            )
+        if split is None:
+            return md
+        if "splits" not in md or split not in md["splits"]:
+            raise InvalidDatasetError(
+                f"split {split!r} not in {sorted(md.get('splits', {}).keys())}"
+            )
+        return _merge_metadata_for_split(md, split)
+
+    # ds_or_dsd is a Dataset → metadata is already single-split-shaped.
+    if split is not None:
+        raise TypeError(
+            "metadata() does not accept `split=` for a Dataset; the split is "
+            "implicit in the loaded Dataset. If you want to filter by split "
+            "name, pass a DatasetDict (load_dataset without `split=` for "
+            "multi-split datasets)."
         )
-    return _METADATA_BY_DS[ds]
+    md = _METADATA_BY_DS.get(ds_or_dsd)
+    if md is None:
+        raise InvalidDatasetError(
+            "no metadata is attached to this Dataset; "
+            "did you load it via whestbench.load_dataset(...)?"
+        )
+    return md
 
 
 def iter_mlps(ds: Dataset) -> Iterator[MLP]:
     """Iterate over a Dataset, yielding one MLP per row."""
+    from datasets import DatasetDict
+
+    if isinstance(ds, DatasetDict):
+        raise TypeError(
+            "iter_mlps requires a single Dataset; for multi-split datasets, "
+            "call load_dataset(..., split='<name>') first or use ds[split]."
+        )
     for row in ds:
         yield MLP.from_row(row)
 
 
 def mlp_at(ds: Dataset, index: int) -> MLP:
     """Return the MLP at `index` in the Dataset."""
+    from datasets import DatasetDict
+
+    if isinstance(ds, DatasetDict):
+        raise TypeError(
+            "mlp_at requires a single Dataset; for multi-split datasets, "
+            "call load_dataset(..., split='<name>') first or use ds[split]."
+        )
     return MLP.from_row(ds[index])

@@ -879,6 +879,15 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="HF Hub revision (tag or commit SHA) for --dataset.",
     )
     run_parser.add_argument(
+        "--split",
+        default=None,
+        type=_validate_split_name,
+        help=(
+            "For multi-split datasets, the split to evaluate. Required when the dataset "
+            "is multi-split; optional when single-split (defaults to the only split)."
+        ),
+    )
+    run_parser.add_argument(
         "--flop-budget",
         type=int,
         default=None,
@@ -1005,6 +1014,12 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     pull_p.add_argument("--revision", default=None)
     pull_p.add_argument("--output", required=True)
     pull_p.add_argument("--token", default=None)
+    pull_p.add_argument(
+        "--split",
+        default=None,
+        type=_validate_split_name,
+        help="Optional: download only the specified split's parquet (and metadata/README).",
+    )
 
     merge_p = dataset_sub.add_parser("merge", help="Merge partial bakes into one dataset.")
     merge_p.add_argument("inputs", nargs="+", help="Partial dataset directories.")
@@ -1222,13 +1237,38 @@ def _dispatch_dataset_command(args) -> int:
     if sub == "pull":
         from huggingface_hub import snapshot_download
 
-        snapshot_download(
+        allow_patterns = None
+        if getattr(args, "split", None) is not None:
+            allow_patterns = [
+                f"data/{args.split}-*.parquet",
+                "metadata.json",
+                "README.md",
+                ".gitattributes",
+            ]
+
+        local = snapshot_download(
             repo_id=args.repo_id,
             repo_type="dataset",
             revision=args.revision,
             local_dir=args.output,
             token=args.token,
+            allow_patterns=allow_patterns,
         )
+
+        # If --split was given, verify the download actually got parquet(s) for it.
+        # snapshot_download silently succeeds with zero matches if the glob doesn't
+        # match any file in the repo (e.g. typo'd split name or single-split repo).
+        if getattr(args, "split", None) is not None:
+            matches = list(Path(local).glob(f"data/{args.split}-*.parquet"))
+            if not matches:
+                print(
+                    f"error: --split {args.split!r} matched no parquet files in "
+                    f"{args.repo_id!r}. Available splits can be inferred from the "
+                    f"repo's data/ directory listing.",
+                    file=sys.stderr,
+                )
+                return 1
+
         print(f"Pulled {args.repo_id}@{args.revision or 'main'} to {args.output}")
         return 0
 
@@ -1742,7 +1782,18 @@ def _main_participant(argv: "list[str]") -> int:
                 repo_or_path, rev, _is_local = _resolve_dataset_arg(
                     dataset_path, revision=getattr(args, "revision", None)
                 )
-                ds = _wb_load_dataset(repo_or_path, revision=rev)
+                ds = _wb_load_dataset(
+                    repo_or_path, revision=rev, split=getattr(args, "split", None)
+                )
+                from datasets import DatasetDict as _DatasetDict
+
+                if isinstance(ds, _DatasetDict):
+                    print(
+                        f"error: dataset {dataset_path!r} is multi-split with splits "
+                        f"{sorted(ds.keys())}. Pass --split <name> to select one.",
+                        file=sys.stderr,
+                    )
+                    return 1
                 ds_meta = _wb_metadata(ds)
                 ds_n_mlps = len(ds)
 
