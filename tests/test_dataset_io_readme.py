@@ -72,6 +72,19 @@ def test_readme_includes_logo_at_top():
     assert logo_pos < title_pos
 
 
+def test_readme_includes_aicrowd_organiser_line():
+    """An 'Organised by AIcrowd' line with the AIcrowd logo must appear under the Whest logo."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    assert "Organised by" in out
+    assert "avatars.githubusercontent.com/u/44522764" in out  # AIcrowd GH avatar
+    body = out.split("\n---\n", 1)[1]
+    # AIcrowd line sits between Whest logo and title
+    whest_pos = body.find("logo.png")
+    aicrowd_pos = body.find("Organised by")
+    title_pos = body.find("# ")
+    assert whest_pos < aicrowd_pos < title_pos
+
+
 def test_readme_includes_title():
     out = generate_readme(
         _flopscope_metadata(),
@@ -87,7 +100,7 @@ def test_readme_uses_default_title_when_pretty_name_absent():
     md = _flopscope_metadata()
     del md["pretty_name"]
     out = generate_readme(md, split="public", ds_size=4)
-    assert "WhestBench 2026 — White-Box Activation Estimation" in out
+    assert "WhestBench 2026: ARC White-Box Estimation Challenge" in out
 
 
 def test_readme_includes_problem_statement():
@@ -107,7 +120,7 @@ def test_readme_includes_split_aware_lead():
     assert "`holdout` split" in out_hld
 
 
-# --- Links ---
+# --- Badge row (replaces the bullet-list Links section) ---
 
 
 def test_readme_links_to_challenge_page():
@@ -139,6 +152,22 @@ def test_readme_links_to_hub_page_with_repo_and_revision():
         revision="v1",
     )
     assert "huggingface.co/datasets/aicrowd/arc-whestbench-2026/tree/v1" in out
+
+
+def test_readme_uses_shields_io_badges_for_all_five_links():
+    """Each of the 5 links should be a shields.io badge (`for-the-badge` style)."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    # Each badge URL is a shields.io URL. We check for a unique fragment of each.
+    for badge_fragment in (
+        "img.shields.io/badge/AIcrowd-Challenge_Page",
+        "img.shields.io/badge/GitHub-AIcrowd%2Fwhestbench",
+        "img.shields.io/badge/Starter_Kit-whest--starterkit",
+        "img.shields.io/badge/MLP_Explorer-Interactive",
+        "View_on_HF_Hub",  # preceded by the URL-encoded 🤗 emoji in the badge URL
+    ):
+        assert badge_fragment in out, f"badge missing: {badge_fragment!r}"
+    # for-the-badge style is consistent across all
+    assert out.count("style=for-the-badge") >= 5
 
 
 # --- Quick-start snippets ---
@@ -322,8 +351,8 @@ def test_readme_front_matter_has_expanded_tags():
 
 def test_readme_citation_points_at_challenge_page():
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
-    assert "ARC White-Box Estimation Challenge" in out
-    # The citation URL is also in the links bar; this asserts the dedicated section exists.
+    assert "WhestBench 2026: ARC White-Box Estimation Challenge" in out
+    # The citation URL is also in the badge row; this asserts the dedicated section exists.
     assert "## Citation" in out
 
 
