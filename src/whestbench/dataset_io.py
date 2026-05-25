@@ -106,10 +106,18 @@ def generate_readme(
     card_data = DatasetCardData(
         license="cc-by-4.0",
         language=["code"],
-        tags=["whestbench", "alignment", "neural-network-statistics"],
+        tags=[
+            "whestbench",
+            "alignment",
+            "neural-network-statistics",
+            "benchmark",
+            "white-box",
+        ],
         task_categories=["other"],
-        pretty_name=metadata.get("pretty_name", "WhestBench Dataset"),
+        pretty_name=metadata.get("pretty_name", "WhestBench 2026"),
         size_categories=[_size_category(ds_size)],
+        homepage="https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026",
+        repository="https://github.com/AIcrowd/whestbench",
     )
     yaml_str = yaml.dump(card_data.to_dict(), default_flow_style=False, allow_unicode=True)
     full_content = f"---\n{yaml_str}---\n\n{body}"
