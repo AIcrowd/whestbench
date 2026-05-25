@@ -21,27 +21,76 @@ whestbench` does not include torch.
 # Auto-detect best available device (cuda > mps > cpu)
 # WARNING: this takes ~4 hours on L40S, ~14 h on M3 Max. Calibrate first
 # (see "Calibration recipe" below) before committing to a multi-hour bake.
-whest create-dataset --device auto \
-    --n-mlps 100 --n-samples 1000000000 -o ground_truth.npz
+whest dataset bake \
+    --torch --device auto \
+    --n-mlps 100 --n-samples 1_000_000_000 \
+    --width 256 --depth 8 --seed 42 \
+    --output ./ground-truth
 
 # Smaller production-realistic example (10 MLPs × 10⁹ ≈ 25 min on L40S)
-whest create-dataset --device cuda --seed 42 \
-    --n-mlps 10 --n-samples 1000000000 -o data.npz
+whest dataset bake \
+    --torch --device cuda \
+    --n-mlps 10 --n-samples 1_000_000_000 \
+    --width 256 --depth 8 --seed 42 \
+    --output ./data
 
 # Develop on laptop using torch CPU (works without GPU)
-whest create-dataset --device cpu --n-mlps 5 --n-samples 100000 -o dev.npz
+whest dataset bake \
+    --torch --device cpu \
+    --n-mlps 5 --n-samples 100_000 \
+    --width 256 --depth 8 \
+    --output ./dev
 ```
 
-The output `.npz` is read by `whestbench.dataset.load_dataset()` unchanged —
-the array schema is identical to a default (flopscope) dataset, including the
-2.4 `mlp_names` field. Both backends produce identical name lists at the same
-`--seed`, since names are a pure function of `mlp.seed` (see `whestbench.naming`).
+Output is a **directory** (schema 3.0 layout), not a single `.npz` file:
+
+```
+./ground-truth/
+├── data/public-00000-of-00001.parquet
+├── metadata.json
+└── README.md
+```
+
+Load it with `whestbench.load_dataset` or push to HF Hub with
+`whest dataset push`. The array schema is identical to a CPU bake — the same
+8 Parquet columns, same `mlp_name` values at the same seed.
 
 > The seed → name mapping is stable across machines as long as the installed
 > `faker` version matches the pin in `pyproject.toml`. Bumping `faker` is a
 > deliberate operation; the lock-down test in `tests/test_naming.py` trips when
 > faker's wordlists change, and reference datasets must be re-baked alongside
 > the version bump.
+
+## Parallel bakes with `--slice`
+
+For very large bakes, use `--slice K/N` to distribute across multiple GPU workers.
+Each worker produces a partial directory; run `whest dataset merge` afterwards.
+
+```bash
+# 4 workers
+whest dataset bake --slice 0/4 --torch --device cuda \
+    --n-mlps 400 --n-samples 1_000_000_000 \
+    --width 256 --depth 8 --seed 42 --output ./p0
+# ... (repeat for slices 1/4, 2/4, 3/4)
+
+# Merge
+whest dataset merge ./p0 ./p1 ./p2 ./p3 --output ./final
+```
+
+See [Parallel bake across multiple GPUs](../how-to/parallel-bake.md) for the full
+walkthrough.
+
+## Publishing
+
+After baking (and optionally merging), push to HF Hub:
+
+```bash
+whest dataset push ./ground-truth \
+    --repo aicrowd/arc-whestbench-2026-eval \
+    --tag v1
+```
+
+See [Publishing a dataset to HuggingFace Hub](../how-to/publish-to-hf-hub.md).
 
 ## Device selection
 
@@ -56,7 +105,7 @@ the array schema is identical to a default (flopscope) dataset, including the
 There is **no automatic fallback to CPU** if a GPU device is requested but
 unavailable. Explicit device choices are honored or rejected loudly.
 
-`--max-threads` cannot be combined with `--device`; torch manages threading
+`--max-threads` cannot be combined with `--torch`; torch manages threading
 internally.
 
 ## Performance expectations
@@ -118,15 +167,13 @@ from whestbench.dataset_torch import create_dataset_torch
 # Warmup (kernel compilation, ~0.2s on cuda)
 create_dataset_torch(
     n_mlps=2, n_samples=10_000, width=256, depth=8,
-    flop_budget=17_000_000_000, seed=0,
-    output_path=Path('/tmp/warmup.npz'), device='cuda')
+    seed=0, output_path=Path('/tmp/warmup'), device='cuda')
 
 # Calibration anchored on n_mlps=10 to match the production setup
 t0 = time.perf_counter()
 create_dataset_torch(
     n_mlps=10, n_samples=1_000_000, width=256, depth=8,
-    flop_budget=17_000_000_000, seed=42,
-    output_path=Path('/tmp/cal.npz'), device='cuda')
+    seed=42, output_path=Path('/tmp/cal'), device='cuda')
 torch.cuda.synchronize()
 elapsed = time.perf_counter() - t0
 print(f'{elapsed:.2f}s at N=10⁶ → projected {elapsed*1000/60:.1f} min at N=10⁹')
@@ -142,22 +189,18 @@ since matmuls are small.
 
 ## Verifying the output
 
-Datasets baked with `--device` have identical array layout to default
-(flopscope) datasets. Provenance is in metadata:
+Datasets baked with `--torch` have identical Parquet column layout to default
+(flopscope) datasets. Provenance is in `metadata.json`:
 
 ```python
-from whestbench.dataset import load_dataset
+import whestbench
 
-bundle = load_dataset("ground_truth.npz")
-backend = bundle.metadata.get("backend", "flopscope")   # "torch" or "flopscope"
-device = bundle.metadata.get("device")                  # "cuda" | "mps" | "cpu" if torch
-torch_version = bundle.metadata.get("torch_version")
+ds = whestbench.load_dataset("./ground-truth")
+md = whestbench.metadata(ds)
+backend = md.get("backend", "flopscope")   # "torch" or "flopscope"
+device = md.get("device")                  # "cuda" | "mps" | "cpu" if torch
+torch_version = md.get("torch_version")
 ```
-
-Files written by either path have `schema_version="2.3"`. Pre-existing files
-baked before this feature have `"2.2"` and no `backend` key (default to
-`"flopscope"`). All three are loaded identically — the loader doesn't care
-which path produced them.
 
 ## Reproducibility
 
@@ -187,16 +230,17 @@ from whestbench.dataset_torch import create_dataset_torch
 
 create_dataset_torch(
     n_mlps=100, n_samples=10**9,
-    width=256, depth=8, flop_budget=17_000_000_000,
-    seed=42, output_path="ground_truth.npz",
+    width=256, depth=8,
+    seed=42, output_path="ground_truth",
     device="cuda",
     mlps_per_batch=32,   # default: min(n_mlps, 16). Larger uses more GPU memory.
     chunk_size=1 << 20,  # default: memory-aware on cuda, 65536 on mps/cpu.
 )
 ```
 
-See the docstring for full parameter semantics. The CLI exposes `--device`
-only; `mlps_per_batch` and `chunk_size` are Python-API knobs for benchmarking.
+See the docstring for full parameter semantics. The CLI exposes `--device`,
+`--mlps-per-batch`, and `--chunk-size`; these are also available as Python-API
+knobs for benchmarking.
 
 ## Troubleshooting
 
