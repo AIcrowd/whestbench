@@ -4,6 +4,8 @@ This is the critical correctness gate: if flopscope ever changes its accounting
 model upstream, this test fails loudly and we update the synthesis formula.
 """
 
+import json
+
 from whestbench.dataset import create_dataset, load_dataset
 from whestbench.dataset_torch import _synthesize_sampling_breakdown
 
@@ -21,11 +23,11 @@ def test_closed_form_matches_flopscope_count(tmp_path) -> None:
         width=width,
         depth=depth,
         seed=42,
-        output_path=tmp_path / "flopscope_baseline.npz",
+        output_path=tmp_path / "flopscope_baseline",
     )
-    bundle = load_dataset(out)
-    assert bundle.sampling_budget_breakdowns is not None
-    actual = bundle.sampling_budget_breakdowns[0]
+    ds = load_dataset(out)
+    breakdowns = [json.loads(b) for b in ds["sampling_budget_breakdown"]]
+    actual = breakdowns[0]
     actual_flops = actual["flops_used"]
 
     synthesized = _synthesize_sampling_breakdown(

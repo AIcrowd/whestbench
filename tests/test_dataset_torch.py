@@ -1,6 +1,7 @@
 """Tests for the torch-backed dataset path. Skipped if torch is not installed."""
 
 # pyright: reportMissingImports=false
+import json
 from pathlib import Path
 from typing import Any
 
@@ -141,7 +142,7 @@ def test_auto_chunk_size_cuda_clamps_high(monkeypatch: pytest.MonkeyPatch) -> No
     assert _auto_chunk_size(device="cuda", width=4, mlps_per_batch=1) == (1 << 20)
 
 
-from whestbench.dataset import load_dataset  # noqa: E402
+from whestbench.dataset import iter_mlps, load_dataset, metadata  # noqa: E402
 from whestbench.dataset_torch import create_dataset_torch  # noqa: E402
 
 
@@ -152,17 +153,17 @@ def test_create_dataset_torch_roundtrip_cpu(tmp_path: Path) -> None:
         width=8,
         depth=2,
         seed=42,
-        output_path=tmp_path / "torch_cpu.npz",
+        output_path=tmp_path / "torch_cpu",
         device="cpu",
     )
-    bundle = load_dataset(out)
-    assert bundle.n_mlps == 2
-    assert bundle.all_layer_means.shape == (2, 2, 8)
-    assert bundle.final_means.shape == (2, 8)
-    assert len(bundle.avg_variances) == 2
-    assert bundle.sampling_budget_breakdowns is not None
-    assert len(bundle.sampling_budget_breakdowns) == 2
-    assert bundle.sampling_budget_breakdowns[0]["flops_used"] > 0
+    ds = load_dataset(out)
+    assert len(ds) == 2
+    assert np.array(ds["all_layer_means"]).shape == (2, 2, 8)
+    assert np.array(ds["final_means"]).shape == (2, 8)
+    assert len(ds["avg_variance"]) == 2
+    breakdowns = [json.loads(b) for b in ds["sampling_budget_breakdown"]]
+    assert len(breakdowns) == 2
+    assert breakdowns[0]["flops_used"] > 0
 
 
 def test_create_dataset_torch_metadata_includes_backend_info(tmp_path: Path) -> None:
@@ -172,16 +173,17 @@ def test_create_dataset_torch_metadata_includes_backend_info(tmp_path: Path) -> 
         width=4,
         depth=2,
         seed=42,
-        output_path=tmp_path / "torch_meta.npz",
+        output_path=tmp_path / "torch_meta",
         device="cpu",
     )
-    bundle = load_dataset(out)
-    assert bundle.metadata["schema_version"] == "2.4"
-    assert bundle.metadata["backend"] == "torch"
-    assert bundle.metadata["device"] == "cpu"
-    assert "torch_version" in bundle.metadata
-    assert "mlps_per_batch" in bundle.metadata
-    assert "chunk_size" in bundle.metadata
+    ds = load_dataset(out)
+    md = metadata(ds)
+    assert md["schema_version"] == "3.0"
+    assert md["backend"] == "torch"
+    assert md["device"] == "cpu"
+    assert "torch_version" in md
+    assert "mlps_per_batch" in md
+    assert "chunk_size" in md
 
 
 def test_create_dataset_torch_is_deterministic_with_same_seed(tmp_path: Path) -> None:
@@ -191,7 +193,7 @@ def test_create_dataset_torch_is_deterministic_with_same_seed(tmp_path: Path) ->
         width=4,
         depth=2,
         seed=42,
-        output_path=tmp_path / "torch_det_a.npz",
+        output_path=tmp_path / "torch_det_a",
         device="cpu",
     )
     out_b = create_dataset_torch(
@@ -200,15 +202,17 @@ def test_create_dataset_torch_is_deterministic_with_same_seed(tmp_path: Path) ->
         width=4,
         depth=2,
         seed=42,
-        output_path=tmp_path / "torch_det_b.npz",
+        output_path=tmp_path / "torch_det_b",
         device="cpu",
     )
-    bundle_a = load_dataset(out_a)
-    bundle_b = load_dataset(out_b)
+    ds_a = load_dataset(out_a)
+    ds_b = load_dataset(out_b)
 
-    np.testing.assert_array_equal(bundle_a.all_layer_means, bundle_b.all_layer_means)
-    np.testing.assert_array_equal(bundle_a.final_means, bundle_b.final_means)
-    assert bundle_a.avg_variances == bundle_b.avg_variances
+    np.testing.assert_array_equal(
+        np.array(ds_a["all_layer_means"]), np.array(ds_b["all_layer_means"])
+    )
+    np.testing.assert_array_equal(np.array(ds_a["final_means"]), np.array(ds_b["final_means"]))
+    assert ds_a["avg_variance"] == ds_b["avg_variance"]
 
 
 def test_create_dataset_torch_statistically_matches_cpu_path(tmp_path: Path) -> None:
@@ -222,25 +226,19 @@ def test_create_dataset_torch_statistically_matches_cpu_path(tmp_path: Path) -> 
         "depth": 2,
         "seed": 42,
     }
-    out_cpu = create_dataset(**common_kwargs, output_path=tmp_path / "cpu.npz")
-    out_torch = create_dataset_torch(
-        **common_kwargs, output_path=tmp_path / "torch.npz", device="cpu"
-    )
+    out_cpu = create_dataset(**common_kwargs, output_path=tmp_path / "cpu")
+    out_torch = create_dataset_torch(**common_kwargs, output_path=tmp_path / "torch", device="cpu")
 
-    bundle_cpu = load_dataset(out_cpu)
-    bundle_torch = load_dataset(out_torch)
+    ds_cpu = load_dataset(out_cpu)
+    ds_torch = load_dataset(out_torch)
 
     # Shapes must agree (weights are generated identically via numpy RNG):
-    assert bundle_cpu.all_layer_means.shape == bundle_torch.all_layer_means.shape
+    assert np.array(ds_cpu["all_layer_means"]).shape == np.array(ds_torch["all_layer_means"]).shape
     # final_means agree within 5σ of MC noise — σ ≈ 1/sqrt(N), tol = 5σ.
-    # If this ever flakes, do NOT silently widen the tolerance — investigate
-    # whether the torch hot loop is producing biased output or the seed
-    # protocol has drifted. The 5σ bound at N=100K is generous enough to
-    # absorb legitimate RNG variance between numpy PCG64 and torch Philox.
     tol = 5.0 / (common_kwargs["n_samples"] ** 0.5)
     np.testing.assert_allclose(
-        bundle_cpu.final_means,
-        bundle_torch.final_means,
+        np.array(ds_cpu["final_means"]),
+        np.array(ds_torch["final_means"]),
         atol=tol,
         err_msg="Torch final_means diverge from CPU beyond MC noise tolerance",
     )
@@ -261,41 +259,33 @@ def test_torch_and_cpu_backends_produce_identical_names_at_same_seed(tmp_path: P
         "depth": 2,
         "seed": 42,
     }
-    out_cpu = create_dataset(**common, output_path=tmp_path / "cpu_names.npz")
-    out_torch = create_dataset_torch(
-        **common, output_path=tmp_path / "torch_names.npz", device="cpu"
-    )
+    out_cpu = create_dataset(**common, output_path=tmp_path / "cpu_names")
+    out_torch = create_dataset_torch(**common, output_path=tmp_path / "torch_names", device="cpu")
 
-    names_cpu = [m.name for m in load_dataset(out_cpu).mlps]
-    names_torch = [m.name for m in load_dataset(out_torch).mlps]
+    names_cpu = [m.name for m in iter_mlps(load_dataset(out_cpu))]
+    names_torch = [m.name for m in iter_mlps(load_dataset(out_torch))]
 
     assert names_cpu == names_torch
     assert all(names_cpu)  # no empty strings on either side
 
 
-def test_create_dataset_torch_writes_mlp_names_to_npz(tmp_path: Path) -> None:
-    """A torch-baked .npz must carry the `mlp_names` array directly.
-
-    Without this assertion, the torch path could rely on the loader's
-    legacy-fallback synthesis to fill names in — which works but means the file
-    claims schema 2.4 while lacking the 2.4 field. Other tooling that reads the
-    .npz directly (`np.load(path)['mlp_names']`) would silently break.
-    """
+def test_create_dataset_torch_writes_mlp_names_to_parquet(tmp_path: Path) -> None:
+    """A torch-baked dataset must carry mlp_name in the parquet rows."""
     out = create_dataset_torch(
         n_mlps=3,
         n_samples=64,
         width=4,
         depth=2,
         seed=42,
-        output_path=tmp_path / "torch_names_in_npz.npz",
+        output_path=tmp_path / "torch_names_in_parquet",
         device="cpu",
     )
-    with np.load(out, allow_pickle=False) as data:
-        assert "mlp_names" in data.files
-        assert data["mlp_names"].shape == (3,)
-        # Slug-shaped strings, all non-empty.
-        for s in data["mlp_names"]:
-            assert s and "-" in str(s)
+    ds = load_dataset(out)
+    assert len(ds) == 3
+    names = ds["mlp_name"]
+    assert len(names) == 3
+    for s in names:
+        assert s and "-" in str(s)
 
 
 def test_mini_batch_correctness_uneven_n_mlps(tmp_path: Path) -> None:
@@ -306,20 +296,21 @@ def test_mini_batch_correctness_uneven_n_mlps(tmp_path: Path) -> None:
         width=4,
         depth=2,
         seed=42,
-        output_path=tmp_path / "uneven.npz",
+        output_path=tmp_path / "uneven",
         device="cpu",
         mlps_per_batch=3,
     )
-    bundle = load_dataset(out)
-    assert bundle.n_mlps == 7
-    assert bundle.all_layer_means.shape == (7, 2, 4)
-    assert bundle.final_means.shape == (7, 4)
-    assert len(bundle.avg_variances) == 7
-    assert bundle.sampling_budget_breakdowns is not None
-    assert len(bundle.sampling_budget_breakdowns) == 7
+    ds = load_dataset(out)
+    assert len(ds) == 7
+    assert np.array(ds["all_layer_means"]).shape == (7, 2, 4)
+    assert np.array(ds["final_means"]).shape == (7, 4)
+    assert len(ds["avg_variance"]) == 7
+    breakdowns = [json.loads(b) for b in ds["sampling_budget_breakdown"]]
+    assert len(breakdowns) == 7
+    assert breakdowns[0]["flops_used"] > 0
 
     # Each MLP must have a distinct seed (from the SeedSequence protocol):
-    seeds = [m.seed for m in bundle.mlps]
+    seeds = [m.seed for m in iter_mlps(ds)]
     assert len(set(seeds)) == 7
 
 
@@ -333,15 +324,19 @@ def test_mini_batch_equivalence_to_single_batch(tmp_path: Path) -> None:
         "seed": 42,
         "device": "cpu",
     }
-    out_big = create_dataset_torch(**common, output_path=tmp_path / "big.npz", mlps_per_batch=4)
-    out_small = create_dataset_torch(**common, output_path=tmp_path / "small.npz", mlps_per_batch=1)
+    out_big = create_dataset_torch(**common, output_path=tmp_path / "big", mlps_per_batch=4)
+    out_small = create_dataset_torch(**common, output_path=tmp_path / "small", mlps_per_batch=1)
 
-    bundle_big = load_dataset(out_big)
-    bundle_small = load_dataset(out_small)
+    ds_big = load_dataset(out_big)
+    ds_small = load_dataset(out_small)
 
-    np.testing.assert_array_equal(bundle_big.all_layer_means, bundle_small.all_layer_means)
-    np.testing.assert_array_equal(bundle_big.final_means, bundle_small.final_means)
-    assert bundle_big.avg_variances == bundle_small.avg_variances
+    np.testing.assert_array_equal(
+        np.array(ds_big["all_layer_means"]), np.array(ds_small["all_layer_means"])
+    )
+    np.testing.assert_array_equal(
+        np.array(ds_big["final_means"]), np.array(ds_small["final_means"])
+    )
+    assert ds_big["avg_variance"] == ds_small["avg_variance"]
 
 
 def test_progress_events_have_expected_schema(tmp_path: Path) -> None:
@@ -352,7 +347,7 @@ def test_progress_events_have_expected_schema(tmp_path: Path) -> None:
         width=4,
         depth=2,
         seed=42,
-        output_path=tmp_path / "progress.npz",
+        output_path=tmp_path / "progress",
         device="cpu",
         progress=events.append,
         chunk_size=64,
@@ -393,14 +388,15 @@ def test_cuda_smoke_roundtrip(tmp_path: Path) -> None:
         width=8,
         depth=2,
         seed=42,
-        output_path=tmp_path / "cuda_smoke.npz",
+        output_path=tmp_path / "cuda_smoke",
         device="cuda",
     )
-    bundle = load_dataset(out)
-    assert bundle.n_mlps == 2
-    assert bundle.metadata["device"] == "cuda"
-    assert "cuda_device_name" in bundle.metadata
-    assert "cuda_device_capability" in bundle.metadata
+    ds = load_dataset(out)
+    md = metadata(ds)
+    assert len(ds) == 2
+    assert md["device"] == "cuda"
+    assert "cuda_device_name" in md
+    assert "cuda_device_capability" in md
 
 
 @require_mps
@@ -411,15 +407,16 @@ def test_mps_smoke_roundtrip(tmp_path: Path) -> None:
         width=8,
         depth=2,
         seed=42,
-        output_path=tmp_path / "mps_smoke.npz",
+        output_path=tmp_path / "mps_smoke",
         device="mps",
     )
-    bundle = load_dataset(out)
-    assert bundle.n_mlps == 2
-    assert bundle.metadata["device"] == "mps"
-    assert "mps_device_name" in bundle.metadata
+    ds = load_dataset(out)
+    md = metadata(ds)
+    assert len(ds) == 2
+    assert md["device"] == "mps"
+    assert "mps_device_name" in md
     # Sanity check: avg_variances should be non-negative
-    assert all(v >= 0 for v in bundle.avg_variances)
+    assert all(v >= 0 for v in ds["avg_variance"])
     # FLOP count should be positive
-    assert bundle.sampling_budget_breakdowns is not None
-    assert bundle.sampling_budget_breakdowns[0]["flops_used"] > 0
+    breakdowns = [json.loads(b) for b in ds["sampling_budget_breakdown"]]
+    assert breakdowns[0]["flops_used"] > 0
