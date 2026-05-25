@@ -66,3 +66,30 @@ class MLP:
                 raise ValueError(
                     f"Weight matrix {i} has shape {shape}, expected ({self.width}, {self.width})."
                 )
+
+    @classmethod
+    def from_row(cls, row: "dict") -> "MLP":
+        """Build an MLP from a datasets.Dataset row.
+
+        `row` is a dict from datasets.Dataset indexing (e.g. ds[i]). It must
+        carry the columns `weights`, `mlp_seed`, `mlp_name`. The weights
+        column is a 3-D structure of shape (depth, width, width); both
+        nested-list and array forms are accepted (datasets row format may
+        differ between versions).
+
+        Raises ValueError on malformed weights via MLP.validate().
+        """
+        weight_layers = [fnp.array(w) for w in row["weights"]]
+        if not weight_layers:
+            raise ValueError("MLP row has empty weights.")
+        depth = len(weight_layers)
+        width = weight_layers[0].shape[0] if weight_layers[0].ndim else 0
+        mlp = cls(
+            width=width,
+            depth=depth,
+            weights=weight_layers,
+            seed=int(row.get("mlp_seed", 0)),
+            name=str(row.get("mlp_name", "")),
+        )
+        mlp.validate()
+        return mlp
