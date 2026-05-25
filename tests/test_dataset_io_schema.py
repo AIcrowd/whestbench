@@ -157,3 +157,152 @@ def test_validate_split_name_rejects_digit_only():
 
     with pytest.raises(ValueError, match=r"\[a-z\]\[a-z0-9\]\*"):
         _validate_split_name("123")
+
+
+# ---------------------------------------------------------------------------
+# validate_metadata — multi-split shape
+# ---------------------------------------------------------------------------
+
+
+def _base_md(**overrides):
+    """Build a valid single-split metadata dict for testing."""
+    md = {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "torch",
+        "seed_protocol": {"name": "whestbench_seedsequence_hierarchy", "version": "2.0"},
+        "n_mlps": 4,
+        "n_samples": 100,
+        "seed": 42,
+        "width": 8,
+        "depth": 2,
+        "created_at_utc": "2026-05-25T00:00:00+00:00",
+        "hardware": {},
+    }
+    md.update(overrides)
+    return md
+
+
+def _multi_split_md(**overrides):
+    """Build a valid multi-split metadata dict for testing."""
+    md = {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "torch",
+        "seed_protocol": {"name": "whestbench_seedsequence_hierarchy", "version": "2.0"},
+        "n_samples": 100,
+        "width": 8,
+        "depth": 2,
+        "created_at_utc": "2026-05-25T00:00:00+00:00",
+        "hardware": {},
+        "splits": {
+            "public": {
+                "n_mlps": 2,
+                "seed": 42,
+                "created_at_utc": "2026-05-25T00:00:00+00:00",
+            },
+            "holdout": {
+                "n_mlps": 2,
+                "seed": 99,
+                "created_at_utc": "2026-05-25T00:00:00+00:00",
+            },
+        },
+    }
+    md.update(overrides)
+    return md
+
+
+def test_validate_metadata_accepts_single_split_unchanged():
+    from whestbench.dataset_io import validate_metadata
+
+    validate_metadata(_base_md())  # should not raise
+
+
+def test_validate_metadata_accepts_multi_split():
+    from whestbench.dataset_io import validate_metadata
+
+    validate_metadata(_multi_split_md())  # should not raise
+
+
+def test_validate_metadata_rejects_multi_split_with_top_level_n_mlps():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _multi_split_md(n_mlps=4)  # add forbidden top-level field
+    with pytest.raises(InvalidDatasetError, match=r"top-level.+n_mlps"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_multi_split_with_top_level_seed():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _multi_split_md(seed=42)
+    with pytest.raises(InvalidDatasetError, match=r"top-level.+seed"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_empty_splits_dict():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _multi_split_md(splits={})
+    with pytest.raises(InvalidDatasetError, match=r"at least one"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_split_missing_n_mlps():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _multi_split_md()
+    del md["splits"]["public"]["n_mlps"]
+    with pytest.raises(InvalidDatasetError, match=r"splits\['public'\].+n_mlps"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_split_missing_seed():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _multi_split_md()
+    del md["splits"]["holdout"]["seed"]
+    with pytest.raises(InvalidDatasetError, match=r"splits\['holdout'\].+seed"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_multi_split_with_is_partial():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _multi_split_md(is_partial=True)
+    with pytest.raises(InvalidDatasetError, match=r"partial"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_invalid_split_name_in_splits_dict():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _multi_split_md()
+    md["splits"]["Bad-Name"] = {"n_mlps": 2, "seed": 1}
+    with pytest.raises(InvalidDatasetError, match=r"split name.+(lowercase|convention)"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_splits_null():
+    """Discriminator is key presence — null value must NOT fall through to single-split."""
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _multi_split_md(splits=None)
+    with pytest.raises(InvalidDatasetError, match=r"non-empty dict"):
+        validate_metadata(md)
