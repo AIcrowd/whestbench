@@ -54,7 +54,22 @@ def _merged_metadata():
     return md
 
 
-# --- Title & framing ---
+# --- Logo & framing ---
+
+
+def test_readme_includes_logo_at_top():
+    """The Whest logo should appear above the title, linking to the GitHub repo."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    body = out.split("\n---\n", 1)[1]
+    assert (
+        '<img src="https://raw.githubusercontent.com/AIcrowd/whestbench/main/assets/logo/logo.png"'
+        in body
+    )
+    # Logo must appear before the title.
+    logo_pos = body.find("logo.png")
+    title_pos = body.find("# ")
+    assert logo_pos != -1 and title_pos != -1
+    assert logo_pos < title_pos
 
 
 def test_readme_includes_title():
