@@ -1014,6 +1014,21 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     inspect_p.add_argument("source", help="Local dir or HF repo id.")
     inspect_p.add_argument("--revision", default=None)
 
+    combine_p = dataset_sub.add_parser(
+        "combine-splits",
+        help="Combine N single-split datasets into a multi-split dataset directory.",
+    )
+    combine_p.add_argument(
+        "input_dirs",
+        nargs="+",
+        help="One or more complete single-split dataset directories.",
+    )
+    combine_p.add_argument(
+        "--output",
+        required=True,
+        help="Output directory (must not exist).",
+    )
+
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
     package_parser.add_argument("--estimator", required=True)
     package_parser.add_argument("--class", dest="class_name")
@@ -1237,22 +1252,51 @@ def _dispatch_dataset_command(args) -> int:
                 repo_id=src, filename="metadata.json", repo_type="dataset", revision=args.revision
             )
             md = _json.loads(_Path(md_path).read_text())
-        print("WhestBench dataset")
-        for key in (
-            "schema_version",
-            "format",
-            "backend",
-            "seed",
-            "n_mlps",
-            "n_samples",
-            "width",
-            "depth",
-            "created_at_utc",
-            "device",
-            "cuda_device_name",
-        ):
-            if key in md:
-                print(f"  {key}: {md[key]}")
+        if "splits" in md:
+            print("WhestBench dataset (multi-split)")
+            print(f"  schema_version: {md['schema_version']}")
+            print(f"  format: {md['format']}")
+            print(f"  backend: {md['backend']}")
+            print(f"  width: {md['width']}  depth: {md['depth']}  n_samples: {md['n_samples']:,}")
+            print("  splits:")
+            for name in sorted(md["splits"]):
+                info = md["splits"][name]
+                print(f"    {name}:  n_mlps={info['n_mlps']:,}  seed={info['seed']}")
+            print(f"  created_at_utc: {md['created_at_utc']}")
+        else:
+            print("WhestBench dataset")
+            for key in (
+                "schema_version",
+                "format",
+                "backend",
+                "seed",
+                "n_mlps",
+                "n_samples",
+                "width",
+                "depth",
+                "created_at_utc",
+                "device",
+                "cuda_device_name",
+            ):
+                if key in md:
+                    print(f"  {key}: {md[key]}")
+        return 0
+
+    if sub == "combine-splits":
+        from .dataset_io import MergeIncompatibleError, combine_split_datasets
+
+        try:
+            out = combine_split_datasets(args.input_dirs, output_dir=args.output)
+        except (MergeIncompatibleError, FileExistsError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+
+        md = _json.loads((_Path(out) / "metadata.json").read_text())
+        splits = md.get("splits", {})
+        print(f"Combined {len(splits)} splits into {out}:")
+        for name in sorted(splits.keys()):
+            info = splits[name]
+            print(f"  - {name}  (n_mlps={info['n_mlps']}, seed={info['seed']})")
         return 0
 
     print("Unknown dataset subcommand. Try --help.", file=sys.stderr)

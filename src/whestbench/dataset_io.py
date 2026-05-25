@@ -108,7 +108,8 @@ def _size_category(n: int) -> str:
 def generate_readme(
     metadata: Dict[str, Any],
     *,
-    split: str,
+    split: "str | None" = None,
+    splits: "dict[str, dict] | None" = None,
     ds_size: int,
     repo_id: "str | None" = None,
     revision: "str | None" = None,
@@ -117,7 +118,28 @@ def generate_readme(
 
     Reads templates/dataset_card.md.j2, renders with the metadata + context,
     wraps with HF-standard YAML front-matter via DatasetCard.
+
+    For multi-split datasets, pass ``splits`` instead of ``split``.  The full
+    multi-split template is implemented in a later commit; a minimal placeholder
+    card is emitted for now.
     """
+    if split is None and splits is None:
+        raise ValueError(
+            "generate_readme requires either split=<name> (single-split) or "
+            "splits=<dict> (multi-split). Got neither."
+        )
+
+    if splits is not None:
+        # Detailed multi-split rendering is implemented in a later commit.
+        # For now, emit a minimal placeholder card so combine_split_datasets
+        # can complete its atomic write. _rerender_readme_with_repo will
+        # overwrite this with the full template at push time.
+        return (
+            "---\nlicense: cc-by-4.0\ntags: [whestbench, multi-split]\n---\n\n"
+            f"# WhestBench multi-split dataset\n\n"
+            f"Splits: {', '.join(sorted(splits.keys()))}\n"
+        )
+
     template_path = files("whestbench") / "templates" / "dataset_card.md.j2"
     body = Template(template_path.read_text()).render(
         metadata=metadata,
@@ -433,4 +455,168 @@ def merge_datasets(
         split=partials[0][3],
         metadata=merged_md,
     )
+    return output_dir
+
+
+def combine_split_datasets(
+    input_dirs: "list[Path | str]",
+    *,
+    output_dir: "Path | str",
+) -> Path:
+    """Combine N complete single-split datasets into a multi-split dataset directory.
+
+    Each input must be a complete (non-partial) single-split schema-3.0 dataset
+    directory. Inputs must agree on schema_version, format, backend, seed_protocol,
+    width, depth, and n_samples. Split names (inferred from each input's single
+    parquet filename) must be pairwise distinct.
+
+    Output is a multi-split dataset directory with one parquet file per input
+    split, a multi-split metadata.json (``splits:`` dict), and a rendered README.
+
+    Args:
+        input_dirs: Paths to complete single-split dataset directories.
+        output_dir: Destination path; must not exist.
+
+    Returns:
+        Path to the output directory.
+
+    Raises:
+        MergeIncompatibleError: inputs disagree on invariants, contain a partial,
+            have duplicate split names, or input list is empty.
+        FileExistsError: output_dir already exists.
+    """
+    import shutil
+
+    output_dir = Path(output_dir)
+    if output_dir.exists():
+        raise FileExistsError(f"output_dir already exists: {output_dir}")
+
+    if not input_dirs:
+        raise MergeIncompatibleError("combine_split_datasets requires at least one input directory")
+
+    # Read + validate each input; collect (path, metadata, split_name, parquet_path).
+    entries: list[tuple[Path, Dict[str, Any], str, Path]] = []
+    for d in input_dirs:
+        d = Path(d)
+        md = read_metadata(d)
+        validate_metadata(md, allow_partial=True)
+        if md.get("is_partial"):
+            raise MergeIncompatibleError(
+                f"{d}: is a partial dataset; combine_split_datasets requires "
+                f"complete single-split inputs. Run `whest dataset merge` first."
+            )
+        if "splits" in md:
+            raise MergeIncompatibleError(
+                f"{d}: is already a multi-split dataset; combine_split_datasets "
+                f"currently only accepts single-split inputs."
+            )
+        data_dir = d / PARQUET_SUBDIR
+        parquet_files = list(data_dir.glob("*.parquet"))
+        if len(parquet_files) != 1:
+            raise MergeIncompatibleError(
+                f"{d}: expected exactly one parquet file in data/, found {len(parquet_files)}."
+            )
+        split_name = parquet_files[0].name.split("-")[0]
+        try:
+            _validate_split_name(split_name)
+        except ValueError as exc:
+            raise MergeIncompatibleError(
+                f"{d}: split name {split_name!r} from parquet filename is invalid: {exc}"
+            ) from exc
+        entries.append((d, md, split_name, parquet_files[0]))
+
+    # Validate pairwise-distinct split names.
+    split_names = [e[2] for e in entries]
+    if len(set(split_names)) != len(split_names):
+        seen: set[str] = set()
+        for n in split_names:
+            if n in seen:
+                raise MergeIncompatibleError(
+                    f"duplicate split name {n!r} across inputs; each input must "
+                    f"contribute a distinct split."
+                )
+            seen.add(n)
+
+    # Validate invariants match across inputs.
+    first_md = entries[0][1]
+    invariants = ("schema_version", "format", "backend", "n_samples", "width", "depth")
+    for d, md, _, _ in entries[1:]:
+        for field in invariants:
+            if md.get(field) != first_md.get(field):
+                raise MergeIncompatibleError(
+                    f"{d}: {field}={md.get(field)!r} != {first_md.get(field)!r} "
+                    f"(from {entries[0][0]})."
+                )
+        if md.get("seed_protocol") != first_md.get("seed_protocol"):
+            raise MergeIncompatibleError(
+                f"{d}: seed_protocol={md.get('seed_protocol')!r} != "
+                f"{first_md.get('seed_protocol')!r}."
+            )
+
+    # Write atomically: stage in a temp dir, then rename.
+    staging = output_dir.with_name(output_dir.name + ".staging")
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        staging.mkdir(parents=True)
+        data_dst = staging / PARQUET_SUBDIR
+        data_dst.mkdir()
+        for _d, _md, _split_name, parquet_path in entries:
+            shutil.copyfile(parquet_path, data_dst / parquet_path.name)
+
+        # Build the multi-split metadata.
+        from .hardware import collect_hardware_fingerprint
+
+        common = {
+            k: first_md[k]
+            for k in (
+                "schema_version",
+                "format",
+                "backend",
+                "seed_protocol",
+                "n_samples",
+                "width",
+                "depth",
+            )
+        }
+        splits_md: Dict[str, Dict[str, Any]] = {}
+        for _, md, split_name, _ in entries:
+            entry: Dict[str, Any] = {
+                "n_mlps": md["n_mlps"],
+                "seed": md["seed"],
+                "created_at_utc": md["created_at_utc"],
+            }
+            # Preserve hardware provenance from the bake. merge_datasets-style
+            # ``hardware_fingerprints`` (list) takes precedence; otherwise fold
+            # the single-host ``hardware`` dict into a one-element list.
+            if "hardware_fingerprints" in md:
+                entry["hardware_fingerprints"] = md["hardware_fingerprints"]
+            elif "hardware" in md:
+                entry["hardware_fingerprints"] = [md["hardware"]]
+            splits_md[split_name] = entry
+
+        combined_md: Dict[str, Any] = {
+            **common,
+            "created_at_utc": min(e[1]["created_at_utc"] for e in entries),
+            "hardware": collect_hardware_fingerprint(),
+            "splits": splits_md,
+        }
+
+        # Validate before writing.
+        validate_metadata(combined_md)
+
+        (staging / METADATA_FILE).write_text(json.dumps(combined_md, indent=2))
+
+        # Render README. Placeholder repo_id/revision get rewritten at push time.
+        ds_size = sum(splits_md[n]["n_mlps"] for n in splits_md)
+        (staging / README_FILE).write_text(
+            generate_readme(combined_md, splits=splits_md, ds_size=ds_size)
+        )
+
+        staging.rename(output_dir)
+    except Exception:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+        raise
+
     return output_dir

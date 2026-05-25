@@ -201,6 +201,122 @@ def test_whest_dataset_inspect_prints_metadata(tmp_path: Path):
     assert "seed" in res.stdout.lower()
 
 
+def test_whest_dataset_combine_splits_help_lists_subcommand():
+    res = _run_whest("dataset", "--help")
+    assert res.returncode == 0
+    assert "combine-splits" in res.stdout
+
+
+def test_whest_dataset_combine_splits_produces_multi_split_dir(tmp_path: Path):
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    for split, out_dir, seed in (("public", pub, 1), ("holdout", hold, 2)):
+        res = _run_whest(
+            "dataset",
+            "bake",
+            "--n-mlps",
+            "2",
+            "--n-samples",
+            "100",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--seed",
+            str(seed),
+            "--split",
+            split,
+            "--output",
+            str(out_dir),
+        )
+        assert res.returncode == 0, res.stderr
+
+    out = tmp_path / "combined"
+    res = _run_whest(
+        "dataset",
+        "combine-splits",
+        str(pub),
+        str(hold),
+        "--output",
+        str(out),
+    )
+    assert res.returncode == 0, res.stderr
+    assert (out / "data" / "public-00000-of-00001.parquet").is_file()
+    assert (out / "data" / "holdout-00000-of-00001.parquet").is_file()
+    md = json.loads((out / "metadata.json").read_text())
+    assert set(md["splits"].keys()) == {"public", "holdout"}
+
+
+def test_whest_dataset_combine_splits_rejects_existing_output(tmp_path: Path):
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    for split, out_dir, seed in (("public", pub, 1), ("holdout", hold, 2)):
+        res = _run_whest(
+            "dataset",
+            "bake",
+            "--n-mlps",
+            "2",
+            "--n-samples",
+            "100",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--seed",
+            str(seed),
+            "--split",
+            split,
+            "--output",
+            str(out_dir),
+        )
+        assert res.returncode == 0, res.stderr
+
+    out = tmp_path / "combined"
+    out.mkdir()
+    res = _run_whest(
+        "dataset",
+        "combine-splits",
+        str(pub),
+        str(hold),
+        "--output",
+        str(out),
+    )
+    assert res.returncode != 0
+
+
+def test_whest_dataset_inspect_multi_split_output(tmp_path: Path):
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    for split, out_dir, seed in (("public", pub, 1), ("holdout", hold, 2)):
+        _run_whest(
+            "dataset",
+            "bake",
+            "--n-mlps",
+            "2",
+            "--n-samples",
+            "100",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--seed",
+            str(seed),
+            "--split",
+            split,
+            "--output",
+            str(out_dir),
+        )
+    out = tmp_path / "combined"
+    _run_whest("dataset", "combine-splits", str(pub), str(hold), "--output", str(out))
+
+    res = _run_whest("dataset", "inspect", str(out))
+    assert res.returncode == 0, res.stderr
+    # Multi-split inspect must mention each split name AND the multi-split marker.
+    assert "public" in res.stdout
+    assert "holdout" in res.stdout
+    assert "multi-split" in res.stdout.lower()
+
+
 def test_old_create_dataset_emits_redirect(tmp_path: Path):
     out = tmp_path / "old"
     res = _run_whest(
