@@ -1,4 +1,5 @@
 import flopscope.numpy as fnp
+import numpy as np
 import pytest
 
 from whestbench.domain import MLP
@@ -53,3 +54,45 @@ def test_mlp_accepts_explicit_name() -> None:
     mlp = MLP(width=4, depth=3, weights=weights, name="danielle-johnson")
     assert mlp.name == "danielle-johnson"
     mlp.validate()  # name does not affect validation
+
+
+def test_mlp_from_row_builds_valid_mlp():
+    width, depth = 4, 2
+    row = {
+        "mlp_seed": 123,
+        "mlp_name": "test-name",
+        "weights": np.random.default_rng(0)
+        .standard_normal((depth, width, width))
+        .astype("float32"),
+    }
+    mlp = MLP.from_row(row)
+    assert mlp.width == width
+    assert mlp.depth == depth
+    assert mlp.seed == 123
+    assert mlp.name == "test-name"
+    assert len(mlp.weights) == depth
+    assert mlp.weights[0].shape == (width, width)
+
+
+def test_mlp_from_row_accepts_list_of_lists():
+    """datasets.Dataset rows may yield nested lists rather than arrays."""
+    width, depth = 3, 2
+    row = {
+        "mlp_seed": 0,
+        "mlp_name": "x",
+        "weights": [[[1.0] * width] * width] * depth,
+    }
+    mlp = MLP.from_row(row)
+    assert mlp.width == width
+    assert mlp.depth == depth
+
+
+def test_mlp_from_row_validates_shape():
+    """Rows with malformed weights should raise via .validate()."""
+    row = {
+        "mlp_seed": 0,
+        "mlp_name": "x",
+        "weights": [[[1.0, 2.0], [3.0, 4.0, 5.0]]],  # ragged inner row
+    }
+    with pytest.raises(ValueError):
+        MLP.from_row(row)
