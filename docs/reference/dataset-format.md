@@ -40,7 +40,7 @@ maintained in lockstep — any update here must also land in
 | Column | Type / shape | What this is |
 |---|---|---|
 | `mlp_id` | `int32` | 0-based index of this MLP within the dataset (the absolute index across all parallel-bake slices). |
-| `mlp_name` | `string` | Stable, deterministic human-readable slug like `"danielle-johnson"`, derived from `mlp_seed` via the `faker` library. Useful for log lines; carries no information beyond `mlp_seed`. |
+| `mlp_name` | `string` | Stable, deterministic human-readable slug like `"danielle-johnson"`, derived from `mlp_seed`. Useful for log lines; carries no information beyond `mlp_seed`. |
 | `mlp_seed` | `int64` | Seed an estimator should consume if it uses randomness (e.g. Monte Carlo). Per-MLP, derived from the contest seed; passed to `predict(mlp: MLP, budget: int)` as `mlp.seed`. |
 | `weights` | `float32[depth, width, width]` | The MLP's layer weight matrices. The network has no biases and uses ReLU activations. Layer `l` computes `h_l(x) = max(0, W_l @ h_{l-1}(x))`. Weights are drawn i.i.d. from `N(0, 2/width)` (He initialization) at bake time. |
 | `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over many independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`, where `N = n_samples`. Computed by direct Monte Carlo. This is what an estimator predicts. |
