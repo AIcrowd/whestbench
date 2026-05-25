@@ -70,6 +70,8 @@ def test_make_features_final_means_is_sequence_of_width():
     features = make_features(width=5, depth=2)
     final = features["final_means"]
     assert isinstance(final, Sequence)
-    assert isinstance(final.feature, Value)
-    assert final.feature.dtype == "float32"
-    assert final.length == 5
+    # datasets.Sequence's runtime attributes (.feature, .length) aren't in the
+    # type stub; pyright flags them despite the isinstance narrow. Ignore.
+    assert isinstance(final.feature, Value)  # pyright: ignore[reportAttributeAccessIssue]
+    assert final.feature.dtype == "float32"  # pyright: ignore[reportAttributeAccessIssue]
+    assert final.length == 5  # pyright: ignore[reportAttributeAccessIssue]

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -55,7 +56,9 @@ def test_torch_cpu_means_within_tolerance_of_flopscope_path(tmp_path: Path):
     from whestbench.dataset import create_dataset
     from whestbench.dataset_torch import create_dataset_torch
 
-    common = dict(n_mlps=2, n_samples=50_000, width=4, depth=2, seed=42)
+    # dict[str, Any] so pyright doesn't widen the (homogeneous-int) literal
+    # type onto kwargs like `progress`, `split`, `mlp_range` when **-spread.
+    common: dict[str, Any] = dict(n_mlps=2, n_samples=50_000, width=4, depth=2, seed=42)
     cpu_dir = tmp_path / "cpu"
     torch_dir = tmp_path / "torch"
     create_dataset(output_path=cpu_dir, **common)
