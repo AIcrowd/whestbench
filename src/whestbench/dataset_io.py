@@ -94,3 +94,56 @@ def make_features(*, width: int, depth: int) -> Features:
             "sampling_budget_breakdown": Value("string"),
         }
     )
+
+
+class InvalidDatasetError(ValueError):
+    """Raised when a dataset directory has missing/incompatible metadata."""
+
+
+def read_metadata(dataset_dir: "Path | str") -> Dict[str, Any]:
+    """Read and parse metadata.json from a dataset directory.
+
+    Raises InvalidDatasetError if the file is missing or unparseable.
+    Does NOT validate schema_version — call validate_metadata for that.
+    """
+    dataset_dir = Path(dataset_dir)
+    path = dataset_dir / METADATA_FILE
+    if not path.is_file():
+        raise InvalidDatasetError(
+            f"missing metadata.json at {path}. "
+            f"This may be a legacy .npz dataset (re-bake with `whest dataset bake`)."
+        )
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise InvalidDatasetError(f"metadata.json at {path} is not valid JSON: {exc}") from exc
+
+
+def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) -> None:
+    """Validate that metadata is a whestbench schema 3.0 metadata dict.
+
+    Raises InvalidDatasetError with a clear remediation message on any failure.
+    """
+    if "schema_version" not in metadata:
+        raise InvalidDatasetError(
+            "metadata is missing 'schema_version'. "
+            "If this is a legacy .npz dataset, re-bake with `whest dataset bake`."
+        )
+    if metadata["schema_version"] != SCHEMA_VERSION:
+        raise InvalidDatasetError(
+            f"schema_version is {metadata['schema_version']!r}, this whestbench "
+            f"requires {SCHEMA_VERSION!r}. Re-bake with `whest dataset bake`."
+        )
+    seed_proto = metadata.get("seed_protocol") or {}
+    if seed_proto.get("version") != SEED_PROTOCOL_VERSION:
+        raise InvalidDatasetError(
+            f"seed_protocol.version is {seed_proto.get('version')!r}, this "
+            f"whestbench requires {SEED_PROTOCOL_VERSION!r}. Re-bake."
+        )
+    if metadata.get("is_partial") and not allow_partial:
+        mlp_range = metadata.get("mlp_range")
+        total = metadata.get("total_n_mlps")
+        raise InvalidDatasetError(
+            f"this is a partial dataset (mlp_range={mlp_range}, total_n_mlps={total}). "
+            f"Run `whest dataset merge <partials> --output <dir>` first."
+        )
