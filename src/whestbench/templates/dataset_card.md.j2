@@ -75,7 +75,7 @@ whest run \
 Each row is one MLP, paired with the Monte-Carlo–computed ground-truth statistics of its post-activation outputs. Four things travel together per row:
 
 1. The **MLP weights** (the network you'll analyse).
-2. The **per-layer ground-truth means** — what your estimator is trying to predict. Computed by direct Monte Carlo over **N = {{ '{:,}'.format(metadata.n_samples) }}** independent standard-Gaussian input draws per MLP (production WhestBench 2026 uses **N = 10⁹**, for standard errors `~1/√N ≈ 3×10⁻⁵` per neuron).
+2. The **per-layer ground-truth means** — what your estimator is trying to predict. Computed by direct Monte Carlo over **N = {{ '{:,}'.format(metadata.n_samples) }}** independent standard-Gaussian input draws per MLP{% if metadata.n_samples != 1000000000 %} (production WhestBench 2026 uses **N = 10⁹**, for standard errors `~1/√N ≈ 3×10⁻⁵` per neuron){% else %}, giving standard errors `~1/√N ≈ 3×10⁻⁵` per neuron{% endif %}.
 3. A **per-MLP variance scalar** — final-layer mean per-neuron variance, computed alongside the means over the same N draws. Shipped as diagnostic provenance; not consumed by the leaderboard score.
 4. A **per-MLP seed** — passed to your estimator if it uses any randomness, so submissions reproduce under regrade.
 
@@ -104,7 +104,7 @@ Your spend is tracked as **effective compute**:
 C_m = F_m + λ · R_m
 ```
 
-where `F_m` is analytical FLOPs counted by [`flopscope`](https://github.com/AIcrowd/flopscope), `R_m` is residual wall-clock time spent in uninstrumented code, and `λ ≈ 7.7 × 10¹¹` FLOPs/s is a per-phase conversion rate that prices wall time at twice the bare-numpy MLP throughput on the grading hardware. Going outside `flopscope` is allowed; you just pay for it.
+where `F_m` is analytical FLOPs counted by [`flopscope`](https://github.com/AIcrowd/flopscope), `R_m` is residual wall-clock time spent in uninstrumented code, and `λ = 10¹¹` FLOPs/s is the per-phase wall-time-to-FLOPs conversion rate. Going outside `flopscope` is allowed; you just pay for it.
 
 Your **primary score** is final-layer MSE — your prediction's last row vs. `final_means` — multiplied by a budget-adjusted factor:
 
@@ -120,7 +120,7 @@ See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked 
 
 ## How the ground truth was made
 
-> **Monte Carlo with N = {{ '{:,}'.format(metadata.n_samples) }} samples per MLP.** Every entry in `all_layer_means` and `final_means` is the empirical mean over this many independent standard-Gaussian input draws. The production WhestBench 2026 release uses **N = 10⁹**, which gives standard errors on the order of `1/√N ≈ 3×10⁻⁵` per neuron — well below any meaningful estimator gap.
+> **Monte Carlo with N = {{ '{:,}'.format(metadata.n_samples) }} samples per MLP.** Every entry in `all_layer_means` and `final_means` is the empirical mean over this many independent standard-Gaussian input draws.{% if metadata.n_samples != 1000000000 %} The production WhestBench 2026 release uses **N = 10⁹**, which gives standard errors on the order of `1/√N ≈ 3×10⁻⁵` per neuron — well below any meaningful estimator gap.{% else %} Standard errors are on the order of `1/√N ≈ 3×10⁻⁵` per neuron — well below any meaningful estimator gap.{% endif %}
 
 **Input distribution.** Every Monte Carlo sample is a fresh `x ~ N(0, I)` of shape `(width,)`. The same input is forward-propagated through all `depth` layers in one pass, so the per-layer means at indices `[0..depth-1]` share the same input draws.
 
