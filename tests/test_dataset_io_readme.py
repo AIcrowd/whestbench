@@ -287,20 +287,33 @@ def test_readme_schema_explains_all_layer_means_as_post_relu_mean():
 
 
 def test_readme_states_the_monte_carlo_sample_count():
-    """The Monte Carlo N should be stated explicitly with the metadata value, plus
-    the production scale 10^9 should be called out."""
+    """Production-scale (N = 10⁹) bakes name the MC count in the right places and
+    do NOT redundantly add a 'production uses 10⁹' comparison."""
     md = _flopscope_metadata()
     md["n_samples"] = 1_000_000_000  # production-scale N
     out = generate_readme(md, split="public", ds_size=4)
     # Formatted N appears in both schema rows and the dedicated callout.
     assert "1,000,000,000" in out
-    # Production scale callout names 10⁹.
-    assert "N = 10⁹" in out
     # The "## How the ground truth was made" section opens with the N callout.
     section_start = out.find("## How the ground truth was made")
     next_section = out.find("##", section_start + 5)
     section = out[section_start:next_section]
     assert "Monte Carlo with N = 1,000,000,000" in section
+    # When the bake IS at production scale, the redundant "production uses N = 10⁹" line
+    # must be suppressed — the bake itself is at production scale.
+    assert "production WhestBench 2026 release uses" not in out
+    assert "production WhestBench 2026 uses" not in out
+
+
+def test_readme_calls_out_production_target_for_subproduction_bakes():
+    """Sub-production bakes (n_samples < 1e9) keep the 'production uses N = 10⁹'
+    comparison so participants know what the real release will look like."""
+    md = _flopscope_metadata()
+    md["n_samples"] = 100_000  # smoke-scale
+    out = generate_readme(md, split="public", ds_size=4)
+    # The redundant-when-at-production callout SHOULD fire here.
+    assert "N = 10⁹" in out
+    assert "100,000" in out
 
 
 def test_readme_summary_table_bolds_n_samples():
@@ -368,12 +381,16 @@ def test_readme_explains_estimator_task():
 
 
 def test_readme_quantifies_per_mlp_budget_and_lambda():
-    """Per-paper §1.4-1.5: B_m = 6.8×10^10 FLOPs and λ ≈ 7.7×10^11 FLOPs/s."""
+    """B_m = 6.8×10^10 FLOPs and λ = 10^11 FLOPs/s (the deployed value in
+    scoring.py:LAMBDA_FLOPS_PER_SECOND, which differs from the paper's
+    calibration estimate)."""
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
     assert "6.8 × 10¹⁰" in out
-    assert "7.7 × 10¹¹" in out
+    assert "10¹¹" in out
     # Effective-compute formula C_m = F_m + λ · R_m is spelled out
     assert "F_m + λ" in out
+    # The card must NOT use the paper's pre-calibration estimate (7.7 × 10¹¹).
+    assert "7.7 × 10¹¹" not in out
 
 
 def test_readme_failure_path_disables_compute_discount():
