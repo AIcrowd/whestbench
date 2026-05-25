@@ -114,7 +114,9 @@ def generate_readme(
             "white-box",
         ],
         task_categories=["other"],
-        pretty_name=metadata.get("pretty_name", "WhestBench 2026"),
+        pretty_name=metadata.get(
+            "pretty_name", "WhestBench 2026: ARC White-Box Estimation Challenge"
+        ),
         size_categories=[_size_category(ds_size)],
         homepage="https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026",
         repository="https://github.com/AIcrowd/whestbench",
