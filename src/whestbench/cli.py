@@ -135,26 +135,6 @@ def _mlp_label_from_event(event: Dict[str, Any]) -> str:
     return ""
 
 
-def _read_mlp_names(path: "Path | str") -> "list[str]":
-    """Read just the `mlp_names` array from a baked .npz.
-
-    Used by `whest create-dataset` to surface the generated names in its
-    presentation payload (both human-readable and JSON) without needing to
-    re-decode the much larger weights array. Returns `[]` for missing files
-    (e.g. when `create_dataset` is monkeypatched in tests) or legacy bakes
-    without the `mlp_names` array.
-    """
-    import numpy as _np
-
-    try:
-        with _np.load(str(path), allow_pickle=False) as data:
-            if "mlp_names" not in data.files:
-                return []
-            return [str(s) for s in data["mlp_names"].tolist()]
-    except (FileNotFoundError, OSError):
-        return []
-
-
 def _run_progress_columns() -> tuple[Any, ...]:
     return (
         TextColumn("[progress.description]{task.description}"),
@@ -888,7 +868,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--show-diagnostic-plots", action="store_true")
     add_output_format_arguments(run_parser)
     run_parser.add_argument(
-        "--dataset", default=None, help="Path to pre-created dataset .npz file."
+        "--dataset",
+        default=None,
+        help="Path to a baked dataset directory, or hf://owner/repo[@revision] for HF Hub.",
     )
     run_parser.add_argument(
         "--revision",
@@ -1790,9 +1772,9 @@ def _main_participant(argv: "list[str]") -> int:
                 )
                 _dataset_tip = (
                     "\n[bold bright_yellow]Tip:[/] Ground truth is recomputed on every run. "
-                    "Consider creating and reusing a dataset:\n"
-                    "   [cyan]whest create-dataset[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]-o[/] [yellow]my_dataset.npz[/]\n"
-                    "   [cyan]whest run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]my_dataset.npz[/]\n"
+                    "Consider baking and reusing a dataset:\n"
+                    "   [cyan]whest dataset bake[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]--width[/] [yellow]256[/] [green]--depth[/] [yellow]8[/] [green]--output[/] [yellow]./my-eval[/]\n"
+                    "   [cyan]whest run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]./my-eval[/]\n"
                 )
                 gen_label = (
                     "Loading dataset" if dataset_path is not None else "Sampling Ground Truth"

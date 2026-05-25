@@ -64,8 +64,9 @@ def create_dataset_torch(
     """Torch-backed analog of whestbench.dataset.create_dataset.
 
     Drop-in for create_dataset() at the same kwargs. Generates MLPs with the same
-    seed protocol and produces an .npz with the same array layout. Output metadata
-    self-identifies via backend="torch" and includes device/torch_version provenance.
+    seed protocol and writes a schema-3.0 Parquet+sidecar dataset directory. Output
+    metadata self-identifies via backend="torch" and includes device/torch_version
+    provenance.
 
     Statistical (not bitwise) equivalence with the flopscope CPU path holds at the
     same seed: per-neuron means agree within ~3e-5 at N=1e9 (MC noise).
@@ -86,7 +87,7 @@ def create_dataset_torch(
             on cuda; fixed 65536 on mps/cpu.
 
     Returns:
-        Path to the written .npz.
+        Path to the written dataset directory.
     """
     torch = _require_torch()
 
