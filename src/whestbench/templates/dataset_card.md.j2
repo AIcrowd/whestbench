@@ -1,8 +1,18 @@
-# {{ metadata.get('pretty_name', 'WhestBench Dataset') }}
+# {{ metadata.get('pretty_name', 'WhestBench 2026 — White-Box Activation Estimation') }}
 
-Pre-baked MLPs and ground-truth statistics for the WhestBench competition.
+WhestBench is a benchmark for *white-box activation estimation*: given the weights of a small ReLU multi-layer perceptron (MLP) and a strict floating-point-operation (FLOP) budget, predict the average post-activation value of every neuron when the network is fed standard Gaussian inputs. **This dataset is the `{{ split }}` split of the WhestBench 2026 evaluation set** — pre-baked MLPs paired with their ground-truth activation statistics, ready to consume.
+
+## Links
+
+- 🏆 **Challenge page** — <https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026>
+- 💻 **Source code** — <https://github.com/AIcrowd/whestbench>
+- 🚀 **Starter kit** — <https://github.com/AIcrowd/whest-starterkit>
+- 🔍 **Interactive MLP explorer** — <https://aicrowd.github.io/whestbench-explorer/>
+- 📊 **This dataset on the Hub** — <https://huggingface.co/datasets/{{ repo_id }}/tree/{{ revision }}>
 
 ## Quick start
+
+The pure HuggingFace path (no whestbench install required):
 
 ```python
 from datasets import load_dataset
@@ -16,15 +26,65 @@ print(ds)
 print(ds[0]["mlp_name"])
 ```
 
-Or via the whestbench convenience wrapper (adds schema validation + metadata):
+The whestbench convenience wrapper (adds schema validation + `metadata.json` access):
 
 ```python
 import whestbench
 
 ds = whestbench.load_dataset("{{ repo_id }}", revision="{{ revision }}")
 for mlp in whestbench.iter_mlps(ds):
+    # `mlp` is a whestbench.MLP with .weights, .seed, .name, .width, .depth
     ...
+
+provenance = whestbench.metadata(ds)
+print(provenance["n_samples"], provenance["created_at_utc"])
 ```
+
+Run an estimator end-to-end via the CLI:
+
+```bash
+whest run \
+    --estimator my_estimator.py \
+    --dataset hf://{{ repo_id }}@{{ revision }}
+```
+
+## What's in this dataset
+
+Each row is one MLP, paired with the Monte-Carlo–computed ground-truth statistics of its post-activation outputs. Four things travel together per row:
+
+1. The **MLP weights** (the network you'll analyse).
+2. The **per-layer ground-truth means** — what your estimator is trying to predict.
+3. A **per-MLP variance scalar** — used by the scoring formula to normalise MSE across networks with naturally different output scales.
+4. A **per-MLP seed** — passed to your estimator if it uses any randomness, so submissions reproduce under regrade.
+
+## Schema
+
+Each row is one MLP. Eight columns:
+
+| Column | Type / shape | What this is |
+|---|---|---|
+| `mlp_id` | `int32` | 0-based index of this MLP within the dataset (the absolute index across all parallel-bake slices). |
+| `mlp_name` | `string` | Stable, deterministic human-readable slug like `"danielle-johnson"`, derived from `mlp_seed` via the [`faker`](https://faker.readthedocs.io/) library. Useful for log lines; carries no information beyond `mlp_seed`. |
+| `mlp_seed` | `int64` | Seed an estimator should consume if it uses randomness (e.g. Monte Carlo). Per-MLP, derived from the contest seed; passed to `predict(mlp: MLP, budget: int)` as `mlp.seed`. |
+| `weights` | `float32[depth, width, width]` | The MLP's layer weight matrices. The network has no biases and uses ReLU activations. Layer `l` computes `h_l(x) = max(0, W_l @ h_{l-1}(x))`. Weights are drawn i.i.d. from `N(0, 2/width)` (He initialization) at bake time. |
+| `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over many independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`, where `N = n_samples` (see the metadata table below). Computed by direct Monte Carlo. **This is what your estimator predicts.** |
+| `final_means` | `float32[width]` | The last row of `all_layer_means` — i.e. `E[h_{depth}(x)_j]` for each output neuron `j`. Materialised as its own column because the **primary scoring metric** (`final_layer_mse`) only looks at this row. |
+| `avg_variance` | `float64` | The mean across the final-layer neurons of the per-neuron output variance: `(1/width) Σ_j Var[h_{depth}(x)_j]`. A single scalar per MLP. Used as a normaliser in budget-adjusted scoring so that networks with naturally low output variance don't dominate the MSE rankings. |
+| `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting for the bake that produced the ground truth for **this** row — useful as provenance. **Not** related to the estimator's FLOP budget at evaluation time. Decode with `json.loads(...)`. |
+
+## Your task as a participant
+
+You implement a class with a `predict(mlp: MLP, budget: int) -> ndarray[depth, width]` method that returns your estimate of `all_layer_means` for the given MLP. The harness gives you the weights and a strict FLOP budget, with FLOPs tracked precisely by the [`flopscope`](https://github.com/AIcrowd/flopscope) library — go over the budget and your predictions are zeroed out for that MLP.
+
+Your **primary score** is final-layer MSE — your prediction's last row vs. `final_means` — multiplied by `max(0.1, effective_compute / flop_budget)` so that staying well under budget pays off. All-layers MSE and a per-MLP breakdown ship in the result for diagnostics. See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked end-to-end example.
+
+## How the ground truth was made
+
+**Input distribution.** Every Monte Carlo sample is a fresh `x ~ N(0, I)` of shape `(width,)`. The same input is forward-propagated through all `depth` layers in one pass, so the per-layer means at indices `[0..depth-1]` share the same input draws.
+
+**Estimator.** Sums of post-ReLU activations are accumulated in `float64` for numerical stability, then divided by `n_samples` at the end and downcast to `float32`. The final-layer variance scalar comes from `E[h²] - (E[h])²` over the same `n_samples` draws.
+
+**Compute.** Sampling is chunked so memory stays bounded (`~4MB` per chunk on the flopscope CPU backend; tunable on the torch GPU backend via `chunk_size`). The two backends produce *statistically* equivalent output (means agree within `~3e-5` at `n_samples = 1e9`); the flopscope path is bit-exact run-to-run at the same seed.
 
 ## Dataset summary
 
@@ -38,21 +98,6 @@ for mlp in whestbench.iter_mlps(ds):
 | Schema version | {{ metadata.schema_version }} |
 | Seed protocol | `{{ metadata.seed_protocol.name }}` v{{ metadata.seed_protocol.version }} |
 
-## Schema
-
-Each row is one MLP. Columns:
-
-| Column | Type | Description |
-|---|---|---|
-| `mlp_id` | `int32` | 0-based row index |
-| `mlp_name` | `string` | Deterministic faker-derived slug, e.g. `"danielle-johnson"` |
-| `mlp_seed` | `int64` | Per-MLP grader-supplied seed |
-| `weights` | `float32[depth][width][width]` | Layer weight matrices |
-| `all_layer_means` | `float32[depth][width]` | Ground-truth per-layer means |
-| `final_means` | `float32[width]` | Ground-truth final-layer means |
-| `avg_variance` | `float64` | Across-layer mean variance |
-| `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting from the bake |
-
 ## Reproducibility
 
 This dataset was baked with:
@@ -64,9 +109,9 @@ This dataset was baked with:
 - **Device:** `{{ metadata.device }}`{% if metadata.cuda_device_name %} ({{ metadata.cuda_device_name }}){% endif %}
 - **Torch version:** `{{ metadata.torch_version }}`
 {% endif %}
-- **Created:** `{{ metadata.created_at_utc }}`
+- **Created (UTC):** `{{ metadata.created_at_utc }}`
 
-To re-bake locally:
+To re-bake locally and produce a directory bit-identical to this one (CPU backend) or statistically equivalent (torch backend):
 
 ```bash
 whest dataset bake \
@@ -80,16 +125,25 @@ whest dataset bake \
     --torch{% endif %}
 ```
 
-Bit-exact reproducibility requires the same `whestbench` and `faker` versions; statistical reproducibility (means within ~3e-5) holds across hardware on the `torch` backend.
+Bit-exact reproducibility requires the same `whestbench` and `faker` versions pinned at bake time; statistical reproducibility (means within `~3e-5`) holds across hardware on the `torch` backend.
+
+## Provenance
 
 {% if metadata.hardware_fingerprints %}
-## Provenance — assembled from {{ metadata.hardware_fingerprints|length }} parallel bakes
-
+Assembled from **{{ metadata.hardware_fingerprints|length }}** parallel bakes merged via `whest dataset merge`:
 {% for hw in metadata.hardware_fingerprints %}
-- `{{ hw.cuda_device_name or hw.cpu_brand or 'unknown' }}` — MLPs `[{{ hw.mlp_range[0] }}, {{ hw.mlp_range[1] }})`
+- `{{ hw.cuda_device_name or hw.cpu_brand or 'unknown host' }}` — MLPs `[{{ hw.mlp_range[0] }}, {{ hw.mlp_range[1] }})`
 {% endfor %}
+{% else %}
+Single-host bake on `{{ metadata.hardware.cuda_device_name or metadata.hardware.cpu_brand or metadata.cuda_device_name or 'unspecified host' }}`.
 {% endif %}
+
+## Citation
+
+If you use this dataset, please cite the challenge:
+
+**AIcrowd ARC White-Box Estimation Challenge 2026** — <https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026>
 
 ## License
 
-CC-BY-4.0. Released for research and competition use.
+Released under **CC-BY-4.0**. Use is encouraged for research, competition entries, and educational material; please credit the WhestBench team and the AIcrowd challenge.

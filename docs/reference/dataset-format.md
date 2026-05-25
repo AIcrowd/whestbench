@@ -33,31 +33,43 @@ with `whest dataset bake` to migrate.
 Eight columns per row. The `depth` and `width` dimensions are fixed for a given
 dataset and captured in `metadata.json`.
 
-| Column | Type | Shape | Description |
-|---|---|---|---|
-| `mlp_id` | `int32` | scalar | 0-based row index within the logical dataset |
-| `mlp_name` | `string` | — | Deterministic faker-derived slug, e.g. `"danielle-johnson"` |
-| `mlp_seed` | `int64` | scalar | Per-MLP seed passed to the estimator's `SetupContext.seed` |
-| `weights` | `float32` | `(depth, width, width)` | Layer weight matrices |
-| `all_layer_means` | `float32` | `(depth, width)` | Ground-truth per-layer output means |
-| `final_means` | `float32` | `(width,)` | Ground-truth final-layer output means |
-| `avg_variance` | `float64` | scalar | Across-layer mean variance |
-| `sampling_budget_breakdown` | `string` | — | JSON-serialised FLOP accounting from the bake |
+This table mirrors the schema section in the published dataset card. They are
+maintained in lockstep — any update here must also land in
+`src/whestbench/templates/dataset_card.md.j2`.
 
-**`mlp_id`**: matches the MLP's position in the logical dataset. Partial bakes
-(from `--slice`) have `mlp_id` values starting from their slice offset. After merging,
-`mlp_id` is monotonically increasing from 0.
+| Column | Type / shape | What this is |
+|---|---|---|
+| `mlp_id` | `int32` | 0-based index of this MLP within the dataset (the absolute index across all parallel-bake slices). |
+| `mlp_name` | `string` | Stable, deterministic human-readable slug like `"danielle-johnson"`, derived from `mlp_seed` via the `faker` library. Useful for log lines; carries no information beyond `mlp_seed`. |
+| `mlp_seed` | `int64` | Seed an estimator should consume if it uses randomness (e.g. Monte Carlo). Per-MLP, derived from the contest seed; passed to `predict(mlp: MLP, budget: int)` as `mlp.seed`. |
+| `weights` | `float32[depth, width, width]` | The MLP's layer weight matrices. The network has no biases and uses ReLU activations. Layer `l` computes `h_l(x) = max(0, W_l @ h_{l-1}(x))`. Weights are drawn i.i.d. from `N(0, 2/width)` (He initialization) at bake time. |
+| `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over many independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`, where `N = n_samples`. Computed by direct Monte Carlo. This is what an estimator predicts. |
+| `final_means` | `float32[width]` | The last row of `all_layer_means` — i.e. `E[h_{depth}(x)_j]` for each output neuron `j`. Materialised as its own column because the primary scoring metric (`final_layer_mse`) only looks at this row. |
+| `avg_variance` | `float64` | The mean across the final-layer neurons of the per-neuron output variance: `(1/width) Σ_j Var[h_{depth}(x)_j]`. A single scalar per MLP. Used as a normaliser in budget-adjusted scoring so that networks with naturally low output variance don't dominate the MSE rankings. |
+| `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting for the bake that produced the ground truth for **this** row — useful as provenance. Not related to the estimator's FLOP budget at evaluation time. Decode with `json.loads(...)`. |
 
-**`mlp_name`**: the name is derived deterministically from the per-MLP seed using
-the `faker` library at a pinned version. The same `--seed` and `--n-mlps` always
+### Notes on individual columns
+
+**`mlp_id`** — matches the MLP's position in the logical dataset. Partial bakes
+(from `--slice`/`--mlp-range`) have `mlp_id` values starting from their slice
+offset; after `whest dataset merge`, `mlp_id` is monotonically increasing from 0.
+
+**`mlp_name`** — the name is derived deterministically from `mlp_seed` using the
+`faker` library at a pinned version. The same `--seed` and `--n-mlps` always
 produce the same name list, on any hardware. Bumping the `faker` version pin
 requires a deliberate re-bake.
 
-**`weights`**: stored as `float32`. The weight matrices for each layer are
-`weight_matrix[i]` of shape `(width, width)`.
+**`weights`** — stored as `float32`. The weight matrices for each layer are
+`weights[i]` of shape `(width, width)`. The forward pass uses no biases and ReLU
+between layers; inputs are standard Gaussian, sampled fresh per Monte-Carlo draw
+when ground truth is computed.
 
-**`sampling_budget_breakdown`**: a JSON string with per-layer FLOP counts used for
-budget accounting during `whest run`. Consumers can parse it with `json.loads(row["sampling_budget_breakdown"])`.
+**`sampling_budget_breakdown`** — a JSON string with the per-namespace FLOP
+counts and wall time consumed by the ground-truth Monte Carlo, accounted via
+[`flopscope`](https://github.com/AIcrowd/flopscope). Parse with
+`json.loads(row["sampling_budget_breakdown"])`. This is provenance metadata
+about the bake itself, **not** the estimator's FLOP budget at evaluation time
+(which is set at runtime via `whest run --flop-budget N`).
 
 ## metadata.json schema
 
