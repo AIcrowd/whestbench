@@ -1,18 +1,28 @@
-"""Create, save, and load pre-computed evaluation datasets."""
+"""Create, save, and load whestbench evaluation datasets (schema 3.0)."""
 
 from __future__ import annotations
 
 import dataclasses
 import json
-from dataclasses import dataclass
+import weakref
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import flopscope as flops
 import flopscope.numpy as fnp
-import numpy as np  # needed for np.savez, np.load (file I/O)
+import numpy as np
+from datasets import Dataset
 
+from .dataset_io import (
+    DEFAULT_SPLIT,
+    SCHEMA_FORMAT,
+    SCHEMA_VERSION,
+    SEED_PROTOCOL_NAME,
+    SEED_PROTOCOL_VERSION,
+    make_features,
+    write_dataset_dir,
+)
 from .domain import MLP
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
@@ -20,36 +30,20 @@ from .naming import assign_unique_names
 from .scoring import _normalize_sampling_budget_breakdown
 from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_count
 
-# 2.4 added the `mlp_names` array (per-MLP human-readable slug, see
-# `whestbench.naming`). Names are a pure function of `mlp_seeds`, so 2.3
-# files load cleanly by synthesizing names on the fly.
-SCHEMA_VERSION = "2.4"
-SEED_PROTOCOL_NAME = "whestbench_seedsequence_hierarchy"
-SEED_PROTOCOL_VERSION = "2.0"
+# Metadata side-channel: associates a Dataset with its metadata.json contents
+# without mutating the Dataset object itself.
+_METADATA_BY_DS: "weakref.WeakKeyDictionary[Dataset, Dict[str, Any]]" = weakref.WeakKeyDictionary()
 
 
-def dataset_file_hash(path: "Path | str") -> str:
-    import hashlib
-
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-@dataclass(frozen=True)
-class DatasetBundle:
-    metadata: Dict[str, Any]
-    mlps: List[MLP]
-    all_layer_means: fnp.ndarray
-    final_means: fnp.ndarray
-    avg_variances: List[float]
-    sampling_budget_breakdowns: List[Dict[str, Any]] | None = None
-
-    @property
-    def n_mlps(self) -> int:
-        return len(self.mlps)
+def _resolve_mlp_range(n_mlps: int, mlp_range: Optional[Tuple[int, int]]) -> Tuple[int, int]:
+    if mlp_range is None:
+        return (0, n_mlps)
+    start, end = mlp_range
+    if not (0 <= start < end <= n_mlps):
+        raise ValueError(
+            f"mlp_range {mlp_range!r} invalid for n_mlps={n_mlps}; need 0 <= start < end <= n_mlps."
+        )
+    return (start, end)
 
 
 def create_dataset(
@@ -60,63 +54,78 @@ def create_dataset(
     depth: int,
     seed: Optional[int] = None,
     output_path: "Path | str",
-    progress: Optional[Any] = None,
+    split: str = DEFAULT_SPLIT,
+    mlp_range: Optional[Tuple[int, int]] = None,
+    progress: Optional[Callable[[Dict[str, Any]], None]] = None,
 ) -> Path:
-    """Generate MLPs, compute ground truth, and save to .npz."""
+    """Generate MLPs, compute ground-truth, and write a schema-3.0 dataset directory.
+
+    Output is a directory with data/<split>-00000-of-00001.parquet, metadata.json,
+    README.md. Raises FileExistsError if output_path already exists.
+
+    If `mlp_range=(start, end)` is set, only MLPs in [start, end) are generated.
+    Output metadata is marked is_partial=true. Run merge_datasets to combine.
+
+    Bit-equivalent property: a worker baking slice [a, b) of a logical dataset of
+    size N produces the same rows as the corresponding slice of a single-host bake
+    of size N.
+    """
     output_path = Path(output_path)
+    start, end = _resolve_mlp_range(n_mlps, mlp_range)
+
     seed_sequence = (
         fnp.random.SeedSequence() if seed is None else fnp.random.SeedSequence(int(seed))
     )
     stream_seed = seed_sequence.spawn(3 * n_mlps)
 
+    # Phase 1: generate MLPs in the slice
     mlps: List[MLP] = []
-    for i in range(n_mlps):
+    for slice_idx, i in enumerate(range(start, end)):
         weight_stream = fnp.random.default_rng(stream_seed[3 * i])
         estimator_seed_i = int(stream_seed[3 * i + 2].generate_state(1)[0])
         mlps.append(sample_mlp(width, depth, weight_stream, seed=estimator_seed_i))
         if progress is not None:
-            progress({"phase": "generating", "completed": i + 1, "total": n_mlps})
+            progress({"phase": "generating", "completed": slice_idx + 1, "total": end - start})
 
-    # Attach deterministic human-readable names derived from each MLP's seed.
-    # Names are a pure function of `mlp.seed`, so they reproduce across runs
-    # and across CPU/GPU backends at the pinned faker version.
-    mlp_names_list = assign_unique_names([m.seed for m in mlps])
-    mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, mlp_names_list)]
+    # Names: derived from ALL logical seeds, then sliced. Guarantees slice's
+    # names match the corresponding slice of a single-host bake.
+    all_logical_seeds = [int(stream_seed[3 * i + 2].generate_state(1)[0]) for i in range(n_mlps)]
+    all_names = assign_unique_names(all_logical_seeds)
+    slice_names = all_names[start:end]
+    mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, slice_names)]
 
-    # Pack weight matrices: shape (n_mlps, depth, width, width)
     weights_array = np.stack([np.stack(mlp.weights) for mlp in mlps]).astype(np.float32)
 
-    # Compute ground truth
+    # Phase 2: ground-truth sampling
     all_means_list: List[fnp.ndarray] = []
     final_means_list: List[fnp.ndarray] = []
     avg_variances: List[float] = []
     sampling_budget_breakdowns: List[Dict[str, Any]] = []
     chunks_per_mlp = sample_layer_statistics_chunk_count(width, n_samples)
-    total_sampling_chunks = n_mlps * chunks_per_mlp
-    for i, mlp in enumerate(mlps):
-        sample_stream = fnp.random.default_rng(stream_seed[3 * i + 1])
+    total_sampling_chunks = (end - start) * chunks_per_mlp
 
-        def _on_sampling_chunk(
-            event: Dict[str, Any],
+    for slice_idx, i in enumerate(range(start, end)):
+        sample_stream = fnp.random.default_rng(stream_seed[3 * i + 1])
+        mlp = mlps[slice_idx]
+
+        def _on_chunk(
+            event,
             *,
-            mlp_index: int = i + 1,
-            mlp_name: str = mlps[i].name,
-            chunk_offset: int = i * chunks_per_mlp,
-        ) -> None:
+            mlp_index=slice_idx + 1,
+            name=mlp.name,
+            chunk_offset=slice_idx * chunks_per_mlp,
+        ):
             if progress is None:
                 return
             local_completed = int(event.get("completed", 0))
-            local_total = int(event.get("total", chunks_per_mlp))
             progress(
                 {
                     "phase": "sampling",
                     "completed": chunk_offset + local_completed,
                     "total": total_sampling_chunks,
                     "mlp_index": mlp_index,
-                    "mlp_name": mlp_name,
-                    "n_mlps": n_mlps,
-                    "mlp_completed": local_completed,
-                    "mlp_total": local_total,
+                    "mlp_name": name,
+                    "n_mlps": end - start,
                     "unit": "chunks",
                 }
             )
@@ -128,16 +137,13 @@ def create_dataset(
                         mlp,
                         n_samples,
                         rng=sample_stream,
-                        progress=_on_sampling_chunk if progress is not None else None,
+                        progress=_on_chunk if progress is not None else None,
                     )
-        normalized_sampling = _normalize_sampling_budget_breakdown(
+        normalized = _normalize_sampling_budget_breakdown(
             sampling_budget.summary_dict(by_namespace=True)
         )
-        if normalized_sampling is not None:
-            sampling_budget_breakdowns.append(normalized_sampling)
-        # The triple is always bound: flopscope's namespace `__exit__` returns
-        # False at runtime (never suppresses), but pyright reads the `-> bool`
-        # annotation conservatively.
+        if normalized is not None:
+            sampling_budget_breakdowns.append(normalized)
         all_means_list.append(fnp.asarray(all_means, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
         final_means_list.append(fnp.asarray(final_mean, dtype=fnp.float32))  # pyright: ignore[reportPossiblyUnboundVariable]
         avg_variances.append(avg_var)  # pyright: ignore[reportPossiblyUnboundVariable]
@@ -145,8 +151,23 @@ def create_dataset(
     all_layer_means = np.stack(all_means_list).astype(np.float32)
     final_means = np.stack(final_means_list).astype(np.float32)
 
+    ds = Dataset.from_dict(
+        {
+            "mlp_id": list(range(start, end)),
+            "mlp_name": [m.name for m in mlps],
+            "mlp_seed": [int(m.seed) for m in mlps],
+            "weights": weights_array,
+            "all_layer_means": all_layer_means,
+            "final_means": final_means,
+            "avg_variance": avg_variances,
+            "sampling_budget_breakdown": [json.dumps(b) for b in sampling_budget_breakdowns],
+        },
+        features=make_features(width=width, depth=depth),
+    )
+
     metadata: Dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
+        "format": SCHEMA_FORMAT,
         "backend": "flopscope",
         "seed_protocol": {
             "name": SEED_PROTOCOL_NAME,
@@ -155,103 +176,18 @@ def create_dataset(
         },
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "seed": int(seed_sequence.entropy),
-        "n_mlps": n_mlps,
+        "n_mlps": end - start,
         "n_samples": n_samples,
         "width": width,
         "depth": depth,
         "hardware": collect_hardware_fingerprint(),
     }
 
-    mlp_seeds = np.array([m.seed for m in mlps], dtype=np.int64)
-    # U64 is comfortably above the longest realistic slug (faker names are
-    # generally < 20 chars; collision suffixes add a few more).
-    mlp_names_array = np.array([m.name for m in mlps], dtype="U64")
+    is_partial = (start, end) != (0, n_mlps)
+    if is_partial:
+        metadata["is_partial"] = True
+        metadata["mlp_range"] = [start, end]
+        metadata["total_n_mlps"] = n_mlps
 
-    np.savez(
-        output_path,
-        metadata=np.array(json.dumps(metadata)),
-        weights=weights_array,
-        all_layer_means=all_layer_means,
-        final_means=final_means,
-        avg_variances=np.array(avg_variances, dtype=np.float64),
-        sampling_budget_breakdowns=np.array(json.dumps(sampling_budget_breakdowns)),
-        mlp_seeds=mlp_seeds,
-        mlp_names=mlp_names_array,
-    )
+    write_dataset_dir(ds, output_dir=output_path, split=split, metadata=metadata)
     return output_path
-
-
-def load_dataset(path: "Path | str") -> DatasetBundle:
-    path = Path(path)
-    data = np.load(path, allow_pickle=False)
-    metadata = json.loads(str(data["metadata"]))
-
-    if "schema_version" not in metadata:
-        raise ValueError("Invalid dataset: missing schema_version.")
-
-    seed_proto = metadata.get("seed_protocol") or {}
-    protocol_version = str(seed_proto.get("version", "")) if isinstance(seed_proto, dict) else ""
-    if protocol_version and protocol_version != SEED_PROTOCOL_VERSION:
-        raise ValueError(
-            f"Incompatible dataset seed_protocol version: file has {protocol_version!r}, "
-            f"this whestbench requires {SEED_PROTOCOL_VERSION!r}. "
-            f"Re-bake the dataset with `whest create-dataset`."
-        )
-
-    weights_array = data["weights"].astype(np.float32)
-    all_layer_means = data["all_layer_means"].astype(np.float32)
-    final_means = data["final_means"].astype(np.float32)
-    avg_variances = data["avg_variances"].astype(np.float64).tolist()
-    sampling_budget_breakdowns: List[Dict[str, Any]] | None = None
-    if "sampling_budget_breakdowns" in data.files:
-        raw_sampling_breakdowns = json.loads(str(data["sampling_budget_breakdowns"]))
-        if isinstance(raw_sampling_breakdowns, list):
-            sampling_budget_breakdowns = [
-                item for item in raw_sampling_breakdowns if isinstance(item, dict)
-            ]
-
-    n_mlps = int(weights_array.shape[0])
-    depth = int(weights_array.shape[1])
-    width = int(weights_array.shape[2])
-
-    if "mlp_seeds" in data.files:
-        mlp_seeds = data["mlp_seeds"].astype(np.int64).tolist()
-    elif protocol_version == SEED_PROTOCOL_VERSION:
-        raise ValueError(
-            "Dataset is at SEED_PROTOCOL_VERSION='2.0' but missing 'mlp_seeds' array; "
-            "the file appears corrupted. Re-bake with `whest create-dataset`."
-        )
-    else:
-        # Legacy datasets pre-dating seed_protocol carry no per-MLP seeds; default to 0.
-        mlp_seeds = [0] * n_mlps
-
-    # Schema 2.4 introduced per-MLP names. For older files (no `mlp_names`),
-    # synthesize from `mlp_seeds` — names are a pure function of seed, so the
-    # synthesized values match what a fresh 2.4 bake of the same seeds would
-    # produce. No separate "placeholder" fallback.
-    if "mlp_names" in data.files:
-        mlp_names = [str(s) for s in data["mlp_names"].tolist()]
-    else:
-        mlp_names = assign_unique_names(list(mlp_seeds))
-
-    mlps: List[MLP] = []
-    for i in range(n_mlps):
-        layer_weights = [fnp.array(weights_array[i, j]) for j in range(depth)]
-        mlp = MLP(
-            width=width,
-            depth=depth,
-            weights=layer_weights,
-            seed=int(mlp_seeds[i]),
-            name=mlp_names[i],
-        )
-        mlp.validate()
-        mlps.append(mlp)
-
-    return DatasetBundle(
-        metadata=metadata,
-        mlps=mlps,
-        all_layer_means=all_layer_means,
-        final_means=final_means,
-        avg_variances=avg_variances,
-        sampling_budget_breakdowns=sampling_budget_breakdowns,
-    )
