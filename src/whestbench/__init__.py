@@ -10,6 +10,7 @@ from .dataset import (
 from .dataset_io import (
     SCHEMA_VERSION,
     InvalidDatasetError,
+    combine_split_datasets,
     merge_datasets,
 )
 from .domain import MLP
@@ -26,6 +27,7 @@ from .simulation import relu, run_mlp, run_mlp_all_layers, sample_layer_statisti
 __all__ = [
     "BaseEstimator",
     "BudgetExhaustionWarning",
+    "combine_split_datasets",
     "InvalidDatasetError",
     "MLP",
     "merge_datasets",
