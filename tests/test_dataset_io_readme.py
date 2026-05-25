@@ -171,8 +171,8 @@ def test_readme_links_to_hub_page_with_repo_and_revision():
     assert "huggingface.co/datasets/aicrowd/arc-whestbench-2026/tree/v1" in out
 
 
-def test_readme_uses_shields_io_badges_for_all_five_links():
-    """Each of the 5 links should be a shields.io badge (`for-the-badge` style)."""
+def test_readme_uses_shields_io_badges_for_all_six_links():
+    """Each of the 6 links should be a shields.io badge (`for-the-badge` style)."""
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
     # Each badge URL is a shields.io URL. We check for a unique fragment of each.
     for badge_fragment in (
@@ -180,11 +180,18 @@ def test_readme_uses_shields_io_badges_for_all_five_links():
         "img.shields.io/badge/GitHub-AIcrowd%2Fwhestbench",
         "img.shields.io/badge/Starter_Kit-whest--starterkit",
         "img.shields.io/badge/MLP_Explorer-Interactive",
+        "img.shields.io/badge/FLOP_Tracking-flopscope",
         "View_on_HF_Hub",  # preceded by the URL-encoded 🤗 emoji in the badge URL
     ):
         assert badge_fragment in out, f"badge missing: {badge_fragment!r}"
     # for-the-badge style is consistent across all
-    assert out.count("style=for-the-badge") >= 5
+    assert out.count("style=for-the-badge") >= 6
+
+
+def test_readme_flopscope_badge_links_to_github():
+    """The flopscope badge wraps a link to the flopscope GitHub repo."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    assert 'href="https://github.com/AIcrowd/flopscope"' in out
 
 
 # --- Quick-start snippets ---
@@ -227,6 +234,24 @@ def test_readme_includes_cli_run_snippet():
     )
     assert "whest run" in out
     assert "hf://aicrowd/arc-whestbench-2026@v1" in out
+
+
+def test_readme_invites_starterkit_after_cli_snippet():
+    """A call-to-action linking the starter kit appears right after the CLI snippet."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    body = out.split("\n---\n", 1)[1]
+    cli_pos = body.find("whest run")
+    invite_pos = body.find("New to the challenge?")
+    whats_in_pos = body.find("## What's in this dataset")
+    # Invitation sits between the CLI snippet and the next section.
+    assert cli_pos != -1
+    assert invite_pos != -1
+    assert whats_in_pos != -1
+    assert cli_pos < invite_pos < whats_in_pos
+    # The invitation links to the starter kit + mentions flopscope as a learning resource.
+    invitation = body[invite_pos:whats_in_pos]
+    assert "github.com/AIcrowd/whest-starterkit" in invitation
+    assert "flopscope" in invitation
 
 
 def test_readme_placeholder_repo_id_default():
@@ -366,11 +391,23 @@ def test_readme_front_matter_has_expanded_tags():
 # --- Citation + license ---
 
 
-def test_readme_citation_points_at_challenge_page():
+def test_readme_citation_is_bibtex_block_attributing_arc_and_aicrowd():
+    """Citation section ships a proper BibTeX block citing both organizers."""
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
-    assert "WhestBench 2026: ARC White-Box Estimation Challenge" in out
-    # The citation URL is also in the badge row; this asserts the dedicated section exists.
     assert "## Citation" in out
+    # BibTeX fenced block + key entry shape
+    assert "```bibtex" in out
+    assert "@misc{whestbench2026," in out
+    # Title preserved as-is via double-braces
+    assert "{{WhestBench 2026: ARC White-Box Estimation Challenge}}" in out
+    # Author attribution names BOTH organizations
+    assert "{Alignment Research Center}" in out
+    assert "{AIcrowd}" in out
+    assert "and" in out
+    # Standard fields present
+    assert "year         = {2026}" in out
+    assert "howpublished" in out
+    assert "aicrowd.com/challenges/arc-white-box-estimation-challenge-2026" in out
 
 
 def test_readme_license_section_present():
