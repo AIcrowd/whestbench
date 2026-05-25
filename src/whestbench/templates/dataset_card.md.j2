@@ -17,6 +17,7 @@
   <a href="https://github.com/AIcrowd/whestbench"><img alt="GitHub" src="https://img.shields.io/badge/GitHub-AIcrowd%2Fwhestbench-181717?style=for-the-badge&logo=github&logoColor=white"></a>
   <a href="https://github.com/AIcrowd/whest-starterkit"><img alt="Starter Kit" src="https://img.shields.io/badge/Starter_Kit-whest--starterkit-f57c00?style=for-the-badge&logo=github&logoColor=white"></a>
   <a href="https://aicrowd.github.io/whestbench-explorer/"><img alt="MLP Explorer" src="https://img.shields.io/badge/MLP_Explorer-Interactive-7e57c2?style=for-the-badge"></a>
+  <a href="https://github.com/AIcrowd/flopscope"><img alt="flopscope" src="https://img.shields.io/badge/FLOP_Tracking-flopscope-009688?style=for-the-badge&logo=github&logoColor=white"></a>
   <a href="https://huggingface.co/datasets/{{ repo_id }}/tree/{{ revision }}"><img alt="Hugging Face" src="https://img.shields.io/badge/%F0%9F%A4%97-View_on_HF_Hub-ffd54f?style=for-the-badge"></a>
 </p>
 
@@ -66,6 +67,8 @@ whest run \
     --estimator my_estimator.py \
     --dataset hf://{{ repo_id }}@{{ revision }}
 ```
+
+➡️ **New to the challenge?** Head over to the **[WhestBench starter kit](https://github.com/AIcrowd/whest-starterkit)** for a worked example estimator, the recommended project layout, FLOP-tracking patterns with [`flopscope`](https://github.com/AIcrowd/flopscope), local testing tips, and the submission workflow.
 
 ## What's in this dataset
 
@@ -161,7 +164,17 @@ Single-host bake on `{{ metadata.hardware.cuda_device_name or metadata.hardware.
 
 If you use this dataset, please cite the challenge:
 
-**WhestBench 2026: ARC White-Box Estimation Challenge** — organized by the [Alignment Research Center (ARC)](https://www.alignment.org/) and [AIcrowd](https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026).
+{% raw %}
+```bibtex
+@misc{whestbench2026,
+  title        = {{WhestBench 2026: ARC White-Box Estimation Challenge}},
+  author       = {{Alignment Research Center} and {AIcrowd}},
+  year         = {2026},
+  publisher    = {AIcrowd},
+  howpublished = {\url{https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026}},
+}
+```
+{% endraw %}
 
 ## License
 
