@@ -46,7 +46,7 @@ def test_readme_includes_title():
         _flopscope_metadata(),
         split="public",
         ds_size=4,
-        repo_id="aicrowd/arc-whestbench-2026-eval",
+        repo_id="aicrowd/arc-whestbench-2026",
         revision="v1",
     )
     assert "WhestBench Test Dataset" in out
@@ -57,11 +57,11 @@ def test_readme_includes_load_snippet_with_repo_id():
         _flopscope_metadata(),
         split="public",
         ds_size=4,
-        repo_id="aicrowd/arc-whestbench-2026-eval",
+        repo_id="aicrowd/arc-whestbench-2026",
         revision="v1",
     )
     assert "load_dataset(" in out
-    assert '"aicrowd/arc-whestbench-2026-eval"' in out
+    assert '"aicrowd/arc-whestbench-2026"' in out
     assert 'revision="v1"' in out
     assert 'split="public"' in out
 

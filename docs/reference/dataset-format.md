@@ -167,7 +167,7 @@ ds = load_dataset("./my-eval", split="public")
 
 # HF Hub
 ds = load_dataset(
-    "aicrowd/arc-whestbench-2026-eval",
+    "aicrowd/arc-whestbench-2026",
     revision="v1",
     split="public",
 )
@@ -189,7 +189,7 @@ ds = whestbench.load_dataset("./my-eval")
 
 # HF Hub (pin a revision — bare repo without revision is rejected by whest run)
 ds = whestbench.load_dataset(
-    "aicrowd/arc-whestbench-2026-eval",
+    "aicrowd/arc-whestbench-2026",
     revision="v1",
     split="public",
 )
