@@ -14,6 +14,7 @@ from .dataset_io import (
 )
 from .domain import MLP
 from .generation import sample_mlp
+from .hub import publish_dataset
 from .scoring import (
     BudgetExhaustionWarning,
     ScoringExhaustionWarning,
@@ -28,6 +29,7 @@ __all__ = [
     "InvalidDatasetError",
     "MLP",
     "merge_datasets",
+    "publish_dataset",
     "SCHEMA_VERSION",
     "ScoringExhaustionWarning",
     "SetupContext",
