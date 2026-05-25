@@ -212,7 +212,7 @@ def load_dataset(
 
     Args:
         path_or_repo: Local directory path, or HF Hub repo id (e.g.
-            "aicrowd/arc-whestbench-2026-eval").
+            "aicrowd/arc-whestbench-2026").
         revision: HF Hub git tag or commit SHA. Ignored for local paths.
         split: Split name (default "public"; holdout repos use "holdout").
         token: HF Hub auth token. Falls back to HF auth cache.

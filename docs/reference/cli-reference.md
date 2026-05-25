@@ -116,8 +116,8 @@ Key options:
 - `--json` — alias for `--format json`.
 - `--dataset <path>` — dataset source. Accepts:
   - Local directory: `./my-eval` or `/abs/path/my-eval`
-  - HF Hub with inline revision: `hf://owner/repo@v1` or `hf://aicrowd/arc-whestbench-2026-eval@v1`
-  - HF Hub with `--revision` flag: `aicrowd/arc-whestbench-2026-eval --revision v1`
+  - HF Hub with inline revision: `hf://owner/repo@v1` or `hf://aicrowd/arc-whestbench-2026@v1`
+  - HF Hub with `--revision` flag: `aicrowd/arc-whestbench-2026 --revision v1`
   Bare `owner/repo` without `--revision` is rejected (revision must be explicit).
 - `--revision <tag>` — HF Hub git tag or commit SHA for `--dataset`. Ignored for local paths.
 - `--n-samples <int>` — ground truth samples per MLP when generating on-the-fly (without `--dataset`). Default: `width*width*256`.
@@ -141,11 +141,11 @@ whest run --estimator ./path/to/estimator.py --runner local --format plain   # f
 whest run --estimator ./estimator.py --dataset ./my-eval
 
 # HF Hub with inline revision (preferred)
-whest run --estimator ./estimator.py --dataset hf://aicrowd/arc-whestbench-2026-eval@v1
+whest run --estimator ./estimator.py --dataset hf://aicrowd/arc-whestbench-2026@v1
 
 # HF Hub with separate --revision flag
 whest run --estimator ./estimator.py \
-    --dataset aicrowd/arc-whestbench-2026-eval \
+    --dataset aicrowd/arc-whestbench-2026 \
     --revision v1
 ```
 
@@ -248,7 +248,7 @@ whest dataset inspect <DIR_OR_REPO_ID> [--revision REV]
 
 Arguments:
 
-- `DIR_OR_REPO_ID` — local dataset directory, or HF Hub repo id (e.g. `aicrowd/arc-whestbench-2026-eval`).
+- `DIR_OR_REPO_ID` — local dataset directory, or HF Hub repo id (e.g. `aicrowd/arc-whestbench-2026`).
 - `--revision <tag>` — HF Hub git tag or commit SHA (for remote repos).
 
 ### Example
@@ -258,7 +258,7 @@ Arguments:
 whest dataset inspect ./my-eval
 
 # Remote
-whest dataset inspect aicrowd/arc-whestbench-2026-eval --revision v1
+whest dataset inspect aicrowd/arc-whestbench-2026 --revision v1
 ```
 
 Output prints key metadata fields: `schema_version`, `format`, `backend`, `seed`, `n_mlps`, `n_samples`, `width`, `depth`, `created_at_utc`, and device provenance for torch bakes.
@@ -279,7 +279,7 @@ whest dataset push <LOCAL_DIR> \
 Arguments:
 
 - `LOCAL_DIR` — local directory produced by `whest dataset bake` or `whest dataset merge`.
-- `--repo <repo_id>` — HF Hub repo id, e.g. `aicrowd/arc-whestbench-2026-eval`.
+- `--repo <repo_id>` — HF Hub repo id, e.g. `aicrowd/arc-whestbench-2026`.
 - `--tag <tag>` — optional git tag to create on the uploaded commit (e.g. `v1`). Recommended for versioning.
 - `--private` — create the repo as private if it doesn't exist yet.
 - `--token <token>` — HF Hub write token. Falls back to `HF_TOKEN` env var, then the `huggingface-cli login` cache.
@@ -290,7 +290,7 @@ Arguments:
 ```bash
 # Publish with a version tag
 whest dataset push ./my-eval \
-    --repo aicrowd/arc-whestbench-2026-eval \
+    --repo aicrowd/arc-whestbench-2026 \
     --tag v1 \
     --message "Bake: 10 MLPs, seed=42"
 
@@ -314,7 +314,7 @@ whest dataset pull <REPO_ID> \
 
 Arguments:
 
-- `REPO_ID` — HF Hub repo id (e.g. `aicrowd/arc-whestbench-2026-eval`).
+- `REPO_ID` — HF Hub repo id (e.g. `aicrowd/arc-whestbench-2026`).
 - `--revision <tag>` — HF Hub git tag or commit SHA. Default: `main`.
 - `--output <dir>` — local destination directory.
 - `--token <token>` — HF Hub token for private repos. Falls back to `HF_TOKEN` env var.
@@ -322,7 +322,7 @@ Arguments:
 ### Example
 
 ```bash
-whest dataset pull aicrowd/arc-whestbench-2026-eval \
+whest dataset pull aicrowd/arc-whestbench-2026 \
     --revision v1 \
     --output ./eval-v1
 ```
@@ -368,16 +368,16 @@ whest dataset inspect ./my-eval
 # 3. Publish
 export HF_TOKEN=hf_...
 whest dataset push ./my-eval \
-    --repo aicrowd/arc-whestbench-2026-eval \
+    --repo aicrowd/arc-whestbench-2026 \
     --tag v1
 
 # 4. Pull on another machine
-whest dataset pull aicrowd/arc-whestbench-2026-eval \
+whest dataset pull aicrowd/arc-whestbench-2026 \
     --revision v1 --output ./local-copy
 
 # 5. Run evaluation
 whest run --estimator ./estimator.py \
-    --dataset hf://aicrowd/arc-whestbench-2026-eval@v1
+    --dataset hf://aicrowd/arc-whestbench-2026@v1
 ```
 
 ## `whest package`

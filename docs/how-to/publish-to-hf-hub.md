@@ -84,7 +84,7 @@ this is strongly recommended so participants can pin a specific version.
 
 ```bash
 whest dataset push ./my-bake \
-    --repo aicrowd/arc-whestbench-2026-eval \
+    --repo aicrowd/arc-whestbench-2026 \
     --tag v1 \
     --message "Bake: 10 MLPs, seed=42, 10M samples"
 ```
@@ -92,7 +92,7 @@ whest dataset push ./my-bake \
 Expected output:
 
 ```
-Uploaded to aicrowd/arc-whestbench-2026-eval; commit abc1234def; tag v1
+Uploaded to aicrowd/arc-whestbench-2026; commit abc1234def; tag v1
 ```
 
 For a private repo (e.g. holdout sets), add `--private`:
@@ -116,7 +116,7 @@ whest dataset push ./my-bake \
 Visit the dataset page to confirm the upload succeeded:
 
 ```
-https://huggingface.co/datasets/aicrowd/arc-whestbench-2026-eval/tree/v1
+https://huggingface.co/datasets/aicrowd/arc-whestbench-2026/tree/v1
 ```
 
 You should see the three files (`data/`, `metadata.json`, `README.md`) and the
@@ -125,7 +125,7 @@ dataset card rendered from the README.
 You can also inspect from the CLI without downloading:
 
 ```bash
-whest dataset inspect aicrowd/arc-whestbench-2026-eval --revision v1
+whest dataset inspect aicrowd/arc-whestbench-2026 --revision v1
 ```
 
 ## 6. Pull on another machine
@@ -133,7 +133,7 @@ whest dataset inspect aicrowd/arc-whestbench-2026-eval --revision v1
 On any other machine with `whestbench` installed:
 
 ```bash
-whest dataset pull aicrowd/arc-whestbench-2026-eval \
+whest dataset pull aicrowd/arc-whestbench-2026 \
     --revision v1 \
     --output ./local-copy
 ```
@@ -148,7 +148,7 @@ For a private repo, pass `--token` or set `HF_TOKEN` first.
 from datasets import load_dataset
 
 ds = load_dataset(
-    "aicrowd/arc-whestbench-2026-eval",
+    "aicrowd/arc-whestbench-2026",
     revision="v1",
     split="public",
 )
@@ -164,7 +164,7 @@ The wrapper validates the schema and attaches metadata for later retrieval:
 import whestbench
 
 ds = whestbench.load_dataset(
-    "aicrowd/arc-whestbench-2026-eval",
+    "aicrowd/arc-whestbench-2026",
     revision="v1",
     split="public",
 )
@@ -182,15 +182,15 @@ print(md["seed"], md["n_mlps"])
 
 ```bash
 whest run --estimator ./estimator.py \
-    --dataset hf://aicrowd/arc-whestbench-2026-eval@v1
+    --dataset hf://aicrowd/arc-whestbench-2026@v1
 
 # Or equivalently:
 whest run --estimator ./estimator.py \
-    --dataset aicrowd/arc-whestbench-2026-eval \
+    --dataset aicrowd/arc-whestbench-2026 \
     --revision v1
 ```
 
-Note: bare `aicrowd/arc-whestbench-2026-eval` without `--revision` is rejected by
+Note: bare `aicrowd/arc-whestbench-2026` without `--revision` is rejected by
 `whest run` — always pin a revision.
 
 ## Troubleshooting

@@ -19,30 +19,26 @@ def test_resolves_local_absolute_path():
 
 
 def test_resolves_hf_url_scheme():
-    repo, rev, is_local = _resolve_dataset_arg(
-        "hf://aicrowd/arc-whestbench-2026-eval@v1", revision=None
-    )
+    repo, rev, is_local = _resolve_dataset_arg("hf://aicrowd/arc-whestbench-2026@v1", revision=None)
     assert is_local is False
-    assert repo == "aicrowd/arc-whestbench-2026-eval"
+    assert repo == "aicrowd/arc-whestbench-2026"
     assert rev == "v1"
 
 
 def test_resolves_hf_url_without_tag():
-    repo, rev, is_local = _resolve_dataset_arg(
-        "hf://aicrowd/arc-whestbench-2026-eval", revision=None
-    )
+    repo, rev, is_local = _resolve_dataset_arg("hf://aicrowd/arc-whestbench-2026", revision=None)
     assert is_local is False
-    assert repo == "aicrowd/arc-whestbench-2026-eval"
+    assert repo == "aicrowd/arc-whestbench-2026"
     assert rev is None
 
 
 def test_resolves_repo_with_revision_flag():
-    repo, rev, is_local = _resolve_dataset_arg("aicrowd/arc-whestbench-2026-eval", revision="v1")
+    repo, rev, is_local = _resolve_dataset_arg("aicrowd/arc-whestbench-2026", revision="v1")
     assert is_local is False
-    assert repo == "aicrowd/arc-whestbench-2026-eval"
+    assert repo == "aicrowd/arc-whestbench-2026"
     assert rev == "v1"
 
 
 def test_rejects_bare_repo_without_revision_or_prefix():
     with pytest.raises(SystemExit, match="hf://"):
-        _resolve_dataset_arg("aicrowd/arc-whestbench-2026-eval", revision=None)
+        _resolve_dataset_arg("aicrowd/arc-whestbench-2026", revision=None)

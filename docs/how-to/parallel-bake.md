@@ -172,7 +172,7 @@ whest dataset inspect ./final-eval
 
 # Publish
 whest dataset push ./final-eval \
-    --repo aicrowd/arc-whestbench-2026-eval \
+    --repo aicrowd/arc-whestbench-2026 \
     --tag v1 \
     --message "Parallel bake: 1000 MLPs, seed=42, 4 workers"
 ```

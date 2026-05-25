@@ -50,7 +50,7 @@ from datasets import load_dataset
 import whestbench
 
 ds = load_dataset(
-    "aicrowd/arc-whestbench-2026-eval",
+    "aicrowd/arc-whestbench-2026",
     revision="v1",
     split="public",
 )
@@ -69,7 +69,7 @@ Run evaluation against a published or local dataset:
 ```bash
 # HF Hub (pinned revision required)
 whest run --estimator ./estimator.py \
-    --dataset hf://aicrowd/arc-whestbench-2026-eval@v1
+    --dataset hf://aicrowd/arc-whestbench-2026@v1
 
 # Local directory
 whest run --estimator ./estimator.py --dataset ./my-eval

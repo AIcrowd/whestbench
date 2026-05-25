@@ -41,7 +41,7 @@ def publish_dataset(
 
     Args:
         local_dir: Directory containing data/, metadata.json, README.md.
-        repo_id: e.g. "aicrowd/arc-whestbench-2026-eval".
+        repo_id: e.g. "aicrowd/arc-whestbench-2026".
         tag: If provided, creates a git tag pointing at the new commit.
         token: HF Hub auth token; falls back to HF auth cache.
         commit_message: Commit message; default is auto-generated.
