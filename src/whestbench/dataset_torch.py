@@ -301,12 +301,15 @@ def _synthesize_sampling_breakdown(
       - standard_normal((n, width)):  16 FLOPs/element * n * width
         (flopscope counts RNG generation at 16 FLOPs/element, not 1)
       - array cast to fnp:             1 FLOPs/element * n * width
-      - matmul (n,w)@(w,w) per layer:  n * w^2 per layer
+      - matmul (n,w)@(w,w) per layer:  n * w * (2*w - 1) per layer
+        (BLAS MAC convention: w multiplies + (w-1) additions per output element;
+        flopscope upgraded from `n * w^2` to this in their 2026 accounting)
       - maximum (ReLU) per layer:      n * w per layer      (1 FLOP/element)
-      - sum along axis=0 per layer:    n * w per layer      (input size, per flopscope docs)
+      - sum along axis=0 per layer:    (n - 1) * w per layer
+        (actual additions, not input size; flopscope upgraded from `n * w` to this)
       - power x_f64**2:               16 FLOPs/element * n * width
         (flopscope charges power at 16 FLOPs/element, unlike x*x which is 1)
-      - sum for final_sum_sq:          n * width            (input size)
+      - sum for final_sum_sq:          (n - 1) * width      (actual additions)
 
     Per-chunk ops (scale with n_chunks):
       - add layer_sums += per layer:   width per layer per chunk
@@ -326,11 +329,13 @@ def _synthesize_sampling_breakdown(
     # Per-sample costs
     standard_normal = 16 * n_samples * width
     array_cast = n_samples * width
-    matmul = depth * n_samples * width * width
+    # BLAS MAC convention: (n, w) @ (w, w) costs n * w * (2*w - 1) per call.
+    matmul = depth * n_samples * width * (2 * width - 1)
     relu = depth * n_samples * width
-    sum_layer = depth * n_samples * width
+    # sum along axis=0 on (n, w): (n - 1) actual additions per output column.
+    sum_layer = depth * (n_samples - 1) * width
     power_sq = 16 * n_samples * width
-    sum_sq = n_samples * width
+    sum_sq = (n_samples - 1) * width
 
     # Per-chunk costs
     add_costs = n_chunks * (depth * width + width)
