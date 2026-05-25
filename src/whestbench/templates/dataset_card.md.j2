@@ -20,7 +20,14 @@
   <a href="https://huggingface.co/datasets/{{ repo_id }}/tree/{{ revision }}"><img alt="Hugging Face" src="https://img.shields.io/badge/%F0%9F%A4%97-View_on_HF_Hub-ffd54f?style=for-the-badge"></a>
 </p>
 
-WhestBench is a benchmark for *white-box activation estimation*: given the weights of a small ReLU multi-layer perceptron (MLP) and a strict floating-point-operation (FLOP) budget, predict the average post-activation value of every neuron when the network is fed standard Gaussian inputs. **This dataset is the `{{ split }}` split of the WhestBench 2026 evaluation set** — pre-baked MLPs paired with their ground-truth activation statistics, ready to consume.
+WhestBench is a benchmark for *white-box activation estimation*: given the weights of a small ReLU multi-layer perceptron (MLP) and a strict floating-point-operation (FLOP) budget, predict the average post-activation value of every neuron when the network is fed standard Gaussian inputs.
+{% if split == "public" %}
+**This is the Public Dataset Release for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics, free to download and use while you develop your estimator. The actual evaluation is run against a separate, private holdout dataset under the same schema.
+{%- elif split == "holdout" %}
+**This is the private Holdout Dataset for WhestBench 2026** — consumed by the evaluator at grading time. It is not intended for participant download; the public release at `aicrowd/arc-whestbench-2026` is what you'll develop against.
+{%- else %}
+**This is the `{{ split }}` dataset for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics.
+{%- endif %}
 
 ## Quick start
 
@@ -154,7 +161,7 @@ Single-host bake on `{{ metadata.hardware.cuda_device_name or metadata.hardware.
 
 If you use this dataset, please cite the challenge:
 
-**WhestBench 2026: ARC White-Box Estimation Challenge** — organised by [AIcrowd](https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026).
+**WhestBench 2026: ARC White-Box Estimation Challenge** — organized by the [Alignment Research Center (ARC)](https://www.alignment.org/) and [AIcrowd](https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026).
 
 ## License
 

@@ -123,12 +123,18 @@ def test_readme_includes_problem_statement():
     assert "Gaussian" in out
 
 
-def test_readme_includes_split_aware_lead():
-    """The first paragraph names the split."""
+def test_readme_split_aware_release_label():
+    """Framing reads as a 'Public Dataset Release' vs. 'Holdout Dataset' — not as a 'split'."""
     out_pub = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
     out_hld = generate_readme(_flopscope_metadata(), split="holdout", ds_size=4)
-    assert "`public` split" in out_pub
-    assert "`holdout` split" in out_hld
+
+    assert "Public Dataset Release for WhestBench 2026" in out_pub
+    # Public framing must not call itself the "public split of the evaluation set".
+    assert "public` split of the WhestBench 2026 evaluation set" not in out_pub
+
+    assert "Holdout Dataset for WhestBench 2026" in out_hld
+    # Holdout points participants at the public release.
+    assert "aicrowd/arc-whestbench-2026" in out_hld
 
 
 # --- Badge row (replaces the bullet-list Links section) ---
