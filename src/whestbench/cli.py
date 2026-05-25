@@ -43,7 +43,6 @@ try:
 except Exception:  # pragma: no cover - optional at runtime
     rich_tqdm = None
 
-from .dataset import load_dataset
 from .dataset import metadata as _wb_metadata
 from .dataset_io import metadata_file_hash as _metadata_file_hash
 from .estimators import CombinedEstimator
@@ -892,6 +891,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--dataset", default=None, help="Path to pre-created dataset .npz file."
     )
     run_parser.add_argument(
+        "--revision",
+        default=None,
+        help="HF Hub revision (tag or commit SHA) for --dataset.",
+    )
+    run_parser.add_argument(
         "--flop-budget",
         type=int,
         default=None,
@@ -1113,6 +1117,39 @@ def _parse_mlp_range_cli(arg, *, slice_spec, n_mlps):
         end = (k + 1) * n_mlps // n
         return (start, end)
     return None
+
+
+def _resolve_dataset_arg(arg, *, revision):
+    """Resolve ``--dataset`` argument to (repo_or_path, revision, is_local).
+
+    Accepts:
+        - Local path: starts with ./, /, ~/, Windows drive letter, or exists on disk
+        - hf:// URL: e.g. "hf://owner/repo@v1" or "hf://owner/repo"
+        - "owner/repo" with --revision flag explicitly set
+
+    Bare "owner/repo" without --revision is rejected to force explicit pinning.
+    """
+    from pathlib import Path
+
+    if arg.startswith("hf://"):
+        body = arg[len("hf://") :]
+        if "@" in body:
+            repo, rev = body.split("@", 1)
+            return (repo, rev, False)
+        return (body, None, False)
+
+    if arg.startswith(("./", "/", "~/")) or Path(arg).exists() or (len(arg) >= 2 and arg[1] == ":"):
+        return (arg, revision, True)
+
+    if "/" in arg:
+        if revision is None:
+            raise SystemExit(
+                f"--dataset {arg!r} looks like an HF Hub repo but no revision is "
+                f"pinned. Either pass --revision <tag> or use hf://{arg}@<tag>."
+            )
+        return (arg, revision, False)
+
+    raise SystemExit(f"--dataset {arg!r} not recognized as local path or HF repo.")
 
 
 def _dispatch_dataset_command(args) -> int:
@@ -1654,9 +1691,13 @@ def _main_participant(argv: "list[str]") -> int:
             contest_data = None
             ds_meta: Dict[str, Any] = {}
             if dataset_path is not None:
+                from .dataset import load_dataset as _wb_load_dataset
                 from .scoring import make_contest_from_dataset
 
-                ds = load_dataset(dataset_path)
+                repo_or_path, rev, _is_local = _resolve_dataset_arg(
+                    dataset_path, revision=getattr(args, "revision", None)
+                )
+                ds = _wb_load_dataset(repo_or_path, revision=rev)
                 ds_meta = _wb_metadata(ds)
                 ds_n_mlps = len(ds)
 
