@@ -10,6 +10,7 @@ from .dataset import (
 from .dataset_io import (
     SCHEMA_VERSION,
     InvalidDatasetError,
+    merge_datasets,
 )
 from .domain import MLP
 from .generation import sample_mlp
@@ -26,6 +27,7 @@ __all__ = [
     "BudgetExhaustionWarning",
     "InvalidDatasetError",
     "MLP",
+    "merge_datasets",
     "SCHEMA_VERSION",
     "ScoringExhaustionWarning",
     "SetupContext",

@@ -13,6 +13,7 @@ helpers for reading/writing this layout.
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from importlib.resources import files
 from pathlib import Path
 from typing import Any, Dict
@@ -201,3 +202,145 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
             f"this is a partial dataset (mlp_range={mlp_range}, total_n_mlps={total}). "
             f"Run `whest dataset merge <partials> --output <dir>` first."
         )
+
+
+class MergeIncompatibleError(InvalidDatasetError):
+    """Raised when partials have incompatible bake parameters."""
+
+
+class MergeIncompleteError(InvalidDatasetError):
+    """Raised when partials don't cover [0, total_n_mlps) completely."""
+
+
+class MergeOverlapError(InvalidDatasetError):
+    """Raised when partial mlp_range values overlap."""
+
+
+class MergeCorruptError(InvalidDatasetError):
+    """Raised when a partial's row mlp_id values don't match its declared mlp_range."""
+
+
+_COMMON_FIELDS = ("seed", "n_samples", "width", "depth", "backend")
+
+
+def merge_datasets(
+    input_dirs: "list[Path | str]",
+    *,
+    output_dir: "Path | str",
+) -> Path:
+    """Concatenate partial bakes into a single canonical dataset directory.
+
+    Validates that all partials share compatible bake parameters and that
+    their mlp_range values cover [0, total_n_mlps) exactly once. Output
+    metadata strips per-partial fields and adds hardware_fingerprints and
+    merged_at_utc.
+
+    Bit-equivalent to a single-host bake with the same (seed, n_mlps, ...).
+
+    Raises:
+        MergeIncompatibleError: partials disagree on schema_version, seed,
+            n_samples, width, depth, backend, or total_n_mlps; or any input
+            is not a partial.
+        MergeIncompleteError: ranges don't cover [0, total_n_mlps) — gaps.
+        MergeOverlapError: ranges overlap.
+        MergeCorruptError: a partial's row mlp_ids don't match its declared
+            mlp_range.
+    """
+    from datasets import concatenate_datasets
+    from datasets import load_dataset as hf_load_dataset
+
+    output_dir = Path(output_dir)
+    if not input_dirs:
+        raise MergeIncompatibleError("merge_datasets requires at least one input directory")
+
+    partials = []
+    for d in input_dirs:
+        d = Path(d)
+        md = read_metadata(d)
+        validate_metadata(md, allow_partial=True)
+        if not md.get("is_partial"):
+            raise MergeIncompatibleError(
+                f"{d} is a complete (non-partial) dataset; merge_datasets only "
+                f"accepts partials (is_partial=true)."
+            )
+        # Determine the split name from the parquet file present in data/
+        data_dir = d / PARQUET_SUBDIR
+        parquet_files = list(data_dir.glob("*.parquet"))
+        if len(parquet_files) != 1:
+            raise MergeIncompatibleError(f"{d} has {len(parquet_files)} parquet files; expected 1")
+        split_name = parquet_files[0].name.split("-")[0]
+        ds = hf_load_dataset(str(d), split=split_name)
+        partials.append((d, md, ds, split_name))
+
+    # Validate all share the same common fields
+    first_md = partials[0][1]
+    for d, md, _, split_name in partials[1:]:
+        if split_name != partials[0][3]:
+            raise MergeIncompatibleError(
+                f"{d} has split {split_name!r}, expected {partials[0][3]!r}"
+            )
+        if md["schema_version"] != first_md["schema_version"]:
+            raise MergeIncompatibleError(
+                f"{d}: schema_version {md['schema_version']!r} != {first_md['schema_version']!r}"
+            )
+        for f in _COMMON_FIELDS:
+            if md.get(f) != first_md.get(f):
+                raise MergeIncompatibleError(f"{d}: {f}={md.get(f)!r} != {first_md.get(f)!r}")
+        if md["total_n_mlps"] != first_md["total_n_mlps"]:
+            raise MergeIncompatibleError(
+                f"{d}: total_n_mlps={md['total_n_mlps']} != {first_md['total_n_mlps']}"
+            )
+
+    total = first_md["total_n_mlps"]
+    partials.sort(key=lambda p: p[1]["mlp_range"][0])
+
+    # Check coverage of [0, total)
+    expected_start = 0
+    for d, md, ds, _ in partials:
+        start, end = md["mlp_range"]
+        if start < expected_start:
+            raise MergeOverlapError(
+                f"{d}: mlp_range starts at {start} but previous range ended at {expected_start}"
+            )
+        if start > expected_start:
+            raise MergeIncompleteError(f"gap: no partial covers MLPs [{expected_start}, {start})")
+        # Check internal mlp_id consistency
+        actual_ids = ds["mlp_id"]
+        expected_ids = list(range(start, end))
+        if actual_ids != expected_ids:
+            raise MergeCorruptError(
+                f"{d}: mlp_id values {actual_ids[:5]}... don't match declared range [{start}, {end})"
+            )
+        expected_start = end
+
+    if expected_start != total:
+        raise MergeIncompleteError(f"gap: no partial covers MLPs [{expected_start}, {total})")
+
+    # Concatenate in slice order
+    merged_ds = concatenate_datasets([p[2] for p in partials])
+
+    # Reconcile metadata
+    merged_md: Dict[str, Any] = {
+        k: v
+        for k, v in first_md.items()
+        if k not in ("is_partial", "mlp_range", "total_n_mlps", "hardware", "created_at_utc")
+    }
+    merged_md["n_mlps"] = total
+    merged_md["created_at_utc"] = min(p[1]["created_at_utc"] for p in partials)
+    merged_md["merged_at_utc"] = datetime.now(timezone.utc).isoformat()
+    merged_md["hardware_fingerprints"] = [
+        {
+            **p[1].get("hardware", {}),
+            "mlp_range": p[1]["mlp_range"],
+            **{k: v for k, v in p[1].items() if k.startswith("cuda_") or k.startswith("mps_")},
+        }
+        for p in partials
+    ]
+
+    write_dataset_dir(
+        merged_ds,
+        output_dir=output_dir,
+        split=partials[0][3],
+        metadata=merged_md,
+    )
+    return output_dir
