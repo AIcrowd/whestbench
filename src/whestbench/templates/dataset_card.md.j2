@@ -1,0 +1,95 @@
+# {{ metadata.get('pretty_name', 'WhestBench Dataset') }}
+
+Pre-baked MLPs and ground-truth statistics for the WhestBench competition.
+
+## Quick start
+
+```python
+from datasets import load_dataset
+
+ds = load_dataset(
+    "{{ repo_id }}",
+    revision="{{ revision }}",
+    split="{{ split }}",
+)
+print(ds)
+print(ds[0]["mlp_name"])
+```
+
+Or via the whestbench convenience wrapper (adds schema validation + metadata):
+
+```python
+import whestbench
+
+ds = whestbench.load_dataset("{{ repo_id }}", revision="{{ revision }}")
+for mlp in whestbench.iter_mlps(ds):
+    ...
+```
+
+## Dataset summary
+
+|  |  |
+|---|---|
+| Split | `{{ split }}` |
+| MLPs | {{ ds_size }} |
+| Width | {{ metadata.width }} |
+| Depth | {{ metadata.depth }} |
+| Samples per MLP | {{ '{:,}'.format(metadata.n_samples) }} |
+| Schema version | {{ metadata.schema_version }} |
+| Seed protocol | `{{ metadata.seed_protocol.name }}` v{{ metadata.seed_protocol.version }} |
+
+## Schema
+
+Each row is one MLP. Columns:
+
+| Column | Type | Description |
+|---|---|---|
+| `mlp_id` | `int32` | 0-based row index |
+| `mlp_name` | `string` | Deterministic faker-derived slug, e.g. `"danielle-johnson"` |
+| `mlp_seed` | `int64` | Per-MLP grader-supplied seed |
+| `weights` | `float32[depth][width][width]` | Layer weight matrices |
+| `all_layer_means` | `float32[depth][width]` | Ground-truth per-layer means |
+| `final_means` | `float32[width]` | Ground-truth final-layer means |
+| `avg_variance` | `float64` | Across-layer mean variance |
+| `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting from the bake |
+
+## Reproducibility
+
+This dataset was baked with:
+
+- **Backend:** `{{ metadata.backend }}`
+- **Root seed:** `{{ metadata.seed }}`
+- **Seed protocol:** `{{ metadata.seed_protocol.name }}` v{{ metadata.seed_protocol.version }}
+{% if metadata.backend == "torch" %}
+- **Device:** `{{ metadata.device }}`{% if metadata.cuda_device_name %} ({{ metadata.cuda_device_name }}){% endif %}
+- **Torch version:** `{{ metadata.torch_version }}`
+{% endif %}
+- **Created:** `{{ metadata.created_at_utc }}`
+
+To re-bake locally:
+
+```bash
+whest dataset bake \
+    --seed {{ metadata.seed }} \
+    --n-mlps {{ metadata.n_mlps }} \
+    --n-samples {{ metadata.n_samples }} \
+    --width {{ metadata.width }} \
+    --depth {{ metadata.depth }} \
+    --split {{ split }} \
+    --output ./my-bake{% if metadata.backend == "torch" %} \
+    --torch{% endif %}
+```
+
+Bit-exact reproducibility requires the same `whestbench` and `faker` versions; statistical reproducibility (means within ~3e-5) holds across hardware on the `torch` backend.
+
+{% if metadata.hardware_fingerprints %}
+## Provenance — assembled from {{ metadata.hardware_fingerprints|length }} parallel bakes
+
+{% for hw in metadata.hardware_fingerprints %}
+- `{{ hw.cuda_device_name or hw.cpu_brand or 'unknown' }}` — MLPs `[{{ hw.mlp_range[0] }}, {{ hw.mlp_range[1] }})`
+{% endfor %}
+{% endif %}
+
+## License
+
+CC-BY-4.0. Released for research and competition use.

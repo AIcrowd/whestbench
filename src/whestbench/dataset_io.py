@@ -13,10 +13,14 @@ helpers for reading/writing this layout.
 from __future__ import annotations
 
 import json
+from importlib.resources import files
 from pathlib import Path
 from typing import Any, Dict
 
+import yaml
 from datasets import Array2D, Array3D, Dataset, Features, Sequence, Value
+from huggingface_hub import DatasetCard, DatasetCardData
+from jinja2 import Template
 
 SCHEMA_VERSION = "3.0"
 SCHEMA_FORMAT = "hf-datasets-parquet"
@@ -65,6 +69,17 @@ def write_dataset_dir(
     return output_dir
 
 
+def _size_category(n: int) -> str:
+    """Map an MLP count to HF's standard size_categories label."""
+    if n < 1_000:
+        return "n<1K"
+    if n < 10_000:
+        return "1K<n<10K"
+    if n < 100_000:
+        return "10K<n<100K"
+    return "100K<n<1M"
+
+
 def generate_readme(
     metadata: Dict[str, Any],
     *,
@@ -73,8 +88,31 @@ def generate_readme(
     repo_id: "str | None" = None,
     revision: "str | None" = None,
 ) -> str:
-    """Placeholder; replaced by Jinja template in Task 5."""
-    return f"# {metadata.get('pretty_name', 'WhestBench Dataset')}\n\nSplit: `{split}`, MLPs: {ds_size}\n"
+    """Render the HF dataset card README.
+
+    Reads templates/dataset_card.md.j2, renders with the metadata + context,
+    wraps with HF-standard YAML front-matter via DatasetCard.
+    """
+    template_path = files("whestbench") / "templates" / "dataset_card.md.j2"
+    body = Template(template_path.read_text()).render(
+        metadata=metadata,
+        split=split,
+        ds_size=ds_size,
+        repo_id=repo_id or "<your-repo>",
+        revision=revision or "main",
+    )
+
+    card_data = DatasetCardData(
+        license="cc-by-4.0",
+        language=["code"],
+        tags=["whestbench", "alignment", "neural-network-statistics"],
+        task_categories=["other"],
+        pretty_name=metadata.get("pretty_name", "WhestBench Dataset"),
+        size_categories=[_size_category(ds_size)],
+    )
+    yaml_str = yaml.dump(card_data.to_dict(), default_flow_style=False, allow_unicode=True)
+    full_content = f"---\n{yaml_str}---\n\n{body}"
+    return str(DatasetCard(full_content))
 
 
 def make_features(*, width: int, depth: int) -> Features:
