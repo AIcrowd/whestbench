@@ -331,8 +331,24 @@ def test_readme_avg_variance_does_not_falsely_claim_to_normalize_scoring():
     """
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
     assert "diagnostic" in out.lower()
-    # The card must NOT claim avg_variance normalises the score.
+    # The card must NOT claim avg_variance normalises the score anywhere.
     assert "normaliser in budget-adjusted scoring" not in out
+    assert "normalise MSE across networks" not in out
+
+
+def test_readme_whats_in_this_dataset_states_monte_carlo_N():
+    """The "What's in this dataset" overview must surface the MC sample count N
+    used for generating the per-layer means, with the production scale called out."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    section_start = out.find("## What's in this dataset")
+    section_end = out.find("## Schema", section_start)
+    assert section_start != -1 and section_end != -1
+    section = out[section_start:section_end]
+    # Item 2 must spell out the metadata N value and reference production N=10⁹.
+    assert "N = 100,000" in section  # the fixture's n_samples
+    assert "N = 10⁹" in section
+    # Variance scalar reframed: no false normaliser claim, diagnostic-only.
+    assert "diagnostic provenance" in section
 
 
 def test_readme_schema_explains_mlp_seed_estimator_use():
