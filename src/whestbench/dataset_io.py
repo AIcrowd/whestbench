@@ -211,6 +211,15 @@ def read_metadata(dataset_dir: "Path | str") -> Dict[str, Any]:
 def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) -> None:
     """Validate that metadata is a whestbench schema 3.0 metadata dict.
 
+    Accepts both single-split shape (top-level `n_mlps`/`seed`) and multi-split
+    shape (top-level common fields + `splits:` dict with per-split `n_mlps`/`seed`).
+
+    The discriminator is the presence of the `splits` KEY in metadata, not its
+    value — `"splits": null` is invalid multi-split, not a fallback to single-split.
+
+    `allow_partial` is meaningful only for the single-split shape; multi-split
+    datasets cannot be partial.
+
     Raises InvalidDatasetError with a clear remediation message on any failure.
     """
     if "schema_version" not in metadata:
@@ -229,6 +238,53 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
             f"seed_protocol.version is {seed_proto.get('version')!r}, this "
             f"whestbench requires {SEED_PROTOCOL_VERSION!r}. Re-bake."
         )
+
+    if "splits" in metadata:
+        # Multi-split shape. Discriminator is key presence; value must still be
+        # a non-empty dict (catches null, [], {}).
+        splits = metadata["splits"]
+        if not isinstance(splits, dict) or not splits:
+            raise InvalidDatasetError(
+                "multi-split metadata requires 'splits' to be a non-empty dict "
+                "with at least one entry."
+            )
+        if metadata.get("is_partial"):
+            raise InvalidDatasetError(
+                "multi-split datasets cannot also be partial; got is_partial=true "
+                "alongside a 'splits:' dict. Partials are always single-split — "
+                "merge each split's partials first, then combine with "
+                "`whest dataset combine-splits`."
+            )
+        if "n_mlps" in metadata:
+            raise InvalidDatasetError(
+                "multi-split metadata must not have top-level 'n_mlps'; "
+                "per-split n_mlps live under splits[<name>]."
+            )
+        if "seed" in metadata:
+            raise InvalidDatasetError(
+                "multi-split metadata must not have top-level 'seed'; "
+                "per-split seed lives under splits[<name>]."
+            )
+        for split_name, info in splits.items():
+            try:
+                _validate_split_name(split_name)
+            except ValueError as exc:
+                raise InvalidDatasetError(f"invalid split name in splits dict: {exc}") from exc
+            if not isinstance(info, dict):
+                raise InvalidDatasetError(
+                    f"splits[{split_name!r}] must be a dict; got {type(info).__name__}."
+                )
+            if "n_mlps" not in info:
+                raise InvalidDatasetError(
+                    f"splits[{split_name!r}] is missing required field 'n_mlps'."
+                )
+            if "seed" not in info:
+                raise InvalidDatasetError(
+                    f"splits[{split_name!r}] is missing required field 'seed'."
+                )
+        return  # multi-split validated; skip the single-split partial check below
+
+    # Single-split shape.
     if metadata.get("is_partial") and not allow_partial:
         mlp_range = metadata.get("mlp_range")
         total = metadata.get("total_n_mlps")
