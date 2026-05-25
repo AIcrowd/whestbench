@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -48,7 +49,9 @@ def test_cpu_bake_bit_equivalent_old_vs_new(tmp_path: Path):
     from whestbench.dataset import create_dataset
     from whestbench.dataset_io import DEFAULT_SPLIT
 
-    common = dict(n_mlps=3, n_samples=100, width=4, depth=2, seed=42)
+    # dict[str, Any] so pyright doesn't widen the (homogeneous-int) literal
+    # type onto kwargs like `progress`, `split`, `mlp_range` when **-spread.
+    common: dict[str, Any] = dict(n_mlps=3, n_samples=100, width=4, depth=2, seed=42)
 
     old_npz = tmp_path / "old.npz"
     legacy_create_dataset_npz(output_path=old_npz, **common)
