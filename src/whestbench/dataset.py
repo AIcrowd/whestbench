@@ -7,7 +7,7 @@ import json
 import weakref
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 import flopscope as flops
 import flopscope.numpy as fnp
@@ -20,7 +20,10 @@ from .dataset_io import (
     SCHEMA_VERSION,
     SEED_PROTOCOL_NAME,
     SEED_PROTOCOL_VERSION,
+    InvalidDatasetError,
     make_features,
+    read_metadata,
+    validate_metadata,
     write_dataset_dir,
 )
 from .domain import MLP
@@ -191,3 +194,92 @@ def create_dataset(
 
     write_dataset_dir(ds, output_dir=output_path, split=split, metadata=metadata)
     return output_path
+
+
+def load_dataset(
+    path_or_repo: "Path | str",
+    *,
+    revision: Optional[str] = None,
+    split: str = DEFAULT_SPLIT,
+    token: Optional[str] = None,
+) -> Dataset:
+    """Load a whestbench dataset from a local directory or HF Hub repo.
+
+    Returns a datasets.Dataset (the canonical in-memory type).
+    Validates metadata.json's schema_version and seed_protocol; refuses to
+    load partial datasets (run `whest dataset merge` first).
+    Use whestbench.metadata(ds) to access the validated metadata dict.
+
+    Args:
+        path_or_repo: Local directory path, or HF Hub repo id (e.g.
+            "aicrowd/arc-whestbench-2026-eval").
+        revision: HF Hub git tag or commit SHA. Ignored for local paths.
+        split: Split name (default "public"; holdout repos use "holdout").
+        token: HF Hub auth token. Falls back to HF auth cache.
+
+    Raises:
+        InvalidDatasetError: if metadata.json is missing/malformed/partial,
+            or if path is a file (e.g. legacy .npz).
+    """
+    import datasets as hf_datasets
+
+    path_or_repo_str = str(path_or_repo)
+    local_candidate = Path(path_or_repo_str)
+    is_local = local_candidate.exists()
+
+    if is_local:
+        if local_candidate.is_file():
+            raise InvalidDatasetError(
+                f"{local_candidate} is a file, not a directory. Schema 3.0 "
+                f"datasets are directories; if this is a legacy .npz, re-bake "
+                f"with `whest dataset bake`."
+            )
+        md = read_metadata(local_candidate)
+        validate_metadata(md)
+        ds = hf_datasets.load_dataset(str(local_candidate), split=split)
+    else:
+        # HF Hub
+        from huggingface_hub import hf_hub_download
+
+        metadata_path = hf_hub_download(
+            repo_id=path_or_repo_str,
+            filename="metadata.json",
+            repo_type="dataset",
+            revision=revision,
+            token=token,
+        )
+        md = json.loads(Path(metadata_path).read_text())
+        validate_metadata(md)
+        ds = hf_datasets.load_dataset(
+            path_or_repo_str,
+            revision=revision,
+            split=split,
+            token=token,
+        )
+
+    _METADATA_BY_DS[ds] = md
+    return ds
+
+
+def metadata(ds: Dataset) -> Dict[str, Any]:
+    """Return the metadata.json dict for a Dataset loaded via whestbench.load_dataset.
+
+    Raises KeyError if `ds` was loaded directly via datasets.load_dataset(...).
+    """
+    if ds not in _METADATA_BY_DS:
+        raise KeyError(
+            "Dataset has no whestbench metadata attached. Load via "
+            "whestbench.load_dataset(...) instead of datasets.load_dataset(...)."
+        )
+    return _METADATA_BY_DS[ds]
+
+
+def iter_mlps(ds: Dataset) -> Iterator[MLP]:
+    """Iterate over a Dataset, yielding one MLP per row."""
+    for row in ds:
+        yield MLP.from_row(row)
+
+
+def mlp_at(ds: Dataset, index: int) -> MLP:
+    """Return the MLP at `index` in the Dataset."""
+    return MLP.from_row(ds[index])
