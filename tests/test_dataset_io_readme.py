@@ -286,6 +286,30 @@ def test_readme_schema_explains_all_layer_means_as_post_relu_mean():
     assert "Monte Carlo" in out
 
 
+def test_readme_states_the_monte_carlo_sample_count():
+    """The Monte Carlo N should be stated explicitly with the metadata value, plus
+    the production scale 10^9 should be called out."""
+    md = _flopscope_metadata()
+    md["n_samples"] = 1_000_000_000  # production-scale N
+    out = generate_readme(md, split="public", ds_size=4)
+    # Formatted N appears in both schema rows and the dedicated callout.
+    assert "1,000,000,000" in out
+    # Production scale callout names 10⁹.
+    assert "N = 10⁹" in out
+    # The "## How the ground truth was made" section opens with the N callout.
+    section_start = out.find("## How the ground truth was made")
+    next_section = out.find("##", section_start + 5)
+    section = out[section_start:next_section]
+    assert "Monte Carlo with N = 1,000,000,000" in section
+
+
+def test_readme_summary_table_bolds_n_samples():
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    assert "Monte Carlo samples per MLP (N)" in out
+    # n_samples in the fixture is 100,000 → table cell has it bolded
+    assert "**100,000**" in out
+
+
 def test_readme_schema_explains_weights_with_he_init():
     """The weights description should name the activation and initialization."""
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
@@ -297,6 +321,18 @@ def test_readme_schema_explains_weights_with_he_init():
 def test_readme_schema_explains_avg_variance_formula():
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
     assert "Var[h_{depth}" in out
+
+
+def test_readme_avg_variance_does_not_falsely_claim_to_normalize_scoring():
+    """avg_variance is computed but NOT consumed by the leaderboard score.
+
+    The previous card text incorrectly said it was used as an MSE normaliser;
+    the scoring formula is mse_final · max(0.1, C_m / B_m), no variance term.
+    """
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    assert "diagnostic" in out.lower()
+    # The card must NOT claim avg_variance normalises the score.
+    assert "normaliser in budget-adjusted scoring" not in out
 
 
 def test_readme_schema_explains_mlp_seed_estimator_use():
@@ -313,6 +349,37 @@ def test_readme_explains_estimator_task():
     assert "predict(mlp: MLP, budget: int)" in out
     assert "final_layer_mse" in out or "final-layer MSE" in out
     assert "flopscope" in out
+
+
+def test_readme_quantifies_per_mlp_budget_and_lambda():
+    """Per-paper §1.4-1.5: B_m = 6.8×10^10 FLOPs and λ ≈ 7.7×10^11 FLOPs/s."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    assert "6.8 × 10¹⁰" in out
+    assert "7.7 × 10¹¹" in out
+    # Effective-compute formula C_m = F_m + λ · R_m is spelled out
+    assert "F_m + λ" in out
+
+
+def test_readme_failure_path_disables_compute_discount():
+    """Failure (over-budget, NaN, wrong shape, guard trip) zeros prediction AND
+    forces the multiplier to 1.0 — no compute discount on failures."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    assert "1.0" in out  # forced multiplier
+    assert "no compute discount" in out.lower() or "no discount" in out.lower()
+
+
+def test_readme_no_separate_output_layer_in_weights_description():
+    """Paper §1.3: 'every weight matrix is followed by a ReLU; there is no
+    additional linear output layer'."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    assert "no separate linear output layer" in out
+
+
+def test_readme_marks_earlier_layers_as_diagnostic():
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    # The card explicitly tags the earlier-layer rows as diagnostic only
+    assert "diagnostic" in out.lower()
+    assert "all_layer_means[0..depth-2]" in out or "earlier-layer rows" in out
 
 
 def test_readme_explains_ground_truth_construction():
