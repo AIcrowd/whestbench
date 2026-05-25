@@ -248,3 +248,173 @@ def test_create_dataset_names_reproduce_at_same_seed(tmp_path) -> None:
     names_b = [m.name for m in iter_mlps(load_dataset(out_b))]
     assert names_a == names_b
     assert all(names_a)  # no empty strings
+
+
+# ---------------------------------------------------------------------------
+# Task 4: polymorphic load_dataset + metadata filter + iter_mlps/mlp_at guards
+# ---------------------------------------------------------------------------
+
+
+def _make_multi_split(tmp_path):
+    """Bake two tiny single-split datasets and combine them."""
+    from whestbench.dataset import create_dataset
+    from whestbench.dataset_io import combine_split_datasets
+
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    create_dataset(
+        n_mlps=2,
+        n_samples=100,
+        width=4,
+        depth=2,
+        seed=1,
+        output_path=pub,
+        split="public",
+    )
+    create_dataset(
+        n_mlps=3,
+        n_samples=100,
+        width=4,
+        depth=2,
+        seed=2,
+        output_path=hold,
+        split="holdout",
+    )
+    combined = tmp_path / "combined"
+    combine_split_datasets([pub, hold], output_dir=combined)
+    return combined
+
+
+def test_load_dataset_multi_split_returns_dataset_dict(tmp_path):
+    from datasets import DatasetDict
+
+    from whestbench.dataset import load_dataset
+
+    combined = _make_multi_split(tmp_path)
+    dsd = load_dataset(combined)
+    assert isinstance(dsd, DatasetDict)
+    assert set(dsd.keys()) == {"public", "holdout"}
+    assert len(dsd["public"]) == 2
+    assert len(dsd["holdout"]) == 3
+
+
+def test_load_dataset_multi_split_with_split_returns_dataset(tmp_path):
+    from datasets import Dataset
+
+    from whestbench.dataset import load_dataset
+
+    combined = _make_multi_split(tmp_path)
+    ds = load_dataset(combined, split="public")
+    assert isinstance(ds, Dataset)
+    assert len(ds) == 2
+    ds_h = load_dataset(combined, split="holdout")
+    assert isinstance(ds_h, Dataset)
+    assert len(ds_h) == 3
+
+
+def test_load_dataset_multi_split_unknown_split_raises(tmp_path):
+    import pytest
+
+    from whestbench.dataset import load_dataset
+    from whestbench.dataset_io import InvalidDatasetError
+
+    combined = _make_multi_split(tmp_path)
+    with pytest.raises(InvalidDatasetError, match=r"split.+not.+\{.*public.*\}"):
+        load_dataset(combined, split="does-not-exist")
+
+
+def test_load_dataset_single_split_returns_dataset_unchanged(tmp_path):
+    from datasets import Dataset
+
+    from whestbench.dataset import create_dataset, load_dataset
+
+    out = tmp_path / "single"
+    create_dataset(
+        n_mlps=2,
+        n_samples=100,
+        width=4,
+        depth=2,
+        seed=1,
+        output_path=out,
+    )
+    ds = load_dataset(out)
+    assert isinstance(ds, Dataset)
+    assert len(ds) == 2
+    ds2 = load_dataset(out, split="public")
+    assert isinstance(ds2, Dataset)
+    assert len(ds2) == 2
+
+
+def test_metadata_on_dataset_dict_returns_full_multi_split_dict(tmp_path):
+    from whestbench.dataset import load_dataset, metadata
+
+    combined = _make_multi_split(tmp_path)
+    dsd = load_dataset(combined)
+    md = metadata(dsd)
+    assert "splits" in md
+    assert set(md["splits"].keys()) == {"public", "holdout"}
+
+
+def test_metadata_on_dataset_dict_with_split_returns_merged_single_split_shape(tmp_path):
+    from whestbench.dataset import load_dataset, metadata
+
+    combined = _make_multi_split(tmp_path)
+    dsd = load_dataset(combined)
+    md = metadata(dsd, split="public")
+    assert "splits" not in md
+    assert md["n_mlps"] == 2
+    assert md["seed"] == 1
+
+
+def test_metadata_on_member_dataset_returns_merged_single_split_shape(tmp_path):
+    """Accessing dsd['public'] returns a Dataset with merged metadata attached."""
+    from whestbench.dataset import load_dataset, metadata
+
+    combined = _make_multi_split(tmp_path)
+    dsd = load_dataset(combined)
+    ds = dsd["public"]
+    md = metadata(ds)
+    assert "splits" not in md
+    assert md["n_mlps"] == 2
+    assert md["seed"] == 1
+
+
+def test_metadata_split_arg_rejected_on_dataset(tmp_path):
+    import pytest
+
+    from whestbench.dataset import load_dataset, metadata
+
+    combined = _make_multi_split(tmp_path)
+    ds = load_dataset(combined, split="public")
+    with pytest.raises(TypeError, match=r"split=.+Dataset"):
+        metadata(ds, split="public")
+
+
+def test_iter_mlps_raises_on_dataset_dict(tmp_path):
+    import pytest
+
+    from whestbench.dataset import iter_mlps, load_dataset
+
+    dsd = load_dataset(_make_multi_split(tmp_path))
+    with pytest.raises(TypeError, match=r"single Dataset"):
+        next(iter_mlps(dsd))
+
+
+def test_mlp_at_raises_on_dataset_dict(tmp_path):
+    import pytest
+
+    from whestbench.dataset import load_dataset, mlp_at
+
+    dsd = load_dataset(_make_multi_split(tmp_path))
+    with pytest.raises(TypeError, match=r"single Dataset"):
+        mlp_at(dsd, 0)
+
+
+def test_iter_mlps_works_on_member_dataset(tmp_path):
+    from whestbench.dataset import iter_mlps, load_dataset
+
+    dsd = load_dataset(_make_multi_split(tmp_path))
+    mlps = list(iter_mlps(dsd["public"]))
+    assert len(mlps) == 2
+    for m in mlps:
+        m.validate()
