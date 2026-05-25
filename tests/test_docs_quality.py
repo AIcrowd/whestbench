@@ -150,10 +150,10 @@ def test_legacy_guides_directory_is_removed():
 
 def test_participant_taxonomy_removed():
     repo_root = Path(__file__).resolve().parents[1]
+    # docs/how-to is intentionally allowed for schema-3.0 / HF how-to guides
     for gone in (
         "docs/getting-started",
         "docs/concepts",
-        "docs/how-to",
         "docs/troubleshooting",
         "examples/estimators",
     ):
