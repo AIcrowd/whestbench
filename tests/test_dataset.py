@@ -6,7 +6,7 @@ import pytest
 
 import whestbench.simulation as simulation
 from whestbench import hardware as hardware_mod
-from whestbench.dataset import create_dataset, load_dataset
+from whestbench.dataset import create_dataset, iter_mlps, load_dataset, metadata
 
 
 def test_create_and_load_roundtrip(tmp_path) -> None:
@@ -16,29 +16,29 @@ def test_create_and_load_roundtrip(tmp_path) -> None:
         width=8,
         depth=2,
         seed=42,
-        output_path=tmp_path / "test.npz",
+        output_path=tmp_path / "test",
     )
-    bundle = load_dataset(out)
-    assert bundle.n_mlps == 2
-    assert len(bundle.mlps) == 2
-    assert bundle.all_layer_means.shape == (2, 2, 8)
-    assert bundle.final_means.shape == (2, 8)
-    assert len(bundle.avg_variances) == 2
-    assert bundle.sampling_budget_breakdowns is not None
-    assert len(bundle.sampling_budget_breakdowns) == 2
-    assert bundle.sampling_budget_breakdowns[0]["flops_used"] > 0
-    assert (
-        "sampling.sample_layer_statistics" in bundle.sampling_budget_breakdowns[0]["by_namespace"]
-    )
-    # New assertions for backend tag + schema bump + #23 flop_budget removal:
-    assert bundle.metadata["schema_version"] == "2.4"
-    assert bundle.metadata["backend"] == "flopscope"
-    assert "flop_budget" not in bundle.metadata
-    for mlp in bundle.mlps:
+    ds = load_dataset(out)
+    assert len(ds) == 2
+    mlps = list(iter_mlps(ds))
+    assert len(mlps) == 2
+    assert np.array(ds["all_layer_means"]).shape == (2, 2, 8)
+    assert np.array(ds["final_means"]).shape == (2, 8)
+    assert len(ds["avg_variance"]) == 2
+    breakdowns = [json.loads(b) for b in ds["sampling_budget_breakdown"]]
+    assert len(breakdowns) == 2
+    assert breakdowns[0]["flops_used"] > 0
+    assert "sampling.sample_layer_statistics" in breakdowns[0]["by_namespace"]
+    # New assertions for backend tag + schema bump:
+    md = metadata(ds)
+    assert md["schema_version"] == "3.0"
+    assert md["backend"] == "flopscope"
+    assert "flop_budget" not in md
+    for mlp in mlps:
         mlp.validate()
         assert mlp.width == 8
         assert mlp.depth == 2
-        # 2.4 datasets carry a non-empty, slug-shaped name on every MLP.
+        # 3.0 datasets carry a non-empty, slug-shaped name on every MLP.
         assert mlp.name and "-" in mlp.name
 
 
@@ -49,7 +49,7 @@ def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
         width=8,
         depth=2,
         seed=1234,
-        output_path=tmp_path / "seeded_a.npz",
+        output_path=tmp_path / "seeded_a",
     )
     create_dataset(
         n_mlps=3,
@@ -57,29 +57,25 @@ def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
         width=8,
         depth=2,
         seed=1234,
-        output_path=tmp_path / "seeded_b.npz",
+        output_path=tmp_path / "seeded_b",
     )
 
-    bundle_a = load_dataset(tmp_path / "seeded_a.npz")
-    bundle_b = load_dataset(tmp_path / "seeded_b.npz")
+    ds_a = load_dataset(tmp_path / "seeded_a")
+    ds_b = load_dataset(tmp_path / "seeded_b")
 
-    assert bundle_a.n_mlps == bundle_b.n_mlps == 3
-    for idx in range(bundle_a.n_mlps):
-        mlp_a = bundle_a.mlps[idx]
-        mlp_b = bundle_b.mlps[idx]
+    assert len(ds_a) == len(ds_b) == 3
+    for idx in range(len(ds_a)):
+        mlp_a = list(iter_mlps(ds_a))[idx]
+        mlp_b = list(iter_mlps(ds_b))[idx]
         for wa, wb in zip(mlp_a.weights, mlp_b.weights):
             fnp.testing.assert_array_equal(wa, wb)
 
-        fnp.testing.assert_array_equal(bundle_a.all_layer_means[idx], bundle_b.all_layer_means[idx])
-        fnp.testing.assert_array_equal(bundle_a.final_means[idx], bundle_b.final_means[idx])
-    assert bundle_a.avg_variances == bundle_b.avg_variances
-    assert bundle_a.sampling_budget_breakdowns is not None
-    assert bundle_b.sampling_budget_breakdowns is not None
-    for breakdown_a, breakdown_b in zip(
-        bundle_a.sampling_budget_breakdowns,
-        bundle_b.sampling_budget_breakdowns,
-        strict=True,
-    ):
+        fnp.testing.assert_array_equal(ds_a[idx]["all_layer_means"], ds_b[idx]["all_layer_means"])
+        fnp.testing.assert_array_equal(ds_a[idx]["final_means"], ds_b[idx]["final_means"])
+    assert ds_a["avg_variance"] == ds_b["avg_variance"]
+    breakdowns_a = [json.loads(b) for b in ds_a["sampling_budget_breakdown"]]
+    breakdowns_b = [json.loads(b) for b in ds_b["sampling_budget_breakdown"]]
+    for breakdown_a, breakdown_b in zip(breakdowns_a, breakdowns_b, strict=True):
         assert breakdown_a["flops_used"] == breakdown_b["flops_used"]
         assert sorted(breakdown_a["by_namespace"]) == sorted(breakdown_b["by_namespace"])
         for namespace in breakdown_a["by_namespace"]:
@@ -101,7 +97,7 @@ def test_create_dataset_reports_sampling_chunk_progress(
         width=4,
         depth=1,
         seed=42,
-        output_path=tmp_path / "chunked_progress.npz",
+        output_path=tmp_path / "chunked_progress",
         progress=events.append,
     )
 
@@ -111,28 +107,20 @@ def test_create_dataset_reports_sampling_chunk_progress(
         {"phase": "generating", "completed": 1, "total": 2},
         {"phase": "generating", "completed": 2, "total": 2},
     ]
-    assert sampling[0] == {
-        "phase": "sampling",
-        "completed": 1,
-        "total": 6,
-        "mlp_index": 1,
-        "mlp_name": "kathleen-munoz",
-        "n_mlps": 2,
-        "mlp_completed": 1,
-        "mlp_total": 3,
-        "unit": "chunks",
-    }
-    assert sampling[-1] == {
-        "phase": "sampling",
-        "completed": 6,
-        "total": 6,
-        "mlp_index": 2,
-        "mlp_name": "sheri-nguyen",
-        "n_mlps": 2,
-        "mlp_completed": 3,
-        "mlp_total": 3,
-        "unit": "chunks",
-    }
+    assert sampling[0]["phase"] == "sampling"
+    assert sampling[0]["completed"] == 1
+    assert sampling[0]["total"] == 6
+    assert sampling[0]["mlp_index"] == 1
+    assert sampling[0]["mlp_name"] == "kathleen-munoz"
+    assert sampling[0]["n_mlps"] == 2
+    assert sampling[0]["unit"] == "chunks"
+    assert sampling[-1]["phase"] == "sampling"
+    assert sampling[-1]["completed"] == 6
+    assert sampling[-1]["total"] == 6
+    assert sampling[-1]["mlp_index"] == 2
+    assert sampling[-1]["mlp_name"] == "sheri-nguyen"
+    assert sampling[-1]["n_mlps"] == 2
+    assert sampling[-1]["unit"] == "chunks"
 
 
 def test_create_dataset_skips_hardware_fallback_probes_via_env(tmp_path, monkeypatch) -> None:
@@ -154,52 +142,63 @@ def test_create_dataset_skips_hardware_fallback_probes_via_env(tmp_path, monkeyp
         width=4,
         depth=2,
         seed=7,
-        output_path=tmp_path / "skip_fallbacks.npz",
+        output_path=tmp_path / "skip_fallbacks",
     )
 
-    bundle = load_dataset(out)
+    ds = load_dataset(out)
+    md = metadata(ds)
 
-    assert bundle.metadata["hardware"]["hostname"]
-    assert bundle.metadata["hardware"]["cpu_count_logical"] > 0
-    assert bundle.metadata["hardware"]["cpu_count_physical"] is None
-    assert bundle.metadata["hardware"]["ram_total_bytes"] is None
+    assert md["hardware"]["hostname"]
+    assert md["hardware"]["cpu_count_logical"] > 0
+    assert md["hardware"]["cpu_count_physical"] is None
+    assert md["hardware"]["ram_total_bytes"] is None
 
 
-def test_load_dataset_accepts_older_files_without_sampling_breakdowns(tmp_path) -> None:
-    path = tmp_path / "legacy.npz"
-    rng = np.random.default_rng(0)
-    weights = rng.standard_normal((2, 2, 4, 4)).astype(np.float32)
-    all_layer_means = rng.standard_normal((2, 2, 4)).astype(np.float32)
-    final_means = rng.standard_normal((2, 4)).astype(np.float32)
-    avg_variances = np.ones(2, dtype=np.float64)
-    metadata = {
-        "schema_version": "2.1",
-        "created_at_utc": "2026-04-19T00:00:00+00:00",
-        "seed": 0,
-        "n_mlps": 2,
-        "n_samples": 16,
-        "width": 4,
-        "depth": 2,
-        "flop_budget": 1000,
-        "hardware": {},
-    }
-    np.savez(
-        path,
-        metadata=np.array(json.dumps(metadata)),
-        weights=weights,
-        all_layer_means=all_layer_means,
-        final_means=final_means,
-        avg_variances=avg_variances,
+def test_load_dataset_rejects_file_path(tmp_path) -> None:
+    """load_dataset must raise InvalidDatasetError when given a file, not a directory."""
+    from whestbench.dataset_io import InvalidDatasetError
+
+    fake_file = tmp_path / "legacy.npz"
+    fake_file.write_bytes(b"fake")
+
+    with pytest.raises(InvalidDatasetError, match="file"):
+        load_dataset(fake_file)
+
+
+def test_load_dataset_rejects_wrong_schema_version(tmp_path) -> None:
+    """load_dataset must raise InvalidDatasetError for wrong schema_version."""
+    import json
+
+    from whestbench.dataset_io import InvalidDatasetError
+
+    dataset_dir = tmp_path / "wrong_schema"
+    dataset_dir.mkdir()
+    (dataset_dir / "metadata.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "2.4",
+                "seed_protocol": {
+                    "name": "whestbench_seedsequence_hierarchy",
+                    "version": "2.0",
+                    "seeded": False,
+                },
+                "created_at_utc": "2026-01-01T00:00:00+00:00",
+                "seed": 0,
+                "n_mlps": 1,
+                "n_samples": 1,
+                "width": 4,
+                "depth": 2,
+                "hardware": {},
+            }
+        )
     )
 
-    bundle = load_dataset(path)
-
-    assert bundle.n_mlps == 2
-    assert bundle.sampling_budget_breakdowns is None
+    with pytest.raises(InvalidDatasetError, match="schema_version"):
+        load_dataset(dataset_dir)
 
 
 # ---------------------------------------------------------------------------
-# 2.4 schema: per-MLP human-readable names
+# 3.0 schema: per-MLP human-readable names
 # ---------------------------------------------------------------------------
 
 
@@ -213,14 +212,15 @@ def test_create_dataset_persists_mlp_names_matching_seed_assignment(tmp_path) ->
         width=4,
         depth=2,
         seed=2024,
-        output_path=tmp_path / "named.npz",
+        output_path=tmp_path / "named",
     )
-    bundle = load_dataset(out)
+    ds = load_dataset(out)
+    mlps = list(iter_mlps(ds))
 
-    expected = assign_unique_names([m.seed for m in bundle.mlps])
-    assert [m.name for m in bundle.mlps] == expected
+    expected = assign_unique_names([m.seed for m in mlps])
+    assert [m.name for m in mlps] == expected
     # And every name is slug-shaped.
-    for m in bundle.mlps:
+    for m in mlps:
         assert m.name
         assert m.name.islower()
         assert "-" in m.name
@@ -234,7 +234,7 @@ def test_create_dataset_names_reproduce_at_same_seed(tmp_path) -> None:
         width=4,
         depth=2,
         seed=7777,
-        output_path=tmp_path / "a.npz",
+        output_path=tmp_path / "a",
     )
     out_b = create_dataset(
         n_mlps=4,
@@ -242,59 +242,9 @@ def test_create_dataset_names_reproduce_at_same_seed(tmp_path) -> None:
         width=4,
         depth=2,
         seed=7777,
-        output_path=tmp_path / "b.npz",
+        output_path=tmp_path / "b",
     )
-    names_a = [m.name for m in load_dataset(out_a).mlps]
-    names_b = [m.name for m in load_dataset(out_b).mlps]
+    names_a = [m.name for m in iter_mlps(load_dataset(out_a))]
+    names_b = [m.name for m in iter_mlps(load_dataset(out_b))]
     assert names_a == names_b
     assert all(names_a)  # no empty strings
-
-
-def test_load_legacy_2_3_dataset_synthesizes_names_from_seeds(tmp_path) -> None:
-    """Loading a 2.3 .npz without `mlp_names` synthesizes them from `mlp_seeds`.
-
-    The synthesized names match what a fresh 2.4 bake would produce at the same
-    per-MLP seeds — i.e. there is no separate "placeholder" fallback. This
-    preserves the invariant that name is a pure function of seed.
-    """
-    from whestbench.naming import assign_unique_names
-
-    path = tmp_path / "legacy_2_3.npz"
-    rng = np.random.default_rng(0)
-    weights = rng.standard_normal((3, 2, 4, 4)).astype(np.float32)
-    all_layer_means = rng.standard_normal((3, 2, 4)).astype(np.float32)
-    final_means = rng.standard_normal((3, 4)).astype(np.float32)
-    avg_variances = np.ones(3, dtype=np.float64)
-    mlp_seeds = np.array([1001, 1002, 1003], dtype=np.int64)
-    metadata = {
-        "schema_version": "2.3",
-        "backend": "flopscope",
-        "seed_protocol": {
-            "name": "whestbench_seedsequence_hierarchy",
-            "version": "2.0",
-            "seeded": True,
-        },
-        "created_at_utc": "2026-04-19T00:00:00+00:00",
-        "seed": 0,
-        "n_mlps": 3,
-        "n_samples": 16,
-        "width": 4,
-        "depth": 2,
-        "hardware": {},
-    }
-    np.savez(
-        path,
-        metadata=np.array(json.dumps(metadata)),
-        weights=weights,
-        all_layer_means=all_layer_means,
-        final_means=final_means,
-        avg_variances=avg_variances,
-        sampling_budget_breakdowns=np.array(json.dumps([])),
-        mlp_seeds=mlp_seeds,
-    )
-
-    bundle = load_dataset(path)
-
-    expected = assign_unique_names(mlp_seeds.tolist())
-    assert [m.name for m in bundle.mlps] == expected
-    assert all(m.name for m in bundle.mlps)

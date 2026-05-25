@@ -480,18 +480,53 @@ def test_run_flop_budget_overrides_stale_dataset_metadata(
     `whest run --flop-budget Y --dataset X` must always use Y for the
     ContestSpec, regardless of any flop_budget stored in X's metadata.
     """
-    from whestbench.dataset import (
+    from datasets import Dataset
+
+    from whestbench.dataset_io import (
+        DEFAULT_SPLIT,
+        SCHEMA_FORMAT,
         SCHEMA_VERSION,
         SEED_PROTOCOL_NAME,
         SEED_PROTOCOL_VERSION,
+        make_features,
+        write_dataset_dir,
     )
 
     STALE_BUDGET = 999
     USER_BUDGET = 12_345
 
     width, depth, n_mlps = 4, 2, 1
+    rng = np.random.default_rng(0)
+    ds = Dataset.from_dict(
+        {
+            "mlp_id": [0],
+            "mlp_name": ["mlp-0"],
+            "mlp_seed": [0],
+            "weights": rng.standard_normal((n_mlps, depth, width, width)).astype(np.float32),
+            "all_layer_means": np.zeros((n_mlps, depth, width), dtype=np.float32),
+            "final_means": np.zeros((n_mlps, width), dtype=np.float32),
+            "avg_variance": [1.0],
+            "sampling_budget_breakdown": [
+                json.dumps(
+                    {
+                        "flop_budget": 1_000_000_000_000_000,
+                        "flops_used": 0,
+                        "flops_remaining": 1_000_000_000_000_000,
+                        "wall_time_s": 0.0,
+                        "flopscope_backend_time_s": 0.0,
+                        "flopscope_overhead_time_s": 0.0,
+                        "residual_wall_time_s": 0.0,
+                        "by_namespace": {},
+                    }
+                )
+            ],
+        },
+        features=make_features(width=width, depth=depth),
+    )
     fake_metadata = {
         "schema_version": SCHEMA_VERSION,
+        "format": SCHEMA_FORMAT,
+        "backend": "flopscope",
         "seed_protocol": {
             "name": SEED_PROTOCOL_NAME,
             "version": SEED_PROTOCOL_VERSION,
@@ -506,18 +541,8 @@ def test_run_flop_budget_overrides_stale_dataset_metadata(
         "flop_budget": STALE_BUDGET,  # the stale field whose value must NOT win
         "hardware": {},
     }
-    rng = np.random.default_rng(0)
-    dataset_path = tmp_path / "stale.npz"
-    np.savez(
-        dataset_path,
-        metadata=np.array(json.dumps(fake_metadata)),
-        weights=rng.standard_normal((n_mlps, depth, width, width)).astype(np.float32),
-        all_layer_means=np.zeros((n_mlps, depth, width), dtype=np.float32),
-        final_means=np.zeros((n_mlps, width), dtype=np.float32),
-        avg_variances=np.ones(n_mlps, dtype=np.float64),
-        sampling_budget_breakdowns=np.array(json.dumps([])),
-        mlp_seeds=np.array([0], dtype=np.int64),
-    )
+    dataset_path = tmp_path / "stale"
+    write_dataset_dir(ds, output_dir=dataset_path, split=DEFAULT_SPLIT, metadata=fake_metadata)
 
     observed: dict[str, Any] = {}
 

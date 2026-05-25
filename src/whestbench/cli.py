@@ -43,7 +43,9 @@ try:
 except Exception:  # pragma: no cover - optional at runtime
     rich_tqdm = None
 
-from .dataset import create_dataset, dataset_file_hash, load_dataset
+from .dataset import create_dataset, load_dataset
+from .dataset import metadata as _wb_metadata
+from .dataset_io import metadata_file_hash as _metadata_file_hash
 from .estimators import CombinedEstimator
 from .generation import sample_mlp
 from .hardware import collect_hardware_fingerprint
@@ -1649,23 +1651,23 @@ def _main_participant(argv: "list[str]") -> int:
             # --- Dataset loading & n_mlps resolution ---
             dataset_path: Optional[str] = getattr(args, "dataset", None)
             contest_data = None
-            bundle = None
             ds_meta: Dict[str, Any] = {}
             if dataset_path is not None:
-                from .scoring import make_contest_from_bundle
+                from .scoring import make_contest_from_dataset
 
-                bundle = load_dataset(dataset_path)
-                ds_meta = bundle.metadata
+                ds = load_dataset(dataset_path)
+                ds_meta = _wb_metadata(ds)
+                ds_n_mlps = len(ds)
 
                 if user_n_mlps is None:
-                    n_mlps = bundle.n_mlps
-                elif user_n_mlps > bundle.n_mlps:
+                    n_mlps = ds_n_mlps
+                elif user_n_mlps > ds_n_mlps:
                     print(
                         f"Warning: --n-mlps={user_n_mlps} exceeds dataset size "
-                        f"({bundle.n_mlps}); using {bundle.n_mlps}.",
+                        f"({ds_n_mlps}); using {ds_n_mlps}.",
                         file=sys.stderr,
                     )
-                    n_mlps = bundle.n_mlps
+                    n_mlps = ds_n_mlps
                 else:
                     n_mlps = user_n_mlps
 
@@ -1679,7 +1681,7 @@ def _main_participant(argv: "list[str]") -> int:
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
                     residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
                 )
-                contest_data = make_contest_from_bundle(contest_spec, bundle, n_mlps)
+                contest_data = make_contest_from_dataset(contest_spec, ds, n_mlps)
             else:
                 n_mlps = user_n_mlps if user_n_mlps is not None else 10
                 contest_spec = ContestSpec(
@@ -1713,7 +1715,7 @@ def _main_participant(argv: "list[str]") -> int:
                 if dataset_path is not None:
                     report.setdefault("run_config", {})["dataset"] = {
                         "path": str(Path(dataset_path).resolve()),
-                        "sha256": dataset_file_hash(dataset_path),
+                        "sha256": _metadata_file_hash(dataset_path),
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
@@ -1786,7 +1788,7 @@ def _main_participant(argv: "list[str]") -> int:
                 if dataset_path is not None:
                     report.setdefault("run_config", {})["dataset"] = {
                         "path": str(Path(dataset_path).resolve()),
-                        "sha256": dataset_file_hash(dataset_path),
+                        "sha256": _metadata_file_hash(dataset_path),
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }

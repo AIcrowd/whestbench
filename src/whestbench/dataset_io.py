@@ -138,6 +138,22 @@ class InvalidDatasetError(ValueError):
     """Raised when a dataset directory has missing/incompatible metadata."""
 
 
+def metadata_file_hash(path: "Path | str") -> str:
+    """Return the SHA-256 hex digest of metadata.json in the dataset directory.
+
+    Used for logging/reporting to identify a specific bake without loading the
+    full dataset. Deterministic given the same dataset directory.
+    """
+    import hashlib
+
+    metadata_path = Path(path) / METADATA_FILE
+    h = hashlib.sha256()
+    with metadata_path.open("rb") as f:
+        while chunk := f.read(8192):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def read_metadata(dataset_dir: "Path | str") -> Dict[str, Any]:
     """Read and parse metadata.json from a dataset directory.
 
