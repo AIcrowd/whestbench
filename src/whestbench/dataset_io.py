@@ -28,6 +28,8 @@ SCHEMA_VERSION = "3.0"
 SCHEMA_FORMAT = "hf-datasets-parquet"
 SEED_PROTOCOL_NAME = "whestbench_seedsequence_hierarchy"
 SEED_PROTOCOL_VERSION = "2.0"
+SEED_PROTOCOL_NAME_V3 = "whestbench_explicit_per_mlp_seeds"
+SEED_PROTOCOL_VERSION_V3 = "3.0"
 
 DEFAULT_SPLIT = "public"
 HOLDOUT_SPLIT = "holdout"
@@ -58,6 +60,42 @@ def _validate_split_name(name: str) -> str:
             f"hyphens between alphanumeric runs)."
         )
     return name
+
+
+def _validate_mlp_seeds(seeds: "list[int]", n_mlps: int) -> None:
+    """Validate that mlp_seeds is a list of n_mlps distinct non-negative int63s.
+
+    Each seed must satisfy ``0 <= seed < 2**63`` (positive int64 range, so the
+    seeds fit in the parquet ``mlp_seed: int64`` column without wraparound).
+    Booleans are rejected even though they are technically int subtypes.
+    Duplicate seeds are rejected: two MLPs sharing a seed would be bit-identical,
+    almost certainly a user error.
+
+    Raises:
+        ValueError: on any rule violation, with a message identifying the
+            offending index.
+    """
+    if not isinstance(seeds, list):
+        raise ValueError(f"mlp_seeds must be a list; got {type(seeds).__name__}.")
+    if len(seeds) != n_mlps:
+        raise ValueError(f"mlp_seeds has length {len(seeds)}, expected n_mlps={n_mlps}.")
+    seen: dict[int, int] = {}
+    for i, s in enumerate(seeds):
+        # bool is a subclass of int; check explicitly.
+        if isinstance(s, bool) or not isinstance(s, int):
+            raise ValueError(f"mlp_seeds[{i}] must be an int; got {type(s).__name__}: {s!r}.")
+        if s < 0 or s >= (1 << 63):
+            raise ValueError(
+                f"mlp_seeds[{i}] = {s} is out of range [0, 2**63). "
+                f"Seeds must fit in an int64 column."
+            )
+        if s in seen:
+            raise ValueError(
+                f"mlp_seeds contains duplicate at indices [{seen[s]}, {i}]: "
+                f"both = {s}. Two MLPs with the same seed are bit-identical; "
+                f"likely a user error."
+            )
+        seen[s] = i
 
 
 def write_dataset_dir(
