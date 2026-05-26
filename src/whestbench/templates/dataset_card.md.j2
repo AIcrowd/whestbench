@@ -134,7 +134,7 @@ Each row is one MLP. Eight columns:
 | `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over **N = {{ '{:,}'.format(metadata.n_samples) }}** independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`. Computed by direct Monte Carlo. **This is what your estimator predicts.** |
 | `final_means` | `float32[width]` | The last row of `all_layer_means` — i.e. `E[h_{depth}(x)_j]` for each output neuron `j`, again over N = {{ '{:,}'.format(metadata.n_samples) }} samples. Materialised as its own column because the **primary scoring metric** (`final_layer_mse`) only looks at this row. |
 | `avg_variance` | `float64` | Per-MLP mean of the per-neuron output variance at the final layer: `(1/width) Σ_j Var[h_{depth}(x)_j]`. A single scalar per MLP, computed alongside the means over the same Monte Carlo draws. Shipped as **diagnostic provenance** — useful for normalising your own MSE locally or as input to variance-aware estimators. **Not** consumed by the active scoring formula (the score is `mse_final · max(0.1, C_m / B_m)`). |
-| `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting for the bake that produced the ground truth for **this** row — useful as provenance. **Not** related to the estimator's FLOP budget at evaluation time. Decode with `json.loads(...)`. |
+| `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting for the bake that produced the ground truth for **this** row — useful as provenance. **Not** related to the estimator's FLOP budget at evaluation time. Decode with `json.loads(...)` to get a dict with keys: `flop_budget`, `flops_used`, `flops_remaining`, `wall_time_s`, `flopscope_backend_time_s`, `flopscope_overhead_time_s`, `residual_wall_time_s`, and `by_namespace` (per-namespace nested breakdown: each namespace key maps to its own `{flops_used, calls, flopscope_backend_time_s, flopscope_overhead_time_s, operations}`). |
 
 {% if not splits %}
 ## Your task as a participant
@@ -170,7 +170,7 @@ See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked 
 
 **Estimator.** Sums of post-ReLU activations are accumulated in `float64` for numerical stability, then divided by N at the end and downcast to `float32`. The final-layer variance scalar (`avg_variance`) comes from `E[h²] - (E[h])²` over the same N draws.
 
-**Compute.** Sampling is chunked so memory stays bounded (`~4MB` per chunk on the flopscope CPU backend; tunable on the torch GPU backend via `chunk_size`). Under matched determinism config (`torch.use_deterministic_algorithms=True`, `cudnn.deterministic=True`, `CUBLAS_WORKSPACE_CONFIG=:4096:8`) on a fixed `torch` version and GPU architecture, the bake is **bit-exact**: `weights`, `all_layer_means`, and `final_means` reproduce byte-for-byte; `avg_variance` agrees to `1e-12` relative tolerance (1 float64 ULP from the `(sum_sq/n − mean²)` step).{% if metadata.cross_driver_verified %} Verified empirically across the CUDA driver versions present in this dataset.{% else %} Cross-CUDA-driver bit-equivalence is not separately verified for this release; within a single driver version statistical agreement at `~3×10⁻⁵` per neuron at N=10⁹ holds.{% endif %} Across backends (flopscope CPU ↔ torch GPU), agreement is statistical: `~3×10⁻⁵` per neuron at N=10⁹.
+**Compute.** Sampling is chunked so memory stays bounded (`~4MB` per chunk on the flopscope CPU backend; tunable on the torch GPU backend via `chunk_size`). On the torch backend, under matched determinism config (`torch.use_deterministic_algorithms=True`, `cudnn.deterministic=True`, `CUBLAS_WORKSPACE_CONFIG=:4096:8`) on a fixed `torch` version and GPU architecture, the bake is **bit-exact**: `weights`, `all_layer_means`, and `final_means` reproduce byte-for-byte; `avg_variance` agrees to `1e-12` relative tolerance (1 float64 ULP from the `(sum_sq/n − mean²)` step). The two backends (flopscope CPU and torch GPU) produce statistically equivalent output: means agree within `~3×10⁻⁵` at N=10⁹.
 
 ## Dataset summary
 
@@ -179,6 +179,9 @@ See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked 
 {% if splits -%}
 | Splits | {{ splits.keys()|list|join(", ") }} |
 | MLPs total | {{ ds_size }} |
+{%- for name, info in splits.items() %}
+| `{{ name }}` split MLPs | {{ '{:,}'.format(info.n_mlps) }} |
+{%- endfor %}
 {%- else -%}
 | Split | `{{ split }}` |
 | MLPs | {{ ds_size }} |
@@ -283,7 +286,7 @@ whest dataset bake \
 (Note: new bakes use seed_protocol 3.0 and `--mlp-seeds FILE` instead of `--seed N`.)
 {% endif %}
 
-Bit-exact reproducibility on `weights`, `all_layer_means`, `final_means` and ≤1-ULP agreement on `avg_variance` require the same `whestbench` and `faker` versions plus the determinism env recorded in `metadata.bake_config`. Under those pins this dataset reproduces bit-for-bit on its native backend. Cross-hardware / cross-backend agreement is statistical (`~3×10⁻⁵` per neuron at N=10⁹).
+The pins required for the bit-exactness guarantee (see *Compute* above) are recorded in `metadata.bake_config` alongside the `whestbench` and `faker` versions.
 
 ## Provenance
 
