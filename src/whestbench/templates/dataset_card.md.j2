@@ -22,10 +22,11 @@
 </p>
 
 WhestBench is a benchmark for *white-box activation estimation*: given the weights of a small ReLU multi-layer perceptron (MLP) and a strict floating-point-operation (FLOP) budget, predict the average post-activation value of every neuron when the network is fed standard Gaussian inputs.
+{%- set companion = companion_repo or ("aicrowd/arc-whestbench-2026-evals" if (not splits and split == "public") else "aicrowd/arc-whestbench-2026") %}
 {% if not splits and split == "public" %}
-**This is the Public Dataset Release for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics, free to download and use while you develop your estimator. The actual contest evaluation runs against the private `public` and `holdout` splits of [`aicrowd/arc-whestbench-2026-evals`](https://huggingface.co/datasets/aicrowd/arc-whestbench-2026-evals), released per round under the same schema.
+**This is the Public Dataset Release for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics, free to download and use while you develop your estimator. The actual contest evaluation runs against the private `public` and `holdout` splits of [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}), released per round under the same schema.
 {%- elif not splits and split == "holdout" %}
-**This is the private Holdout split for WhestBench 2026** — consumed by the evaluator at grading time. It is not intended for participant download; the public release at [`aicrowd/arc-whestbench-2026`](https://huggingface.co/datasets/aicrowd/arc-whestbench-2026) is what you'll develop against.
+**This is the private Holdout split for WhestBench 2026** — consumed by the evaluator at grading time. It is not intended for participant download; the public release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}) is what you'll develop against.
 {%- elif not splits %}
 **This is the `{{ split }}` dataset for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics.
 {%- endif %}
@@ -44,7 +45,7 @@ WhestBench is a benchmark for *white-box activation estimation*: given the weigh
 {% endfor -%}
 {%- endif %}
 
-This dataset is intentionally not part of the Public Release at [`aicrowd/arc-whestbench-2026`](https://huggingface.co/datasets/aicrowd/arc-whestbench-2026); develop your estimator against the public release first.
+This dataset is intentionally not part of the Public Release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}); develop your estimator against the public release first.
 {%- endif %}
 
 ## Quick start
@@ -169,7 +170,7 @@ See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked 
 
 **Estimator.** Sums of post-ReLU activations are accumulated in `float64` for numerical stability, then divided by N at the end and downcast to `float32`. The final-layer variance scalar (`avg_variance`) comes from `E[h²] - (E[h])²` over the same N draws.
 
-**Compute.** Sampling is chunked so memory stays bounded (`~4MB` per chunk on the flopscope CPU backend; tunable on the torch GPU backend via `chunk_size`). The two backends produce *statistically* equivalent output (means agree within `~3×10⁻⁵` at N = 10⁹); the flopscope path is additionally bit-exact run-to-run at the same seed.
+**Compute.** Sampling is chunked so memory stays bounded (`~4MB` per chunk on the flopscope CPU backend; tunable on the torch GPU backend via `chunk_size`). Under matched determinism config (`torch.use_deterministic_algorithms=True`, `cudnn.deterministic=True`, `CUBLAS_WORKSPACE_CONFIG=:4096:8`) on a fixed `torch` version and GPU architecture, the bake is **bit-exact**: `weights`, `all_layer_means`, and `final_means` reproduce byte-for-byte; `avg_variance` agrees to `1e-12` relative tolerance (1 float64 ULP from the `(sum_sq/n − mean²)` step).{% if metadata.cross_driver_verified %} Verified empirically across the CUDA driver versions present in this dataset.{% else %} Cross-CUDA-driver bit-equivalence is not separately verified for this release; within a single driver version statistical agreement at `~3×10⁻⁵` per neuron at N=10⁹ holds.{% endif %} Across backends (flopscope CPU ↔ torch GPU), agreement is statistical: `~3×10⁻⁵` per neuron at N=10⁹.
 
 ## Dataset summary
 
@@ -282,18 +283,37 @@ whest dataset bake \
 (Note: new bakes use seed_protocol 3.0 and `--mlp-seeds FILE` instead of `--seed N`.)
 {% endif %}
 
-Bit-exact reproducibility requires the same `whestbench` and `faker` versions pinned at bake time; statistical reproducibility (means within `~3e-5`) holds across hardware on the `torch` backend.
+Bit-exact reproducibility on `weights`, `all_layer_means`, `final_means` and ≤1-ULP agreement on `avg_variance` require the same `whestbench` and `faker` versions plus the determinism env recorded in `metadata.bake_config`. Under those pins this dataset reproduces bit-for-bit on its native backend. Cross-hardware / cross-backend agreement is statistical (`~3×10⁻⁵` per neuron at N=10⁹).
 
 ## Provenance
 
-{% if metadata.hardware_fingerprints %}
-Assembled from **{{ metadata.hardware_fingerprints|length }}** parallel bakes merged via `whest dataset merge`:
+{% if metadata.hardware_fingerprints -%}
+Assembled from **{{ metadata.partials_count or metadata.hardware_fingerprints|sum(attribute='mlp_count') }}** single-MLP partial bakes merged via `whest dataset merge` across a fleet of nodes on the AIcrowd cluster, in **{{ metadata.hardware_fingerprints|length }}** distinct hardware configuration{{ 's' if metadata.hardware_fingerprints|length > 1 else '' }}.
 {% for hw in metadata.hardware_fingerprints %}
-- `{{ hw.cuda_device_name or hw.cpu_brand or 'unknown host' }}` — MLPs `[{{ hw.mlp_range[0] }}, {{ hw.mlp_range[1] }})`
+**Configuration {{ loop.index }}** — {{ hw.mlp_count }} partials
+- **GPU**: {{ hw.cuda_device_name }}{% if hw.cuda_device_capability %} (compute capability {{ hw.cuda_device_capability[0] }}.{{ hw.cuda_device_capability[1] }}){% endif %}
+- **CPU**: {{ hw.cpu_brand }}{% if hw.cpu_count_logical %} ({{ hw.cpu_count_logical }} logical cores){% endif %}
+{%- if hw.ram_total_bytes %}
+- **RAM**: {{ '{:.0f}'.format(hw.ram_total_bytes / 1e9) }} GB
+{%- endif %}
+{%- if hw.os and hw.os_release %}
+- **OS**: {{ hw.os }} {{ hw.os_release }}
+{%- endif %}
+- **Python**: {{ hw.python_version }} · **PyTorch**: {{ hw.torch_version }}{% if hw.device %} (device={{ hw.device }}){% endif %} · **NumPy**: {{ hw.numpy_version }}
+- **whestbench**: {{ hw.whestbench_version }} · **flopscope**: {{ hw.flopscope_version }}
+{%- if hw.bake_config %}
+- **Determinism**: `torch.use_deterministic_algorithms={{ hw.bake_config.torch_use_deterministic_algorithms }}` · `cudnn.deterministic={{ hw.bake_config.cudnn_deterministic }}` · `CUBLAS_WORKSPACE_CONFIG={{ hw.bake_config.cublas_workspace_config }}`
+{%- endif %}
+{%- if hw.drivers_seen %}
+- **CUDA drivers observed**: {{ hw.drivers_seen|join(', ') }}
+{%- endif %}
+{%- if hw.kernels_seen %}
+- **Linux kernels observed**: {{ hw.kernels_seen|join(', ') }}
+{%- endif %}
 {% endfor %}
-{% else %}
+{%- else %}
 Single-host bake on `{{ metadata.hardware.cuda_device_name or metadata.hardware.cpu_brand or metadata.cuda_device_name or 'unspecified host' }}`.
-{% endif %}
+{%- endif %}
 
 ## Citation
 
