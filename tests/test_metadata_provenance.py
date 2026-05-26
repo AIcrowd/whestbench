@@ -135,7 +135,7 @@ def test_torch_cpu_metadata_has_no_cuda_driver_version(torch_metadata):
 
 
 def test_validate_metadata_accepts_v3_with_provenance(tmp_path: Path):
-    """A 3.0 single-split metadata with the new fields passes validate_metadata."""
+    """A 3.0 single-split metadata with the provenance fields passes validate_metadata."""
     metadata = {
         "schema_version": "3.0",
         "format": "hf-datasets-parquet",
@@ -161,8 +161,9 @@ def test_validate_metadata_accepts_v3_with_provenance(tmp_path: Path):
 
 
 def test_validate_metadata_accepts_v3_without_provenance(tmp_path: Path):
-    """Datasets baked BEFORE this PR don't have the new fields. They must
-    continue to validate."""
+    """Provenance fields are informational — validate_metadata treats them as
+    optional. Hand-written or stripped-down metadata.json files without them
+    still validate."""
     metadata = {
         "schema_version": "3.0",
         "format": "hf-datasets-parquet",

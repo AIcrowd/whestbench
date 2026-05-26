@@ -92,7 +92,7 @@ about the bake itself, **not** the estimator's FLOP budget at evaluation time
 | `created_at_utc` | `string` | ISO-8601 UTC timestamp of bake completion |
 | `hardware` | `object` | Hardware fingerprint from the baking host |
 
-### Provenance fields (added in mid-2026; absent on older datasets)
+### Provenance fields
 
 These pin the exact code + runtime state that produced a dataset, so a reader
 can reproduce a bake without guessing which whestbench/flopscope/torch versions
@@ -104,6 +104,10 @@ for the operational consequences.
 |---|---|---|
 | `whestbench_version` | `string` | Installed whestbench package version (e.g. `"0.3.0"`). `"unknown"` if `importlib.metadata` couldn't resolve it. |
 | `flopscope_version` | `string` | Installed flopscope package version. Weight init uses `flopscope.numpy` so this matters for bit-exact weights. |
+
+`validate_metadata` treats these as informational and does not require them
+(absence doesn't fail validation), but `whest dataset bake` always populates
+them.
 
 ### Torch-specific fields (when `backend == "torch"`)
 
