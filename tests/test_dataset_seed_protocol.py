@@ -1,4 +1,4 @@
-"""Dataset persists mlp.seed and uses SEED_PROTOCOL_VERSION 2.0."""
+"""Dataset persists mlp.seed and uses SEED_PROTOCOL_VERSION 3.0 by default."""
 
 from __future__ import annotations
 
@@ -11,23 +11,30 @@ from whestbench.dataset import (
 )
 from whestbench.dataset_io import (
     SEED_PROTOCOL_VERSION,
+    SEED_PROTOCOL_VERSION_V3,
     InvalidDatasetError,
 )
 
 
 def test_seed_protocol_version_is_2():
+    # SEED_PROTOCOL_VERSION (v2.0) constant is still exported for back-compat.
     assert SEED_PROTOCOL_VERSION == "2.0"
 
 
-def test_dataset_roundtrip_persists_mlp_seeds(tmp_path):
-    """Round-trip: create_dataset writes mlp.seed; load_dataset restores them."""
+def test_seed_protocol_version_v3_is_3():
+    assert SEED_PROTOCOL_VERSION_V3 == "3.0"
+
+
+def test_dataset_roundtrip_persists_estimator_seeds(tmp_path):
+    """Round-trip: create_dataset under v3; iter_mlps derives estimator seeds."""
     out = tmp_path / "test"
+    mlp_seeds = [42000, 42001, 42002]
     create_dataset(
         n_mlps=3,
         n_samples=100,
         width=8,
         depth=2,
-        seed=42,
+        mlp_seeds=mlp_seeds,
         output_path=out,
     )
     ds = load_dataset(out, split="public")
@@ -37,7 +44,8 @@ def test_dataset_roundtrip_persists_mlp_seeds(tmp_path):
 
 
 def test_dataset_create_reproduces_same_seeds(tmp_path):
-    """Same spec.seed → same per-MLP seeds across two dataset bakes."""
+    """Same mlp_seeds → same per-MLP estimator seeds across two dataset bakes."""
+    mlp_seeds = [99000, 99001, 99002]
     out1 = tmp_path / "a"
     out2 = tmp_path / "b"
     for path in (out1, out2):
@@ -46,7 +54,7 @@ def test_dataset_create_reproduces_same_seeds(tmp_path):
             n_samples=100,
             width=8,
             depth=2,
-            seed=99,
+            mlp_seeds=mlp_seeds,
             output_path=path,
         )
     seeds_a = [m.seed for m in iter_mlps(load_dataset(out1, split="public"))]

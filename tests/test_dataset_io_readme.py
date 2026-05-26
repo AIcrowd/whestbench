@@ -688,7 +688,7 @@ def test_rerender_readme_with_repo_handles_multi_split(tmp_path):
         n_samples=100,
         width=4,
         depth=2,
-        seed=1,
+        mlp_seeds=[1000, 1001],
         output_path=pub,
         split="public",
     )
@@ -697,7 +697,7 @@ def test_rerender_readme_with_repo_handles_multi_split(tmp_path):
         n_samples=100,
         width=4,
         depth=2,
-        seed=2,
+        mlp_seeds=[2000, 2001],
         output_path=hold,
         split="holdout",
     )
@@ -728,7 +728,7 @@ def test_rerender_readme_with_repo_handles_single_split(tmp_path):
         n_samples=100,
         width=4,
         depth=2,
-        seed=1,
+        mlp_seeds=[1000, 1001],
         output_path=out,
     )
 

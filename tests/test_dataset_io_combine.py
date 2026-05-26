@@ -14,20 +14,21 @@ def _bake_single_split(
     *,
     split: str = "public",
     n_mlps: int = 2,
-    seed: int = 42,
+    seed: int = 42,  # kept for call-site compatibility; used to derive mlp_seeds
     width: int = 8,
     depth: int = 2,
     n_samples: int = 100,
 ):
     from whestbench.dataset import create_dataset
 
+    mlp_seeds = [seed * 1000 + i for i in range(n_mlps)]
     out = tmp_path / name
     create_dataset(
         n_mlps=n_mlps,
         n_samples=n_samples,
         width=width,
         depth=depth,
-        seed=seed,
+        mlp_seeds=mlp_seeds,
         output_path=out,
         split=split,
     )
@@ -50,15 +51,16 @@ def test_combine_splits_roundtrip(tmp_path: Path):
     md = json.loads((out / "metadata.json").read_text())
     assert md["schema_version"] == "3.0"
     assert "n_mlps" not in md  # promoted to per-split
-    assert "seed" not in md
+    assert "seed" not in md  # no top-level seed under v3
     assert md["width"] == 8
     assert md["depth"] == 2
     assert md["n_samples"] == 100
     assert md["backend"] == "flopscope"
     assert md["splits"]["public"]["n_mlps"] == 2
-    assert md["splits"]["public"]["seed"] == 42
+    # Under v3, per-split `seed` is not stored — seeds live in the parquet column.
+    assert "seed" not in md["splits"]["public"]
     assert md["splits"]["holdout"]["n_mlps"] == 2
-    assert md["splits"]["holdout"]["seed"] == 99
+    assert "seed" not in md["splits"]["holdout"]
 
 
 def test_combine_splits_returns_output_path(tmp_path: Path):
@@ -110,7 +112,7 @@ def test_combine_splits_rejects_partial_input(tmp_path: Path):
         n_samples=100,
         width=4,
         depth=2,
-        seed=1,
+        mlp_seeds=[1000 + i for i in range(8)],
         output_path=partial,
         mlp_range=(0, 4),
     )

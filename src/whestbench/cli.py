@@ -1198,7 +1198,6 @@ def _dispatch_dataset_command(args) -> int:
                 n_samples=args.n_samples,
                 width=args.width,
                 depth=args.depth,
-                seed=args.seed,
                 output_path=args.output,
                 split=args.split,
                 mlp_range=mlp_range,
@@ -1212,7 +1211,6 @@ def _dispatch_dataset_command(args) -> int:
                 n_samples=args.n_samples,
                 width=args.width,
                 depth=args.depth,
-                seed=args.seed,
                 output_path=args.output,
                 split=args.split,
                 mlp_range=mlp_range,
@@ -1301,7 +1299,8 @@ def _dispatch_dataset_command(args) -> int:
             print("  splits:")
             for name in sorted(md["splits"]):
                 info = md["splits"][name]
-                print(f"    {name}:  n_mlps={info['n_mlps']:,}  seed={info['seed']}")
+                seed_str = f"  seed={info['seed']}" if "seed" in info else ""
+                print(f"    {name}:  n_mlps={info['n_mlps']:,}{seed_str}")
             print(f"  created_at_utc: {md['created_at_utc']}")
         else:
             print("WhestBench dataset")
@@ -1336,7 +1335,8 @@ def _dispatch_dataset_command(args) -> int:
         print(f"Combined {len(splits)} splits into {out}:")
         for name in sorted(splits.keys()):
             info = splits[name]
-            print(f"  - {name}  (n_mlps={info['n_mlps']}, seed={info['seed']})")
+            seed_str = f", seed={info['seed']}" if "seed" in info else ""
+            print(f"  - {name}  (n_mlps={info['n_mlps']}{seed_str})")
         return 0
 
     print("Unknown dataset subcommand. Try --help.", file=sys.stderr)
