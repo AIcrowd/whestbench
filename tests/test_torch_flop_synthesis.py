@@ -25,7 +25,7 @@ def test_closed_form_matches_flopscope_count(tmp_path) -> None:
         seed=42,
         output_path=tmp_path / "flopscope_baseline",
     )
-    ds = load_dataset(out)
+    ds = load_dataset(out, split="public")
     breakdowns = [json.loads(b) for b in ds["sampling_budget_breakdown"]]
     actual = breakdowns[0]
     actual_flops = actual["flops_used"]

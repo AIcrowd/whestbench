@@ -1,8 +1,10 @@
 import json
+from typing import cast
 
 import flopscope.numpy as fnp
 import numpy as np
 import pytest
+from datasets import Dataset
 
 import whestbench.simulation as simulation
 from whestbench import hardware as hardware_mod
@@ -18,7 +20,7 @@ def test_create_and_load_roundtrip(tmp_path) -> None:
         seed=42,
         output_path=tmp_path / "test",
     )
-    ds = load_dataset(out)
+    ds = load_dataset(out, split="public")
     assert len(ds) == 2
     mlps = list(iter_mlps(ds))
     assert len(mlps) == 2
@@ -60,8 +62,8 @@ def test_create_dataset_is_reproducible_with_explicit_seed(tmp_path) -> None:
         output_path=tmp_path / "seeded_b",
     )
 
-    ds_a = load_dataset(tmp_path / "seeded_a")
-    ds_b = load_dataset(tmp_path / "seeded_b")
+    ds_a = load_dataset(tmp_path / "seeded_a", split="public")
+    ds_b = load_dataset(tmp_path / "seeded_b", split="public")
 
     assert len(ds_a) == len(ds_b) == 3
     for idx in range(len(ds_a)):
@@ -214,7 +216,7 @@ def test_create_dataset_persists_mlp_names_matching_seed_assignment(tmp_path) ->
         seed=2024,
         output_path=tmp_path / "named",
     )
-    ds = load_dataset(out)
+    ds = load_dataset(out, split="public")
     mlps = list(iter_mlps(ds))
 
     expected = assign_unique_names([m.seed for m in mlps])
@@ -244,8 +246,8 @@ def test_create_dataset_names_reproduce_at_same_seed(tmp_path) -> None:
         seed=7777,
         output_path=tmp_path / "b",
     )
-    names_a = [m.name for m in iter_mlps(load_dataset(out_a))]
-    names_b = [m.name for m in iter_mlps(load_dataset(out_b))]
+    names_a = [m.name for m in iter_mlps(load_dataset(out_a, split="public"))]
+    names_b = [m.name for m in iter_mlps(load_dataset(out_b, split="public"))]
     assert names_a == names_b
     assert all(names_a)  # no empty strings
 
@@ -372,7 +374,7 @@ def test_metadata_on_member_dataset_returns_merged_single_split_shape(tmp_path):
 
     combined = _make_multi_split(tmp_path)
     dsd = load_dataset(combined)
-    ds = dsd["public"]
+    ds = cast(Dataset, dsd["public"])
     md = metadata(ds)
     assert "splits" not in md
     assert md["n_mlps"] == 2
@@ -397,7 +399,7 @@ def test_iter_mlps_raises_on_dataset_dict(tmp_path):
 
     dsd = load_dataset(_make_multi_split(tmp_path))
     with pytest.raises(TypeError, match=r"single Dataset"):
-        next(iter_mlps(dsd))
+        next(iter_mlps(cast(Dataset, dsd)))
 
 
 def test_mlp_at_raises_on_dataset_dict(tmp_path):
@@ -407,14 +409,14 @@ def test_mlp_at_raises_on_dataset_dict(tmp_path):
 
     dsd = load_dataset(_make_multi_split(tmp_path))
     with pytest.raises(TypeError, match=r"single Dataset"):
-        mlp_at(dsd, 0)
+        mlp_at(cast(Dataset, dsd), 0)
 
 
 def test_iter_mlps_works_on_member_dataset(tmp_path):
     from whestbench.dataset import iter_mlps, load_dataset
 
     dsd = load_dataset(_make_multi_split(tmp_path))
-    mlps = list(iter_mlps(dsd["public"]))
+    mlps = list(iter_mlps(cast(Dataset, dsd["public"])))
     assert len(mlps) == 2
     for m in mlps:
         m.validate()

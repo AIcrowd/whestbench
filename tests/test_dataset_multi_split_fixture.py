@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
+
+from datasets import Dataset
 
 FIXTURE = Path(__file__).parent / "fixtures" / "multi_split_v3.0"
 
@@ -61,7 +64,7 @@ def test_fixture_member_dataset_supports_iter_mlps():
     from whestbench.dataset import iter_mlps, load_dataset
 
     dsd = load_dataset(FIXTURE)
-    mlps_pub = list(iter_mlps(dsd["public"]))
+    mlps_pub = list(iter_mlps(cast(Dataset, dsd["public"])))
     assert len(mlps_pub) == 4
     for m in mlps_pub:
         m.validate()

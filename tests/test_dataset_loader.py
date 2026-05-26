@@ -80,7 +80,7 @@ def test_iter_mlps_yields_validated_mlps(tmp_path: Path):
     from whestbench.domain import MLP
 
     out = _bake_small(tmp_path)
-    ds = load_dataset(out)
+    ds = load_dataset(out, split="public")
     mlps = list(iter_mlps(ds))
     assert len(mlps) == 3
     for m in mlps:
@@ -93,7 +93,7 @@ def test_mlp_at_returns_indexed_mlp(tmp_path: Path):
     from whestbench.dataset import load_dataset, mlp_at
 
     out = _bake_small(tmp_path)
-    ds = load_dataset(out)
+    ds = load_dataset(out, split="public")
     m0 = mlp_at(ds, 0)
     m2 = mlp_at(ds, 2)
     assert m0.seed != m2.seed

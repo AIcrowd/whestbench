@@ -7,7 +7,7 @@ import json
 import weakref
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple, overload
 
 if TYPE_CHECKING:
     from datasets import DatasetDict
@@ -219,6 +219,26 @@ def create_dataset(
 
     write_dataset_dir(ds, output_dir=output_path, split=split, metadata=metadata)
     return output_path
+
+
+@overload
+def load_dataset(
+    path_or_repo: "Path | str",
+    *,
+    revision: Optional[str] = ...,
+    split: str,
+    token: Optional[str] = ...,
+) -> "Dataset": ...
+
+
+@overload
+def load_dataset(
+    path_or_repo: "Path | str",
+    *,
+    revision: Optional[str] = ...,
+    split: None = ...,
+    token: Optional[str] = ...,
+) -> "Dataset | DatasetDict": ...
 
 
 def load_dataset(
