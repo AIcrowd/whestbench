@@ -34,6 +34,11 @@ SEED_PROTOCOL_VERSION_V3 = "3.0"
 DEFAULT_SPLIT = "public"
 HOLDOUT_SPLIT = "holdout"
 
+_KNOWN_SEED_PROTOCOLS = {
+    (SEED_PROTOCOL_NAME, SEED_PROTOCOL_VERSION),  # 2.0
+    (SEED_PROTOCOL_NAME_V3, SEED_PROTOCOL_VERSION_V3),  # 3.0
+}
+
 PARQUET_SUBDIR = "data"
 METADATA_FILE = "metadata.json"
 README_FILE = "README.md"
@@ -255,18 +260,23 @@ def read_metadata(dataset_dir: "Path | str") -> Dict[str, Any]:
 
 
 def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) -> None:
-    """Validate that metadata is a whestbench schema 3.0 metadata dict.
+    """Validate that metadata is a valid whestbench dataset metadata dict.
 
-    Accepts both single-split shape (top-level `n_mlps`/`seed`) and multi-split
-    shape (top-level common fields + `splits:` dict with per-split `n_mlps`/`seed`).
+    Accepts:
+    - seed_protocol 2.0 (whestbench_seedsequence_hierarchy): top-level ``seed``
+      for single-split, per-split ``seed`` for multi-split.
+    - seed_protocol 3.0 (whestbench_explicit_per_mlp_seeds): NO ``seed`` field
+      anywhere; the parquet mlp_seed column is canonical.
 
-    The discriminator is the presence of the `splits` KEY in metadata, not its
-    value — `"splits": null` is invalid multi-split, not a fallback to single-split.
+    The discriminator for single-split vs multi-split is the presence of the
+    ``splits`` KEY in metadata, not its value — ``"splits": null`` is invalid
+    multi-split, not a fallback to single-split.
 
-    `allow_partial` is meaningful only for the single-split shape; multi-split
+    ``allow_partial`` is meaningful only for the single-split shape; multi-split
     datasets cannot be partial.
 
-    Raises InvalidDatasetError with a clear remediation message on any failure.
+    Raises:
+        InvalidDatasetError: on schema, partial-state, or protocol violations.
     """
     if "schema_version" not in metadata:
         raise InvalidDatasetError(
@@ -278,12 +288,18 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
             f"schema_version is {metadata['schema_version']!r}, this whestbench "
             f"requires {SCHEMA_VERSION!r}. Re-bake with `whest dataset bake`."
         )
+
     seed_proto = metadata.get("seed_protocol") or {}
-    if seed_proto.get("version") != SEED_PROTOCOL_VERSION:
+    proto_name = seed_proto.get("name")
+    proto_version = seed_proto.get("version")
+    if (proto_name, proto_version) not in _KNOWN_SEED_PROTOCOLS:
         raise InvalidDatasetError(
-            f"seed_protocol.version is {seed_proto.get('version')!r}, this "
-            f"whestbench requires {SEED_PROTOCOL_VERSION!r}. Re-bake."
+            f"unknown seed_protocol name={proto_name!r} / version={proto_version!r}. "
+            f"Known protocols: "
+            + ", ".join(f"{n!r}@{v!r}" for n, v in sorted(_KNOWN_SEED_PROTOCOLS))
         )
+
+    is_v3 = proto_name == SEED_PROTOCOL_NAME_V3
 
     if "splits" in metadata:
         # Multi-split shape. Discriminator is key presence; value must still be
@@ -306,11 +322,19 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
                 "multi-split metadata must not have top-level 'n_mlps'; "
                 "per-split n_mlps live under splits[<name>]."
             )
-        if "seed" in metadata:
-            raise InvalidDatasetError(
-                "multi-split metadata must not have top-level 'seed'; "
-                "per-split seed lives under splits[<name>]."
-            )
+        if is_v3:
+            if "seed" in metadata:
+                raise InvalidDatasetError(
+                    "seed_protocol 3.0: multi-split metadata must not have a "
+                    "top-level 'seed' field; the parquet mlp_seed column is "
+                    "the canonical per-MLP seed record."
+                )
+        else:
+            if "seed" in metadata:
+                raise InvalidDatasetError(
+                    "multi-split metadata must not have top-level 'seed'; "
+                    "per-split seed lives under splits[<name>]."
+                )
         for split_name, info in splits.items():
             try:
                 _validate_split_name(split_name)
@@ -324,13 +348,36 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
                 raise InvalidDatasetError(
                     f"splits[{split_name!r}] is missing required field 'n_mlps'."
                 )
-            if "seed" not in info:
-                raise InvalidDatasetError(
-                    f"splits[{split_name!r}] is missing required field 'seed'."
-                )
+            if is_v3:
+                if "seed" in info:
+                    raise InvalidDatasetError(
+                        f"seed_protocol 3.0: splits[{split_name!r}] must not "
+                        f"have a 'seed' field; the parquet mlp_seed column "
+                        f"is the canonical per-MLP seed record."
+                    )
+            else:
+                if "seed" not in info:
+                    raise InvalidDatasetError(
+                        f"splits[{split_name!r}] is missing required field 'seed'."
+                    )
         return  # multi-split validated; skip the single-split partial check below
 
     # Single-split shape.
+    if "n_mlps" not in metadata:
+        raise InvalidDatasetError("single-split metadata missing required field 'n_mlps'.")
+    if is_v3:
+        if "seed" in metadata:
+            raise InvalidDatasetError(
+                "seed_protocol 3.0: single-split metadata must not have a "
+                "top-level 'seed' field; the parquet mlp_seed column is "
+                "the canonical per-MLP seed record."
+            )
+    else:
+        if "seed" not in metadata:
+            raise InvalidDatasetError(
+                "seed_protocol 2.0: single-split metadata missing required top-level 'seed' field."
+            )
+
     if metadata.get("is_partial") and not allow_partial:
         mlp_range = metadata.get("mlp_range")
         total = metadata.get("total_n_mlps")
