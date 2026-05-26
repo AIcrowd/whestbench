@@ -4,6 +4,11 @@
 
 ### Added
 
+- `seed_protocol 3.0` (`whestbench_explicit_per_mlp_seeds`): each MLP's seed is an independent input rather than a derivation from a single root. Each `mlp_seed` value in the parquet column is the canonical input seed. Within-MLP three-stream derivation (weight/sample/estimator) is preserved via `SeedSequence(mlp_seed).spawn(3)`.
+- `whest dataset bake --mlp-seeds FILE` (JSON array of N ints) for explicit per-MLP seeds. Omitting both `--mlp-seeds` and `--seed` auto-generates via `secrets.randbits(63)`.
+- `create_dataset(mlp_seeds=[...])` / `create_dataset_torch(mlp_seeds=[...])`.
+- `MLP.from_row(row, *, seed_protocol_version=...)`: protocol-aware estimator-seed derivation.
+- Frozen fixture `tests/fixtures/single_split_v3_protocol/` for schema-drift regression.
 - Multi-split dataset support: dataset directories can now contain multiple Parquet files in `data/`, one per split, described by an optional `splits:` sub-dict in `metadata.json`. Backward-compatible — single-split datasets are unchanged.
 - `whest dataset combine-splits INPUT_DIR... --output OUTPUT_DIR` CLI subcommand for assembling multi-split datasets from N complete single-split inputs.
 - `whestbench.combine_split_datasets()` Python helper (re-exported from `whestbench`).
@@ -12,14 +17,19 @@
 
 ### Changed
 
+- `create_dataset(seed=...)` / `create_dataset_torch(seed=...)` and `whest dataset bake --seed N` now reject with a migration hint pointing at `--mlp-seeds`.
+- Parquet `mlp_seed` column semantics: under 3.0, the column stores the **input** seed (was: derived estimator seed under 2.0). `MLP.seed` (participant-facing) is unchanged across protocols — derived locally from the input under 3.0.
+- `whest dataset inspect` now recognises multi-split datasets and prints a per-split summary, plus the `seed_protocol: <name> (version <version>)` line for all datasets.
 - `whestbench.load_dataset()` returns `Dataset | DatasetDict` based on the dataset shape; explicit `split=` always returns `Dataset`.
 - `whestbench.metadata()` accepts a `DatasetDict` and an optional `split=` filter that projects to single-split-shaped metadata.
-- `whest dataset inspect` now recognises multi-split datasets and prints a per-split summary.
 - The dataset-card template gains a multi-split branch with leaderboard-specific wording when splits are `{public, holdout}`; the single-split `public` branch's wording is updated to point at the new evaluation repo.
 
 ### Compatibility
 
-- `schema_version` stays at `"3.0"`. The `splits:` field is purely additive.
+- `whestbench.load_dataset` reads both `seed_protocol 2.0` and `3.0` datasets indefinitely. Existing published datasets (e.g. `aicrowd/arc-whestbench-2026-smoke-test`) continue to work unchanged.
+- New bakes only write 3.0.
+- `schema_version` stays at `"3.0"`. The protocol discriminator is `seed_protocol.{name,version}`.
+- The `splits:` field is purely additive.
 - Old whestbench reading new multi-split datasets fails loudly with a missing-`n_mlps` error — upgrade whestbench to read multi-split.
 
 ---
