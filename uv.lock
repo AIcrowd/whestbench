@@ -552,25 +552,33 @@ wheels = [
 
 [[package]]
 name = "flopscope"
-version = "0.2.0"
-source = { git = "https://github.com/AIcrowd/flopscope.git#14d13e63b3508eaa4648599cd78c210986e83b92" }
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "opt-einsum" },
     { name = "rich" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/38/96/f0c7e04e7e8f18b0011572581ccdd92746a7563cd7efbab6a54067d16d11/flopscope-0.4.1.tar.gz", hash = "sha256:6e490892a39684dd45d692a485a72a4738a332bc5b4bc88ec444ea345fe79ec9", size = 10624075, upload-time = "2026-05-26T11:19:38.115Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3e/9f/f872765e106ce785104dc8ea33cdc050027d09b56ef3efc3efb0e0a0eaea/flopscope-0.4.1-py3-none-any.whl", hash = "sha256:1d1d26013400138e2adec26f1de656af1314cd2c8d02a35d1a5004de1b12a4e6", size = 369586, upload-time = "2026-05-26T11:19:27.08Z" },
+]
 
 [[package]]
 name = "flopscope-server"
-version = "0.1.0"
-source = { git = "https://github.com/AIcrowd/flopscope.git?subdirectory=flopscope-server#14d13e63b3508eaa4648599cd78c210986e83b92" }
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flopscope" },
     { name = "msgpack" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pyzmq" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/66/a4/cceecf3d08cc0caf008b0b654ef93fe74e4f67e55dd3d96e1cc23fba405b/flopscope_server-0.4.1.tar.gz", hash = "sha256:1dcce83746c5adbf3fc2b8eaccc3fc63cb3ec66443eca73c732fd04077830820", size = 59623, upload-time = "2026-05-26T11:19:48.569Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/14/bb/089c637b7643b2fef73c66d2f14974e2ec3ae4ad19ea4d8e3df6e1390216/flopscope_server-0.4.1-py3-none-any.whl", hash = "sha256:5571ae4b1f418e93f8561e1087c15c560db449f48960b951c4d3f8fddd5fdf62", size = 17387, upload-time = "2026-05-26T11:19:47.531Z" },
 ]
 
 [[package]]
@@ -2386,7 +2394,7 @@ server = [
 requires-dist = [
     { name = "datasets", specifier = ">=2.20" },
     { name = "faker", specifier = "~=37.0" },
-    { name = "flopscope", git = "https://github.com/AIcrowd/flopscope.git" },
+    { name = "flopscope", specifier = ">=0.4.1" },
     { name = "huggingface-hub", specifier = ">=0.24" },
     { name = "jinja2", specifier = ">=3.1" },
     { name = "plotext" },
@@ -2405,7 +2413,7 @@ dev = [
     { name = "pytest", specifier = ">=8.2.0" },
     { name = "ruff", specifier = ">=0.6.0" },
 ]
-server = [{ name = "flopscope-server", git = "https://github.com/AIcrowd/flopscope.git?subdirectory=flopscope-server" }]
+server = [{ name = "flopscope-server", specifier = ">=0.4.1" }]
 
 [[package]]
 name = "xxhash"
