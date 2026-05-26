@@ -231,20 +231,86 @@ class InvalidDatasetError(ValueError):
     """Raised when a dataset directory has missing/incompatible metadata."""
 
 
-def metadata_file_hash(path: "Path | str") -> str:
-    """Return the SHA-256 hex digest of metadata.json in the dataset directory.
+def metadata_file_hash(
+    path: "Path | str",
+    *,
+    revision: "str | None" = None,
+) -> str:
+    """Return the SHA-256 hex digest of a dataset's metadata.json.
 
     Used for logging/reporting to identify a specific bake without loading the
-    full dataset. Deterministic given the same dataset directory.
+    full dataset. Deterministic given the same metadata bytes.
+
+    Accepts three forms of ``path``:
+
+    - **Local directory**: any path that exists on disk (or starts with ``./``,
+      ``/``, ``~/``, or a Windows drive letter). Reads
+      ``<path>/metadata.json`` from disk.
+    - **``hf://owner/repo[@revision]`` URL**: downloads ``metadata.json``
+      from the HF Hub repo (cached locally) and hashes its bytes.
+    - **Bare ``owner/repo``** with the ``revision`` kwarg explicitly set:
+      same as the hf:// form. Without ``revision`` falls back to the local
+      path interpretation.
+
+    Args:
+        path: Local dataset directory, hf:// URL, or bare ``owner/repo``.
+        revision: HF Hub git tag or commit SHA. Ignored for local paths.
+            If ``path`` is an ``hf://...@<rev>`` URL the embedded revision
+            wins over this kwarg.
     """
     import hashlib
 
-    metadata_path = Path(path) / METADATA_FILE
+    path_str = str(path)
+    metadata_path = _resolve_metadata_json_path(path_str, revision=revision)
     h = hashlib.sha256()
     with metadata_path.open("rb") as f:
         while chunk := f.read(8192):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _resolve_metadata_json_path(path_str: str, *, revision: "str | None") -> Path:
+    """Resolve a `--dataset`-shaped string to a local metadata.json path.
+
+    Centralises the local-vs-HF-Hub branch so callers don't have to repeat the
+    detection logic. Returns a Path to the (possibly HF-cached) metadata.json.
+    """
+    # 1. hf:// URL — parse and download.
+    if path_str.startswith("hf://"):
+        body = path_str[len("hf://") :]
+        if "@" in body:
+            repo_id, embedded_rev = body.rsplit("@", 1)
+            rev = revision or embedded_rev
+        else:
+            repo_id, rev = body, revision
+        return _hf_metadata_path(repo_id, rev)
+
+    # 2. Existing local directory — fast-path.
+    candidate = Path(path_str)
+    if candidate.exists():
+        return candidate / METADATA_FILE
+
+    # 3. Bare "owner/repo" with revision kwarg → treat as HF Hub.
+    if "/" in path_str and revision is not None:
+        return _hf_metadata_path(path_str, revision)
+
+    # 4. Fall through: assume local path (will raise FileNotFoundError on open
+    #    when the caller tries to read it — same as old behaviour).
+    return candidate / METADATA_FILE
+
+
+def _hf_metadata_path(repo_id: str, revision: "str | None") -> Path:
+    """Download metadata.json from HF Hub (cached) and return the local path."""
+    from huggingface_hub import hf_hub_download
+
+    return Path(
+        hf_hub_download(
+            repo_id=repo_id,
+            filename=METADATA_FILE,
+            repo_type="dataset",
+            revision=revision,
+        )
+    )
 
 
 def read_metadata(dataset_dir: "Path | str") -> Dict[str, Any]:
