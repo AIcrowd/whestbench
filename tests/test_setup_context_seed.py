@@ -152,7 +152,9 @@ def test_seed_flag_allowed_alongside_dataset(tmp_path):
     import json
     import subprocess
 
-    # First, bake a tiny dataset.
+    # First, bake a tiny dataset using --mlp-seeds (seed_protocol 3.0).
+    seeds_file = tmp_path / "seeds.json"
+    seeds_file.write_text(json.dumps([1]))
     dataset_path = tmp_path / "ds"
     bake = subprocess.run(
         [
@@ -167,8 +169,8 @@ def test_seed_flag_allowed_alongside_dataset(tmp_path):
             "8",
             "--depth",
             "2",
-            "--seed",
-            "1",
+            "--mlp-seeds",
+            str(seeds_file),
             "--n-samples",
             "100",
             "--output",
@@ -429,7 +431,9 @@ class Estimator(BaseEstimator):
         return fnp.zeros((mlp.depth, mlp.width))
 """)
 
-    # Bake a tiny dataset at --seed 1.
+    # Bake a tiny dataset using --mlp-seeds (seed_protocol 3.0).
+    seeds_file = tmp_path / "seeds.json"
+    seeds_file.write_text(json.dumps([1]))
     dataset_path = tmp_path / "ds"
     bake = subprocess.run(
         [
@@ -444,8 +448,8 @@ class Estimator(BaseEstimator):
             "8",
             "--depth",
             "2",
-            "--seed",
-            "1",
+            "--mlp-seeds",
+            str(seeds_file),
             "--n-samples",
             "100",
             "--output",
