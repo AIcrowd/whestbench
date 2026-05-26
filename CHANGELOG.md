@@ -4,6 +4,14 @@
 
 ### Added
 
+- `whestbench.load_dataset(... streaming=True)` now supported (HF Hub only).
+  Returns `IterableDataset` for single-split or `IterableDatasetDict` for
+  multi-split. `whestbench.metadata(ds)` and `whestbench.iter_mlps(ds)` both
+  work on the streaming return — same code path, same row contract.
+  `whestbench.mlp_at(ds, i)` raises `TypeError` on streaming inputs (no
+  random-access contract; use `next(itertools.islice(iter_mlps(ds), i, i+1))`
+  or reload without streaming). `streaming=True` on a local path raises
+  `ValueError`. Closes #55.
 - `generate_readme(... companion_repo=...)`: new keyword argument that controls
   the cross-link text between paired public-release and evals datasets (e.g. a
   public-release README now points at the evals repo it pairs with). When unset,

@@ -113,3 +113,99 @@ def test_mlp_at_returns_indexed_mlp(tmp_path: Path):
     m2 = mlp_at(ds, 2)
     assert m0.seed != m2.seed
     assert m0.name == ds[0]["mlp_name"]
+
+
+# -----------------------------------------------------------------------------
+# Streaming-mode tests
+# -----------------------------------------------------------------------------
+
+
+def test_load_dataset_streaming_rejects_local_path(tmp_path: Path):
+    """streaming=True on a local path is rejected with a clear ValueError."""
+    from whestbench.dataset import load_dataset
+
+    out = _bake_small(tmp_path)
+    with pytest.raises(ValueError, match="streaming=True is only supported"):
+        load_dataset(out, streaming=True)
+
+
+def test_iter_mlps_works_on_iterable_dataset(tmp_path: Path):
+    """iter_mlps() accepts IterableDataset (streaming) and yields correct MLPs.
+
+    We construct an IterableDataset from a materialised one and attach
+    metadata via the same side-channel load_dataset would use. This proves
+    iter_mlps' code path is streaming-compatible without needing network.
+    """
+    from datasets import IterableDataset
+
+    from whestbench.dataset import _METADATA_BY_DS, iter_mlps, load_dataset
+
+    out = _bake_small(tmp_path)
+    materialised = load_dataset(out, split="public")
+    md = _METADATA_BY_DS[materialised]
+
+    # Wrap the same rows as a streaming IterableDataset and attach the
+    # same metadata. iter_mlps should produce identical MLP objects.
+    rows = list(materialised)
+    stream = IterableDataset.from_generator(lambda: iter(rows))
+    _METADATA_BY_DS[stream] = md
+
+    reference = list(iter_mlps(materialised))
+    streamed = list(iter_mlps(stream))
+    assert len(reference) == len(streamed) == 3
+    for ref_mlp, str_mlp in zip(reference, streamed):
+        assert ref_mlp.name == str_mlp.name
+        assert ref_mlp.seed == str_mlp.seed
+        assert ref_mlp.width == str_mlp.width
+        assert ref_mlp.depth == str_mlp.depth
+        ref_w = np.stack([np.asarray(w) for w in ref_mlp.weights])
+        str_w = np.stack([np.asarray(w) for w in str_mlp.weights])
+        np.testing.assert_array_equal(ref_w, str_w)
+
+
+def test_mlp_at_on_iterable_dataset_raises_typeerror():
+    """mlp_at() raises TypeError on IterableDataset (no random-access contract)."""
+    from datasets import IterableDataset
+
+    from whestbench.dataset import mlp_at
+
+    def _gen():
+        yield {"mlp_id": 0, "mlp_name": "test", "mlp_seed": 1, "weights": [[[0.0]]]}
+
+    stream = IterableDataset.from_generator(_gen)
+    with pytest.raises(TypeError, match="streaming IterableDataset"):
+        mlp_at(stream, 0)
+
+
+def test_iter_mlps_rejects_iterable_dataset_dict():
+    """iter_mlps() rejects IterableDatasetDict with a clear error."""
+    from datasets import IterableDataset, IterableDatasetDict
+
+    from whestbench.dataset import iter_mlps
+
+    def _gen():
+        yield {"mlp_id": 0, "mlp_name": "test", "mlp_seed": 1, "weights": [[[0.0]]]}
+
+    idd = IterableDatasetDict({"public": IterableDataset.from_generator(_gen)})
+    with pytest.raises(TypeError, match="multi-split"):
+        list(iter_mlps(idd))  # type: ignore[arg-type]
+
+
+def test_metadata_works_on_iterable_dataset(tmp_path: Path):
+    """whestbench.metadata() retrieves attached metadata for IterableDataset too."""
+    from datasets import IterableDataset
+
+    from whestbench.dataset import _METADATA_BY_DS, load_dataset, metadata
+
+    out = _bake_small(tmp_path)
+    materialised = load_dataset(out, split="public")
+    md = _METADATA_BY_DS[materialised]
+
+    rows = list(materialised)
+    stream = IterableDataset.from_generator(lambda: iter(rows))
+    _METADATA_BY_DS[stream] = md
+
+    md_via_api = metadata(stream)
+    assert md_via_api["n_mlps"] == 3
+    assert md_via_api["width"] == 4
+    assert md_via_api["depth"] == 2
