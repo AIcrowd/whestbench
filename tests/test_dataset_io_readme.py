@@ -42,14 +42,30 @@ def _torch_metadata():
 
 
 def _merged_metadata():
-    """A merged-from-parallel-bakes metadata dict."""
+    """A merged-from-parallel-bakes metadata dict (post-collapse shape)."""
     md = _flopscope_metadata()
     # Drop the single-host `hardware` key; merged datasets carry fingerprints instead.
     md.pop("hardware", None)
     md["merged_at_utc"] = "2026-05-25T01:00:00+00:00"
+    md["partials_count"] = 4
     md["hardware_fingerprints"] = [
-        {"cpu_brand": "host-a", "mlp_range": [0, 2]},
-        {"cpu_brand": "host-b", "mlp_range": [2, 4]},
+        {
+            "cuda_device_name": "NVIDIA A100-SXM4-80GB",
+            "cuda_device_capability": [8, 0],
+            "torch_version": "2.4.1+cu124",
+            "cpu_brand": "x86_64",
+            "cpu_count_logical": 128,
+            "python_version": "3.11.10",
+            "numpy_version": "2.4.6",
+            "bake_config": {
+                "torch_use_deterministic_algorithms": True,
+                "cudnn_deterministic": True,
+                "cublas_workspace_config": ":4096:8",
+            },
+            "mlp_count": 4,
+            "drivers_seen": ["550.127.05", "580.126.16"],
+            "kernels_seen": ["6.8.0-100-generic"],
+        },
     ]
     return md
 
@@ -450,14 +466,57 @@ def test_readme_single_host_provenance_fallback():
     assert "TestCPU" in out
 
 
-def test_readme_merged_provenance_lists_each_host():
+def test_readme_merged_provenance_uses_collapsed_signature():
+    """Post-collapse: one block per distinct hardware signature with rich detail
+    + aggregated drivers_seen / kernels_seen ranges. Per-partial mlp_range
+    labels are intentionally NOT shown (would be 1000 lines on a 1000-partial
+    bake)."""
     out = generate_readme(_merged_metadata(), split="public", ds_size=4)
     assert "Assembled from" in out
-    assert "host-a" in out
-    assert "host-b" in out
-    # The MLP-range labels should both appear
-    assert "[0, 2)" in out
-    assert "[2, 4)" in out
+    assert "**4** single-MLP partial bakes" in out
+    assert "**1** distinct hardware configuration" in out
+    assert "Configuration 1" in out
+    assert "4 partials" in out
+    # Rich hardware detail surfaced
+    assert "NVIDIA A100-SXM4-80GB" in out
+    assert "compute capability 8.0" in out
+    assert "2.4.1+cu124" in out  # torch version
+    assert "torch.use_deterministic_algorithms=True" in out
+    # Aggregated drivers
+    assert "550.127.05" in out
+    assert "580.126.16" in out
+    # No per-partial mlp_range bullet (was the 1000-line bug)
+    assert "MLPs `[0, 1)`" not in out
+    assert "MLPs `[1, 2)`" not in out
+
+
+def test_readme_companion_repo_substitution():
+    """generate_readme accepts companion_repo and embeds it in cross-link text."""
+    out = generate_readme(
+        _flopscope_metadata(),
+        split="public",
+        ds_size=4,
+        repo_id="aicrowd/arc-whestbench-public-2026",
+        revision="v1-warmup",
+        companion_repo="aicrowd/my-evals-2099",
+    )
+    assert "aicrowd/my-evals-2099" in out
+    # Should NOT default to the hardcoded canonical name when companion_repo is set
+    assert "aicrowd/arc-whestbench-2026-evals" not in out
+
+
+def test_readme_no_placeholder_when_repo_id_passed():
+    """The literal '<your-repo>' placeholder must NOT appear when repo_id is supplied."""
+    out = generate_readme(
+        _flopscope_metadata(),
+        split="public",
+        ds_size=4,
+        repo_id="aicrowd/arc-whestbench-public-2026",
+        revision="v1-warmup",
+    )
+    assert "<your-repo>" not in out
+    assert "aicrowd/arc-whestbench-public-2026" in out
+    assert "v1-warmup" in out
 
 
 # --- YAML front-matter ---

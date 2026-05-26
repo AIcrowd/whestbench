@@ -156,10 +156,16 @@ def generate_readme(
     ds_size: int,
     repo_id: "str | None" = None,
     revision: "str | None" = None,
+    companion_repo: "str | None" = None,
 ) -> str:
     """Render the HF dataset card README.
 
     Exactly one of `split` (single-split) or `splits` (multi-split) must be provided.
+
+    Args:
+        companion_repo: HF Hub repo id of the companion dataset (public ↔ evals
+            cross-link). When unset, the template falls back to the canonical
+            ``aicrowd/arc-whestbench-2026[-evals]`` names.
     """
     if (split is None) == (splits is None):
         raise ValueError("generate_readme requires exactly one of `split` or `splits` to be set.")
@@ -172,6 +178,7 @@ def generate_readme(
         ds_size=ds_size,
         repo_id=repo_id or "<your-repo>",
         revision=revision or "main",
+        companion_repo=companion_repo,
     )
 
     tags = [
@@ -406,6 +413,104 @@ class MergeCorruptError(InvalidDatasetError):
 _COMMON_FIELDS = ("seed", "n_samples", "width", "depth", "backend")
 
 
+def _collapse_hardware_fingerprints(
+    partials: "list[tuple[Path, Dict[str, Any], Any]]",
+) -> "list[Dict[str, Any]]":
+    """Group per-partial metadata by COARSE hardware signature.
+
+    The signature intentionally excludes ``cuda_driver_version`` and
+    ``os_release`` (kernel patch): those vary across pods in a fleet but do not
+    affect determinism guarantees under our pinned env. They're aggregated as
+    ``drivers_seen`` / ``kernels_seen`` per signature group.
+
+    Returns one entry per distinct (GPU, capability, torch, determinism env)
+    tuple, each carrying ``mlp_count`` + the representative full-detail fields
+    that DO affect bit-exactness.
+    """
+    from collections import defaultdict
+
+    def _sig(md: Dict[str, Any]) -> tuple:
+        """Determinism-affecting fields only.
+
+        Excludes host-inventory variations that don't affect bit-equivalence:
+        - `cpu_count_logical`, `ram_total_bytes` (host capacity)
+        - `cpu_brand` (always x86_64 in practice; not a determinism factor for
+          GPU bakes)
+        - `os_release` (kernel patch — aggregated as `kernels_seen`)
+
+        Includes:
+        - GPU (cuda_device_name + capability) — distinct SM archs can differ
+        - Code versions (torch, python, numpy, whestbench, flopscope) — affect
+          generated kernels / RNG implementations
+        - Determinism env (3 bake_config flags)
+        """
+        hw = md.get("hardware", {}) or {}
+        bc = md.get("bake_config", {}) or {}
+        return (
+            md.get("cuda_device_name"),
+            tuple(md.get("cuda_device_capability") or ()),
+            md.get("torch_version"),
+            md.get("device"),
+            hw.get("python_version"),
+            hw.get("numpy_version"),
+            md.get("whestbench_version"),
+            md.get("flopscope_version"),
+            bc.get("torch_use_deterministic_algorithms"),
+            bc.get("cudnn_deterministic"),
+            bc.get("cublas_workspace_config"),
+        )
+
+    groups: "defaultdict[tuple, list[Dict[str, Any]]]" = defaultdict(list)
+    for p in partials:
+        md = p[1]
+        groups[_sig(md)].append(md)
+
+    fingerprints: list[Dict[str, Any]] = []
+    for _key, mds in groups.items():
+        rep = mds[0]  # representative; signature fields are equal across the group
+        hw = rep.get("hardware", {}) or {}
+        bc = rep.get("bake_config", {}) or {}
+        drivers = sorted(
+            {m.get("cuda_driver_version") for m in mds if m.get("cuda_driver_version")}
+        )
+        kernels = sorted(
+            {
+                (m.get("hardware", {}) or {}).get("os_release")
+                for m in mds
+                if (m.get("hardware", {}) or {}).get("os_release")
+            }
+        )
+        hostnames = []
+        for m in mds:
+            h = (m.get("hardware", {}) or {}).get("hostname")
+            if h and h not in hostnames:
+                hostnames.append(h)
+            if len(hostnames) >= 3:
+                break
+        fp = {
+            "cuda_device_name": rep.get("cuda_device_name"),
+            "cuda_device_capability": rep.get("cuda_device_capability"),
+            "torch_version": rep.get("torch_version"),
+            "device": rep.get("device"),
+            "cpu_brand": hw.get("cpu_brand"),
+            "cpu_count_logical": hw.get("cpu_count_logical"),
+            "ram_total_bytes": hw.get("ram_total_bytes"),
+            "python_version": hw.get("python_version"),
+            "numpy_version": hw.get("numpy_version"),
+            "os": hw.get("os"),
+            "whestbench_version": rep.get("whestbench_version"),
+            "flopscope_version": rep.get("flopscope_version"),
+            "bake_config": bc or None,
+            "mlp_count": len(mds),
+            "drivers_seen": drivers,
+            "kernels_seen": kernels,
+            "representative_hostnames": hostnames,
+        }
+        # Drop None-valued keys to keep metadata.json clean.
+        fingerprints.append({k: v for k, v in fp.items() if v is not None and v != []})
+    return fingerprints
+
+
 def merge_datasets(
     input_dirs: "list[Path | str]",
     *,
@@ -511,14 +616,8 @@ def merge_datasets(
     merged_md["n_mlps"] = total
     merged_md["created_at_utc"] = min(p[1]["created_at_utc"] for p in partials)
     merged_md["merged_at_utc"] = datetime.now(timezone.utc).isoformat()
-    merged_md["hardware_fingerprints"] = [
-        {
-            **p[1].get("hardware", {}),
-            "mlp_range": p[1]["mlp_range"],
-            **{k: v for k, v in p[1].items() if k.startswith("cuda_") or k.startswith("mps_")},
-        }
-        for p in partials
-    ]
+    merged_md["hardware_fingerprints"] = _collapse_hardware_fingerprints(partials)
+    merged_md["partials_count"] = len(partials)
 
     write_dataset_dir(
         merged_ds,

@@ -157,4 +157,60 @@ def test_merged_metadata_has_no_is_partial(tmp_path: Path):
     assert "total_n_mlps" not in md
     assert "merged_at_utc" in md
     assert "hardware_fingerprints" in md
-    assert len(md["hardware_fingerprints"]) == 2
+    # Both partials are baked on the same machine → identical hardware signature
+    # → collapsed to 1 fingerprint with mlp_count=2.
+    assert len(md["hardware_fingerprints"]) == 1
+    fp = md["hardware_fingerprints"][0]
+    assert fp["mlp_count"] == 2, (
+        f"expected 2 partials in single fingerprint, got {fp.get('mlp_count')}"
+    )
+    assert md["partials_count"] == 2
+
+
+def test_merge_collapses_partials_with_different_drivers_into_one_signature(tmp_path: Path):
+    """Per-partial cuda_driver_version varies in a fleet; the COARSE signature
+    excludes driver_version so all such partials collapse into ONE fingerprint
+    whose `drivers_seen` lists every distinct driver.
+    """
+    from whestbench.dataset_io import merge_datasets
+
+    p0 = _bake_partial(tmp_path, "p0", mlp_range=(0, 4))
+    p1 = _bake_partial(tmp_path, "p1", mlp_range=(4, 8))
+    # Hand-patch the partials' metadata to simulate different driver versions
+    for p, drv in ((p0, "550.127.05"), (p1, "580.126.16")):
+        md_path = p / "metadata.json"
+        md = json.loads(md_path.read_text())
+        md["cuda_driver_version"] = drv
+        md_path.write_text(json.dumps(md))
+
+    merged = tmp_path / "merged"
+    merge_datasets([p0, p1], output_dir=merged)
+    md = json.loads((merged / "metadata.json").read_text())
+    assert len(md["hardware_fingerprints"]) == 1, (
+        "different driver versions should still collapse to ONE coarse signature"
+    )
+    fp = md["hardware_fingerprints"][0]
+    assert fp["mlp_count"] == 2
+    assert sorted(fp["drivers_seen"]) == ["550.127.05", "580.126.16"]
+
+
+def test_merge_keeps_distinct_gpu_signatures(tmp_path: Path):
+    """Different GPU models do NOT collapse — separate fingerprints."""
+    from whestbench.dataset_io import merge_datasets
+
+    p0 = _bake_partial(tmp_path, "p0", mlp_range=(0, 4))
+    p1 = _bake_partial(tmp_path, "p1", mlp_range=(4, 8))
+    for p, gpu in ((p0, "NVIDIA A100-SXM4-80GB"), (p1, "NVIDIA L40S")):
+        md_path = p / "metadata.json"
+        md = json.loads(md_path.read_text())
+        md["cuda_device_name"] = gpu
+        md_path.write_text(json.dumps(md))
+
+    merged = tmp_path / "merged"
+    merge_datasets([p0, p1], output_dir=merged)
+    md = json.loads((merged / "metadata.json").read_text())
+    assert len(md["hardware_fingerprints"]) == 2, (
+        "different GPU models must produce distinct fingerprints"
+    )
+    gpus = sorted(fp.get("cuda_device_name") for fp in md["hardware_fingerprints"])
+    assert gpus == ["NVIDIA A100-SXM4-80GB", "NVIDIA L40S"]
