@@ -470,20 +470,22 @@ def _collapse_hardware_fingerprints(
         rep = mds[0]  # representative; signature fields are equal across the group
         hw = rep.get("hardware", {}) or {}
         bc = rep.get("bake_config", {}) or {}
-        drivers = sorted(
-            {m.get("cuda_driver_version") for m in mds if m.get("cuda_driver_version")}
-        )
-        kernels = sorted(
-            {
-                (m.get("hardware", {}) or {}).get("os_release")
-                for m in mds
-                if (m.get("hardware", {}) or {}).get("os_release")
-            }
-        )
-        hostnames = []
+        drivers_set: set[str] = set()
+        for m in mds:
+            d = m.get("cuda_driver_version")
+            if isinstance(d, str):
+                drivers_set.add(d)
+        drivers: list[str] = sorted(drivers_set)
+        kernels_set: set[str] = set()
+        for m in mds:
+            k = (m.get("hardware", {}) or {}).get("os_release")
+            if isinstance(k, str):
+                kernels_set.add(k)
+        kernels: list[str] = sorted(kernels_set)
+        hostnames: list[str] = []
         for m in mds:
             h = (m.get("hardware", {}) or {}).get("hostname")
-            if h and h not in hostnames:
+            if isinstance(h, str) and h not in hostnames:
                 hostnames.append(h)
             if len(hostnames) >= 3:
                 break
