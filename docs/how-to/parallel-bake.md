@@ -156,12 +156,16 @@ for i in range(len(reference)):
     print(f"MLP {i}: max |Δmean| = {max_diff:.2e}")
     assert max_diff == 0.0, f"MLP {i}: not bit-exact!"
 
-    # avg_variance loses ~1 ULP from the (sum_sq/n - mean²) subtraction; check
-    # it with a small tolerance rather than strict equality. 1e-12 is 5 orders
-    # of magnitude above observed ULP noise.
+    # avg_variance loses ~1 float64 ULP from the (sum_sq/n - mean²) subtraction,
+    # so compare with np.isclose rather than strict equality. rtol=1e-12 covers
+    # ULP noise that scales with the variance magnitude; atol=1e-15 guards near
+    # zero. Observed noise on N=1e9 bakes is ~1e-17, so this is ~100× headroom.
     merged_var = float(merged[i]["avg_variance"])
     ref_var = float(reference[i]["avg_variance"])
-    assert abs(merged_var - ref_var) < 1e-12, f"MLP {i}: variance not within ULP tol!"
+    assert np.isclose(merged_var, ref_var, rtol=1e-12, atol=1e-15), (
+        f"MLP {i}: variance not within ULP tol "
+        f"(merged={merged_var}, ref={ref_var})"
+    )
 
 print("Bit-equivalence verified for first 4 MLPs.")
 ```
@@ -259,8 +263,10 @@ The merge step produces a dataset bit-equivalent to a single-host bake only when
    `cudnn.benchmark=False`, `CUBLAS_WORKSPACE_CONFIG=:4096:8`). With those + a
    pinned `--chunk-size`, parallel-vs-serial bakes match bit-exactly on
    `weights`, `all_layer_means`, and `final_means`. `avg_variance` differs by
-   ~1 float64 ULP (~1e-17) due to the `(sum_sq/n − mean²)` subtraction; consumers
-   should treat that column as tolerant to 1 ULP rather than strictly bit-exact.
+   ~1 float64 ULP (~1e-17 on N=1e9 bakes) due to the `(sum_sq/n − mean²)`
+   subtraction; compare it with `np.isclose(rtol=1e-12, atol=1e-15)` rather
+   than strict equality. `rtol` covers ULP noise that scales with variance
+   magnitude; `atol` guards near zero.
 
 ## Multi-split datasets
 
