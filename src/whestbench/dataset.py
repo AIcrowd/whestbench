@@ -8,7 +8,18 @@ import secrets
 import weakref
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple, overload
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    overload,
+)
 
 if TYPE_CHECKING:
     from datasets import DatasetDict, IterableDataset, IterableDatasetDict
@@ -283,6 +294,10 @@ def create_dataset(
     return output_path
 
 
+# Overloads narrow the return type on `streaming`:
+# - Default `streaming=False` keeps the previous Dataset/DatasetDict shape, so
+#   existing callers (which use `len(ds)`, `ds[i]`, etc.) type-check unchanged.
+# - `streaming=True` returns the IterableDataset/IterableDatasetDict shape.
 @overload
 def load_dataset(
     path_or_repo: "Path | str",
@@ -290,8 +305,8 @@ def load_dataset(
     revision: Optional[str] = ...,
     split: str,
     token: Optional[str] = ...,
-    streaming: bool = ...,
-) -> "Dataset | IterableDataset": ...
+    streaming: Literal[False] = ...,
+) -> "Dataset": ...
 
 
 @overload
@@ -301,8 +316,30 @@ def load_dataset(
     revision: Optional[str] = ...,
     split: None = ...,
     token: Optional[str] = ...,
-    streaming: bool = ...,
-) -> "Dataset | DatasetDict | IterableDataset | IterableDatasetDict": ...
+    streaming: Literal[False] = ...,
+) -> "Dataset | DatasetDict": ...
+
+
+@overload
+def load_dataset(
+    path_or_repo: "Path | str",
+    *,
+    revision: Optional[str] = ...,
+    split: str,
+    token: Optional[str] = ...,
+    streaming: Literal[True],
+) -> "IterableDataset": ...
+
+
+@overload
+def load_dataset(
+    path_or_repo: "Path | str",
+    *,
+    revision: Optional[str] = ...,
+    split: None = ...,
+    token: Optional[str] = ...,
+    streaming: Literal[True],
+) -> "IterableDataset | IterableDatasetDict": ...
 
 
 def load_dataset(
