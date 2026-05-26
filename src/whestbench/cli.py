@@ -977,7 +977,22 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     bake_p.add_argument("--n-samples", type=int, required=True)
     bake_p.add_argument("--width", type=int, required=True)
     bake_p.add_argument("--depth", type=int, required=True)
-    bake_p.add_argument("--seed", type=int, default=None)
+    bake_p.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help=argparse.SUPPRESS,  # legacy 2.0 flag; hidden, rejected at dispatch with migration hint
+    )
+    bake_p.add_argument(
+        "--mlp-seeds",
+        type=str,
+        default=None,
+        help=(
+            "Path to a JSON file containing an array of N explicit per-MLP seeds "
+            "(each a non-negative int < 2**63). If omitted, auto-generate via "
+            "secrets.randbits(63). See docs/reference/dataset-format.md."
+        ),
+    )
 
     def _split_name_arg(value: str) -> str:
         try:
@@ -1185,38 +1200,72 @@ def _dispatch_dataset_command(args) -> int:
     if sub == "bake":
         from .dataset import create_dataset as _create_dataset
 
+        # Legacy --seed rejection
+        if args.seed is not None:
+            print(
+                "error: --seed is no longer supported as of seed_protocol 3.0. "
+                "Pass --mlp-seeds <file.json> (JSON array of N ints) or omit "
+                "the flag for auto-generation. See docs/reference/dataset-format.md.",
+                file=sys.stderr,
+            )
+            return 1
+
+        # Materialise mlp_seeds from --mlp-seeds file (or leave None for auto-gen).
+        mlp_seeds = None
+        if args.mlp_seeds is not None:
+            try:
+                with open(args.mlp_seeds, "r") as _f:
+                    mlp_seeds = json.load(_f)
+            except (OSError, json.JSONDecodeError) as exc:
+                print(
+                    f"error: cannot read --mlp-seeds file {args.mlp_seeds!r}: invalid JSON: {exc}",
+                    file=sys.stderr,
+                )
+                return 1
+            if not isinstance(mlp_seeds, list):
+                print(
+                    f"error: --mlp-seeds file {args.mlp_seeds!r} must contain a "
+                    f"JSON array; got {type(mlp_seeds).__name__}.",
+                    file=sys.stderr,
+                )
+                return 1
+
         mlp_range = _parse_mlp_range_cli(
             args.mlp_range_str,
             slice_spec=args.slice_spec,
             n_mlps=args.n_mlps,
         )
-        if args.torch:
-            from .dataset_torch import create_dataset_torch
+        try:
+            if args.torch:
+                from .dataset_torch import create_dataset_torch
 
-            create_dataset_torch(
-                n_mlps=args.n_mlps,
-                n_samples=args.n_samples,
-                width=args.width,
-                depth=args.depth,
-                seed=args.seed,
-                output_path=args.output,
-                split=args.split,
-                mlp_range=mlp_range,
-                device=args.device,
-                mlps_per_batch=args.mlps_per_batch,
-                chunk_size=args.chunk_size,
-            )
-        else:
-            _create_dataset(
-                n_mlps=args.n_mlps,
-                n_samples=args.n_samples,
-                width=args.width,
-                depth=args.depth,
-                seed=args.seed,
-                output_path=args.output,
-                split=args.split,
-                mlp_range=mlp_range,
-            )
+                create_dataset_torch(
+                    n_mlps=args.n_mlps,
+                    n_samples=args.n_samples,
+                    width=args.width,
+                    depth=args.depth,
+                    mlp_seeds=mlp_seeds,
+                    output_path=args.output,
+                    split=args.split,
+                    mlp_range=mlp_range,
+                    device=args.device,
+                    mlps_per_batch=args.mlps_per_batch,
+                    chunk_size=args.chunk_size,
+                )
+            else:
+                _create_dataset(
+                    n_mlps=args.n_mlps,
+                    n_samples=args.n_samples,
+                    width=args.width,
+                    depth=args.depth,
+                    mlp_seeds=mlp_seeds,
+                    output_path=args.output,
+                    split=args.split,
+                    mlp_range=mlp_range,
+                )
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
         print(f"Baked dataset to {args.output}")
         return 0
 
@@ -1301,7 +1350,8 @@ def _dispatch_dataset_command(args) -> int:
             print("  splits:")
             for name in sorted(md["splits"]):
                 info = md["splits"][name]
-                print(f"    {name}:  n_mlps={info['n_mlps']:,}  seed={info['seed']}")
+                seed_str = f"  seed={info['seed']}" if "seed" in info else ""
+                print(f"    {name}:  n_mlps={info['n_mlps']:,}{seed_str}")
             print(f"  created_at_utc: {md['created_at_utc']}")
         else:
             print("WhestBench dataset")
@@ -1320,6 +1370,11 @@ def _dispatch_dataset_command(args) -> int:
             ):
                 if key in md:
                     print(f"  {key}: {md[key]}")
+            proto = md.get("seed_protocol", {})
+            if proto:
+                print(
+                    f"  seed_protocol:  {proto.get('name', '?')} (version {proto.get('version', '?')})"
+                )
         return 0
 
     if sub == "combine-splits":
@@ -1336,7 +1391,8 @@ def _dispatch_dataset_command(args) -> int:
         print(f"Combined {len(splits)} splits into {out}:")
         for name in sorted(splits.keys()):
             info = splits[name]
-            print(f"  - {name}  (n_mlps={info['n_mlps']}, seed={info['seed']})")
+            seed_str = f", seed={info['seed']}" if "seed" in info else ""
+            print(f"  - {name}  (n_mlps={info['n_mlps']}{seed_str})")
         return 0
 
     print("Unknown dataset subcommand. Try --help.", file=sys.stderr)

@@ -688,7 +688,7 @@ def test_rerender_readme_with_repo_handles_multi_split(tmp_path):
         n_samples=100,
         width=4,
         depth=2,
-        seed=1,
+        mlp_seeds=[1000, 1001],
         output_path=pub,
         split="public",
     )
@@ -697,7 +697,7 @@ def test_rerender_readme_with_repo_handles_multi_split(tmp_path):
         n_samples=100,
         width=4,
         depth=2,
-        seed=2,
+        mlp_seeds=[2000, 2001],
         output_path=hold,
         split="holdout",
     )
@@ -728,7 +728,7 @@ def test_rerender_readme_with_repo_handles_single_split(tmp_path):
         n_samples=100,
         width=4,
         depth=2,
-        seed=1,
+        mlp_seeds=[1000, 1001],
         output_path=out,
     )
 
@@ -742,3 +742,123 @@ def test_rerender_readme_with_repo_handles_single_split(tmp_path):
     assert "Public Dataset Release" in readme
     assert "aicrowd/arc-whestbench-2026" in readme
     assert "v1" in readme
+
+
+def test_generate_readme_v3_single_split_mentions_protocol():
+    """3.0 single-split rendered README mentions the explicit-seed protocol."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _v3_single_split_md_for_readme()
+    out = generate_readme(
+        md,
+        split="public",
+        ds_size=md["n_mlps"],
+        repo_id="aicrowd/example",
+        revision="v1",
+    )
+    assert "whestbench_explicit_per_mlp_seeds" in out or "explicit per-MLP seeds" in out
+
+
+def test_generate_readme_v3_rebake_command_uses_mlp_seeds():
+    """The rebake-command block in the rendered README uses --mlp-seeds, not --seed."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _v3_single_split_md_for_readme()
+    out = generate_readme(
+        md,
+        split="public",
+        ds_size=md["n_mlps"],
+        repo_id="aicrowd/example",
+        revision="v1",
+    )
+    assert "--mlp-seeds" in out
+    assert "--seed " not in out and "--seed=" not in out  # legacy flag should not appear
+
+
+def test_generate_readme_v3_multi_split_mentions_protocol():
+    from whestbench.dataset_io import generate_readme
+
+    md = _v3_multi_split_md_for_readme()
+    out = generate_readme(
+        md,
+        splits=md["splits"],
+        ds_size=100,
+        repo_id="aicrowd/arc-whestbench-2026-evals",
+        revision="round-1",
+    )
+    assert "whestbench_explicit_per_mlp_seeds" in out or "explicit per-MLP seeds" in out
+
+
+def test_generate_readme_v2_legacy_still_renders():
+    """2.0 datasets continue to render (backward compat)."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _v2_single_split_md_for_readme()
+    out = generate_readme(
+        md,
+        split="public",
+        ds_size=md["n_mlps"],
+        repo_id="aicrowd/example",
+        revision="v1",
+    )
+    # 2.0 rebake guidance can still use --seed (or could be tightened later).
+    # Just check it renders without crashing.
+    assert "Public Dataset Release" in out or "WhestBench" in out
+
+
+def _v3_single_split_md_for_readme():
+    return {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "torch",
+        "seed_protocol": {
+            "name": "whestbench_explicit_per_mlp_seeds",
+            "version": "3.0",
+        },
+        "n_mlps": 4,
+        "n_samples": 100,
+        "width": 4,
+        "depth": 2,
+        "created_at_utc": "2026-05-26T00:00:00+00:00",
+        "hardware": {},
+    }
+
+
+def _v3_multi_split_md_for_readme():
+    return {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "torch",
+        "seed_protocol": {
+            "name": "whestbench_explicit_per_mlp_seeds",
+            "version": "3.0",
+        },
+        "n_samples": 100,
+        "width": 4,
+        "depth": 2,
+        "created_at_utc": "2026-05-26T00:00:00+00:00",
+        "hardware": {},
+        "splits": {
+            "public": {"n_mlps": 50, "created_at_utc": "2026-05-26T00:00:00+00:00"},
+            "holdout": {"n_mlps": 50, "created_at_utc": "2026-05-26T00:00:00+00:00"},
+        },
+    }
+
+
+def _v2_single_split_md_for_readme():
+    return {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "flopscope",
+        "seed_protocol": {
+            "name": "whestbench_seedsequence_hierarchy",
+            "version": "2.0",
+        },
+        "n_mlps": 1000,
+        "n_samples": 1_000_000_000,
+        "seed": 42,
+        "width": 256,
+        "depth": 8,
+        "created_at_utc": "2026-05-25T00:00:00+00:00",
+        "hardware": {},
+    }

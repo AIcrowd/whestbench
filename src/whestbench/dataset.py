@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import secrets
 import weakref
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,9 +22,10 @@ from .dataset_io import (
     DEFAULT_SPLIT,
     SCHEMA_FORMAT,
     SCHEMA_VERSION,
-    SEED_PROTOCOL_NAME,
-    SEED_PROTOCOL_VERSION,
+    SEED_PROTOCOL_NAME_V3,
+    SEED_PROTOCOL_VERSION_V3,
     InvalidDatasetError,
+    _validate_mlp_seeds,
     make_features,
     read_metadata,
     validate_metadata,
@@ -80,44 +82,99 @@ def create_dataset(
     n_samples: int,
     width: int,
     depth: int,
-    seed: Optional[int] = None,
+    mlp_seeds: Optional[List[int]] = None,
     output_path: "Path | str",
     split: str = DEFAULT_SPLIT,
     mlp_range: Optional[Tuple[int, int]] = None,
     progress: Optional[Callable[[Dict[str, Any]], None]] = None,
+    **deprecated_kwargs: Any,
 ) -> Path:
     """Generate MLPs, compute ground-truth, and write a schema-3.0 dataset directory.
 
     Output is a directory with data/<split>-00000-of-00001.parquet, metadata.json,
     README.md. Raises FileExistsError if output_path already exists.
 
+    Each MLP is seeded by an element of ``mlp_seeds``. When ``mlp_seeds`` is
+    omitted, one distinct ``secrets.randbits(63)`` value is generated per MLP.
+
     If `mlp_range=(start, end)` is set, only MLPs in [start, end) are generated.
     Output metadata is marked is_partial=true. Run merge_datasets to combine.
 
     Bit-equivalent property: a worker baking slice [a, b) of a logical dataset of
-    size N produces the same rows as the corresponding slice of a single-host bake
-    of size N.
+    size N with the same ``mlp_seeds`` list produces the same rows as the
+    corresponding slice of a single-host bake of size N.
+
+    Args:
+        n_mlps: Total number of MLPs in the logical dataset.
+        n_samples: Ground-truth samples per MLP.
+        width: Neurons per layer.
+        depth: Number of weight matrices.
+        mlp_seeds: Per-MLP input seeds (list of ``n_mlps`` distinct int63s).
+            Auto-generated when omitted.
+        output_path: Destination directory (must not exist).
+        split: HF split name for the parquet file.
+        mlp_range: ``(start, end)`` to bake a slice of [0, n_mlps).
+        progress: Optional callback for progress events.
+
+    Raises:
+        TypeError: if the legacy ``seed=`` kwarg is passed.
+        ValueError: if ``mlp_seeds`` length or values are invalid.
+        FileExistsError: if ``output_path`` already exists.
     """
+    # Reject the legacy `seed=` kwarg with a migration hint.
+    if "seed" in deprecated_kwargs:
+        raise TypeError(
+            "seed= is no longer supported in create_dataset. "
+            "Use mlp_seeds=[...] to provide explicit per-MLP seeds, "
+            "or omit mlp_seeds to auto-generate them."
+        )
+    if deprecated_kwargs:
+        unexpected = ", ".join(repr(k) for k in deprecated_kwargs)
+        raise TypeError(f"create_dataset() got unexpected keyword argument(s): {unexpected}")
+
     output_path = Path(output_path)
     start, end = _resolve_mlp_range(n_mlps, mlp_range)
 
-    seed_sequence = (
-        fnp.random.SeedSequence() if seed is None else fnp.random.SeedSequence(int(seed))
-    )
-    stream_seed = seed_sequence.spawn(3 * n_mlps)
+    # Auto-generate or validate mlp_seeds.
+    if mlp_seeds is None:
+        # Generate distinct int63 seeds. Collisions are astronomically unlikely
+        # (~n^2 / 2^64) but we re-roll defensively. The max_attempts cap prevents
+        # an unbounded loop in the pathological case of a broken CSPRNG.
+        seen: set = set()
+        generated: List[int] = []
+        max_attempts = n_mlps * 10
+        for _ in range(max_attempts):
+            if len(generated) >= n_mlps:
+                break
+            s = secrets.randbits(63)
+            if s not in seen:
+                seen.add(s)
+                generated.append(s)
+        if len(generated) < n_mlps:
+            raise RuntimeError(
+                f"failed to generate {n_mlps} distinct seeds in {max_attempts} attempts; "
+                f"check that secrets.randbits is functioning correctly."
+            )
+        mlp_seeds = generated
+    _validate_mlp_seeds(mlp_seeds, n_mlps)
 
-    # Phase 1: generate MLPs in the slice
+    # Phase 1: generate MLPs in the slice.
+    # Per-MLP SeedSequence: spawn(3) gives [weight_ss, sample_ss, estimator_ss].
     mlps: List[MLP] = []
     for slice_idx, i in enumerate(range(start, end)):
-        weight_stream = fnp.random.default_rng(stream_seed[3 * i])
-        estimator_seed_i = int(stream_seed[3 * i + 2].generate_state(1)[0])
+        ss = fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)
+        weight_stream = fnp.random.default_rng(ss[0])
+        estimator_seed_i = int(ss[2].generate_state(1)[0])
         mlps.append(sample_mlp(width, depth, weight_stream, seed=estimator_seed_i))
         if progress is not None:
             progress({"phase": "generating", "completed": slice_idx + 1, "total": end - start})
 
-    # Names: derived from ALL logical seeds, then sliced. Guarantees slice's
-    # names match the corresponding slice of a single-host bake.
-    all_logical_seeds = [int(stream_seed[3 * i + 2].generate_state(1)[0]) for i in range(n_mlps)]
+    # Names: derived from ALL logical estimator seeds, then sliced. Guarantees
+    # slice's names match the corresponding slice of a single-host bake.
+    all_logical_seeds = [
+        int(fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)[2].generate_state(1)[0])
+        for i in range(n_mlps)
+    ]
     all_names = assign_unique_names(all_logical_seeds)
     slice_names = all_names[start:end]
     mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, slice_names)]
@@ -133,7 +190,8 @@ def create_dataset(
     total_sampling_chunks = (end - start) * chunks_per_mlp
 
     for slice_idx, i in enumerate(range(start, end)):
-        sample_stream = fnp.random.default_rng(stream_seed[3 * i + 1])
+        ss = fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)
+        sample_stream = fnp.random.default_rng(ss[1])
         mlp = mlps[slice_idx]
 
         def _on_chunk(
@@ -183,7 +241,8 @@ def create_dataset(
         {
             "mlp_id": list(range(start, end)),
             "mlp_name": [m.name for m in mlps],
-            "mlp_seed": [int(m.seed) for m in mlps],
+            # Under 3.0, parquet mlp_seed stores the INPUT seed (not derived estimator seed).
+            "mlp_seed": mlp_seeds[start:end],
             "weights": weights_array,
             "all_layer_means": all_layer_means,
             "final_means": final_means,
@@ -198,12 +257,10 @@ def create_dataset(
         "format": SCHEMA_FORMAT,
         "backend": "flopscope",
         "seed_protocol": {
-            "name": SEED_PROTOCOL_NAME,
-            "version": SEED_PROTOCOL_VERSION,
-            "seeded": seed is not None,
+            "name": SEED_PROTOCOL_NAME_V3,
+            "version": SEED_PROTOCOL_VERSION_V3,
         },
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
-        "seed": int(seed_sequence.entropy),
         "n_mlps": end - start,
         "n_samples": n_samples,
         "width": width,
@@ -401,7 +458,13 @@ def metadata(
 
 
 def iter_mlps(ds: Dataset) -> Iterator[MLP]:
-    """Iterate over a Dataset, yielding one MLP per row."""
+    """Iterate the MLPs in a Dataset, constructing MLP objects per row.
+
+    Looks up the dataset's seed_protocol via the metadata side-channel to
+    construct each MLP with the correct estimator-seed derivation. Falls
+    back to seed_protocol 2.0 semantics if no metadata is attached (e.g.
+    a Dataset constructed manually for tests).
+    """
     from datasets import DatasetDict
 
     if isinstance(ds, DatasetDict):
@@ -409,8 +472,10 @@ def iter_mlps(ds: Dataset) -> Iterator[MLP]:
             "iter_mlps requires a single Dataset; for multi-split datasets, "
             "call load_dataset(..., split='<name>') first or use ds[split]."
         )
+    md = _METADATA_BY_DS.get(ds, {})
+    proto_version = md.get("seed_protocol", {}).get("version", "2.0")
     for row in ds:
-        yield MLP.from_row(row)
+        yield MLP.from_row(row, seed_protocol_version=proto_version)
 
 
 def mlp_at(ds: Dataset, index: int) -> MLP:
@@ -422,4 +487,6 @@ def mlp_at(ds: Dataset, index: int) -> MLP:
             "mlp_at requires a single Dataset; for multi-split datasets, "
             "call load_dataset(..., split='<name>') first or use ds[split]."
         )
-    return MLP.from_row(ds[index])
+    md = _METADATA_BY_DS.get(ds, {})
+    proto_version = md.get("seed_protocol", {}).get("version", "2.0")
+    return MLP.from_row(ds[index], seed_protocol_version=proto_version)
