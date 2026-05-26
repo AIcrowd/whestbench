@@ -289,3 +289,82 @@ same `--seed` and `--n-mlps`. This holds because:
 Note: bit-equivalence is per-backend. The `flopscope` (CPU) and `torch` backends
 use different RNG algorithms and produce statistically equivalent (not bitwise
 identical) results at the same seed.
+
+## Multi-split datasets
+
+A dataset directory can contain multiple splits as sibling parquet files in `data/`, with a single `metadata.json` describing all of them via an optional `splits:` sub-dict.
+
+### On-disk layout
+
+```
+my-eval/
+├── data/
+│   ├── public-00000-of-00001.parquet
+│   └── holdout-00000-of-00001.parquet
+├── metadata.json
+└── README.md
+```
+
+### metadata.json shape
+
+```json
+{
+  "schema_version": "3.0",
+  "format": "hf-datasets-parquet",
+  "backend": "torch",
+  "seed_protocol": {"name": "whestbench_seedsequence_hierarchy", "version": "2.0"},
+  "n_samples": 1000000000,
+  "width": 256,
+  "depth": 8,
+  "created_at_utc": "...",
+  "hardware": {...},
+  "splits": {
+    "public":  {"n_mlps": 50, "seed": <int>, "created_at_utc": "...", "hardware_fingerprints": [...]},
+    "holdout": {"n_mlps": 50, "seed": <int>, "created_at_utc": "...", "hardware_fingerprints": [...]}
+  }
+}
+```
+
+### Field placement
+
+| Field | Single-split | Multi-split |
+|---|---|---|
+| `schema_version`, `format`, `seed_protocol` | top-level | top-level |
+| `backend`, `width`, `depth`, `n_samples` | top-level | top-level — must match across all splits (validated at combine time) |
+| `n_mlps`, `seed` | top-level | per-split (`splits.<name>.{n_mlps,seed}`) |
+| `created_at_utc` | top-level | top-level (= earliest of splits) + optional per-split |
+| `hardware` | top-level (bake host) | top-level (combine host) + per-split `hardware_fingerprints` for provenance |
+| `splits` | absent | present |
+| `is_partial`, `mlp_range`, `total_n_mlps` | present iff partial | not allowed (multi-split + partial is invalid) |
+
+The discriminator is the presence of the `splits` field. No `schema_version` bump — the multi-split shape is a purely additive extension of schema 3.0.
+
+### Loading
+
+```python
+from whestbench import load_dataset, metadata, iter_mlps
+
+dsd = load_dataset("./my-eval")             # → DatasetDict
+ds  = load_dataset("./my-eval", split="public")   # → Dataset
+
+print(metadata(dsd)["splits"].keys())        # full multi-split metadata
+print(metadata(dsd, split="public")["seed"]) # single-split-shaped projection
+
+for mlp in iter_mlps(dsd["public"]):
+    mlp.validate()
+```
+
+### Building a multi-split dataset
+
+Bake each split as a complete single-split dataset, then combine:
+
+```bash
+whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split public  --seed <S1> --output ./pub
+whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split holdout --seed <S2> --output ./hold
+whest dataset combine-splits ./pub ./hold --output ./eval-r1
+whest dataset push ./eval-r1 --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
+```
+
+### The `public` / `holdout` naming convention
+
+The contest's evaluation dataset uses split names `public` (visible-during-contest scores) and `holdout` (private/final-leaderboard scores). The dataset-card template special-cases these names with leaderboard-specific wording. Other names render generically. Tooling itself accepts any HF-Hub-compatible split name (regex `[a-z][a-z0-9]*(-[a-z0-9]+)*`).

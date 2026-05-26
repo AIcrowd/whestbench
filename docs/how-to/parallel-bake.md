@@ -224,3 +224,36 @@ The merge step produces a dataset bit-equivalent to a single-host bake only when
    identical results at the same seed.
 3. For the `torch` backend on CUDA, bitwise reproducibility additionally requires
    the same torch version (CUDA kernel implementations may differ between versions).
+
+## Multi-split datasets
+
+For datasets with multiple splits (e.g. the evaluation dataset with `public` and `holdout`), bake each split independently — each split has its own seed and the seeds must be uncorrelated — then combine.
+
+```bash
+# Parallel-bake the public split (4 workers).
+for K in 0 1 2 3; do
+  whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 \
+    --split public --seed <PUBLIC_SEED> --slice $K/4 \
+    --torch --device cuda --output ./pub-p$K &
+done
+wait
+whest dataset merge ./pub-p* --output ./pub-complete
+
+# Parallel-bake the holdout split (4 workers, different seed).
+for K in 0 1 2 3; do
+  whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 \
+    --split holdout --seed <HOLDOUT_SEED> --slice $K/4 \
+    --torch --device cuda --output ./hold-p$K &
+done
+wait
+whest dataset merge ./hold-p* --output ./hold-complete
+
+# Combine into one multi-split directory.
+whest dataset combine-splits ./pub-complete ./hold-complete --output ./eval
+
+# Inspect, push.
+whest dataset inspect ./eval
+whest dataset push ./eval --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
+```
+
+Each per-split bake is independent — workers in different splits don't share any seed state. The combine step validates that all splits agree on the invariants (`width`, `depth`, `n_samples`, `backend`) but allows different per-split `n_mlps` and `seed`.

@@ -12,16 +12,41 @@ from .dataset_io import METADATA_FILE, README_FILE, generate_readme
 
 
 def _rerender_readme_with_repo(local_dir: Path, *, repo_id: str, revision: str) -> None:
-    """Re-render README.md with concrete repo_id and revision before upload."""
+    """Re-render README.md with concrete repo_id and revision before upload.
+
+    Handles both single-split and multi-split dataset directories.
+    """
     md = json.loads((local_dir / METADATA_FILE).read_text())
     parquet_files = list((local_dir / "data").glob("*.parquet"))
-    if len(parquet_files) != 1:
-        return
-    split = parquet_files[0].name.split("-")[0]
-    ds_size = md.get("n_mlps", 0)
-    (local_dir / README_FILE).write_text(
-        generate_readme(md, split=split, ds_size=ds_size, repo_id=repo_id, revision=revision)
-    )
+    if not parquet_files:
+        return  # nothing to render against
+
+    splits_dict = md.get("splits")
+    if splits_dict:
+        ds_size = sum(s["n_mlps"] for s in splits_dict.values())
+        (local_dir / README_FILE).write_text(
+            generate_readme(
+                md,
+                splits=splits_dict,
+                ds_size=ds_size,
+                repo_id=repo_id,
+                revision=revision,
+            )
+        )
+    else:
+        if len(parquet_files) != 1:
+            return
+        split = parquet_files[0].name.split("-")[0]
+        ds_size = md.get("n_mlps", 0)
+        (local_dir / README_FILE).write_text(
+            generate_readme(
+                md,
+                split=split,
+                ds_size=ds_size,
+                repo_id=repo_id,
+                revision=revision,
+            )
+        )
 
 
 def publish_dataset(

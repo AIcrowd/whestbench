@@ -1,3 +1,29 @@
+# Changelog
+
+## Unreleased
+
+### Added
+
+- Multi-split dataset support: dataset directories can now contain multiple Parquet files in `data/`, one per split, described by an optional `splits:` sub-dict in `metadata.json`. Backward-compatible — single-split datasets are unchanged.
+- `whest dataset combine-splits INPUT_DIR... --output OUTPUT_DIR` CLI subcommand for assembling multi-split datasets from N complete single-split inputs.
+- `whestbench.combine_split_datasets()` Python helper (re-exported from `whestbench`).
+- `whest dataset bake --split <name>` now accepts arbitrary split names matching `[a-z][a-z0-9]*(-[a-z0-9]+)*` (previously restricted to `public` / `holdout`).
+- `whest dataset pull --split <name>` and `whest run --dataset ... --split <name>` for selecting one split from multi-split datasets.
+
+### Changed
+
+- `whestbench.load_dataset()` returns `Dataset | DatasetDict` based on the dataset shape; explicit `split=` always returns `Dataset`.
+- `whestbench.metadata()` accepts a `DatasetDict` and an optional `split=` filter that projects to single-split-shaped metadata.
+- `whest dataset inspect` now recognises multi-split datasets and prints a per-split summary.
+- The dataset-card template gains a multi-split branch with leaderboard-specific wording when splits are `{public, holdout}`; the single-split `public` branch's wording is updated to point at the new evaluation repo.
+
+### Compatibility
+
+- `schema_version` stays at `"3.0"`. The `splits:` field is purely additive.
+- Old whestbench reading new multi-split datasets fails loudly with a missing-`n_mlps` error — upgrade whestbench to read multi-split.
+
+---
+
 ## 0.3.0 — 2026-05-25
 
 ### BREAKING
