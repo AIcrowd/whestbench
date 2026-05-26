@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false
 """Version + runtime-state lookups for dataset metadata.
 
 These are embedded in ``metadata.json`` under top-level version pins and the
