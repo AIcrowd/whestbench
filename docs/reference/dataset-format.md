@@ -92,6 +92,23 @@ about the bake itself, **not** the estimator's FLOP budget at evaluation time
 | `created_at_utc` | `string` | ISO-8601 UTC timestamp of bake completion |
 | `hardware` | `object` | Hardware fingerprint from the baking host |
 
+### Provenance fields
+
+These pin the exact code + runtime state that produced a dataset, so a reader
+can reproduce a bake without guessing which whestbench/flopscope/torch versions
+or determinism flags were in effect. See
+[Parallel bake → Bit-equivalence requirements](../how-to/parallel-bake.md#bit-equivalence-requirements)
+for the operational consequences.
+
+| Field | Type | Description |
+|---|---|---|
+| `whestbench_version` | `string` | Installed whestbench package version (e.g. `"0.3.0"`). `"unknown"` if `importlib.metadata` couldn't resolve it. |
+| `flopscope_version` | `string` | Installed flopscope package version. Weight init uses `flopscope.numpy` so this matters for bit-exact weights. |
+
+`validate_metadata` treats these as informational and does not require them
+(absence doesn't fail validation), but `whest dataset bake` always populates
+them.
+
 ### Torch-specific fields (when `backend == "torch"`)
 
 | Field | Type | Description |
@@ -100,7 +117,24 @@ about the bake itself, **not** the estimator's FLOP budget at evaluation time
 | `torch_version` | `string` | PyTorch version string, e.g. `"2.3.0"` |
 | `cuda_device_name` | `string` | GPU name (CUDA only), e.g. `"NVIDIA L40S"` |
 | `cuda_device_capability` | `[int, int]` | CUDA compute capability (CUDA only), e.g. `[8, 9]` |
+| `cuda_driver_version` | `string` | NVIDIA driver version (CUDA only, best-effort via `nvidia-smi`). Absent if `nvidia-smi` is unavailable. |
 | `mps_device_name` | `string` | Processor name (MPS only) |
+| `mlps_per_batch` | `integer` | Number of MLPs the bake processed per device-side batch. |
+| `chunk_size` | `integer` | Number of MC samples per device-side chunk. **Pinning this to a fixed value across workers + reference re-bakes is required for cross-host bit-exact verification** (see [parallel-bake.md](../how-to/parallel-bake.md)). |
+| `bake_config` | `object` | Determinism flag state at bake time. See below. |
+
+#### `bake_config` object (torch path only)
+
+Captures the state of torch's determinism levers + the cuBLAS workspace env var
+at bake time. Two bakes that should produce bit-identical numeric columns must
+have matching `bake_config` values (and matching `chunk_size`).
+
+| Field | Type | Description |
+|---|---|---|
+| `cudnn_deterministic` | `boolean` | Value of `torch.backends.cudnn.deterministic` at bake time. |
+| `cudnn_benchmark` | `boolean` | Value of `torch.backends.cudnn.benchmark` at bake time. |
+| `cublas_workspace_config` | `string` or `null` | Value of the `CUBLAS_WORKSPACE_CONFIG` env var at bake time, or `null` if unset. Recommended value for deterministic cuBLAS: `":4096:8"`. |
+| `torch_use_deterministic_algorithms` | `boolean` | Value of `torch.are_deterministic_algorithms_enabled()` at bake time. |
 
 ### Partial-bake fields (when `--slice` or `--mlp-range` was used)
 
@@ -143,6 +177,43 @@ A dataset with `is_partial=true` is refused by `whestbench.load_dataset` — run
     "cpu_brand": "Intel Xeon Platinum 8480+",
     "cpu_count": 64,
     "ram_gb": 512.0
+  },
+  "whestbench_version": "0.3.0",
+  "flopscope_version": "0.3.0"
+}
+```
+
+### Example metadata.json (torch CUDA bake, seed_protocol 3.0)
+
+```json
+{
+  "schema_version": "3.0",
+  "format": "hf-datasets-parquet",
+  "backend": "torch",
+  "seed_protocol": {
+    "name": "whestbench_explicit_per_mlp_seeds",
+    "version": "3.0"
+  },
+  "n_mlps": 50,
+  "n_samples": 1000000000,
+  "width": 256,
+  "depth": 8,
+  "created_at_utc": "2026-05-26T03:45:00+00:00",
+  "hardware": { "...": "..." },
+  "whestbench_version": "0.3.0",
+  "flopscope_version": "0.3.0",
+  "torch_version": "2.3.0+cu121",
+  "device": "cuda",
+  "cuda_device_name": "NVIDIA L40S",
+  "cuda_device_capability": [8, 9],
+  "cuda_driver_version": "535.183.01",
+  "mlps_per_batch": 16,
+  "chunk_size": 524288,
+  "bake_config": {
+    "cudnn_deterministic": true,
+    "cudnn_benchmark": false,
+    "cublas_workspace_config": ":4096:8",
+    "torch_use_deterministic_algorithms": false
   }
 }
 ```

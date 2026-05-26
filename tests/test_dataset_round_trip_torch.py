@@ -21,7 +21,7 @@ def test_torch_bake_metadata_has_schema_3_0(tmp_path: Path):
         n_samples=10_000,
         width=4,
         depth=2,
-        seed=7,
+        mlp_seeds=[7, 8],
         output_path=out,
         device="cpu",
     )
@@ -41,7 +41,7 @@ def test_torch_bake_three_file_layout(tmp_path: Path):
         n_samples=10_000,
         width=4,
         depth=2,
-        seed=7,
+        mlp_seeds=[7, 8],
         output_path=out,
         device="cpu",
     )
@@ -50,7 +50,7 @@ def test_torch_bake_three_file_layout(tmp_path: Path):
 
 
 def test_torch_cpu_means_within_tolerance_of_flopscope_path(tmp_path: Path):
-    """At the same seed, torch CPU mode statistically matches flopscope CPU."""
+    """At the same mlp_seeds, torch CPU mode statistically matches flopscope CPU."""
     from datasets import load_dataset as hf_load_dataset
 
     from whestbench.dataset import create_dataset
@@ -58,7 +58,7 @@ def test_torch_cpu_means_within_tolerance_of_flopscope_path(tmp_path: Path):
 
     # dict[str, Any] so pyright doesn't widen the (homogeneous-int) literal
     # type onto kwargs like `progress`, `split`, `mlp_range` when **-spread.
-    common: dict[str, Any] = dict(n_mlps=2, n_samples=50_000, width=4, depth=2, seed=42)
+    common: dict[str, Any] = dict(n_mlps=2, n_samples=50_000, width=4, depth=2, mlp_seeds=[42, 43])
     cpu_dir = tmp_path / "cpu"
     torch_dir = tmp_path / "torch"
     create_dataset(output_path=cpu_dir, **common)
@@ -89,7 +89,7 @@ def test_torch_bake_supports_mlp_range(tmp_path: Path):
         n_samples=10_000,
         width=4,
         depth=2,
-        seed=1,
+        mlp_seeds=[1, 2, 3, 4, 5, 6, 7, 8],
         output_path=out,
         mlp_range=(2, 5),
         device="cpu",
