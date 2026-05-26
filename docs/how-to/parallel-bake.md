@@ -137,10 +137,14 @@ from datasets import load_dataset
 # Load the merged result
 merged = load_dataset("./final-eval", split="public")
 
-# Bake a tiny reference (e.g. first 4 MLPs) on one host for verification
+# Bake a tiny reference (e.g. first 4 MLPs) on one host for verification.
+# Pass the SAME --chunk-size as the parallel workers — otherwise the auto-tuned
+# chunk_size differs (workers: B=mlps_per_slice; reference: B=4) and reductions
+# accumulate in different orders, producing ~5e-4 spurious diffs on CUDA.
 # echo '[<seed0>,<seed1>,<seed2>,<seed3>]' > ref-seeds.json  # use seeds[0:4] from seeds.json
 # whest dataset bake --n-mlps 4 --n-samples 1000000 \
-#     --width 256 --depth 8 --mlp-seeds ref-seeds.json --output ./reference-4
+#     --width 256 --depth 8 --mlp-seeds ref-seeds.json \
+#     --chunk-size 524288 --output ./reference-4
 
 reference = load_dataset("./reference-4", split="public")
 
@@ -151,6 +155,17 @@ for i in range(len(reference)):
     max_diff = np.abs(merged_means - ref_means).max()
     print(f"MLP {i}: max |Δmean| = {max_diff:.2e}")
     assert max_diff == 0.0, f"MLP {i}: not bit-exact!"
+
+    # avg_variance loses ~1 float64 ULP from the (sum_sq/n - mean²) subtraction,
+    # so compare with np.isclose rather than strict equality. rtol=1e-12 covers
+    # ULP noise that scales with the variance magnitude; atol=1e-15 guards near
+    # zero. Observed noise on N=1e9 bakes is ~1e-17, so this is ~100× headroom.
+    merged_var = float(merged[i]["avg_variance"])
+    ref_var = float(reference[i]["avg_variance"])
+    assert np.isclose(merged_var, ref_var, rtol=1e-12, atol=1e-15), (
+        f"MLP {i}: variance not within ULP tol "
+        f"(merged={merged_var}, ref={ref_var})"
+    )
 
 print("Bit-equivalence verified for first 4 MLPs.")
 ```
@@ -232,6 +247,26 @@ The merge step produces a dataset bit-equivalent to a single-host bake only when
    identical results at the same seeds.
 3. For the `torch` backend on CUDA, bitwise reproducibility additionally requires
    the same torch version (CUDA kernel implementations may differ between versions).
+4. For the `torch` backend on CUDA, **all workers and any reference re-bake must use
+   the same `--chunk-size`**. The default is auto-tuned per call from
+   `mlps_per_batch` (which derives from `--n-mlps` minus slicing) and the device's
+   free memory — so a worker baking a 1-MLP slice (`mlps_per_batch=1`, auto chunk
+   ≈ 1048576) and a 4-MLP reference bake (`mlps_per_batch=4`, auto chunk ≈ 524288)
+   will pick different chunk sizes, accumulate float reductions in different
+   orders, and disagree by ~5e-4 absolute on `all_layer_means`, `final_means`, and
+   `avg_variance`. Pinning `--chunk-size` to a fixed value across every bake
+   (workers AND any reference bake) eliminates this. For `width=256`,
+   `--chunk-size 524288` is a safe choice across all batch sizes from 1 to 16.
+
+   Cross-host CUDA non-determinism beyond chunk-size has been ruled out in practice
+   when the standard PyTorch determinism flags are set (`cudnn.deterministic=True`,
+   `cudnn.benchmark=False`, `CUBLAS_WORKSPACE_CONFIG=:4096:8`). With those + a
+   pinned `--chunk-size`, parallel-vs-serial bakes match bit-exactly on
+   `weights`, `all_layer_means`, and `final_means`. `avg_variance` differs by
+   ~1 float64 ULP (~1e-17 on N=1e9 bakes) due to the `(sum_sq/n − mean²)`
+   subtraction; compare it with `np.isclose(rtol=1e-12, atol=1e-15)` rather
+   than strict equality. `rtol` covers ULP noise that scales with variance
+   magnitude; `atol` guards near zero.
 
 ## Multi-split datasets
 
