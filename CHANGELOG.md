@@ -26,10 +26,9 @@
 - Dataset card template `templates/dataset_card.md.j2`: Provenance section
   renders rich per-signature blocks instead of a per-partial bullet list.
   Reproducibility wording strengthened — `weights`, `all_layer_means`,
-  `final_means` are documented as **bit-exact** under matched determinism env
-  on a fixed `torch` version + GPU architecture. When
-  `metadata.cross_driver_verified` is True, additionally states cross-driver
-  bit-equivalence is empirically verified.
+  `final_means` are documented as **bit-exact** under matched determinism
+  env on a fixed `torch` version, CUDA driver, and GPU architecture (was
+  understated as only "statistically equivalent ~3×10⁻⁵").
 - Dataset card template: hardcoded companion-repo names replaced with the
   `companion_repo` template variable (backwards-compatible fallback).
 
