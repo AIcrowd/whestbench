@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -30,6 +32,10 @@ jobs:
 
       - name: Type check
         run: uv run pyright
+
+      - name: Conventional commits (gitlint)
+        if: github.event_name == 'pull_request'
+        run: uv run gitlint --commits origin/${{ github.base_ref }}..HEAD
 
       - name: Pre-push hook hint
         if: failure()
