@@ -193,7 +193,7 @@ See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked 
 This dataset was baked with:
 
 - **Backend:** `{{ metadata.backend }}`
-{% if not splits -%}
+{% if not splits and metadata.get('seed') -%}
 - **Root seed:** `{{ metadata.seed }}`
 {% endif -%}
 - **Seed protocol:** `{{ metadata.seed_protocol.name }}` v{{ metadata.seed_protocol.version }}
@@ -205,12 +205,58 @@ This dataset was baked with:
 {% endif %}
 - **Created (UTC):** `{{ metadata.created_at_utc }}`
 
-{% if not splits %}
-To re-bake locally and produce a directory bit-identical to this one (CPU backend) or statistically equivalent (torch backend):
+{% set proto_name = metadata.get('seed_protocol', {}).get('name', '') %}
+{% if proto_name == 'whestbench_explicit_per_mlp_seeds' %}
+This dataset was baked with **seed_protocol 3.0 (explicit per-MLP seeds)**. Each MLP's seed is recorded in the parquet `mlp_seed` column. To re-bake locally with the same seed list:
 
 ```bash
+# Extract the per-MLP seeds from the published dataset:
+python -c "
+import json
+from datasets import load_dataset
+ds = load_dataset('{{ repo_id }}', revision='{{ revision }}'{% if splits %}, {% endif %})
+{% if splits %}
+{% for split_name in splits.keys() %}
+seeds_{{ split_name }} = [int(row['mlp_seed']) for row in ds['{{ split_name }}']]
+open('{{ split_name }}-seeds.json', 'w').write(json.dumps(seeds_{{ split_name }}))
+{% endfor %}
+{% else %}
+seeds = [int(row['mlp_seed']) for row in ds['{{ split }}']]
+open('seeds.json', 'w').write(json.dumps(seeds))
+{% endif %}
+"
+
+# Re-bake:
+{% if splits %}
+{% for name, info in splits.items() %}
 whest dataset bake \
-    --seed {{ metadata.seed }} \
+    --n-mlps {{ info.n_mlps }} \
+    --n-samples {{ metadata.n_samples }} \
+    --width {{ metadata.width }} --depth {{ metadata.depth }} \
+    --split {{ name }} \
+    --mlp-seeds {{ name }}-seeds.json \
+    --output ./{{ name }}-rebake{% if metadata.backend == 'torch' %} \
+    --torch --device cuda{% endif %}
+
+{% endfor %}
+{% else %}
+whest dataset bake \
+    --n-mlps {{ metadata.n_mlps }} \
+    --n-samples {{ metadata.n_samples }} \
+    --width {{ metadata.width }} --depth {{ metadata.depth }} \
+    --split {{ split }} \
+    --mlp-seeds seeds.json \
+    --output ./rebake{% if metadata.backend == 'torch' %} \
+    --torch --device cuda{% endif %}
+{% endif %}
+```
+{% elif proto_name == 'whestbench_seedsequence_hierarchy' %}
+This dataset was baked with **seed_protocol 2.0 (legacy single-root)**. To re-bake:
+
+{% if not splits %}
+```bash
+whest dataset bake \
+    --seed {{ metadata.get('seed', '<unknown>') }} \
     --n-mlps {{ metadata.n_mlps }} \
     --n-samples {{ metadata.n_samples }} \
     --width {{ metadata.width }} \
@@ -220,8 +266,6 @@ whest dataset bake \
     --torch{% endif %}
 ```
 {% else %}
-To re-bake a single split from this dataset (CPU backend) or statistically equivalent (torch backend):
-
 ```bash
 # Re-bake the public split
 whest dataset bake \
@@ -234,6 +278,8 @@ whest dataset bake \
     --torch{% endif %} \
     --output ./my-bake
 ```
+{% endif %}
+(Note: new bakes use seed_protocol 3.0 and `--mlp-seeds FILE` instead of `--seed N`.)
 {% endif %}
 
 Bit-exact reproducibility requires the same `whestbench` and `faker` versions pinned at bake time; statistical reproducibility (means within `~3e-5`) holds across hardware on the `torch` backend.
