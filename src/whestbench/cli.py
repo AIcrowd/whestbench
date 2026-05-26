@@ -1831,6 +1831,12 @@ def _main_participant(argv: "list[str]") -> int:
             dataset_path: Optional[str] = getattr(args, "dataset", None)
             contest_data = None
             ds_meta: Dict[str, Any] = {}
+            # `rev` / `_is_local` are populated inside the
+            # `if dataset_path is not None:` branch below; pre-init so pyright
+            # sees them as always-bound when referenced again in the later
+            # report-building blocks (which also guard on `dataset_path`).
+            rev: Optional[str] = None
+            _is_local: bool = True
             if dataset_path is not None:
                 from .dataset import load_dataset as _wb_load_dataset
                 from .scoring import make_contest_from_dataset
@@ -1907,9 +1913,13 @@ def _main_participant(argv: "list[str]") -> int:
                 report = _run_estimator_with_runner(runner, **score_kwargs)
                 report["mode"] = "agent"
                 if dataset_path is not None:
+                    # `dataset_path` is the raw user argument — could be a
+                    # local directory OR an hf:// URL OR a bare owner/repo.
+                    # Only `resolve()` it for local paths; HF Hub URLs are
+                    # carried through verbatim so the report stays interpretable.
                     report.setdefault("run_config", {})["dataset"] = {
-                        "path": str(Path(dataset_path).resolve()),
-                        "sha256": _metadata_file_hash(dataset_path),
+                        "path": str(Path(dataset_path).resolve()) if _is_local else dataset_path,
+                        "sha256": _metadata_file_hash(dataset_path, revision=rev),
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
@@ -1980,9 +1990,13 @@ def _main_participant(argv: "list[str]") -> int:
                         live_session.update_run_meta(report.get("run_meta", {}))
                 report["mode"] = "human"
                 if dataset_path is not None:
+                    # `dataset_path` is the raw user argument — could be a
+                    # local directory OR an hf:// URL OR a bare owner/repo.
+                    # Only `resolve()` it for local paths; HF Hub URLs are
+                    # carried through verbatim so the report stays interpretable.
                     report.setdefault("run_config", {})["dataset"] = {
-                        "path": str(Path(dataset_path).resolve()),
-                        "sha256": _metadata_file_hash(dataset_path),
+                        "path": str(Path(dataset_path).resolve()) if _is_local else dataset_path,
+                        "sha256": _metadata_file_hash(dataset_path, revision=rev),
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
