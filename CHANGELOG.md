@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fix
+
+- **dataset_io**: `merge_datasets` now scopes its HF datasets cache to a per-call temporary directory by default, so merging N partials no longer leaks N per-partial entries (keyed on each input dir's basename) into the global `~/.cache/huggingface/datasets/`. At fleet scale (1000 partials named `mlp-NNNN`) this was ~2.4 GB of orphan cache. Pass `cache_dir=...` to opt back into a persistent location for debugging.
+
 ## v0.5.0 (2026-05-27)
 
 ### Feat
