@@ -132,7 +132,7 @@ def test_readme_split_aware_release_label():
     # Public framing must not call itself the "public split of the evaluation set".
     assert "public` split of the WhestBench 2026 evaluation set" not in out_pub
 
-    assert "Holdout Dataset for WhestBench 2026" in out_hld
+    assert "Holdout split for WhestBench 2026" in out_hld
     # Holdout points participants at the public release.
     assert "aicrowd/arc-whestbench-2026" in out_hld
 
@@ -525,3 +525,220 @@ def test_readme_renders_loadable_as_dataset_card():
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
     card = DatasetCard(out)
     assert card.text is not None
+
+
+def _multi_split_metadata():
+    return {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "torch",
+        "seed_protocol": {"name": "whestbench_seedsequence_hierarchy", "version": "2.0"},
+        "n_samples": 1_000_000_000,
+        "width": 256,
+        "depth": 8,
+        "created_at_utc": "2026-05-25T00:00:00+00:00",
+        "hardware": {},
+        "splits": {
+            "public": {"n_mlps": 50, "seed": 1, "created_at_utc": "2026-05-25T00:00:00+00:00"},
+            "holdout": {"n_mlps": 50, "seed": 2, "created_at_utc": "2026-05-25T00:00:00+00:00"},
+        },
+    }
+
+
+def test_generate_readme_multi_split_renders_eval_dataset_intro():
+    from whestbench.dataset_io import generate_readme
+
+    md = _multi_split_metadata()
+    out = generate_readme(
+        md,
+        splits=md["splits"],
+        ds_size=100,
+        repo_id="aicrowd/arc-whestbench-2026-evals",
+        revision="round-1",
+    )
+    assert "WhestBench 2026 Evaluation Dataset" in out
+    assert "public" in out
+    assert "holdout" in out
+    assert "public leaderboard" in out.lower()
+    assert "private/final leaderboard" in out.lower() or "final leaderboard" in out.lower()
+
+
+def test_generate_readme_multi_split_includes_quick_start_for_both_load_forms():
+    from whestbench.dataset_io import generate_readme
+
+    md = _multi_split_metadata()
+    out = generate_readme(
+        md,
+        splits=md["splits"],
+        ds_size=100,
+        repo_id="aicrowd/arc-whestbench-2026-evals",
+        revision="round-1",
+    )
+    assert 'load_dataset("aicrowd/arc-whestbench-2026-evals", revision="round-1")' in out
+    assert 'split="public"' in out
+
+
+def test_generate_readme_multi_split_has_multi_split_tag_in_yaml_front_matter():
+    from whestbench.dataset_io import generate_readme
+
+    md = _multi_split_metadata()
+    out = generate_readme(
+        md,
+        splits=md["splits"],
+        ds_size=100,
+        repo_id="aicrowd/arc-whestbench-2026-evals",
+        revision="round-1",
+    )
+    front_matter = out.split("---")[1]
+    assert "multi-split" in front_matter
+
+
+def test_generate_readme_multi_split_generic_split_names():
+    """If splits aren't {public, holdout}, render generic bullets, no leaderboard prose."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _multi_split_metadata()
+    md["splits"] = {
+        "round-1-a": {"n_mlps": 25, "seed": 1, "created_at_utc": "2026-05-25T00:00:00+00:00"},
+        "round-1-b": {"n_mlps": 25, "seed": 2, "created_at_utc": "2026-05-25T00:00:00+00:00"},
+    }
+    out = generate_readme(
+        md,
+        splits=md["splits"],
+        ds_size=50,
+        repo_id="aicrowd/foo",
+        revision="main",
+    )
+    assert "round-1-a" in out
+    assert "round-1-b" in out
+    assert "leaderboard" not in out.lower()
+
+
+def test_generate_readme_single_split_public_unchanged_modulo_eval_repo_link():
+    """Public-split rendering should still mention 'Public Dataset Release'."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _multi_split_metadata()
+    del md["splits"]
+    md["n_mlps"] = 1000
+    md["seed"] = 42
+    out = generate_readme(
+        md,
+        split="public",
+        ds_size=1000,
+        repo_id="aicrowd/arc-whestbench-2026",
+        revision="v1",
+    )
+    assert "Public Dataset Release" in out
+    assert "arc-whestbench-2026-evals" in out
+
+
+def test_generate_readme_single_split_holdout_unchanged():
+    from whestbench.dataset_io import generate_readme
+
+    md = _multi_split_metadata()
+    del md["splits"]
+    md["n_mlps"] = 50
+    md["seed"] = 99
+    out = generate_readme(
+        md,
+        split="holdout",
+        ds_size=50,
+        repo_id="aicrowd/somewhere",
+        revision="v1",
+    )
+    assert "Holdout split" in out
+
+
+def test_generate_readme_raises_if_neither_split_nor_splits():
+    import pytest
+
+    from whestbench.dataset_io import generate_readme
+
+    md = _multi_split_metadata()
+    with pytest.raises(ValueError, match=r"exactly one"):
+        generate_readme(md, ds_size=100)
+
+
+def test_generate_readme_raises_if_both_split_and_splits():
+    import pytest
+
+    from whestbench.dataset_io import generate_readme
+
+    md = _multi_split_metadata()
+    with pytest.raises(ValueError, match=r"exactly one"):
+        generate_readme(
+            md,
+            split="public",
+            splits=md["splits"],
+            ds_size=100,
+        )
+
+
+def test_rerender_readme_with_repo_handles_multi_split(tmp_path):
+    """The hub.py wrapper detects multi-split dirs and re-renders correctly."""
+    from whestbench.dataset import create_dataset
+    from whestbench.dataset_io import combine_split_datasets
+    from whestbench.hub import _rerender_readme_with_repo
+
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    create_dataset(
+        n_mlps=2,
+        n_samples=100,
+        width=4,
+        depth=2,
+        seed=1,
+        output_path=pub,
+        split="public",
+    )
+    create_dataset(
+        n_mlps=2,
+        n_samples=100,
+        width=4,
+        depth=2,
+        seed=2,
+        output_path=hold,
+        split="holdout",
+    )
+    combined = tmp_path / "combined"
+    combine_split_datasets([pub, hold], output_dir=combined)
+
+    _rerender_readme_with_repo(
+        combined,
+        repo_id="aicrowd/arc-whestbench-2026-evals",
+        revision="round-1",
+    )
+
+    readme = (combined / "README.md").read_text()
+    assert "Evaluation Dataset" in readme
+    assert "aicrowd/arc-whestbench-2026-evals" in readme
+    assert "round-1" in readme
+    assert "multi-split" in readme  # YAML front-matter tag
+
+
+def test_rerender_readme_with_repo_handles_single_split(tmp_path):
+    """The hub.py wrapper preserves single-split rendering exactly."""
+    from whestbench.dataset import create_dataset
+    from whestbench.hub import _rerender_readme_with_repo
+
+    out = tmp_path / "single"
+    create_dataset(
+        n_mlps=2,
+        n_samples=100,
+        width=4,
+        depth=2,
+        seed=1,
+        output_path=out,
+    )
+
+    _rerender_readme_with_repo(
+        out,
+        repo_id="aicrowd/arc-whestbench-2026",
+        revision="v1",
+    )
+
+    readme = (out / "README.md").read_text()
+    assert "Public Dataset Release" in readme
+    assert "aicrowd/arc-whestbench-2026" in readme
+    assert "v1" in readme

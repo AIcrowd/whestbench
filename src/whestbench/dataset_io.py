@@ -116,49 +116,35 @@ def generate_readme(
 ) -> str:
     """Render the HF dataset card README.
 
-    Reads templates/dataset_card.md.j2, renders with the metadata + context,
-    wraps with HF-standard YAML front-matter via DatasetCard.
-
-    For multi-split datasets, pass ``splits`` instead of ``split``.  The full
-    multi-split template is implemented in a later commit; a minimal placeholder
-    card is emitted for now.
+    Exactly one of `split` (single-split) or `splits` (multi-split) must be provided.
     """
-    if split is None and splits is None:
-        raise ValueError(
-            "generate_readme requires either split=<name> (single-split) or "
-            "splits=<dict> (multi-split). Got neither."
-        )
-
-    if splits is not None:
-        # Detailed multi-split rendering is implemented in a later commit.
-        # For now, emit a minimal placeholder card so combine_split_datasets
-        # can complete its atomic write. _rerender_readme_with_repo will
-        # overwrite this with the full template at push time.
-        return (
-            "---\nlicense: cc-by-4.0\ntags: [whestbench, multi-split]\n---\n\n"
-            f"# WhestBench multi-split dataset\n\n"
-            f"Splits: {', '.join(sorted(splits.keys()))}\n"
-        )
+    if (split is None) == (splits is None):
+        raise ValueError("generate_readme requires exactly one of `split` or `splits` to be set.")
 
     template_path = files("whestbench") / "templates" / "dataset_card.md.j2"
     body = Template(template_path.read_text()).render(
         metadata=metadata,
         split=split,
+        splits=splits,
         ds_size=ds_size,
         repo_id=repo_id or "<your-repo>",
         revision=revision or "main",
     )
 
+    tags = [
+        "whestbench",
+        "alignment",
+        "neural-network-statistics",
+        "benchmark",
+        "white-box",
+    ]
+    if splits is not None:
+        tags.append("multi-split")
+
     card_data = DatasetCardData(
         license="cc-by-4.0",
         language=["code"],
-        tags=[
-            "whestbench",
-            "alignment",
-            "neural-network-statistics",
-            "benchmark",
-            "white-box",
-        ],
+        tags=tags,
         task_categories=["other"],
         pretty_name=metadata.get(
             "pretty_name", "WhestBench 2026: ARC White-Box Estimation Challenge"
