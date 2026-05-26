@@ -174,7 +174,8 @@ def test_mlp_at_on_iterable_dataset_raises_typeerror():
 
     stream = IterableDataset.from_generator(_gen)
     with pytest.raises(TypeError, match="streaming IterableDataset"):
-        mlp_at(stream, 0)
+        # Deliberately violating the type contract — that's what the test asserts.
+        mlp_at(stream, 0)  # type: ignore[arg-type]
 
 
 def test_iter_mlps_rejects_iterable_dataset_dict():
