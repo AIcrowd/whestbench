@@ -156,10 +156,16 @@ def generate_readme(
     ds_size: int,
     repo_id: "str | None" = None,
     revision: "str | None" = None,
+    companion_repo: "str | None" = None,
 ) -> str:
     """Render the HF dataset card README.
 
     Exactly one of `split` (single-split) or `splits` (multi-split) must be provided.
+
+    Args:
+        companion_repo: HF Hub repo id of the companion dataset (public ↔ evals
+            cross-link). When unset, the template falls back to the canonical
+            ``aicrowd/arc-whestbench-2026[-evals]`` names.
     """
     if (split is None) == (splits is None):
         raise ValueError("generate_readme requires exactly one of `split` or `splits` to be set.")
@@ -172,6 +178,7 @@ def generate_readme(
         ds_size=ds_size,
         repo_id=repo_id or "<your-repo>",
         revision=revision or "main",
+        companion_repo=companion_repo,
     )
 
     tags = [
@@ -224,20 +231,86 @@ class InvalidDatasetError(ValueError):
     """Raised when a dataset directory has missing/incompatible metadata."""
 
 
-def metadata_file_hash(path: "Path | str") -> str:
-    """Return the SHA-256 hex digest of metadata.json in the dataset directory.
+def metadata_file_hash(
+    path: "Path | str",
+    *,
+    revision: "str | None" = None,
+) -> str:
+    """Return the SHA-256 hex digest of a dataset's metadata.json.
 
     Used for logging/reporting to identify a specific bake without loading the
-    full dataset. Deterministic given the same dataset directory.
+    full dataset. Deterministic given the same metadata bytes.
+
+    Accepts three forms of ``path``:
+
+    - **Local directory**: any path that exists on disk (or starts with ``./``,
+      ``/``, ``~/``, or a Windows drive letter). Reads
+      ``<path>/metadata.json`` from disk.
+    - **``hf://owner/repo[@revision]`` URL**: downloads ``metadata.json``
+      from the HF Hub repo (cached locally) and hashes its bytes.
+    - **Bare ``owner/repo``** with the ``revision`` kwarg explicitly set:
+      same as the hf:// form. Without ``revision`` falls back to the local
+      path interpretation.
+
+    Args:
+        path: Local dataset directory, hf:// URL, or bare ``owner/repo``.
+        revision: HF Hub git tag or commit SHA. Ignored for local paths.
+            If ``path`` is an ``hf://...@<rev>`` URL the embedded revision
+            wins over this kwarg.
     """
     import hashlib
 
-    metadata_path = Path(path) / METADATA_FILE
+    path_str = str(path)
+    metadata_path = _resolve_metadata_json_path(path_str, revision=revision)
     h = hashlib.sha256()
     with metadata_path.open("rb") as f:
         while chunk := f.read(8192):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _resolve_metadata_json_path(path_str: str, *, revision: "str | None") -> Path:
+    """Resolve a `--dataset`-shaped string to a local metadata.json path.
+
+    Centralises the local-vs-HF-Hub branch so callers don't have to repeat the
+    detection logic. Returns a Path to the (possibly HF-cached) metadata.json.
+    """
+    # 1. hf:// URL — parse and download.
+    if path_str.startswith("hf://"):
+        body = path_str[len("hf://") :]
+        if "@" in body:
+            repo_id, embedded_rev = body.rsplit("@", 1)
+            rev = revision or embedded_rev
+        else:
+            repo_id, rev = body, revision
+        return _hf_metadata_path(repo_id, rev)
+
+    # 2. Existing local directory — fast-path.
+    candidate = Path(path_str)
+    if candidate.exists():
+        return candidate / METADATA_FILE
+
+    # 3. Bare "owner/repo" with revision kwarg → treat as HF Hub.
+    if "/" in path_str and revision is not None:
+        return _hf_metadata_path(path_str, revision)
+
+    # 4. Fall through: assume local path (will raise FileNotFoundError on open
+    #    when the caller tries to read it — same as old behaviour).
+    return candidate / METADATA_FILE
+
+
+def _hf_metadata_path(repo_id: str, revision: "str | None") -> Path:
+    """Download metadata.json from HF Hub (cached) and return the local path."""
+    from huggingface_hub import hf_hub_download
+
+    return Path(
+        hf_hub_download(
+            repo_id=repo_id,
+            filename=METADATA_FILE,
+            repo_type="dataset",
+            revision=revision,
+        )
+    )
 
 
 def read_metadata(dataset_dir: "Path | str") -> Dict[str, Any]:
@@ -406,6 +479,106 @@ class MergeCorruptError(InvalidDatasetError):
 _COMMON_FIELDS = ("seed", "n_samples", "width", "depth", "backend")
 
 
+def _collapse_hardware_fingerprints(
+    partials: "list[tuple[Path, Dict[str, Any], Any]]",
+) -> "list[Dict[str, Any]]":
+    """Group per-partial metadata by COARSE hardware signature.
+
+    The signature intentionally excludes ``cuda_driver_version`` and
+    ``os_release`` (kernel patch): those vary across pods in a fleet but do not
+    affect determinism guarantees under our pinned env. They're aggregated as
+    ``drivers_seen`` / ``kernels_seen`` per signature group.
+
+    Returns one entry per distinct (GPU, capability, torch, determinism env)
+    tuple, each carrying ``mlp_count`` + the representative full-detail fields
+    that DO affect bit-exactness.
+    """
+    from collections import defaultdict
+
+    def _sig(md: Dict[str, Any]) -> tuple:
+        """Determinism-affecting fields only.
+
+        Excludes host-inventory variations that don't affect bit-equivalence:
+        - `cpu_count_logical`, `ram_total_bytes` (host capacity)
+        - `cpu_brand` (always x86_64 in practice; not a determinism factor for
+          GPU bakes)
+        - `os_release` (kernel patch — aggregated as `kernels_seen`)
+
+        Includes:
+        - GPU (cuda_device_name + capability) — distinct SM archs can differ
+        - Code versions (torch, python, numpy, whestbench, flopscope) — affect
+          generated kernels / RNG implementations
+        - Determinism env (3 bake_config flags)
+        """
+        hw = md.get("hardware", {}) or {}
+        bc = md.get("bake_config", {}) or {}
+        return (
+            md.get("cuda_device_name"),
+            tuple(md.get("cuda_device_capability") or ()),
+            md.get("torch_version"),
+            md.get("device"),
+            hw.get("python_version"),
+            hw.get("numpy_version"),
+            md.get("whestbench_version"),
+            md.get("flopscope_version"),
+            bc.get("torch_use_deterministic_algorithms"),
+            bc.get("cudnn_deterministic"),
+            bc.get("cublas_workspace_config"),
+        )
+
+    groups: "defaultdict[tuple, list[Dict[str, Any]]]" = defaultdict(list)
+    for p in partials:
+        md = p[1]
+        groups[_sig(md)].append(md)
+
+    fingerprints: list[Dict[str, Any]] = []
+    for _key, mds in groups.items():
+        rep = mds[0]  # representative; signature fields are equal across the group
+        hw = rep.get("hardware", {}) or {}
+        bc = rep.get("bake_config", {}) or {}
+        drivers_set: set[str] = set()
+        for m in mds:
+            d = m.get("cuda_driver_version")
+            if isinstance(d, str):
+                drivers_set.add(d)
+        drivers: list[str] = sorted(drivers_set)
+        kernels_set: set[str] = set()
+        for m in mds:
+            k = (m.get("hardware", {}) or {}).get("os_release")
+            if isinstance(k, str):
+                kernels_set.add(k)
+        kernels: list[str] = sorted(kernels_set)
+        hostnames: list[str] = []
+        for m in mds:
+            h = (m.get("hardware", {}) or {}).get("hostname")
+            if isinstance(h, str) and h not in hostnames:
+                hostnames.append(h)
+            if len(hostnames) >= 3:
+                break
+        fp = {
+            "cuda_device_name": rep.get("cuda_device_name"),
+            "cuda_device_capability": rep.get("cuda_device_capability"),
+            "torch_version": rep.get("torch_version"),
+            "device": rep.get("device"),
+            "cpu_brand": hw.get("cpu_brand"),
+            "cpu_count_logical": hw.get("cpu_count_logical"),
+            "ram_total_bytes": hw.get("ram_total_bytes"),
+            "python_version": hw.get("python_version"),
+            "numpy_version": hw.get("numpy_version"),
+            "os": hw.get("os"),
+            "whestbench_version": rep.get("whestbench_version"),
+            "flopscope_version": rep.get("flopscope_version"),
+            "bake_config": bc or None,
+            "mlp_count": len(mds),
+            "drivers_seen": drivers,
+            "kernels_seen": kernels,
+            "representative_hostnames": hostnames,
+        }
+        # Drop None-valued keys to keep metadata.json clean.
+        fingerprints.append({k: v for k, v in fp.items() if v is not None and v != []})
+    return fingerprints
+
+
 def merge_datasets(
     input_dirs: "list[Path | str]",
     *,
@@ -511,14 +684,8 @@ def merge_datasets(
     merged_md["n_mlps"] = total
     merged_md["created_at_utc"] = min(p[1]["created_at_utc"] for p in partials)
     merged_md["merged_at_utc"] = datetime.now(timezone.utc).isoformat()
-    merged_md["hardware_fingerprints"] = [
-        {
-            **p[1].get("hardware", {}),
-            "mlp_range": p[1]["mlp_range"],
-            **{k: v for k, v in p[1].items() if k.startswith("cuda_") or k.startswith("mps_")},
-        }
-        for p in partials
-    ]
+    merged_md["hardware_fingerprints"] = _collapse_hardware_fingerprints(partials)
+    merged_md["partials_count"] = len(partials)
 
     write_dataset_dir(
         merged_ds,

@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+### Added
+
+- `whestbench.load_dataset(... streaming=True)` now supported (HF Hub only).
+  Returns `IterableDataset` for single-split or `IterableDatasetDict` for
+  multi-split. `whestbench.metadata(ds)` and `whestbench.iter_mlps(ds)` both
+  work on the streaming return — same code path, same row contract.
+  `whestbench.mlp_at(ds, i)` raises `TypeError` on streaming inputs (no
+  random-access contract; use `next(itertools.islice(iter_mlps(ds), i, i+1))`
+  or reload without streaming). `streaming=True` on a local path raises
+  `ValueError`. Closes #55.
+- `generate_readme(... companion_repo=...)`: new keyword argument that controls
+  the cross-link text between paired public-release and evals datasets (e.g. a
+  public-release README now points at the evals repo it pairs with). When unset,
+  falls back to the canonical `aicrowd/arc-whestbench-2026[-evals]` literals so
+  the change is backwards-compatible.
+- `metadata.partials_count` recorded by `merge_datasets`: total number of
+  partials merged (used by the new Provenance summary).
+
+### Changed
+
+- `merge_datasets` now collapses `hardware_fingerprints` by **coarse hardware
+  signature** (GPU + capability + torch version + determinism env), rather than
+  one entry per partial. The previous one-bullet-per-partial Provenance render
+  was unusable at production scale (1000 single-MLP partials → 1000-line
+  README). Each collapsed entry carries the full hardware tech stack
+  (RAM, CPU, Python/Torch/NumPy/whestbench/flopscope versions, determinism
+  flags) plus `mlp_count`, `drivers_seen` (aggregated CUDA driver versions),
+  `kernels_seen` (aggregated kernel patches), and `representative_hostnames`.
+  The per-partial `mlp_range` field is dropped from collapsed entries.
+- Dataset card template `templates/dataset_card.md.j2`: Provenance section
+  renders rich per-signature blocks instead of a per-partial bullet list.
+  Reproducibility wording strengthened — `weights`, `all_layer_means`,
+  `final_means` are documented as **bit-exact** under matched determinism
+  env on a fixed `torch` version, CUDA driver, and GPU architecture (was
+  understated as only "statistically equivalent ~3×10⁻⁵").
+- Dataset card template: hardcoded companion-repo names replaced with the
+  `companion_repo` template variable (backwards-compatible fallback).
+
 ## v0.4.0 (2026-05-26)
 
 ### Added
