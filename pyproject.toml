@@ -32,6 +32,8 @@ gpu = ["torch>=2.1"]
 
 [dependency-groups]
 dev = [
+    "commitizen>=4.0",
+    "gitlint>=0.19",
     "pytest>=8.2.0",
     "pyright>=1.1.0",
     "ruff>=0.6.0",
@@ -59,3 +61,11 @@ include = [
     "tests",
     "main.py",
 ]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "pep621"
+tag_format = "v$version"
+update_changelog_on_bump = true
+major_version_zero = true
+changelog_incremental = true
