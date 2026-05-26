@@ -1,0 +1,100 @@
+name: PyPI publish
+
+# Triggered when a `v*` tag is pushed (typically via `cz bump` followed by
+# `git push --follow-tags`). See docs/release-process.md for the
+# end-to-end flow and the one-time PyPI Trusted Publisher setup.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Deny all default permissions; each job opts in to only what it needs.
+permissions: {}
+
+# Never run two publish jobs for the same tag in parallel. Don't cancel an
+# in-flight publish if another tag arrives — let it finish atomically.
+concurrency:
+  group: pypi-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Build distributions
+        run: uv build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    # The `pypi` environment in repo settings has Required Reviewers
+    # configured, so this job pauses for a human approval before running.
+    environment:
+      name: pypi
+      url: https://pypi.org/project/whestbench/
+    permissions:
+      # Required for Trusted Publishing (OIDC). No long-lived token stored.
+      id-token: write
+    steps:
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: Create GitHub Release
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract CHANGELOG section for this tag
+        run: |
+          # Extract the section between `## v<version>` and the next `## ` header.
+          # commitizen writes headers like `## v0.4.0 (2026-05-26)`.
+          awk -v ver="${GITHUB_REF_NAME}" '
+            $1 == "##" && $2 == ver { capture = 1; next }
+            $1 == "##" && capture { exit }
+            capture { print }
+          ' CHANGELOG.md > release-notes.md
+
+          # Fallback if no matching section (defensive — shouldn't happen if
+          # cz bump was used, but covers manual tags with no changelog entry).
+          if [ ! -s release-notes.md ]; then
+            printf 'Release %s\n\nSee CHANGELOG.md for details.\n' "${GITHUB_REF_NAME}" > release-notes.md
+          fi
+
+          echo "--- release notes ---"
+          cat release-notes.md
+          echo "--- end ---"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.4.0 (2026-05-26)
+
 ### Added
 
 - `seed_protocol 3.0` (`whestbench_explicit_per_mlp_seeds`): each MLP's seed is an independent input rather than a derivation from a single root. Each `mlp_seed` value in the parquet column is the canonical input seed. Within-MLP three-stream derivation (weight/sample/estimator) is preserved via `SeedSequence(mlp_seed).spawn(3)`.
