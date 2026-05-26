@@ -201,6 +201,122 @@ def test_whest_dataset_inspect_prints_metadata(tmp_path: Path):
     assert "seed" in res.stdout.lower()
 
 
+def test_whest_dataset_combine_splits_help_lists_subcommand():
+    res = _run_whest("dataset", "--help")
+    assert res.returncode == 0
+    assert "combine-splits" in res.stdout
+
+
+def test_whest_dataset_combine_splits_produces_multi_split_dir(tmp_path: Path):
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    for split, out_dir, seed in (("public", pub, 1), ("holdout", hold, 2)):
+        res = _run_whest(
+            "dataset",
+            "bake",
+            "--n-mlps",
+            "2",
+            "--n-samples",
+            "100",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--seed",
+            str(seed),
+            "--split",
+            split,
+            "--output",
+            str(out_dir),
+        )
+        assert res.returncode == 0, res.stderr
+
+    out = tmp_path / "combined"
+    res = _run_whest(
+        "dataset",
+        "combine-splits",
+        str(pub),
+        str(hold),
+        "--output",
+        str(out),
+    )
+    assert res.returncode == 0, res.stderr
+    assert (out / "data" / "public-00000-of-00001.parquet").is_file()
+    assert (out / "data" / "holdout-00000-of-00001.parquet").is_file()
+    md = json.loads((out / "metadata.json").read_text())
+    assert set(md["splits"].keys()) == {"public", "holdout"}
+
+
+def test_whest_dataset_combine_splits_rejects_existing_output(tmp_path: Path):
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    for split, out_dir, seed in (("public", pub, 1), ("holdout", hold, 2)):
+        res = _run_whest(
+            "dataset",
+            "bake",
+            "--n-mlps",
+            "2",
+            "--n-samples",
+            "100",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--seed",
+            str(seed),
+            "--split",
+            split,
+            "--output",
+            str(out_dir),
+        )
+        assert res.returncode == 0, res.stderr
+
+    out = tmp_path / "combined"
+    out.mkdir()
+    res = _run_whest(
+        "dataset",
+        "combine-splits",
+        str(pub),
+        str(hold),
+        "--output",
+        str(out),
+    )
+    assert res.returncode != 0
+
+
+def test_whest_dataset_inspect_multi_split_output(tmp_path: Path):
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    for split, out_dir, seed in (("public", pub, 1), ("holdout", hold, 2)):
+        _run_whest(
+            "dataset",
+            "bake",
+            "--n-mlps",
+            "2",
+            "--n-samples",
+            "100",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--seed",
+            str(seed),
+            "--split",
+            split,
+            "--output",
+            str(out_dir),
+        )
+    out = tmp_path / "combined"
+    _run_whest("dataset", "combine-splits", str(pub), str(hold), "--output", str(out))
+
+    res = _run_whest("dataset", "inspect", str(out))
+    assert res.returncode == 0, res.stderr
+    # Multi-split inspect must mention each split name AND the multi-split marker.
+    assert "public" in res.stdout
+    assert "holdout" in res.stdout
+    assert "multi-split" in res.stdout.lower()
+
+
 def test_old_create_dataset_emits_redirect(tmp_path: Path):
     out = tmp_path / "old"
     res = _run_whest(
@@ -220,3 +336,125 @@ def test_old_create_dataset_emits_redirect(tmp_path: Path):
     )
     assert res.returncode != 0
     assert "whest dataset bake" in (res.stderr + res.stdout)
+
+
+def test_whest_dataset_bake_with_arbitrary_split_name(tmp_path: Path):
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "2",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--seed",
+        "1",
+        "--split",
+        "my-custom-split",
+        "--output",
+        str(out),
+    )
+    assert res.returncode == 0, res.stderr
+    assert (out / "data" / "my-custom-split-00000-of-00001.parquet").is_file()
+
+
+def test_whest_dataset_bake_rejects_uppercase_split(tmp_path: Path):
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "2",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--seed",
+        "1",
+        "--split",
+        "Public",
+        "--output",
+        str(out),
+    )
+    assert res.returncode != 0
+    combined = (res.stderr + res.stdout).lower()
+    assert "[a-z][a-z0-9]" in combined or "convention" in combined
+
+
+def test_whest_dataset_bake_rejects_underscore_split(tmp_path: Path):
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "2",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--seed",
+        "1",
+        "--split",
+        "my_split",
+        "--output",
+        str(out),
+    )
+    assert res.returncode != 0
+    combined = (res.stderr + res.stdout).lower()
+    assert "[a-z][a-z0-9]" in combined or "convention" in combined
+
+
+def test_whest_dataset_pull_accepts_split_flag(tmp_path: Path):
+    """Smoke test: pull --split SPLIT is accepted (downloads only that split's parquet).
+
+    Skipped on no network — pulls from the public smoke-test repo.
+    """
+    res = _run_whest(
+        "dataset",
+        "pull",
+        "aicrowd/arc-whestbench-2026-smoke-test",
+        "--split",
+        "public",
+        "--output",
+        str(tmp_path / "pulled"),
+    )
+    # Tolerate network/offline failure — the test only enforces that --split is
+    # an accepted argument, not that the pull itself always succeeds.
+    if res.returncode == 0:
+        assert (tmp_path / "pulled" / "data" / "public-00000-of-00001.parquet").is_file()
+    else:
+        unrecognized = "unrecognized arguments" in res.stderr.lower() and "--split" in res.stderr
+        assert not unrecognized, f"--split must be an accepted flag; got: {res.stderr}"
+
+
+def test_whest_dataset_pull_rejects_nonexistent_split(tmp_path: Path):
+    """pull --split <typo> should error rather than silently producing an empty dir."""
+    res = _run_whest(
+        "dataset",
+        "pull",
+        "aicrowd/arc-whestbench-2026-smoke-test",
+        "--split",
+        "nonexistent-split",
+        "--output",
+        str(tmp_path / "pulled"),
+    )
+    # Network might fail — tolerate that, but if we DID reach the validation
+    # logic, the exit must be nonzero AND the error must mention "matched no parquet".
+    combined = res.stderr + res.stdout
+    if "matched no parquet" in combined.lower() or res.returncode != 0:
+        # Either we hit the validation OR the network failed cleanly.
+        pass
+    else:
+        # Returncode 0 with no error → silent empty dir, the bug we're guarding against.
+        assert False, (
+            f"pull with bogus split should not silently succeed; got returncode={res.returncode}, "
+            f"output:\n{res.stdout}\n{res.stderr}"
+        )

@@ -44,6 +44,7 @@ except Exception:  # pragma: no cover - optional at runtime
     rich_tqdm = None
 
 from .dataset import metadata as _wb_metadata
+from .dataset_io import _validate_split_name
 from .dataset_io import metadata_file_hash as _metadata_file_hash
 from .estimators import CombinedEstimator
 from .generation import sample_mlp
@@ -878,6 +879,15 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="HF Hub revision (tag or commit SHA) for --dataset.",
     )
     run_parser.add_argument(
+        "--split",
+        default=None,
+        type=_validate_split_name,
+        help=(
+            "For multi-split datasets, the split to evaluate. Required when the dataset "
+            "is multi-split; optional when single-split (defaults to the only split)."
+        ),
+    )
+    run_parser.add_argument(
         "--flop-budget",
         type=int,
         default=None,
@@ -968,7 +978,19 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     bake_p.add_argument("--width", type=int, required=True)
     bake_p.add_argument("--depth", type=int, required=True)
     bake_p.add_argument("--seed", type=int, default=None)
-    bake_p.add_argument("--split", default="public", choices=["public", "holdout"])
+
+    def _split_name_arg(value: str) -> str:
+        try:
+            return _validate_split_name(value)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(str(exc)) from exc
+
+    bake_p.add_argument(
+        "--split",
+        default="public",
+        type=_split_name_arg,
+        help="Split name. Must match [a-z][a-z0-9-]* (HF Hub split-name convention).",
+    )
     bake_p.add_argument("--output", required=True, help="Output directory (must not exist).")
     bake_p.add_argument("--torch", action="store_true", help="Use GPU/torch backend.")
     bake_p.add_argument("--device", default="auto", choices=["auto", "cuda", "mps", "cpu"])
@@ -992,6 +1014,12 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     pull_p.add_argument("--revision", default=None)
     pull_p.add_argument("--output", required=True)
     pull_p.add_argument("--token", default=None)
+    pull_p.add_argument(
+        "--split",
+        default=None,
+        type=_validate_split_name,
+        help="Optional: download only the specified split's parquet (and metadata/README).",
+    )
 
     merge_p = dataset_sub.add_parser("merge", help="Merge partial bakes into one dataset.")
     merge_p.add_argument("inputs", nargs="+", help="Partial dataset directories.")
@@ -1000,6 +1028,21 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     inspect_p = dataset_sub.add_parser("inspect", help="Print dataset metadata.")
     inspect_p.add_argument("source", help="Local dir or HF repo id.")
     inspect_p.add_argument("--revision", default=None)
+
+    combine_p = dataset_sub.add_parser(
+        "combine-splits",
+        help="Combine N single-split datasets into a multi-split dataset directory.",
+    )
+    combine_p.add_argument(
+        "input_dirs",
+        nargs="+",
+        help="One or more complete single-split dataset directories.",
+    )
+    combine_p.add_argument(
+        "--output",
+        required=True,
+        help="Output directory (must not exist).",
+    )
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
     package_parser.add_argument("--estimator", required=True)
@@ -1194,13 +1237,38 @@ def _dispatch_dataset_command(args) -> int:
     if sub == "pull":
         from huggingface_hub import snapshot_download
 
-        snapshot_download(
+        allow_patterns = None
+        if getattr(args, "split", None) is not None:
+            allow_patterns = [
+                f"data/{args.split}-*.parquet",
+                "metadata.json",
+                "README.md",
+                ".gitattributes",
+            ]
+
+        local = snapshot_download(
             repo_id=args.repo_id,
             repo_type="dataset",
             revision=args.revision,
             local_dir=args.output,
             token=args.token,
+            allow_patterns=allow_patterns,
         )
+
+        # If --split was given, verify the download actually got parquet(s) for it.
+        # snapshot_download silently succeeds with zero matches if the glob doesn't
+        # match any file in the repo (e.g. typo'd split name or single-split repo).
+        if getattr(args, "split", None) is not None:
+            matches = list(Path(local).glob(f"data/{args.split}-*.parquet"))
+            if not matches:
+                print(
+                    f"error: --split {args.split!r} matched no parquet files in "
+                    f"{args.repo_id!r}. Available splits can be inferred from the "
+                    f"repo's data/ directory listing.",
+                    file=sys.stderr,
+                )
+                return 1
+
         print(f"Pulled {args.repo_id}@{args.revision or 'main'} to {args.output}")
         return 0
 
@@ -1224,22 +1292,51 @@ def _dispatch_dataset_command(args) -> int:
                 repo_id=src, filename="metadata.json", repo_type="dataset", revision=args.revision
             )
             md = _json.loads(_Path(md_path).read_text())
-        print("WhestBench dataset")
-        for key in (
-            "schema_version",
-            "format",
-            "backend",
-            "seed",
-            "n_mlps",
-            "n_samples",
-            "width",
-            "depth",
-            "created_at_utc",
-            "device",
-            "cuda_device_name",
-        ):
-            if key in md:
-                print(f"  {key}: {md[key]}")
+        if "splits" in md:
+            print("WhestBench dataset (multi-split)")
+            print(f"  schema_version: {md['schema_version']}")
+            print(f"  format: {md['format']}")
+            print(f"  backend: {md['backend']}")
+            print(f"  width: {md['width']}  depth: {md['depth']}  n_samples: {md['n_samples']:,}")
+            print("  splits:")
+            for name in sorted(md["splits"]):
+                info = md["splits"][name]
+                print(f"    {name}:  n_mlps={info['n_mlps']:,}  seed={info['seed']}")
+            print(f"  created_at_utc: {md['created_at_utc']}")
+        else:
+            print("WhestBench dataset")
+            for key in (
+                "schema_version",
+                "format",
+                "backend",
+                "seed",
+                "n_mlps",
+                "n_samples",
+                "width",
+                "depth",
+                "created_at_utc",
+                "device",
+                "cuda_device_name",
+            ):
+                if key in md:
+                    print(f"  {key}: {md[key]}")
+        return 0
+
+    if sub == "combine-splits":
+        from .dataset_io import MergeIncompatibleError, combine_split_datasets
+
+        try:
+            out = combine_split_datasets(args.input_dirs, output_dir=args.output)
+        except (MergeIncompatibleError, FileExistsError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+
+        md = _json.loads((_Path(out) / "metadata.json").read_text())
+        splits = md.get("splits", {})
+        print(f"Combined {len(splits)} splits into {out}:")
+        for name in sorted(splits.keys()):
+            info = splits[name]
+            print(f"  - {name}  (n_mlps={info['n_mlps']}, seed={info['seed']})")
         return 0
 
     print("Unknown dataset subcommand. Try --help.", file=sys.stderr)
@@ -1685,7 +1782,18 @@ def _main_participant(argv: "list[str]") -> int:
                 repo_or_path, rev, _is_local = _resolve_dataset_arg(
                     dataset_path, revision=getattr(args, "revision", None)
                 )
-                ds = _wb_load_dataset(repo_or_path, revision=rev)
+                ds = _wb_load_dataset(
+                    repo_or_path, revision=rev, split=getattr(args, "split", None)
+                )
+                from datasets import DatasetDict as _DatasetDict
+
+                if isinstance(ds, _DatasetDict):
+                    print(
+                        f"error: dataset {dataset_path!r} is multi-split with splits "
+                        f"{sorted(ds.keys())}. Pass --split <name> to select one.",
+                        file=sys.stderr,
+                    )
+                    return 1
                 ds_meta = _wb_metadata(ds)
                 ds_n_mlps = len(ds)
 
