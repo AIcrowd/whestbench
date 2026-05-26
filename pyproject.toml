@@ -15,7 +15,7 @@ requires-python = ">=3.10"
 dependencies = [
     "datasets>=2.20",
     "faker~=37.0",
-    "flopscope @ git+https://github.com/AIcrowd/flopscope.git",
+    "flopscope>=0.4.1",
     "huggingface_hub>=0.24",
     "jinja2>=3.1",
     "plotext",
@@ -40,7 +40,7 @@ dev = [
     "ruff>=0.6.0",
 ]
 server = [
-    "flopscope-server @ git+https://github.com/AIcrowd/flopscope.git#subdirectory=flopscope-server",
+    "flopscope-server>=0.4.1",
 ]
 
 [tool.ruff]
