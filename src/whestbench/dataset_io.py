@@ -654,9 +654,12 @@ def combine_split_datasets(
         for _, md, split_name, _ in entries:
             entry: Dict[str, Any] = {
                 "n_mlps": md["n_mlps"],
-                "seed": md["seed"],
                 "created_at_utc": md["created_at_utc"],
             }
+            # Under seed_protocol 2.0, include the per-split `seed` field.
+            # Under seed_protocol 3.0, there is no `seed` field (seeds are in parquet).
+            if "seed" in md:
+                entry["seed"] = md["seed"]
             # Preserve hardware provenance from the bake. merge_datasets-style
             # ``hardware_fingerprints`` (list) takes precedence; otherwise fold
             # the single-host ``hardware`` dict into a one-element list.

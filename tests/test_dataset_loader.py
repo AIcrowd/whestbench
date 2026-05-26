@@ -12,7 +12,15 @@ def _bake_small(tmp_path: Path, *, split: str = "public") -> Path:
     from whestbench.dataset import create_dataset
 
     out = tmp_path / f"bake-{split}"
-    create_dataset(n_mlps=3, n_samples=100, width=4, depth=2, seed=42, output_path=out, split=split)
+    create_dataset(
+        n_mlps=3,
+        n_samples=100,
+        width=4,
+        depth=2,
+        mlp_seeds=[42000, 42001, 42002],
+        output_path=out,
+        split=split,
+    )
     return out
 
 
@@ -33,7 +41,13 @@ def test_load_dataset_rejects_partial(tmp_path: Path):
 
     out = tmp_path / "partial"
     create_dataset(
-        n_mlps=10, n_samples=50, width=4, depth=2, seed=1, output_path=out, mlp_range=(2, 5)
+        n_mlps=10,
+        n_samples=50,
+        width=4,
+        depth=2,
+        mlp_seeds=list(range(10)),
+        output_path=out,
+        mlp_range=(2, 5),
     )
     with pytest.raises(InvalidDatasetError, match="partial"):
         load_dataset(out)
@@ -57,7 +71,8 @@ def test_metadata_accessor_returns_parsed_json(tmp_path: Path):
     ds = load_dataset(out)
     md = metadata(ds)
     assert md["schema_version"] == "3.0"
-    assert md["seed"] == 42
+    # Under seed_protocol 3.0, there is no top-level `seed` field.
+    assert "seed" not in md
     assert md["n_mlps"] == 3
 
 

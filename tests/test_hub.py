@@ -10,7 +10,9 @@ def _bake_small(tmp_path: Path) -> Path:
     from whestbench.dataset import create_dataset
 
     out = tmp_path / "ds"
-    create_dataset(n_mlps=2, n_samples=50, width=4, depth=2, seed=1, output_path=out)
+    create_dataset(
+        n_mlps=2, n_samples=50, width=4, depth=2, mlp_seeds=[1000, 1001], output_path=out
+    )
     return out
 
 

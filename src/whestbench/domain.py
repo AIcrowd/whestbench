@@ -68,27 +68,50 @@ class MLP:
                 )
 
     @classmethod
-    def from_row(cls, row: "Any") -> "MLP":
+    def from_row(
+        cls,
+        row: "Any",
+        *,
+        seed_protocol_version: str = "2.0",
+    ) -> "MLP":
         """Build an MLP from a datasets.Dataset row.
 
-        `row` is a dict from datasets.Dataset indexing (e.g. ds[i]). It must
-        carry the columns `weights`, `mlp_seed`, `mlp_name`. The weights
-        column is a 3-D structure of shape (depth, width, width); both
-        nested-list and array forms are accepted (datasets row format may
-        differ between versions).
+        Under seed_protocol 2.0 (legacy), ``parquet["mlp_seed"]`` IS the estimator
+        seed — ``mlp.seed`` returns it directly.
 
-        Raises ValueError on malformed weights via MLP.validate().
+        Under seed_protocol 3.0 (new), ``parquet["mlp_seed"]`` is the per-MLP
+        INPUT seed; ``mlp.seed`` (the estimator seed) is derived locally via
+        ``int(SeedSequence(input).spawn(3)[2].generate_state(1)[0])``. This keeps
+        the in-memory ``mlp.seed`` semantics identical across protocols, so
+        participant estimator code is unaffected.
+
+        Args:
+            row: Dataset row dict.
+            seed_protocol_version: ``"2.0"`` (legacy) or ``"3.0"`` (explicit).
+                Defaults to ``"2.0"`` for callers that don't pass it (preserves
+                historical behavior).
+
+        Raises:
+            ValueError: on malformed weights via MLP.validate().
         """
         weight_layers = [fnp.array(w) for w in row["weights"]]
         if not weight_layers:
             raise ValueError("MLP row has empty weights.")
         depth = len(weight_layers)
         width = weight_layers[0].shape[0] if weight_layers[0].ndim else 0
+
+        raw_seed = int(row.get("mlp_seed", 0))
+        if seed_protocol_version == "3.0":
+            ss = fnp.random.SeedSequence(raw_seed).spawn(3)
+            estimator_seed = int(ss[2].generate_state(1)[0])
+        else:  # "2.0" or any other legacy
+            estimator_seed = raw_seed
+
         mlp = cls(
             width=width,
             depth=depth,
             weights=weight_layers,
-            seed=int(row.get("mlp_seed", 0)),
+            seed=estimator_seed,
             name=str(row.get("mlp_name", "")),
         )
         mlp.validate()
