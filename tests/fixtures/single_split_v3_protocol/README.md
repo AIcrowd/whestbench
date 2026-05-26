@@ -1,3 +1,22 @@
+---
+homepage: https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026
+language:
+- code
+license: cc-by-4.0
+pretty_name: 'WhestBench 2026: ARC White-Box Estimation Challenge'
+repository: https://github.com/AIcrowd/whestbench
+size_categories:
+- n<1K
+tags:
+- whestbench
+- alignment
+- neural-network-statistics
+- benchmark
+- white-box
+task_categories:
+- other
+---
+
 <p align="center">
   <a href="https://github.com/AIcrowd/whestbench">
     <img src="https://raw.githubusercontent.com/AIcrowd/whestbench/main/assets/logo/logo.png" width="320" alt="WhestBench logo">
@@ -10,7 +29,7 @@
   <a href="https://www.aicrowd.com/"><b>AIcrowd</b></a>
 </p>
 
-# {{ metadata.get('pretty_name', 'WhestBench 2026: ARC White-Box Estimation Challenge') }}
+# WhestBench 2026: ARC White-Box Estimation Challenge
 
 <p align="center">
   <a href="https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026"><img alt="Challenge" src="https://img.shields.io/badge/AIcrowd-Challenge_Page-f0524d?style=for-the-badge"></a>
@@ -18,34 +37,12 @@
   <a href="https://github.com/AIcrowd/whest-starterkit"><img alt="Starter Kit" src="https://img.shields.io/badge/Starter_Kit-whest--starterkit-f57c00?style=for-the-badge&logo=github&logoColor=white"></a>
   <a href="https://aicrowd.github.io/whestbench-explorer/"><img alt="MLP Explorer" src="https://img.shields.io/badge/MLP_Explorer-Interactive-7e57c2?style=for-the-badge"></a>
   <a href="https://github.com/AIcrowd/flopscope"><img alt="flopscope" src="https://img.shields.io/badge/FLOP_Tracking-flopscope-009688?style=for-the-badge&logo=github&logoColor=white"></a>
-  <a href="https://huggingface.co/datasets/{{ repo_id }}/tree/{{ revision }}"><img alt="Hugging Face" src="https://img.shields.io/badge/%F0%9F%A4%97-View_on_HF_Hub-ffd54f?style=for-the-badge"></a>
+  <a href="https://huggingface.co/datasets/<your-repo>/tree/main"><img alt="Hugging Face" src="https://img.shields.io/badge/%F0%9F%A4%97-View_on_HF_Hub-ffd54f?style=for-the-badge"></a>
 </p>
 
 WhestBench is a benchmark for *white-box activation estimation*: given the weights of a small ReLU multi-layer perceptron (MLP) and a strict floating-point-operation (FLOP) budget, predict the average post-activation value of every neuron when the network is fed standard Gaussian inputs.
-{% if not splits and split == "public" %}
+
 **This is the Public Dataset Release for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics, free to download and use while you develop your estimator. The actual contest evaluation runs against the private `public` and `holdout` splits of [`aicrowd/arc-whestbench-2026-evals`](https://huggingface.co/datasets/aicrowd/arc-whestbench-2026-evals), released per round under the same schema.
-{%- elif not splits and split == "holdout" %}
-**This is the private Holdout split for WhestBench 2026** — consumed by the evaluator at grading time. It is not intended for participant download; the public release at [`aicrowd/arc-whestbench-2026`](https://huggingface.co/datasets/aicrowd/arc-whestbench-2026) is what you'll develop against.
-{%- elif not splits %}
-**This is the `{{ split }}` dataset for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics.
-{%- endif %}
-
-{%- if splits %}
-{% if "public" in splits and "holdout" in splits -%}
-**This is the WhestBench 2026 Evaluation Dataset** — per-round MLP ground-truth that powers the leaderboards. It contains disjoint splits with different visibility:
-
-- **`public`** ({{ '{:,}'.format(splits["public"].n_mlps) }} MLPs) — submissions are scored against this split with scores visible to participants on the **public leaderboard** in real time.
-- **`holdout`** ({{ '{:,}'.format(splits["holdout"].n_mlps) }} MLPs) — submissions are also scored against this split, but the scores power the **private/final leaderboard** and are revealed only at the conclusion of the round.
-{%- else -%}
-**This is the WhestBench 2026 Evaluation Dataset** — per-round MLP ground-truth. It contains disjoint splits:
-
-{% for name, info in splits.items() -%}
-- **`{{ name }}`** ({{ '{:,}'.format(info.n_mlps) }} MLPs)
-{% endfor -%}
-{%- endif %}
-
-This dataset is intentionally not part of the Public Release at [`aicrowd/arc-whestbench-2026`](https://huggingface.co/datasets/aicrowd/arc-whestbench-2026); develop your estimator against the public release first.
-{%- endif %}
 
 ## Quick start
 
@@ -53,37 +50,14 @@ The pure HuggingFace path (no whestbench install required):
 
 ```python
 from datasets import load_dataset
-{% if splits %}
-# Load both splits (returns DatasetDict)
-ds = load_dataset(
-    "{{ repo_id }}",
-    revision="{{ revision }}",
-)
-# → DatasetDict({"public": ..., "holdout": ...})
 
-# Load one split (returns Dataset)
-{% if "public" in splits -%}
 ds = load_dataset(
-    "{{ repo_id }}",
-    revision="{{ revision }}",
+    "<your-repo>",
+    revision="main",
     split="public",
 )
-{%- else -%}
-ds = load_dataset(
-    "{{ repo_id }}",
-    revision="{{ revision }}",
-    split="{{ (splits.keys() | list)[0] }}",
-)
-{%- endif %}
 print(ds[0]["mlp_name"])
-{% else %}
-ds = load_dataset(
-    "{{ repo_id }}",
-    revision="{{ revision }}",
-    split="{{ split }}",
-)
-print(ds[0]["mlp_name"])
-{% endif %}
+
 ```
 
 The whestbench convenience wrapper (adds schema validation + `metadata.json` access):
@@ -91,7 +65,7 @@ The whestbench convenience wrapper (adds schema validation + `metadata.json` acc
 ```python
 import whestbench
 
-ds = whestbench.load_dataset("{{ repo_id }}", revision="{{ revision }}")
+ds = whestbench.load_dataset("<your-repo>", revision="main")
 for mlp in whestbench.iter_mlps(ds):
     # `mlp` is a whestbench.MLP with .weights, .seed, .name, .width, .depth
     ...
@@ -105,21 +79,21 @@ Run an estimator end-to-end via the CLI:
 ```bash
 whest run \
     --estimator my_estimator.py \
-    --dataset hf://{{ repo_id }}@{{ revision }}
+    --dataset hf://<your-repo>@main
 ```
 
 ➡️ **New to the challenge?** Head over to the **[WhestBench starter kit](https://github.com/AIcrowd/whest-starterkit)** for a worked example estimator, the recommended project layout, FLOP-tracking patterns with [`flopscope`](https://github.com/AIcrowd/flopscope), local testing tips, and the submission workflow.
 
-{% if not splits %}
+
 ## What's in this dataset
 
 Each row is one MLP, paired with the Monte-Carlo–computed ground-truth statistics of its post-activation outputs. Four things travel together per row:
 
 1. The **MLP weights** (the network you'll analyse).
-2. The **per-layer ground-truth means** — what your estimator is trying to predict. Computed by direct Monte Carlo over **N = {{ '{:,}'.format(metadata.n_samples) }}** independent standard-Gaussian input draws per MLP{% if metadata.n_samples != 1000000000 %} (production WhestBench 2026 uses **N = 10⁹**, for standard errors `~1/√N ≈ 3×10⁻⁵` per neuron){% else %}, giving standard errors `~1/√N ≈ 3×10⁻⁵` per neuron{% endif %}.
+2. The **per-layer ground-truth means** — what your estimator is trying to predict. Computed by direct Monte Carlo over **N = 100** independent standard-Gaussian input draws per MLP (production WhestBench 2026 uses **N = 10⁹**, for standard errors `~1/√N ≈ 3×10⁻⁵` per neuron).
 3. A **per-MLP variance scalar** — final-layer mean per-neuron variance, computed alongside the means over the same N draws. Shipped as diagnostic provenance; not consumed by the score.
 4. A **per-MLP seed** — passed to your estimator if it uses any randomness, so submissions reproduce under regrade.
-{% endif %}
+
 ## Schema
 
 Each row is one MLP. Eight columns:
@@ -130,12 +104,12 @@ Each row is one MLP. Eight columns:
 | `mlp_name` | `string` | Stable, deterministic human-readable slug like `"danielle-johnson"`, derived from `mlp_seed`. Useful for log lines; carries no information beyond `mlp_seed`. |
 | `mlp_seed` | `int64` | Per-MLP seed exposed in the dataset. Under seed_protocol 3.0 (`whestbench_explicit_per_mlp_seeds`), this is the **input** seed for the MLP — `MLP.seed` (the estimator seed) is derived locally. Under seed_protocol 2.0 (`whestbench_seedsequence_hierarchy`, legacy), this is the **derived** estimator seed itself. Estimators read `mlp.seed` and see the same kind of value in both protocols (a deterministic int derived from the dataset's seed material). |
 | `weights` | `float32[depth, width, width]` | The MLP's layer weight matrices. The network has **no biases** and **no separate linear output layer** — every weight matrix is followed by a ReLU. Layer `l` computes `h_l(x) = max(0, W_l @ h_{l-1}(x))`. Weights are drawn i.i.d. from `N(0, 2/width)` (He initialization) at bake time. |
-| `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over **N = {{ '{:,}'.format(metadata.n_samples) }}** independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`. Computed by direct Monte Carlo. **This is what your estimator predicts.** |
-| `final_means` | `float32[width]` | The last row of `all_layer_means` — i.e. `E[h_{depth}(x)_j]` for each output neuron `j`, again over N = {{ '{:,}'.format(metadata.n_samples) }} samples. Materialised as its own column because the **primary scoring metric** (`final_layer_mse`) only looks at this row. |
+| `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over **N = 100** independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`. Computed by direct Monte Carlo. **This is what your estimator predicts.** |
+| `final_means` | `float32[width]` | The last row of `all_layer_means` — i.e. `E[h_{depth}(x)_j]` for each output neuron `j`, again over N = 100 samples. Materialised as its own column because the **primary scoring metric** (`final_layer_mse`) only looks at this row. |
 | `avg_variance` | `float64` | Per-MLP mean of the per-neuron output variance at the final layer: `(1/width) Σ_j Var[h_{depth}(x)_j]`. A single scalar per MLP, computed alongside the means over the same Monte Carlo draws. Shipped as **diagnostic provenance** — useful for normalising your own MSE locally or as input to variance-aware estimators. **Not** consumed by the active scoring formula (the score is `mse_final · max(0.1, C_m / B_m)`). |
 | `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting for the bake that produced the ground truth for **this** row — useful as provenance. **Not** related to the estimator's FLOP budget at evaluation time. Decode with `json.loads(...)`. |
 
-{% if not splits %}
+
 ## Your task as a participant
 
 You implement a class with a `predict(mlp: MLP, budget: int) -> ndarray[depth, width]` method that returns your estimate of `all_layer_means` for the given MLP. The harness gives you the weights and a strict per-MLP FLOP budget `B_m` — **B_m = 6.8 × 10¹⁰** for the initial competition configuration (roughly 6.5 × 10⁴ Monte Carlo forward passes' worth of compute).
@@ -159,11 +133,11 @@ so that staying well under budget pays off (down to a factor-of-ten cap). The **
 If your estimator goes over budget, raises, returns non-finite or wrong-shape output, or trips an operational guard (per-MLP wall-clock cap, memory cap), the grader **zeros your prediction for that MLP AND forces the multiplier to 1.0** — no compute discount on failed runs. Other MLPs in the suite are unaffected.
 
 See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked end-to-end example, plus baselines for Monte Carlo sampling, mean propagation, covariance propagation, and a budget-aware combined estimator.
-{% endif %}
+
 
 ## How the ground truth was made
 
-> **Monte Carlo with N = {{ '{:,}'.format(metadata.n_samples) }} samples per MLP.** Every entry in `all_layer_means` and `final_means` is the empirical mean over this many independent standard-Gaussian input draws.{% if metadata.n_samples != 1000000000 %} The production WhestBench 2026 release uses **N = 10⁹**, which gives standard errors on the order of `1/√N ≈ 3×10⁻⁵` per neuron — well below any meaningful estimator gap.{% else %} Standard errors are on the order of `1/√N ≈ 3×10⁻⁵` per neuron — well below any meaningful estimator gap.{% endif %}
+> **Monte Carlo with N = 100 samples per MLP.** Every entry in `all_layer_means` and `final_means` is the empirical mean over this many independent standard-Gaussian input draws. The production WhestBench 2026 release uses **N = 10⁹**, which gives standard errors on the order of `1/√N ≈ 3×10⁻⁵` per neuron — well below any meaningful estimator gap.
 
 **Input distribution.** Every Monte Carlo sample is a fresh `x ~ N(0, I)` of shape `(width,)`. The same input is forward-propagated through all `depth` layers in one pass, so the per-layer means at indices `[0..depth-1]` share the same input draws.
 
@@ -175,38 +149,25 @@ See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked 
 
 |  |  |
 |---|---|
-{% if splits -%}
-| Splits | {{ splits.keys()|list|join(", ") }} |
-| MLPs total | {{ ds_size }} |
-{%- else -%}
-| Split | `{{ split }}` |
-| MLPs | {{ ds_size }} |
-{%- endif %}
-| Width | {{ metadata.width }} |
-| Depth | {{ metadata.depth }} |
-| Monte Carlo samples per MLP (N) | **{{ '{:,}'.format(metadata.n_samples) }}** |
-| Schema version | {{ metadata.schema_version }} |
-| Seed protocol | `{{ metadata.seed_protocol.name }}` v{{ metadata.seed_protocol.version }} |
+| Split | `public` |
+| MLPs | 4 |
+| Width | 4 |
+| Depth | 2 |
+| Monte Carlo samples per MLP (N) | **100** |
+| Schema version | 3.0 |
+| Seed protocol | `whestbench_explicit_per_mlp_seeds` v3.0 |
 
 ## Reproducibility
 
 This dataset was baked with:
 
-- **Backend:** `{{ metadata.backend }}`
-{% if not splits and metadata.get('seed') -%}
-- **Root seed:** `{{ metadata.seed }}`
-{% endif -%}
-- **Seed protocol:** `{{ metadata.seed_protocol.name }}` v{{ metadata.seed_protocol.version }}
-{% if metadata.backend == "torch" and metadata.device %}
-- **Device:** `{{ metadata.device }}`{% if metadata.cuda_device_name %} ({{ metadata.cuda_device_name }}){% endif %}
-{% endif -%}
-{% if metadata.backend == "torch" and metadata.torch_version %}
-- **Torch version:** `{{ metadata.torch_version }}`
-{% endif %}
-- **Created (UTC):** `{{ metadata.created_at_utc }}`
+- **Backend:** `flopscope`
+- **Seed protocol:** `whestbench_explicit_per_mlp_seeds` v3.0
 
-{% set proto_name = metadata.get('seed_protocol', {}).get('name', '') %}
-{% if proto_name == 'whestbench_explicit_per_mlp_seeds' %}
+- **Created (UTC):** `2026-05-26T00:00:00+00:00`
+
+
+
 This dataset was baked with **seed_protocol 3.0 (explicit per-MLP seeds)**. Each MLP's seed is recorded in the parquet `mlp_seed` column. To re-bake locally with the same seed list:
 
 ```bash
@@ -214,92 +175,39 @@ This dataset was baked with **seed_protocol 3.0 (explicit per-MLP seeds)**. Each
 python -c "
 import json
 from datasets import load_dataset
-ds = load_dataset('{{ repo_id }}', revision='{{ revision }}'{% if splits %}, {% endif %})
-{% if splits %}
-{% for split_name in splits.keys() %}
-seeds_{{ split_name }} = [int(row['mlp_seed']) for row in ds['{{ split_name }}']]
-open('{{ split_name }}-seeds.json', 'w').write(json.dumps(seeds_{{ split_name }}))
-{% endfor %}
-{% else %}
-seeds = [int(row['mlp_seed']) for row in ds['{{ split }}']]
+ds = load_dataset('<your-repo>', revision='main')
+
+seeds = [int(row['mlp_seed']) for row in ds['public']]
 open('seeds.json', 'w').write(json.dumps(seeds))
-{% endif %}
+
 "
 
 # Re-bake:
-{% if splits %}
-{% for name, info in splits.items() %}
-whest dataset bake \
-    --n-mlps {{ info.n_mlps }} \
-    --n-samples {{ metadata.n_samples }} \
-    --width {{ metadata.width }} --depth {{ metadata.depth }} \
-    --split {{ name }} \
-    --mlp-seeds {{ name }}-seeds.json \
-    --output ./{{ name }}-rebake{% if metadata.backend == 'torch' %} \
-    --torch --device cuda{% endif %}
 
-{% endfor %}
-{% else %}
 whest dataset bake \
-    --n-mlps {{ metadata.n_mlps }} \
-    --n-samples {{ metadata.n_samples }} \
-    --width {{ metadata.width }} --depth {{ metadata.depth }} \
-    --split {{ split }} \
+    --n-mlps 4 \
+    --n-samples 100 \
+    --width 4 --depth 2 \
+    --split public \
     --mlp-seeds seeds.json \
-    --output ./rebake{% if metadata.backend == 'torch' %} \
-    --torch --device cuda{% endif %}
-{% endif %}
-```
-{% elif proto_name == 'whestbench_seedsequence_hierarchy' %}
-This dataset was baked with **seed_protocol 2.0 (legacy single-root)**. To re-bake:
+    --output ./rebake
 
-{% if not splits %}
-```bash
-whest dataset bake \
-    --seed {{ metadata.get('seed', '<unknown>') }} \
-    --n-mlps {{ metadata.n_mlps }} \
-    --n-samples {{ metadata.n_samples }} \
-    --width {{ metadata.width }} \
-    --depth {{ metadata.depth }} \
-    --split {{ split }} \
-    --output ./my-bake{% if metadata.backend == "torch" %} \
-    --torch{% endif %}
 ```
-{% else %}
-```bash
-# Re-bake the public split
-whest dataset bake \
-    --seed <per-split seed from metadata.json> \
-    --n-mlps <per-split n_mlps from metadata.json> \
-    --n-samples {{ metadata.n_samples }} \
-    --width {{ metadata.width }} \
-    --depth {{ metadata.depth }} \
-    --split <split-name>{% if metadata.backend == "torch" %} \
-    --torch{% endif %} \
-    --output ./my-bake
-```
-{% endif %}
-(Note: new bakes use seed_protocol 3.0 and `--mlp-seeds FILE` instead of `--seed N`.)
-{% endif %}
+
 
 Bit-exact reproducibility requires the same `whestbench` and `faker` versions pinned at bake time; statistical reproducibility (means within `~3e-5`) holds across hardware on the `torch` backend.
 
 ## Provenance
 
-{% if metadata.hardware_fingerprints %}
-Assembled from **{{ metadata.hardware_fingerprints|length }}** parallel bakes merged via `whest dataset merge`:
-{% for hw in metadata.hardware_fingerprints %}
-- `{{ hw.cuda_device_name or hw.cpu_brand or 'unknown host' }}` — MLPs `[{{ hw.mlp_range[0] }}, {{ hw.mlp_range[1] }})`
-{% endfor %}
-{% else %}
-Single-host bake on `{{ metadata.hardware.cuda_device_name or metadata.hardware.cpu_brand or metadata.cuda_device_name or 'unspecified host' }}`.
-{% endif %}
+
+Single-host bake on `unspecified host`.
+
 
 ## Citation
 
 If you use this dataset, please cite the challenge:
 
-{% raw %}
+
 ```bibtex
 @misc{whestbench2026,
   title        = {{WhestBench 2026: ARC White-Box Estimation Challenge}},
@@ -308,7 +216,7 @@ If you use this dataset, please cite the challenge:
   howpublished = {\url{https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026}},
 }
 ```
-{% endraw %}
+
 
 ## License
 

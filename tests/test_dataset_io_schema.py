@@ -306,3 +306,285 @@ def test_validate_metadata_rejects_splits_null():
     md = _multi_split_md(splits=None)
     with pytest.raises(InvalidDatasetError, match=r"non-empty dict"):
         validate_metadata(md)
+
+
+# ---------------------------------------------------------------------------
+# _validate_mlp_seeds + seed_protocol 3.0 constants
+# ---------------------------------------------------------------------------
+
+
+def test_validate_mlp_seeds_accepts_canonical_list():
+    """Happy path: distinct ints across the full int63 range, including the upper boundary."""
+    from whestbench.dataset_io import _validate_mlp_seeds
+
+    seeds = [42, 99, 12345, (1 << 63) - 1]  # last is the max valid value
+    _validate_mlp_seeds(seeds, n_mlps=4)  # should not raise
+
+
+def test_validate_mlp_seeds_rejects_wrong_length():
+    import pytest
+
+    from whestbench.dataset_io import _validate_mlp_seeds
+
+    with pytest.raises(ValueError, match=r"length 3.+n_mlps=4"):
+        _validate_mlp_seeds([1, 2, 3], n_mlps=4)
+
+
+def test_validate_mlp_seeds_rejects_empty():
+    import pytest
+
+    from whestbench.dataset_io import _validate_mlp_seeds
+
+    with pytest.raises(ValueError, match=r"length 0.+n_mlps=4"):
+        _validate_mlp_seeds([], n_mlps=4)
+
+
+def test_validate_mlp_seeds_rejects_negative():
+    import pytest
+
+    from whestbench.dataset_io import _validate_mlp_seeds
+
+    with pytest.raises(ValueError, match=r"mlp_seeds\[1\].+-5"):
+        _validate_mlp_seeds([1, -5, 3, 4], n_mlps=4)
+
+
+def test_validate_mlp_seeds_rejects_too_large():
+    import pytest
+
+    from whestbench.dataset_io import _validate_mlp_seeds
+
+    too_big = 2**63  # exactly out of range
+    with pytest.raises(ValueError, match=r"mlp_seeds\[2\].+out of range"):
+        _validate_mlp_seeds([1, 2, too_big, 4], n_mlps=4)
+
+
+def test_validate_mlp_seeds_rejects_non_int():
+    import pytest
+
+    from whestbench.dataset_io import _validate_mlp_seeds
+
+    with pytest.raises(ValueError, match=r"mlp_seeds\[1\].+str"):
+        _validate_mlp_seeds([1, "abc", 3, 4], n_mlps=4)  # type: ignore[list-item]
+
+
+def test_validate_mlp_seeds_rejects_float():
+    import pytest
+
+    from whestbench.dataset_io import _validate_mlp_seeds
+
+    with pytest.raises(ValueError, match=r"mlp_seeds\[0\].+float"):
+        _validate_mlp_seeds([1.5, 2, 3, 4], n_mlps=4)  # type: ignore[list-item]
+
+
+def test_validate_mlp_seeds_rejects_bool():
+    """Python bools are ints but should NOT be accepted as seeds (likely a mistake)."""
+    import pytest
+
+    from whestbench.dataset_io import _validate_mlp_seeds
+
+    with pytest.raises(ValueError, match=r"mlp_seeds\[0\].+bool"):
+        _validate_mlp_seeds([True, 2, 3, 4], n_mlps=4)  # type: ignore[list-item]
+
+
+def test_validate_mlp_seeds_rejects_duplicates():
+    import pytest
+
+    from whestbench.dataset_io import _validate_mlp_seeds
+
+    with pytest.raises(ValueError, match=r"duplicate.+indices"):
+        _validate_mlp_seeds([1, 2, 1, 4], n_mlps=4)
+
+
+def test_seed_protocol_v3_constants_exist():
+    from whestbench.dataset_io import SEED_PROTOCOL_NAME_V3, SEED_PROTOCOL_VERSION_V3
+
+    assert SEED_PROTOCOL_NAME_V3 == "whestbench_explicit_per_mlp_seeds"
+    assert SEED_PROTOCOL_VERSION_V3 == "3.0"
+
+
+# ---------------------------------------------------------------------------
+# validate_metadata — seed_protocol 3.0 shape
+# ---------------------------------------------------------------------------
+
+
+def _v3_single_split_md(**overrides):
+    """Build a valid 3.0 single-split metadata dict."""
+    md = {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "torch",
+        "seed_protocol": {
+            "name": "whestbench_explicit_per_mlp_seeds",
+            "version": "3.0",
+        },
+        "n_mlps": 4,
+        "n_samples": 100,
+        "width": 8,
+        "depth": 2,
+        "created_at_utc": "2026-05-26T00:00:00+00:00",
+        "hardware": {},
+    }
+    md.update(overrides)
+    return md
+
+
+def _v3_multi_split_md(**overrides):
+    """Build a valid 3.0 multi-split metadata dict."""
+    md = {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "torch",
+        "seed_protocol": {
+            "name": "whestbench_explicit_per_mlp_seeds",
+            "version": "3.0",
+        },
+        "n_samples": 100,
+        "width": 8,
+        "depth": 2,
+        "created_at_utc": "2026-05-26T00:00:00+00:00",
+        "hardware": {},
+        "splits": {
+            "public": {
+                "n_mlps": 2,
+                "created_at_utc": "2026-05-26T00:00:00+00:00",
+            },
+            "holdout": {
+                "n_mlps": 2,
+                "created_at_utc": "2026-05-26T00:00:00+00:00",
+            },
+        },
+    }
+    md.update(overrides)
+    return md
+
+
+def test_validate_metadata_accepts_v3_single_split():
+    from whestbench.dataset_io import validate_metadata
+
+    validate_metadata(_v3_single_split_md())  # should not raise
+
+
+def test_validate_metadata_accepts_v3_multi_split():
+    from whestbench.dataset_io import validate_metadata
+
+    validate_metadata(_v3_multi_split_md())  # should not raise
+
+
+def test_validate_metadata_rejects_v3_with_top_level_seed():
+    """3.0 single-split must not have a top-level `seed` field."""
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _v3_single_split_md(seed=42)
+    with pytest.raises(InvalidDatasetError, match=r"seed_protocol.+3\.0.+top-level.+seed"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_v3_multi_split_with_top_level_seed():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _v3_multi_split_md(seed=42)
+    with pytest.raises(InvalidDatasetError, match=r"seed_protocol.+3\.0.+top-level.+seed"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_v3_multi_split_with_per_split_seed():
+    """3.0 multi-split must not have per-split `seed` fields."""
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _v3_multi_split_md()
+    md["splits"]["public"]["seed"] = 42
+    with pytest.raises(InvalidDatasetError, match=r"seed_protocol.+3\.0.+splits.+seed"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_v2_single_split_missing_seed():
+    """2.0 single-split MUST have a top-level seed (existing behavior)."""
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "flopscope",
+        "seed_protocol": {
+            "name": "whestbench_seedsequence_hierarchy",
+            "version": "2.0",
+        },
+        "n_mlps": 4,
+        "n_samples": 100,
+        # intentionally no `seed` field
+        "width": 8,
+        "depth": 2,
+        "created_at_utc": "2026-05-26T00:00:00+00:00",
+        "hardware": {},
+    }
+    with pytest.raises(InvalidDatasetError, match=r"seed"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_unknown_seed_protocol_name():
+    """Unknown seed_protocol.name is refused with a clear error."""
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _v3_single_split_md()
+    md["seed_protocol"]["name"] = "made-up-protocol"
+    with pytest.raises(InvalidDatasetError, match=r"seed_protocol.+name"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_v2_single_split_still_validates():
+    """Existing 2.0 single-split datasets must continue to validate (backward compat)."""
+    from whestbench.dataset_io import validate_metadata
+
+    md = {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "flopscope",
+        "seed_protocol": {
+            "name": "whestbench_seedsequence_hierarchy",
+            "version": "2.0",
+        },
+        "n_mlps": 4,
+        "n_samples": 100,
+        "seed": 42,
+        "width": 8,
+        "depth": 2,
+        "created_at_utc": "2026-05-26T00:00:00+00:00",
+        "hardware": {},
+    }
+    validate_metadata(md)  # should not raise
+
+
+def test_validate_metadata_rejects_v2_single_split_missing_n_mlps():
+    """2.0 single-split missing n_mlps fails the same check as 3.0."""
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "flopscope",
+        "seed_protocol": {
+            "name": "whestbench_seedsequence_hierarchy",
+            "version": "2.0",
+        },
+        # intentionally no `n_mlps` field
+        "n_samples": 100,
+        "seed": 42,
+        "width": 8,
+        "depth": 2,
+        "created_at_utc": "2026-05-26T00:00:00+00:00",
+        "hardware": {},
+    }
+    with pytest.raises(InvalidDatasetError, match=r"n_mlps"):
+        validate_metadata(md)

@@ -37,8 +37,6 @@ def test_whest_dataset_bake_outputs_three_files(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--output",
         str(out),
     )
@@ -61,8 +59,6 @@ def test_whest_dataset_bake_with_holdout_split(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--split",
         "holdout",
         "--output",
@@ -85,8 +81,6 @@ def test_whest_dataset_bake_with_slice(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--slice",
         "0/2",
         "--output",
@@ -112,8 +106,6 @@ def test_whest_dataset_bake_with_mlp_range(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--mlp-range",
         "2-5",
         "--output",
@@ -140,8 +132,6 @@ def test_whest_dataset_merge_combines_partials(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--mlp-range",
         "0-1",
         "--output",
@@ -159,8 +149,6 @@ def test_whest_dataset_merge_combines_partials(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--mlp-range",
         "2-3",
         "--output",
@@ -188,8 +176,6 @@ def test_whest_dataset_inspect_prints_metadata(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--output",
         str(out),
         check=True,
@@ -198,7 +184,8 @@ def test_whest_dataset_inspect_prints_metadata(tmp_path: Path):
     assert res.returncode == 0
     assert "3.0" in res.stdout
     assert "flopscope" in res.stdout
-    assert "seed" in res.stdout.lower()
+    # Under seed_protocol 3.0, there is no `seed` field in metadata.
+    assert "n_mlps" in res.stdout
 
 
 def test_whest_dataset_combine_splits_help_lists_subcommand():
@@ -210,7 +197,7 @@ def test_whest_dataset_combine_splits_help_lists_subcommand():
 def test_whest_dataset_combine_splits_produces_multi_split_dir(tmp_path: Path):
     pub = tmp_path / "pub"
     hold = tmp_path / "hold"
-    for split, out_dir, seed in (("public", pub, 1), ("holdout", hold, 2)):
+    for split, out_dir in (("public", pub), ("holdout", hold)):
         res = _run_whest(
             "dataset",
             "bake",
@@ -222,8 +209,6 @@ def test_whest_dataset_combine_splits_produces_multi_split_dir(tmp_path: Path):
             "4",
             "--depth",
             "2",
-            "--seed",
-            str(seed),
             "--split",
             split,
             "--output",
@@ -250,7 +235,7 @@ def test_whest_dataset_combine_splits_produces_multi_split_dir(tmp_path: Path):
 def test_whest_dataset_combine_splits_rejects_existing_output(tmp_path: Path):
     pub = tmp_path / "pub"
     hold = tmp_path / "hold"
-    for split, out_dir, seed in (("public", pub, 1), ("holdout", hold, 2)):
+    for split, out_dir in (("public", pub), ("holdout", hold)):
         res = _run_whest(
             "dataset",
             "bake",
@@ -262,8 +247,6 @@ def test_whest_dataset_combine_splits_rejects_existing_output(tmp_path: Path):
             "4",
             "--depth",
             "2",
-            "--seed",
-            str(seed),
             "--split",
             split,
             "--output",
@@ -287,7 +270,7 @@ def test_whest_dataset_combine_splits_rejects_existing_output(tmp_path: Path):
 def test_whest_dataset_inspect_multi_split_output(tmp_path: Path):
     pub = tmp_path / "pub"
     hold = tmp_path / "hold"
-    for split, out_dir, seed in (("public", pub, 1), ("holdout", hold, 2)):
+    for split, out_dir in (("public", pub), ("holdout", hold)):
         _run_whest(
             "dataset",
             "bake",
@@ -299,8 +282,6 @@ def test_whest_dataset_inspect_multi_split_output(tmp_path: Path):
             "4",
             "--depth",
             "2",
-            "--seed",
-            str(seed),
             "--split",
             split,
             "--output",
@@ -329,8 +310,6 @@ def test_old_create_dataset_emits_redirect(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--output",
         str(out),
     )
@@ -351,8 +330,6 @@ def test_whest_dataset_bake_with_arbitrary_split_name(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--split",
         "my-custom-split",
         "--output",
@@ -375,8 +352,6 @@ def test_whest_dataset_bake_rejects_uppercase_split(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--split",
         "Public",
         "--output",
@@ -400,8 +375,6 @@ def test_whest_dataset_bake_rejects_underscore_split(tmp_path: Path):
         "4",
         "--depth",
         "2",
-        "--seed",
-        "1",
         "--split",
         "my_split",
         "--output",
@@ -458,3 +431,152 @@ def test_whest_dataset_pull_rejects_nonexistent_split(tmp_path: Path):
             f"pull with bogus split should not silently succeed; got returncode={res.returncode}, "
             f"output:\n{res.stdout}\n{res.stderr}"
         )
+
+
+def test_whest_dataset_bake_accepts_mlp_seeds_file(tmp_path: Path):
+    """`whest dataset bake --mlp-seeds FILE.json` reads + bakes with explicit seeds."""
+    seeds_file = tmp_path / "seeds.json"
+    seeds_file.write_text(json.dumps([42, 99, 1234, 5678]))
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "4",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--mlp-seeds",
+        str(seeds_file),
+        "--output",
+        str(out),
+    )
+    assert res.returncode == 0, res.stderr
+    md = json.loads((out / "metadata.json").read_text())
+    assert md["seed_protocol"]["name"] == "whestbench_explicit_per_mlp_seeds"
+    assert "seed" not in md
+
+
+def test_whest_dataset_bake_auto_generates_when_no_seed_flag(tmp_path: Path):
+    """No --seed and no --mlp-seeds → auto-generate."""
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "4",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--output",
+        str(out),
+    )
+    assert res.returncode == 0, res.stderr
+    md = json.loads((out / "metadata.json").read_text())
+    assert md["seed_protocol"]["version"] == "3.0"
+
+
+def test_whest_dataset_bake_rejects_legacy_seed_flag(tmp_path: Path):
+    """`--seed N` produces a clear migration error."""
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "4",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--seed",
+        "42",
+        "--output",
+        str(out),
+    )
+    assert res.returncode != 0
+    combined = (res.stderr + res.stdout).lower()
+    assert "mlp-seeds" in combined or "mlp_seeds" in combined
+    assert "no longer" in combined or "deprecated" in combined or "not supported" in combined
+
+
+def test_whest_dataset_bake_rejects_mlp_seeds_wrong_length(tmp_path: Path):
+    """File length must match --n-mlps."""
+    seeds_file = tmp_path / "seeds.json"
+    seeds_file.write_text(json.dumps([1, 2, 3]))  # length 3
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "4",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--mlp-seeds",
+        str(seeds_file),
+        "--output",
+        str(out),
+    )
+    assert res.returncode != 0
+    combined = (res.stderr + res.stdout).lower()
+    assert "length" in combined and "n_mlps" in combined
+
+
+def test_whest_dataset_bake_rejects_mlp_seeds_malformed_file(tmp_path: Path):
+    """File must parse as a JSON array."""
+    seeds_file = tmp_path / "seeds.json"
+    seeds_file.write_text("not valid json {")
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "4",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--mlp-seeds",
+        str(seeds_file),
+        "--output",
+        str(out),
+    )
+    assert res.returncode != 0
+    combined = (res.stderr + res.stdout).lower()
+    assert "json" in combined or "parse" in combined or "invalid" in combined
+
+
+def test_whest_dataset_inspect_v3_mentions_protocol(tmp_path: Path):
+    """inspect output for a 3.0 dataset should mention the protocol."""
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "4",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--output",
+        str(out),
+    )
+    assert res.returncode == 0, res.stderr
+    res = _run_whest("dataset", "inspect", str(out))
+    assert res.returncode == 0, res.stderr
+    assert "whestbench_explicit_per_mlp_seeds" in res.stdout or "3.0" in res.stdout

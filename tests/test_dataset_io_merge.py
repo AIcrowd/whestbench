@@ -10,17 +10,24 @@ import pytest
 
 
 def _bake_partial(
-    tmp_path: Path, name: str, *, mlp_range: "tuple[int, int]", n_mlps: int = 8, seed: int = 42
+    tmp_path: Path,
+    name: str,
+    *,
+    mlp_range: "tuple[int, int]",
+    n_mlps: int = 8,
+    mlp_seeds: "list[int] | None" = None,
 ):
     from whestbench.dataset import create_dataset
 
+    if mlp_seeds is None:
+        mlp_seeds = [42 * 1000 + i for i in range(n_mlps)]
     out = tmp_path / name
     create_dataset(
         n_mlps=n_mlps,
         n_samples=50,
         width=4,
         depth=2,
-        seed=seed,
+        mlp_seeds=mlp_seeds,
         output_path=out,
         mlp_range=mlp_range,
     )
@@ -48,12 +55,21 @@ def test_merge_bit_equivalent_to_single_bake(tmp_path: Path):
     from whestbench.dataset import create_dataset
     from whestbench.dataset_io import merge_datasets
 
+    mlp_seeds = [7 * 1000 + i for i in range(9)]
     single_out = tmp_path / "single"
-    create_dataset(n_mlps=9, n_samples=50, width=4, depth=2, seed=7, output_path=single_out)
+    create_dataset(
+        n_mlps=9, n_samples=50, width=4, depth=2, mlp_seeds=mlp_seeds, output_path=single_out
+    )
 
     partials = []
     for k in range(3):
-        out = _bake_partial(tmp_path, f"p{k}", mlp_range=(3 * k, 3 * (k + 1)), n_mlps=9, seed=7)
+        out = _bake_partial(
+            tmp_path,
+            f"p{k}",
+            mlp_range=(3 * k, 3 * (k + 1)),
+            n_mlps=9,
+            mlp_seeds=mlp_seeds,
+        )
         partials.append(out)
     merged = tmp_path / "merged"
     merge_datasets(partials, output_dir=merged)
@@ -86,11 +102,29 @@ def test_merge_rejects_gap(tmp_path: Path):
         merge_datasets([p0, p1], output_dir=tmp_path / "out")
 
 
-def test_merge_rejects_different_seeds(tmp_path: Path):
+def test_merge_rejects_different_backends(tmp_path: Path):
+    """Merge must reject partials with mismatched bake parameters.
+
+    Note: under seed_protocol 3.0, per-partial seeds are not in metadata
+    (they live in the parquet mlp_seed column). `merge_datasets` cannot
+    detect "different seeds" at merge time. Mismatched seeds would
+    produce a dataset with discontinuous mlp_id values — which IS
+    detected by merge_datasets's separate gap/overlap check, not by a
+    direct seed comparison. This test covers the explicit-metadata-field
+    rejection path (backend); the gap-detection path is tested
+    elsewhere.
+    """
+    import json
+
     from whestbench.dataset_io import MergeIncompatibleError, merge_datasets
 
-    p0 = _bake_partial(tmp_path, "p0", mlp_range=(0, 4), seed=1)
-    p1 = _bake_partial(tmp_path, "p1", mlp_range=(4, 8), seed=2)
+    p0 = _bake_partial(tmp_path, "p0", mlp_range=(0, 4))
+    p1 = _bake_partial(tmp_path, "p1", mlp_range=(4, 8))
+    # Patch p1 to report a different backend.
+    md_path = p1 / "metadata.json"
+    md = json.loads(md_path.read_text())
+    md["backend"] = "torch"
+    md_path.write_text(json.dumps(md, indent=2))
     with pytest.raises(MergeIncompatibleError):
         merge_datasets([p0, p1], output_dir=tmp_path / "out")
 
@@ -101,8 +135,11 @@ def test_merge_rejects_complete_dataset(tmp_path: Path):
     from whestbench.dataset_io import MergeIncompatibleError, merge_datasets
 
     complete = tmp_path / "complete"
-    create_dataset(n_mlps=4, n_samples=50, width=4, depth=2, seed=1, output_path=complete)
-    p1 = _bake_partial(tmp_path, "p1", mlp_range=(0, 4), n_mlps=4, seed=1)
+    mlp_seeds = [1000 + i for i in range(4)]
+    create_dataset(
+        n_mlps=4, n_samples=50, width=4, depth=2, mlp_seeds=mlp_seeds, output_path=complete
+    )
+    p1 = _bake_partial(tmp_path, "p1", mlp_range=(0, 4), n_mlps=4, mlp_seeds=mlp_seeds)
     with pytest.raises(MergeIncompatibleError):
         merge_datasets([complete, p1], output_dir=tmp_path / "out")
 

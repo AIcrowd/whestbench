@@ -1,0 +1,15 @@
+{
+  "schema_version": "3.0",
+  "format": "hf-datasets-parquet",
+  "backend": "flopscope",
+  "seed_protocol": {
+    "name": "whestbench_explicit_per_mlp_seeds",
+    "version": "3.0"
+  },
+  "created_at_utc": "2026-05-26T00:00:00+00:00",
+  "n_mlps": 4,
+  "n_samples": 100,
+  "width": 4,
+  "depth": 2,
+  "hardware": {}
+}

@@ -12,6 +12,7 @@ import dataclasses
 import json
 import math
 import platform
+import secrets
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,8 +27,9 @@ from .dataset_io import (
     DEFAULT_SPLIT,
     SCHEMA_FORMAT,
     SCHEMA_VERSION,
-    SEED_PROTOCOL_NAME,
-    SEED_PROTOCOL_VERSION,
+    SEED_PROTOCOL_NAME_V3,
+    SEED_PROTOCOL_VERSION_V3,
+    _validate_mlp_seeds,
     make_features,
     write_dataset_dir,
 )
@@ -52,7 +54,7 @@ def create_dataset_torch(
     n_samples: int,
     width: int,
     depth: int,
-    seed: Optional[int] = None,
+    mlp_seeds: Optional[List[int]] = None,
     output_path: "Path | str",
     split: str = DEFAULT_SPLIT,
     mlp_range: Optional[Tuple[int, int]] = None,
@@ -60,6 +62,7 @@ def create_dataset_torch(
     device: str = "auto",
     mlps_per_batch: Optional[int] = None,
     chunk_size: Optional[int] = None,
+    **deprecated_kwargs: Any,
 ) -> Path:
     """Torch-backed analog of whestbench.dataset.create_dataset.
 
@@ -69,10 +72,10 @@ def create_dataset_torch(
     provenance.
 
     Statistical (not bitwise) equivalence with the flopscope CPU path holds at the
-    same seed: per-neuron means agree within ~3e-5 at N=1e9 (MC noise).
+    same mlp_seeds: per-neuron means agree within ~3e-5 at N=1e9 (MC noise).
 
     Args:
-        n_mlps, n_samples, width, depth, seed, output_path, progress:
+        n_mlps, n_samples, width, depth, mlp_seeds, output_path, progress:
             Same as create_dataset(). See whestbench.dataset for full semantics.
         device: "auto" | "cuda" | "mps" | "cpu". "auto" resolves cuda > mps > cpu.
             Explicit values error if unavailable (no silent CPU fallback).
@@ -88,7 +91,22 @@ def create_dataset_torch(
 
     Returns:
         Path to the written dataset directory.
+
+    Raises:
+        TypeError: if the legacy ``seed=`` kwarg is passed.
+        ValueError: if ``mlp_seeds`` length or values are invalid.
     """
+    # Reject the legacy `seed=` kwarg with a migration hint.
+    if "seed" in deprecated_kwargs:
+        raise TypeError(
+            "seed= is no longer supported in create_dataset_torch. "
+            "Use mlp_seeds=[...] to provide explicit per-MLP seeds, "
+            "or omit mlp_seeds to auto-generate them."
+        )
+    if deprecated_kwargs:
+        unexpected = ", ".join(repr(k) for k in deprecated_kwargs)
+        raise TypeError(f"create_dataset_torch() got unexpected keyword argument(s): {unexpected}")
+
     torch = _require_torch()
 
     output_path = Path(output_path)
@@ -105,23 +123,45 @@ def create_dataset_torch(
         else int(chunk_size)
     )
 
-    seed_sequence = (
-        fnp.random.SeedSequence() if seed is None else fnp.random.SeedSequence(int(seed))
-    )
-    stream_seed = seed_sequence.spawn(3 * n_mlps)
+    # Auto-generate or validate mlp_seeds.
+    if mlp_seeds is None:
+        # Generate distinct int63 seeds. Collisions are astronomically unlikely
+        # (~n^2 / 2^64) but we re-roll defensively. The max_attempts cap prevents
+        # an unbounded loop in the pathological case of a broken CSPRNG.
+        seen: set = set()
+        generated: List[int] = []
+        max_attempts = n_mlps * 10
+        for _ in range(max_attempts):
+            if len(generated) >= n_mlps:
+                break
+            s = secrets.randbits(63)
+            if s not in seen:
+                seen.add(s)
+                generated.append(s)
+        if len(generated) < n_mlps:
+            raise RuntimeError(
+                f"failed to generate {n_mlps} distinct seeds in {max_attempts} attempts; "
+                f"check that secrets.randbits is functioning correctly."
+            )
+        mlp_seeds = generated
+    _validate_mlp_seeds(mlp_seeds, n_mlps)
 
     # Phase 1: generate MLPs on CPU (same protocol as create_dataset())
     mlps = []
     for slice_idx, i in enumerate(range(start, end)):
-        weight_stream = fnp.random.default_rng(stream_seed[3 * i])
-        estimator_seed_i = int(stream_seed[3 * i + 2].generate_state(1)[0])
+        ss = fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)
+        weight_stream = fnp.random.default_rng(ss[0])
+        estimator_seed_i = int(ss[2].generate_state(1)[0])
         mlps.append(sample_mlp(width, depth, weight_stream, seed=estimator_seed_i))
         if progress is not None:
             progress({"phase": "generating", "completed": slice_idx + 1, "total": end - start})
 
-    # Names from ALL logical seeds (so slice's names equal slice of single-host bake).
-    # Mirrors create_dataset() so both backends produce identical name lists at same `--seed`.
-    all_logical_seeds = [int(stream_seed[3 * i + 2].generate_state(1)[0]) for i in range(n_mlps)]
+    # Names from ALL logical estimator seeds (so slice's names equal slice of single-host bake).
+    # Mirrors create_dataset() so both backends produce identical name lists at same mlp_seeds.
+    all_logical_seeds = [
+        int(fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)[2].generate_state(1)[0])
+        for i in range(n_mlps)
+    ]
     all_names = assign_unique_names(all_logical_seeds)
     slice_names = all_names[start:end]
     mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, slice_names)]
@@ -146,12 +186,13 @@ def create_dataset_torch(
         batch_end_local = min(batch_start_local + resolved_mlps_per_batch, slice_size)
         batch_size = batch_end_local - batch_start_local
 
-        # Per-MLP torch generators seeded from the SeedSequence stream.
-        # Use logical indices (i = batch_start_local + start) for stream_seed access.
+        # Per-MLP torch generators seeded from the per-MLP SeedSequence stream.
+        # Use logical index i to access mlp_seeds[i].spawn(3)[1] for the sample stream.
         generators = []
         for local_idx in range(batch_start_local, batch_end_local):
-            i = local_idx + start  # logical index into stream_seed
-            torch_seed = int(stream_seed[3 * i + 1].generate_state(1)[0])
+            i = local_idx + start  # logical index
+            ss = fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)
+            torch_seed = int(ss[1].generate_state(1)[0])
             gen = torch.Generator(device=resolved_device)
             gen.manual_seed(torch_seed)
             generators.append(gen)
@@ -225,12 +266,10 @@ def create_dataset_torch(
         "format": SCHEMA_FORMAT,
         "backend": "torch",
         "seed_protocol": {
-            "name": SEED_PROTOCOL_NAME,
-            "version": SEED_PROTOCOL_VERSION,
-            "seeded": seed is not None,
+            "name": SEED_PROTOCOL_NAME_V3,
+            "version": SEED_PROTOCOL_VERSION_V3,
         },
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
-        "seed": int(seed_sequence.entropy),
         "n_mlps": end - start,
         "n_samples": n_samples,
         "width": width,
@@ -257,7 +296,8 @@ def create_dataset_torch(
         {
             "mlp_id": list(range(start, end)),
             "mlp_name": [m.name for m in mlps],
-            "mlp_seed": [int(m.seed) for m in mlps],
+            # Under 3.0, parquet mlp_seed stores the INPUT seed (not derived estimator seed).
+            "mlp_seed": mlp_seeds[start:end],
             "weights": weights_array,
             "all_layer_means": all_layer_means,
             "final_means": final_means,

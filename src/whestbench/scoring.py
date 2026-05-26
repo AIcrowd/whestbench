@@ -218,7 +218,13 @@ def make_contest_from_dataset(
     if spec.n_mlps != n_mlps:
         raise ValueError(f"spec.n_mlps ({spec.n_mlps}) must equal n_mlps ({n_mlps}).")
 
-    mlps = [MLP.from_row(row) for row in ds.select(range(n_mlps))]
+    from .dataset import _METADATA_BY_DS  # local import to avoid circular dependency
+
+    ds_md = _METADATA_BY_DS.get(ds, {})
+    proto_version = ds_md.get("seed_protocol", {}).get("version", "2.0")
+    mlps = [
+        MLP.from_row(row, seed_protocol_version=proto_version) for row in ds.select(range(n_mlps))
+    ]
     all_layer_targets = [
         fnp.asarray(ds[i]["all_layer_means"], dtype=fnp.float32) for i in range(n_mlps)
     ]

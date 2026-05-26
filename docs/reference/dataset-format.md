@@ -41,7 +41,7 @@ maintained in lockstep — any update here must also land in
 |---|---|---|
 | `mlp_id` | `int32` | 0-based index of this MLP within the dataset (the absolute index across all parallel-bake slices). |
 | `mlp_name` | `string` | Stable, deterministic human-readable slug like `"danielle-johnson"`, derived from `mlp_seed`. Useful for log lines; carries no information beyond `mlp_seed`. |
-| `mlp_seed` | `int64` | Seed an estimator should consume if it uses randomness (e.g. Monte Carlo). Per-MLP, derived from the contest seed; passed to `predict(mlp: MLP, budget: int)` as `mlp.seed`. |
+| `mlp_seed` | `int64` | Per-MLP seed. Under seed_protocol 3.0 (new bakes), this is the **input** seed — the canonical value stored in the parquet. `mlp.seed` (participant-facing) is derived locally from this value via `SeedSequence(mlp_seed).spawn(3)[2]`. Under legacy seed_protocol 2.0, this column stored the already-derived estimator seed. |
 | `weights` | `float32[depth, width, width]` | The MLP's layer weight matrices. The network has no biases and uses ReLU activations. Layer `l` computes `h_l(x) = max(0, W_l @ h_{l-1}(x))`. Weights are drawn i.i.d. from `N(0, 2/width)` (He initialization) at bake time. |
 | `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over many independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`, where `N = n_samples`. Computed by direct Monte Carlo. This is what an estimator predicts. |
 | `final_means` | `float32[width]` | The last row of `all_layer_means` — i.e. `E[h_{depth}(x)_j]` for each output neuron `j`. Materialised as its own column because the primary scoring metric (`final_layer_mse`) only looks at this row. |
@@ -82,9 +82,9 @@ about the bake itself, **not** the estimator's FLOP budget at evaluation time
 | `schema_version` | `string` | Always `"3.0"` for this format |
 | `format` | `string` | Always `"hf-datasets-parquet"` |
 | `backend` | `string` | `"flopscope"` (CPU path) or `"torch"` (GPU path) |
-| `seed_protocol.name` | `string` | Always `"whestbench_seedsequence_hierarchy"` |
-| `seed_protocol.version` | `string` | Always `"2.0"` |
-| `seed` | `integer` or `null` | Root seed passed to `--seed`. `null` if auto-generated |
+| `seed_protocol.name` | `string` | `"whestbench_explicit_per_mlp_seeds"` (3.0, new bakes) or `"whestbench_seedsequence_hierarchy"` (2.0, legacy). |
+| `seed_protocol.version` | `string` | `"3.0"` (new bakes) or `"2.0"` (legacy). |
+| `seed` | `integer` or `null` | **Present under seed_protocol 2.0 only.** Root seed passed to `--seed`. `null` if auto-generated. Absent in 3.0 datasets. |
 | `n_mlps` | `integer` | Number of MLPs in this dataset (or partial) |
 | `n_samples` | `integer` | Ground-truth samples per MLP |
 | `width` | `integer` | Neuron count per layer |
@@ -123,7 +123,34 @@ A dataset with `is_partial=true` is refused by `whestbench.load_dataset` — run
 `is_partial`, `mlp_range`, and `total_n_mlps` are removed by the merge step.
 `n_mlps` is set to the total count.
 
-### Example metadata.json (CPU bake)
+### Example metadata.json (CPU bake, seed_protocol 3.0)
+
+```json
+{
+  "schema_version": "3.0",
+  "format": "hf-datasets-parquet",
+  "backend": "flopscope",
+  "seed_protocol": {
+    "name": "whestbench_explicit_per_mlp_seeds",
+    "version": "3.0"
+  },
+  "n_mlps": 10,
+  "n_samples": 10000000,
+  "width": 256,
+  "depth": 8,
+  "created_at_utc": "2026-05-25T12:00:00+00:00",
+  "hardware": {
+    "cpu_brand": "Intel Xeon Platinum 8480+",
+    "cpu_count": 64,
+    "ram_gb": 512.0
+  }
+}
+```
+
+Under seed_protocol 3.0 there is no top-level `seed` field. Each MLP's input seed is
+stored in the parquet `mlp_seed` column.
+
+### Example metadata.json (legacy seed_protocol 2.0)
 
 ```json
 {
@@ -147,6 +174,9 @@ A dataset with `is_partial=true` is refused by `whestbench.load_dataset` — run
   }
 }
 ```
+
+Legacy datasets (e.g. `aicrowd/arc-whestbench-2026-smoke-test`) use seed_protocol 2.0
+and continue to load correctly. New bakes always write seed_protocol 3.0.
 
 ## README.md (HF dataset card)
 
@@ -235,9 +265,79 @@ The `MLP` object exposes the same interface as MLPs produced on-the-fly by
 | 2.2 | `.npz` | Legacy. |
 
 `schema_version` tracks the storage format (2.x = npz, 3.0 = Parquet).
-`seed_protocol.version` (always `"2.0"` in schema 3.0) tracks the RNG hierarchy
-that produces per-MLP seeds. These two version numbers are independent — the
-seed protocol could be bumped without changing the storage format, and vice versa.
+`seed_protocol.version` tracks the RNG algorithm that produces per-MLP seeds.
+These two version numbers are independent — the seed protocol can be bumped without
+changing the storage format, and vice versa.
+
+## Seed protocols
+
+### `whestbench_seedsequence_hierarchy` version `2.0` (legacy, read-only)
+
+The original seeding scheme. A single **root seed** (`--seed N`) is expanded via
+`numpy.random.SeedSequence(root_seed)` into `n_mlps` child sequences. Each child
+spawns three streams: weights, samples, and estimator. The parquet `mlp_seed` column
+stored the already-derived **estimator** seed (stream index 2), not the input seed.
+New bakes can no longer write seed_protocol 2.0; `--seed N` on the CLI now rejects
+with a migration hint.
+
+### `whestbench_explicit_per_mlp_seeds` version `3.0` (new, default)
+
+Each MLP receives an **independent input seed** (64-bit integer). Seeds are either
+auto-generated via `secrets.randbits(63)` or supplied explicitly via
+`--mlp-seeds FILE` (JSON array of N ints). The parquet `mlp_seed` column stores
+the **input** seed — the canonical, portable value.
+
+Within each MLP, the three RNG streams are still derived locally:
+`SeedSequence(mlp_seed).spawn(3)` → `[weight_seq, sample_seq, estimator_seq]`.
+`mlp.seed` (participant-facing) equals `int(estimator_seq.generate_state(1)[0])`,
+unchanged from 2.0 from the participant's perspective.
+
+#### Building a 3.0 dataset
+
+```bash
+# Auto-generated seeds (recommended for production bakes):
+whest dataset bake --n-mlps 10 --n-samples 1e7 --width 256 --depth 8 \
+    --output ./my-eval
+
+# Explicit seeds (for reproducible small datasets or tests):
+echo '[1001,2002,3003,4004]' > my-seeds.json
+whest dataset bake --n-mlps 4 --n-samples 100 --width 4 --depth 2 \
+    --mlp-seeds my-seeds.json --output ./tiny-eval
+```
+
+In Python:
+
+```python
+from whestbench.dataset import create_dataset
+
+# Auto-generated:
+create_dataset(n_mlps=10, n_samples=1_000_000, width=256, depth=8,
+               output_path="./my-eval")
+
+# Explicit:
+create_dataset(n_mlps=4, n_samples=100, width=4, depth=2,
+               mlp_seeds=[1001, 2002, 3003, 4004],
+               output_path="./tiny-eval")
+```
+
+#### Extracting seeds from a published dataset
+
+```python
+import whestbench
+
+ds = whestbench.load_dataset("aicrowd/arc-whestbench-2026", revision="v1", split="public")
+md = whestbench.metadata(ds)
+if md["seed_protocol"]["version"] == "3.0":
+    seeds = ds["mlp_seed"]   # list of input seeds
+    print(seeds)
+```
+
+#### `--slice` + seed_protocol 3.0
+
+Under 3.0, all workers baking a given split must receive the **same** `--mlp-seeds`
+JSON file. Each worker uses `--slice K/N` to select its subset of rows; it draws
+the corresponding seeds from that shared file. Seeds for different splits must use
+different JSON files to preserve cross-split independence.
 
 HuggingFace git tags (e.g. `v1`, `v2`) are content versions for a specific published
 dataset. They are independent of the schema version — a dataset at tag `v2` is still
@@ -252,11 +352,14 @@ slice K (0-indexed). The output metadata is marked `is_partial=true` and include
 `mlp_range=[start, end)` and `total_n_mlps`.
 
 ```bash
+# Generate once, share the same file with all workers.
+whest dataset generate-seeds --n-mlps 1000 > seeds.json
+
 # 4 workers each bake 250 of 1000 MLPs
-whest dataset bake --slice 0/4 --n-mlps 1000 --seed 42 ... --output ./p0
-whest dataset bake --slice 1/4 --n-mlps 1000 --seed 42 ... --output ./p1
-whest dataset bake --slice 2/4 --n-mlps 1000 --seed 42 ... --output ./p2
-whest dataset bake --slice 3/4 --n-mlps 1000 --seed 42 ... --output ./p3
+whest dataset bake --slice 0/4 --n-mlps 1000 --mlp-seeds seeds.json ... --output ./p0
+whest dataset bake --slice 1/4 --n-mlps 1000 --mlp-seeds seeds.json ... --output ./p1
+whest dataset bake --slice 2/4 --n-mlps 1000 --mlp-seeds seeds.json ... --output ./p2
+whest dataset bake --slice 3/4 --n-mlps 1000 --mlp-seeds seeds.json ... --output ./p3
 ```
 
 `--mlp-range START-END` is the lower-level alternative. Both endpoints are inclusive
@@ -277,13 +380,13 @@ whest dataset merge ./p0 ./p1 ./p2 ./p3 --output ./final
 
 The bit-equivalence guarantee means a worker baking `--slice K/N` produces rows
 that are bitwise identical to the corresponding rows of a single-host bake with the
-same `--seed` and `--n-mlps`. This holds because:
+same `--mlp-seeds` file and `--n-mlps`. This holds because:
 
-1. The seed hierarchy derives each MLP's per-layer seeds from a global
-   `numpy.random.SeedSequence(root_seed)` that is expanded over all `n_mlps` logical
-   slots before any slicing occurs. A worker baking slot `i` uses the same derived
-   seed regardless of which slice it's in.
-2. MLP names are derived from all `n_mlps` logical seeds so that `slice_names[K]`
+1. Under seed_protocol 3.0, each slot's input seed comes directly from the shared
+   `--mlp-seeds` JSON file. A worker baking slot `i` reads `seeds[i]` from that file
+   regardless of which slice it's assigned, so the derived weight/sample/estimator
+   streams are identical to a single-host bake.
+2. MLP names are derived from the same per-MLP input seeds so that `slice_names[K]`
    equals `full_names[K]`.
 
 Note: bit-equivalence is per-backend. The `flopscope` (CPU) and `torch` backends
@@ -312,18 +415,21 @@ my-eval/
   "schema_version": "3.0",
   "format": "hf-datasets-parquet",
   "backend": "torch",
-  "seed_protocol": {"name": "whestbench_seedsequence_hierarchy", "version": "2.0"},
+  "seed_protocol": {"name": "whestbench_explicit_per_mlp_seeds", "version": "3.0"},
   "n_samples": 1000000000,
   "width": 256,
   "depth": 8,
   "created_at_utc": "...",
   "hardware": {...},
   "splits": {
-    "public":  {"n_mlps": 50, "seed": <int>, "created_at_utc": "...", "hardware_fingerprints": [...]},
-    "holdout": {"n_mlps": 50, "seed": <int>, "created_at_utc": "...", "hardware_fingerprints": [...]}
+    "public":  {"n_mlps": 50, "created_at_utc": "...", "hardware_fingerprints": [...]},
+    "holdout": {"n_mlps": 50, "created_at_utc": "...", "hardware_fingerprints": [...]}
   }
 }
 ```
+
+Under seed_protocol 3.0 there is no per-split `seed` field; seeds are stored in
+the parquet `mlp_seed` column for each split.
 
 ### Field placement
 
@@ -356,11 +462,16 @@ for mlp in iter_mlps(dsd["public"]):
 
 ### Building a multi-split dataset
 
-Bake each split as a complete single-split dataset, then combine:
+Bake each split as a complete single-split dataset, then combine. Under seed_protocol
+3.0, each split uses its own seeds JSON file:
 
 ```bash
-whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split public  --seed <S1> --output ./pub
-whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split holdout --seed <S2> --output ./hold
+# Generate independent seed files for each split.
+whest dataset generate-seeds --n-mlps 50 > public-seeds.json
+whest dataset generate-seeds --n-mlps 50 > holdout-seeds.json
+
+whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split public  --mlp-seeds public-seeds.json  --output ./pub
+whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split holdout --mlp-seeds holdout-seeds.json --output ./hold
 whest dataset combine-splits ./pub ./hold --output ./eval-r1
 whest dataset push ./eval-r1 --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
 ```
