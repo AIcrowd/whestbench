@@ -30,7 +30,7 @@ def test_dataset_roundtrip_persists_mlp_seeds(tmp_path):
         seed=42,
         output_path=out,
     )
-    ds = load_dataset(out)
+    ds = load_dataset(out, split="public")
     seeds = [m.seed for m in iter_mlps(ds)]
     assert all(isinstance(s, int) for s in seeds)
     assert len(set(seeds)) == 3, f"seeds not distinct: {seeds}"
@@ -49,8 +49,8 @@ def test_dataset_create_reproduces_same_seeds(tmp_path):
             seed=99,
             output_path=path,
         )
-    seeds_a = [m.seed for m in iter_mlps(load_dataset(out1))]
-    seeds_b = [m.seed for m in iter_mlps(load_dataset(out2))]
+    seeds_a = [m.seed for m in iter_mlps(load_dataset(out1, split="public"))]
+    seeds_b = [m.seed for m in iter_mlps(load_dataset(out2, split="public"))]
     assert seeds_a == seeds_b
 
 

@@ -156,7 +156,7 @@ def test_create_dataset_torch_roundtrip_cpu(tmp_path: Path) -> None:
         output_path=tmp_path / "torch_cpu",
         device="cpu",
     )
-    ds = load_dataset(out)
+    ds = load_dataset(out, split="public")
     assert len(ds) == 2
     assert np.array(ds["all_layer_means"]).shape == (2, 2, 8)
     assert np.array(ds["final_means"]).shape == (2, 8)
@@ -262,8 +262,8 @@ def test_torch_and_cpu_backends_produce_identical_names_at_same_seed(tmp_path: P
     out_cpu = create_dataset(**common, output_path=tmp_path / "cpu_names")
     out_torch = create_dataset_torch(**common, output_path=tmp_path / "torch_names", device="cpu")
 
-    names_cpu = [m.name for m in iter_mlps(load_dataset(out_cpu))]
-    names_torch = [m.name for m in iter_mlps(load_dataset(out_torch))]
+    names_cpu = [m.name for m in iter_mlps(load_dataset(out_cpu, split="public"))]
+    names_torch = [m.name for m in iter_mlps(load_dataset(out_torch, split="public"))]
 
     assert names_cpu == names_torch
     assert all(names_cpu)  # no empty strings on either side
@@ -300,7 +300,7 @@ def test_mini_batch_correctness_uneven_n_mlps(tmp_path: Path) -> None:
         device="cpu",
         mlps_per_batch=3,
     )
-    ds = load_dataset(out)
+    ds = load_dataset(out, split="public")
     assert len(ds) == 7
     assert np.array(ds["all_layer_means"]).shape == (7, 2, 4)
     assert np.array(ds["final_means"]).shape == (7, 4)
@@ -410,7 +410,7 @@ def test_mps_smoke_roundtrip(tmp_path: Path) -> None:
         output_path=tmp_path / "mps_smoke",
         device="mps",
     )
-    ds = load_dataset(out)
+    ds = load_dataset(out, split="public")
     md = metadata(ds)
     assert len(ds) == 2
     assert md["device"] == "mps"
