@@ -211,3 +211,9 @@ a new `--output` path.
 **Dataset rejected with "partial dataset" error** — You pushed a slice bake without
 merging first. Run `whest dataset merge` on all slices, then push the merged result.
 See [Parallel bake](./parallel-bake.md).
+
+### Multi-split datasets
+
+`whest dataset push` handles multi-split datasets natively. The local directory must contain one parquet per split in `data/` and a `metadata.json` with a `splits:` dict; this is the shape produced by `whest dataset combine-splits`. The push uploads all parquets in one commit; tag with `--tag round-N` for per-round eval datasets.
+
+For private repos (e.g. the evaluation dataset), pass `--private` on first push to create the repo as private. Subsequent pushes preserve the privacy setting.
