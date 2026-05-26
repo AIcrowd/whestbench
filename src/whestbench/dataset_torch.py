@@ -22,6 +22,12 @@ import flopscope.numpy as fnp
 import numpy as np
 from datasets import Dataset
 
+from ._provenance import (
+    flopscope_version,
+    nvidia_driver_version,
+    torch_determinism_state,
+    whestbench_version,
+)
 from .dataset import _resolve_mlp_range
 from .dataset_io import (
     DEFAULT_SPLIT,
@@ -275,14 +281,24 @@ def create_dataset_torch(
         "width": width,
         "depth": depth,
         "hardware": collect_hardware_fingerprint(),
+        "whestbench_version": whestbench_version(),
+        "flopscope_version": flopscope_version(),
         "torch_version": torch.__version__,
         "device": resolved_device,
         "mlps_per_batch": resolved_mlps_per_batch,
         "chunk_size": resolved_chunk_size,
+        # Runtime state of torch's determinism levers + the cuBLAS workspace
+        # env var. Bit-exact cross-host reproduction requires these to match
+        # what the canonical bake used. See docs/how-to/parallel-bake.md §
+        # "Bit-equivalence requirements".
+        "bake_config": torch_determinism_state(),
     }
     if resolved_device == "cuda":
         metadata["cuda_device_name"] = torch.cuda.get_device_name()
         metadata["cuda_device_capability"] = list(torch.cuda.get_device_capability())
+        driver = nvidia_driver_version()
+        if driver is not None:
+            metadata["cuda_driver_version"] = driver
     elif resolved_device == "mps":
         metadata["mps_device_name"] = platform.processor() or "Apple Silicon"
 
