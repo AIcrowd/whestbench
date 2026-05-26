@@ -18,6 +18,7 @@ import flopscope.numpy as fnp
 import numpy as np
 from datasets import Dataset
 
+from ._provenance import flopscope_version, whestbench_version
 from .dataset_io import (
     DEFAULT_SPLIT,
     SCHEMA_FORMAT,
@@ -266,6 +267,8 @@ def create_dataset(
         "width": width,
         "depth": depth,
         "hardware": collect_hardware_fingerprint(),
+        "whestbench_version": whestbench_version(),
+        "flopscope_version": flopscope_version(),
     }
 
     is_partial = (start, end) != (0, n_mlps)
