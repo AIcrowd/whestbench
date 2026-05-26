@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, Iterator, List, Optional, Tuple, overload
 
 if TYPE_CHECKING:
-    from datasets import DatasetDict
+    from datasets import DatasetDict, IterableDataset, IterableDatasetDict
 
 import flopscope as flops
 import flopscope.numpy as fnp
 import numpy as np
-from datasets import Dataset
+from datasets import Dataset, IterableDataset, IterableDatasetDict
 
 from ._provenance import flopscope_version, whestbench_version
 from .dataset_io import (
@@ -42,16 +42,18 @@ from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_c
 # Metadata side-channel: associates a Dataset/DatasetDict with its
 # metadata.json contents without mutating the object itself.
 #
-# Dataset is hashable -> use a WeakKeyDictionary.
-# DatasetDict inherits from dict (unhashable) but IS weakref-able -> use an
-# id()-keyed plain dict with a weakref finalizer for cleanup.
-_METADATA_BY_DS: "weakref.WeakKeyDictionary[Dataset, Dict[str, Any]]" = weakref.WeakKeyDictionary()
-_METADATA_BY_DSD: "Dict[int, Dict[str, Any]]" = {}  # keyed by id(DatasetDict)
+# Dataset (and IterableDataset) are hashable -> WeakKeyDictionary works for both.
+# DatasetDict / IterableDatasetDict inherit from dict (unhashable) but ARE
+# weakref-able -> use an id()-keyed plain dict with a weakref finalizer.
+_METADATA_BY_DS: "weakref.WeakKeyDictionary[Dataset | IterableDataset, Dict[str, Any]]" = (
+    weakref.WeakKeyDictionary()
+)
+_METADATA_BY_DSD: "Dict[int, Dict[str, Any]]" = {}  # keyed by id(DatasetDict-like)
 _DSD_REFS: "Dict[int, weakref.ref]" = {}  # keeps finalizer alive
 
 
-def _register_dsd_metadata(dsd: "DatasetDict", md: "Dict[str, Any]") -> None:
-    """Store metadata for a DatasetDict, cleaning up when the object is GC'd."""
+def _register_dsd_metadata(dsd: "DatasetDict | IterableDatasetDict", md: "Dict[str, Any]") -> None:
+    """Store metadata for a DatasetDict-like, cleaning up when the object is GC'd."""
     oid = id(dsd)
     _METADATA_BY_DSD[oid] = md
 
@@ -62,7 +64,7 @@ def _register_dsd_metadata(dsd: "DatasetDict", md: "Dict[str, Any]") -> None:
     _DSD_REFS[oid] = weakref.ref(dsd, _cleanup)
 
 
-def _get_dsd_metadata(dsd: "DatasetDict") -> "Dict[str, Any] | None":
+def _get_dsd_metadata(dsd: "DatasetDict | IterableDatasetDict") -> "Dict[str, Any] | None":
     return _METADATA_BY_DSD.get(id(dsd))
 
 
@@ -288,7 +290,8 @@ def load_dataset(
     revision: Optional[str] = ...,
     split: str,
     token: Optional[str] = ...,
-) -> "Dataset": ...
+    streaming: bool = ...,
+) -> "Dataset | IterableDataset": ...
 
 
 @overload
@@ -298,7 +301,8 @@ def load_dataset(
     revision: Optional[str] = ...,
     split: None = ...,
     token: Optional[str] = ...,
-) -> "Dataset | DatasetDict": ...
+    streaming: bool = ...,
+) -> "Dataset | DatasetDict | IterableDataset | IterableDatasetDict": ...
 
 
 def load_dataset(
@@ -307,20 +311,32 @@ def load_dataset(
     revision: Optional[str] = None,
     split: Optional[str] = None,
     token: Optional[str] = None,
-) -> "Dataset | DatasetDict":
+    streaming: bool = False,
+) -> "Dataset | DatasetDict | IterableDataset | IterableDatasetDict":
     """Load a whestbench dataset from a local directory or HF Hub repo.
 
     Returns `Dataset` for single-split datasets, and when `split=` is provided
     for either single- or multi-split. Returns `DatasetDict` for multi-split
     datasets when `split=` is not provided.
 
+    When ``streaming=True`` (HF Hub only), returns the equivalent streaming
+    types: ``IterableDataset`` (single-split or split-selected) or
+    ``IterableDatasetDict`` (multi-split, no ``split=``). The metadata
+    side-channel works identically for both materialised and streaming
+    returns. ``iter_mlps()`` accepts both; ``mlp_at()`` requires a
+    materialised dataset and raises ``TypeError`` on streaming inputs.
+
+    Note: streaming datasets cannot currently be used with ``whest run
+    --dataset`` because the scoring path uses random-access indexing.
+
     Metadata is attached via a weakref side-channel (accessible through
     `whestbench.metadata()`):
-    - Dataset (single-split or split-selected): the single-split-shaped metadata.
-    - DatasetDict (multi-split, no split=): the full multi-split metadata with
-      the `splits:` dict.
-    - Each member Dataset inside a DatasetDict: the merged single-split-shaped
-      metadata for that split.
+    - Dataset / IterableDataset (single-split or split-selected): the
+      single-split-shaped metadata.
+    - DatasetDict / IterableDatasetDict (multi-split, no split=): the full
+      multi-split metadata with the `splits:` dict.
+    - Each member inside a DatasetDict / IterableDatasetDict: the merged
+      single-split-shaped metadata for that split.
 
     Args:
         path_or_repo: Local directory path, or HF Hub repo id (e.g.
@@ -330,17 +346,29 @@ def load_dataset(
             you want a DatasetDict; defaults to "public" for single-split
             datasets (preserves prior behavior).
         token: HF Hub auth token. Falls back to HF auth cache.
+        streaming: If True, return HF streaming types (``IterableDataset`` /
+            ``IterableDatasetDict``) instead of materialised ones. Only
+            supported for HF Hub repos — raises ``ValueError`` for local
+            paths.
 
     Raises:
         InvalidDatasetError: missing/malformed/partial metadata, or unknown
             split name for a multi-split dataset.
+        ValueError: ``streaming=True`` combined with a local path.
     """
     import datasets as hf_datasets
-    from datasets import DatasetDict
+    from datasets import DatasetDict, IterableDatasetDict
 
     path_or_repo_str = str(path_or_repo)
     local_candidate = Path(path_or_repo_str)
     is_local = local_candidate.exists()
+
+    if streaming and is_local:
+        raise ValueError(
+            "streaming=True is only supported for HF Hub repos, not local paths. "
+            "For local datasets, materialise via `load_dataset(local_path)` and "
+            "iterate normally."
+        )
 
     # Materialise metadata.json regardless of source.
     if is_local:
@@ -366,7 +394,9 @@ def load_dataset(
     validate_metadata(md, allow_partial=False)
 
     loader_path = str(local_candidate) if is_local else path_or_repo_str
-    hf_kwargs: Dict[str, Any] = {} if is_local else {"revision": revision, "token": token}
+    hf_kwargs: Dict[str, Any] = (
+        {} if is_local else {"revision": revision, "token": token, "streaming": streaming}
+    )
 
     if "splits" in md:
         # Multi-split path.
@@ -379,7 +409,12 @@ def load_dataset(
             ds = hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
             _METADATA_BY_DS[ds] = _merge_metadata_for_split(md, split)
             return ds
-        dsd = DatasetDict()
+        # Multi-split container. HF gives us a DatasetDict normally; under
+        # streaming we assemble an IterableDatasetDict ourselves (HF supports
+        # this — IterableDatasetDict is a plain dict subclass).
+        dsd: "DatasetDict | IterableDatasetDict" = (
+            IterableDatasetDict() if streaming else DatasetDict()
+        )
         for name in available_splits:
             member = hf_datasets.load_dataset(loader_path, split=name, **hf_kwargs)
             _METADATA_BY_DS[member] = _merge_metadata_for_split(md, name)
@@ -407,28 +442,29 @@ def _merge_metadata_for_split(md: Dict[str, Any], split: str) -> Dict[str, Any]:
 
 
 def metadata(
-    ds_or_dsd: "Dataset | DatasetDict",
+    ds_or_dsd: "Dataset | DatasetDict | IterableDataset | IterableDatasetDict",
     *,
     split: "str | None" = None,
 ) -> Dict[str, Any]:
     """Return the metadata.json contents attached to a Dataset or DatasetDict.
 
-    For a DatasetDict (multi-split, no split= at load time): returns the full
-    multi-split metadata dict (with `splits:`). Pass `split="X"` to get a
-    single-split-shaped merged dict for split X.
+    For a DatasetDict / IterableDatasetDict (multi-split, no split= at load
+    time): returns the full multi-split metadata dict (with `splits:`). Pass
+    `split="X"` to get a single-split-shaped merged dict for split X.
 
-    For a Dataset (single-split or `load_dataset(..., split=X)`): returns the
-    single-split-shaped metadata. `split=` is rejected with a TypeError — the
-    Dataset's split is fixed at load time and cannot be re-selected here.
+    For a Dataset / IterableDataset (single-split or
+    `load_dataset(..., split=X)`): returns the single-split-shaped metadata.
+    `split=` is rejected with a TypeError — the split is fixed at load time
+    and cannot be re-selected here.
 
     Raises:
         InvalidDatasetError: if no metadata is attached, or if `split=` names
-            a split that's not in the DatasetDict.
-        TypeError: if `split=` is passed for a Dataset.
+            a split that's not in the DatasetDict-like.
+        TypeError: if `split=` is passed for a single-Dataset-like.
     """
-    from datasets import DatasetDict
+    from datasets import DatasetDict, IterableDatasetDict
 
-    if isinstance(ds_or_dsd, DatasetDict):
+    if isinstance(ds_or_dsd, (DatasetDict, IterableDatasetDict)):
         md = _get_dsd_metadata(ds_or_dsd)
         if md is None:
             raise InvalidDatasetError(
@@ -460,20 +496,26 @@ def metadata(
     return md
 
 
-def iter_mlps(ds: Dataset) -> Iterator[MLP]:
+def iter_mlps(ds: "Dataset | IterableDataset") -> Iterator[MLP]:
     """Iterate the MLPs in a Dataset, constructing MLP objects per row.
+
+    Accepts both materialised ``Dataset`` and streaming ``IterableDataset``
+    inputs — iteration is by ``for row in ds:`` either way, so this works
+    transparently on streaming datasets returned by
+    ``load_dataset(..., streaming=True)``.
 
     Looks up the dataset's seed_protocol via the metadata side-channel to
     construct each MLP with the correct estimator-seed derivation. Falls
     back to seed_protocol 2.0 semantics if no metadata is attached (e.g.
     a Dataset constructed manually for tests).
     """
-    from datasets import DatasetDict
+    from datasets import DatasetDict, IterableDatasetDict
 
-    if isinstance(ds, DatasetDict):
+    if isinstance(ds, (DatasetDict, IterableDatasetDict)):
         raise TypeError(
-            "iter_mlps requires a single Dataset; for multi-split datasets, "
-            "call load_dataset(..., split='<name>') first or use ds[split]."
+            "iter_mlps requires a single Dataset / IterableDataset; for "
+            "multi-split datasets, call load_dataset(..., split='<name>') "
+            "first or use ds[split]."
         )
     md = _METADATA_BY_DS.get(ds, {})
     proto_version = md.get("seed_protocol", {}).get("version", "2.0")
@@ -482,13 +524,31 @@ def iter_mlps(ds: Dataset) -> Iterator[MLP]:
 
 
 def mlp_at(ds: Dataset, index: int) -> MLP:
-    """Return the MLP at `index` in the Dataset."""
-    from datasets import DatasetDict
+    """Return the MLP at `index` in the Dataset.
 
-    if isinstance(ds, DatasetDict):
+    Requires a materialised ``Dataset``; streaming ``IterableDataset`` has no
+    random-access contract, so this raises ``TypeError`` on streaming inputs.
+    To get one MLP at index ``i`` from a streaming dataset, use::
+
+        import itertools
+        mlp = next(itertools.islice(iter_mlps(streaming_ds), i, i + 1))
+
+    Cost is O(i) rows scanned — sequential scan to position ``i``.
+    """
+    from datasets import DatasetDict, IterableDatasetDict
+
+    if isinstance(ds, (DatasetDict, IterableDatasetDict)):
         raise TypeError(
             "mlp_at requires a single Dataset; for multi-split datasets, "
             "call load_dataset(..., split='<name>') first or use ds[split]."
+        )
+    if isinstance(ds, IterableDataset):
+        raise TypeError(
+            "mlp_at requires a materialised Dataset; streaming IterableDataset "
+            "has no random-access contract. To get one MLP at index i from a "
+            "streaming dataset, use "
+            "`next(itertools.islice(iter_mlps(ds), i, i + 1))` "
+            "(cost: O(i) rows scanned), or reload without streaming=True."
         )
     md = _METADATA_BY_DS.get(ds, {})
     proto_version = md.get("seed_protocol", {}).get("version", "2.0")
