@@ -340,6 +340,24 @@ def test_smoke_test_debug_includes_traceback_field(
     assert "RuntimeError: boom" in captured.out
 
 
+def test_smoke_test_json_error_payload_includes_whestbench_version(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def _broken_report(*_args: Any, **_kwargs: Any) -> dict:
+        raise ValueError("boom")
+
+    monkeypatch.setattr(cli, "run_default_report", _broken_report)
+    monkeypatch.setattr(cli, "_resolve_whestbench_version", lambda: "0.2.0")
+
+    exit_code = cli.main(["smoke-test", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    payload = json.loads(captured.out)
+    assert payload["whestbench_version"] == "0.2.0"
+    assert payload["ok"] is False
+
+
 def test_print_error_renders_structured_details_and_unknown_keys(
     capsys: pytest.CaptureFixture[str],
 ) -> None:

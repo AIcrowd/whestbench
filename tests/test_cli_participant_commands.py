@@ -53,6 +53,7 @@ def test_validate_command_returns_json_only_with_json_flag(
         "validate_submission_entrypoint",
         lambda *_args, **_kwargs: {"ok": True, "class_name": "Estimator", "output_shape": [2, 4]},
     )
+    monkeypatch.setattr(cli, "_resolve_whestbench_version", lambda: "0.2.0")
 
     exit_code = cli.main(["validate", "--estimator", "estimator.py", "--json"])
     captured = capsys.readouterr()
@@ -63,6 +64,7 @@ def test_validate_command_returns_json_only_with_json_flag(
         "ok": True,
         "class_name": "Estimator",
         "output_shape": [2, 4],
+        "whestbench_version": "0.2.0",
     }
 
 
@@ -113,6 +115,7 @@ def test_validate_json_shape_stays_stable(
         },
         raising=False,
     )
+    monkeypatch.setattr(cli, "_resolve_whestbench_version", lambda: "0.2.0")
 
     exit_code = cli.main(["validate", "--estimator", "estimator.py", "--json"])
     captured = capsys.readouterr()
@@ -123,6 +126,7 @@ def test_validate_json_shape_stays_stable(
         "class_name": "Estimator",
         "module_name": "_submission",
         "output_shape": [2, 4],
+        "whestbench_version": "0.2.0",
     }
 
 
@@ -142,6 +146,7 @@ def test_validate_format_json_matches_json_flag(
         },
         raising=False,
     )
+    monkeypatch.setattr(cli, "_resolve_whestbench_version", lambda: "0.2.0")
 
     exit_code = cli.main(["validate", "--estimator", "estimator.py", "--format", "json"])
     captured = capsys.readouterr()
@@ -152,6 +157,7 @@ def test_validate_format_json_matches_json_flag(
         "class_name": "Estimator",
         "module_name": "_submission",
         "output_shape": [2, 4],
+        "whestbench_version": "0.2.0",
     }
 
 
@@ -184,12 +190,17 @@ def test_init_command_json_shape_stays_stable(
         "_write_init_template",
         lambda _path: [str(Path("/tmp/demo/estimator.py"))],
     )
+    monkeypatch.setattr(cli, "_resolve_whestbench_version", lambda: "0.2.0")
 
     exit_code = cli.main(["init", "/tmp/demo", "--json"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert json.loads(captured.out) == {"ok": True, "created": ["/tmp/demo/estimator.py"]}
+    assert json.loads(captured.out) == {
+        "ok": True,
+        "created": ["/tmp/demo/estimator.py"],
+        "whestbench_version": "0.2.0",
+    }
 
 
 def test_init_command_renders_noop_status_when_nothing_created(
@@ -267,7 +278,6 @@ def test_create_dataset_command_emits_redirect(
 
 
 def test_create_dataset_json_shape_stays_stable(
-    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     tmp_path: Path,
 ) -> None:
@@ -284,6 +294,62 @@ def test_create_dataset_json_shape_stays_stable(
 
     assert exit_code != 0
     assert "whest dataset bake" in (captured.err + captured.out)
+
+
+def test_version_command_json_shape_stays_stable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(cli, "_resolve_whestbench_version", lambda: "0.2.0")
+
+    exit_code = cli.main(["version", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert json.loads(captured.out) == {
+        "ok": True,
+        "command": "version",
+        "name": "whestbench",
+        "version": "0.2.0",
+        "whestbench_version": "0.2.0",
+    }
+
+
+def test_version_command_plain_output_is_compact(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(cli, "_resolve_whestbench_version", lambda: "0.2.0")
+
+    exit_code = cli.main(["version"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.out == "whestbench 0.2.0\n"
+
+
+def test_version_command_plain_output_falls_back_to_unknown(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(cli, "_resolve_whestbench_version", lambda: "unknown")
+
+    exit_code = cli.main(["version"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert captured.out == "whestbench unknown\n"
+
+
+def test_version_command_falls_back_to_unknown(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(cli, "_resolve_whestbench_version", lambda: "unknown")
+
+    exit_code = cli.main(["version", "--json"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    payload = json.loads(captured.out)
+    assert payload["version"] == "unknown"
+    assert payload["whestbench_version"] == "unknown"
 
 
 def test_package_command_renders_artifact_summary(
