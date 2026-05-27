@@ -153,6 +153,29 @@ def _install_run_mocks(
     return captured
 
 
+def _assert_say_ordering(
+    joined: str,
+    *,
+    mode: str,
+) -> None:
+    """Assert ``say.step`` → ``say.intent`` → ``say.ok`` order in captured output.
+
+    For the cache-hit path there is no ``say.intent`` (the ``Loading from
+    cache`` banner is a transient ``console.status`` and doesn't land in
+    captured prints), so only the present markers are ordered.
+    """
+    positions = {
+        "step": joined.find("Resolving"),
+        "intent": joined.find("Downloading") if mode != "cache_hit" else -1,
+        "ok": joined.find("✓"),
+    }
+    present = [(name, pos) for name, pos in positions.items() if pos != -1]
+    sorted_present = sorted(present, key=lambda x: x[1])
+    assert [n for n, _ in present] == [n for n, _ in sorted_present], (
+        f"expected step → intent → ok order; got {present!r} in joined={joined!r}"
+    )
+
+
 @pytest.fixture()
 def _estimator_file(tmp_path: Path) -> Path:
     """A minimal estimator file on disk; cli.py only resolves the path."""
@@ -196,6 +219,7 @@ def test_cli_run_hf_cache_hit_emits_cache_hit_status(
     assert exit_code == 0
     joined = "\n".join(captured)
     assert "from cache" in joined.lower(), f"missing cache-hit message; got: {joined!r}"
+    _assert_say_ordering(joined, mode="cache_hit")
 
 
 def test_cli_run_hf_cache_miss_emits_download_intent(
@@ -237,3 +261,44 @@ def test_cli_run_hf_cache_miss_emits_download_intent(
     assert "Downloaded 2.0 GB" in joined, (
         f"cache-miss ok line should read 'Downloaded 2.0 GB ...'; got: {joined!r}"
     )
+    _assert_say_ordering(joined, mode="cache_miss")
+
+
+def test_cli_run_hf_preflight_unavailable_emits_intent_without_size(
+    monkeypatch: pytest.MonkeyPatch, _estimator_file: Path
+) -> None:
+    """When preflight fails (returns ``None``), the download intent should
+    still fire — just without a file count / byte total — and the cache-miss
+    ✓ line should fire without a byte label.
+    """
+    captured = _install_run_mocks(monkeypatch, preflight=None)
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            str(_estimator_file),
+            "--dataset",
+            "hf://aicrowd/foo@v1-warmup",
+            "--format",
+            "plain",
+        ]
+    )
+
+    assert exit_code == 0
+    joined = "\n".join(captured)
+    assert "Downloading hf://aicrowd/foo@v1-warmup" in joined, (
+        f"missing download intent; got: {joined!r}"
+    )
+    assert "preflight unavailable" in joined, (
+        f"missing preflight-unavailable annotation; got: {joined!r}"
+    )
+    # ✓ line fires; with no preflight there is no byte count between
+    # "Downloaded" and "and loaded".
+    assert "✓" in joined and "Downloaded" in joined and "loaded" in joined, (
+        f"missing cache-miss ✓ line; got: {joined!r}"
+    )
+    assert "Downloaded and loaded" in joined, (
+        f"preflight-None ok line should read 'Downloaded and loaded ...'; got: {joined!r}"
+    )
+    _assert_say_ordering(joined, mode="cache_miss")
