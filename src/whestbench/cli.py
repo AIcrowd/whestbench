@@ -1462,10 +1462,17 @@ def _dispatch_dataset_command(args) -> int:
         return 0
 
     if sub == "merge":
-        from .dataset_io import merge_datasets
+        import time as _time
 
-        merge_datasets([_Path(p) for p in args.inputs], output_dir=_Path(args.output))
-        print(f"Merged {len(args.inputs)} partials to {args.output}")
+        from .dataset_io import merge_datasets
+        from .ui import format_duration, say, status
+
+        say.intent(f"Merging {len(args.inputs)} partials → {args.output}")
+        _t0 = _time.perf_counter()
+        with status("Validating partials and concatenating"):
+            merge_datasets([_Path(p) for p in args.inputs], output_dir=_Path(args.output))
+        _elapsed = _time.perf_counter() - _t0
+        say.ok(f"Merged in {format_duration(_elapsed)} → {args.output}")
         return 0
 
     if sub == "info":
