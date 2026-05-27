@@ -218,8 +218,13 @@ def generate_readme(
         size_categories=[_size_category(ds_size)],
         homepage="https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026",
         repository="https://github.com/AIcrowd/whestbench",
-        **({"configs": configs_block} if configs_block is not None else {}),
     )
+    # DatasetCardData accepts arbitrary extra YAML keys as attributes.
+    # Setting `configs` as an attribute (rather than via **kwargs) avoids a
+    # Pyright false-positive: the **kwargs unpack confuses the type checker into
+    # checking the list-of-dicts value against each named __init__ parameter.
+    if configs_block is not None:
+        card_data.configs = configs_block  # type: ignore[attr-defined]
     yaml_str = yaml.dump(card_data.to_dict(), default_flow_style=False, allow_unicode=True)
     full_content = f"---\n{yaml_str}---\n\n{body}"
     return str(DatasetCard(full_content))
