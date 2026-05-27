@@ -329,3 +329,58 @@ See [Performance tuning](#performance-tuning) for more knobs.
 
 > If it broke (long pause, disk full, gated dataset, `cas-bridge.xethub.hf.co`
 > URLs you don't recognise), jump to [Troubleshooting](#troubleshooting).
+
+## Streaming mode
+
+You want to score against a small slice of a remote dataset without paying
+the cost of a full download. `whest run --streaming` consumes the dataset
+row-group-by-row-group over HTTP instead of downloading it first.
+
+### When to use
+
+- You're iterating on estimator code with `--n-mlps 5` (or some small K).
+  Streaming fetches only the first ⌈K/47⌉ row groups (~95 MB each for the
+  warmup dataset) instead of the full 2 GB.
+- You're on a constrained-disk environment (CI runner, container).
+- You want a fast first-row response time more than total throughput.
+
+### When NOT to use
+
+- Repeated full evaluations of the same dataset. Streaming does NOT populate
+  the cache — every run re-fetches. Use the
+  [default materialise path](#downloading-from-hf-hub-and-the-local-cache)
+  instead.
+- Anything that needs random access. `IterableDataset` is iteration-only;
+  `len(ds)`, `ds[i]`, and `ds.shuffle(seed=…)` don't work as expected.
+
+### Trade-off table
+
+| Property | Materialise (default) | `--streaming` |
+|---|---|---|
+| First-row latency, cold cache | ~30 s (full download) | ~5 s |
+| First-row latency, warm cache | ~2 s | ~5 s (re-fetch) |
+| Disk usage | ~4 GB (blob + Arrow) | 0 |
+| Subsequent runs | ~2 s (cache hit) | ~5 s (re-fetch every time) |
+| Random access | Yes | No |
+
+### Authentication and streaming
+
+Unauthenticated requests to HF are rate-limited and noticeably slower. Run
+`hf auth login` once to set a token; streaming throughput typically improves
+30–50% authenticated.
+
+### Example
+
+```bash
+whest run --estimator estimator.py \
+          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-warmup \
+          --streaming \
+          --n-mlps 5
+```
+
+You'll see a `⚠ Streaming from HF` warning at startup, then a progress
+indicator while the first row group is fetched, then scoring begins.
+
+> Streaming is incompatible with `--json` output (it would corrupt JSON
+> ordering) and `len(ds)` raises on a streaming dataset. Both are documented
+> under [Troubleshooting](#troubleshooting).
