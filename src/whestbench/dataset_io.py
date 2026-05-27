@@ -191,6 +191,22 @@ def generate_readme(
     if splits is not None:
         tags.append("multi-split")
 
+    # For multi-split datasets, emit an explicit `configs:` block listing each
+    # split in dict insertion order. Without this block, HF Datasets falls back
+    # to alphabetical split discovery and the Dataset Viewer defaults to
+    # whichever split sorts first (e.g. `full` < `mini`), which is rarely
+    # what the dataset author wants.
+    configs_block = None
+    if splits is not None:
+        configs_block = [
+            {
+                "config_name": "default",
+                "data_files": [
+                    {"split": name, "path": f"data/{name}-*.parquet"} for name in splits
+                ],
+            }
+        ]
+
     card_data = DatasetCardData(
         license="cc-by-4.0",
         language=["code"],
@@ -203,6 +219,12 @@ def generate_readme(
         homepage="https://www.aicrowd.com/challenges/arc-white-box-estimation-challenge-2026",
         repository="https://github.com/AIcrowd/whestbench",
     )
+    # DatasetCardData accepts arbitrary extra YAML keys as attributes.
+    # Setting `configs` as an attribute (rather than via **kwargs) avoids a
+    # Pyright false-positive: the **kwargs unpack confuses the type checker into
+    # checking the list-of-dicts value against each named __init__ parameter.
+    if configs_block is not None:
+        card_data.configs = configs_block  # type: ignore[attr-defined]
     yaml_str = yaml.dump(card_data.to_dict(), default_flow_style=False, allow_unicode=True)
     full_content = f"---\n{yaml_str}---\n\n{body}"
     return str(DatasetCard(full_content))
