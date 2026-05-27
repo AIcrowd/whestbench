@@ -16,10 +16,12 @@ from rich.console import Console
 from rich.progress import (
     BarColumn,
     DownloadColumn,
+    MofNCompleteColumn,
     Progress,
     SpinnerColumn,
     TaskID,
     TextColumn,
+    TimeElapsedColumn,
     TimeRemainingColumn,
     TransferSpeedColumn,
 )
@@ -202,6 +204,38 @@ def progress_bytes(
         BarColumn(),
         DownloadColumn(),
         TransferSpeedColumn(),
+        TimeRemainingColumn(),
+        console=_get_console(console),
+        transient=False,
+    )
+    with progress:
+        task_id = progress.add_task(label, total=total)
+        yield _ProgressHandle(progress, task_id)
+
+
+@contextmanager
+def progress_count(
+    *,
+    total: int,
+    label: str,
+    console: Optional[Console] = None,
+    quiet: bool = False,
+) -> Iterator[ProgressHandle]:
+    """Yield a handle for a count-denominated Rich progress bar.
+
+    Same shape as :func:`progress_bytes` but with M-of-N + elapsed/remaining
+    columns instead of bytes/throughput — used for per-MLP sampling, scoring,
+    and similar count-style loops.
+    """
+    if _progress_disabled(quiet):
+        yield _NullHandle()
+        return
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[bold]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeElapsedColumn(),
         TimeRemainingColumn(),
         console=_get_console(console),
         transient=False,

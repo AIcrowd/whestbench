@@ -12,6 +12,7 @@ from whestbench.ui import (
     format_duration,
     format_throughput,
     progress_bytes,
+    progress_count,
     say,
 )
 
@@ -214,3 +215,30 @@ def test_progress_bytes_disabled_env_falsy_values_still_emit(
         p.advance(500)
     # The label should appear — env is treated as not-set / falsy.
     assert "dl" in buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# progress_count
+
+
+def test_progress_count_advance_updates_bar() -> None:
+    console, buf = _make_console()
+    with progress_count(total=100, label="Sampling", console=console) as p:
+        p.advance(50)
+        p.advance(50)
+    assert "Sampling" in buf.getvalue()
+
+
+def test_progress_count_quiet_emits_nothing() -> None:
+    console, buf = _make_console()
+    with progress_count(total=100, label="Sampling", console=console, quiet=True) as p:
+        p.advance(10)
+    assert buf.getvalue() == ""
+
+
+def test_progress_count_disabled_env_emits_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    console, buf = _make_console()
+    with progress_count(total=100, label="Sampling", console=console) as p:
+        p.advance(10)
+    assert buf.getvalue() == ""
