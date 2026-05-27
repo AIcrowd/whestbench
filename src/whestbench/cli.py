@@ -1349,17 +1349,40 @@ def _dispatch_dataset_command(args) -> int:
         return 0
 
     if sub == "upload":
-        from .hub import publish_dataset
+        import time as _time
 
-        sha = publish_dataset(
-            args.local_dir,
-            repo_id=args.repo,
-            tag=args.tag,
-            token=args.token,
-            commit_message=args.message,
-            private=args.private,
+        from .hf_progress import hf_upload
+        from .hub import publish_dataset
+        from .ui import format_bytes, format_duration, say
+
+        _revision_label = args.tag or "main"
+        _title = f"hf://{args.repo}@{_revision_label}"
+        say.intent(f"Uploading {args.local_dir} → {_title}")
+
+        # Preflight summary: count files + bytes in the local dir.
+        _local = Path(args.local_dir)
+        _files = [p for p in _local.rglob("*") if p.is_file() and not p.is_symlink()]
+        _total = sum(p.stat().st_size for p in _files)
+        say.step(
+            f"Total: {format_bytes(_total)} ({len(_files)} files) — will create repo if needed."
         )
-        print(f"Uploaded to {args.repo}; commit {sha}" + (f"; tag {args.tag}" if args.tag else ""))
+
+        _console = Console()
+        _t0 = _time.perf_counter()
+        with hf_upload(_console, title=_title, local_dir=args.local_dir):
+            sha = publish_dataset(
+                args.local_dir,
+                repo_id=args.repo,
+                tag=args.tag,
+                token=args.token,
+                commit_message=args.message,
+                private=args.private,
+            )
+        _elapsed = _time.perf_counter() - _t0
+
+        say.ok(f"Uploaded {_title} in {format_duration(_elapsed)}")
+        say.step(f"Commit: {sha}")
+        say.step(f"Visible at: https://huggingface.co/datasets/{args.repo}/tree/{_revision_label}")
         return 0
 
     if sub == "download":
