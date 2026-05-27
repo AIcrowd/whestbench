@@ -224,7 +224,7 @@ def test_merge_does_not_leak_per_partial_entries_to_global_hf_cache(
     into ``~/.cache/huggingface/datasets/``. At 1000 partials this is ~2.4 GB of
     dead cache. ``merge_datasets`` must not touch the global HF cache.
     """
-    import datasets
+    import datasets.config
 
     from whestbench.dataset_io import merge_datasets
 
