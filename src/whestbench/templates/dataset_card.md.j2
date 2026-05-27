@@ -37,11 +37,13 @@ WhestBench is a benchmark for *white-box activation estimation*: given the weigh
 
 - **`public`** ({{ '{:,}'.format(splits["public"].n_mlps) }} MLPs) — submissions are scored against this split with scores visible to participants on the **public leaderboard** in real time.
 - **`holdout`** ({{ '{:,}'.format(splits["holdout"].n_mlps) }} MLPs) — submissions are also scored against this split, but the scores power the **private/final leaderboard** and are revealed only at the conclusion of the round.
-{%- elif "mini" in splits and "full" in splits %}
+
+This dataset is intentionally not part of the Public Release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}); develop your estimator against the public release first.
+{%- elif "mini" in splits and "full" in splits -%}
 **This is the WhestBench 2026 Public Dataset Release** — pre-baked MLPs paired with their ground-truth activation statistics. Two **independent** splits, baked with **disjoint seeds**:
 
 - **`mini`** ({{ '{:,}'.format(splits["mini"].n_mlps) }} MLPs) — the development split. Small enough to download in seconds. Iterate on your estimator here.
-- **`full`** ({{ '{:,}'.format(splits["full"].n_mlps) }} MLPs) — the canonical evaluation surface. Run against this once your estimator is dialled in.
+- **`full`** ({{ '{:,}'.format(splits["full"].n_mlps) }} MLPs) — the canonical evaluation surface. Run against this once your estimator is dialed in.
 
 `mini` is **not** a subset of `full`. They share no MLPs — verify with the `mlp_seed` column.
 {%- else -%}
@@ -51,8 +53,6 @@ WhestBench is a benchmark for *white-box activation estimation*: given the weigh
 - **`{{ name }}`** ({{ '{:,}'.format(info.n_mlps) }} MLPs)
 {% endfor -%}
 {%- endif %}
-
-This dataset is intentionally not part of the Public Release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}); develop your estimator against the public release first.
 {%- endif %}
 
 ## Quick start
