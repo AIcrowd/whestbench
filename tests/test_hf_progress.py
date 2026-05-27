@@ -151,6 +151,47 @@ def test_richhftqdm_no_active_progress_is_noop(monkeypatch: pytest.MonkeyPatch) 
     assert True
 
 
+def test_richhftqdm_disable_true_does_not_register_with_active_progress(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression for C1: tqdm omits ``self.desc`` etc. when ``disable=True``.
+
+    HF Hub sets ``kwargs["disable"]=True`` when ``HF_HUB_DISABLE_PROGRESS_BARS``
+    is active. Touching ``self.desc`` in our ``__init__`` would AttributeError;
+    we must short-circuit Rich registration entirely.
+    """
+    events: list[str] = []
+
+    class _FakeProgress:
+        def add_task(self, description, *, total):  # noqa: ARG002
+            events.append("add_task")
+            return 1
+
+        def update(self, task_id, *, completed=None, total=None):  # noqa: ARG002
+            events.append("update")
+
+        def remove_task(self, task_id):  # noqa: ARG002
+            events.append("remove")
+
+    monkeypatch.setattr("whestbench.hf_progress._ACTIVE_RICH_PROGRESS", _FakeProgress())
+
+    bar = RichHFTqdm(total=100, disable=True)
+    # update() must not raise even though _rich_task_id is None.
+    bar.update(50)
+    bar.close()
+    assert events == []  # nothing routed into Rich while disabled
+
+
+def test_richhftqdm_accepts_hf_name_kwarg() -> None:
+    """Regression for I1: subclassing HF's tqdm (not vanilla) means ``name=``
+    is accepted (HF pops it before delegating). Vanilla tqdm would raise
+    ``TqdmKeyError`` for an unknown kwarg.
+    """
+    # Should not raise.
+    bar = RichHFTqdm(name="peft.foo", total=10)
+    bar.close()
+
+
 def _live_hf_tqdm() -> object:
     """Read the current ``huggingface_hub.utils.tqdm`` class via getattr.
 

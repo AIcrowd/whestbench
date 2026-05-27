@@ -8,8 +8,10 @@ from pathlib import Path
 from typing import Any, Iterator, List, Literal, Optional, Tuple, Union
 
 import huggingface_hub.utils
-import tqdm as _tqdm_mod
 from huggingface_hub import HfApi, try_to_load_from_cache
+from huggingface_hub.utils.tqdm import (
+    tqdm as _hf_tqdm,  # pyright: ignore[reportPrivateImportUsage]
+)
 from rich.console import Console
 from rich.progress import (
     BarColumn,
@@ -120,25 +122,34 @@ def hf_preflight(
     )
 
 
-class RichHFTqdm(_tqdm_mod.tqdm):
+class RichHFTqdm(_hf_tqdm):
     """tqdm subclass that mirrors progress into our active Rich Progress.
 
-    HF Hub creates one of these whenever it would normally create a ``tqdm.tqdm``
-    bar (per-file downloads, etc.). If a Rich ``Progress`` is currently active
-    (i.e. ``_ACTIVE_RICH_PROGRESS is not None``), every ``__init__`` / ``update``
-    / ``close`` forwards into it via ``add_task`` / ``update`` / ``remove_task``.
-    When no Progress is active the subclass behaves like a vanilla tqdm.
+    Subclasses HF Hub's own ``tqdm`` (not vanilla ``tqdm.std.tqdm``) so we keep
+    HF-specific behaviour like the ``name=`` kwarg used by group-disable
+    (``huggingface_hub.utils.tqdm`` strips ``name`` before delegating, then sets
+    ``disable=True`` if that group is muted via ``HF_HUB_DISABLE_PROGRESS_BARS``
+    or an explicit ``disable_progress_bars(name)``).
+
+    When a Rich ``Progress`` is currently active (``_ACTIVE_RICH_PROGRESS is not
+    None``) and the bar is NOT disabled, every ``__init__`` / ``update`` /
+    ``close`` forwards into it via ``add_task`` / ``update`` / ``remove_task``.
+    Otherwise the subclass behaves like a vanilla tqdm — which includes the
+    disabled case, where ``tqdm.std.tqdm`` deliberately does not set ``desc`` /
+    other display attrs, so we must NOT try to read them.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         prog = _ACTIVE_RICH_PROGRESS
-        if prog is not None:
-            self._rich_task_id: "int | None" = prog.add_task(
-                self.desc or "Downloading", total=self.total
-            )
-        else:
-            self._rich_task_id = None
+        # When ``disable=True`` (set either explicitly or by HF Hub's group-disable
+        # path when ``HF_HUB_DISABLE_PROGRESS_BARS`` is on), tqdm skips setting
+        # ``self.desc`` / display attrs entirely. Reading them would AttributeError,
+        # so we short-circuit Rich registration in that case.
+        if prog is None or getattr(self, "disable", False):
+            self._rich_task_id: "int | None" = None
+            return
+        self._rich_task_id = prog.add_task(self.desc or "Downloading", total=self.total)
 
     def update(self, n: int = 1) -> None:  # type: ignore[override]
         super().update(n)
