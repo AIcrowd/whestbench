@@ -100,6 +100,20 @@ def hf_preflight(
     # _CACHED_NO_EXIST. We treat anything other than a real str path as "not
     # cached" so a missing file or the sentinel both flip is_cached to False.
     resolved_revision = info.sha if revision is None else revision
+    if resolved_revision is None:
+        # HF should always populate ``info.sha`` on a successful ``dataset_info``
+        # call, but if it doesn't we have no key for ``try_to_load_from_cache``
+        # — bail to "not cached" rather than guess (or worse, pass None and
+        # have HF silently scan the wrong revision).
+        return HFPreflight(
+            repo_id=repo_id,
+            revision=revision,
+            file_count=len(relevant),
+            total_bytes=sum(s for _, s in relevant),
+            is_cached=False,
+            files=relevant,
+        )
+
     all_cached = True
     for name, _size in relevant:
         cached = try_to_load_from_cache(
