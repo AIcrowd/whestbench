@@ -275,3 +275,25 @@ def test_hf_upload_quiet_is_passthrough(tmp_path: Path) -> None:
     with hf_upload(con, title="hf://x", local_dir=tmp_path, quiet=True):
         assert _live_hf_tqdm() is original
     assert _live_hf_tqdm() is original
+
+
+def test_hf_download_nested_raises() -> None:
+    """Regression for C2: nesting two ``materialize``/``streaming`` contexts
+    must hard-fail. The inner's ``finally`` would otherwise clear
+    ``_ACTIVE_RICH_PROGRESS`` while the outer is still live, silently breaking
+    progress routing. ``cache_hit`` mode is intentionally NOT guarded (it
+    doesn't touch the global).
+    """
+    con = RichConsole(file=io.StringIO(), force_terminal=True, color_system=None, width=120)
+    pf = HFPreflight(
+        repo_id="aicrowd/foo",
+        revision="v1",
+        file_count=1,
+        total_bytes=1024,
+        is_cached=False,
+        files=[("data/x.parquet", 1024)],
+    )
+    with hf_download(con, title="outer", preflight=pf, mode="materialize"):
+        with pytest.raises(RuntimeError, match="cannot be nested"):
+            with hf_download(con, title="inner", preflight=pf, mode="materialize"):
+                pass

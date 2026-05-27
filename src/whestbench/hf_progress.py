@@ -206,6 +206,17 @@ def hf_download(
             yield
         return
 
+    # materialize / streaming both swap the global tqdm class. Nesting two of
+    # them would leave the inner context's ``finally`` clearing
+    # ``_ACTIVE_RICH_PROGRESS`` while the outer still holds a Progress —
+    # silently breaking routing. The module-level docstring guarantees "one
+    # bar at a time", so we hard-fail instead.
+    if _ACTIVE_RICH_PROGRESS is not None:
+        raise RuntimeError(
+            "hf_download/hf_upload cannot be nested — only one Rich-bridged "
+            "HF download/upload can be active at a time."
+        )
+
     # materialize or streaming
     if mode == "materialize":
         columns: tuple[Any, ...] = (
@@ -279,6 +290,13 @@ def hf_upload(
     if quiet:
         yield
         return
+
+    # Same nesting guard as ``hf_download`` — see that function for the why.
+    if _ACTIVE_RICH_PROGRESS is not None:
+        raise RuntimeError(
+            "hf_download/hf_upload cannot be nested — only one Rich-bridged "
+            "HF download/upload can be active at a time."
+        )
 
     local_dir = Path(local_dir)
     total = _du_local(local_dir)
