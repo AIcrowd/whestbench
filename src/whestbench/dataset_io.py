@@ -17,7 +17,7 @@ import re
 from datetime import datetime, timezone
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Mapping
 
 import yaml
 from datasets import Array2D, Array3D, Dataset, Features, Sequence, Value
@@ -152,7 +152,7 @@ def generate_readme(
     metadata: Dict[str, Any],
     *,
     split: "str | None" = None,
-    splits: "dict[str, dict] | None" = None,
+    splits: "Mapping[str, Any] | None" = None,
     ds_size: int,
     repo_id: "str | None" = None,
     revision: "str | None" = None,
