@@ -30,3 +30,29 @@ truth on every invocation. Baking a dataset once and reusing it makes your runs
 deterministic and ~10× faster.
 
 [Continue to: lifecycle ↓](#the-dataset-lifecycle)
+
+## The dataset lifecycle
+
+```
++--------+        +-----------+        +----------+        +--------+
+| local  | upload |    HF     | down-  |  local   |  run   | scores |
+|  bake  | -----> | Hub repo  | load → |  cache   | -----> | report |
+| (./out)|        | (org/...) |        |  (~/.hf) |        |        |
++--------+        +-----------+        +----------+        +--------+
+   ^                                                            |
+   |____________________________________________________________|
+                   iterate on estimator code
+```
+
+- **Local-only workflow:** `bake → run`. Best when you're iterating fast and
+  don't care about sharing the dataset. See
+  [Working locally](#working-locally).
+- **Team workflow:** `bake → upload → … later … → download → run`. The HF
+  repo's tag pins which exact dataset everyone scores against. See
+  [Publishing to HuggingFace Hub](#publishing-to-huggingface-hub) and
+  [Downloading from HF Hub and the local cache](#downloading-from-hf-hub-and-the-local-cache).
+- **CI / leaderboard workflow:** `bake → upload --tag v1-warmup`. Participants
+  pull by tag. Streaming (`whest run --streaming`) is the natural fit for
+  per-PR CI gates — see [Streaming mode](#streaming-mode).
+
+Each verb is detailed below.
