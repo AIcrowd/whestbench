@@ -588,3 +588,38 @@ def test_validate_metadata_rejects_v2_single_split_missing_n_mlps():
     }
     with pytest.raises(InvalidDatasetError, match=r"n_mlps"):
         validate_metadata(md)
+
+
+# ---------------------------------------------------------------------------
+# default_split (optional multi-split field)
+# ---------------------------------------------------------------------------
+
+
+def test_validate_metadata_accepts_valid_default_split():
+    """A default_split that names one of the splits validates cleanly."""
+    from whestbench.dataset_io import validate_metadata
+
+    md = _multi_split_md(default_split="public")
+    validate_metadata(md)  # should not raise
+
+
+def test_validate_metadata_rejects_default_split_not_in_splits():
+    """default_split must name one of the dataset's splits."""
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _multi_split_md(default_split="nonexistent")
+    with pytest.raises(InvalidDatasetError, match=r"default_split.*not one of"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_non_string_default_split():
+    """default_split must be a string, not a number or list."""
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _multi_split_md(default_split=42)
+    with pytest.raises(InvalidDatasetError, match=r"default_split.*string"):
+        validate_metadata(md)

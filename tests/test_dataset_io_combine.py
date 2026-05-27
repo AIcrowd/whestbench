@@ -243,3 +243,52 @@ def test_combine_splits_rejects_mismatched_seed_protocol(tmp_path: Path):
     )
     with pytest.raises((MergeIncompatibleError, InvalidDatasetError), match=r"seed_protocol"):
         combine_split_datasets([pub, hold], output_dir=tmp_path / "x")
+
+
+# -----------------------------------------------------------------------------
+# default_split
+# -----------------------------------------------------------------------------
+
+
+def test_combine_splits_writes_default_split_when_given(tmp_path: Path):
+    """A valid default_split is recorded at the top level of metadata.json."""
+    from whestbench.dataset_io import combine_split_datasets
+
+    pub = _bake_single_split(tmp_path, "pub", split="public", seed=42)
+    hold = _bake_single_split(tmp_path, "hold", split="holdout", seed=99)
+    out = tmp_path / "combined"
+    combine_split_datasets(
+        [pub, hold],
+        output_dir=out,
+        default_split="public",
+    )
+
+    md = json.loads((out / "metadata.json").read_text())
+    assert md["default_split"] == "public"
+
+
+def test_combine_splits_omits_default_split_when_unset(tmp_path: Path):
+    """Without an explicit default_split, the field is absent from metadata.json."""
+    from whestbench.dataset_io import combine_split_datasets
+
+    pub = _bake_single_split(tmp_path, "pub", split="public", seed=42)
+    hold = _bake_single_split(tmp_path, "hold", split="holdout", seed=99)
+    out = tmp_path / "combined"
+    combine_split_datasets([pub, hold], output_dir=out)
+
+    md = json.loads((out / "metadata.json").read_text())
+    assert "default_split" not in md
+
+
+def test_combine_splits_rejects_unknown_default_split(tmp_path: Path):
+    """default_split must name one of the input splits."""
+    from whestbench.dataset_io import MergeIncompatibleError, combine_split_datasets
+
+    pub = _bake_single_split(tmp_path, "pub", split="public", seed=42)
+    hold = _bake_single_split(tmp_path, "hold", split="holdout", seed=99)
+    with pytest.raises(MergeIncompatibleError, match=r"default_split.*not one of"):
+        combine_split_datasets(
+            [pub, hold],
+            output_dir=tmp_path / "x",
+            default_split="nonexistent",
+        )

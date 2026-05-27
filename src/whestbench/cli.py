@@ -2232,12 +2232,36 @@ def _main_participant(argv: "list[str]") -> int:
                 from datasets import IterableDatasetDict as _IterableDatasetDict
 
                 if isinstance(ds, (_DatasetDict, _IterableDatasetDict)):
-                    print(
-                        f"error: dataset {dataset_path!r} is multi-split with splits "
-                        f"{sorted(ds.keys())}. Pass --split <name> to select one.",
-                        file=sys.stderr,
-                    )
-                    return 1
+                    # --split was not given. If the dataset's metadata declares
+                    # a `default_split`, project the dict down to that single
+                    # split; otherwise instruct the user to pass --split.
+                    _dd_meta = _wb_metadata(ds)
+                    _default_split = _dd_meta.get("default_split")
+                    if isinstance(_default_split, str) and _default_split in ds:
+                        if not json_output:
+                            print(
+                                f"Using default split {_default_split!r} "
+                                f"(from metadata.default_split)",
+                                file=sys.stderr,
+                            )
+                        ds = ds[_default_split]
+                    else:
+                        _hint = (
+                            ""
+                            if _default_split is None
+                            else (
+                                f" (metadata's default_split="
+                                f"{_default_split!r} is not one of the "
+                                f"available splits and is being ignored)"
+                            )
+                        )
+                        print(
+                            f"error: dataset {dataset_path!r} is multi-split "
+                            f"with splits {sorted(ds.keys())}. Pass --split "
+                            f"<name> to select one{_hint}.",
+                            file=sys.stderr,
+                        )
+                        return 1
                 ds_meta = _wb_metadata(ds)
 
                 if isinstance(ds, _IterableDataset):

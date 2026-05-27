@@ -417,6 +417,19 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
                 "multi-split metadata must not have top-level 'n_mlps'; "
                 "per-split n_mlps live under splits[<name>]."
             )
+        # Optional default_split: if present, must be a string naming one of
+        # the splits. Honoured by `whest run` when --split is omitted.
+        if "default_split" in metadata:
+            default_split = metadata["default_split"]
+            if not isinstance(default_split, str):
+                raise InvalidDatasetError(
+                    f"'default_split' must be a string; got {type(default_split).__name__}."
+                )
+            if default_split not in splits:
+                raise InvalidDatasetError(
+                    f"'default_split'={default_split!r} is not one of the "
+                    f"dataset's splits {sorted(splits.keys())}."
+                )
         if is_v3:
             if "seed" in metadata:
                 raise InvalidDatasetError(
@@ -748,6 +761,7 @@ def combine_split_datasets(
     input_dirs: "list[Path | str]",
     *,
     output_dir: "Path | str",
+    default_split: "str | None" = None,
 ) -> Path:
     """Combine N complete single-split datasets into a multi-split dataset directory.
 
@@ -762,13 +776,21 @@ def combine_split_datasets(
     Args:
         input_dirs: Paths to complete single-split dataset directories.
         output_dir: Destination path; must not exist.
+        default_split: Optional name of the split that downstream consumers
+            should fall back to when a multi-split dataset is given without
+            an explicit ``--split``. Must be one of the present split names;
+            otherwise raises ``MergeIncompatibleError``. Recorded as
+            ``default_split`` at the top level of the multi-split
+            ``metadata.json``. ``whest run`` honours it when ``--split`` is
+            omitted on a multi-split dataset.
 
     Returns:
         Path to the output directory.
 
     Raises:
         MergeIncompatibleError: inputs disagree on invariants, contain a partial,
-            have duplicate split names, or input list is empty.
+            have duplicate split names, ``default_split`` is unknown, or input
+            list is empty.
         FileExistsError: output_dir already exists.
     """
     import shutil
@@ -822,6 +844,12 @@ def combine_split_datasets(
                     f"contribute a distinct split."
                 )
             seen.add(n)
+
+    # Validate default_split, if set, names one of the inputs.
+    if default_split is not None and default_split not in split_names:
+        raise MergeIncompatibleError(
+            f"default_split={default_split!r} is not one of the input splits {sorted(split_names)}."
+        )
 
     # Validate invariants match across inputs.
     first_md = entries[0][1]
@@ -890,6 +918,8 @@ def combine_split_datasets(
             "hardware": collect_hardware_fingerprint(),
             "splits": splits_md,
         }
+        if default_split is not None:
+            combined_md["default_split"] = default_split
 
         # Validate before writing.
         validate_metadata(combined_md)

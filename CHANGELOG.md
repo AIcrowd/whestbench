@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Feat
+
+- **metadata**: optional `default_split` field on multi-split datasets.
+  When set, `whest run --dataset hf://…` without `--split` projects to the
+  named split instead of erroring out. Set at bake time via the new
+  `combine_split_datasets(default_split=…)` kwarg. `validate_metadata`
+  enforces that the value is a string naming one of the dataset's splits.
+  The dataset-card template surfaces it in the `whest run` quick-start
+  block. Older whestbench versions ignore the field (forward-compatible).
+
 ## v0.6.0 (2026-05-27)
 
 ### Feat
