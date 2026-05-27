@@ -243,3 +243,89 @@ page (tags, license, language, etc.). Don't strip it.
 
 > If it broke (401, 403, repo already exists, network errors), jump to
 > [Troubleshooting](#troubleshooting).
+
+## Downloading from HF Hub and the local cache
+
+You want to score against a dataset published by your team or the contest
+organisers. There are two paths.
+
+### `whest dataset download` — explicit fetch
+
+Use when you want a real on-disk copy you can inspect, ship to another
+machine, or commit to a separate artifact store:
+
+```bash
+whest dataset download aicrowd/arc-whestbench-public-2026 \
+    --revision v1-warmup \
+    --output ./eval
+```
+
+Representative output:
+
+```
+→ Downloading aicrowd/arc-whestbench-public-2026@v1-warmup → ./eval
+  Preflight: 1 parquet shard, 2.0 GB, 1,000 MLPs
+  ✓ Downloaded 2.0 GB              ████████████████████ 100%   28.9s
+✓ Wrote ./eval (cache: ~/.cache/huggingface/hub/datasets--aicrowd--arc-whestbench-public-2026)
+```
+
+With `--output` set, files are materialised under the named directory; the HF
+cache also picks them up.
+
+### Auto-fetch via `whest run`
+
+You can skip the explicit download — `whest run` does it lazily on first use:
+
+```bash
+whest run --estimator estimator.py \
+          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-warmup
+```
+
+This downloads on first invocation (showing a progress bar) and caches.
+Subsequent runs are ~10× faster (the cache hit prints `Loaded from cache`).
+
+### HF cache layout
+
+After a fetch, the HF cache lives at three places:
+
+| Path | What's there |
+|---|---|
+| `~/.cache/huggingface/hub/datasets--<org>--<name>/` | Raw blobs (Git LFS / Xet objects) + the revision snapshot symlinks |
+| `~/.cache/huggingface/datasets/<org>___<name>/` | The `datasets` library's regenerated Arrow tables (memory-mapped) |
+| `~/.cache/huggingface/xet/{chunk_cache,shard_cache,staging}/` | Xet chunk-level dedup cache (since `hf_xet ≥ 1.0`) |
+
+Total disk usage is roughly `2× download size` (the parquet blob + Arrow
+rebuild). The hub cache uses content-addressed dedup, so the same blob is
+shared across revisions and even repos.
+
+### Cleaning up
+
+Defer to HF's own cache CLI — it understands the layout above and will not
+accidentally orphan blobs that are still referenced from another revision:
+
+```bash
+hf cache ls                  # show what's there
+hf cache prune               # drop unreferenced revisions
+hf cache rm <selector>       # remove a specific repo or revision
+hf cache verify              # check integrity
+```
+
+Full reference: [HF cache management](https://huggingface.co/docs/huggingface_hub/guides/manage-cache).
+
+### Cache location overrides
+
+| Env var | What it sets | Default |
+|---|---|---|
+| `HF_HOME` | Root of all HF state | `~/.cache/huggingface` |
+| `HF_HUB_CACHE` | Hub-only cache (blobs/snapshots) | `$HF_HOME/hub` |
+| `HF_DATASETS_CACHE` | datasets-library Arrow cache | `$HF_HOME/datasets` |
+| `HF_XET_CACHE` | Xet chunk staging | `$HF_HOME/xet` |
+
+When running on NFS, point `HF_XET_CACHE=/local/ssd` to avoid roundtrips.
+See [Performance tuning](#performance-tuning) for more knobs.
+
+> `whest dataset pull` continues to work as a deprecated alias for `download`
+> through v0.6.
+
+> If it broke (long pause, disk full, gated dataset, `cas-bridge.xethub.hf.co`
+> URLs you don't recognise), jump to [Troubleshooting](#troubleshooting).
