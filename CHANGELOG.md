@@ -5,6 +5,7 @@
 ### Added
 
 - Dataset card template now recognises the `mini`+`full` split pair and renders dedicated copy explaining the two-split shape (independent seed lists, mini as the dev surface, full as the canonical evaluation surface). Mirrors the existing `public`+`holdout` special case for evaluation datasets.
+- `generate_readme` now emits an explicit `configs:` block in the YAML frontmatter for multi-split datasets. The block lists each split in `splits` dict insertion order with its `data/<split>-*.parquet` glob, so the HF Dataset Viewer defaults to the first-listed split (rather than HF Datasets' alphabetical auto-discovery fallback, which surfaces e.g. `full` before `mini`). Single-split datasets are unchanged.
 
 ### Fix
 
