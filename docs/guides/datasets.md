@@ -484,3 +484,46 @@ export HF_HUB_DISABLE_PROGRESS_BARS=1
 
 Whestbench's `say.*` lines still emit; only the progress bars are suppressed.
 For complete silence add `--quiet` to the `whest` invocation.
+
+## Troubleshooting
+
+**"I see a long pause and no output."**
+Cache miss on a cold HF cache. Watch the progress bar — for the warmup
+dataset it's ~30 s on a 70 MB/s link. To avoid silent re-downloads, run
+[`whest dataset download`](#whest-dataset-download--explicit-fetch) ahead
+of time, or `ls ~/.cache/huggingface/hub/` to confirm progress.
+
+**"Downloads feel slow."**
+You're probably unauthenticated; HF rate-limits anonymous traffic.
+Run `hf auth login` once and re-run. See also
+[Authentication and streaming](#authentication-and-streaming).
+
+**"Disk filled up."**
+HF stores blobs in both `~/.cache/huggingface/hub/` (raw download) and
+`~/.cache/huggingface/datasets/` (regenerated Arrow). Use
+`hf cache prune` to drop unreferenced revisions, then `hf cache ls` to
+verify reclaimed space. See [Cleaning up](#cleaning-up).
+
+**"401/403 on upload."**
+Your token doesn't have `write` scope. Re-login with
+`hf auth login --token <new-token>` from a token created with write access.
+For org-owned repos, your account also needs membership in the org.
+
+**"Cannot use `--streaming` with `--json` output."**
+Known limitation — streaming progress events would corrupt JSON ordering.
+Drop `--json`, or drop `--streaming`.
+
+**"`len(ds)` raises on a streaming dataset."**
+Expected per HF docs. Use `whestbench.metadata(ds)["n_mlps"]` instead — it
+reflects the upstream `metadata.json`, not the local materialised count.
+
+**"I see `cas-bridge.xethub.hf.co` URLs but the file is LFS."**
+That's HF's Xet bridge transparently serving legacy LFS content via the Xet
+CDN edge. No action required. If you need to force plain-LFS transport for
+debugging, set `HF_HUB_DISABLE_XET=1` (see
+[Disabling Xet entirely](#disabling-xet-entirely)).
+
+**"Dataset is gated."**
+Request access on the dataset page (HF will email you a link from
+`https://huggingface.co/datasets/<repo>`), then re-run. Make sure you're
+authenticated with the same account that was granted access.
