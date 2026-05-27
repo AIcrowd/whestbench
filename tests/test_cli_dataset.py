@@ -5,6 +5,10 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
+from typing import Any, List
+
+import pytest
+from rich.console import Console as _RichConsole
 
 
 def _run_whest(*args, cwd=None, check=False):
@@ -17,10 +21,28 @@ def _run_whest(*args, cwd=None, check=False):
     )
 
 
+def _spy_console_print(monkeypatch: pytest.MonkeyPatch) -> List[str]:
+    """Capture every ``Console.print`` first-arg string; return the list.
+
+    Mirrors the helper in ``test_cli_dataset_aliases.py`` — real print still
+    fires so test failures surface the captured copy in pytest's stdout.
+    """
+    captured: List[str] = []
+    original_print = _RichConsole.print
+
+    def spy_print(self: _RichConsole, *args: Any, **kwargs: Any) -> Any:
+        if args:
+            captured.append(str(args[0]))
+        return original_print(self, *args, **kwargs)
+
+    monkeypatch.setattr(_RichConsole, "print", spy_print)
+    return captured
+
+
 def test_whest_dataset_help_lists_subcommands():
     res = _run_whest("dataset", "--help")
     assert res.returncode == 0
-    for sub in ("bake", "push", "pull", "merge", "inspect"):
+    for sub in ("bake", "upload", "download", "merge", "info"):
         assert sub in res.stdout
 
 
@@ -180,7 +202,7 @@ def test_whest_dataset_inspect_prints_metadata(tmp_path: Path):
         str(out),
         check=True,
     )
-    res = _run_whest("dataset", "inspect", str(out))
+    res = _run_whest("dataset", "info", str(out))
     assert res.returncode == 0
     assert "3.0" in res.stdout
     assert "flopscope" in res.stdout
@@ -290,9 +312,9 @@ def test_whest_dataset_inspect_multi_split_output(tmp_path: Path):
     out = tmp_path / "combined"
     _run_whest("dataset", "combine-splits", str(pub), str(hold), "--output", str(out))
 
-    res = _run_whest("dataset", "inspect", str(out))
+    res = _run_whest("dataset", "info", str(out))
     assert res.returncode == 0, res.stderr
-    # Multi-split inspect must mention each split name AND the multi-split marker.
+    # Multi-split info must mention each split name AND the multi-split marker.
     assert "public" in res.stdout
     assert "holdout" in res.stdout
     assert "multi-split" in res.stdout.lower()
@@ -386,13 +408,13 @@ def test_whest_dataset_bake_rejects_underscore_split(tmp_path: Path):
 
 
 def test_whest_dataset_pull_accepts_split_flag(tmp_path: Path):
-    """Smoke test: pull --split SPLIT is accepted (downloads only that split's parquet).
+    """Smoke test: download --split SPLIT is accepted (downloads only that split's parquet).
 
-    Skipped on no network — pulls from the public smoke-test repo.
+    Skipped on no network — downloads from the public smoke-test repo.
     """
     res = _run_whest(
         "dataset",
-        "pull",
+        "download",
         "aicrowd/arc-whestbench-2026-smoke-test",
         "--split",
         "public",
@@ -400,7 +422,7 @@ def test_whest_dataset_pull_accepts_split_flag(tmp_path: Path):
         str(tmp_path / "pulled"),
     )
     # Tolerate network/offline failure — the test only enforces that --split is
-    # an accepted argument, not that the pull itself always succeeds.
+    # an accepted argument, not that the download itself always succeeds.
     if res.returncode == 0:
         assert (tmp_path / "pulled" / "data" / "public-00000-of-00001.parquet").is_file()
     else:
@@ -409,10 +431,10 @@ def test_whest_dataset_pull_accepts_split_flag(tmp_path: Path):
 
 
 def test_whest_dataset_pull_rejects_nonexistent_split(tmp_path: Path):
-    """pull --split <typo> should error rather than silently producing an empty dir."""
+    """download --split <typo> should error rather than silently producing an empty dir."""
     res = _run_whest(
         "dataset",
-        "pull",
+        "download",
         "aicrowd/arc-whestbench-2026-smoke-test",
         "--split",
         "nonexistent-split",
@@ -428,7 +450,7 @@ def test_whest_dataset_pull_rejects_nonexistent_split(tmp_path: Path):
     else:
         # Returncode 0 with no error → silent empty dir, the bug we're guarding against.
         assert False, (
-            f"pull with bogus split should not silently succeed; got returncode={res.returncode}, "
+            f"download with bogus split should not silently succeed; got returncode={res.returncode}, "
             f"output:\n{res.stdout}\n{res.stderr}"
         )
 
@@ -560,7 +582,7 @@ def test_whest_dataset_bake_rejects_mlp_seeds_malformed_file(tmp_path: Path):
 
 
 def test_whest_dataset_inspect_v3_mentions_protocol(tmp_path: Path):
-    """inspect output for a 3.0 dataset should mention the protocol."""
+    """info output for a 3.0 dataset should mention the protocol."""
     out = tmp_path / "ds"
     res = _run_whest(
         "dataset",
@@ -577,6 +599,147 @@ def test_whest_dataset_inspect_v3_mentions_protocol(tmp_path: Path):
         str(out),
     )
     assert res.returncode == 0, res.stderr
-    res = _run_whest("dataset", "inspect", str(out))
+    res = _run_whest("dataset", "info", str(out))
     assert res.returncode == 0, res.stderr
     assert "whestbench_explicit_per_mlp_seeds" in res.stdout or "3.0" in res.stdout
+
+
+def test_whest_dataset_download_cache_hit_says_loaded_from_cache(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Cache-hit download must say "from cache" — not "Downloaded" — since no
+    bytes were transferred. Mocks preflight to return ``is_cached=True`` and
+    stubs ``snapshot_download`` so we never touch the network.
+    """
+    import whestbench.cli as cli
+    import whestbench.hf_progress as _hf_progress_mod
+    from whestbench.hf_progress import HFPreflight
+
+    captured = _spy_console_print(monkeypatch)
+
+    fake_preflight = HFPreflight(
+        repo_id="aicrowd/test",
+        revision="v1",
+        file_count=2,
+        total_bytes=2048,
+        is_cached=True,
+        files=[("metadata.json", 48), ("data/public-00000-of-00001.parquet", 2000)],
+    )
+    monkeypatch.setattr(_hf_progress_mod, "hf_preflight", lambda *_a, **_k: fake_preflight)
+
+    out_dir = tmp_path / "pulled"
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        return str(out_dir)
+
+    import huggingface_hub
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+
+    rc = cli.main(
+        [
+            "dataset",
+            "download",
+            "aicrowd/test",
+            "--revision",
+            "v1",
+            "--output",
+            str(out_dir),
+        ]
+    )
+    assert rc == 0
+    joined = "\n".join(captured)
+    assert "from cache" in joined, f"cache-hit message missing 'from cache'; got: {joined!r}"
+    # The verb "Loaded" should appear (not "Downloaded") on the completion line.
+    assert "Loaded hf://aicrowd/test@v1 from cache" in joined, (
+        f"cache-hit completion line missing or malformed; got: {joined!r}"
+    )
+    # The preflight summary still fires and reports 2 files (plural).
+    assert "2 files" in joined, f"preflight summary missing or singular; got: {joined!r}"
+
+
+def test_whest_dataset_download_materialize_says_downloaded(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Materialize-mode (cache-miss) download keeps the "Downloaded ..." verb."""
+    import whestbench.cli as cli
+    import whestbench.hf_progress as _hf_progress_mod
+    from whestbench.hf_progress import HFPreflight
+
+    captured = _spy_console_print(monkeypatch)
+
+    fake_preflight = HFPreflight(
+        repo_id="aicrowd/test",
+        revision="v1",
+        file_count=2,
+        total_bytes=2048,
+        is_cached=False,
+        files=[("metadata.json", 48), ("data/public-00000-of-00001.parquet", 2000)],
+    )
+    monkeypatch.setattr(_hf_progress_mod, "hf_preflight", lambda *_a, **_k: fake_preflight)
+
+    out_dir = tmp_path / "pulled"
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        return str(out_dir)
+
+    import huggingface_hub
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+
+    rc = cli.main(
+        [
+            "dataset",
+            "download",
+            "aicrowd/test",
+            "--revision",
+            "v1",
+            "--output",
+            str(out_dir),
+        ]
+    )
+    assert rc == 0
+    joined = "\n".join(captured)
+    assert "Downloaded hf://aicrowd/test@v1" in joined, (
+        f"materialize completion line missing; got: {joined!r}"
+    )
+    assert "from cache" not in joined, (
+        f"materialize path should NOT mention 'from cache'; got: {joined!r}"
+    )
+
+
+def test_whest_dataset_upload_singular_pluralization(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Upload preflight says "1 file" — not "1 files" — for single-file uploads."""
+    import whestbench.cli as cli
+    import whestbench.hub as _hub_mod
+
+    captured = _spy_console_print(monkeypatch)
+
+    def fake_publish(local_dir: Any, **kwargs: Any) -> str:
+        return "cafebabe" * 5
+
+    monkeypatch.setattr(_hub_mod, "publish_dataset", fake_publish)
+
+    local = tmp_path / "ds"
+    local.mkdir()
+    (local / "metadata.json").write_text("{}")  # exactly one file
+
+    rc = cli.main(
+        [
+            "dataset",
+            "upload",
+            str(local),
+            "--repo",
+            "aicrowd/test",
+            "--tag",
+            "v1",
+        ]
+    )
+    assert rc == 0
+    joined = "\n".join(captured)
+    assert "1 file)" in joined, f"single-file upload should say '1 file'; got: {joined!r}"
+    assert "1 files" not in joined, f"plural 'files' leaked for 1-file upload; got: {joined!r}"

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from importlib import metadata as importlib_metadata
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
@@ -78,6 +78,33 @@ def build_manifest(
     }
 
 
+class _CountingWriter:
+    """File-like wrapper that reports byte counts via a callback.
+
+    Wrapped around the raw file passed to :func:`tarfile.open` so the
+    ``progress`` callback fires with the gzipped, post-compression byte count
+    actually written to disk. That matches what we surface in the ``ok`` line
+    after packaging completes, so the progress bar's completion count and the
+    final on-disk size agree.
+    """
+
+    def __init__(self, inner: Any, cb: Callable[[int], None]) -> None:
+        self._inner = inner
+        self._cb = cb
+
+    def write(self, data: bytes) -> int:
+        n = self._inner.write(data)
+        # Some inner writers (e.g. GzipFile) return ``None``; fall back to
+        # ``len(data)``. Avoid blowing up if `n` is briefly ``None``.
+        reported = n if isinstance(n, int) else len(data)
+        if reported:
+            self._cb(reported)
+        return reported if isinstance(n, int) else n  # type: ignore[return-value]
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._inner, name)
+
+
 def package_submission(
     estimator_path: "Any",
     *,
@@ -86,6 +113,7 @@ def package_submission(
     submission_yaml_path: "Any" = None,
     approach_md_path: "Any" = None,
     output_path: "Any" = None,
+    progress: Optional[Callable[[int], None]] = None,
 ) -> Path:
     estimator = Path(estimator_path).resolve()
     if not estimator.is_file():
@@ -114,18 +142,26 @@ def package_submission(
             Path.cwd() / f"submission-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}.tar.gz"
         )
     )
-    with tarfile.open(target, mode="w:gz") as archive:
-        archive.add(estimator, arcname="estimator.py")
-        if files.requirements is not None:
-            archive.add(files.requirements, arcname="requirements.txt")
-        if files.submission_yaml is not None:
-            archive.add(files.submission_yaml, arcname="submission.yaml")
-        if files.approach_md is not None:
-            archive.add(files.approach_md, arcname="APPROACH.md")
-        info = tarfile.TarInfo(name="manifest.json")
-        info.size = len(manifest_blob)
-        info.mtime = datetime.now(timezone.utc).timestamp()
-        archive.addfile(info, fileobj=_bytes_io(manifest_blob))
+
+    def _write_archive(fileobj: Any) -> None:
+        with tarfile.open(fileobj=fileobj, mode="w:gz") as archive:
+            archive.add(estimator, arcname="estimator.py")
+            if files.requirements is not None:
+                archive.add(files.requirements, arcname="requirements.txt")
+            if files.submission_yaml is not None:
+                archive.add(files.submission_yaml, arcname="submission.yaml")
+            if files.approach_md is not None:
+                archive.add(files.approach_md, arcname="APPROACH.md")
+            info = tarfile.TarInfo(name="manifest.json")
+            info.size = len(manifest_blob)
+            info.mtime = datetime.now(timezone.utc).timestamp()
+            archive.addfile(info, fileobj=_bytes_io(manifest_blob))
+
+    with open(target, "wb") as raw:
+        if progress is not None:
+            _write_archive(_CountingWriter(raw, progress))
+        else:
+            _write_archive(raw)
     return target
 
 

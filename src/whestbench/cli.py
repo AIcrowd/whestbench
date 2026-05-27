@@ -844,7 +844,14 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     validate_parser.add_argument("--debug", action="store_true")
     add_output_format_arguments(validate_parser)
 
-    run_parser = subparsers.add_parser("run", help="Run local evaluation for an estimator.")
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Run local evaluation for an estimator.",
+        epilog=(
+            "Dataset usage: pass --dataset <local-dir> or hf://owner/repo[@rev]. "
+            "See docs/guides/datasets.md for the full lifecycle."
+        ),
+    )
     run_parser.add_argument(
         "--estimator",
         required=True,
@@ -872,6 +879,17 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--dataset",
         default=None,
         help="Path to a baked dataset directory, or hf://owner/repo[@revision] for HF Hub.",
+    )
+    run_parser.add_argument(
+        "--streaming",
+        action="store_true",
+        default=False,
+        help=(
+            "Stream the dataset from HF instead of downloading it. Iteration-only "
+            "(no random access). Data is NOT cached — subsequent runs will re-fetch. "
+            "Useful for small --n-mlps debugging runs. See "
+            "docs/guides/datasets.md#streaming-mode."
+        ),
     )
     run_parser.add_argument(
         "--revision",
@@ -970,7 +988,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     dataset_sub = dataset_parser.add_subparsers(dest="dataset_cmd", required=True)
 
-    bake_p = dataset_sub.add_parser("bake", help="Bake a new dataset to a directory.")
+    bake_p = dataset_sub.add_parser(
+        "bake",
+        help="Bake a new dataset to a directory.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
+    )
     bake_p.add_argument(
         "--n-mlps", type=int, required=True, help="Total number of MLPs in the logical dataset."
     )
@@ -1016,37 +1038,57 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--mlp-range", dest="mlp_range_str", help="START-END (inclusive on both ends), e.g. 0-249."
     )
 
-    push_p = dataset_sub.add_parser("push", help="Upload a baked dataset to HF Hub.")
-    push_p.add_argument("local_dir")
-    push_p.add_argument("--repo", required=True, help="HF repo id (org/name).")
-    push_p.add_argument("--tag", default=None, help="Optional git tag (e.g. v1).")
-    push_p.add_argument("--private", action="store_true")
-    push_p.add_argument("--token", default=None)
-    push_p.add_argument("--message", default=None)
+    upload_p = dataset_sub.add_parser(
+        "upload",
+        aliases=["push"],
+        help="Upload a baked dataset to HF Hub.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
+    )
+    upload_p.add_argument("local_dir")
+    upload_p.add_argument("--repo", required=True, help="HF repo id (org/name).")
+    upload_p.add_argument("--tag", default=None, help="Optional git tag (e.g. v1).")
+    upload_p.add_argument("--private", action="store_true")
+    upload_p.add_argument("--token", default=None)
+    upload_p.add_argument("--message", default=None)
 
-    pull_p = dataset_sub.add_parser("pull", help="Download a dataset from HF Hub.")
-    pull_p.add_argument("repo_id")
-    pull_p.add_argument("--revision", default=None)
-    pull_p.add_argument("--output", required=True)
-    pull_p.add_argument("--token", default=None)
-    pull_p.add_argument(
+    download_p = dataset_sub.add_parser(
+        "download",
+        aliases=["pull"],
+        help="Download a dataset from HF Hub.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
+    )
+    download_p.add_argument("repo_id")
+    download_p.add_argument("--revision", default=None)
+    download_p.add_argument("--output", required=True)
+    download_p.add_argument("--token", default=None)
+    download_p.add_argument(
         "--split",
         default=None,
         type=_validate_split_name,
         help="Optional: download only the specified split's parquet (and metadata/README).",
     )
 
-    merge_p = dataset_sub.add_parser("merge", help="Merge partial bakes into one dataset.")
+    merge_p = dataset_sub.add_parser(
+        "merge",
+        help="Merge partial bakes into one dataset.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
+    )
     merge_p.add_argument("inputs", nargs="+", help="Partial dataset directories.")
     merge_p.add_argument("--output", required=True)
 
-    inspect_p = dataset_sub.add_parser("inspect", help="Print dataset metadata.")
-    inspect_p.add_argument("source", help="Local dir or HF repo id.")
-    inspect_p.add_argument("--revision", default=None)
+    info_p = dataset_sub.add_parser(
+        "info",
+        aliases=["inspect"],
+        help="Print dataset metadata.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
+    )
+    info_p.add_argument("source", help="Local dir or HF repo id.")
+    info_p.add_argument("--revision", default=None)
 
     combine_p = dataset_sub.add_parser(
         "combine-splits",
         help="Combine N single-split datasets into a multi-split dataset directory.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
     )
     combine_p.add_argument(
         "input_dirs",
@@ -1192,13 +1234,29 @@ def _resolve_dataset_arg(arg, *, revision):
     raise SystemExit(f"--dataset {arg!r} not recognized as local path or HF repo.")
 
 
+_DEPRECATED_DATASET_ALIASES = {"push": "upload", "pull": "download", "inspect": "info"}
+
+
 def _dispatch_dataset_command(args) -> int:
     import json as _json
     from pathlib import Path as _Path
 
     sub = args.dataset_cmd
+    if sub in _DEPRECATED_DATASET_ALIASES:
+        from .ui import say
+
+        canonical = _DEPRECATED_DATASET_ALIASES[sub]
+        say.warn(
+            f"`whest dataset {sub}` is deprecated; use `whest dataset {canonical}`. "
+            f"Aliases will be removed in v0.7."
+        )
+        sub = canonical
+
     if sub == "bake":
+        import time as _time
+
         from .dataset import create_dataset as _create_dataset
+        from .ui import format_bytes, format_duration, progress_count, say
 
         # Legacy --seed rejection
         if args.seed is not None:
@@ -1235,100 +1293,224 @@ def _dispatch_dataset_command(args) -> int:
             slice_spec=args.slice_spec,
             n_mlps=args.n_mlps,
         )
-        try:
-            if args.torch:
-                from .dataset_torch import create_dataset_torch
 
-                create_dataset_torch(
-                    n_mlps=args.n_mlps,
-                    n_samples=args.n_samples,
-                    width=args.width,
-                    depth=args.depth,
-                    mlp_seeds=mlp_seeds,
-                    output_path=args.output,
-                    split=args.split,
-                    mlp_range=mlp_range,
-                    device=args.device,
-                    mlps_per_batch=args.mlps_per_batch,
-                    chunk_size=args.chunk_size,
-                )
-            else:
-                _create_dataset(
-                    n_mlps=args.n_mlps,
-                    n_samples=args.n_samples,
-                    width=args.width,
-                    depth=args.depth,
-                    mlp_seeds=mlp_seeds,
-                    output_path=args.output,
-                    split=args.split,
-                    mlp_range=mlp_range,
-                )
-        except ValueError as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 1
-        print(f"Baked dataset to {args.output}")
-        return 0
-
-    if sub == "push":
-        from .hub import publish_dataset
-
-        sha = publish_dataset(
-            args.local_dir,
-            repo_id=args.repo,
-            tag=args.tag,
-            token=args.token,
-            commit_message=args.message,
-            private=args.private,
+        say.intent(
+            f"Baking {args.n_mlps} MLPs (width={args.width}, depth={args.depth}) → {args.output}"
         )
-        print(f"Uploaded to {args.repo}; commit {sha}" + (f"; tag {args.tag}" if args.tag else ""))
+        _t0 = _time.perf_counter()
+
+        # Phase callback drives one progress_count bar per phase. Each phase's
+        # context manager is opened on its first event and closed in `finally`
+        # below so a mid-bake exception still tears the bars down cleanly.
+        _bake_phase_labels = {
+            "generating": "Generating MLPs",
+            "sampling": "Sampling ground truth",
+        }
+        _bars: Dict[str, tuple[Any, Any]] = {}
+
+        def _on_bake_progress(event: Dict[str, Any]) -> None:
+            phase = event.get("phase")
+            if not isinstance(phase, str):
+                return
+            total = int(event.get("total", 0) or 0)
+            completed = int(event.get("completed", 0) or 0)
+            if phase not in _bars:
+                label = _bake_phase_labels.get(phase, phase)
+                ctx = progress_count(total=total, label=label)
+                handle = ctx.__enter__()
+                _bars[phase] = (ctx, handle)
+            _, handle = _bars[phase]
+            handle.update(completed=completed)
+
+        try:
+            try:
+                if args.torch:
+                    from .dataset_torch import create_dataset_torch
+
+                    create_dataset_torch(
+                        n_mlps=args.n_mlps,
+                        n_samples=args.n_samples,
+                        width=args.width,
+                        depth=args.depth,
+                        mlp_seeds=mlp_seeds,
+                        output_path=args.output,
+                        split=args.split,
+                        mlp_range=mlp_range,
+                        device=args.device,
+                        mlps_per_batch=args.mlps_per_batch,
+                        chunk_size=args.chunk_size,
+                        progress=_on_bake_progress,
+                    )
+                else:
+                    _create_dataset(
+                        n_mlps=args.n_mlps,
+                        n_samples=args.n_samples,
+                        width=args.width,
+                        depth=args.depth,
+                        mlp_seeds=mlp_seeds,
+                        output_path=args.output,
+                        split=args.split,
+                        mlp_range=mlp_range,
+                        progress=_on_bake_progress,
+                    )
+            except ValueError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 1
+        finally:
+            for _phase, (_ctx, _handle) in _bars.items():
+                _ctx.__exit__(None, None, None)
+
+        _elapsed = _time.perf_counter() - _t0
+        _out = Path(args.output)
+        _size = sum(p.stat().st_size for p in _out.rglob("*") if p.is_file() and not p.is_symlink())
+        say.ok(f"Wrote {_out} in {format_duration(_elapsed)} ({format_bytes(_size)})")
+        say.hint(f"To publish: `whest dataset upload {_out} --repo aicrowd/<name> --tag v1`")
         return 0
 
-    if sub == "pull":
+    if sub == "upload":
+        import time as _time
+
+        from .hf_progress import hf_upload
+        from .hub import publish_dataset
+        from .ui import format_bytes, format_duration, say
+
+        _revision_label = args.tag or "main"
+        _title = f"hf://{args.repo}@{_revision_label}"
+        _console = Console()
+        say.intent(f"Uploading {args.local_dir} → {_title}", console=_console)
+
+        # Preflight summary: count files + bytes in the local dir.
+        _local = Path(args.local_dir)
+        _files = [p for p in _local.rglob("*") if p.is_file() and not p.is_symlink()]
+        _total = sum(p.stat().st_size for p in _files)
+        _plural = "s" if len(_files) != 1 else ""
+        say.step(
+            f"Total: {format_bytes(_total)} ({len(_files)} file{_plural}) — "
+            f"will create repo if needed.",
+            console=_console,
+        )
+
+        _t0 = _time.perf_counter()
+        with hf_upload(_console, title=_title, local_dir=args.local_dir):
+            sha = publish_dataset(
+                args.local_dir,
+                repo_id=args.repo,
+                tag=args.tag,
+                token=args.token,
+                commit_message=args.message,
+                private=args.private,
+            )
+        _elapsed = _time.perf_counter() - _t0
+
+        say.ok(f"Uploaded {_title} in {format_duration(_elapsed)}", console=_console)
+        say.step(f"Commit: {sha}", console=_console)
+        say.step(
+            f"Visible at: https://huggingface.co/datasets/{args.repo}/tree/{_revision_label}",
+            console=_console,
+        )
+        return 0
+
+    if sub == "download":
+        import time as _time
+
         from huggingface_hub import snapshot_download
 
+        from .hf_progress import hf_download, hf_preflight
+        from .ui import format_bytes, format_duration, say
+
+        _split = getattr(args, "split", None)
+        _revision_label = args.revision or "main"
+        _title = f"hf://{args.repo_id}@{_revision_label}"
+        _console = Console()
+        say.intent(f"Downloading {_title} → {args.output}", console=_console)
+
+        # Preflight: surface file count, byte total, cache state before any work.
+        preflight = hf_preflight(args.repo_id, revision=args.revision, split=_split)
+        if preflight is not None:
+            _files = preflight.file_count
+            _plural = "s" if _files != 1 else ""
+            _cache_label = "cached" if preflight.is_cached else "not cached"
+            say.step(
+                f"Preflight: {_files} file{_plural}, "
+                f"{format_bytes(preflight.total_bytes)} — {_cache_label}.",
+                console=_console,
+            )
+            mode: Literal["cache_hit", "materialize"] = (
+                "cache_hit" if preflight.is_cached else "materialize"
+            )
+        else:
+            say.step("Preflight: unavailable.", console=_console)
+            mode = "materialize"
+
         allow_patterns = None
-        if getattr(args, "split", None) is not None:
+        if _split is not None:
             allow_patterns = [
-                f"data/{args.split}-*.parquet",
+                f"data/{_split}-*.parquet",
                 "metadata.json",
                 "README.md",
                 ".gitattributes",
             ]
 
-        local = snapshot_download(
-            repo_id=args.repo_id,
-            repo_type="dataset",
-            revision=args.revision,
-            local_dir=args.output,
-            token=args.token,
-            allow_patterns=allow_patterns,
-        )
+        _t0 = _time.perf_counter()
+        with hf_download(_console, title=_title, preflight=preflight, mode=mode):
+            local = snapshot_download(
+                repo_id=args.repo_id,
+                repo_type="dataset",
+                revision=args.revision,
+                local_dir=args.output,
+                token=args.token,
+                allow_patterns=allow_patterns,
+            )
+        _elapsed = _time.perf_counter() - _t0
 
         # If --split was given, verify the download actually got parquet(s) for it.
         # snapshot_download silently succeeds with zero matches if the glob doesn't
         # match any file in the repo (e.g. typo'd split name or single-split repo).
-        if getattr(args, "split", None) is not None:
-            matches = list(Path(local).glob(f"data/{args.split}-*.parquet"))
+        if _split is not None:
+            matches = list(Path(local).glob(f"data/{_split}-*.parquet"))
             if not matches:
                 print(
-                    f"error: --split {args.split!r} matched no parquet files in "
+                    f"error: --split {_split!r} matched no parquet files in "
                     f"{args.repo_id!r}. Available splits can be inferred from the "
                     f"repo's data/ directory listing.",
                     file=sys.stderr,
                 )
                 return 1
 
-        print(f"Pulled {args.repo_id}@{args.revision or 'main'} to {args.output}")
+        _local_path = Path(local)
+        _size = sum(
+            p.stat().st_size for p in _local_path.rglob("*") if p.is_file() and not p.is_symlink()
+        )
+        if mode == "cache_hit":
+            say.ok(
+                f"Loaded {_title} from cache in {format_duration(_elapsed)} "
+                f"({format_bytes(_size)} on disk)",
+                console=_console,
+            )
+        else:
+            say.ok(
+                f"Downloaded {_title} in {format_duration(_elapsed)} "
+                f"({format_bytes(_size)} on disk)",
+                console=_console,
+            )
+        say.step(f"Location: {local}", console=_console)
         return 0
 
     if sub == "merge":
-        from .dataset_io import merge_datasets
+        import time as _time
 
-        merge_datasets([_Path(p) for p in args.inputs], output_dir=_Path(args.output))
-        print(f"Merged {len(args.inputs)} partials to {args.output}")
+        from .dataset_io import merge_datasets
+        from .ui import format_duration, say, status
+
+        say.intent(f"Merging {len(args.inputs)} partials → {args.output}")
+        _t0 = _time.perf_counter()
+        with status("Validating partials and concatenating"):
+            merge_datasets([_Path(p) for p in args.inputs], output_dir=_Path(args.output))
+        _elapsed = _time.perf_counter() - _t0
+        say.ok(f"Merged in {format_duration(_elapsed)} → {args.output}")
         return 0
 
-    if sub == "inspect":
+    if sub == "info":
         from .dataset_io import read_metadata
 
         src = args.source
@@ -1648,6 +1830,10 @@ def _main_participant(argv: "list[str]") -> int:
 
     try:
         if command == "smoke-test":
+            import time as _time
+
+            from .ui import format_duration, say
+
             if json_output:
                 report = run_default_report(
                     profile=bool(args.profile),
@@ -1656,6 +1842,9 @@ def _main_participant(argv: "list[str]") -> int:
                 report["mode"] = "agent"
                 print(render_agent_report(report), end="")
                 return 0
+
+            say.intent("Running smoke test against CombinedEstimator")
+            _smoke_t0 = _time.perf_counter()
 
             if no_rich:
                 # Plain-text path: no Rich Live, no progress bar. Emit
@@ -1678,6 +1867,9 @@ def _main_participant(argv: "list[str]") -> int:
                 report["mode"] = "human"
                 output = _render_plain_text_report(report, command="smoke-test")
                 print(output, end="" if output.endswith("\n") else "\n")
+                say.ok(
+                    f"Smoke test completed in {format_duration(_time.perf_counter() - _smoke_t0)}"
+                )
                 return 0
 
             # Set up Rich progress bar for immediate user feedback.
@@ -1753,10 +1945,22 @@ def _main_participant(argv: "list[str]") -> int:
             if rich_rendered:
                 next_steps = render_smoke_test_next_steps(report, debug=debug)
                 print(next_steps, end="" if next_steps.endswith("\n") else "\n")
+            say.ok(f"Smoke test completed in {format_duration(_time.perf_counter() - _smoke_t0)}")
             return 0
 
         if command == "init":
-            created = _write_init_template(Path(args.path).resolve())
+            import time as _time
+
+            from .ui import format_duration, say
+
+            _target = Path(args.path).resolve()
+            say.intent(
+                f"Initializing starter estimator in {_target}",
+                quiet=json_output,
+            )
+            _t0 = _time.perf_counter()
+            created = _write_init_template(_target)
+            _elapsed = _time.perf_counter() - _t0
             payload = {"ok": True, "created": created}
             if json_output:
                 print(json.dumps(payload, indent=2))
@@ -1770,28 +1974,59 @@ def _main_participant(argv: "list[str]") -> int:
                     ),
                     end="",
                 )
+            _n = len(created)
+            if _n:
+                _plural = "s" if _n != 1 else ""
+                say.ok(
+                    f"Created {_n} file{_plural} in {format_duration(_elapsed)}",
+                    quiet=json_output,
+                )
+            else:
+                say.ok(
+                    f"Starter files already present (checked in {format_duration(_elapsed)})",
+                    quiet=json_output,
+                )
             return 0
 
         if command == "validate":
+            import time as _time
+
+            from .ui import format_duration, say, status
+
             validate_seed: Optional[int] = getattr(args, "seed", None)
-            if json_output:
-                payload = validate_submission_entrypoint(
-                    args.estimator, class_name=args.class_name, seed=validate_seed
-                )
-                print(json.dumps(payload, indent=2))
-            else:
-                result = _run_validate_checks(
-                    args.estimator, class_name=args.class_name, seed=validate_seed
-                )
-                doc = build_validate_presentation(result)
-                print(
-                    render_command_presentation(
-                        doc,
-                        output_format=output_format,
-                        force_terminal=stdout_is_tty,
-                    ),
-                    end="",
-                )
+            say.intent(
+                f"Validating estimator {args.estimator}",
+                quiet=json_output,
+            )
+            _t0 = _time.perf_counter()
+            with status(
+                f"Importing {args.estimator} and running setup/predict checks",
+                quiet=json_output,
+            ):
+                if json_output:
+                    payload = validate_submission_entrypoint(
+                        args.estimator, class_name=args.class_name, seed=validate_seed
+                    )
+                    _elapsed = _time.perf_counter() - _t0
+                    print(json.dumps(payload, indent=2))
+                else:
+                    result = _run_validate_checks(
+                        args.estimator, class_name=args.class_name, seed=validate_seed
+                    )
+                    _elapsed = _time.perf_counter() - _t0
+                    doc = build_validate_presentation(result)
+                    print(
+                        render_command_presentation(
+                            doc,
+                            output_format=output_format,
+                            force_terminal=stdout_is_tty,
+                        ),
+                        end="",
+                    )
+            say.ok(
+                f"Validation passed in {format_duration(_elapsed)}",
+                quiet=json_output,
+            )
             return 0
 
         if command == "create-dataset":
@@ -1838,18 +2073,131 @@ def _main_participant(argv: "list[str]") -> int:
             rev: Optional[str] = None
             _is_local: bool = True
             if dataset_path is not None:
+                import time as _time
+
+                from rich.console import Console as _RichConsole
+
                 from .dataset import load_dataset as _wb_load_dataset
+                from .hf_progress import hf_download, hf_preflight
                 from .scoring import make_contest_from_dataset
+                from .ui import format_bytes, format_duration, say
 
                 repo_or_path, rev, _is_local = _resolve_dataset_arg(
                     dataset_path, revision=getattr(args, "revision", None)
                 )
-                ds = _wb_load_dataset(
-                    repo_or_path, revision=rev, split=getattr(args, "split", None)
-                )
-                from datasets import DatasetDict as _DatasetDict
+                _streaming = bool(getattr(args, "streaming", False))
 
-                if isinstance(ds, _DatasetDict):
+                if _is_local and _streaming:
+                    print(
+                        "error: --streaming is only valid with hf:// datasets, not local paths.",
+                        file=sys.stderr,
+                    )
+                    return 1
+
+                if _is_local:
+                    ds = _wb_load_dataset(
+                        repo_or_path, revision=rev, split=getattr(args, "split", None)
+                    )
+                else:
+                    _console = _RichConsole()
+                    _title = f"hf://{repo_or_path}@{rev or 'main'}"
+                    say.step(f"Resolving {_title}", console=_console, quiet=json_output)
+                    preflight = hf_preflight(
+                        repo_or_path, revision=rev, split=getattr(args, "split", None)
+                    )
+
+                    if _streaming:
+                        mode: Literal["cache_hit", "materialize", "streaming"] = "streaming"
+                    elif preflight is not None and preflight.is_cached:
+                        mode = "cache_hit"
+                    else:
+                        mode = "materialize"
+
+                    if _streaming:
+                        say.warn(
+                            "Streaming from HF\n"
+                            "  • Iteration-only: streaming yields MLPs sequentially "
+                            "without random access.\n"
+                            "  • Not cached locally — every run re-fetches from "
+                            "the network.\n"
+                            "  • Best for quick iteration with `--n-mlps K` where "
+                            "K is small.\n"
+                            "  • To populate the cache, run:\n"
+                            f"      whest dataset download {repo_or_path} "
+                            f"--revision {rev or 'main'}",
+                            console=_console,
+                            quiet=json_output,
+                        )
+                    elif mode == "materialize":
+                        if preflight is not None:
+                            _files = preflight.file_count
+                            _plural = "s" if _files != 1 else ""
+                            say.intent(
+                                f"Downloading {_title} — {_files} file{_plural}, "
+                                f"{format_bytes(preflight.total_bytes)}",
+                                console=_console,
+                                quiet=json_output,
+                            )
+                        else:
+                            say.intent(
+                                f"Downloading {_title} (preflight unavailable)",
+                                console=_console,
+                                quiet=json_output,
+                            )
+
+                    _t0 = _time.perf_counter()
+                    with hf_download(
+                        _console,
+                        title=_title,
+                        preflight=preflight,
+                        mode=mode,
+                        quiet=json_output,
+                    ):
+                        ds = _wb_load_dataset(
+                            repo_or_path,
+                            revision=rev,
+                            split=getattr(args, "split", None),
+                            streaming=_streaming,
+                        )
+                    _elapsed = _time.perf_counter() - _t0
+
+                    from datasets import (
+                        Dataset as _Dataset,
+                    )
+
+                    if isinstance(ds, _Dataset):
+                        _n_str = f"{len(ds):,}"
+                    else:
+                        # IterableDataset (streaming) or *Dict types — no random
+                        # access / __len__. The *Dict cases are rejected below
+                        # with a clearer error.
+                        _n_str = "?"
+                    if mode == "cache_hit":
+                        say.ok(
+                            f"Loaded {_n_str} MLPs in {format_duration(_elapsed)} (from cache)",
+                            console=_console,
+                            quiet=json_output,
+                        )
+                    elif mode == "streaming":
+                        say.ok(
+                            f"Streaming dataset ready in {format_duration(_elapsed)}",
+                            console=_console,
+                            quiet=json_output,
+                        )
+                    else:
+                        _bytes_label = (
+                            f" {format_bytes(preflight.total_bytes)}" if preflight else ""
+                        )
+                        say.ok(
+                            f"Downloaded{_bytes_label} and loaded {_n_str} MLPs in {format_duration(_elapsed)}",
+                            console=_console,
+                            quiet=json_output,
+                        )
+                from datasets import DatasetDict as _DatasetDict
+                from datasets import IterableDataset as _IterableDataset
+                from datasets import IterableDatasetDict as _IterableDatasetDict
+
+                if isinstance(ds, (_DatasetDict, _IterableDatasetDict)):
                     print(
                         f"error: dataset {dataset_path!r} is multi-split with splits "
                         f"{sorted(ds.keys())}. Pass --split <name> to select one.",
@@ -1857,7 +2205,13 @@ def _main_participant(argv: "list[str]") -> int:
                     )
                     return 1
                 ds_meta = _wb_metadata(ds)
-                ds_n_mlps = len(ds)
+
+                if isinstance(ds, _IterableDataset):
+                    ds_n_mlps = int(ds_meta.get("n_mlps") or 0)
+                    if ds_n_mlps <= 0:
+                        raise SystemExit("error: streaming dataset has no n_mlps in metadata.")
+                else:
+                    ds_n_mlps = len(ds)
 
                 if user_n_mlps is None:
                     n_mlps = ds_n_mlps
@@ -2051,14 +2405,54 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "package":
-            artifact_path = package_submission(
-                args.estimator,
-                class_name=args.class_name,
-                requirements_path=args.requirements,
-                submission_yaml_path=args.submission_metadata,
-                approach_md_path=args.approach,
-                output_path=args.output,
+            import time as _time
+
+            from .ui import format_bytes, format_duration, progress_bytes, say
+
+            # The bytes flowing into the bar are gzipped output bytes; counting
+            # uncompressed input bytes as the bar's target gives a roughly
+            # honest progress signal (compressed size is typically ≤ input
+            # size + per-file tar headers + manifest blob). A small overshoot
+            # is benign — the bar still conveys real-time motion. We add a
+            # ~1 KB pad for the manifest + tar overhead so the bar reaches
+            # close to 100% rather than sitting at "1.5x" by the time the
+            # last file is added.
+            _estimator = Path(args.estimator)
+            _input_paths: list[Path] = [_estimator] if _estimator.is_file() else []
+            for _opt in (args.requirements, args.submission_metadata, args.approach):
+                if _opt is None:
+                    continue
+                _p = Path(_opt)
+                if _p.is_file():
+                    _input_paths.append(_p)
+            _total = sum(p.stat().st_size for p in _input_paths) + 1024
+
+            say.intent(
+                f"Packaging {args.estimator} → {args.output or 'submission-*.tar.gz'}",
+                quiet=json_output,
             )
+            _t0 = _time.perf_counter()
+            with progress_bytes(total=_total, label="Packaging", quiet=json_output) as _bar:
+                artifact_path = package_submission(
+                    args.estimator,
+                    class_name=args.class_name,
+                    requirements_path=args.requirements,
+                    submission_yaml_path=args.submission_metadata,
+                    approach_md_path=args.approach,
+                    output_path=args.output,
+                    progress=lambda n: _bar.advance(n),
+                )
+            _elapsed = _time.perf_counter() - _t0
+            try:
+                _size = artifact_path.stat().st_size
+                _size_label = f" ({format_bytes(_size)})"
+            except OSError:
+                _size_label = ""
+            say.ok(
+                f"Wrote {artifact_path} in {format_duration(_elapsed)}{_size_label}",
+                quiet=json_output,
+            )
+
             payload = {"ok": True, "artifact_path": str(artifact_path)}
             if json_output:
                 print(json.dumps(payload, indent=2))
@@ -2075,21 +2469,45 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "doctor":
+            import time as _time
+
             from .doctor import _doctor_exit_code, run_all
             from .reporting import render_doctor_json, render_doctor_report
+            from .ui import format_duration, say, status
 
-            checks = run_all(debug=debug)
+            say.intent("Running whestbench doctor", quiet=json_output)
+            _t0 = _time.perf_counter()
+            with status(
+                "Probing Python, uv, install mode, BLAS, disk, and CWD permissions",
+                quiet=json_output,
+            ):
+                checks = run_all(debug=debug)
+            _elapsed = _time.perf_counter() - _t0
             if output_format == "json":
                 print(render_doctor_json(checks), end="")
             elif output_format == "plain":
                 print(render_doctor_report(checks, rich=False), end="")
             else:
                 print(render_doctor_report(checks, rich=True), end="")
+            _n = len(checks)
+            _plural = "s" if _n != 1 else ""
+            say.ok(
+                f"Ran {_n} check{_plural} in {format_duration(_elapsed)}",
+                quiet=json_output,
+            )
             return _doctor_exit_code(checks, strict=bool(args.strict))
 
         if command == "profile-simulation":
-            from .profiler import run_profile
+            import time as _time
 
+            from .profiler import run_profile
+            from .ui import format_duration, say
+
+            say.intent(
+                f"Profiling simulation backends (preset={args.preset})",
+                quiet=json_output,
+            )
+            _t0 = _time.perf_counter()
             terminal_output, json_data = run_profile(
                 preset_name=str(args.preset),
                 output_path=args.output,
@@ -2099,10 +2517,15 @@ def _main_participant(argv: "list[str]") -> int:
                 log_progress=bool(args.log_progress),
                 output_format=output_format,
             )
+            _elapsed = _time.perf_counter() - _t0
             if json_output:
                 print(json.dumps(json_data, indent=2))
             else:
                 print(terminal_output, end="" if terminal_output.endswith("\n") else "\n")
+            say.ok(
+                f"Profile completed in {format_duration(_elapsed)}",
+                quiet=json_output,
+            )
             return 0
 
         raise ValueError(f"Unsupported command: {command}")
