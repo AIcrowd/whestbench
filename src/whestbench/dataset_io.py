@@ -17,7 +17,8 @@ import re
 from datetime import datetime, timezone
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, Dict, Mapping
+from typing import Any, Dict, Mapping, cast
+from typing import Sequence as _TypingSequence
 
 import yaml
 from datasets import Array2D, Array3D, Dataset, Features, Sequence, Value
@@ -834,12 +835,12 @@ def merge_datasets(
 
 
 def write_prepared_arrow_split(
-    parquet_path: "Path | str",
+    parquet_path: "Path | str | _TypingSequence[Path | str]",
     output_dir: "Path | str",
     *,
     split: str,
 ) -> Path:
-    """Materialise a single split's parquet file into a `Dataset.save_to_disk()` directory.
+    """Materialise a split's parquet file(s) into a `Dataset.save_to_disk()` directory.
 
     The output directory is what `datasets.load_from_disk(...)` accepts. We
     upload it to HF under `prepared/<split>/` so participants can pull
@@ -847,7 +848,10 @@ def write_prepared_arrow_split(
     cache.
 
     Args:
-        parquet_path: Single parquet file (one split's worth of MLPs).
+        parquet_path: Either a single parquet file or a list of parquet
+            files (multi-shard split, e.g. ``full-00000-of-00008.parquet``…).
+            All shards are concatenated by ``datasets.Dataset.from_parquet``
+            preserving the on-disk row order.
         output_dir: Directory to create. Must not exist; written atomically
             via a sibling `.staging` directory.
         split: The HF split name to record inside the saved Dataset.
@@ -857,19 +861,36 @@ def write_prepared_arrow_split(
 
     Raises:
         FileExistsError: ``output_dir`` already exists.
+        FileNotFoundError: any of the listed parquet files is missing.
     """
     import shutil
 
     output_dir = Path(output_dir)
-    parquet_path = Path(parquet_path)
+    if isinstance(parquet_path, (str, Path)):
+        parquet_paths: list[Path] = [Path(parquet_path)]
+    else:
+        parquet_paths = sorted(Path(p) for p in parquet_path)
+    if not parquet_paths:
+        raise FileNotFoundError("write_prepared_arrow_split: empty parquet list")
     if output_dir.exists():
         raise FileExistsError(f"output_dir already exists: {output_dir}")
-    if not parquet_path.is_file():
-        raise FileNotFoundError(f"parquet not found: {parquet_path}")
+    for p in parquet_paths:
+        if not p.is_file():
+            raise FileNotFoundError(f"parquet not found: {p}")
 
     from datasets import Dataset, NamedSplit
 
-    ds = Dataset.from_parquet(str(parquet_path), split=NamedSplit(split))
+    # datasets.Dataset.from_parquet accepts either a single path string or a
+    # list of path strings (it concatenates shards in list order). We sort
+    # the shard list above to be insensitive to glob iteration order.
+    # The typeshed for from_parquet types the list overload as `list[PathLike]`
+    # (invariant), but the runtime accepts `list[str]`; cast through Any to
+    # silence pyright without runtime cost.
+    if len(parquet_paths) == 1:
+        parquet_arg: Any = str(parquet_paths[0])
+    else:
+        parquet_arg = cast(Any, [str(p) for p in parquet_paths])
+    ds = Dataset.from_parquet(parquet_arg, split=NamedSplit(split))
 
     staging = output_dir.with_name(output_dir.name + ".staging")
     if staging.exists():
@@ -908,15 +929,10 @@ def build_prepared_splits_for_directory(
 
     block: Dict[str, Dict[str, str]] = {}
     for split in splits:
-        parquet_files = list((dataset_dir / PARQUET_SUBDIR).glob(f"{split}-*.parquet"))
+        parquet_files = sorted((dataset_dir / PARQUET_SUBDIR).glob(f"{split}-*.parquet"))
         if not parquet_files:
             raise FileNotFoundError(
                 f"no parquet found for split {split!r} in {dataset_dir / PARQUET_SUBDIR}"
-            )
-        if len(parquet_files) != 1:
-            raise NotImplementedError(
-                f"multi-shard parquet not yet handled for prepared arrow; got "
-                f"{len(parquet_files)} files for split {split!r}"
             )
         out = prepared_root / split
         # `write_prepared_arrow_split` is idempotent against the staging dir
@@ -925,7 +941,9 @@ def build_prepared_splits_for_directory(
             import shutil
 
             shutil.rmtree(out)
-        write_prepared_arrow_split(parquet_files[0], out, split=split)
+        # Pass the full shard list (single or multi); `write_prepared_arrow_split`
+        # handles both shapes.
+        write_prepared_arrow_split(parquet_files, out, split=split)
         block[split] = {
             "path": f"{PREPARED_ARROW_SUBDIR}/{split}",
             "format": PREPARED_ARROW_FORMAT,
