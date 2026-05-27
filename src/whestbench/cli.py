@@ -13,6 +13,7 @@ import warnings
 from contextlib import contextmanager
 from dataclasses import replace
 from datetime import datetime, timezone
+from importlib.metadata import version as package_version
 from importlib.resources import files
 from pathlib import Path
 from typing import (
@@ -119,6 +120,21 @@ def _default_contest_spec() -> ContestSpec:
         flop_budget=68_000_000_000,
         ground_truth_samples=100 * 100 * 256,
     )
+
+
+def _resolve_whestbench_version() -> str:
+    """Resolve the installed whestbench package version."""
+
+    try:
+        return package_version("whestbench")
+    except Exception:
+        return "unknown"
+
+
+def _json_payload_with_metadata(payload: Dict[str, Any]) -> Dict[str, Any]:
+    payload_with_metadata = dict(payload)
+    payload_with_metadata["whestbench_version"] = _resolve_whestbench_version()
+    return payload_with_metadata
 
 
 def _is_first_progress_phase(phase: str) -> bool:
@@ -822,6 +838,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Limit BLAS to at most N CPU threads.",
     )
+
+    version_parser = subparsers.add_parser("version", help="Print whestbench version.")
+    add_output_format_arguments(version_parser)
 
     init_parser = subparsers.add_parser("init", help="Create starter estimator files.")
     init_parser.add_argument("path", nargs="?", default=".")
@@ -1840,7 +1859,7 @@ def _main_participant(argv: "list[str]") -> int:
                     detail=str(args.detail),
                 )
                 report["mode"] = "agent"
-                print(render_agent_report(report), end="")
+                print(render_agent_report(_json_payload_with_metadata(report)), end="")
                 return 0
 
             say.intent("Running smoke test against CombinedEstimator")
@@ -1948,6 +1967,19 @@ def _main_participant(argv: "list[str]") -> int:
             say.ok(f"Smoke test completed in {format_duration(_time.perf_counter() - _smoke_t0)}")
             return 0
 
+        if command == "version":
+            payload = {
+                "ok": True,
+                "command": "version",
+                "name": "whestbench",
+                "version": _resolve_whestbench_version(),
+            }
+            if json_output:
+                print(json.dumps(_json_payload_with_metadata(payload), indent=2))
+            else:
+                print(f"whestbench {payload['version']}")
+            return 0
+
         if command == "init":
             import time as _time
 
@@ -1963,7 +1995,7 @@ def _main_participant(argv: "list[str]") -> int:
             _elapsed = _time.perf_counter() - _t0
             payload = {"ok": True, "created": created}
             if json_output:
-                print(json.dumps(payload, indent=2))
+                print(json.dumps(_json_payload_with_metadata(payload), indent=2))
             else:
                 doc = build_init_presentation(payload)
                 print(
@@ -1999,30 +2031,32 @@ def _main_participant(argv: "list[str]") -> int:
                 quiet=json_output,
             )
             _t0 = _time.perf_counter()
+            if json_output:
+                payload = _json_payload_with_metadata(
+                    validate_submission_entrypoint(
+                        args.estimator, class_name=args.class_name, seed=validate_seed
+                    )
+                )
+                print(json.dumps(payload, indent=2))
+                return 0
+
             with status(
                 f"Importing {args.estimator} and running setup/predict checks",
                 quiet=json_output,
             ):
-                if json_output:
-                    payload = validate_submission_entrypoint(
-                        args.estimator, class_name=args.class_name, seed=validate_seed
-                    )
-                    _elapsed = _time.perf_counter() - _t0
-                    print(json.dumps(payload, indent=2))
-                else:
-                    result = _run_validate_checks(
-                        args.estimator, class_name=args.class_name, seed=validate_seed
-                    )
-                    _elapsed = _time.perf_counter() - _t0
-                    doc = build_validate_presentation(result)
-                    print(
-                        render_command_presentation(
-                            doc,
-                            output_format=output_format,
-                            force_terminal=stdout_is_tty,
-                        ),
-                        end="",
-                    )
+                result = _run_validate_checks(
+                    args.estimator, class_name=args.class_name, seed=validate_seed
+                )
+                _elapsed = _time.perf_counter() - _t0
+                doc = build_validate_presentation(result)
+                print(
+                    render_command_presentation(
+                        doc,
+                        output_format=output_format,
+                        force_terminal=stdout_is_tty,
+                    ),
+                    end="",
+                )
             say.ok(
                 f"Validation passed in {format_duration(_elapsed)}",
                 quiet=json_output,
@@ -2277,7 +2311,7 @@ def _main_participant(argv: "list[str]") -> int:
                         "seed": ds_meta.get("seed"),
                         "n_mlps": ds_meta.get("n_mlps"),
                     }
-                output = render_agent_report(report)
+                output = render_agent_report(_json_payload_with_metadata(report))
             else:
                 metadata = resolve_estimator_class_metadata(
                     entrypoint.file_path, class_name=entrypoint.class_name
@@ -2455,7 +2489,7 @@ def _main_participant(argv: "list[str]") -> int:
 
             payload = {"ok": True, "artifact_path": str(artifact_path)}
             if json_output:
-                print(json.dumps(payload, indent=2))
+                print(json.dumps(_json_payload_with_metadata(payload), indent=2))
             else:
                 doc = build_package_presentation(payload)
                 print(
@@ -2484,7 +2518,12 @@ def _main_participant(argv: "list[str]") -> int:
                 checks = run_all(debug=debug)
             _elapsed = _time.perf_counter() - _t0
             if output_format == "json":
-                print(render_doctor_json(checks), end="")
+                print(
+                    json.dumps(
+                        _json_payload_with_metadata(json.loads(render_doctor_json(checks))),
+                        indent=2,
+                    )
+                )
             elif output_format == "plain":
                 print(render_doctor_report(checks, rich=False), end="")
             else:
@@ -2519,7 +2558,7 @@ def _main_participant(argv: "list[str]") -> int:
             )
             _elapsed = _time.perf_counter() - _t0
             if json_output:
-                print(json.dumps(json_data, indent=2))
+                print(json.dumps(_json_payload_with_metadata(json_data or {}), indent=2))
             else:
                 print(terminal_output, end="" if terminal_output.endswith("\n") else "\n")
             say.ok(
@@ -2562,7 +2601,7 @@ def _print_error(
     show_inprocess_hint: bool = False,
 ) -> None:
     if json_output:
-        print(json.dumps(payload, indent=2))
+        print(json.dumps(_json_payload_with_metadata(payload), indent=2))
         return
     doc = build_error_presentation(
         payload,

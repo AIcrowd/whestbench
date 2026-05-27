@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from rich import box
@@ -54,7 +55,7 @@ def _score_value_markup(metric: str, value: str) -> str:
 
 
 def build_score_block(section: TableSection) -> Panel:
-    table = Table(box=box.SIMPLE_HEAVY, header_style="bold")
+    table = Table(box=box.SIMPLE_HEAVY, header_style="bold", expand=True)
     table.add_column("metric")
     table.add_column("value", justify="right")
     # Note column carries the "← primary score" annotation on the adjusted row;
@@ -111,9 +112,18 @@ def build_score_block(section: TableSection) -> Panel:
 
     panel_kwargs: dict[str, Any] = {
         "title": escape(section.title),
-        "subtitle": escape(section.subtitle or ""),
-        "subtitle_align": "left",
     }
+    if section.subtitle:
+        formula_match = re.search(
+            r"max\(0\.1,\s*effective_compute/flop_budget\)",
+            section.subtitle,
+        )
+        panel_kwargs["subtitle"] = (
+            f"final_layer_mse: {formula_match.group(0)}"
+            if formula_match
+            else escape(section.subtitle)
+        )
+        panel_kwargs["subtitle_align"] = "left"
     if section.border_style is not None:
         panel_kwargs["border_style"] = section.border_style
     return Panel(Align.center(table), **panel_kwargs)
