@@ -1027,20 +1027,28 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--mlp-range", dest="mlp_range_str", help="START-END (inclusive on both ends), e.g. 0-249."
     )
 
-    push_p = dataset_sub.add_parser("push", help="Upload a baked dataset to HF Hub.")
-    push_p.add_argument("local_dir")
-    push_p.add_argument("--repo", required=True, help="HF repo id (org/name).")
-    push_p.add_argument("--tag", default=None, help="Optional git tag (e.g. v1).")
-    push_p.add_argument("--private", action="store_true")
-    push_p.add_argument("--token", default=None)
-    push_p.add_argument("--message", default=None)
+    upload_p = dataset_sub.add_parser(
+        "upload",
+        aliases=["push"],
+        help="Upload a baked dataset to HF Hub.",
+    )
+    upload_p.add_argument("local_dir")
+    upload_p.add_argument("--repo", required=True, help="HF repo id (org/name).")
+    upload_p.add_argument("--tag", default=None, help="Optional git tag (e.g. v1).")
+    upload_p.add_argument("--private", action="store_true")
+    upload_p.add_argument("--token", default=None)
+    upload_p.add_argument("--message", default=None)
 
-    pull_p = dataset_sub.add_parser("pull", help="Download a dataset from HF Hub.")
-    pull_p.add_argument("repo_id")
-    pull_p.add_argument("--revision", default=None)
-    pull_p.add_argument("--output", required=True)
-    pull_p.add_argument("--token", default=None)
-    pull_p.add_argument(
+    download_p = dataset_sub.add_parser(
+        "download",
+        aliases=["pull"],
+        help="Download a dataset from HF Hub.",
+    )
+    download_p.add_argument("repo_id")
+    download_p.add_argument("--revision", default=None)
+    download_p.add_argument("--output", required=True)
+    download_p.add_argument("--token", default=None)
+    download_p.add_argument(
         "--split",
         default=None,
         type=_validate_split_name,
@@ -1051,9 +1059,13 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     merge_p.add_argument("inputs", nargs="+", help="Partial dataset directories.")
     merge_p.add_argument("--output", required=True)
 
-    inspect_p = dataset_sub.add_parser("inspect", help="Print dataset metadata.")
-    inspect_p.add_argument("source", help="Local dir or HF repo id.")
-    inspect_p.add_argument("--revision", default=None)
+    info_p = dataset_sub.add_parser(
+        "info",
+        aliases=["inspect"],
+        help="Print dataset metadata.",
+    )
+    info_p.add_argument("source", help="Local dir or HF repo id.")
+    info_p.add_argument("--revision", default=None)
 
     combine_p = dataset_sub.add_parser(
         "combine-splits",
@@ -1203,11 +1215,24 @@ def _resolve_dataset_arg(arg, *, revision):
     raise SystemExit(f"--dataset {arg!r} not recognized as local path or HF repo.")
 
 
+_DEPRECATED_DATASET_ALIASES = {"push": "upload", "pull": "download", "inspect": "info"}
+
+
 def _dispatch_dataset_command(args) -> int:
     import json as _json
     from pathlib import Path as _Path
 
     sub = args.dataset_cmd
+    if sub in _DEPRECATED_DATASET_ALIASES:
+        from .ui import say
+
+        canonical = _DEPRECATED_DATASET_ALIASES[sub]
+        say.warn(
+            f"`whest dataset {sub}` is deprecated; use `whest dataset {canonical}`. "
+            f"Aliases will be removed in v0.7."
+        )
+        sub = canonical
+
     if sub == "bake":
         from .dataset import create_dataset as _create_dataset
 
@@ -1280,7 +1305,7 @@ def _dispatch_dataset_command(args) -> int:
         print(f"Baked dataset to {args.output}")
         return 0
 
-    if sub == "push":
+    if sub == "upload":
         from .hub import publish_dataset
 
         sha = publish_dataset(
@@ -1294,7 +1319,7 @@ def _dispatch_dataset_command(args) -> int:
         print(f"Uploaded to {args.repo}; commit {sha}" + (f"; tag {args.tag}" if args.tag else ""))
         return 0
 
-    if sub == "pull":
+    if sub == "download":
         from huggingface_hub import snapshot_download
 
         allow_patterns = None
@@ -1339,7 +1364,7 @@ def _dispatch_dataset_command(args) -> int:
         print(f"Merged {len(args.inputs)} partials to {args.output}")
         return 0
 
-    if sub == "inspect":
+    if sub == "info":
         from .dataset_io import read_metadata
 
         src = args.source

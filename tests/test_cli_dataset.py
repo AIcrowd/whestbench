@@ -20,7 +20,7 @@ def _run_whest(*args, cwd=None, check=False):
 def test_whest_dataset_help_lists_subcommands():
     res = _run_whest("dataset", "--help")
     assert res.returncode == 0
-    for sub in ("bake", "push", "pull", "merge", "inspect"):
+    for sub in ("bake", "upload", "download", "merge", "info"):
         assert sub in res.stdout
 
 
@@ -180,7 +180,7 @@ def test_whest_dataset_inspect_prints_metadata(tmp_path: Path):
         str(out),
         check=True,
     )
-    res = _run_whest("dataset", "inspect", str(out))
+    res = _run_whest("dataset", "info", str(out))
     assert res.returncode == 0
     assert "3.0" in res.stdout
     assert "flopscope" in res.stdout
@@ -290,9 +290,9 @@ def test_whest_dataset_inspect_multi_split_output(tmp_path: Path):
     out = tmp_path / "combined"
     _run_whest("dataset", "combine-splits", str(pub), str(hold), "--output", str(out))
 
-    res = _run_whest("dataset", "inspect", str(out))
+    res = _run_whest("dataset", "info", str(out))
     assert res.returncode == 0, res.stderr
-    # Multi-split inspect must mention each split name AND the multi-split marker.
+    # Multi-split info must mention each split name AND the multi-split marker.
     assert "public" in res.stdout
     assert "holdout" in res.stdout
     assert "multi-split" in res.stdout.lower()
@@ -386,13 +386,13 @@ def test_whest_dataset_bake_rejects_underscore_split(tmp_path: Path):
 
 
 def test_whest_dataset_pull_accepts_split_flag(tmp_path: Path):
-    """Smoke test: pull --split SPLIT is accepted (downloads only that split's parquet).
+    """Smoke test: download --split SPLIT is accepted (downloads only that split's parquet).
 
-    Skipped on no network — pulls from the public smoke-test repo.
+    Skipped on no network — downloads from the public smoke-test repo.
     """
     res = _run_whest(
         "dataset",
-        "pull",
+        "download",
         "aicrowd/arc-whestbench-2026-smoke-test",
         "--split",
         "public",
@@ -400,7 +400,7 @@ def test_whest_dataset_pull_accepts_split_flag(tmp_path: Path):
         str(tmp_path / "pulled"),
     )
     # Tolerate network/offline failure — the test only enforces that --split is
-    # an accepted argument, not that the pull itself always succeeds.
+    # an accepted argument, not that the download itself always succeeds.
     if res.returncode == 0:
         assert (tmp_path / "pulled" / "data" / "public-00000-of-00001.parquet").is_file()
     else:
@@ -409,10 +409,10 @@ def test_whest_dataset_pull_accepts_split_flag(tmp_path: Path):
 
 
 def test_whest_dataset_pull_rejects_nonexistent_split(tmp_path: Path):
-    """pull --split <typo> should error rather than silently producing an empty dir."""
+    """download --split <typo> should error rather than silently producing an empty dir."""
     res = _run_whest(
         "dataset",
-        "pull",
+        "download",
         "aicrowd/arc-whestbench-2026-smoke-test",
         "--split",
         "nonexistent-split",
@@ -428,7 +428,7 @@ def test_whest_dataset_pull_rejects_nonexistent_split(tmp_path: Path):
     else:
         # Returncode 0 with no error → silent empty dir, the bug we're guarding against.
         assert False, (
-            f"pull with bogus split should not silently succeed; got returncode={res.returncode}, "
+            f"download with bogus split should not silently succeed; got returncode={res.returncode}, "
             f"output:\n{res.stdout}\n{res.stderr}"
         )
 
@@ -560,7 +560,7 @@ def test_whest_dataset_bake_rejects_mlp_seeds_malformed_file(tmp_path: Path):
 
 
 def test_whest_dataset_inspect_v3_mentions_protocol(tmp_path: Path):
-    """inspect output for a 3.0 dataset should mention the protocol."""
+    """info output for a 3.0 dataset should mention the protocol."""
     out = tmp_path / "ds"
     res = _run_whest(
         "dataset",
@@ -577,6 +577,6 @@ def test_whest_dataset_inspect_v3_mentions_protocol(tmp_path: Path):
         str(out),
     )
     assert res.returncode == 0, res.stderr
-    res = _run_whest("dataset", "inspect", str(out))
+    res = _run_whest("dataset", "info", str(out))
     assert res.returncode == 0, res.stderr
     assert "whestbench_explicit_per_mlp_seeds" in res.stdout or "3.0" in res.stdout
