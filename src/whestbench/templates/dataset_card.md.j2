@@ -37,6 +37,15 @@ WhestBench is a benchmark for *white-box activation estimation*: given the weigh
 
 - **`public`** ({{ '{:,}'.format(splits["public"].n_mlps) }} MLPs) — submissions are scored against this split with scores visible to participants on the **public leaderboard** in real time.
 - **`holdout`** ({{ '{:,}'.format(splits["holdout"].n_mlps) }} MLPs) — submissions are also scored against this split, but the scores power the **private/final leaderboard** and are revealed only at the conclusion of the round.
+
+This dataset is intentionally not part of the Public Release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}); develop your estimator against the public release first.
+{%- elif "mini" in splits and "full" in splits -%}
+**This is the WhestBench 2026 Public Dataset Release** — pre-baked MLPs paired with their ground-truth activation statistics. Two **independent** splits, baked with **disjoint seeds**:
+
+- **`mini`** ({{ '{:,}'.format(splits["mini"].n_mlps) }} MLPs) — the development split. Small enough to download in seconds. Iterate on your estimator here.
+- **`full`** ({{ '{:,}'.format(splits["full"].n_mlps) }} MLPs) — the canonical evaluation surface. Run against this once your estimator is dialed in.
+
+`mini` is **not** a subset of `full`. They share no MLPs — verify with the `mlp_seed` column.
 {%- else -%}
 **This is the WhestBench 2026 Evaluation Dataset** — per-round MLP ground-truth. It contains disjoint splits:
 
@@ -44,48 +53,47 @@ WhestBench is a benchmark for *white-box activation estimation*: given the weigh
 - **`{{ name }}`** ({{ '{:,}'.format(info.n_mlps) }} MLPs)
 {% endfor -%}
 {%- endif %}
-
-This dataset is intentionally not part of the Public Release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}); develop your estimator against the public release first.
 {%- endif %}
 
 ## Quick start
 
 The pure HuggingFace path (no whestbench install required):
 
+{%- if splits and "mini" in splits and "full" in splits %}
 ```python
 from datasets import load_dataset
-{% if splits %}
-# Load both splits (returns DatasetDict)
-ds = load_dataset(
-    "{{ repo_id }}",
-    revision="{{ revision }}",
-)
-# → DatasetDict({"public": ..., "holdout": ...})
 
-# Load one split (returns Dataset)
-{% if "public" in splits -%}
-ds = load_dataset(
-    "{{ repo_id }}",
-    revision="{{ revision }}",
-    split="public",
-)
-{%- else -%}
-ds = load_dataset(
-    "{{ repo_id }}",
-    revision="{{ revision }}",
-    split="{{ (splits.keys() | list)[0] }}",
-)
-{%- endif %}
+# Develop against mini — {{ '{:,}'.format(splits["mini"].n_mlps) }} MLPs, downloads in seconds
+mini = load_dataset("{{ repo_id }}", revision="{{ revision }}", split="mini")
+print(mini[0]["mlp_name"])
+
+# Lock in your numbers against full — {{ '{:,}'.format(splits["full"].n_mlps) }} MLPs
+full = load_dataset("{{ repo_id }}", revision="{{ revision }}", split="full")
+```
+{%- elif splits %}
+```python
+from datasets import load_dataset
+
+# Load all splits
+dsd = load_dataset("{{ repo_id }}", revision="{{ revision }}")
+print(dsd)
+
+# Or load one split:
+ds = load_dataset("{{ repo_id }}", revision="{{ revision }}", split="{{ splits.keys()|list|first }}")
 print(ds[0]["mlp_name"])
-{% else %}
+```
+{%- else %}
+```python
+from datasets import load_dataset
+
 ds = load_dataset(
     "{{ repo_id }}",
     revision="{{ revision }}",
     split="{{ split }}",
 )
 print(ds[0]["mlp_name"])
-{% endif %}
 ```
+{%- endif %}
 
 The whestbench convenience wrapper (adds schema validation + `metadata.json` access):
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Dataset card template now recognises the `mini`+`full` split pair and renders dedicated copy explaining the two-split shape (independent seed lists, mini as the dev surface, full as the canonical evaluation surface). Mirrors the existing `public`+`holdout` special case for evaluation datasets.
+
 ### Fix
 
 - **dataset_io**: `merge_datasets` now scopes its HF datasets cache to a per-call temporary directory by default, so merging N partials no longer leaks N per-partial entries (keyed on each input dir's basename) into the global `~/.cache/huggingface/datasets/`. At fleet scale (1000 partials named `mlp-NNNN`) this was ~2.4 GB of orphan cache. Pass `cache_dir=...` to opt back into a persistent location for debugging.
