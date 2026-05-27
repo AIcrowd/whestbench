@@ -18,6 +18,9 @@ run_ci_like_checks() {
   echo "==> ruff format --check"
   uv run ruff format --check .
 
+  echo "==> pyright"
+  uv run pyright
+
   echo "==> pytest (non-exhaustive)"
   uv run pytest -m "not exhaustive" -x -q
 
