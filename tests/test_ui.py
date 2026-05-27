@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 from rich.console import Console
+from rich.progress import Progress
 
 from whestbench.ui import (
     format_bytes,
@@ -197,6 +198,31 @@ def test_progress_bytes_update_completed_sets_absolute() -> None:
     assert "dl" in out
 
 
+def test_progress_bytes_advance_forwards_to_rich_progress_update() -> None:
+    """Spy on ``Progress.update`` to confirm ``advance(N)`` actually advances."""
+    console, _buf = _make_console()
+    original_update = Progress.update
+    with patch.object(Progress, "update", autospec=True) as spy:
+        spy.side_effect = original_update
+        with progress_bytes(total=1000, label="dl", console=console) as p:
+            p.advance(250)
+            p.advance(750)
+    advance_calls = [c for c in spy.call_args_list if c.kwargs.get("advance") is not None]
+    assert [c.kwargs["advance"] for c in advance_calls] == [250, 750]
+
+
+def test_progress_bytes_update_forwards_to_rich_progress_update() -> None:
+    """Spy on ``Progress.update`` to confirm ``update(completed=N)`` propagates."""
+    console, _buf = _make_console()
+    original_update = Progress.update
+    with patch.object(Progress, "update", autospec=True) as spy:
+        spy.side_effect = original_update
+        with progress_bytes(total=2000, label="dl", console=console) as p:
+            p.update(completed=1500)
+    completed_calls = [c for c in spy.call_args_list if c.kwargs.get("completed") is not None]
+    assert any(c.kwargs["completed"] == 1500 for c in completed_calls)
+
+
 def test_progress_bytes_quiet_emits_nothing() -> None:
     console, buf = _make_console()
     with progress_bytes(total=1000, label="dl", console=console, quiet=True) as p:
@@ -244,6 +270,31 @@ def test_progress_count_advance_updates_bar() -> None:
         p.advance(50)
         p.advance(50)
     assert "Sampling" in buf.getvalue()
+
+
+def test_progress_count_advance_forwards_to_rich_progress_update() -> None:
+    """Spy on ``Progress.update`` to confirm ``advance(N)`` actually advances."""
+    console, _buf = _make_console()
+    original_update = Progress.update
+    with patch.object(Progress, "update", autospec=True) as spy:
+        spy.side_effect = original_update
+        with progress_count(total=100, label="Sampling", console=console) as p:
+            p.advance(10)
+            p.advance(40)
+    advance_calls = [c for c in spy.call_args_list if c.kwargs.get("advance") is not None]
+    assert [c.kwargs["advance"] for c in advance_calls] == [10, 40]
+
+
+def test_progress_count_update_forwards_to_rich_progress_update() -> None:
+    """Spy on ``Progress.update`` to confirm ``update(completed=N)`` propagates."""
+    console, _buf = _make_console()
+    original_update = Progress.update
+    with patch.object(Progress, "update", autospec=True) as spy:
+        spy.side_effect = original_update
+        with progress_count(total=100, label="Sampling", console=console) as p:
+            p.update(completed=42)
+    completed_calls = [c for c in spy.call_args_list if c.kwargs.get("completed") is not None]
+    assert any(c.kwargs["completed"] == 42 for c in completed_calls)
 
 
 def test_progress_count_quiet_emits_nothing() -> None:
