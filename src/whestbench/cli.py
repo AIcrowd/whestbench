@@ -1119,6 +1119,16 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         required=True,
         help="Output directory (must not exist).",
     )
+    combine_p.add_argument(
+        "--default-split",
+        default=None,
+        help=(
+            "Optional name of the split that downstream consumers should fall "
+            "back to when --split is omitted on a multi-split dataset. Must "
+            "match one of the input splits. Recorded as 'default_split' in "
+            "the combined metadata.json and used by `whest run`."
+        ),
+    )
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
     package_parser.add_argument("--estimator", required=True)
@@ -1582,7 +1592,11 @@ def _dispatch_dataset_command(args) -> int:
         from .dataset_io import MergeIncompatibleError, combine_split_datasets
 
         try:
-            out = combine_split_datasets(args.input_dirs, output_dir=args.output)
+            out = combine_split_datasets(
+                args.input_dirs,
+                output_dir=args.output,
+                default_split=getattr(args, "default_split", None),
+            )
         except (MergeIncompatibleError, FileExistsError) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
@@ -2136,8 +2150,51 @@ def _main_participant(argv: "list[str]") -> int:
                     _console = _RichConsole()
                     _title = f"hf://{repo_or_path}@{rev or 'main'}"
                     say.step(f"Resolving {_title}", console=_console, quiet=json_output)
+
+                    # Resolve --split (or its default_split fallback) BEFORE
+                    # preflight so the size estimate + the parquet download
+                    # touch only the target split. Without this, a multi-split
+                    # dataset with default_split declared but --split omitted
+                    # would preflight every shard in the repo (~4.7 GB across
+                    # mini+full instead of ~250 MB for mini alone).
+                    _user_split = getattr(args, "split", None)
+                    _effective_split = _user_split
+                    if _user_split is None:
+                        try:
+                            from huggingface_hub import hf_hub_download as _hf_hub_dl
+
+                            _md_path = _hf_hub_dl(
+                                repo_id=repo_or_path,
+                                repo_type="dataset",
+                                revision=rev,
+                                filename="metadata.json",
+                            )
+                            _md_early = json.loads(Path(_md_path).read_text())
+                            if "splits" in _md_early:
+                                _ds_default = _md_early.get("default_split")
+                                if (
+                                    isinstance(_ds_default, str)
+                                    and _ds_default in _md_early["splits"]
+                                ):
+                                    _effective_split = _ds_default
+                                    if not json_output:
+                                        say.ok(
+                                            f"Using default split "
+                                            f"{_ds_default!r} (from "
+                                            f"metadata.default_split)",
+                                            console=_console,
+                                        )
+                        except Exception:  # noqa: BLE001 — best-effort optimisation
+                            # If we can't fetch metadata.json early (network
+                            # blip, gated repo, etc.) we fall through with
+                            # _effective_split = None and let preflight +
+                            # load handle the error path normally.
+                            pass
+
                     preflight = hf_preflight(
-                        repo_or_path, revision=rev, split=getattr(args, "split", None)
+                        repo_or_path,
+                        revision=rev,
+                        split=_effective_split,
                     )
 
                     if _streaming:
@@ -2190,7 +2247,7 @@ def _main_participant(argv: "list[str]") -> int:
                         ds = _wb_load_dataset(
                             repo_or_path,
                             revision=rev,
-                            split=getattr(args, "split", None),
+                            split=_effective_split,
                             streaming=_streaming,
                         )
                     _elapsed = _time.perf_counter() - _t0
