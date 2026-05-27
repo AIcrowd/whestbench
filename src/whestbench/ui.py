@@ -47,3 +47,11 @@ def format_duration(seconds: float) -> str:
         return f"{minutes}m {sec}s"
     hours, minutes = divmod(minutes, 60)
     return f"{hours}h {minutes}m {sec}s"
+
+
+def format_throughput(n_bytes: int, seconds: float) -> str:
+    """Bytes per second, formatted via ``format_bytes``. Zero/negative time → ``— /s``."""
+    if seconds <= 0:
+        return "— /s"
+    bps = int(n_bytes / seconds)
+    return f"{format_bytes(bps)}/s"

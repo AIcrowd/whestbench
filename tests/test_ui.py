@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from whestbench.ui import format_bytes, format_duration
+from whestbench.ui import format_bytes, format_duration, format_throughput
 
 
 @pytest.mark.parametrize(
@@ -55,3 +55,20 @@ def test_format_duration(seconds: float, expected: str) -> None:
 def test_format_duration_negative_raises() -> None:
     with pytest.raises(ValueError):
         format_duration(-0.1)
+
+
+@pytest.mark.parametrize(
+    "n_bytes,seconds,expected",
+    [
+        (2_000_000_000, 30.0, "63.6 MB/s"),
+        (1_048_576, 1.0, "1.0 MB/s"),
+        (512, 1.0, "512 B/s"),
+        (1_073_741_824, 1.0, "1.0 GB/s"),
+    ],
+)
+def test_format_throughput(n_bytes: int, seconds: float, expected: str) -> None:
+    assert format_throughput(n_bytes, seconds) == expected
+
+
+def test_format_throughput_zero_seconds_returns_dash() -> None:
+    assert format_throughput(1024, 0.0) == "— /s"
