@@ -49,6 +49,12 @@ def _make_console() -> tuple[Console, io.StringIO]:
         (1_073_741_824, "1.0 GB"),
         (2_118_949_161, "2.0 GB"),
         (1_099_511_627_776, "1.0 TB"),
+        # Boundary cases — values just under the next unit must roll over,
+        # not render as "1024.0 <prev unit>" (regression test for C1).
+        (1024**2 - 1, "1.0 MB"),
+        (1024**3 - 1, "1.0 GB"),
+        (1024**4 - 1, "1.0 TB"),
+        (1024**5 - 1, "1.0 PB"),
     ],
 )
 def test_format_bytes(n_bytes: int, expected: str) -> None:

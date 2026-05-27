@@ -94,7 +94,9 @@ def format_bytes(n_bytes: int) -> str:
     """Format a byte count as a human-readable string.
 
     Uses 1024-based units (KB = 1024 B, etc.) with one decimal place from KB
-    upward. Below 1024 bytes returns plain bytes.
+    upward. Below 1024 bytes returns plain bytes. Values just under the next
+    unit (e.g. ``1024**2 - 1``) roll over to the next unit rather than
+    rendering as ``"1024.0 KB"``.
     """
     if n_bytes < 0:
         raise ValueError(f"format_bytes requires a non-negative count, got {n_bytes!r}")
@@ -104,7 +106,14 @@ def format_bytes(n_bytes: int) -> str:
     size = float(n_bytes)
     for unit in units:
         size /= 1024.0
-        if size < 1024.0 or unit == units[-1]:
+        # If we're at the last unit, render as-is — there's nothing to roll
+        # over to.
+        if unit == units[-1]:
+            return f"{size:.1f} {unit}"
+        # Use this unit only if size will not render as "1024.0" after .1f
+        # rounding. Otherwise continue to the next unit so values just shy of
+        # the next boundary (e.g. 1024**2 - 1) don't render as "1024.0 KB".
+        if round(size, 1) < 1024.0:
             return f"{size:.1f} {unit}"
     raise AssertionError("unreachable")
 
