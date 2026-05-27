@@ -2333,14 +2333,54 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "package":
-            artifact_path = package_submission(
-                args.estimator,
-                class_name=args.class_name,
-                requirements_path=args.requirements,
-                submission_yaml_path=args.submission_metadata,
-                approach_md_path=args.approach,
-                output_path=args.output,
+            import time as _time
+
+            from .ui import format_bytes, format_duration, progress_bytes, say
+
+            # The bytes flowing into the bar are gzipped output bytes; counting
+            # uncompressed input bytes as the bar's target gives a roughly
+            # honest progress signal (compressed size is typically ≤ input
+            # size + per-file tar headers + manifest blob). A small overshoot
+            # is benign — the bar still conveys real-time motion. We add a
+            # ~1 KB pad for the manifest + tar overhead so the bar reaches
+            # close to 100% rather than sitting at "1.5x" by the time the
+            # last file is added.
+            _estimator = Path(args.estimator)
+            _input_paths: list[Path] = [_estimator] if _estimator.is_file() else []
+            for _opt in (args.requirements, args.submission_metadata, args.approach):
+                if _opt is None:
+                    continue
+                _p = Path(_opt)
+                if _p.is_file():
+                    _input_paths.append(_p)
+            _total = sum(p.stat().st_size for p in _input_paths) + 1024
+
+            say.intent(
+                f"Packaging {args.estimator} → {args.output or 'submission-*.tar.gz'}",
+                quiet=json_output,
             )
+            _t0 = _time.perf_counter()
+            with progress_bytes(total=_total, label="Packaging", quiet=json_output) as _bar:
+                artifact_path = package_submission(
+                    args.estimator,
+                    class_name=args.class_name,
+                    requirements_path=args.requirements,
+                    submission_yaml_path=args.submission_metadata,
+                    approach_md_path=args.approach,
+                    output_path=args.output,
+                    progress=lambda n: _bar.advance(n),
+                )
+            _elapsed = _time.perf_counter() - _t0
+            try:
+                _size = artifact_path.stat().st_size
+                _size_label = f" ({format_bytes(_size)})"
+            except OSError:
+                _size_label = ""
+            say.ok(
+                f"Wrote {artifact_path} in {format_duration(_elapsed)}{_size_label}",
+                quiet=json_output,
+            )
+
             payload = {"ok": True, "artifact_path": str(artifact_path)}
             if json_output:
                 print(json.dumps(payload, indent=2))
