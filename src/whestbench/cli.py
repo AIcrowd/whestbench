@@ -1234,7 +1234,10 @@ def _dispatch_dataset_command(args) -> int:
         sub = canonical
 
     if sub == "bake":
+        import time as _time
+
         from .dataset import create_dataset as _create_dataset
+        from .ui import format_bytes, format_duration, progress_count, say
 
         # Legacy --seed rejection
         if args.seed is not None:
@@ -1271,38 +1274,78 @@ def _dispatch_dataset_command(args) -> int:
             slice_spec=args.slice_spec,
             n_mlps=args.n_mlps,
         )
-        try:
-            if args.torch:
-                from .dataset_torch import create_dataset_torch
 
-                create_dataset_torch(
-                    n_mlps=args.n_mlps,
-                    n_samples=args.n_samples,
-                    width=args.width,
-                    depth=args.depth,
-                    mlp_seeds=mlp_seeds,
-                    output_path=args.output,
-                    split=args.split,
-                    mlp_range=mlp_range,
-                    device=args.device,
-                    mlps_per_batch=args.mlps_per_batch,
-                    chunk_size=args.chunk_size,
-                )
-            else:
-                _create_dataset(
-                    n_mlps=args.n_mlps,
-                    n_samples=args.n_samples,
-                    width=args.width,
-                    depth=args.depth,
-                    mlp_seeds=mlp_seeds,
-                    output_path=args.output,
-                    split=args.split,
-                    mlp_range=mlp_range,
-                )
-        except ValueError as exc:
-            print(f"error: {exc}", file=sys.stderr)
-            return 1
-        print(f"Baked dataset to {args.output}")
+        say.intent(
+            f"Baking {args.n_mlps} MLPs (width={args.width}, depth={args.depth}) → {args.output}"
+        )
+        _t0 = _time.perf_counter()
+
+        # Phase callback drives one progress_count bar per phase. Each phase's
+        # context manager is opened on its first event and closed in `finally`
+        # below so a mid-bake exception still tears the bars down cleanly.
+        _bake_phase_labels = {
+            "generating": "Generating MLPs",
+            "sampling": "Sampling ground truth",
+        }
+        _bars: Dict[str, tuple[Any, Any]] = {}
+
+        def _on_bake_progress(event: Dict[str, Any]) -> None:
+            phase = event.get("phase")
+            if not isinstance(phase, str):
+                return
+            total = int(event.get("total", 0) or 0)
+            completed = int(event.get("completed", 0) or 0)
+            if phase not in _bars:
+                label = _bake_phase_labels.get(phase, phase)
+                ctx = progress_count(total=total, label=label)
+                handle = ctx.__enter__()
+                _bars[phase] = (ctx, handle)
+            _, handle = _bars[phase]
+            handle.update(completed=completed)
+
+        try:
+            try:
+                if args.torch:
+                    from .dataset_torch import create_dataset_torch
+
+                    create_dataset_torch(
+                        n_mlps=args.n_mlps,
+                        n_samples=args.n_samples,
+                        width=args.width,
+                        depth=args.depth,
+                        mlp_seeds=mlp_seeds,
+                        output_path=args.output,
+                        split=args.split,
+                        mlp_range=mlp_range,
+                        device=args.device,
+                        mlps_per_batch=args.mlps_per_batch,
+                        chunk_size=args.chunk_size,
+                        progress=_on_bake_progress,
+                    )
+                else:
+                    _create_dataset(
+                        n_mlps=args.n_mlps,
+                        n_samples=args.n_samples,
+                        width=args.width,
+                        depth=args.depth,
+                        mlp_seeds=mlp_seeds,
+                        output_path=args.output,
+                        split=args.split,
+                        mlp_range=mlp_range,
+                        progress=_on_bake_progress,
+                    )
+            except ValueError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 1
+        finally:
+            for _phase, (_ctx, _handle) in _bars.items():
+                _ctx.__exit__(None, None, None)
+
+        _elapsed = _time.perf_counter() - _t0
+        _out = Path(args.output)
+        _size = sum(p.stat().st_size for p in _out.rglob("*") if p.is_file() and not p.is_symlink())
+        say.ok(f"Wrote {_out} in {format_duration(_elapsed)} ({format_bytes(_size)})")
+        say.hint(f"To publish: `whest dataset upload {_out} --repo aicrowd/<name> --tag v1`")
         return 0
 
     if sub == "upload":
