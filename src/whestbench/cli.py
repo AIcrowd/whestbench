@@ -844,7 +844,14 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     validate_parser.add_argument("--debug", action="store_true")
     add_output_format_arguments(validate_parser)
 
-    run_parser = subparsers.add_parser("run", help="Run local evaluation for an estimator.")
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Run local evaluation for an estimator.",
+        epilog=(
+            "Dataset usage: pass --dataset <local-dir> or hf://owner/repo[@rev]. "
+            "See docs/guides/datasets.md for the full lifecycle."
+        ),
+    )
     run_parser.add_argument(
         "--estimator",
         required=True,
@@ -981,7 +988,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     dataset_sub = dataset_parser.add_subparsers(dest="dataset_cmd", required=True)
 
-    bake_p = dataset_sub.add_parser("bake", help="Bake a new dataset to a directory.")
+    bake_p = dataset_sub.add_parser(
+        "bake",
+        help="Bake a new dataset to a directory.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
+    )
     bake_p.add_argument(
         "--n-mlps", type=int, required=True, help="Total number of MLPs in the logical dataset."
     )
@@ -1031,6 +1042,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "upload",
         aliases=["push"],
         help="Upload a baked dataset to HF Hub.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
     )
     upload_p.add_argument("local_dir")
     upload_p.add_argument("--repo", required=True, help="HF repo id (org/name).")
@@ -1043,6 +1055,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "download",
         aliases=["pull"],
         help="Download a dataset from HF Hub.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
     )
     download_p.add_argument("repo_id")
     download_p.add_argument("--revision", default=None)
@@ -1055,7 +1068,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Optional: download only the specified split's parquet (and metadata/README).",
     )
 
-    merge_p = dataset_sub.add_parser("merge", help="Merge partial bakes into one dataset.")
+    merge_p = dataset_sub.add_parser(
+        "merge",
+        help="Merge partial bakes into one dataset.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
+    )
     merge_p.add_argument("inputs", nargs="+", help="Partial dataset directories.")
     merge_p.add_argument("--output", required=True)
 
@@ -1063,6 +1080,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "info",
         aliases=["inspect"],
         help="Print dataset metadata.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
     )
     info_p.add_argument("source", help="Local dir or HF repo id.")
     info_p.add_argument("--revision", default=None)
@@ -1070,6 +1088,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     combine_p = dataset_sub.add_parser(
         "combine-splits",
         help="Combine N single-split datasets into a multi-split dataset directory.",
+        epilog="See docs/guides/datasets.md for a complete walk-through.",
     )
     combine_p.add_argument(
         "input_dirs",
