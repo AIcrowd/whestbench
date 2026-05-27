@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from whestbench.ui import format_bytes
+from whestbench.ui import format_bytes, format_duration
 
 
 @pytest.mark.parametrize(
@@ -29,3 +29,29 @@ def test_format_bytes(n_bytes: int, expected: str) -> None:
 def test_format_bytes_negative_raises() -> None:
     with pytest.raises(ValueError):
         format_bytes(-1)
+
+
+@pytest.mark.parametrize(
+    "seconds,expected",
+    [
+        (0.0, "0ms"),
+        (0.05, "50ms"),
+        (0.999, "999ms"),
+        (1.0, "1.0s"),
+        (2.137, "2.1s"),
+        (31.7, "31.7s"),
+        (59.9, "59.9s"),
+        (60.0, "1m 0s"),
+        (125.0, "2m 5s"),
+        (3599.0, "59m 59s"),
+        (3600.0, "1h 0m 0s"),
+        (7325.0, "2h 2m 5s"),
+    ],
+)
+def test_format_duration(seconds: float, expected: str) -> None:
+    assert format_duration(seconds) == expected
+
+
+def test_format_duration_negative_raises() -> None:
+    with pytest.raises(ValueError):
+        format_duration(-0.1)

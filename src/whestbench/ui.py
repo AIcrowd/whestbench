@@ -26,3 +26,24 @@ def format_bytes(n_bytes: int) -> str:
         if size < 1024.0 or unit == units[-1]:
             return f"{size:.1f} {unit}"
     raise AssertionError("unreachable")
+
+
+def format_duration(seconds: float) -> str:
+    """Format a duration in seconds as a compact human-readable string.
+
+    - <1s: "Nms" (integer milliseconds)
+    - <60s: "X.Ys" (one decimal)
+    - <1h:  "Xm Ys"
+    - >=1h: "Xh Ym Zs"
+    """
+    if seconds < 0:
+        raise ValueError(f"format_duration requires non-negative seconds, got {seconds!r}")
+    if seconds < 1.0:
+        return f"{int(round(seconds * 1000))}ms"
+    if seconds < 60.0:
+        return f"{seconds:.1f}s"
+    minutes, sec = divmod(int(seconds), 60)
+    if minutes < 60:
+        return f"{minutes}m {sec}s"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours}h {minutes}m {sec}s"
