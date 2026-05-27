@@ -7,7 +7,13 @@ import io
 import pytest
 from rich.console import Console
 
-from whestbench.ui import format_bytes, format_duration, format_throughput, say
+from whestbench.ui import (
+    format_bytes,
+    format_duration,
+    format_throughput,
+    progress_bytes,
+    say,
+)
 
 
 def _make_console() -> tuple[Console, io.StringIO]:
@@ -158,3 +164,53 @@ def test_say_intent_emits_even_when_hf_progress_disabled(
     console, buf = _make_console()
     say.intent("hello", console=console)
     assert "hello" in buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# progress_bytes
+
+
+def test_progress_bytes_advance_updates_bar() -> None:
+    console, buf = _make_console()
+    with progress_bytes(total=1000, label="dl", console=console) as p:
+        p.advance(500)
+        p.advance(500)
+    out = buf.getvalue()
+    # Label should appear in the output and the bar should have rendered.
+    assert "dl" in out
+
+
+def test_progress_bytes_update_completed_sets_absolute() -> None:
+    console, buf = _make_console()
+    with progress_bytes(total=2000, label="dl", console=console) as p:
+        p.update(completed=1024)
+    out = buf.getvalue()
+    assert "dl" in out
+
+
+def test_progress_bytes_quiet_emits_nothing() -> None:
+    console, buf = _make_console()
+    with progress_bytes(total=1000, label="dl", console=console, quiet=True) as p:
+        p.advance(100)
+        p.update(completed=500)
+    assert buf.getvalue() == ""
+
+
+def test_progress_bytes_disabled_env_emits_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    console, buf = _make_console()
+    with progress_bytes(total=1000, label="dl", console=console) as p:
+        p.advance(500)
+    assert buf.getvalue() == ""
+
+
+@pytest.mark.parametrize("value", ["0", "false", "False", ""])
+def test_progress_bytes_disabled_env_falsy_values_still_emit(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("HF_HUB_DISABLE_PROGRESS_BARS", value)
+    console, buf = _make_console()
+    with progress_bytes(total=1000, label="dl", console=console) as p:
+        p.advance(500)
+    # The label should appear — env is treated as not-set / falsy.
+    assert "dl" in buf.getvalue()

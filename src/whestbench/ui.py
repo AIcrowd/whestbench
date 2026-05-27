@@ -8,9 +8,34 @@ All helpers in this module respect:
 
 from __future__ import annotations
 
-from typing import Optional
+import os
+from contextlib import contextmanager
+from typing import Iterator, Optional, Protocol
 
 from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    SpinnerColumn,
+    TaskID,
+    TextColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+)
+
+
+class ProgressHandle(Protocol):
+    """Public surface for a progress bar handle.
+
+    Both the real Rich-backed handle and the disabled no-op handle satisfy
+    this protocol, so callers can write code that runs identically in either
+    mode.
+    """
+
+    def advance(self, n: int) -> None: ...
+
+    def update(self, *, completed: int) -> None: ...
 
 
 def _get_console(console: Optional[Console]) -> Console:
@@ -18,6 +43,49 @@ def _get_console(console: Optional[Console]) -> Console:
     if console is not None:
         return console
     return Console()
+
+
+def _progress_disabled(quiet: bool) -> bool:
+    """Return True when progress bars should be suppressed.
+
+    Suppressed if ``quiet`` is True, or if ``HF_HUB_DISABLE_PROGRESS_BARS`` is
+    set to a truthy value. Falsy values (``""``, ``"0"``, ``"false"``,
+    ``"False"``) are treated as not-set.
+    """
+    if quiet:
+        return True
+    raw = os.environ.get("HF_HUB_DISABLE_PROGRESS_BARS")
+    if raw is None:
+        return False
+    return raw.strip() not in ("", "0", "false", "False")
+
+
+class _NullHandle:
+    """No-op progress handle returned when bars are disabled."""
+
+    def advance(self, n: int) -> None:  # noqa: ARG002 - signature matches real handle
+        return None
+
+    def update(self, *, completed: int) -> None:  # noqa: ARG002
+        return None
+
+
+class _ProgressHandle:
+    """Thin wrapper around a Rich ``Progress`` task with the public API.
+
+    Exposes ``advance(n)`` and ``update(*, completed=)`` — the only two
+    operations callers need for the bytes/count bars.
+    """
+
+    def __init__(self, progress: Progress, task_id: TaskID) -> None:
+        self._progress = progress
+        self._task_id = task_id
+
+    def advance(self, n: int) -> None:
+        self._progress.update(self._task_id, advance=n)
+
+    def update(self, *, completed: int) -> None:
+        self._progress.update(self._task_id, completed=completed)
 
 
 def format_bytes(n_bytes: int) -> str:
@@ -109,3 +177,35 @@ class _Say:
 
 
 say = _Say()
+
+
+@contextmanager
+def progress_bytes(
+    *,
+    total: int,
+    label: str,
+    console: Optional[Console] = None,
+    quiet: bool = False,
+) -> Iterator[ProgressHandle]:
+    """Yield a handle for a byte-denominated Rich progress bar.
+
+    The handle exposes ``advance(n)`` and ``update(*, completed=)``. The bar is
+    suppressed when ``quiet`` is True or when ``HF_HUB_DISABLE_PROGRESS_BARS``
+    is set to a truthy value — in that case, a no-op handle is yielded.
+    """
+    if _progress_disabled(quiet):
+        yield _NullHandle()
+        return
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[bold]{task.description}"),
+        BarColumn(),
+        DownloadColumn(),
+        TransferSpeedColumn(),
+        TimeRemainingColumn(),
+        console=_get_console(console),
+        transient=False,
+    )
+    with progress:
+        task_id = progress.add_task(label, total=total)
+        yield _ProgressHandle(progress, task_id)
