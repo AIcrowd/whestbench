@@ -143,14 +143,11 @@ def test_library_docs_do_not_reference_sanitized_internal_paths():
             assert token not in text, "{}: {}".format(path, token)
 
 
-def test_legacy_guides_directory_is_removed():
-    repo_root = Path(__file__).resolve().parents[1]
-    assert not (repo_root / "docs/guides").exists()
-
-
 def test_participant_taxonomy_removed():
     repo_root = Path(__file__).resolve().parents[1]
-    # docs/how-to is intentionally allowed for schema-3.0 / HF how-to guides
+    # docs/how-to is intentionally allowed for schema-3.0 / HF how-to guides.
+    # docs/guides is intentionally allowed for library-facing walkthroughs
+    # (e.g. the datasets guide).
     for gone in (
         "docs/getting-started",
         "docs/concepts",
