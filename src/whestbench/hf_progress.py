@@ -2,11 +2,23 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, List, Optional, Tuple
+from typing import Any, Iterator, List, Literal, Optional, Tuple
 
+import huggingface_hub.utils
 import tqdm as _tqdm_mod
 from huggingface_hub import HfApi, try_to_load_from_cache
+from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+)
 
 # ---------------------------------------------------------------------------
 # Module-level mutable state
@@ -63,7 +75,7 @@ def hf_preflight(
         return None
 
     relevant: list[tuple[str, int]] = []
-    for sib in info.siblings:
+    for sib in info.siblings or ():
         name = sib.rfilename
         size = int(getattr(sib, "size", 0) or 0)
         keep = False
@@ -141,3 +153,76 @@ class RichHFTqdm(_tqdm_mod.tqdm):
                 prog.remove_task(self._rich_task_id)
             finally:
                 self._rich_task_id = None
+
+
+DownloadMode = Literal["cache_hit", "materialize", "streaming"]
+
+
+@contextmanager
+def hf_download(
+    console: Console,
+    *,
+    title: str,
+    preflight: "Optional[HFPreflight]",  # noqa: ARG001 — reserved for future label tweaks
+    mode: DownloadMode,
+    quiet: bool = False,
+) -> Iterator[None]:
+    """Wrap an HF download call with mode-appropriate progress UI.
+
+    Modes:
+        cache_hit   — Rich Status spinner only. Does NOT monkey-patch tqdm.
+        materialize — Full bytes/speed/ETA Progress bar; monkey-patches
+                      ``huggingface_hub.utils.tqdm`` to ``RichHFTqdm`` so HF's
+                      internal progress events route into the bar.
+        streaming   — Lighter Progress (spinner + speed, no total/bar);
+                      same monkey-patch.
+
+    The patch is restored in a ``try/finally`` that survives exceptions raised
+    inside the context body.
+    """
+    global _ACTIVE_RICH_PROGRESS
+
+    if quiet:
+        yield
+        return
+
+    if mode == "cache_hit":
+        # Cache-hit path: a short spinner is all we want. Crucially this branch
+        # does NOT touch ``_ACTIVE_RICH_PROGRESS`` or ``huggingface_hub.utils.tqdm``,
+        # so nested HF calls fall back to vanilla tqdm.
+        with console.status(f"Loading {title} from cache…"):
+            yield
+        return
+
+    # materialize or streaming
+    if mode == "materialize":
+        columns: tuple[Any, ...] = (
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            DownloadColumn(),
+            TransferSpeedColumn(),
+            TimeRemainingColumn(),
+        )
+    else:  # streaming — no total known up-front, so drop Bar/Download/ETA columns.
+        columns = (
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            TransferSpeedColumn(),
+        )
+
+    progress = Progress(*columns, console=console, transient=False)
+    # ``huggingface_hub.utils.tqdm`` is the live class HF Hub instantiates for
+    # per-file progress bars; we swap it for ``RichHFTqdm`` for the duration of
+    # this context. Pyright flags it as a private import because it's not in
+    # ``__all__``, but it's documented HF internals (see hf_hub.utils.tqdm).
+    original_tqdm = huggingface_hub.utils.tqdm  # pyright: ignore[reportPrivateImportUsage]
+
+    with progress:
+        _ACTIVE_RICH_PROGRESS = progress
+        huggingface_hub.utils.tqdm = RichHFTqdm  # pyright: ignore[reportPrivateImportUsage]
+        try:
+            yield
+        finally:
+            huggingface_hub.utils.tqdm = original_tqdm  # pyright: ignore[reportPrivateImportUsage]
+            _ACTIVE_RICH_PROGRESS = None

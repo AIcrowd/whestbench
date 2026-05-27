@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import io
 from dataclasses import is_dataclass
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
+import huggingface_hub.utils
 import pytest
+from rich.console import Console as RichConsole
 
 from whestbench.hf_progress import (
     _ACTIVE_RICH_PROGRESS,  # noqa: F401 — imported to assert the symbol exists
     HFPreflight,
     RichHFTqdm,
+    hf_download,
     hf_preflight,
 )
 
@@ -37,11 +41,12 @@ def test_hfpreflight_is_frozen_dataclass() -> None:
     assert len(p.files) == 3
 
 
-def _fake_dataset_info(siblings: list[dict]) -> MagicMock:
-    """Build a mock that HfApi.dataset_info returns.
+def _fake_dataset_info(siblings: list[dict]) -> SimpleNamespace:
+    """Build a stub that ``HfApi.dataset_info`` returns.
 
     Each sibling is a dict with rfilename + size. We expose them as attributes
-    via SimpleNamespace so they behave like the real ``RepoSibling`` objects.
+    via ``SimpleNamespace`` so they behave like the real ``RepoSibling`` objects
+    without us having to pin to HF Hub's actual class shape.
     """
     return SimpleNamespace(
         sha="198ab8a15ad60cb858feb22c59b3b53bb6ae98ec",
@@ -142,3 +147,66 @@ def test_richhftqdm_no_active_progress_is_noop(monkeypatch: pytest.MonkeyPatch) 
     bar.close()
     # No exception.
     assert True
+
+
+def _live_hf_tqdm() -> object:
+    """Read the current ``huggingface_hub.utils.tqdm`` class via getattr.
+
+    The class is not in ``__all__``, so direct attribute access trips Pyright's
+    ``reportPrivateImportUsage``. Going through ``getattr`` keeps the type
+    checker quiet without sprinkling per-line ignores across the test file.
+    """
+    return getattr(huggingface_hub.utils, "tqdm")
+
+
+def test_hf_download_cache_hit_mode_does_not_install_richhftqdm() -> None:
+    buf = io.StringIO()
+    con = RichConsole(file=buf, force_terminal=True, color_system=None, width=120)
+    original = _live_hf_tqdm()
+    pf = HFPreflight(
+        repo_id="aicrowd/foo",
+        revision="v1-warmup",
+        file_count=1,
+        total_bytes=100,
+        is_cached=True,
+        files=[("metadata.json", 100)],
+    )
+    with hf_download(con, title="hf://aicrowd/foo@v1-warmup", preflight=pf, mode="cache_hit"):
+        # In cache_hit mode we DO NOT monkey-patch the tqdm class.
+        assert _live_hf_tqdm() is original
+    assert _live_hf_tqdm() is original  # restored on exit too
+
+
+def test_hf_download_materialize_mode_swaps_tqdm() -> None:
+    buf = io.StringIO()
+    con = RichConsole(file=buf, force_terminal=True, color_system=None, width=120)
+    original = _live_hf_tqdm()
+    pf = HFPreflight(
+        repo_id="aicrowd/foo",
+        revision="v1-warmup",
+        file_count=1,
+        total_bytes=2_000_000_000,
+        is_cached=False,
+        files=[("data/public-00000-of-00001.parquet", 2_000_000_000)],
+    )
+    with hf_download(con, title="hf://aicrowd/foo@v1-warmup", preflight=pf, mode="materialize"):
+        assert _live_hf_tqdm() is not original
+    # Restored on exit.
+    assert _live_hf_tqdm() is original
+
+
+def test_hf_download_restores_tqdm_on_exception() -> None:
+    con = RichConsole(file=io.StringIO(), force_terminal=True, color_system=None, width=120)
+    original = _live_hf_tqdm()
+    pf = HFPreflight(
+        repo_id="aicrowd/foo",
+        revision=None,
+        file_count=1,
+        total_bytes=2_000_000_000,
+        is_cached=False,
+        files=[("data/x.parquet", 2_000_000_000)],
+    )
+    with pytest.raises(RuntimeError):
+        with hf_download(con, title="hf://x", preflight=pf, mode="materialize"):
+            raise RuntimeError("boom")
+    assert _live_hf_tqdm() is original
