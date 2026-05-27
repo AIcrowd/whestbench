@@ -14,6 +14,7 @@ from whestbench.ui import (
     progress_bytes,
     progress_count,
     say,
+    status,
 )
 
 
@@ -241,4 +242,29 @@ def test_progress_count_disabled_env_emits_nothing(monkeypatch: pytest.MonkeyPat
     console, buf = _make_console()
     with progress_count(total=100, label="Sampling", console=console) as p:
         p.advance(10)
+    assert buf.getvalue() == ""
+
+
+# ---------------------------------------------------------------------------
+# status spinner
+
+
+def test_status_context_manager_does_not_raise() -> None:
+    console, _buf = _make_console()
+    with status("Loading from cache", console=console):
+        pass
+
+
+def test_status_quiet_emits_nothing() -> None:
+    console, buf = _make_console()
+    with status("Loading from cache", console=console, quiet=True):
+        pass
+    assert buf.getvalue() == ""
+
+
+def test_status_disabled_env_emits_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    console, buf = _make_console()
+    with status("Loading from cache", console=console):
+        pass
     assert buf.getvalue() == ""

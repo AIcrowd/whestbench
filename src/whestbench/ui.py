@@ -214,6 +214,26 @@ def progress_bytes(
 
 
 @contextmanager
+def status(
+    label: str,
+    *,
+    console: Optional[Console] = None,
+    quiet: bool = False,
+) -> Iterator[None]:
+    """Yield while showing a Rich spinner with ``label``.
+
+    Useful for unknown-duration steps (e.g. "Loading from cache",
+    "Resolving revision"). No bar is shown when ``quiet`` is True or when
+    ``HF_HUB_DISABLE_PROGRESS_BARS`` is set to a truthy value.
+    """
+    if _progress_disabled(quiet):
+        yield
+        return
+    with _get_console(console).status(label):
+        yield
+
+
+@contextmanager
 def progress_count(
     *,
     total: int,
