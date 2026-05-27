@@ -232,3 +232,8 @@ def test_cli_run_hf_cache_miss_emits_download_intent(
         f"missing download intent; got: {joined!r}"
     )
     assert "2.0 GB" in joined, f"missing byte total; got: {joined!r}"
+    # Lock the cache-miss ✓ format: a single space between "Downloaded" and
+    # the byte total — no stray comma (regression guard).
+    assert "Downloaded 2.0 GB" in joined, (
+        f"cache-miss ok line should read 'Downloaded 2.0 GB ...'; got: {joined!r}"
+    )

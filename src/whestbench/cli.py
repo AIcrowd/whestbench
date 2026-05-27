@@ -1910,7 +1910,7 @@ def _main_participant(argv: "list[str]") -> int:
                         )
                     else:
                         _bytes_label = (
-                            f", {format_bytes(preflight.total_bytes)}" if preflight else ""
+                            f" {format_bytes(preflight.total_bytes)}" if preflight else ""
                         )
                         say.ok(
                             f"Downloaded{_bytes_label} and loaded {_n_str} MLPs in {format_duration(_elapsed)}",
