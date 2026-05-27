@@ -47,19 +47,24 @@ def _get_console(console: Optional[Console]) -> Console:
     return Console()
 
 
+_HF_TRUTHY_VALUES = frozenset({"1", "on", "true", "yes"})
+
+
 def _progress_disabled(quiet: bool) -> bool:
     """Return True when progress bars should be suppressed.
 
     Suppressed if ``quiet`` is True, or if ``HF_HUB_DISABLE_PROGRESS_BARS`` is
-    set to a truthy value. Falsy values (``""``, ``"0"``, ``"false"``,
-    ``"False"``) are treated as not-set.
+    set to a truthy value. This follows HF Hub's own env-var convention: only
+    ``{"1", "ON", "TRUE", "YES"}`` (case-insensitive) count as truthy. Any
+    other value — including ``""``, ``"0"``, ``"false"``, ``"no"``, ``"off"``,
+    or unrecognised strings — leaves progress enabled.
     """
     if quiet:
         return True
     raw = os.environ.get("HF_HUB_DISABLE_PROGRESS_BARS")
     if raw is None:
         return False
-    return raw.strip() not in ("", "0", "false", "False")
+    return raw.strip().lower() in _HF_TRUTHY_VALUES
 
 
 class _NullHandle:

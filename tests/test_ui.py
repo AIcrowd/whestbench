@@ -204,18 +204,27 @@ def test_progress_bytes_quiet_emits_nothing() -> None:
     assert buf.getvalue() == ""
 
 
-def test_progress_bytes_disabled_env_emits_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+@pytest.mark.parametrize("value", ["1", "ON", "true", "YES", "On", "TRUE", "yes"])
+def test_progress_bytes_disabled_env_truthy_values_emit_nothing(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    # HF Hub convention: only {"1","ON","TRUE","YES"} (case-insensitive) are
+    # truthy; whestbench's progress helpers follow the same rule.
+    monkeypatch.setenv("HF_HUB_DISABLE_PROGRESS_BARS", value)
     console, buf = _make_console()
     with progress_bytes(total=1000, label="dl", console=console) as p:
         p.advance(500)
     assert buf.getvalue() == ""
 
 
-@pytest.mark.parametrize("value", ["0", "false", "False", ""])
-def test_progress_bytes_disabled_env_falsy_values_still_emit(
+@pytest.mark.parametrize(
+    "value", ["0", "false", "False", "", "no", "off", "FALSE", "NO", "Off", "anything-else"]
+)
+def test_progress_bytes_disabled_env_non_truthy_values_still_emit(
     monkeypatch: pytest.MonkeyPatch, value: str
 ) -> None:
+    # Anything outside the HF-truthy allow-list keeps progress on — including
+    # "no", "off", "false", empty string, and unrecognised values.
     monkeypatch.setenv("HF_HUB_DISABLE_PROGRESS_BARS", value)
     console, buf = _make_console()
     with progress_bytes(total=1000, label="dl", console=console) as p:
