@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import platform
 import shutil
 import subprocess
 import tarfile
@@ -10,6 +11,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Dict
 
+import numpy as np
 import pytest
 
 from whestbench.packaging import package_submission
@@ -67,6 +69,19 @@ def test_manifest_records_resolved_entrypoint_and_sha256_hashes(tmp_path: Path) 
     estimator_entry = next(file for file in files if file["name"] == "estimator.py")
     expected_hash = hashlib.sha256(estimator.read_bytes()).hexdigest()
     assert estimator_entry["sha256"] == expected_hash
+
+
+def test_manifest_records_local_tool_and_runtime_versions(tmp_path: Path) -> None:
+    from importlib import metadata as importlib_metadata
+
+    estimator = _write_estimator_module(tmp_path)
+    artifact = package_submission(estimator, output_path=tmp_path / "submission.tar.gz")
+    manifest = _read_tar_json(artifact, "manifest.json")
+
+    assert manifest["whestbench_version"] == importlib_metadata.version("whestbench")
+    assert manifest["flopscope_version"] == importlib_metadata.version("flopscope")
+    assert manifest["python_version"] == platform.python_version()
+    assert manifest["numpy_version"] == np.__version__
 
 
 def test_optional_submission_yaml_and_approach_md_are_included_when_present(tmp_path: Path) -> None:

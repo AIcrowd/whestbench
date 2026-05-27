@@ -8,10 +8,20 @@ import platform
 import tarfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from importlib import metadata as importlib_metadata
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import numpy as np
+
 from .loader import load_estimator_from_path
+
+
+def _installed_version(distribution: str) -> str:
+    try:
+        return importlib_metadata.version(distribution)
+    except importlib_metadata.PackageNotFoundError:
+        return "unknown"
 
 
 @dataclass(frozen=True)
@@ -61,6 +71,10 @@ def build_manifest(
         "files": manifest_files,
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "packager_version": packager_version,
+        "whestbench_version": _installed_version("whestbench"),
+        "flopscope_version": _installed_version("flopscope"),
+        "python_version": platform.python_version(),
+        "numpy_version": np.__version__,
     }
 
 
