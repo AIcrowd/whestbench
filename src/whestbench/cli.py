@@ -1927,7 +1927,14 @@ def _main_participant(argv: "list[str]") -> int:
                     )
                     return 1
                 ds_meta = _wb_metadata(ds)
-                ds_n_mlps = len(ds)
+                from datasets import IterableDataset as _IterableDataset
+
+                if isinstance(ds, _IterableDataset):
+                    ds_n_mlps = int(ds_meta.get("n_mlps") or 0)
+                    if ds_n_mlps <= 0:
+                        raise SystemExit("error: streaming dataset has no n_mlps in metadata.")
+                else:
+                    ds_n_mlps = len(ds)
 
                 if user_n_mlps is None:
                     n_mlps = ds_n_mlps
