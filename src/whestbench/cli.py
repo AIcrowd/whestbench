@@ -1861,6 +1861,14 @@ def _main_participant(argv: "list[str]") -> int:
                 repo_or_path, rev, _is_local = _resolve_dataset_arg(
                     dataset_path, revision=getattr(args, "revision", None)
                 )
+                _streaming = bool(getattr(args, "streaming", False))
+
+                if _is_local and _streaming:
+                    print(
+                        "error: --streaming is only valid with hf:// datasets, not local paths.",
+                        file=sys.stderr,
+                    )
+                    return 1
 
                 if _is_local:
                     ds = _wb_load_dataset(
@@ -1874,10 +1882,29 @@ def _main_participant(argv: "list[str]") -> int:
                         repo_or_path, revision=rev, split=getattr(args, "split", None)
                     )
 
-                    if preflight is not None and preflight.is_cached:
-                        mode: Literal["cache_hit", "materialize", "streaming"] = "cache_hit"
+                    if _streaming:
+                        mode: Literal["cache_hit", "materialize", "streaming"] = "streaming"
+                    elif preflight is not None and preflight.is_cached:
+                        mode = "cache_hit"
                     else:
                         mode = "materialize"
+
+                    if _streaming:
+                        say.warn(
+                            "Streaming from HF\n"
+                            "  • Iteration-only: streaming yields MLPs sequentially "
+                            "without random access.\n"
+                            "  • Not cached locally — every run re-fetches from "
+                            "the network.\n"
+                            "  • Best for quick iteration with `--n-mlps K` where "
+                            "K is small.\n"
+                            "  • To populate the cache, run:\n"
+                            f"      whest dataset download {repo_or_path} "
+                            f"--revision {rev or 'main'}",
+                            console=_console,
+                            quiet=json_output,
+                        )
+                    elif mode == "materialize":
                         if preflight is not None:
                             _files = preflight.file_count
                             _plural = "s" if _files != 1 else ""
@@ -1906,16 +1933,30 @@ def _main_participant(argv: "list[str]") -> int:
                             repo_or_path,
                             revision=rev,
                             split=getattr(args, "split", None),
+                            streaming=_streaming,
                         )
                     _elapsed = _time.perf_counter() - _t0
 
-                    try:
+                    from datasets import (
+                        Dataset as _Dataset,
+                    )
+
+                    if isinstance(ds, _Dataset):
                         _n_str = f"{len(ds):,}"
-                    except TypeError:
+                    else:
+                        # IterableDataset (streaming) or *Dict types — no random
+                        # access / __len__. The *Dict cases are rejected below
+                        # with a clearer error.
                         _n_str = "?"
                     if mode == "cache_hit":
                         say.ok(
                             f"Loaded {_n_str} MLPs in {format_duration(_elapsed)} (from cache)",
+                            console=_console,
+                            quiet=json_output,
+                        )
+                    elif mode == "streaming":
+                        say.ok(
+                            f"Streaming dataset ready in {format_duration(_elapsed)}",
                             console=_console,
                             quiet=json_output,
                         )
@@ -1929,8 +1970,10 @@ def _main_participant(argv: "list[str]") -> int:
                             quiet=json_output,
                         )
                 from datasets import DatasetDict as _DatasetDict
+                from datasets import IterableDataset as _IterableDataset
+                from datasets import IterableDatasetDict as _IterableDatasetDict
 
-                if isinstance(ds, _DatasetDict):
+                if isinstance(ds, (_DatasetDict, _IterableDatasetDict)):
                     print(
                         f"error: dataset {dataset_path!r} is multi-split with splits "
                         f"{sorted(ds.keys())}. Pass --split <name> to select one.",
@@ -1938,7 +1981,6 @@ def _main_participant(argv: "list[str]") -> int:
                     )
                     return 1
                 ds_meta = _wb_metadata(ds)
-                from datasets import IterableDataset as _IterableDataset
 
                 if isinstance(ds, _IterableDataset):
                     ds_n_mlps = int(ds_meta.get("n_mlps") or 0)

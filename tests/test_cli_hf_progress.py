@@ -40,12 +40,19 @@ def _install_run_mocks(
     preflight: "HFPreflight | None",
     *,
     n_mlps: int = 3,
+    load_dataset_return: Any = None,
 ) -> List[str]:
     """Patch everything in cli.py's hf:// run path; capture Rich prints.
 
     Returns the ``captured`` list — every ``Console.print`` call's first
     positional argument is appended as a string before the original print
     runs (so we still see real output if the test fails).
+
+    ``load_dataset_return``: if not ``None``, the mocked ``load_dataset``
+    returns this object instead of the default in-memory ``_FakeDS`` stub.
+    Useful for handing back a real ``IterableDataset`` for streaming-path
+    coverage. The caller is responsible for attaching dataset metadata via
+    ``_dataset_mod._METADATA_BY_DS`` if needed.
     """
     captured: List[str] = []
 
@@ -65,7 +72,7 @@ def _install_run_mocks(
         def __len__(self) -> int:
             return n_mlps
 
-    fake_ds = _FakeDS()
+    fake_ds: Any = load_dataset_return if load_dataset_return is not None else _FakeDS()
 
     def fake_load_dataset(*_args: Any, **_kwargs: Any) -> Any:
         return fake_ds
@@ -302,3 +309,110 @@ def test_cli_run_hf_preflight_unavailable_emits_intent_without_size(
         f"preflight-None ok line should read 'Downloaded and loaded ...'; got: {joined!r}"
     )
     _assert_say_ordering(joined, mode="cache_miss")
+
+
+def test_cli_run_hf_streaming_emits_warning(
+    monkeypatch: pytest.MonkeyPatch, _estimator_file: Path
+) -> None:
+    """--streaming opts into IterableDataset mode and emits the cache trade-off warning."""
+    # Mocked preflight is cold cache — streaming should override it.
+    fake_preflight = HFPreflight(
+        repo_id="aicrowd/foo",
+        revision="v1-warmup",
+        file_count=1,
+        total_bytes=95_000_000,
+        is_cached=False,
+        files=[("data/public-00000-of-00001.parquet", 95_000_000)],
+    )
+
+    # Build a real IterableDataset via Dataset.to_iterable_dataset so cli.py's
+    # `isinstance(ds, IterableDataset)` check fires correctly. The single
+    # placeholder row is never iterated (we mock make_contest_from_dataset).
+    from datasets import Dataset as _RealDataset
+
+    real_iter = _RealDataset.from_list([{"placeholder": 0}]).to_iterable_dataset()
+    # Attach dataset metadata via the public weakref side-channel so cli.py's
+    # `_wb_metadata(ds)` and `ds_n_mlps` resolution both succeed.
+    _dataset_mod._METADATA_BY_DS[real_iter] = {
+        "schema_version": "3.0",
+        "format": "parquet",
+        "backend": "flopscope",
+        "n_mlps": 5,
+        "n_samples": 10,
+        "width": 8,
+        "depth": 2,
+        "seed_protocol": {
+            "name": "whestbench_explicit_per_mlp_seeds",
+            "version": "3.0",
+        },
+    }
+
+    captured = _install_run_mocks(
+        monkeypatch,
+        preflight=fake_preflight,
+        load_dataset_return=real_iter,
+    )
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            str(_estimator_file),
+            "--dataset",
+            "hf://aicrowd/foo@v1-warmup",
+            "--n-mlps",
+            "1",
+            "--streaming",
+            "--format",
+            "plain",
+        ]
+    )
+
+    assert exit_code == 0, f"streaming run unexpectedly failed; got: {exit_code!r}"
+    joined = "\n".join(captured)
+    assert "Streaming from HF" in joined, f"missing streaming banner; got: {joined!r}"
+    assert "Iteration-only" in joined, f"missing iteration-only line in warning; got: {joined!r}"
+    assert "Not cached locally" in joined, (
+        f"missing cache-trade-off line in warning; got: {joined!r}"
+    )
+    # The forward-pointing hint must use the new verb name *and* include the
+    # exact repo + revision the user asked for, so they can copy-paste it.
+    assert "whest dataset download aicrowd/foo --revision v1-warmup" in joined, (
+        f"missing copy-pasteable populate-cache hint; got: {joined!r}"
+    )
+    # Streaming-specific ok line.
+    assert "Streaming dataset ready" in joined, f"missing streaming ok line; got: {joined!r}"
+    # Sanity: the cache-miss intent line must NOT fire (streaming overrides it).
+    assert "Downloading hf://aicrowd/foo@v1-warmup" not in joined, (
+        f"unexpected download intent in streaming mode; got: {joined!r}"
+    )
+
+
+def test_cli_run_streaming_with_local_path_errors(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """--streaming on a local-path dataset fails fast with a clear message."""
+    # Any existing path qualifies as a local dataset arg for _resolve_dataset_arg.
+    local = tmp_path / "fake-eval"
+    local.mkdir()
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "some-est.py",  # never reached: we bail before estimator loading.
+            "--dataset",
+            str(local),
+            "--streaming",
+        ]
+    )
+
+    assert exit_code != 0, "expected non-zero exit when --streaming is used locally"
+    captured = capsys.readouterr()
+    combined = (captured.err + captured.out).lower()
+    assert "streaming" in combined, (
+        f"missing 'streaming' in error output; got err={captured.err!r} out={captured.out!r}"
+    )
+    assert "hf://" in combined, (
+        f"missing 'hf://' guidance in error output; got err={captured.err!r} out={captured.out!r}"
+    )
