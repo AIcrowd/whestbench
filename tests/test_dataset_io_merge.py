@@ -214,3 +214,28 @@ def test_merge_keeps_distinct_gpu_signatures(tmp_path: Path):
     )
     gpus = sorted(fp.get("cuda_device_name") for fp in md["hardware_fingerprints"])
     assert gpus == ["NVIDIA A100-SXM4-80GB", "NVIDIA L40S"]
+
+
+def test_merge_does_not_leak_per_partial_entries_to_global_hf_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Production fleet names partial dirs ``mlp-NNNN``. ``hf_load_dataset(str(d))``
+    uses ``d.name`` as the cache key, so merging N partials leaks N cache entries
+    into ``~/.cache/huggingface/datasets/``. At 1000 partials this is ~2.4 GB of
+    dead cache. ``merge_datasets`` must not touch the global HF cache.
+    """
+    import datasets.config
+
+    from whestbench.dataset_io import merge_datasets
+
+    fake_global = tmp_path / "fake_hf_datasets_cache"
+    fake_global.mkdir()
+    monkeypatch.setenv("HF_DATASETS_CACHE", str(fake_global))
+    monkeypatch.setattr(datasets.config, "HF_DATASETS_CACHE", str(fake_global))
+
+    p0 = _bake_partial(tmp_path, "mlp-0000", mlp_range=(0, 4))
+    p1 = _bake_partial(tmp_path, "mlp-0001", mlp_range=(4, 8))
+    merge_datasets([p0, p1], output_dir=tmp_path / "merged")
+
+    leaked = sorted(p.name for p in fake_global.iterdir() if p.is_dir())
+    assert leaked == [], f"merge_datasets leaked per-partial entries into global HF cache: {leaked}"
