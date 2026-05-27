@@ -874,6 +874,17 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Path to a baked dataset directory, or hf://owner/repo[@revision] for HF Hub.",
     )
     run_parser.add_argument(
+        "--streaming",
+        action="store_true",
+        default=False,
+        help=(
+            "Stream the dataset from HF instead of downloading it. Iteration-only "
+            "(no random access). Data is NOT cached — subsequent runs will re-fetch. "
+            "Useful for small --n-mlps debugging runs. See "
+            "docs/guides/datasets.md#streaming-mode."
+        ),
+    )
+    run_parser.add_argument(
         "--revision",
         default=None,
         help="HF Hub revision (tag or commit SHA) for --dataset.",
