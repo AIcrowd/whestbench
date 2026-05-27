@@ -111,7 +111,14 @@ print(provenance["n_samples"], provenance["created_at_utc"])
 
 Run an estimator end-to-end via the CLI:
 
-{%- if splits and "mini" in splits and "full" in splits %}
+{%- if splits and metadata.default_split %}
+```bash
+whest run \
+    --estimator my_estimator.py \
+    --dataset hf://{{ repo_id }}@{{ revision }}
+# (automatically uses metadata.default_split: "{{ metadata.default_split }}"; pass --split <name> to override)
+```
+{%- elif splits and "mini" in splits and "full" in splits %}
 ```bash
 whest run \
     --estimator my_estimator.py \
