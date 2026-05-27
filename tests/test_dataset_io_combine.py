@@ -372,6 +372,37 @@ def test_write_prepared_arrow_split_rejects_existing_output(tmp_path: Path):
         write_prepared_arrow_split(parquet, existing, split="public")
 
 
+def test_write_prepared_arrow_split_handles_multi_shard(tmp_path: Path):
+    """Multi-shard parquet (e.g. full-00000-of-00008.parquet ...) round-trips."""
+    from datasets import Dataset, load_from_disk
+
+    from whestbench.dataset_io import combine_split_datasets, write_prepared_arrow_split
+
+    pub = _bake_single_split(tmp_path, "pub", split="public", seed=42)
+    hold = _bake_single_split(tmp_path, "hold", split="holdout", seed=99)
+    out = tmp_path / "combined"
+    # Build via combine first (gets us a real parquet to split).
+    combine_split_datasets([pub, hold], output_dir=out, write_prepared_arrow=False)
+
+    # Fake a multi-shard layout by splitting one parquet into two.
+    src_parquet = out / "data" / "public-00000-of-00001.parquet"
+    ds = Dataset.from_parquet(str(src_parquet))
+    half = len(ds) // 2 or 1
+    shard0 = ds.select(range(0, half))
+    shard1 = ds.select(range(half, len(ds)))
+    shard0_path = out / "data" / "public-00000-of-00002.parquet"
+    shard1_path = out / "data" / "public-00001-of-00002.parquet"
+    shard0.to_parquet(str(shard0_path))
+    shard1.to_parquet(str(shard1_path))
+
+    target = tmp_path / "prepared_multi"
+    write_prepared_arrow_split([shard1_path, shard0_path], target, split="public")
+    materialised = load_from_disk(str(target))
+    assert isinstance(materialised, Dataset)
+    # The result row count must equal the union of the two shards.
+    assert len(materialised) == len(ds)
+
+
 def test_build_prepared_splits_for_directory_mutates_metadata(tmp_path: Path):
     """build_prepared_splits_for_directory writes the metadata block in-place."""
     from whestbench.dataset_io import (
