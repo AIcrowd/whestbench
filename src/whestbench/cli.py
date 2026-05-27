@@ -2563,7 +2563,7 @@ def _main_participant(argv: "list[str]") -> int:
             )
             _elapsed = _time.perf_counter() - _t0
             if json_output:
-                print(json.dumps(_json_payload_with_metadata(json_data), indent=2))
+                print(json.dumps(_json_payload_with_metadata(json_data or {}), indent=2))
             else:
                 print(terminal_output, end="" if terminal_output.endswith("\n") else "\n")
             say.ok(
