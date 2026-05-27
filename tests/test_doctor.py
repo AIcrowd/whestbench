@@ -407,17 +407,20 @@ def test_cli_doctor_strict_exits_1_on_warn() -> None:
 
 
 def test_cli_doctor_json_emits_valid_shape(
+    monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     from whestbench.cli import _main_participant
 
     with patch("whestbench.doctor.run_all", return_value=_one_warn_checks()):
+        monkeypatch.setattr("whestbench.cli._resolve_whestbench_version", lambda: "0.2.0")
         _main_participant(["doctor", "--json"])
     out = capsys.readouterr().out
     parsed = json.loads(out)
     assert parsed["overall"] == "warn"
     assert parsed["counts"]["warn"] == 1
     assert parsed["counts"]["ok"] == 5
+    assert parsed["whestbench_version"] == "0.2.0"
 
 
 def test_cli_doctor_format_plain_output_has_no_ansi(

@@ -21,6 +21,36 @@ Participant workflow commands:
 - `whest dataset` (bake / push / pull / merge / inspect)
 - `whest package`
 - `whest profile-simulation`
+- `whest version`
+
+All JSON outputs include a top-level `whestbench_version` string for traceability.
+
+## `whest version`
+
+Print installed whestbench version.
+
+```bash
+whest version [--format rich|plain|json] [--json]
+```
+
+JSON output is:
+
+```json
+{
+  "ok": true,
+  "command": "version",
+  "name": "whestbench",
+  "version": "0.2.0",
+  "whestbench_version": "0.2.0"
+}
+```
+
+Examples:
+
+```bash
+whest version
+whest version --json
+```
 
 > **Migration note:** `whest create-dataset` is replaced by `whest dataset bake`. Running `whest create-dataset` prints a redirect and exits.
 
