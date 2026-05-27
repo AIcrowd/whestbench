@@ -163,3 +163,83 @@ quick iteration). Pass `--split <name>` if the dataset is
 
 Once you're happy with local results, [publish the dataset](#publishing-to-huggingface-hub)
 so teammates can score against the same MLPs.
+
+## Publishing to HuggingFace Hub
+
+You've baked a dataset locally and want to share it with the team — or pin a
+specific revision so a CI gate scores everyone against the same MLPs. Upload
+to a HuggingFace Hub dataset repo.
+
+### Authenticate once
+
+```bash
+hf auth login   # opens a browser; or pass --token <hf_xxx>
+```
+
+Tokens with `write` scope are required to push. You can also set the token
+without the interactive flow:
+
+```bash
+export HF_TOKEN=hf_xxx
+```
+
+`whest dataset upload` reads `HF_TOKEN` as a fallback when `--token` isn't
+passed. See also: the
+[publish-to-hf-hub how-to](../how-to/publish-to-hf-hub.md) for an
+end-to-end walkthrough.
+
+### `whest dataset upload`
+
+You have `./my-eval` from the previous section. Push it as a private repo and
+pin the resulting commit with a tag:
+
+```bash
+whest dataset upload ./my-eval \
+    --repo aicrowd/my-eval \
+    --tag v1 \
+    --private   # omit for public datasets
+```
+
+Representative output:
+
+```
+→ Uploading ./my-eval to aicrowd/my-eval (private)
+  ✓ Repo exists / created
+  ✓ Uploaded 2.0 GB                 ████████████████████ 100%   34.1s
+  ✓ Tag v1 created at d2f9a1c
+✓ Done: https://huggingface.co/datasets/aicrowd/my-eval/tree/v1
+```
+
+The repo is created if it doesn't exist. The tag is created at the resulting
+commit so
+
+```bash
+whest run --dataset hf://aicrowd/my-eval@v1
+```
+
+pins to this exact revision.
+
+**Repo naming.** Use `<org>/<dataset-name>`. Keep names short and
+hyphen-separated (e.g. `aicrowd/arc-whestbench-public-2026`).
+
+**Tag conventions.** HF doesn't enforce semver; the de-facto pattern is
+`v<MAJOR>.<MINOR>` (e.g. `v1.0`, `v1.1`) or descriptive (`v1-warmup`,
+`v1-holdout`). See
+[HF's revision docs](https://huggingface.co/docs/huggingface_hub/guides/cli).
+
+### What gets published
+
+The dataset card (`README.md`) is auto-generated from `metadata.json` at bake
+time. It includes splits, hardware fingerprint, seed protocol, and a runnable
+quick-start snippet. Edit `README.md` after `bake` and before `upload` to
+add custom content.
+
+The card's YAML front-matter is what HuggingFace Hub renders on the dataset
+page (tags, license, language, etc.). Don't strip it.
+
+> `whest dataset push` continues to work as a deprecated alias for `upload`
+> through v0.6. v0.7 will remove it. Same applies to `pull` → `download` and
+> `inspect` → `info`.
+
+> If it broke (401, 403, repo already exists, network errors), jump to
+> [Troubleshooting](#troubleshooting).
