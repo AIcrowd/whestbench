@@ -1386,41 +1386,79 @@ def _dispatch_dataset_command(args) -> int:
         return 0
 
     if sub == "download":
+        import time as _time
+
         from huggingface_hub import snapshot_download
 
+        from .hf_progress import hf_download, hf_preflight
+        from .ui import format_bytes, format_duration, say
+
+        _split = getattr(args, "split", None)
+        _revision_label = args.revision or "main"
+        _title = f"hf://{args.repo_id}@{_revision_label}"
+        say.intent(f"Downloading {_title} → {args.output}")
+
+        # Preflight: surface file count, byte total, cache state before any work.
+        preflight = hf_preflight(args.repo_id, revision=args.revision, split=_split)
+        if preflight is not None:
+            _files = preflight.file_count
+            _plural = "s" if _files != 1 else ""
+            _cache_label = "cached" if preflight.is_cached else "not cached"
+            say.step(
+                f"Preflight: {_files} file{_plural}, "
+                f"{format_bytes(preflight.total_bytes)} — {_cache_label}."
+            )
+            mode: Literal["cache_hit", "materialize"] = (
+                "cache_hit" if preflight.is_cached else "materialize"
+            )
+        else:
+            say.step("Preflight: unavailable.")
+            mode = "materialize"
+
         allow_patterns = None
-        if getattr(args, "split", None) is not None:
+        if _split is not None:
             allow_patterns = [
-                f"data/{args.split}-*.parquet",
+                f"data/{_split}-*.parquet",
                 "metadata.json",
                 "README.md",
                 ".gitattributes",
             ]
 
-        local = snapshot_download(
-            repo_id=args.repo_id,
-            repo_type="dataset",
-            revision=args.revision,
-            local_dir=args.output,
-            token=args.token,
-            allow_patterns=allow_patterns,
-        )
+        _console = Console()
+        _t0 = _time.perf_counter()
+        with hf_download(_console, title=_title, preflight=preflight, mode=mode):
+            local = snapshot_download(
+                repo_id=args.repo_id,
+                repo_type="dataset",
+                revision=args.revision,
+                local_dir=args.output,
+                token=args.token,
+                allow_patterns=allow_patterns,
+            )
+        _elapsed = _time.perf_counter() - _t0
 
         # If --split was given, verify the download actually got parquet(s) for it.
         # snapshot_download silently succeeds with zero matches if the glob doesn't
         # match any file in the repo (e.g. typo'd split name or single-split repo).
-        if getattr(args, "split", None) is not None:
-            matches = list(Path(local).glob(f"data/{args.split}-*.parquet"))
+        if _split is not None:
+            matches = list(Path(local).glob(f"data/{_split}-*.parquet"))
             if not matches:
                 print(
-                    f"error: --split {args.split!r} matched no parquet files in "
+                    f"error: --split {_split!r} matched no parquet files in "
                     f"{args.repo_id!r}. Available splits can be inferred from the "
                     f"repo's data/ directory listing.",
                     file=sys.stderr,
                 )
                 return 1
 
-        print(f"Pulled {args.repo_id}@{args.revision or 'main'} to {args.output}")
+        _local_path = Path(local)
+        _size = sum(
+            p.stat().st_size for p in _local_path.rglob("*") if p.is_file() and not p.is_symlink()
+        )
+        say.ok(
+            f"Downloaded {_title} in {format_duration(_elapsed)} ({format_bytes(_size)} on disk)"
+        )
+        say.step(f"Location: {local}")
         return 0
 
     if sub == "merge":
