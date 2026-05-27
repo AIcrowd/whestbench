@@ -39,40 +39,24 @@ whest doctor
 
 See `docs/reference/cli-reference.md` for the full command surface.
 
-### Using evaluation datasets (schema 3.0)
+## Datasets
 
-Datasets are HuggingFace Hub repositories — Parquet files + metadata sidecar. Use
-the published evaluation dataset directly, or bake your own:
-
-```python
-# Use the published evaluation dataset
-from datasets import load_dataset
-import whestbench
-
-ds = load_dataset(
-    "aicrowd/arc-whestbench-2026",
-    revision="v1",
-    split="public",
-)
-
-# Or bake your own (schema 3.0 directory output)
-# $ whest dataset bake --n-mlps 8 --n-samples 1_000_000 --width 256 --depth 8 \
-#       --seed 42 --output ./my-eval
-
-# Iterate as MLP instances (same interface as on-the-fly sampling)
-for mlp in whestbench.iter_mlps(ds):
-    y_pred = my_estimator.predict(mlp)
-```
-
-Run evaluation against a published or local dataset:
+WhestBench evaluations run against datasets (collections of MLPs with
+ground-truth statistics). You can bake them locally, publish to HF, and pull
+back for reproducible scoring. See the [datasets guide](docs/guides/datasets.md)
+for the full walkthrough.
 
 ```bash
-# HF Hub (pinned revision required)
-whest run --estimator ./estimator.py \
-    --dataset hf://aicrowd/arc-whestbench-2026@v1
+# 5-minute path:
+whest dataset bake --n-mlps 10 --output ./my-eval
+whest run --estimator estimator.py --dataset ./my-eval
+```
 
-# Local directory
-whest run --estimator ./estimator.py --dataset ./my-eval
+For HF-hosted datasets:
+
+```bash
+whest run --estimator estimator.py \
+          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-warmup
 ```
 
 See `docs/reference/dataset-format.md` for the schema 3.0 specification.
