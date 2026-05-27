@@ -438,3 +438,49 @@ whest dataset info ./eval-full
 
 > If `combine-splits` complains about overlapping `mlp_seed`s or mismatched
 > hardware fingerprints, see [Troubleshooting](#troubleshooting).
+
+## Performance tuning
+
+These are power-user knobs. The defaults are fine for almost everyone.
+
+### Xet high-performance mode
+
+If you have ≥64 GB RAM and a fat uplink:
+
+```bash
+export HF_XET_HIGH_PERFORMANCE=1
+```
+
+Saturates both bandwidth and CPU cores. Helpful when downloading
+many-GB datasets to a workstation. Reference:
+[HF Xet storage docs](https://huggingface.co/docs/hub/xet/using-xet-storage).
+
+### Local SSD for the Xet cache
+
+If your HF cache is on NFS or a slow disk:
+
+```bash
+export HF_XET_CACHE=/local/ssd/hf-xet
+```
+
+Keeps the chunk staging cache on fast local storage. The main hub cache
+(`HF_HUB_CACHE`) can stay on NFS — only the per-chunk Xet metadata is
+roundtrip-sensitive.
+
+### Disabling Xet entirely
+
+```bash
+export HF_HUB_DISABLE_XET=1
+```
+
+Falls back to plain LFS transport. Rarely useful; only reach for it if you've
+confirmed a Xet-specific bug.
+
+### Disabling progress bars (CI)
+
+```bash
+export HF_HUB_DISABLE_PROGRESS_BARS=1
+```
+
+Whestbench's `say.*` lines still emit; only the progress bars are suppressed.
+For complete silence add `--quiet` to the `whest` invocation.
