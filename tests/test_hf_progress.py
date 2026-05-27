@@ -6,7 +6,14 @@ from dataclasses import is_dataclass
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from whestbench.hf_progress import HFPreflight, hf_preflight
+import pytest
+
+from whestbench.hf_progress import (
+    _ACTIVE_RICH_PROGRESS,  # noqa: F401 — imported to assert the symbol exists
+    HFPreflight,
+    RichHFTqdm,
+    hf_preflight,
+)
 
 
 def test_hfpreflight_is_frozen_dataclass() -> None:
@@ -98,3 +105,40 @@ def test_hf_preflight_returns_none_on_hf_error() -> None:
         MockApi.return_value.dataset_info.side_effect = ConnectionError("offline")
         pf = hf_preflight("aicrowd/foo", revision="v1-warmup", split="public")
     assert pf is None
+
+
+def test_richhftqdm_forwards_updates_to_active_progress(monkeypatch: pytest.MonkeyPatch) -> None:
+    events: list[tuple[str, int]] = []
+
+    class _FakeProgress:
+        def add_task(self, description, *, total):  # noqa: ARG002
+            events.append(("add_task", total))
+            return 7
+
+        def update(self, task_id, *, completed=None, total=None):  # noqa: ARG002
+            if completed is not None:
+                events.append(("update_completed", completed))
+
+        def remove_task(self, task_id):  # noqa: ARG002
+            events.append(("remove", 0))
+
+    fake = _FakeProgress()
+    monkeypatch.setattr("whestbench.hf_progress._ACTIVE_RICH_PROGRESS", fake)
+
+    bar = RichHFTqdm(total=1000, desc="test.bin")
+    bar.update(250)
+    bar.update(750)
+    bar.close()
+
+    # add_task fires on __init__, then update_completed twice, then remove on close.
+    kinds = [e[0] for e in events]
+    assert kinds == ["add_task", "update_completed", "update_completed", "remove"]
+
+
+def test_richhftqdm_no_active_progress_is_noop(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("whestbench.hf_progress._ACTIVE_RICH_PROGRESS", None)
+    bar = RichHFTqdm(total=10, desc="x")
+    bar.update(5)
+    bar.close()
+    # No exception.
+    assert True

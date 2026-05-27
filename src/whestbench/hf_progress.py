@@ -3,9 +3,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
+import tqdm as _tqdm_mod
 from huggingface_hub import HfApi, try_to_load_from_cache
+
+# ---------------------------------------------------------------------------
+# Module-level mutable state
+#
+# ``_ACTIVE_RICH_PROGRESS`` is the only mutable global in this module. It is
+# set to a Rich ``Progress`` instance by ``hf_download`` / ``hf_upload`` for
+# the lifetime of their context-manager body, and reset to ``None`` in their
+# ``finally`` blocks. When set, ``RichHFTqdm`` instances created by HF Hub's
+# internal download/upload code path (via the monkey-patched
+# ``huggingface_hub.utils.tqdm``) forward their progress events into the
+# Progress; when ``None`` they fall back to a no-op so that callers outside a
+# ``hf_download``/``hf_upload`` context do not crash.
+_ACTIVE_RICH_PROGRESS: Any = None
 
 
 @dataclass(frozen=True)
@@ -91,3 +105,39 @@ def hf_preflight(
         is_cached=all_cached,
         files=relevant,
     )
+
+
+class RichHFTqdm(_tqdm_mod.tqdm):
+    """tqdm subclass that mirrors progress into our active Rich Progress.
+
+    HF Hub creates one of these whenever it would normally create a ``tqdm.tqdm``
+    bar (per-file downloads, etc.). If a Rich ``Progress`` is currently active
+    (i.e. ``_ACTIVE_RICH_PROGRESS is not None``), every ``__init__`` / ``update``
+    / ``close`` forwards into it via ``add_task`` / ``update`` / ``remove_task``.
+    When no Progress is active the subclass behaves like a vanilla tqdm.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        prog = _ACTIVE_RICH_PROGRESS
+        if prog is not None:
+            self._rich_task_id: "int | None" = prog.add_task(
+                self.desc or "Downloading", total=self.total
+            )
+        else:
+            self._rich_task_id = None
+
+    def update(self, n: int = 1) -> None:  # type: ignore[override]
+        super().update(n)
+        prog = _ACTIVE_RICH_PROGRESS
+        if prog is not None and self._rich_task_id is not None:
+            prog.update(self._rich_task_id, completed=self.n, total=self.total)
+
+    def close(self) -> None:  # type: ignore[override]
+        super().close()
+        prog = _ACTIVE_RICH_PROGRESS
+        if prog is not None and self._rich_task_id is not None:
+            try:
+                prog.remove_task(self._rich_task_id)
+            finally:
+                self._rich_task_id = None
