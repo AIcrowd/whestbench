@@ -2031,34 +2031,6 @@ def _main_participant(argv: "list[str]") -> int:
                 quiet=json_output,
             )
             _t0 = _time.perf_counter()
-            with status(
-                f"Importing {args.estimator} and running setup/predict checks",
-                quiet=json_output,
-            ):
-                if json_output:
-                    payload = validate_submission_entrypoint(
-                        args.estimator, class_name=args.class_name, seed=validate_seed
-                    )
-                    _elapsed = _time.perf_counter() - _t0
-                    print(json.dumps(payload, indent=2))
-                else:
-                    result = _run_validate_checks(
-                        args.estimator, class_name=args.class_name, seed=validate_seed
-                    )
-                    _elapsed = _time.perf_counter() - _t0
-                    doc = build_validate_presentation(result)
-                    print(
-                        render_command_presentation(
-                            doc,
-                            output_format=output_format,
-                            force_terminal=stdout_is_tty,
-                        ),
-                        end="",
-                    )
-            say.ok(
-                f"Validation passed in {format_duration(_elapsed)}",
-                quiet=json_output,
-            )
             if json_output:
                 payload = _json_payload_with_metadata(
                     validate_submission_entrypoint(
@@ -2066,6 +2038,29 @@ def _main_participant(argv: "list[str]") -> int:
                     )
                 )
                 print(json.dumps(payload, indent=2))
+                return 0
+
+            with status(
+                f"Importing {args.estimator} and running setup/predict checks",
+                quiet=json_output,
+            ):
+                result = _run_validate_checks(
+                    args.estimator, class_name=args.class_name, seed=validate_seed
+                )
+                _elapsed = _time.perf_counter() - _t0
+                doc = build_validate_presentation(result)
+                print(
+                    render_command_presentation(
+                        doc,
+                        output_format=output_format,
+                        force_terminal=stdout_is_tty,
+                    ),
+                    end="",
+                )
+            say.ok(
+                f"Validation passed in {format_duration(_elapsed)}",
+                quiet=json_output,
+            )
             return 0
 
         if command == "create-dataset":
