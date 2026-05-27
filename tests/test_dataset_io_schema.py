@@ -309,6 +309,99 @@ def test_validate_metadata_rejects_splits_null():
 
 
 # ---------------------------------------------------------------------------
+# prepared_splits validation (Arrow fast path metadata block)
+# ---------------------------------------------------------------------------
+
+
+def _md_with_prepared(**overrides):
+    md = _multi_split_md()
+    md["prepared_splits"] = {
+        "public": {"path": "prepared/public", "format": "save_to_disk"},
+        "holdout": {"path": "prepared/holdout", "format": "save_to_disk"},
+    }
+    md.update(overrides)
+    return md
+
+
+def test_validate_metadata_accepts_prepared_splits():
+    from whestbench.dataset_io import validate_metadata
+
+    validate_metadata(_md_with_prepared())  # should not raise
+
+
+def test_validate_metadata_accepts_prepared_splits_subset():
+    """Prepared block may cover only a subset of splits."""
+    from whestbench.dataset_io import validate_metadata
+
+    md = _md_with_prepared()
+    md["prepared_splits"] = {"public": {"path": "prepared/public", "format": "save_to_disk"}}
+    validate_metadata(md)
+
+
+def test_validate_metadata_accepts_prepared_splits_without_format():
+    """Format is optional (defaults to save_to_disk at load time)."""
+    from whestbench.dataset_io import validate_metadata
+
+    md = _md_with_prepared()
+    md["prepared_splits"]["public"] = {"path": "prepared/public"}
+    validate_metadata(md)
+
+
+def test_validate_metadata_rejects_prepared_splits_non_dict():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _md_with_prepared(prepared_splits=["prepared/public"])
+    with pytest.raises(InvalidDatasetError, match=r"prepared_splits.+dict"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_prepared_splits_unknown_split():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _md_with_prepared()
+    md["prepared_splits"]["nonexistent"] = {"path": "prepared/nonexistent"}
+    with pytest.raises(InvalidDatasetError, match=r"isn't in this dataset"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_prepared_splits_entry_non_dict():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _md_with_prepared()
+    md["prepared_splits"]["public"] = "prepared/public"  # bare string is invalid
+    with pytest.raises(InvalidDatasetError, match=r"must be a dict"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_prepared_splits_path_non_string():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _md_with_prepared()
+    md["prepared_splits"]["public"]["path"] = 42
+    with pytest.raises(InvalidDatasetError, match=r"path.+string"):
+        validate_metadata(md)
+
+
+def test_validate_metadata_rejects_prepared_splits_format_non_string():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _md_with_prepared()
+    md["prepared_splits"]["public"]["format"] = 1
+    with pytest.raises(InvalidDatasetError, match=r"format.+string"):
+        validate_metadata(md)
+
+
+# ---------------------------------------------------------------------------
 # _validate_mlp_seeds + seed_protocol 3.0 constants
 # ---------------------------------------------------------------------------
 

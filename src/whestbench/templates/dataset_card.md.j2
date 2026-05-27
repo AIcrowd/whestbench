@@ -99,7 +99,7 @@ print(ds[0]["mlp_name"])
 ```
 {%- endif %}
 
-The whestbench convenience wrapper (adds schema validation + `metadata.json` access):
+The whestbench convenience wrapper (adds schema validation + `metadata.json` access{% if metadata.prepared_splits %} + the prepared-Arrow fast path{% endif %}):
 
 ```python
 import whestbench
@@ -112,6 +112,16 @@ for mlp in whestbench.iter_mlps(ds):
 provenance = whestbench.metadata(ds)
 print(provenance["n_samples"], provenance["created_at_utc"])
 ```
+{%- if metadata.prepared_splits %}
+
+> **Fast path on cold cache.** This release ships prepared Arrow artifacts
+> under `prepared/<split>/` ({{ metadata.prepared_splits.keys()|list|join(', ') }}).
+> When you call `whestbench.load_dataset(...)` with a `split=` argument, the
+> library downloads only the matching Arrow tree and memory-maps it via
+> `Dataset.load_from_disk()` — skipping the parquet→arrow conversion that
+> a fresh `datasets.load_dataset(...)` call pays on first use. You'll see a
+> one-line stderr notice when the fast path fires.
+{%- endif %}
 
 Run an estimator end-to-end via the CLI:
 

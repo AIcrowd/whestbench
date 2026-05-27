@@ -210,3 +210,111 @@ def test_metadata_works_on_iterable_dataset(tmp_path: Path):
     assert md_via_api["n_mlps"] == 3
     assert md_via_api["width"] == 4
     assert md_via_api["depth"] == 2
+
+
+# -----------------------------------------------------------------------------
+# Prepared-Arrow fast path
+# -----------------------------------------------------------------------------
+
+
+def _bake_multi_split_with_prepared(tmp_path: Path) -> Path:
+    """Build a tiny multi-split dataset directory with prepared/<split>/."""
+    from whestbench.dataset_io import combine_split_datasets
+
+    pub = _bake_small(tmp_path, split="public")
+    hold = _bake_small(tmp_path, split="holdout")
+    out = tmp_path / "combined"
+    combine_split_datasets([pub, hold], output_dir=out)
+    return out
+
+
+def test_load_dataset_prefers_prepared_arrow_locally(tmp_path: Path, capsys):
+    """When prepared/<split>/ exists, local load_dataset uses load_from_disk
+    and prints the fast-path notice."""
+    from datasets import Dataset
+
+    from whestbench.dataset import _PREPARED_LOAD_NOTICE_SHOWN, load_dataset
+
+    out = _bake_multi_split_with_prepared(tmp_path)
+
+    # Reset the per-process notice cache so we observe the print here.
+    _PREPARED_LOAD_NOTICE_SHOWN.clear()
+
+    ds = load_dataset(out, split="public")
+    assert isinstance(ds, Dataset)
+    assert len(ds) == 3
+
+    captured = capsys.readouterr()
+    assert "using prepared Arrow split 'public'" in captured.err
+    assert "no local parquet" in captured.err
+
+
+def test_load_dataset_falls_back_when_prepared_dir_missing(tmp_path: Path, capsys):
+    """If metadata claims prepared but the directory is gone, load still falls
+    through to the parquet path without raising and without printing the
+    fast-path notice."""
+    import shutil
+
+    from datasets import Dataset
+
+    from whestbench.dataset import _PREPARED_LOAD_NOTICE_SHOWN, load_dataset
+
+    out = _bake_multi_split_with_prepared(tmp_path)
+    # Nuke the prepared tree but keep the metadata block referencing it.
+    shutil.rmtree(out / "prepared")
+    _PREPARED_LOAD_NOTICE_SHOWN.clear()
+
+    ds = load_dataset(out, split="public")
+    assert isinstance(ds, Dataset)
+    # We deliberately don't assert n_rows here: HF's auto-discovery on a
+    # plain local directory is independent of whestbench. The thing this
+    # test guards is the silent fallback contract — prepared/ missing must
+    # NOT raise, and must NOT print the fast-path notice.
+    captured = capsys.readouterr()
+    assert "using prepared Arrow" not in captured.err
+
+
+def test_load_dataset_streaming_skips_prepared(tmp_path: Path, capsys):
+    """streaming=True must NOT take the prepared (random-access) path."""
+    from whestbench.dataset import _PREPARED_LOAD_NOTICE_SHOWN, load_dataset
+
+    out = _bake_multi_split_with_prepared(tmp_path)
+    _PREPARED_LOAD_NOTICE_SHOWN.clear()
+
+    # Local path + streaming is rejected (existing behavior); use the
+    # rejection to prove the prepared path doesn't fire on streaming either,
+    # since it's gated by `not streaming`.
+    with pytest.raises(ValueError, match="streaming=True is only supported"):
+        load_dataset(out, split="public", streaming=True)
+    captured = capsys.readouterr()
+    assert "using prepared Arrow" not in captured.err
+
+
+def test_load_dataset_prepared_notice_shown_once_per_key(tmp_path: Path, capsys):
+    """The fast-path notice should not be re-printed for repeat loads of the
+    same repo+split within a process."""
+    from whestbench.dataset import _PREPARED_LOAD_NOTICE_SHOWN, load_dataset
+
+    out = _bake_multi_split_with_prepared(tmp_path)
+    _PREPARED_LOAD_NOTICE_SHOWN.clear()
+
+    load_dataset(out, split="public")
+    first = capsys.readouterr().err
+    load_dataset(out, split="public")
+    second = capsys.readouterr().err
+
+    assert first.count("using prepared Arrow split 'public'") == 1
+    assert "using prepared Arrow split 'public'" not in second
+
+
+def test_load_dataset_prepared_recorded_metadata_matches_split(tmp_path: Path):
+    """Fast-path return value still carries per-split merged metadata."""
+    from whestbench.dataset import load_dataset, metadata
+
+    out = _bake_multi_split_with_prepared(tmp_path)
+    ds = load_dataset(out, split="public")
+    md = metadata(ds)
+    # Per-split shape, not the multi-split shape.
+    assert "splits" not in md
+    assert md["n_mlps"] == 3
+    assert md["width"] == 4

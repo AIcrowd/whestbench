@@ -1129,6 +1129,35 @@ def _build_participant_parser() -> argparse.ArgumentParser:
             "the combined metadata.json and used by `whest run`."
         ),
     )
+    combine_p.add_argument(
+        "--skip-prepared-arrow",
+        action="store_true",
+        help=(
+            "Skip generation of prepared/<split>/ Arrow artifacts. By default "
+            "combine-splits emits `Dataset.save_to_disk()` directories for "
+            "each split so `whestbench.load_dataset` can memory-map them "
+            "directly on the consumer side (no parquet→arrow conversion). "
+            "Skip if the prepare cost outweighs the runtime win for your use."
+        ),
+    )
+
+    prepare_p = dataset_sub.add_parser(
+        "prepare-arrow",
+        help=(
+            "Patch an existing multi-split dataset directory with "
+            "prepared/<split>/ Arrow artifacts so consumers can skip the "
+            "parquet→arrow conversion on cold cache."
+        ),
+        epilog=(
+            "Use this to upgrade a dataset baked before this feature existed "
+            "without re-running the whole bake. Idempotent — re-runs replace "
+            "any existing prepared/ subtree."
+        ),
+    )
+    prepare_p.add_argument(
+        "dataset_dir",
+        help="Path to an existing multi-split dataset directory (with data/, metadata.json).",
+    )
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
     package_parser.add_argument("--estimator", required=True)
@@ -1596,6 +1625,7 @@ def _dispatch_dataset_command(args) -> int:
                 args.input_dirs,
                 output_dir=args.output,
                 default_split=getattr(args, "default_split", None),
+                write_prepared_arrow=not getattr(args, "skip_prepared_arrow", False),
             )
         except (MergeIncompatibleError, FileExistsError) as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -1608,6 +1638,61 @@ def _dispatch_dataset_command(args) -> int:
             info = splits[name]
             seed_str = f", seed={info['seed']}" if "seed" in info else ""
             print(f"  - {name}  (n_mlps={info['n_mlps']}{seed_str})")
+        if md.get("prepared_splits"):
+            print("  prepared Arrow artifacts: " + ", ".join(sorted(md["prepared_splits"].keys())))
+        return 0
+
+    if sub == "prepare-arrow":
+        from .dataset_io import (
+            METADATA_FILE,
+            README_FILE,
+            build_prepared_splits_for_directory,
+            generate_readme,
+            read_metadata,
+            validate_metadata,
+        )
+
+        dataset_dir = _Path(args.dataset_dir)
+        if not dataset_dir.is_dir():
+            print(f"error: {dataset_dir} is not a directory.", file=sys.stderr)
+            return 1
+        md = read_metadata(dataset_dir)
+        if "splits" not in md:
+            print(
+                "error: prepare-arrow is only meaningful for multi-split "
+                "datasets (no 'splits' block found in metadata.json).",
+                file=sys.stderr,
+            )
+            return 1
+        splits = list(md["splits"].keys())
+        build_prepared_splits_for_directory(
+            dataset_dir,
+            splits=splits,
+            metadata=md,
+        )
+        validate_metadata(md)
+        (dataset_dir / METADATA_FILE).write_text(_json.dumps(md, indent=2))
+        # Re-render README so the YAML frontmatter matches the new metadata.
+        ds_size = sum(int(md["splits"][s]["n_mlps"]) for s in splits)
+        try:
+            from types import SimpleNamespace as _SN
+
+            splits_kwarg = {n: _SN(n_mlps=int(md["splits"][n]["n_mlps"])) for n in splits}
+            (dataset_dir / README_FILE).write_text(
+                generate_readme(md, splits=splits_kwarg, ds_size=ds_size)
+            )
+        except Exception as exc:  # noqa: BLE001 — README rewrite is best-effort
+            print(
+                f"warning: prepared metadata written, but README rewrite "
+                f"failed ({exc}). You can re-render via "
+                f"`whestbench.dataset_io.generate_readme` separately.",
+                file=sys.stderr,
+            )
+        print(
+            f"Patched {dataset_dir} with prepared Arrow artifacts for "
+            f"{len(splits)} split(s): "
+            f"{', '.join(sorted(md['prepared_splits'].keys()))}"
+        )
         return 0
 
     print("Unknown dataset subcommand. Try --help.", file=sys.stderr)

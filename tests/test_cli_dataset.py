@@ -254,6 +254,157 @@ def test_whest_dataset_combine_splits_produces_multi_split_dir(tmp_path: Path):
     assert set(md["splits"].keys()) == {"public", "holdout"}
 
 
+def test_whest_dataset_combine_splits_writes_prepared_arrow_by_default(tmp_path: Path):
+    """Default combine-splits invocation emits prepared/<split>/ and a metadata block."""
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    for split, out_dir in (("public", pub), ("holdout", hold)):
+        res = _run_whest(
+            "dataset",
+            "bake",
+            "--n-mlps",
+            "2",
+            "--n-samples",
+            "100",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--split",
+            split,
+            "--output",
+            str(out_dir),
+        )
+        assert res.returncode == 0, res.stderr
+
+    out = tmp_path / "combined"
+    res = _run_whest("dataset", "combine-splits", str(pub), str(hold), "--output", str(out))
+    assert res.returncode == 0, res.stderr
+
+    for s in ("public", "holdout"):
+        assert (out / "prepared" / s / "dataset_info.json").is_file()
+        assert (out / "prepared" / s / "state.json").is_file()
+    md = json.loads((out / "metadata.json").read_text())
+    assert "prepared_splits" in md
+    assert set(md["prepared_splits"].keys()) == {"public", "holdout"}
+    for entry in md["prepared_splits"].values():
+        assert entry["format"] == "save_to_disk"
+
+
+def test_whest_dataset_combine_splits_skip_prepared_arrow_flag(tmp_path: Path):
+    """--skip-prepared-arrow disables the prepared tree entirely."""
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    for split, out_dir in (("public", pub), ("holdout", hold)):
+        res = _run_whest(
+            "dataset",
+            "bake",
+            "--n-mlps",
+            "2",
+            "--n-samples",
+            "100",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--split",
+            split,
+            "--output",
+            str(out_dir),
+        )
+        assert res.returncode == 0, res.stderr
+
+    out = tmp_path / "combined"
+    res = _run_whest(
+        "dataset",
+        "combine-splits",
+        str(pub),
+        str(hold),
+        "--output",
+        str(out),
+        "--skip-prepared-arrow",
+    )
+    assert res.returncode == 0, res.stderr
+    assert not (out / "prepared").exists()
+    md = json.loads((out / "metadata.json").read_text())
+    assert "prepared_splits" not in md
+
+
+def test_whest_dataset_prepare_arrow_patches_existing_dataset(tmp_path: Path):
+    """`whest dataset prepare-arrow <dir>` retrofits prepared/<split>/ on a
+    multi-split dataset that was built without it."""
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    for split, out_dir in (("public", pub), ("holdout", hold)):
+        res = _run_whest(
+            "dataset",
+            "bake",
+            "--n-mlps",
+            "2",
+            "--n-samples",
+            "100",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--split",
+            split,
+            "--output",
+            str(out_dir),
+        )
+        assert res.returncode == 0, res.stderr
+
+    out = tmp_path / "combined"
+    # Build without prepared.
+    res = _run_whest(
+        "dataset",
+        "combine-splits",
+        str(pub),
+        str(hold),
+        "--output",
+        str(out),
+        "--skip-prepared-arrow",
+    )
+    assert res.returncode == 0, res.stderr
+    assert not (out / "prepared").exists()
+
+    # Retrofit.
+    res = _run_whest("dataset", "prepare-arrow", str(out))
+    assert res.returncode == 0, res.stderr
+    assert "Patched" in res.stdout
+
+    for s in ("public", "holdout"):
+        assert (out / "prepared" / s / "dataset_info.json").is_file()
+    md = json.loads((out / "metadata.json").read_text())
+    assert set(md["prepared_splits"].keys()) == {"public", "holdout"}
+
+
+def test_whest_dataset_prepare_arrow_rejects_single_split(tmp_path: Path):
+    """`prepare-arrow` errors clearly on a single-split dataset directory."""
+    pub = tmp_path / "pub"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "2",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--split",
+        "public",
+        "--output",
+        str(pub),
+    )
+    assert res.returncode == 0, res.stderr
+
+    res = _run_whest("dataset", "prepare-arrow", str(pub))
+    assert res.returncode != 0
+    assert "multi-split" in res.stderr
+
+
 def test_whest_dataset_combine_splits_rejects_existing_output(tmp_path: Path):
     pub = tmp_path / "pub"
     hold = tmp_path / "hold"
