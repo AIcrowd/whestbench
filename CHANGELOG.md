@@ -1,15 +1,71 @@
 # Changelog
 
-## Unreleased
+## v0.6.0 (2026-05-27)
 
-### Added
+### Feat
 
-- Dataset card template now recognises the `mini`+`full` split pair and renders dedicated copy explaining the two-split shape (independent seed lists, mini as the dev surface, full as the canonical evaluation surface). Mirrors the existing `public`+`holdout` special case for evaluation datasets.
-- `generate_readme` now emits an explicit `configs:` block in the YAML frontmatter for multi-split datasets. The block lists each split in `splits` dict insertion order with its `data/<split>-*.parquet` glob, so the HF Dataset Viewer defaults to the first-listed split (rather than HF Datasets' alphabetical auto-discovery fallback, which surfaces e.g. `full` before `mini`). Single-split datasets are unchanged.
+- add whest version command and version metadata in JSON
+- **cli**: validate/init/smoke-test/profile-simulation adopt unified copy
+- **cli**: package gets a bytes progress bar
+- **cli**: doctor wraps probes in a status spinner + bookends
+- **cli**: merge gets spinner + before/after copy
+- **cli**: download surfaces preflight summary + progress + completion
+- **cli**: upload gets a real progress bar + before/after copy
+- **cli**: bake gets phased progress bars + before/after copy
+- **cli**: rename dataset push/pull/inspect to upload/download/info + deprecation
+- **cli**: --streaming end-to-end with prominent cache-trade-off warning
+- **cli**: add --streaming flag to whest run
+- **cli**: use metadata-based n_mlps clamp when ds is streaming
+- **scoring**: make_contest_from_dataset supports IterableDataset
+- **cli**: wrap hf:// dataset load with hf_download progress UI
+- **hf_progress**: add hf_upload context manager
+- **hf_progress**: add hf_download context manager with three modes
+- **hf_progress**: add RichHFTqdm that forwards into active Rich Progress
+- **hf_progress**: add hf_preflight() with cache detection
+- **hf_progress**: add HFPreflight dataclass
+- **ui**: add status spinner context manager + finalize ui.py
+- **ui**: add progress_count context manager
+- **ui**: add progress_bytes context manager
+- **ui**: add say.* message helpers (intent/step/ok/warn/hint)
+- **ui**: add format_throughput helper
+- **ui**: add format_duration helper
+- **ui**: add format_bytes helper
+- **template**: emit configs: block in YAML for explicit split ordering
+- **package**: record tool and runtime versions in submission manifest
 
 ### Fix
 
-- **dataset_io**: `merge_datasets` now scopes its HF datasets cache to a per-call temporary directory by default, so merging N partials no longer leaks N per-partial entries (keyed on each input dir's basename) into the global `~/.cache/huggingface/datasets/`. At fleet scale (1000 partials named `mlp-NNNN`) this was ~2.4 GB of orphan cache. Pass `cache_dir=...` to opt back into a persistent location for debugging.
+- avoid duplicate JSON output in validate command
+- keep final_layer_mse in narrow score subtitle
+- guard profile-simulation JSON payload type for metadata wrapper
+- **cli**: cache-hit download says "Loaded from cache" not "Downloaded"
+- **cli**: drop stray comma in cache-miss download ok line
+- **hf_progress**: bail preflight when revision cannot be resolved
+- **hf_progress**: drop unused empty top-level upload task
+- **hf_progress**: raise on nested hf_download/hf_upload
+- **hf_progress**: subclass HF tqdm and guard disabled bars
+- **ui**: match HF Hub env-var truthy semantics in _progress_disabled
+- **ui**: roll over format_bytes at the next-unit boundary
+- **dataset_io**: use attr-set for configs to satisfy Pyright
+
+### Refactor
+
+- **ui**: cache the default Console as a module-level singleton
+- **ui**: inherit handles from ProgressHandle Protocol nominally
+
+## v0.5.1 (2026-05-27)
+
+### Feat
+
+- **template**: mini+full quick-start snippet leads with split="mini"
+- **template**: recognise mini+full split pair in dataset card
+
+### Fix
+
+- **template**: restore print(ds[0]['mlp_name']) smoke-test in generic quickstart fallback
+- **template**: scope companion-disclaimer to public+holdout, fix whitespace + spelling
+- **test**: import datasets.config submodule explicitly for pyright
+- **dataset_io**: scope merge_datasets HF cache to tempdir by default
 
 ## v0.5.0 (2026-05-27)
 
