@@ -299,7 +299,6 @@ def hf_upload(
         )
 
     local_dir = Path(local_dir)
-    total = _du_local(local_dir)
 
     progress = Progress(
         SpinnerColumn(),
@@ -316,9 +315,11 @@ def hf_upload(
     with progress:
         _ACTIVE_RICH_PROGRESS = progress
         huggingface_hub.utils.tqdm = RichHFTqdm  # pyright: ignore[reportPrivateImportUsage]
-        # Seed a single overall task representing the whole upload — HF Hub
-        # will spawn its own per-file RichHFTqdm bars on top.
-        progress.add_task(f"Uploading → {title}", total=total)
+        # Intentionally no pre-seeded overall task: HF Hub's per-file events
+        # land as their own ``RichHFTqdm`` bars (which add/remove via
+        # ``_ACTIVE_RICH_PROGRESS``). An overall task here would never be
+        # updated and would sit at 0% for the whole upload — strictly worse
+        # than no overall task at all.
         try:
             yield
         finally:
