@@ -439,11 +439,30 @@ def load_dataset(
         # Multi-split path.
         available_splits = sorted(md["splits"].keys())
         declared_default = md.get("default_split")
+        prepared_splits = md.get("prepared_splits") or {}
         if split is not None:
             if split not in available_splits:
                 raise InvalidDatasetError(
                     f"split {split!r} not in {{{', '.join(repr(s) for s in available_splits)}}}"
                 )
+            # Prepared-Arrow fast path: when the dataset advertises a prepared
+            # artifact for this split AND we're not streaming, download just
+            # that subtree and memory-map it with load_from_disk — skipping
+            # the parquet→arrow conversion entirely. Falls back to the
+            # parquet path on any error.
+            if not streaming and split in prepared_splits:
+                ds = _try_load_prepared_split(
+                    path_or_repo_str,
+                    revision=revision,
+                    token=token,
+                    is_local=is_local,
+                    local_candidate=local_candidate,
+                    split=split,
+                    prepared_entry=prepared_splits[split],
+                )
+                if ds is not None:
+                    _METADATA_BY_DS[ds] = _merge_metadata_for_split(md, split)
+                    return ds
             ds = _hf_load_split(
                 hf_datasets,
                 loader_path,
@@ -478,6 +497,79 @@ def load_dataset(
     effective_split = split if split is not None else DEFAULT_SPLIT
     ds = hf_datasets.load_dataset(loader_path, split=effective_split, **hf_kwargs)
     _METADATA_BY_DS[ds] = md
+    return ds
+
+
+_PREPARED_LOAD_NOTICE_SHOWN: set[str] = set()
+
+
+def _try_load_prepared_split(
+    path_or_repo: str,
+    *,
+    revision: "str | None",
+    token: "str | None",
+    is_local: bool,
+    local_candidate: Path,
+    split: str,
+    prepared_entry: Dict[str, Any],
+) -> "Any | None":
+    """Attempt to load a split via `datasets.load_from_disk` over a prepared
+    artifact. Returns the Dataset on success, ``None`` on any failure so the
+    caller can fall back to the parquet path.
+
+    HF remote: downloads only ``<prepared_entry['path']>/*`` via
+    ``snapshot_download(allow_patterns=...)`` and ``load_from_disk(local)``.
+    Local source: resolves ``<dataset_dir>/<prepared_entry['path']>`` and
+    loads directly.
+
+    Prints (once per process per repo+split key) a stderr notice so users
+    know the fast path fired.
+    """
+    fmt = prepared_entry.get("format") or "save_to_disk"
+    if fmt != "save_to_disk":
+        return None
+    rel_path = prepared_entry.get("path")
+    if not isinstance(rel_path, str) or not rel_path:
+        return None
+
+    try:
+        if is_local:
+            disk_path = local_candidate / rel_path
+            if not disk_path.is_dir():
+                return None
+        else:
+            from huggingface_hub import snapshot_download
+
+            allow = [f"{rel_path}/**"]
+            local_root = snapshot_download(
+                repo_id=path_or_repo,
+                repo_type="dataset",
+                revision=revision,
+                token=token,
+                allow_patterns=allow,
+            )
+            disk_path = Path(local_root) / rel_path
+            if not disk_path.is_dir():
+                return None
+
+        from datasets import Dataset
+
+        ds = Dataset.load_from_disk(str(disk_path))
+    except Exception:
+        # Any prepared-path failure → silent fall-through to parquet.
+        return None
+
+    notice_key = f"{path_or_repo}@{revision or 'main'}::{split}"
+    if notice_key not in _PREPARED_LOAD_NOTICE_SHOWN:
+        _PREPARED_LOAD_NOTICE_SHOWN.add(notice_key)
+        import sys as _sys
+
+        print(
+            f"whestbench: using prepared Arrow split {split!r} from "
+            f"{path_or_repo}@{revision or 'main'}; no local parquet "
+            f"conversion needed.",
+            file=_sys.stderr,
+        )
     return ds
 
 

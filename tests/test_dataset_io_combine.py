@@ -292,3 +292,108 @@ def test_combine_splits_rejects_unknown_default_split(tmp_path: Path):
             output_dir=tmp_path / "x",
             default_split="nonexistent",
         )
+
+
+# -----------------------------------------------------------------------------
+# prepared_splits (Arrow fast path)
+# -----------------------------------------------------------------------------
+
+
+def test_combine_splits_writes_prepared_arrow_by_default(tmp_path: Path):
+    """combine_split_datasets emits prepared/<split>/ for each split by default."""
+    from whestbench.dataset_io import combine_split_datasets
+
+    pub = _bake_single_split(tmp_path, "pub", split="public", seed=42)
+    hold = _bake_single_split(tmp_path, "hold", split="holdout", seed=99)
+    out = tmp_path / "combined"
+    combine_split_datasets([pub, hold], output_dir=out)
+
+    # Filesystem layout per `Dataset.save_to_disk()` contract.
+    for split in ("public", "holdout"):
+        prep_dir = out / "prepared" / split
+        assert prep_dir.is_dir(), f"missing prepared dir for {split}"
+        assert (prep_dir / "dataset_info.json").is_file()
+        assert (prep_dir / "state.json").is_file()
+        arrow_shards = list(prep_dir.glob("data-*.arrow"))
+        assert len(arrow_shards) >= 1, f"no .arrow shards under {prep_dir}"
+
+    # Metadata block.
+    md = json.loads((out / "metadata.json").read_text())
+    assert "prepared_splits" in md
+    assert md["prepared_splits"] == {
+        "public": {"path": "prepared/public", "format": "save_to_disk"},
+        "holdout": {"path": "prepared/holdout", "format": "save_to_disk"},
+    }
+
+
+def test_combine_splits_skips_prepared_arrow_when_disabled(tmp_path: Path):
+    """write_prepared_arrow=False omits the prepared tree and the metadata block."""
+    from whestbench.dataset_io import combine_split_datasets
+
+    pub = _bake_single_split(tmp_path, "pub", split="public", seed=42)
+    hold = _bake_single_split(tmp_path, "hold", split="holdout", seed=99)
+    out = tmp_path / "combined"
+    combine_split_datasets([pub, hold], output_dir=out, write_prepared_arrow=False)
+
+    assert not (out / "prepared").exists()
+    md = json.loads((out / "metadata.json").read_text())
+    assert "prepared_splits" not in md
+
+
+def test_prepared_arrow_is_loadable_via_load_from_disk(tmp_path: Path):
+    """The prepared dir round-trips through datasets.load_from_disk."""
+    from datasets import Dataset, load_from_disk
+
+    from whestbench.dataset_io import combine_split_datasets
+
+    pub = _bake_single_split(tmp_path, "pub", split="public", seed=42)
+    hold = _bake_single_split(tmp_path, "hold", split="holdout", seed=99)
+    out = tmp_path / "combined"
+    combine_split_datasets([pub, hold], output_dir=out)
+
+    for split, expected_n in (("public", 2), ("holdout", 2)):
+        ds = load_from_disk(str(out / "prepared" / split))
+        assert isinstance(ds, Dataset)
+        assert len(ds) == expected_n
+
+
+def test_write_prepared_arrow_split_rejects_existing_output(tmp_path: Path):
+    from whestbench.dataset_io import combine_split_datasets, write_prepared_arrow_split
+
+    pub = _bake_single_split(tmp_path, "pub", split="public", seed=42)
+    hold = _bake_single_split(tmp_path, "hold", split="holdout", seed=99)
+    out = tmp_path / "combined"
+    combine_split_datasets([pub, hold], output_dir=out)
+
+    parquet = out / "data" / "public-00000-of-00001.parquet"
+    existing = out / "prepared" / "public"
+    assert existing.exists()
+    with pytest.raises(FileExistsError):
+        write_prepared_arrow_split(parquet, existing, split="public")
+
+
+def test_build_prepared_splits_for_directory_mutates_metadata(tmp_path: Path):
+    """build_prepared_splits_for_directory writes the metadata block in-place."""
+    from whestbench.dataset_io import (
+        build_prepared_splits_for_directory,
+        combine_split_datasets,
+    )
+
+    pub = _bake_single_split(tmp_path, "pub", split="public", seed=42)
+    hold = _bake_single_split(tmp_path, "hold", split="holdout", seed=99)
+    out = tmp_path / "combined"
+    # First build WITHOUT prepared arrow, then patch it on.
+    combine_split_datasets([pub, hold], output_dir=out, write_prepared_arrow=False)
+    md = json.loads((out / "metadata.json").read_text())
+    assert "prepared_splits" not in md
+
+    result = build_prepared_splits_for_directory(out, splits=["public", "holdout"], metadata=md)
+    # Returned mapping equals the mutated block.
+    assert result == md["prepared_splits"]
+    assert result == {
+        "public": {"path": "prepared/public", "format": "save_to_disk"},
+        "holdout": {"path": "prepared/holdout", "format": "save_to_disk"},
+    }
+    # Files exist on disk.
+    assert (out / "prepared" / "public" / "state.json").is_file()
+    assert (out / "prepared" / "holdout" / "state.json").is_file()

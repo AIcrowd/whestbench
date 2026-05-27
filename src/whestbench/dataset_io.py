@@ -43,6 +43,15 @@ PARQUET_SUBDIR = "data"
 METADATA_FILE = "metadata.json"
 README_FILE = "README.md"
 
+# Optional sibling tree of pre-prepared HuggingFace Arrow artifacts. When
+# present, `whestbench.load_dataset` prefers it over the parquet path because
+# `datasets.load_from_disk(...)` memory-maps the arrow files directly instead
+# of running parquet→arrow conversion on every cold cache. See:
+#  - `write_prepared_arrow_split` (produces it)
+#  - `dataset.load_dataset` (consumes it)
+PREPARED_ARROW_SUBDIR = "prepared"
+PREPARED_ARROW_FORMAT = "save_to_disk"  # i.e. produced by Dataset.save_to_disk()
+
 _SPLIT_NAME_RE = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 
 
@@ -463,6 +472,40 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
                     f"'default_split'={default_split!r} is not one of the "
                     f"dataset's splits {sorted(splits.keys())}."
                 )
+
+        # Optional prepared_splits: per-split sidecar to pre-arrow'd artifacts
+        # (datasets.save_to_disk output). Consumed by whestbench.load_dataset
+        # as a fast path that skips parquet→arrow conversion. Keys must be a
+        # subset of the dataset's splits; each value must be a dict with
+        # string fields {path, format}. The Arrow path is optional — if any
+        # validation here fails the load gracefully falls back to parquet.
+        if "prepared_splits" in metadata:
+            prep = metadata["prepared_splits"]
+            if not isinstance(prep, dict):
+                raise InvalidDatasetError(
+                    f"'prepared_splits' must be a dict; got {type(prep).__name__}."
+                )
+            for split_name, entry in prep.items():
+                if split_name not in splits:
+                    raise InvalidDatasetError(
+                        f"'prepared_splits[{split_name!r}]' references a split "
+                        f"that isn't in this dataset (have: "
+                        f"{sorted(splits.keys())})."
+                    )
+                if not isinstance(entry, dict):
+                    raise InvalidDatasetError(
+                        f"'prepared_splits[{split_name!r}]' must be a dict; "
+                        f"got {type(entry).__name__}."
+                    )
+                if not isinstance(entry.get("path"), str):
+                    raise InvalidDatasetError(
+                        f"'prepared_splits[{split_name!r}].path' must be a string."
+                    )
+                fmt = entry.get("format")
+                if fmt is not None and not isinstance(fmt, str):
+                    raise InvalidDatasetError(
+                        f"'prepared_splits[{split_name!r}].format' must be a string if present."
+                    )
         if is_v3:
             if "seed" in metadata:
                 raise InvalidDatasetError(
@@ -790,11 +833,113 @@ def merge_datasets(
     return output_dir
 
 
+def write_prepared_arrow_split(
+    parquet_path: "Path | str",
+    output_dir: "Path | str",
+    *,
+    split: str,
+) -> Path:
+    """Materialise a single split's parquet file into a `Dataset.save_to_disk()` directory.
+
+    The output directory is what `datasets.load_from_disk(...)` accepts. We
+    upload it to HF under `prepared/<split>/` so participants can pull
+    pre-arrow'd data and skip the parquet→arrow conversion entirely on cold
+    cache.
+
+    Args:
+        parquet_path: Single parquet file (one split's worth of MLPs).
+        output_dir: Directory to create. Must not exist; written atomically
+            via a sibling `.staging` directory.
+        split: The HF split name to record inside the saved Dataset.
+
+    Returns:
+        Path to ``output_dir``.
+
+    Raises:
+        FileExistsError: ``output_dir`` already exists.
+    """
+    import shutil
+
+    output_dir = Path(output_dir)
+    parquet_path = Path(parquet_path)
+    if output_dir.exists():
+        raise FileExistsError(f"output_dir already exists: {output_dir}")
+    if not parquet_path.is_file():
+        raise FileNotFoundError(f"parquet not found: {parquet_path}")
+
+    from datasets import Dataset, NamedSplit
+
+    ds = Dataset.from_parquet(str(parquet_path), split=NamedSplit(split))
+
+    staging = output_dir.with_name(output_dir.name + ".staging")
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        ds.save_to_disk(str(staging))
+        staging.rename(output_dir)
+    except Exception:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+        raise
+    return output_dir
+
+
+def build_prepared_splits_for_directory(
+    dataset_dir: "Path | str",
+    *,
+    splits: "list[str]",
+    metadata: Dict[str, Any],
+) -> Dict[str, Dict[str, str]]:
+    """For each split, produce ``<dataset_dir>/prepared/<split>/`` from its parquet.
+
+    Returns a mapping suitable for the ``prepared_splits`` metadata block:
+
+        {
+          "<split>": {"path": "prepared/<split>", "format": "save_to_disk"},
+          ...
+        }
+
+    Mutates ``metadata['prepared_splits']`` in place. Callers should re-write
+    ``metadata.json`` and ``README.md`` after this returns.
+    """
+    dataset_dir = Path(dataset_dir)
+    prepared_root = dataset_dir / PREPARED_ARROW_SUBDIR
+    prepared_root.mkdir(exist_ok=True)
+
+    block: Dict[str, Dict[str, str]] = {}
+    for split in splits:
+        parquet_files = list((dataset_dir / PARQUET_SUBDIR).glob(f"{split}-*.parquet"))
+        if not parquet_files:
+            raise FileNotFoundError(
+                f"no parquet found for split {split!r} in {dataset_dir / PARQUET_SUBDIR}"
+            )
+        if len(parquet_files) != 1:
+            raise NotImplementedError(
+                f"multi-shard parquet not yet handled for prepared arrow; got "
+                f"{len(parquet_files)} files for split {split!r}"
+            )
+        out = prepared_root / split
+        # `write_prepared_arrow_split` is idempotent against the staging dir
+        # but not against an existing target; clean it for re-runs.
+        if out.exists():
+            import shutil
+
+            shutil.rmtree(out)
+        write_prepared_arrow_split(parquet_files[0], out, split=split)
+        block[split] = {
+            "path": f"{PREPARED_ARROW_SUBDIR}/{split}",
+            "format": PREPARED_ARROW_FORMAT,
+        }
+    metadata["prepared_splits"] = block
+    return block
+
+
 def combine_split_datasets(
     input_dirs: "list[Path | str]",
     *,
     output_dir: "Path | str",
     default_split: "str | None" = None,
+    write_prepared_arrow: bool = True,
 ) -> Path:
     """Combine N complete single-split datasets into a multi-split dataset directory.
 
@@ -816,6 +961,14 @@ def combine_split_datasets(
             ``default_split`` at the top level of the multi-split
             ``metadata.json``. ``whest run`` honours it when ``--split`` is
             omitted on a multi-split dataset.
+        write_prepared_arrow: When True (default), also emits a
+            ``prepared/<split>/`` directory next to ``data/`` containing the
+            `Dataset.save_to_disk()` output for each split. The
+            ``prepared_splits`` block is added to ``metadata.json`` so
+            consumers (``whestbench.load_dataset``, ``whest run``) prefer
+            this pre-arrow'd path on HF Hub and skip the parquet→arrow
+            conversion entirely on cold cache. Set False to skip when the
+            prepare cost matters more than the runtime win (e.g. tests).
 
     Returns:
         Path to the output directory.
@@ -953,6 +1106,16 @@ def combine_split_datasets(
         }
         if default_split is not None:
             combined_md["default_split"] = default_split
+
+        # Optionally produce prepared-Arrow artifacts under prepared/<split>/.
+        # These let `whestbench.load_dataset` skip parquet→arrow conversion
+        # on cold cache (see PREPARED_ARROW_* constants + load_dataset).
+        if write_prepared_arrow:
+            build_prepared_splits_for_directory(
+                staging,
+                splits=list(splits_md.keys()),
+                metadata=combined_md,
+            )
 
         # Validate before writing.
         validate_metadata(combined_md)
