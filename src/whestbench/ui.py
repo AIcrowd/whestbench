@@ -67,8 +67,12 @@ def _progress_disabled(quiet: bool) -> bool:
     return raw.strip().lower() in _HF_TRUTHY_VALUES
 
 
-class _NullHandle:
-    """No-op progress handle returned when bars are disabled."""
+class _NullHandle(ProgressHandle):
+    """No-op progress handle returned when bars are disabled.
+
+    Inherits from :class:`ProgressHandle` nominally so that drift in the
+    Protocol surface is caught at type-check time.
+    """
 
     def advance(self, n: int) -> None:  # noqa: ARG002 - signature matches real handle
         return None
@@ -77,11 +81,13 @@ class _NullHandle:
         return None
 
 
-class _ProgressHandle:
+class _RealProgressHandle(ProgressHandle):
     """Thin wrapper around a Rich ``Progress`` task with the public API.
 
     Exposes ``advance(n)`` and ``update(*, completed=)`` — the only two
-    operations callers need for the bytes/count bars.
+    operations callers need for the bytes/count bars. Inherits from
+    :class:`ProgressHandle` nominally so that drift in the Protocol surface
+    is caught at type-check time.
     """
 
     def __init__(self, progress: Progress, task_id: TaskID) -> None:
@@ -224,7 +230,7 @@ def progress_bytes(
     )
     with progress:
         task_id = progress.add_task(label, total=total)
-        yield _ProgressHandle(progress, task_id)
+        yield _RealProgressHandle(progress, task_id)
 
 
 @contextmanager
@@ -276,4 +282,4 @@ def progress_count(
     )
     with progress:
         task_id = progress.add_task(label, total=total)
-        yield _ProgressHandle(progress, task_id)
+        yield _RealProgressHandle(progress, task_id)
