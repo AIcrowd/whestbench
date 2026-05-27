@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from unittest.mock import patch
 
 import pytest
 from rich.console import Console
@@ -268,6 +269,26 @@ def test_status_context_manager_does_not_raise() -> None:
     console, _buf = _make_console()
     with status("Loading from cache", console=console):
         pass
+
+
+def test_status_invokes_console_status_with_label() -> None:
+    """Spy on ``Console.status`` and assert it was called once with the label."""
+    console, _buf = _make_console()
+    with patch.object(Console, "status", wraps=console.status) as spy:
+        with status("Loading from cache", console=console):
+            pass
+    assert spy.call_count == 1
+    args, _kwargs = spy.call_args
+    assert args[0] == "Loading from cache"
+
+
+def test_status_quiet_does_not_invoke_console_status() -> None:
+    """Quiet mode should bypass ``Console.status`` entirely."""
+    console, _buf = _make_console()
+    with patch.object(Console, "status", wraps=console.status) as spy:
+        with status("Loading from cache", console=console, quiet=True):
+            pass
+    assert spy.call_count == 0
 
 
 def test_status_quiet_emits_nothing() -> None:
