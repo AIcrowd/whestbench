@@ -6,7 +6,7 @@ import dataclasses
 import traceback as _tb
 import warnings
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
 import flopscope as flops
 import flopscope.numpy as fnp
@@ -195,25 +195,31 @@ def make_contest(
 
 def make_contest_from_dataset(
     spec: ContestSpec,
-    ds: "hf_datasets.Dataset",
+    ds: "Union[hf_datasets.Dataset, hf_datasets.IterableDataset]",
     n_mlps: int,
 ) -> ContestData:
-    """Build ContestData from a precomputed datasets.Dataset.
+    """Build ContestData from a precomputed Dataset OR IterableDataset.
 
-    Takes the first ``n_mlps`` rows from the dataset. Ground truth is not
-    recomputed. Sampling attribution is restored from the dataset and
-    aggregated across the first ``n_mlps`` entries.
+    For a materialised ``Dataset`` (random access): takes the first ``n_mlps``
+    rows via ``ds.select(range(n_mlps))`` and ``ds[i]``.
 
-    Raises ``ValueError`` if ``n_mlps`` is not in ``[1, len(ds)]`` or if
-    ``spec`` is inconsistent with the dataset's width/depth.
+    For a streaming ``IterableDataset`` (iterate-once): iterates the dataset
+    exactly once and takes the first ``n_mlps`` rows. Raises ``ValueError`` if
+    fewer rows are available.
+
+    Ground truth is not recomputed. Sampling attribution is restored from the
+    dataset and aggregated across the first ``n_mlps`` entries.
+
+    Raises ``ValueError`` if ``n_mlps`` is not in ``[1, len(ds)]`` (materialised),
+    if a streaming dataset yields fewer than ``n_mlps`` rows, or if ``spec`` is
+    inconsistent with the dataset's width/depth.
     """
     import json as _json
 
-    ds_size = len(ds)
+    from datasets import IterableDataset as _IterableDataset
+
     if n_mlps <= 0:
         raise ValueError("n_mlps must be positive.")
-    if n_mlps > ds_size:
-        raise ValueError(f"n_mlps={n_mlps} exceeds dataset size {ds_size}; clamp before calling.")
     spec.validate()
     if spec.n_mlps != n_mlps:
         raise ValueError(f"spec.n_mlps ({spec.n_mlps}) must equal n_mlps ({n_mlps}).")
@@ -222,6 +228,42 @@ def make_contest_from_dataset(
 
     ds_md = _METADATA_BY_DS.get(ds, {})
     proto_version = ds_md.get("seed_protocol", {}).get("version", "2.0")
+
+    if isinstance(ds, _IterableDataset):
+        mlps: List[MLP] = []
+        all_layer_targets: List[fnp.ndarray] = []
+        final_targets: List[fnp.ndarray] = []
+        avg_variances: List[float] = []
+        sampling_breakdowns: List[Dict[str, Any]] = []
+        for i, row in enumerate(ds):
+            if i >= n_mlps:
+                break
+            mlps.append(MLP.from_row(row, seed_protocol_version=proto_version))
+            all_layer_targets.append(fnp.asarray(row["all_layer_means"], dtype=fnp.float32))
+            final_targets.append(fnp.asarray(row["final_means"], dtype=fnp.float32))
+            avg_variances.append(float(row["avg_variance"]))
+            raw_breakdown = row["sampling_budget_breakdown"]
+            parsed = _json.loads(raw_breakdown) if isinstance(raw_breakdown, str) else raw_breakdown
+            sampling_breakdowns.append(parsed)
+        if len(mlps) < n_mlps:
+            raise ValueError(
+                f"Streaming dataset yielded only {len(mlps)} MLPs (requested {n_mlps}). "
+                f"Pass a smaller --n-mlps, or drop --streaming to use the full "
+                f"materialised dataset."
+            )
+        return ContestData(
+            spec=spec,
+            mlps=mlps,
+            all_layer_targets=all_layer_targets,
+            final_targets=final_targets,
+            avg_variances=avg_variances,
+            sampling_budget_breakdown=_aggregate_budget_breakdowns(sampling_breakdowns),
+        )
+
+    # Materialised Dataset path — preserved verbatim from the prior implementation.
+    ds_size = len(ds)
+    if n_mlps > ds_size:
+        raise ValueError(f"n_mlps={n_mlps} exceeds dataset size {ds_size}; clamp before calling.")
     mlps = [
         MLP.from_row(row, seed_protocol_version=proto_version) for row in ds.select(range(n_mlps))
     ]
