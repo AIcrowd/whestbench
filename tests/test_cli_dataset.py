@@ -5,6 +5,10 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
+from typing import Any, List
+
+import pytest
+from rich.console import Console as _RichConsole
 
 
 def _run_whest(*args, cwd=None, check=False):
@@ -15,6 +19,24 @@ def _run_whest(*args, cwd=None, check=False):
         cwd=cwd,
         check=check,
     )
+
+
+def _spy_console_print(monkeypatch: pytest.MonkeyPatch) -> List[str]:
+    """Capture every ``Console.print`` first-arg string; return the list.
+
+    Mirrors the helper in ``test_cli_dataset_aliases.py`` — real print still
+    fires so test failures surface the captured copy in pytest's stdout.
+    """
+    captured: List[str] = []
+    original_print = _RichConsole.print
+
+    def spy_print(self: _RichConsole, *args: Any, **kwargs: Any) -> Any:
+        if args:
+            captured.append(str(args[0]))
+        return original_print(self, *args, **kwargs)
+
+    monkeypatch.setattr(_RichConsole, "print", spy_print)
+    return captured
 
 
 def test_whest_dataset_help_lists_subcommands():
@@ -580,3 +602,144 @@ def test_whest_dataset_inspect_v3_mentions_protocol(tmp_path: Path):
     res = _run_whest("dataset", "info", str(out))
     assert res.returncode == 0, res.stderr
     assert "whestbench_explicit_per_mlp_seeds" in res.stdout or "3.0" in res.stdout
+
+
+def test_whest_dataset_download_cache_hit_says_loaded_from_cache(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Cache-hit download must say "from cache" — not "Downloaded" — since no
+    bytes were transferred. Mocks preflight to return ``is_cached=True`` and
+    stubs ``snapshot_download`` so we never touch the network.
+    """
+    import whestbench.cli as cli
+    import whestbench.hf_progress as _hf_progress_mod
+    from whestbench.hf_progress import HFPreflight
+
+    captured = _spy_console_print(monkeypatch)
+
+    fake_preflight = HFPreflight(
+        repo_id="aicrowd/test",
+        revision="v1",
+        file_count=2,
+        total_bytes=2048,
+        is_cached=True,
+        files=[("metadata.json", 48), ("data/public-00000-of-00001.parquet", 2000)],
+    )
+    monkeypatch.setattr(_hf_progress_mod, "hf_preflight", lambda *_a, **_k: fake_preflight)
+
+    out_dir = tmp_path / "pulled"
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        return str(out_dir)
+
+    import huggingface_hub
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+
+    rc = cli.main(
+        [
+            "dataset",
+            "download",
+            "aicrowd/test",
+            "--revision",
+            "v1",
+            "--output",
+            str(out_dir),
+        ]
+    )
+    assert rc == 0
+    joined = "\n".join(captured)
+    assert "from cache" in joined, f"cache-hit message missing 'from cache'; got: {joined!r}"
+    # The verb "Loaded" should appear (not "Downloaded") on the completion line.
+    assert "Loaded hf://aicrowd/test@v1 from cache" in joined, (
+        f"cache-hit completion line missing or malformed; got: {joined!r}"
+    )
+    # The preflight summary still fires and reports 2 files (plural).
+    assert "2 files" in joined, f"preflight summary missing or singular; got: {joined!r}"
+
+
+def test_whest_dataset_download_materialize_says_downloaded(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Materialize-mode (cache-miss) download keeps the "Downloaded ..." verb."""
+    import whestbench.cli as cli
+    import whestbench.hf_progress as _hf_progress_mod
+    from whestbench.hf_progress import HFPreflight
+
+    captured = _spy_console_print(monkeypatch)
+
+    fake_preflight = HFPreflight(
+        repo_id="aicrowd/test",
+        revision="v1",
+        file_count=2,
+        total_bytes=2048,
+        is_cached=False,
+        files=[("metadata.json", 48), ("data/public-00000-of-00001.parquet", 2000)],
+    )
+    monkeypatch.setattr(_hf_progress_mod, "hf_preflight", lambda *_a, **_k: fake_preflight)
+
+    out_dir = tmp_path / "pulled"
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        return str(out_dir)
+
+    import huggingface_hub
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+
+    rc = cli.main(
+        [
+            "dataset",
+            "download",
+            "aicrowd/test",
+            "--revision",
+            "v1",
+            "--output",
+            str(out_dir),
+        ]
+    )
+    assert rc == 0
+    joined = "\n".join(captured)
+    assert "Downloaded hf://aicrowd/test@v1" in joined, (
+        f"materialize completion line missing; got: {joined!r}"
+    )
+    assert "from cache" not in joined, (
+        f"materialize path should NOT mention 'from cache'; got: {joined!r}"
+    )
+
+
+def test_whest_dataset_upload_singular_pluralization(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Upload preflight says "1 file" — not "1 files" — for single-file uploads."""
+    import whestbench.cli as cli
+    import whestbench.hub as _hub_mod
+
+    captured = _spy_console_print(monkeypatch)
+
+    def fake_publish(local_dir: Any, **kwargs: Any) -> str:
+        return "cafebabe" * 5
+
+    monkeypatch.setattr(_hub_mod, "publish_dataset", fake_publish)
+
+    local = tmp_path / "ds"
+    local.mkdir()
+    (local / "metadata.json").write_text("{}")  # exactly one file
+
+    rc = cli.main(
+        [
+            "dataset",
+            "upload",
+            str(local),
+            "--repo",
+            "aicrowd/test",
+            "--tag",
+            "v1",
+        ]
+    )
+    assert rc == 0
+    joined = "\n".join(captured)
+    assert "1 file)" in joined, f"single-file upload should say '1 file'; got: {joined!r}"
+    assert "1 files" not in joined, f"plural 'files' leaked for 1-file upload; got: {joined!r}"

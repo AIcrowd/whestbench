@@ -1357,17 +1357,20 @@ def _dispatch_dataset_command(args) -> int:
 
         _revision_label = args.tag or "main"
         _title = f"hf://{args.repo}@{_revision_label}"
-        say.intent(f"Uploading {args.local_dir} → {_title}")
+        _console = Console()
+        say.intent(f"Uploading {args.local_dir} → {_title}", console=_console)
 
         # Preflight summary: count files + bytes in the local dir.
         _local = Path(args.local_dir)
         _files = [p for p in _local.rglob("*") if p.is_file() and not p.is_symlink()]
         _total = sum(p.stat().st_size for p in _files)
+        _plural = "s" if len(_files) != 1 else ""
         say.step(
-            f"Total: {format_bytes(_total)} ({len(_files)} files) — will create repo if needed."
+            f"Total: {format_bytes(_total)} ({len(_files)} file{_plural}) — "
+            f"will create repo if needed.",
+            console=_console,
         )
 
-        _console = Console()
         _t0 = _time.perf_counter()
         with hf_upload(_console, title=_title, local_dir=args.local_dir):
             sha = publish_dataset(
@@ -1380,9 +1383,12 @@ def _dispatch_dataset_command(args) -> int:
             )
         _elapsed = _time.perf_counter() - _t0
 
-        say.ok(f"Uploaded {_title} in {format_duration(_elapsed)}")
-        say.step(f"Commit: {sha}")
-        say.step(f"Visible at: https://huggingface.co/datasets/{args.repo}/tree/{_revision_label}")
+        say.ok(f"Uploaded {_title} in {format_duration(_elapsed)}", console=_console)
+        say.step(f"Commit: {sha}", console=_console)
+        say.step(
+            f"Visible at: https://huggingface.co/datasets/{args.repo}/tree/{_revision_label}",
+            console=_console,
+        )
         return 0
 
     if sub == "download":
@@ -1396,7 +1402,8 @@ def _dispatch_dataset_command(args) -> int:
         _split = getattr(args, "split", None)
         _revision_label = args.revision or "main"
         _title = f"hf://{args.repo_id}@{_revision_label}"
-        say.intent(f"Downloading {_title} → {args.output}")
+        _console = Console()
+        say.intent(f"Downloading {_title} → {args.output}", console=_console)
 
         # Preflight: surface file count, byte total, cache state before any work.
         preflight = hf_preflight(args.repo_id, revision=args.revision, split=_split)
@@ -1406,13 +1413,14 @@ def _dispatch_dataset_command(args) -> int:
             _cache_label = "cached" if preflight.is_cached else "not cached"
             say.step(
                 f"Preflight: {_files} file{_plural}, "
-                f"{format_bytes(preflight.total_bytes)} — {_cache_label}."
+                f"{format_bytes(preflight.total_bytes)} — {_cache_label}.",
+                console=_console,
             )
             mode: Literal["cache_hit", "materialize"] = (
                 "cache_hit" if preflight.is_cached else "materialize"
             )
         else:
-            say.step("Preflight: unavailable.")
+            say.step("Preflight: unavailable.", console=_console)
             mode = "materialize"
 
         allow_patterns = None
@@ -1424,7 +1432,6 @@ def _dispatch_dataset_command(args) -> int:
                 ".gitattributes",
             ]
 
-        _console = Console()
         _t0 = _time.perf_counter()
         with hf_download(_console, title=_title, preflight=preflight, mode=mode):
             local = snapshot_download(
@@ -1455,10 +1462,19 @@ def _dispatch_dataset_command(args) -> int:
         _size = sum(
             p.stat().st_size for p in _local_path.rglob("*") if p.is_file() and not p.is_symlink()
         )
-        say.ok(
-            f"Downloaded {_title} in {format_duration(_elapsed)} ({format_bytes(_size)} on disk)"
-        )
-        say.step(f"Location: {local}")
+        if mode == "cache_hit":
+            say.ok(
+                f"Loaded {_title} from cache in {format_duration(_elapsed)} "
+                f"({format_bytes(_size)} on disk)",
+                console=_console,
+            )
+        else:
+            say.ok(
+                f"Downloaded {_title} in {format_duration(_elapsed)} "
+                f"({format_bytes(_size)} on disk)",
+                console=_console,
+            )
+        say.step(f"Location: {local}", console=_console)
         return 0
 
     if sub == "merge":
