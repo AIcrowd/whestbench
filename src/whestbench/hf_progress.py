@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Iterator, List, Literal, Optional, Tuple
+from pathlib import Path
+from typing import Any, Iterator, List, Literal, Optional, Tuple, Union
 
 import huggingface_hub.utils
 import tqdm as _tqdm_mod
@@ -221,6 +222,74 @@ def hf_download(
     with progress:
         _ACTIVE_RICH_PROGRESS = progress
         huggingface_hub.utils.tqdm = RichHFTqdm  # pyright: ignore[reportPrivateImportUsage]
+        try:
+            yield
+        finally:
+            huggingface_hub.utils.tqdm = original_tqdm  # pyright: ignore[reportPrivateImportUsage]
+            _ACTIVE_RICH_PROGRESS = None
+
+
+def _du_local(p: Path) -> int:
+    """Sum sizes of all regular files under ``p`` (recursive, symlink-safe).
+
+    Each ``stat()`` call is wrapped in ``try/except OSError`` so a vanished or
+    unreadable file silently contributes zero rather than aborting the whole
+    walk — preflight-style "best effort" sizing.
+    """
+    total = 0
+    for f in p.rglob("*"):
+        if f.is_file() and not f.is_symlink():
+            try:
+                total += f.stat().st_size
+            except OSError:
+                pass
+    return total
+
+
+@contextmanager
+def hf_upload(
+    console: Console,
+    *,
+    title: str,
+    local_dir: Union[Path, str],
+    quiet: bool = False,
+) -> Iterator[None]:
+    """Wrap an HF upload call with a bytes Progress bar.
+
+    Computes total bytes from ``local_dir`` once at entry; monkey-patches
+    ``huggingface_hub.utils.tqdm`` for the duration so per-file events route
+    into the bar. The patch is restored in a ``try/finally`` that survives
+    exceptions raised inside the context body.
+
+    When ``quiet=True`` the call is a passthrough — no bar, no tqdm swap.
+    """
+    global _ACTIVE_RICH_PROGRESS
+
+    if quiet:
+        yield
+        return
+
+    local_dir = Path(local_dir)
+    total = _du_local(local_dir)
+
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        DownloadColumn(),
+        TransferSpeedColumn(),
+        TimeRemainingColumn(),
+        console=console,
+        transient=False,
+    )
+    original_tqdm = huggingface_hub.utils.tqdm  # pyright: ignore[reportPrivateImportUsage]
+
+    with progress:
+        _ACTIVE_RICH_PROGRESS = progress
+        huggingface_hub.utils.tqdm = RichHFTqdm  # pyright: ignore[reportPrivateImportUsage]
+        # Seed a single overall task representing the whole upload — HF Hub
+        # will spawn its own per-file RichHFTqdm bars on top.
+        progress.add_task(f"Uploading → {title}", total=total)
         try:
             yield
         finally:

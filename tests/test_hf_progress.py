@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 from dataclasses import is_dataclass
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -17,6 +18,7 @@ from whestbench.hf_progress import (
     RichHFTqdm,
     hf_download,
     hf_preflight,
+    hf_upload,
 )
 
 
@@ -209,4 +211,26 @@ def test_hf_download_restores_tqdm_on_exception() -> None:
     with pytest.raises(RuntimeError):
         with hf_download(con, title="hf://x", preflight=pf, mode="materialize"):
             raise RuntimeError("boom")
+    assert _live_hf_tqdm() is original
+
+
+def test_hf_upload_swaps_tqdm_and_restores(tmp_path: Path) -> None:
+    # Make a small fake folder to upload.
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "x.parquet").write_bytes(b"\0" * 1024)
+    (tmp_path / "metadata.json").write_text("{}")
+
+    con = RichConsole(file=io.StringIO(), force_terminal=True, color_system=None, width=120)
+    original = _live_hf_tqdm()
+    with hf_upload(con, title="hf://aicrowd/foo@v1", local_dir=tmp_path):
+        assert _live_hf_tqdm() is not original
+    assert _live_hf_tqdm() is original
+
+
+def test_hf_upload_quiet_is_passthrough(tmp_path: Path) -> None:
+    (tmp_path / "metadata.json").write_text("{}")
+    con = RichConsole(file=io.StringIO(), force_terminal=True, color_system=None, width=120)
+    original = _live_hf_tqdm()
+    with hf_upload(con, title="hf://x", local_dir=tmp_path, quiet=True):
+        assert _live_hf_tqdm() is original
     assert _live_hf_tqdm() is original
