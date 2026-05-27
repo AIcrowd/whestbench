@@ -2357,16 +2357,32 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "doctor":
+            import time as _time
+
             from .doctor import _doctor_exit_code, run_all
             from .reporting import render_doctor_json, render_doctor_report
+            from .ui import format_duration, say, status
 
-            checks = run_all(debug=debug)
+            say.intent("Running whestbench doctor", quiet=json_output)
+            _t0 = _time.perf_counter()
+            with status(
+                "Probing Python, uv, install mode, BLAS, disk, and CWD permissions",
+                quiet=json_output,
+            ):
+                checks = run_all(debug=debug)
+            _elapsed = _time.perf_counter() - _t0
             if output_format == "json":
                 print(render_doctor_json(checks), end="")
             elif output_format == "plain":
                 print(render_doctor_report(checks, rich=False), end="")
             else:
                 print(render_doctor_report(checks, rich=True), end="")
+            _n = len(checks)
+            _plural = "s" if _n != 1 else ""
+            say.ok(
+                f"Ran {_n} check{_plural} in {format_duration(_elapsed)}",
+                quiet=json_output,
+            )
             return _doctor_exit_code(checks, strict=bool(args.strict))
 
         if command == "profile-simulation":
