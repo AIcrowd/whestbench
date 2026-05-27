@@ -209,3 +209,115 @@ def test_single_split_does_not_emit_configs_block():
     assert "configs:" not in yaml_str, (
         f"single-split README must not emit configs: block; got YAML:\n{yaml_str}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Per-split configs (UX1: default_split → independent configs)
+# ---------------------------------------------------------------------------
+
+
+def _base_metadata_with_default_split(default_split: str = "mini"):
+    md = _base_metadata()
+    md["default_split"] = default_split
+    return md
+
+
+def test_configs_block_with_default_split_emits_one_config_per_split():
+    """When metadata declares default_split, each split must live in its own
+    config: `default` config contains ONLY the default split, and every other
+    split becomes its own named config. This lets HF resolve the requested
+    split's data_files in isolation (otherwise load_dataset(repo, split='mini')
+    pulls every shard in the repo)."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _base_metadata_with_default_split("mini")
+    rendered = generate_readme(
+        md,
+        splits=_mini_full_splits(),
+        ds_size=1100,
+        repo_id="aicrowd/arc-whestbench-public-2026",
+        revision="v1-warmup",
+    )
+    yaml_str = rendered.split("---", 2)[1]
+
+    # Must have TWO config_name lines: default (= mini) and full.
+    assert yaml_str.count("config_name:") == 2, (
+        "expected one config per split when default_split is set; got "
+        f"{yaml_str.count('config_name:')} configs in YAML:\n{yaml_str}"
+    )
+    assert "config_name: default" in yaml_str
+    assert "config_name: full" in yaml_str
+
+    # The default config must contain ONLY mini.
+    default_block_start = yaml_str.find("config_name: default")
+    full_block_start = yaml_str.find("config_name: full")
+    assert 0 <= default_block_start < full_block_start, (
+        f"default config must appear before full config; got default at "
+        f"{default_block_start}, full at {full_block_start}"
+    )
+    default_block = yaml_str[default_block_start:full_block_start]
+    assert "split: mini" in default_block
+    assert "split: full" not in default_block, (
+        "default config must NOT contain split: full; got block:\n" + default_block
+    )
+
+    # The full config must contain ONLY full.
+    full_block = yaml_str[full_block_start:]
+    assert "split: full" in full_block
+    assert "split: mini" not in full_block
+
+
+def test_configs_block_without_default_split_uses_legacy_layout():
+    """No default_split → fall back to one `default` config holding every
+    split. Preserves backwards-compatibility for datasets baked before the
+    field existed."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _base_metadata()  # no default_split
+    rendered = generate_readme(
+        md,
+        splits=_mini_full_splits(),
+        ds_size=1100,
+        repo_id="aicrowd/arc-whestbench-public-2026",
+        revision="v1-warmup",
+    )
+    yaml_str = rendered.split("---", 2)[1]
+    assert yaml_str.count("config_name:") == 1, (
+        "legacy layout (no default_split) must emit exactly one config; got "
+        f"{yaml_str.count('config_name:')} configs in YAML:\n{yaml_str}"
+    )
+    assert "config_name: default" in yaml_str
+    # All splits live under the single `default` config.
+    assert "split: mini" in yaml_str
+    assert "split: full" in yaml_str
+
+
+def test_configs_block_with_default_split_holdout_layout():
+    """evals (public + holdout) with default_split=public: default config
+    holds public, holdout becomes its own named config."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _base_metadata()
+    md["splits"] = {
+        "public": {"n_mlps": 50, "created_at_utc": "2026-05-26T00:00:00+00:00"},
+        "holdout": {"n_mlps": 50, "created_at_utc": "2026-05-26T00:00:00+00:00"},
+    }
+    md["default_split"] = "public"
+    rendered = generate_readme(
+        md,
+        splits={
+            "public": SimpleNamespace(n_mlps=50),
+            "holdout": SimpleNamespace(n_mlps=50),
+        },
+        ds_size=100,
+        repo_id="aicrowd/arc-whestbench-evals-2026",
+        revision="v1-warmup",
+    )
+    yaml_str = rendered.split("---", 2)[1]
+    assert "config_name: default" in yaml_str
+    assert "config_name: holdout" in yaml_str
+    default_idx = yaml_str.find("config_name: default")
+    holdout_idx = yaml_str.find("config_name: holdout")
+    default_block = yaml_str[default_idx:holdout_idx]
+    assert "split: public" in default_block
+    assert "split: holdout" not in default_block

@@ -63,12 +63,16 @@ The pure HuggingFace path (no whestbench install required):
 ```python
 from datasets import load_dataset
 
-# Develop against mini — {{ '{:,}'.format(splits["mini"].n_mlps) }} MLPs, downloads in seconds
+# Develop against mini — {{ '{:,}'.format(splits["mini"].n_mlps) }} MLPs, downloads in seconds.
+# `mini` is the default config of this repo, so no name= is required.
 mini = load_dataset("{{ repo_id }}", revision="{{ revision }}", split="mini")
 print(mini[0]["mlp_name"])
 
-# Lock in your numbers against full — {{ '{:,}'.format(splits["full"].n_mlps) }} MLPs
-full = load_dataset("{{ repo_id }}", revision="{{ revision }}", split="full")
+# Lock in your numbers against full — {{ '{:,}'.format(splits["full"].n_mlps) }} MLPs.
+# `full` is a separate config; pass the name explicitly. mini and full are
+# independent — loading full does NOT also pull mini (or vice versa).
+full = load_dataset("{{ repo_id }}", "full", revision="{{ revision }}", split="full")
+print(full[0]["mlp_name"])
 ```
 {%- elif splits %}
 ```python

@@ -191,21 +191,54 @@ def generate_readme(
     if splits is not None:
         tags.append("multi-split")
 
-    # For multi-split datasets, emit an explicit `configs:` block listing each
-    # split in dict insertion order. Without this block, HF Datasets falls back
-    # to alphabetical split discovery and the Dataset Viewer defaults to
-    # whichever split sorts first (e.g. `full` < `mini`), which is rarely
-    # what the dataset author wants.
+    # For multi-split datasets, emit an explicit per-split `configs:` block.
+    # When metadata declares a default_split, the `default` config holds ONLY
+    # that split; every other split becomes its own named config. This is the
+    # key UX fix: with all splits previously under a single `default` config,
+    # `datasets.load_dataset(repo, split="mini")` was downloading every
+    # split's parquet files in the manifest (e.g. 4.66 GB for what should
+    # have been a 250 MB mini-only fetch). Per-split configs let HF resolve
+    # only the requested split's data_files.
+    #
+    # Without a default_split, fall back to the legacy single-`default`
+    # config containing all splits — preserves behaviour for old datasets
+    # baked before the field existed.
     configs_block = None
     if splits is not None:
-        configs_block = [
-            {
-                "config_name": "default",
-                "data_files": [
-                    {"split": name, "path": f"data/{name}-*.parquet"} for name in splits
-                ],
-            }
-        ]
+        declared_default = metadata.get("default_split")
+        if isinstance(declared_default, str) and declared_default in splits:
+            # New layout: one config per split. `default` config = default_split.
+            configs_block = [
+                {
+                    "config_name": "default",
+                    "data_files": [
+                        {"split": declared_default, "path": f"data/{declared_default}-*.parquet"},
+                    ],
+                }
+            ]
+            for name in splits:
+                if name == declared_default:
+                    continue
+                configs_block.append(
+                    {
+                        "config_name": name,
+                        "data_files": [
+                            {"split": name, "path": f"data/{name}-*.parquet"},
+                        ],
+                    }
+                )
+        else:
+            # Legacy layout: all splits under one `default` config (no
+            # default_split declared, so we have no opinion on which split is
+            # canonical for `load_dataset(repo)` calls).
+            configs_block = [
+                {
+                    "config_name": "default",
+                    "data_files": [
+                        {"split": name, "path": f"data/{name}-*.parquet"} for name in splits
+                    ],
+                }
+            ]
 
     card_data = DatasetCardData(
         license="cc-by-4.0",

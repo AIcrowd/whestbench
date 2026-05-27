@@ -438,12 +438,20 @@ def load_dataset(
     if "splits" in md:
         # Multi-split path.
         available_splits = sorted(md["splits"].keys())
+        declared_default = md.get("default_split")
         if split is not None:
             if split not in available_splits:
                 raise InvalidDatasetError(
                     f"split {split!r} not in {{{', '.join(repr(s) for s in available_splits)}}}"
                 )
-            ds = hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
+            ds = _hf_load_split(
+                hf_datasets,
+                loader_path,
+                split=split,
+                default_split=declared_default,
+                hf_kwargs=hf_kwargs,
+                is_local=is_local,
+            )
             _METADATA_BY_DS[ds] = _merge_metadata_for_split(md, split)
             return ds
         # Multi-split container. HF gives us a DatasetDict normally; under
@@ -453,7 +461,14 @@ def load_dataset(
             IterableDatasetDict() if streaming else DatasetDict()
         )
         for name in available_splits:
-            member = hf_datasets.load_dataset(loader_path, split=name, **hf_kwargs)
+            member = _hf_load_split(
+                hf_datasets,
+                loader_path,
+                split=name,
+                default_split=declared_default,
+                hf_kwargs=hf_kwargs,
+                is_local=is_local,
+            )
             _METADATA_BY_DS[member] = _merge_metadata_for_split(md, name)
             dsd[name] = member
         _register_dsd_metadata(dsd, md)
@@ -464,6 +479,57 @@ def load_dataset(
     ds = hf_datasets.load_dataset(loader_path, split=effective_split, **hf_kwargs)
     _METADATA_BY_DS[ds] = md
     return ds
+
+
+def _hf_load_split(
+    hf_datasets: Any,
+    loader_path: str,
+    *,
+    split: str,
+    default_split: "str | None",
+    hf_kwargs: Dict[str, Any],
+    is_local: bool,
+) -> Any:
+    """Call HF's ``load_dataset`` so it touches only the requested split.
+
+    Multi-split datasets baked since the per-split-configs change carry one
+    HF dataset-card config per split: ``default`` (= ``default_split``) plus
+    one named config per non-default split. Requesting an explicit ``name=``
+    lets HF resolve only the matching config's ``data_files`` instead of
+    fetching the manifest for every parquet shard in the repo.
+
+    For older multi-split datasets (no ``default_split`` declared, all splits
+    crammed under one ``default`` config), the ``name=`` lookup will raise;
+    fall back to the no-name call.
+
+    Local datasets don't have a card; just pass ``split=`` through.
+    """
+    if is_local:
+        return hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
+
+    # Map split → HF config name. Mirrors the layout written by
+    # `generate_readme`: default config = default_split; others self-named.
+    if default_split is not None and split == default_split:
+        config_name = "default"
+    elif default_split is not None:
+        config_name = split
+    else:
+        # Legacy single-config layout — no default_split declared. Defer to HF.
+        config_name = None
+
+    try:
+        if config_name is None:
+            return hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
+        return hf_datasets.load_dataset(
+            loader_path,
+            config_name,
+            split=split,
+            **hf_kwargs,
+        )
+    except (ValueError, KeyError, FileNotFoundError):
+        # Older dataset card with a single `default` config containing every
+        # split — `name=split` doesn't resolve. Retry with the legacy form.
+        return hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
 
 
 def _merge_metadata_for_split(md: Dict[str, Any], split: str) -> Dict[str, Any]:
