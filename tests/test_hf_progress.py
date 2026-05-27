@@ -16,6 +16,7 @@ from whestbench.hf_progress import (
     _ACTIVE_RICH_PROGRESS,  # noqa: F401 — imported to assert the symbol exists
     HFPreflight,
     RichHFTqdm,
+    _du_local,
     hf_download,
     hf_preflight,
     hf_upload,
@@ -105,6 +106,36 @@ def test_hf_preflight_reports_cache_hit_when_all_files_cached() -> None:
         pf = hf_preflight("aicrowd/foo", revision="v1-warmup", split="public")
     assert pf is not None
     assert pf.is_cached is True
+
+
+def test_hf_preflight_reports_not_cached_when_only_some_files_cached() -> None:
+    """Regression for I2: parquet hits cache, metadata.json doesn't → NOT cached.
+
+    The full-cache test above already covers the happy path; this asserts the
+    short-circuit kicks in as soon as ONE file is missing, so partial-cache
+    scenarios (e.g. a stale checkout with only data shards but no metadata)
+    correctly trigger a re-download UX.
+    """
+    info = _fake_dataset_info(
+        [
+            {"rfilename": "data/public-00000-of-00001.parquet", "size": 2_000_000_000},
+            {"rfilename": "metadata.json", "size": 6000},
+        ]
+    )
+
+    def _fake_partial_cache(*, repo_id, filename, repo_type, revision, cache_dir=None):  # noqa: ARG001
+        if filename == "metadata.json":
+            return None  # not cached
+        return f"/tmp/fake-cache/{repo_id}/{filename}"
+
+    with (
+        patch("whestbench.hf_progress.HfApi") as MockApi,
+        patch("whestbench.hf_progress.try_to_load_from_cache", side_effect=_fake_partial_cache),
+    ):
+        MockApi.return_value.dataset_info.return_value = info
+        pf = hf_preflight("aicrowd/foo", revision="v1-warmup", split="public")
+    assert pf is not None
+    assert pf.is_cached is False
 
 
 def test_hf_preflight_returns_none_on_hf_error() -> None:
@@ -233,12 +264,17 @@ def test_hf_download_materialize_mode_swaps_tqdm() -> None:
         files=[("data/public-00000-of-00001.parquet", 2_000_000_000)],
     )
     with hf_download(con, title="hf://aicrowd/foo@v1-warmup", preflight=pf, mode="materialize"):
-        assert _live_hf_tqdm() is not original
+        # Tightened (I3): assert we swapped to OUR class specifically, not just
+        # "something different" — guards against future refactors that swap to
+        # an unrelated subclass and silently break Rich routing.
+        assert _live_hf_tqdm() is RichHFTqdm
     # Restored on exit.
     assert _live_hf_tqdm() is original
 
 
 def test_hf_download_restores_tqdm_on_exception() -> None:
+    from whestbench import hf_progress as _hfp
+
     con = RichConsole(file=io.StringIO(), force_terminal=True, color_system=None, width=120)
     original = _live_hf_tqdm()
     pf = HFPreflight(
@@ -253,6 +289,9 @@ def test_hf_download_restores_tqdm_on_exception() -> None:
         with hf_download(con, title="hf://x", preflight=pf, mode="materialize"):
             raise RuntimeError("boom")
     assert _live_hf_tqdm() is original
+    # Tightened (I4): the global routing state must also reset on exception,
+    # otherwise a subsequent ``hf_download`` would trip the nesting guard.
+    assert _hfp._ACTIVE_RICH_PROGRESS is None
 
 
 def test_hf_upload_swaps_tqdm_and_restores(tmp_path: Path) -> None:
@@ -297,3 +336,20 @@ def test_hf_download_nested_raises() -> None:
         with pytest.raises(RuntimeError, match="cannot be nested"):
             with hf_download(con, title="inner", preflight=pf, mode="materialize"):
                 pass
+
+
+def test_du_local_skips_symlinks_and_handles_broken_links(tmp_path: Path) -> None:
+    """Regression for M1: ``_du_local`` must not double-count via symlinks and
+    must not raise on broken links — both are common in HF cache layouts and a
+    careless ``rglob + stat`` would either inflate the total or crash the walk.
+    """
+    payload = b"x" * 256
+    real = tmp_path / "real.bin"
+    real.write_bytes(payload)
+
+    # (b) symlink to the regular file — should NOT add to the total
+    (tmp_path / "link_to_real.bin").symlink_to(real)
+    # (c) broken symlink — must not raise
+    (tmp_path / "broken.bin").symlink_to(tmp_path / "does_not_exist")
+
+    assert _du_local(tmp_path) == len(payload)
