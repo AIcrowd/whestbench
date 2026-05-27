@@ -1838,15 +1838,85 @@ def _main_participant(argv: "list[str]") -> int:
             rev: Optional[str] = None
             _is_local: bool = True
             if dataset_path is not None:
+                import time as _time
+
+                from rich.console import Console as _RichConsole
+
                 from .dataset import load_dataset as _wb_load_dataset
+                from .hf_progress import hf_download, hf_preflight
                 from .scoring import make_contest_from_dataset
+                from .ui import format_bytes, format_duration, say
 
                 repo_or_path, rev, _is_local = _resolve_dataset_arg(
                     dataset_path, revision=getattr(args, "revision", None)
                 )
-                ds = _wb_load_dataset(
-                    repo_or_path, revision=rev, split=getattr(args, "split", None)
-                )
+
+                if _is_local:
+                    ds = _wb_load_dataset(
+                        repo_or_path, revision=rev, split=getattr(args, "split", None)
+                    )
+                else:
+                    _console = _RichConsole()
+                    _title = f"hf://{repo_or_path}@{rev or 'main'}"
+                    say.step(f"Resolving {_title}", console=_console, quiet=json_output)
+                    preflight = hf_preflight(
+                        repo_or_path, revision=rev, split=getattr(args, "split", None)
+                    )
+
+                    if preflight is not None and preflight.is_cached:
+                        mode: Literal["cache_hit", "materialize", "streaming"] = "cache_hit"
+                    else:
+                        mode = "materialize"
+                        if preflight is not None:
+                            _files = preflight.file_count
+                            _plural = "s" if _files != 1 else ""
+                            say.intent(
+                                f"Downloading {_title} — {_files} file{_plural}, "
+                                f"{format_bytes(preflight.total_bytes)}",
+                                console=_console,
+                                quiet=json_output,
+                            )
+                        else:
+                            say.intent(
+                                f"Downloading {_title} (preflight unavailable)",
+                                console=_console,
+                                quiet=json_output,
+                            )
+
+                    _t0 = _time.perf_counter()
+                    with hf_download(
+                        _console,
+                        title=_title,
+                        preflight=preflight,
+                        mode=mode,
+                        quiet=json_output,
+                    ):
+                        ds = _wb_load_dataset(
+                            repo_or_path,
+                            revision=rev,
+                            split=getattr(args, "split", None),
+                        )
+                    _elapsed = _time.perf_counter() - _t0
+
+                    try:
+                        _n_str = f"{len(ds):,}"
+                    except TypeError:
+                        _n_str = "?"
+                    if mode == "cache_hit":
+                        say.ok(
+                            f"Loaded {_n_str} MLPs in {format_duration(_elapsed)} (from cache)",
+                            console=_console,
+                            quiet=json_output,
+                        )
+                    else:
+                        _bytes_label = (
+                            f", {format_bytes(preflight.total_bytes)}" if preflight else ""
+                        )
+                        say.ok(
+                            f"Downloaded{_bytes_label} and loaded {_n_str} MLPs in {format_duration(_elapsed)}",
+                            console=_console,
+                            quiet=json_output,
+                        )
                 from datasets import DatasetDict as _DatasetDict
 
                 if isinstance(ds, _DatasetDict):
