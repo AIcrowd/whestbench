@@ -384,3 +384,57 @@ indicator while the first row group is fetched, then scoring begins.
 > Streaming is incompatible with `--json` output (it would corrupt JSON
 > ordering) and `len(ds)` raises on a streaming dataset. Both are documented
 > under [Troubleshooting](#troubleshooting).
+
+## Multi-split datasets
+
+A dataset can contain multiple disjoint groups of MLPs — typically `public`
+(open to participants for tuning) and `holdout` (used only by the leaderboard
+grader). One repo, two splits.
+
+### When and why
+
+- **Leaderboard datasets:** participants score against `public` locally,
+  the leaderboard grader scores against `holdout`. Same parquet schema, same
+  hardware fingerprint, different seeds.
+- **Train/validation flow:** split a dataset into `train`/`val`/`test` for
+  meta-learning experiments on top of WhestBench.
+
+### Baking a split
+
+Each split is baked separately. Make sure to use distinct `--mlp-seeds` files
+so the splits don't overlap:
+
+```bash
+whest dataset bake --n-mlps 500 --split public  --output ./eval-public
+whest dataset bake --n-mlps 500 --split holdout --output ./eval-holdout
+```
+
+### Combining splits into one multi-split directory
+
+```bash
+whest dataset combine-splits ./eval-public ./eval-holdout --output ./eval-full
+```
+
+The result is a single dataset directory with both splits in `data/`,
+suitable for `whest dataset upload` to a single HF repo.
+
+### Selecting a split when running
+
+```bash
+whest run --estimator estimator.py \
+          --dataset hf://aicrowd/eval-full@v1 \
+          --split public
+```
+
+Without `--split`, multi-split datasets are rejected by `whest run` (the
+scoring path scores against exactly one split at a time, by design).
+
+### Inspecting splits
+
+```bash
+whest dataset info ./eval-full
+# Reports each split's n_mlps and seed.
+```
+
+> If `combine-splits` complains about overlapping `mlp_seed`s or mismatched
+> hardware fingerprints, see [Troubleshooting](#troubleshooting).
