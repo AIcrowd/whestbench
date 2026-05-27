@@ -80,6 +80,7 @@ print(dsd)
 
 # Or load one split:
 ds = load_dataset("{{ repo_id }}", revision="{{ revision }}", split="{{ splits.keys()|list|first }}")
+print(ds[0]["mlp_name"])
 ```
 {%- else %}
 ```python
