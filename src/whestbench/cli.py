@@ -1811,6 +1811,10 @@ def _main_participant(argv: "list[str]") -> int:
 
     try:
         if command == "smoke-test":
+            import time as _time
+
+            from .ui import format_duration, say
+
             if json_output:
                 report = run_default_report(
                     profile=bool(args.profile),
@@ -1819,6 +1823,9 @@ def _main_participant(argv: "list[str]") -> int:
                 report["mode"] = "agent"
                 print(render_agent_report(report), end="")
                 return 0
+
+            say.intent("Running smoke test against CombinedEstimator")
+            _smoke_t0 = _time.perf_counter()
 
             if no_rich:
                 # Plain-text path: no Rich Live, no progress bar. Emit
@@ -1841,6 +1848,9 @@ def _main_participant(argv: "list[str]") -> int:
                 report["mode"] = "human"
                 output = _render_plain_text_report(report, command="smoke-test")
                 print(output, end="" if output.endswith("\n") else "\n")
+                say.ok(
+                    f"Smoke test completed in {format_duration(_time.perf_counter() - _smoke_t0)}"
+                )
                 return 0
 
             # Set up Rich progress bar for immediate user feedback.
@@ -1916,10 +1926,22 @@ def _main_participant(argv: "list[str]") -> int:
             if rich_rendered:
                 next_steps = render_smoke_test_next_steps(report, debug=debug)
                 print(next_steps, end="" if next_steps.endswith("\n") else "\n")
+            say.ok(f"Smoke test completed in {format_duration(_time.perf_counter() - _smoke_t0)}")
             return 0
 
         if command == "init":
-            created = _write_init_template(Path(args.path).resolve())
+            import time as _time
+
+            from .ui import format_duration, say
+
+            _target = Path(args.path).resolve()
+            say.intent(
+                f"Initializing starter estimator in {_target}",
+                quiet=json_output,
+            )
+            _t0 = _time.perf_counter()
+            created = _write_init_template(_target)
+            _elapsed = _time.perf_counter() - _t0
             payload = {"ok": True, "created": created}
             if json_output:
                 print(json.dumps(payload, indent=2))
@@ -1933,28 +1955,59 @@ def _main_participant(argv: "list[str]") -> int:
                     ),
                     end="",
                 )
+            _n = len(created)
+            if _n:
+                _plural = "s" if _n != 1 else ""
+                say.ok(
+                    f"Created {_n} file{_plural} in {format_duration(_elapsed)}",
+                    quiet=json_output,
+                )
+            else:
+                say.ok(
+                    f"Starter files already present (checked in {format_duration(_elapsed)})",
+                    quiet=json_output,
+                )
             return 0
 
         if command == "validate":
+            import time as _time
+
+            from .ui import format_duration, say, status
+
             validate_seed: Optional[int] = getattr(args, "seed", None)
-            if json_output:
-                payload = validate_submission_entrypoint(
-                    args.estimator, class_name=args.class_name, seed=validate_seed
-                )
-                print(json.dumps(payload, indent=2))
-            else:
-                result = _run_validate_checks(
-                    args.estimator, class_name=args.class_name, seed=validate_seed
-                )
-                doc = build_validate_presentation(result)
-                print(
-                    render_command_presentation(
-                        doc,
-                        output_format=output_format,
-                        force_terminal=stdout_is_tty,
-                    ),
-                    end="",
-                )
+            say.intent(
+                f"Validating estimator {args.estimator}",
+                quiet=json_output,
+            )
+            _t0 = _time.perf_counter()
+            with status(
+                f"Importing {args.estimator} and running setup/predict checks",
+                quiet=json_output,
+            ):
+                if json_output:
+                    payload = validate_submission_entrypoint(
+                        args.estimator, class_name=args.class_name, seed=validate_seed
+                    )
+                    _elapsed = _time.perf_counter() - _t0
+                    print(json.dumps(payload, indent=2))
+                else:
+                    result = _run_validate_checks(
+                        args.estimator, class_name=args.class_name, seed=validate_seed
+                    )
+                    _elapsed = _time.perf_counter() - _t0
+                    doc = build_validate_presentation(result)
+                    print(
+                        render_command_presentation(
+                            doc,
+                            output_format=output_format,
+                            force_terminal=stdout_is_tty,
+                        ),
+                        end="",
+                    )
+            say.ok(
+                f"Validation passed in {format_duration(_elapsed)}",
+                quiet=json_output,
+            )
             return 0
 
         if command == "create-dataset":
@@ -2426,8 +2479,16 @@ def _main_participant(argv: "list[str]") -> int:
             return _doctor_exit_code(checks, strict=bool(args.strict))
 
         if command == "profile-simulation":
-            from .profiler import run_profile
+            import time as _time
 
+            from .profiler import run_profile
+            from .ui import format_duration, say
+
+            say.intent(
+                f"Profiling simulation backends (preset={args.preset})",
+                quiet=json_output,
+            )
+            _t0 = _time.perf_counter()
             terminal_output, json_data = run_profile(
                 preset_name=str(args.preset),
                 output_path=args.output,
@@ -2437,10 +2498,15 @@ def _main_participant(argv: "list[str]") -> int:
                 log_progress=bool(args.log_progress),
                 output_format=output_format,
             )
+            _elapsed = _time.perf_counter() - _t0
             if json_output:
                 print(json.dumps(json_data, indent=2))
             else:
                 print(terminal_output, end="" if terminal_output.endswith("\n") else "\n")
+            say.ok(
+                f"Profile completed in {format_duration(_elapsed)}",
+                quiet=json_output,
+            )
             return 0
 
         raise ValueError(f"Unsupported command: {command}")

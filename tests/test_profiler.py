@@ -343,7 +343,9 @@ def test_profile_simulation_plain_uses_shared_presenter_path(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert captured.out == "shared profile output\n"
+    # Output is the shared presenter block bracketed by the unified
+    # say.intent / say.ok bookends; check the presenter slot is honoured.
+    assert "shared profile output" in captured.out
     assert observed == {
         "title": "Simulation Profile",
         "output_format": "plain",

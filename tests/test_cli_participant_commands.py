@@ -227,7 +227,9 @@ def test_init_format_plain_uses_shared_presenter_path(
     captured = capsys.readouterr()
 
     assert exit_code == 0
-    assert captured.out == "shared presenter output\n"
+    # Output is the shared presenter block bracketed by the unified
+    # say.intent / say.ok bookends; check the presenter slot is honoured.
+    assert "shared presenter output" in captured.out
     assert observed == {
         "title": "Starter Files",
         "output_format": "plain",
