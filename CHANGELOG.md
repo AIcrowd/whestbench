@@ -1,40 +1,11 @@
 # Changelog
 
-## Unreleased
+## v0.7.0 (2026-05-27)
 
 ### Feat
 
-- **dataset card**: per-split HF configs when `default_split` is declared.
-  The generated `configs:` YAML block now emits ONE config per split
-  (`default` = `default_split`, others self-named). Previously every split
-  was crammed under a single `default` config, which caused
-  `datasets.load_dataset(repo, split="mini")` to download every parquet
-  shard in the repo (~4.7 GB instead of ~250 MB). Loading a non-default
-  split now requires the config name: `load_dataset(repo, "full",
-  split="full")`. `whestbench.load_dataset` does this automatically;
-  it falls back to the legacy single-config layout for older cards.
-  Datasets baked without `default_split` keep the legacy single-config
-  layout for back-compat.
-
-- **`whest run` CLI**: resolve `default_split` before preflight. When
-  `--split` is omitted on a multi-split dataset, the CLI now fetches
-  `metadata.json` upfront, extracts `default_split`, and threads it
-  through both `hf_preflight` and the load — so the size estimate and
-  the parquet fetch touch only the target split. Prints `Using default
-  split 'mini' (from metadata.default_split)` to stderr.
-
-- **`whest dataset combine-splits`**: new `--default-split <name>` CLI
-  flag. Passes through to `combine_split_datasets(default_split=...)`
-  so operators can set the field at bake time without editing the
-  metadata.json by hand.
-
-- **metadata**: optional `default_split` field on multi-split datasets.
-  When set, `whest run --dataset hf://…` without `--split` projects to the
-  named split instead of erroring out. Set at bake time via the new
-  `combine_split_datasets(default_split=…)` kwarg. `validate_metadata`
-  enforces that the value is a string naming one of the dataset's splits.
-  The dataset-card template surfaces it in the `whest run` quick-start
-  block. Older whestbench versions ignore the field (forward-compatible).
+- **ux1**: per-split configs + split-aware load + early default_split resolution (#66)
+- **metadata**: optional default_split + CLI fallback for multi-split datasets
 
 ## v0.6.0 (2026-05-27)
 
