@@ -119,7 +119,7 @@ def build_score_block(section: TableSection) -> Panel:
             section.subtitle,
         )
         panel_kwargs["subtitle"] = (
-            f"{formula_match.group(0)}\nfinal_layer_mse"
+            f"final_layer_mse: {formula_match.group(0)}"
             if formula_match
             else escape(section.subtitle)
         )
