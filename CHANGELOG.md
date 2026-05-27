@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.8.0 (2026-05-27)
+
+### Feat
+
+- **ux2**: prepared-Arrow fast path on HF for multi-split datasets (#67)
+
+### Fix
+
+- **prepared-arrow**: handle multi-shard parquet splits (#68)
+
 ## v0.7.0 (2026-05-27)
 
 ### Feat
