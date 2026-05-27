@@ -59,40 +59,40 @@ This dataset is intentionally not part of the Public Release at [`{{ companion }
 
 The pure HuggingFace path (no whestbench install required):
 
+{%- if splits and "mini" in splits and "full" in splits %}
 ```python
 from datasets import load_dataset
-{% if splits %}
-# Load both splits (returns DatasetDict)
-ds = load_dataset(
-    "{{ repo_id }}",
-    revision="{{ revision }}",
-)
-# → DatasetDict({"public": ..., "holdout": ...})
 
-# Load one split (returns Dataset)
-{% if "public" in splits -%}
-ds = load_dataset(
-    "{{ repo_id }}",
-    revision="{{ revision }}",
-    split="public",
-)
-{%- else -%}
-ds = load_dataset(
-    "{{ repo_id }}",
-    revision="{{ revision }}",
-    split="{{ (splits.keys() | list)[0] }}",
-)
-{%- endif %}
-print(ds[0]["mlp_name"])
-{% else %}
+# Develop against mini — {{ '{:,}'.format(splits["mini"].n_mlps) }} MLPs, downloads in seconds
+mini = load_dataset("{{ repo_id }}", revision="{{ revision }}", split="mini")
+print(mini[0]["mlp_name"])
+
+# Lock in your numbers against full — {{ '{:,}'.format(splits["full"].n_mlps) }} MLPs
+full = load_dataset("{{ repo_id }}", revision="{{ revision }}", split="full")
+```
+{%- elif splits %}
+```python
+from datasets import load_dataset
+
+# Load all splits
+dsd = load_dataset("{{ repo_id }}", revision="{{ revision }}")
+print(dsd)
+
+# Or load one split:
+ds = load_dataset("{{ repo_id }}", revision="{{ revision }}", split="{{ splits.keys()|list|first }}")
+```
+{%- else %}
+```python
+from datasets import load_dataset
+
 ds = load_dataset(
     "{{ repo_id }}",
     revision="{{ revision }}",
     split="{{ split }}",
 )
 print(ds[0]["mlp_name"])
-{% endif %}
 ```
+{%- endif %}
 
 The whestbench convenience wrapper (adds schema validation + `metadata.json` access):
 
