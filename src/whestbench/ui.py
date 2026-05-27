@@ -40,11 +40,22 @@ class ProgressHandle(Protocol):
     def update(self, *, completed: int) -> None: ...
 
 
+_DEFAULT_CONSOLE: Optional[Console] = None
+
+
 def _get_console(console: Optional[Console]) -> Console:
-    """Return the provided console, or a fresh default one."""
+    """Return the provided console, or the lazy module-level default one.
+
+    The default ``Console`` is constructed on first use and cached for the
+    process lifetime. Rich's ``Console`` is internally thread-safe, so no
+    locking is required around the lazy init.
+    """
     if console is not None:
         return console
-    return Console()
+    global _DEFAULT_CONSOLE
+    if _DEFAULT_CONSOLE is None:
+        _DEFAULT_CONSOLE = Console()
+    return _DEFAULT_CONSOLE
 
 
 _HF_TRUTHY_VALUES = frozenset({"1", "on", "true", "yes"})

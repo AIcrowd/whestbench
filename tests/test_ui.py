@@ -9,7 +9,9 @@ import pytest
 from rich.console import Console
 from rich.progress import Progress
 
+from whestbench import ui as ui_module
 from whestbench.ui import (
+    _get_console,
     format_bytes,
     format_duration,
     format_throughput,
@@ -355,3 +357,22 @@ def test_status_disabled_env_emits_nothing(monkeypatch: pytest.MonkeyPatch) -> N
     with status("Loading from cache", console=console):
         pass
     assert buf.getvalue() == ""
+
+
+# ---------------------------------------------------------------------------
+# _get_console default-singleton behaviour
+
+
+def test_get_console_returns_singleton_when_none_passed() -> None:
+    """Two ``_get_console(None)`` calls should return the same default instance."""
+    # Reset the cached singleton so this test is independent of import order.
+    ui_module._DEFAULT_CONSOLE = None
+    first = _get_console(None)
+    second = _get_console(None)
+    assert first is second
+
+
+def test_get_console_returns_passed_console_unchanged() -> None:
+    """A user-provided console must take precedence over the default singleton."""
+    custom, _buf = _make_console()
+    assert _get_console(custom) is custom
