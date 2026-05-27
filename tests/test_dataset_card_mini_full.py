@@ -79,13 +79,11 @@ def test_mini_full_intro_does_not_call_mini_a_subset():
         repo_id="aicrowd/arc-whestbench-public-2026",
         revision="v1-warmup",
     )
-    # mini must NOT be described as a subset of full. Either the word "subset" doesn't
-    # appear, or it appears in a "not a subset" disclaimer.
+    # mini must NOT be described as a subset of full. The template must emit the
+    # explicit "not a subset" disclaimer phrase. The template uses markdown bold
+    # (**not**) so the rendered string is "**not** a subset".
     lower = rendered.lower()
-    if "subset" in lower:
-        assert "not" in lower and "subset" in lower, (
-            "rendered README mentions 'subset' but does not disclaim mini-as-subset-of-full"
-        )
+    assert "**not** a subset" in lower, "rendered README must contain the 'not a subset' disclaimer"
 
 
 def test_holdout_path_unchanged_by_mini_full_addition():
@@ -107,9 +105,11 @@ def test_holdout_path_unchanged_by_mini_full_addition():
         repo_id="aicrowd/arc-whestbench-evals-2026",
         revision="v1-warmup",
     )
-    # The existing public+holdout copy must still render.
-    assert (
-        "public leaderboard" in rendered.lower()
-        or "private/final" in rendered.lower()
-        or "holdout" in rendered.lower()
+    # The existing public+holdout copy must still render — check phrases that
+    # only appear in the special-cased public+holdout branch.
+    assert "public leaderboard" in rendered.lower(), (
+        "public+holdout branch missing 'public leaderboard' language"
+    )
+    assert "private/final" in rendered.lower(), (
+        "public+holdout branch missing 'private/final' language"
     )
