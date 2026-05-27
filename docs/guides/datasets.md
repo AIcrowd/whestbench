@@ -527,3 +527,74 @@ debugging, set `HF_HUB_DISABLE_XET=1` (see
 Request access on the dataset page (HF will email you a link from
 `https://huggingface.co/datasets/<repo>`), then re-run. Make sure you're
 authenticated with the same account that was granted access.
+
+## Reference
+
+### Format
+
+- Schema 3.0 spec: [`docs/reference/dataset-format.md`](../reference/dataset-format.md).
+
+### SDK surface
+
+```python
+import whestbench as wb
+
+ds = wb.load_dataset(
+    "aicrowd/foo", revision="v1", split="public", streaming=False
+)
+for mlp in wb.iter_mlps(ds):
+    ...
+mlp = wb.mlp_at(ds, 0)        # random access (materialised datasets only)
+md = wb.metadata(ds)           # the dataset's metadata.json
+
+wb.publish_dataset(
+    "./my-eval", repo_id="aicrowd/foo", tag="v1"
+)
+wb.merge_datasets(["./partial-a", "./partial-b"], output_dir="./full")
+wb.combine_split_datasets(
+    ["./public", "./holdout"], output_dir="./full"
+)
+```
+
+### CLI verbs (canonical names)
+
+| Verb | Purpose | Deprecated alias |
+|---|---|---|
+| `whest dataset bake` | Generate locally | — |
+| `whest dataset upload` | Publish to HF | `push` |
+| `whest dataset download` | Fetch from HF | `pull` |
+| `whest dataset info` | Show metadata | `inspect` |
+| `whest dataset merge` | Concatenate partials | — |
+| `whest dataset combine-splits` | Assemble multi-split | — |
+
+Deprecated aliases continue to work through v0.6 and emit a deprecation
+warning. v0.7 removes them.
+
+### Environment variables
+
+| Var | Purpose |
+|---|---|
+| `HF_TOKEN` | Auth token (lazy — only when needed) |
+| `HF_HOME` | Root of HF state (`~/.cache/huggingface` by default) |
+| `HF_HUB_CACHE` | Hub blobs cache |
+| `HF_DATASETS_CACHE` | datasets-library Arrow cache |
+| `HF_XET_CACHE` | Xet chunk staging |
+| `HF_XET_HIGH_PERFORMANCE` | Saturate bandwidth + CPU |
+| `HF_HUB_DISABLE_PROGRESS_BARS` | Suppress progress bars |
+| `HF_HUB_DISABLE_XET` | Force plain-LFS transport |
+| `HF_HUB_DISABLE_IMPLICIT_TOKEN` | Don't send token on read calls |
+| `NO_COLOR` | Disable ANSI colours |
+
+### CLI flag conventions
+
+`--repo-type`, `--revision`, `--token`, `--cache-dir`, `--quiet`, `--json`,
+`--format {auto,human,agent,json,quiet}`, `--dry-run`, `--exist-ok`. Adopted
+from [HF's `hf` CLI](https://huggingface.co/docs/huggingface_hub/guides/cli)
+for consistency.
+
+### See also
+
+- [CLI reference](../reference/cli-reference.md) — exhaustive flag list per verb.
+- [Dataset format spec](../reference/dataset-format.md) — schema 3.0 on-disk layout.
+- [Parallel bake how-to](../how-to/parallel-bake.md) — distributed `bake` + `merge`.
+- [Publish to HF Hub how-to](../how-to/publish-to-hf-hub.md) — token setup, repo creation.
