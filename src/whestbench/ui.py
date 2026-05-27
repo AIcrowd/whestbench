@@ -8,6 +8,17 @@ All helpers in this module respect:
 
 from __future__ import annotations
 
+from typing import Optional
+
+from rich.console import Console
+
+
+def _get_console(console: Optional[Console]) -> Console:
+    """Return the provided console, or a fresh default one."""
+    if console is not None:
+        return console
+    return Console()
+
 
 def format_bytes(n_bytes: int) -> str:
     """Format a byte count as a human-readable string.
@@ -55,3 +66,46 @@ def format_throughput(n_bytes: int, seconds: float) -> str:
         return "— /s"
     bps = int(n_bytes / seconds)
     return f"{format_bytes(bps)}/s"
+
+
+class _Say:
+    """Styled message emitter used as the module-level ``say`` singleton.
+
+    Each method takes ``(msg, *, console=None, quiet=False)``. ``quiet=True``
+    makes the call a no-op; callers pass ``quiet=True`` for ``--json`` /
+    ``no_rich`` modes. The configured Rich ``Console`` already respects
+    ``NO_COLOR``.
+    """
+
+    def intent(self, msg: str, *, console: Optional[Console] = None, quiet: bool = False) -> None:
+        """Announce an upcoming long-running action (one per verb)."""
+        if quiet:
+            return
+        _get_console(console).print(f"[bold]{msg}[/bold]")
+
+    def step(self, msg: str, *, console: Optional[Console] = None, quiet: bool = False) -> None:
+        """Note an in-progress sub-step (informational, dimmed)."""
+        if quiet:
+            return
+        _get_console(console).print(f"[dim]{msg}[/dim]")
+
+    def ok(self, msg: str, *, console: Optional[Console] = None, quiet: bool = False) -> None:
+        """Report a successful outcome with a leading check mark."""
+        if quiet:
+            return
+        _get_console(console).print(f"[bold green]✓[/bold green] {msg}")
+
+    def warn(self, msg: str, *, console: Optional[Console] = None, quiet: bool = False) -> None:
+        """Flag a non-default behaviour with a leading warning glyph."""
+        if quiet:
+            return
+        _get_console(console).print(f"[bold yellow]⚠[/bold yellow] {msg}")
+
+    def hint(self, msg: str, *, console: Optional[Console] = None, quiet: bool = False) -> None:
+        """Offer an actionable tip — never a warning, never repeated noisily."""
+        if quiet:
+            return
+        _get_console(console).print(f"[dim]tip: {msg}[/dim]")
+
+
+say = _Say()

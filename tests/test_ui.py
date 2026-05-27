@@ -2,9 +2,30 @@
 
 from __future__ import annotations
 
-import pytest
+import io
 
-from whestbench.ui import format_bytes, format_duration, format_throughput
+import pytest
+from rich.console import Console
+
+from whestbench.ui import format_bytes, format_duration, format_throughput, say
+
+
+def _make_console() -> tuple[Console, io.StringIO]:
+    """Build a Rich console that writes to a capturable buffer.
+
+    ``force_terminal=True`` keeps the markup logic active even though our buffer
+    isn't a real TTY; ``color_system=None`` drops ANSI codes so we can grep
+    plain text.
+    """
+    buf = io.StringIO()
+    console = Console(
+        file=buf,
+        force_terminal=True,
+        color_system=None,
+        width=120,
+        highlight=False,
+    )
+    return console, buf
 
 
 @pytest.mark.parametrize(
@@ -72,3 +93,68 @@ def test_format_throughput(n_bytes: int, seconds: float, expected: str) -> None:
 
 def test_format_throughput_zero_seconds_returns_dash() -> None:
     assert format_throughput(1024, 0.0) == "— /s"
+
+
+# ---------------------------------------------------------------------------
+# say.* message helpers
+
+
+def test_say_intent_emits_message() -> None:
+    console, buf = _make_console()
+    say.intent("Downloading hf://foo — 2.0 GB", console=console)
+    assert "Downloading hf://foo — 2.0 GB" in buf.getvalue()
+
+
+def test_say_step_emits_message() -> None:
+    console, buf = _make_console()
+    say.step("Resolving revision v1-warmup", console=console)
+    assert "Resolving revision v1-warmup" in buf.getvalue()
+
+
+def test_say_ok_includes_check_and_message() -> None:
+    console, buf = _make_console()
+    say.ok("Loaded 1,000 MLPs in 2.1s", console=console)
+    out = buf.getvalue()
+    assert "✓" in out
+    assert "Loaded 1,000 MLPs in 2.1s" in out
+
+
+def test_say_warn_includes_warning_glyph_and_message() -> None:
+    console, buf = _make_console()
+    say.warn("Streaming — data not cached", console=console)
+    out = buf.getvalue()
+    assert "⚠" in out
+    assert "Streaming — data not cached" in out
+
+
+def test_say_hint_includes_tip_label_and_message() -> None:
+    console, buf = _make_console()
+    say.hint("Set HF_TOKEN to lift rate limits", console=console)
+    out = buf.getvalue()
+    assert "tip" in out.lower()
+    assert "HF_TOKEN" in out
+
+
+@pytest.mark.parametrize(
+    "method,arg",
+    [
+        ("intent", "hello"),
+        ("step", "hello"),
+        ("ok", "hello"),
+        ("warn", "hello"),
+        ("hint", "hello"),
+    ],
+)
+def test_say_quiet_suppresses_output(method: str, arg: str) -> None:
+    console, buf = _make_console()
+    getattr(say, method)(arg, console=console, quiet=True)
+    assert buf.getvalue() == ""
+
+
+def test_say_intent_emits_even_when_hf_progress_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+    console, buf = _make_console()
+    say.intent("hello", console=console)
+    assert "hello" in buf.getvalue()
