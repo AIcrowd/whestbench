@@ -237,6 +237,16 @@ See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked 
 | Schema version | {{ metadata.schema_version }} |
 | Seed protocol | `{{ metadata.seed_protocol.name }}` v{{ metadata.seed_protocol.version }} |
 
+## Working with this dataset
+
+Three ways in, fastest first:
+
+- **Score an estimator** — `whest run --dataset hf://{{ repo_id }}@{{ revision }}` runs your estimator end-to-end{% if metadata.default_split %} against the default `{{ metadata.default_split }}` split (add `--split <name>` to switch){% elif splits %} (add `--split <name>` to pick a split){% endif %}. No manual download step — the data is fetched and cached for you.
+- **Load in Python** — `whestbench.load_dataset("{{ repo_id }}", revision="{{ revision }}"{% if splits %}, split="{% if metadata.default_split %}{{ metadata.default_split }}{% else %}{{ splits.keys()|list|first }}{% endif %}"{% endif %})` returns a HuggingFace `Dataset` with schema validation plus `whestbench.metadata(ds)` provenance; iterate ready-to-use MLP objects with `whestbench.iter_mlps(ds)`.
+- **Raw rows** — plain `datasets.load_dataset(...)` works too, if you'd rather not install whestbench (see [Quick start](#quick-start)).
+
+📖 **Full walkthrough** — choosing a split, FLOP budgeting, the estimator contract, and the submission flow — see **[Use Evaluation Datasets](https://github.com/AIcrowd/whest-starterkit/blob/main/docs/how-to/use-evaluation-datasets.md)** in the starter kit.
+
 ## Reproducibility
 
 This dataset was baked with:
@@ -256,28 +266,33 @@ This dataset was baked with:
 
 {% set proto_name = metadata.get('seed_protocol', {}).get('name', '') %}
 {% if proto_name == 'whestbench_explicit_per_mlp_seeds' %}
-This dataset was baked with **seed_protocol 3.0 (explicit per-MLP seeds)**. Each MLP's seed is recorded in the parquet `mlp_seed` column. To re-bake locally with the same seed list:
+This dataset was baked with **seed_protocol 3.0 (explicit per-MLP seeds)**: every MLP's input seed lives in the parquet `mlp_seed` column, so the bake is fully reproducible from the published data alone. You almost never need to do this — but if you want to regenerate the dataset byte-for-byte, expand the recipe below.
+
+<details>
+<summary><b>Re-bake this dataset locally from its seeds</b></summary>
+
+**1. Extract the per-MLP seeds** into one JSON file per split:
+
+```python
+import json
+
+import whestbench
+
+{% if splits -%}
+for split in [{% for s in splits.keys() %}"{{ s }}"{% if not loop.last %}, {% endif %}{% endfor %}]:
+    ds = whestbench.load_dataset("{{ repo_id }}", revision="{{ revision }}", split=split)
+    json.dump([int(r["mlp_seed"]) for r in ds], open(f"{split}-seeds.json", "w"))
+{%- else -%}
+ds = whestbench.load_dataset("{{ repo_id }}", revision="{{ revision }}", split="{{ split }}")
+json.dump([int(r["mlp_seed"]) for r in ds], open("{{ split }}-seeds.json", "w"))
+{%- endif %}
+```
+
+**2. Re-bake** each split with the same seeds:
 
 ```bash
-# Extract the per-MLP seeds from the published dataset:
-python -c "
-import json
-from datasets import load_dataset
-ds = load_dataset('{{ repo_id }}', revision='{{ revision }}'{% if splits %}, {% endif %})
-{% if splits %}
-{% for split_name in splits.keys() %}
-seeds_{{ split_name }} = [int(row['mlp_seed']) for row in ds['{{ split_name }}']]
-open('{{ split_name }}-seeds.json', 'w').write(json.dumps(seeds_{{ split_name }}))
-{% endfor %}
-{% else %}
-seeds = [int(row['mlp_seed']) for row in ds['{{ split }}']]
-open('seeds.json', 'w').write(json.dumps(seeds))
-{% endif %}
-"
-
-# Re-bake:
-{% if splits %}
-{% for name, info in splits.items() %}
+{% if splits -%}
+{% for name, info in splits.items() -%}
 whest dataset bake \
     --n-mlps {{ info.n_mlps }} \
     --n-samples {{ metadata.n_samples }} \
@@ -286,19 +301,20 @@ whest dataset bake \
     --mlp-seeds {{ name }}-seeds.json \
     --output ./{{ name }}-rebake{% if metadata.backend == 'torch' %} \
     --torch --device cuda{% endif %}
-
-{% endfor %}
-{% else %}
+{% endfor -%}
+{%- else -%}
 whest dataset bake \
     --n-mlps {{ metadata.n_mlps }} \
     --n-samples {{ metadata.n_samples }} \
     --width {{ metadata.width }} --depth {{ metadata.depth }} \
     --split {{ split }} \
-    --mlp-seeds seeds.json \
+    --mlp-seeds {{ split }}-seeds.json \
     --output ./rebake{% if metadata.backend == 'torch' %} \
     --torch --device cuda{% endif %}
-{% endif %}
+{%- endif %}
 ```
+
+</details>
 {% elif proto_name == 'whestbench_seedsequence_hierarchy' %}
 This dataset was baked with **seed_protocol 2.0 (legacy single-root)**. To re-bake:
 
