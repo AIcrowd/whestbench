@@ -19,8 +19,9 @@ with `whest dataset bake` to migrate.
 └── README.md                              # HuggingFace dataset card
 ```
 
-- `<split>` is the split name: `public` for the evaluation split, `holdout` for the
-  private grader split. Controlled by `whest dataset bake --split`.
+- `<split>` is the split name. Controlled by `whest dataset bake --split`.
+  Dataset authors can separately declare the HF config with `--config`; the
+  default is `default`.
 - `NNNNN-of-MMMMM` is the standard HF shard numbering; single-host bakes produce
   `00000-of-00001`.
 - `metadata.json` is a flat JSON object with provenance, reproducibility, and hardware
@@ -85,6 +86,8 @@ about the bake itself, **not** the estimator's FLOP budget at evaluation time
 | `seed_protocol.name` | `string` | `"whestbench_explicit_per_mlp_seeds"` (3.0, new bakes) or `"whestbench_seedsequence_hierarchy"` (2.0, legacy). |
 | `seed_protocol.version` | `string` | `"3.0"` (new bakes) or `"2.0"` (legacy). |
 | `seed` | `integer` or `null` | **Present under seed_protocol 2.0 only.** Root seed passed to `--seed`. `null` if auto-generated. Absent in 3.0 datasets. |
+| `split` | `string` | Split name for a single-split bake. New bakes populate this; legacy metadata may omit it. |
+| `config` | `string` | HF dataset config for a single-split bake. Defaults to `"default"`; legacy metadata may omit it. |
 | `n_mlps` | `integer` | Number of MLPs in this dataset (or partial) |
 | `n_samples` | `integer` | Ground-truth samples per MLP |
 | `width` | `integer` | Neuron count per layer |
@@ -374,6 +377,10 @@ whest dataset bake --n-mlps 10 --n-samples 1e7 --width 256 --depth 8 \
 echo '[1001,2002,3003,4004]' > my-seeds.json
 whest dataset bake --n-mlps 4 --n-samples 100 --width 4 --depth 2 \
     --mlp-seeds my-seeds.json --output ./tiny-eval
+
+# Explicit HF config coordinate for authoring config-per-split repos:
+whest dataset bake --n-mlps 100 --n-samples 1e9 --width 256 --depth 8 \
+    --split full --config full --output ./full
 ```
 
 In Python:
@@ -389,6 +396,10 @@ create_dataset(n_mlps=10, n_samples=1_000_000, width=256, depth=8,
 create_dataset(n_mlps=4, n_samples=100, width=4, depth=2,
                mlp_seeds=[1001, 2002, 3003, 4004],
                output_path="./tiny-eval")
+
+# Explicit config coordinate:
+create_dataset(n_mlps=100, n_samples=1_000_000_000, width=256, depth=8,
+               split="full", config="full", output_path="./full")
 ```
 
 #### Extracting seeds from a published dataset
@@ -493,9 +504,10 @@ my-eval/
   "created_at_utc": "...",
   "hardware": {...},
   "splits": {
-    "public":  {"n_mlps": 50, "created_at_utc": "...", "hardware_fingerprints": [...]},
-    "holdout": {"n_mlps": 50, "created_at_utc": "...", "hardware_fingerprints": [...]}
-  }
+    "public":  {"config": "default", "n_mlps": 50, "created_at_utc": "...", "hardware_fingerprints": [...]},
+    "holdout": {"config": "holdout", "n_mlps": 50, "created_at_utc": "...", "hardware_fingerprints": [...]}
+  },
+  "default_split": "public"
 }
 ```
 
@@ -508,6 +520,7 @@ the parquet `mlp_seed` column for each split.
 |---|---|---|
 | `schema_version`, `format`, `seed_protocol` | top-level | top-level |
 | `backend`, `width`, `depth`, `n_samples` | top-level | top-level — must match across all splits (validated at combine time) |
+| `split`, `config` | top-level optional coordinate for new bakes | per-split (`splits.<name>.config`) |
 | `n_mlps`, `seed` | top-level | per-split (`splits.<name>.{n_mlps,seed}`) |
 | `created_at_utc` | top-level | top-level (= earliest of splits) + optional per-split |
 | `hardware` | top-level (bake host) | top-level (combine host) + per-split `hardware_fingerprints` for provenance |
@@ -541,11 +554,15 @@ Bake each split as a complete single-split dataset, then combine. Under seed_pro
 whest dataset generate-seeds --n-mlps 50 > public-seeds.json
 whest dataset generate-seeds --n-mlps 50 > holdout-seeds.json
 
-whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split public  --mlp-seeds public-seeds.json  --output ./pub
-whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split holdout --mlp-seeds holdout-seeds.json --output ./hold
+whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split public  --config default --mlp-seeds public-seeds.json  --output ./pub
+whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split holdout --config holdout --mlp-seeds holdout-seeds.json --output ./hold
 whest dataset combine-splits ./pub ./hold --output ./eval-r1
 whest dataset push ./eval-r1 --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
 ```
+
+`combine-splits` preserves the baked config coordinate. If exactly one input
+declares `config="default"`, the combined metadata records that split as
+`default_split`, so `whest run --dataset ...` can keep a split-oriented UX.
 
 ### The `public` / `holdout` naming convention
 

@@ -35,6 +35,7 @@ from .dataset_io import (
     SCHEMA_VERSION,
     SEED_PROTOCOL_NAME_V3,
     SEED_PROTOCOL_VERSION_V3,
+    _validate_config_name,
     _validate_mlp_seeds,
     make_features,
     write_dataset_dir,
@@ -63,6 +64,7 @@ def create_dataset_torch(
     mlp_seeds: Optional[List[int]] = None,
     output_path: "Path | str",
     split: str = DEFAULT_SPLIT,
+    config: str = "default",
     mlp_range: Optional[Tuple[int, int]] = None,
     progress: Optional[Callable[[Dict[str, Any]], None]] = None,
     device: str = "auto",
@@ -83,6 +85,7 @@ def create_dataset_torch(
     Args:
         n_mlps, n_samples, width, depth, mlp_seeds, output_path, progress:
             Same as create_dataset(). See whestbench.dataset for full semantics.
+        config: HF dataset config name for this split. Defaults to "default".
         device: "auto" | "cuda" | "mps" | "cpu". "auto" resolves cuda > mps > cpu.
             Explicit values error if unavailable (no silent CPU fallback).
             Note: bitwise reproducibility on CUDA additionally requires the
@@ -112,6 +115,7 @@ def create_dataset_torch(
     if deprecated_kwargs:
         unexpected = ", ".join(repr(k) for k in deprecated_kwargs)
         raise TypeError(f"create_dataset_torch() got unexpected keyword argument(s): {unexpected}")
+    _validate_config_name(config)
 
     torch = _require_torch()
 
@@ -276,6 +280,8 @@ def create_dataset_torch(
             "version": SEED_PROTOCOL_VERSION_V3,
         },
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "split": split,
+        "config": config,
         "n_mlps": end - start,
         "n_samples": n_samples,
         "width": width,

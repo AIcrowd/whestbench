@@ -205,8 +205,8 @@ Bake a new evaluation dataset to a local directory.
 
 ```bash
 whest dataset bake \
-    --n-mlps N --n-samples N --width W --depth D [--seed S] \
-    [--split public|holdout] \
+    --n-mlps N --n-samples N --width W --depth D \
+    [--split SPLIT] [--config CONFIG] \
     --output DIR \
     [--torch] [--device auto|cuda|mps|cpu] \
     [--mlps-per-batch N] [--chunk-size N] \
@@ -223,8 +223,8 @@ Required options:
 
 Key optional options:
 
-- `--seed <int>` — reproducibility seed. Auto-generated if omitted; printed on completion.
-- `--split public|holdout` — dataset split name. Default: `public`.
+- `--split <name>` — dataset split name. Default: `public`.
+- `--config <name>` — HF dataset config name for this split. Default: `default`. Use this for authoring config-per-split datasets such as `default/mini + full/full` or `default/public + holdout/holdout`.
 - `--torch` — use the GPU/torch backend (requires `pip install whestbench[gpu]`). See [GPU Dataset Generation](./gpu-dataset-generation.md).
 - `--device auto|cuda|mps|cpu` — device when `--torch` is active. `auto` resolves `cuda > mps > cpu`.
 - `--mlps-per-batch <int>` — torch backend: MLPs processed in parallel on device.
@@ -249,14 +249,12 @@ Output is a directory with:
 whest dataset bake \
     --n-mlps 10 --n-samples 10_000_000 \
     --width 256 --depth 8 \
-    --seed 42 \
     --output ./my-eval
 
 # Partial bake (slice 0 of 4)
 whest dataset bake \
     --n-mlps 100 --n-samples 1_000_000_000 \
     --width 256 --depth 8 \
-    --seed 42 \
     --slice 0/4 \
     --output ./partial-0
 
@@ -264,7 +262,7 @@ whest dataset bake \
 whest dataset bake \
     --n-mlps 100 --n-samples 1_000_000_000 \
     --width 256 --depth 8 \
-    --seed 42 --torch --device auto \
+    --torch --device auto \
     --output ./gpu-eval
 ```
 
@@ -291,7 +289,7 @@ whest dataset inspect ./my-eval
 whest dataset inspect aicrowd/arc-whestbench-2026 --revision v1
 ```
 
-Output prints key metadata fields: `schema_version`, `format`, `backend`, `seed`, `n_mlps`, `n_samples`, `width`, `depth`, `created_at_utc`, and device provenance for torch bakes.
+Output prints key metadata fields: `schema_version`, `format`, `backend`, `split`, `config`, `n_mlps`, `n_samples`, `width`, `depth`, `created_at_utc`, and device provenance for torch bakes. Multi-split datasets print each split's `config` when present.
 
 ### `whest dataset push`
 
@@ -389,7 +387,7 @@ whest dataset merge \
 # 1. Bake
 whest dataset bake \
     --n-mlps 10 --n-samples 10_000_000 \
-    --width 256 --depth 8 --seed 42 \
+    --width 256 --depth 8 \
     --output ./my-eval
 
 # 2. Inspect locally

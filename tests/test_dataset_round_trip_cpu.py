@@ -102,12 +102,21 @@ def test_cpu_bake_metadata_has_schema_3_0(tmp_path: Path):
 
     out = tmp_path / "ds"
     create_dataset(
-        n_mlps=2, n_samples=50, width=4, depth=2, mlp_seeds=[1000, 1001], output_path=out
+        n_mlps=2,
+        n_samples=50,
+        width=4,
+        depth=2,
+        mlp_seeds=[1000, 1001],
+        output_path=out,
+        split="mini",
+        config="default",
     )
     md = json.loads((out / "metadata.json").read_text())
     assert md["schema_version"] == "3.0"
     assert md["format"] == "hf-datasets-parquet"
     assert md["backend"] == "flopscope"
+    assert md["split"] == "mini"
+    assert md["config"] == "default"
 
 
 def test_cpu_bake_supports_mlp_range(tmp_path: Path):

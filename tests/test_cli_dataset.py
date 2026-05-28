@@ -90,6 +90,34 @@ def test_whest_dataset_bake_with_holdout_split(tmp_path: Path):
     assert (out / "data" / "holdout-00000-of-00001.parquet").is_file()
 
 
+def test_whest_dataset_bake_accepts_config(tmp_path: Path):
+    out = tmp_path / "ds"
+    res = _run_whest(
+        "dataset",
+        "bake",
+        "--n-mlps",
+        "2",
+        "--n-samples",
+        "100",
+        "--width",
+        "4",
+        "--depth",
+        "2",
+        "--split",
+        "full",
+        "--config",
+        "full",
+        "--output",
+        str(out),
+    )
+    assert res.returncode == 0, res.stderr
+    md = json.loads((out / "metadata.json").read_text())
+    assert md["split"] == "full"
+    assert md["config"] == "full"
+    yaml_frontmatter = (out / "README.md").read_text().split("---", 2)[1]
+    assert "config_name: full" in yaml_frontmatter
+
+
 def test_whest_dataset_bake_with_slice(tmp_path: Path):
     out = tmp_path / "ds"
     res = _run_whest(
@@ -214,6 +242,12 @@ def test_whest_dataset_combine_splits_help_lists_subcommand():
     res = _run_whest("dataset", "--help")
     assert res.returncode == 0
     assert "combine-splits" in res.stdout
+
+
+def test_whest_dataset_bake_help_lists_config_flag():
+    res = _run_whest("dataset", "bake", "--help")
+    assert res.returncode == 0
+    assert "--config" in res.stdout
 
 
 def test_whest_dataset_combine_splits_produces_multi_split_dir(tmp_path: Path):
@@ -469,6 +503,54 @@ def test_whest_dataset_inspect_multi_split_output(tmp_path: Path):
     assert "public" in res.stdout
     assert "holdout" in res.stdout
     assert "multi-split" in res.stdout.lower()
+
+
+def test_whest_dataset_info_prints_config_coordinates(tmp_path: Path):
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    for split, config, out_dir in (("public", "default", pub), ("holdout", "holdout", hold)):
+        res = _run_whest(
+            "dataset",
+            "bake",
+            "--n-mlps",
+            "2",
+            "--n-samples",
+            "100",
+            "--width",
+            "4",
+            "--depth",
+            "2",
+            "--split",
+            split,
+            "--config",
+            config,
+            "--output",
+            str(out_dir),
+        )
+        assert res.returncode == 0, res.stderr
+
+    single = _run_whest("dataset", "info", str(hold))
+    assert single.returncode == 0, single.stderr
+    assert "split: holdout" in single.stdout
+    assert "config: holdout" in single.stdout
+
+    out = tmp_path / "combined"
+    combined = _run_whest(
+        "dataset",
+        "combine-splits",
+        str(pub),
+        str(hold),
+        "--output",
+        str(out),
+        "--skip-prepared-arrow",
+    )
+    assert combined.returncode == 0, combined.stderr
+    multi = _run_whest("dataset", "info", str(out))
+    assert multi.returncode == 0, multi.stderr
+    assert "public:" in multi.stdout
+    assert "config=default" in multi.stdout
+    assert "holdout:" in multi.stdout
+    assert "config=holdout" in multi.stdout
 
 
 def test_old_create_dataset_emits_redirect(tmp_path: Path):
