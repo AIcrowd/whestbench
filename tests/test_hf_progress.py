@@ -145,6 +145,81 @@ def test_hf_preflight_returns_none_on_hf_error() -> None:
     assert pf is None
 
 
+def test_hf_preflight_sizes_from_prepared_subtree_when_prefix_given() -> None:
+    """With data_subtree_prefix='prepared/mini/' the preflight ignores the
+    parquet files and sums sizes from the prepared subtree instead. Used by
+    the `whest run` path so the advertised 'Downloading N files, X bytes'
+    matches what the prepared-Arrow fast path will actually pull."""
+    info = _fake_dataset_info(
+        [
+            # Parquet shards — should be IGNORED when prefix is given.
+            {"rfilename": "data/mini-00000-of-00001.parquet", "size": 200_000_000},
+            {"rfilename": "data/full-00000-of-00005.parquet", "size": 423_000_000},
+            # Prepared subtree for mini — should be counted.
+            {"rfilename": "prepared/mini/data-00000-of-00001.arrow", "size": 212_000_000},
+            {"rfilename": "prepared/mini/dataset_info.json", "size": 1320},
+            {"rfilename": "prepared/mini/state.json", "size": 249},
+            # Prepared subtree for ANOTHER split — should NOT be counted.
+            {"rfilename": "prepared/full/data-00000-of-00005.arrow", "size": 423_000_000},
+            # Always-included sidecars.
+            {"rfilename": "metadata.json", "size": 6000},
+            {"rfilename": "README.md", "size": 13_000},
+        ]
+    )
+    with (
+        patch("whestbench.hf_progress.HfApi") as MockApi,
+        patch("whestbench.hf_progress.try_to_load_from_cache", return_value=None),
+    ):
+        MockApi.return_value.dataset_info.return_value = info
+        pf = hf_preflight(
+            "aicrowd/foo",
+            revision="v1-warmup",
+            split="mini",
+            data_subtree_prefix="prepared/mini/",
+        )
+    assert pf is not None
+    rfiles = [n for n, _ in pf.files]
+    # Parquet shards excluded.
+    assert "data/mini-00000-of-00001.parquet" not in rfiles
+    assert "data/full-00000-of-00005.parquet" not in rfiles
+    # Only `prepared/mini/**` plus the always-on sidecars.
+    assert "prepared/mini/data-00000-of-00001.arrow" in rfiles
+    assert "prepared/mini/dataset_info.json" in rfiles
+    assert "prepared/mini/state.json" in rfiles
+    assert "prepared/full/data-00000-of-00005.arrow" not in rfiles
+    assert "metadata.json" in rfiles
+    assert "README.md" in rfiles
+    assert pf.total_bytes == 212_000_000 + 1320 + 249 + 6_000 + 13_000
+
+
+def test_hf_preflight_prepared_prefix_is_directory_scoped() -> None:
+    """The prepared prefix must require trailing-slash semantics so
+    `prepared/mini/` does NOT match a hypothetical `prepared/minimal/` sibling.
+    Callers in cli.py append the slash before passing it in."""
+    info = _fake_dataset_info(
+        [
+            {"rfilename": "prepared/mini/data-00000-of-00001.arrow", "size": 1_000_000},
+            {"rfilename": "prepared/minimal/data-00000-of-00001.arrow", "size": 999_999},
+            {"rfilename": "metadata.json", "size": 6000},
+        ]
+    )
+    with (
+        patch("whestbench.hf_progress.HfApi") as MockApi,
+        patch("whestbench.hf_progress.try_to_load_from_cache", return_value=None),
+    ):
+        MockApi.return_value.dataset_info.return_value = info
+        pf = hf_preflight(
+            "aicrowd/foo",
+            revision="v1",
+            split="mini",
+            data_subtree_prefix="prepared/mini/",
+        )
+    assert pf is not None
+    rfiles = [n for n, _ in pf.files]
+    assert "prepared/mini/data-00000-of-00001.arrow" in rfiles
+    assert "prepared/minimal/data-00000-of-00001.arrow" not in rfiles
+
+
 def test_richhftqdm_forwards_updates_to_active_progress(monkeypatch: pytest.MonkeyPatch) -> None:
     events: list[tuple[str, int]] = []
 

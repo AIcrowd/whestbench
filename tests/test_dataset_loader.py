@@ -229,30 +229,34 @@ def _bake_multi_split_with_prepared(tmp_path: Path) -> Path:
 
 
 def test_load_dataset_prefers_prepared_arrow_locally(tmp_path: Path, capsys):
-    """When prepared/<split>/ exists, local load_dataset uses load_from_disk
-    and prints the fast-path notice."""
+    """When prepared/<split>/ exists, local load_dataset uses load_from_disk.
+
+    Local-path loads do NOT print the "downloading" notice — nothing
+    crosses the network. The notice is reserved for HF remote loads.
+    """
     from datasets import Dataset
 
     from whestbench.dataset import _PREPARED_LOAD_NOTICE_SHOWN, load_dataset
 
     out = _bake_multi_split_with_prepared(tmp_path)
 
-    # Reset the per-process notice cache so we observe the print here.
+    # Reset the per-process notice cache so we observe whatever prints here.
     _PREPARED_LOAD_NOTICE_SHOWN.clear()
 
     ds = load_dataset(out, split="public")
     assert isinstance(ds, Dataset)
     assert len(ds) == 3
 
+    # No download notice on local paths — the old bragging line is also gone.
     captured = capsys.readouterr()
-    assert "using prepared Arrow split 'public'" in captured.err
-    assert "no local parquet" in captured.err
+    assert "downloading" not in captured.err
+    assert "prepared Arrow" not in captured.err
 
 
 def test_load_dataset_falls_back_when_prepared_dir_missing(tmp_path: Path, capsys):
     """If metadata claims prepared but the directory is gone, load still falls
     through to the parquet path without raising and without printing the
-    fast-path notice."""
+    download notice."""
     import shutil
 
     from datasets import Dataset
@@ -269,9 +273,9 @@ def test_load_dataset_falls_back_when_prepared_dir_missing(tmp_path: Path, capsy
     # We deliberately don't assert n_rows here: HF's auto-discovery on a
     # plain local directory is independent of whestbench. The thing this
     # test guards is the silent fallback contract — prepared/ missing must
-    # NOT raise, and must NOT print the fast-path notice.
+    # NOT raise, and must NOT print the download notice.
     captured = capsys.readouterr()
-    assert "using prepared Arrow" not in captured.err
+    assert "downloading" not in captured.err
 
 
 def test_load_dataset_streaming_skips_prepared(tmp_path: Path, capsys):
@@ -287,24 +291,51 @@ def test_load_dataset_streaming_skips_prepared(tmp_path: Path, capsys):
     with pytest.raises(ValueError, match="streaming=True is only supported"):
         load_dataset(out, split="public", streaming=True)
     captured = capsys.readouterr()
-    assert "using prepared Arrow" not in captured.err
+    assert "downloading" not in captured.err
 
 
-def test_load_dataset_prepared_notice_shown_once_per_key(tmp_path: Path, capsys):
-    """The fast-path notice should not be re-printed for repeat loads of the
-    same repo+split within a process."""
-    from whestbench.dataset import _PREPARED_LOAD_NOTICE_SHOWN, load_dataset
+def test_emit_prepared_download_notice_prints_once_for_hf_repo(capsys):
+    """The user-facing 'downloading' notice prints once per (repo, rev, split).
 
-    out = _bake_multi_split_with_prepared(tmp_path)
+    We test the helper directly because the live HF download path can't be
+    exercised offline. The helper is what fires inside `_try_load_prepared_split`
+    in the non-local branch.
+    """
+    from whestbench.dataset import (
+        _PREPARED_LOAD_NOTICE_SHOWN,
+        _emit_prepared_download_notice,
+    )
+
     _PREPARED_LOAD_NOTICE_SHOWN.clear()
+    _emit_prepared_download_notice("aicrowd/foo", revision="v1-warmup", split="mini")
+    _emit_prepared_download_notice("aicrowd/foo", revision="v1-warmup", split="mini")
+    captured = capsys.readouterr()
 
-    load_dataset(out, split="public")
-    first = capsys.readouterr().err
-    load_dataset(out, split="public")
-    second = capsys.readouterr().err
+    assert (
+        captured.err.count("whestbench: downloading 'mini' split from hf://aicrowd/foo@v1-warmup")
+        == 1
+    )
+    # The old "using prepared Arrow ... no local parquet conversion needed"
+    # bragging line is gone — users should not need to know about the trick.
+    assert "prepared Arrow" not in captured.err
+    assert "no local parquet" not in captured.err
 
-    assert first.count("using prepared Arrow split 'public'") == 1
-    assert "using prepared Arrow split 'public'" not in second
+
+def test_emit_prepared_download_notice_suppressed_inside_hf_download(monkeypatch, capsys):
+    """When a Rich progress bar is active (CLI is showing one), the library
+    notice must NOT double-narrate. The CLI's own `say.intent` line + bar
+    is the visible UX."""
+    from whestbench import hf_progress as _hfp
+    from whestbench.dataset import (
+        _PREPARED_LOAD_NOTICE_SHOWN,
+        _emit_prepared_download_notice,
+    )
+
+    _PREPARED_LOAD_NOTICE_SHOWN.clear()
+    monkeypatch.setattr(_hfp, "_ACTIVE_RICH_PROGRESS", object())
+    _emit_prepared_download_notice("aicrowd/foo", revision="v1", split="mini")
+    captured = capsys.readouterr()
+    assert captured.err == ""
 
 
 def test_load_dataset_prepared_recorded_metadata_matches_split(tmp_path: Path):
