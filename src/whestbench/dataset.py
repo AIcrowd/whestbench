@@ -517,13 +517,15 @@ def _try_load_prepared_split(
     artifact. Returns the Dataset on success, ``None`` on any failure so the
     caller can fall back to the parquet path.
 
-    HF remote: downloads only ``<prepared_entry['path']>/*`` via
-    ``snapshot_download(allow_patterns=...)`` and ``load_from_disk(local)``.
-    Local source: resolves ``<dataset_dir>/<prepared_entry['path']>`` and
-    loads directly.
+    HF remote: prints a single ``whestbench: downloading '<split>' split
+    from hf://<repo>@<rev>`` notice (once per process per repo+split key,
+    suppressed when an enclosing Rich progress is active — e.g. the
+    ``whest run`` CLI already handles UX), then downloads only
+    ``<prepared_entry['path']>/*`` via ``snapshot_download(allow_patterns=...)``
+    and memory-maps it with ``load_from_disk(local)``.
 
-    Prints (once per process per repo+split key) a stderr notice so users
-    know the fast path fired.
+    Local source: resolves ``<dataset_dir>/<prepared_entry['path']>`` and
+    loads directly. No download notice (nothing crosses the network).
     """
     fmt = prepared_entry.get("format") or "save_to_disk"
     if fmt != "save_to_disk":
@@ -540,6 +542,11 @@ def _try_load_prepared_split(
         else:
             from huggingface_hub import snapshot_download
 
+            # Print the user-facing "downloading" notice BEFORE the network
+            # call so users see context immediately, not after the bar
+            # finishes. Suppressed when an enclosing Rich progress is active
+            # (the CLI already handles the visible UX via `hf_download`).
+            _emit_prepared_download_notice(path_or_repo, revision=revision, split=split)
             allow = [f"{rel_path}/**"]
             local_root = snapshot_download(
                 repo_id=path_or_repo,
@@ -559,18 +566,39 @@ def _try_load_prepared_split(
         # Any prepared-path failure → silent fall-through to parquet.
         return None
 
-    notice_key = f"{path_or_repo}@{revision or 'main'}::{split}"
-    if notice_key not in _PREPARED_LOAD_NOTICE_SHOWN:
-        _PREPARED_LOAD_NOTICE_SHOWN.add(notice_key)
-        import sys as _sys
-
-        print(
-            f"whestbench: using prepared Arrow split {split!r} from "
-            f"{path_or_repo}@{revision or 'main'}; no local parquet "
-            f"conversion needed.",
-            file=_sys.stderr,
-        )
     return ds
+
+
+def _emit_prepared_download_notice(
+    path_or_repo: str, *, revision: "str | None", split: str
+) -> None:
+    """Print the one-line download notice for the prepared HF path.
+
+    Deduped per-process by (repo, revision, split). Suppressed when an
+    ``hf_progress.hf_download`` context is active — that wrapper provides
+    its own intent line + Rich progress bar, so a second stderr line would
+    be redundant.
+    """
+    notice_key = f"{path_or_repo}@{revision or 'main'}::{split}"
+    if notice_key in _PREPARED_LOAD_NOTICE_SHOWN:
+        return
+    _PREPARED_LOAD_NOTICE_SHOWN.add(notice_key)
+
+    try:
+        from . import hf_progress as _hfp
+
+        if getattr(_hfp, "_ACTIVE_RICH_PROGRESS", None) is not None:
+            # CLI is already showing a Rich progress bar; don't double-narrate.
+            return
+    except Exception:  # noqa: BLE001 — best-effort UX guard; never block load
+        pass
+
+    import sys as _sys
+
+    print(
+        f"whestbench: downloading {split!r} split from hf://{path_or_repo}@{revision or 'main'}",
+        file=_sys.stderr,
+    )
 
 
 def _hf_load_split(

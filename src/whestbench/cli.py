@@ -2244,42 +2244,63 @@ def _main_participant(argv: "list[str]") -> int:
                     # mini+full instead of ~250 MB for mini alone).
                     _user_split = getattr(args, "split", None)
                     _effective_split = _user_split
-                    if _user_split is None:
-                        try:
-                            from huggingface_hub import hf_hub_download as _hf_hub_dl
+                    # `_md_early` is populated from a one-shot metadata.json
+                    # fetch when we need to resolve `default_split` OR detect
+                    # `prepared_splits` for the preflight sizing path.
+                    _md_early: "Dict[str, Any] | None" = None
+                    try:
+                        from huggingface_hub import hf_hub_download as _hf_hub_dl
 
-                            _md_path = _hf_hub_dl(
-                                repo_id=repo_or_path,
-                                repo_type="dataset",
-                                revision=rev,
-                                filename="metadata.json",
-                            )
-                            _md_early = json.loads(Path(_md_path).read_text())
-                            if "splits" in _md_early:
-                                _ds_default = _md_early.get("default_split")
-                                if (
-                                    isinstance(_ds_default, str)
-                                    and _ds_default in _md_early["splits"]
-                                ):
-                                    _effective_split = _ds_default
-                                    if not json_output:
-                                        say.ok(
-                                            f"Using default split "
-                                            f"{_ds_default!r} (from "
-                                            f"metadata.default_split)",
-                                            console=_console,
-                                        )
-                        except Exception:  # noqa: BLE001 — best-effort optimisation
-                            # If we can't fetch metadata.json early (network
-                            # blip, gated repo, etc.) we fall through with
-                            # _effective_split = None and let preflight +
-                            # load handle the error path normally.
-                            pass
+                        _md_path = _hf_hub_dl(
+                            repo_id=repo_or_path,
+                            repo_type="dataset",
+                            revision=rev,
+                            filename="metadata.json",
+                        )
+                        _md_early = json.loads(Path(_md_path).read_text())
+                    except Exception:  # noqa: BLE001 — best-effort optimisation
+                        # If we can't fetch metadata.json early (network blip,
+                        # gated repo, etc.) we fall through; preflight + load
+                        # handle the error path normally.
+                        _md_early = None
+
+                    if _user_split is None and _md_early is not None and "splits" in _md_early:
+                        _ds_default = _md_early.get("default_split")
+                        if isinstance(_ds_default, str) and _ds_default in _md_early["splits"]:
+                            _effective_split = _ds_default
+                            if not json_output:
+                                say.ok(
+                                    f"Using default split "
+                                    f"{_ds_default!r} (from "
+                                    f"metadata.default_split)",
+                                    console=_console,
+                                )
+
+                    # If this dataset ships a prepared-Arrow subtree for the
+                    # effective split, point preflight at that subtree so the
+                    # advertised "Downloading N files, X bytes" matches what
+                    # `whestbench.load_dataset` will actually pull.
+                    _prepared_prefix: "str | None" = None
+                    if (
+                        _effective_split is not None
+                        and _md_early is not None
+                        and isinstance(_md_early.get("prepared_splits"), dict)
+                    ):
+                        _prep_entry = _md_early["prepared_splits"].get(_effective_split)
+                        if isinstance(_prep_entry, dict):
+                            _prep_path = _prep_entry.get("path")
+                            if isinstance(_prep_path, str) and _prep_path:
+                                # Ensure a trailing slash so prefix matching is
+                                # directory-scoped (e.g. "prepared/mini/" — NOT
+                                # "prepared/min" which would match a hypothetical
+                                # "prepared/minimal/").
+                                _prepared_prefix = _prep_path.rstrip("/") + "/"
 
                     preflight = hf_preflight(
                         repo_or_path,
                         revision=rev,
                         split=_effective_split,
+                        data_subtree_prefix=_prepared_prefix,
                     )
 
                     if _streaming:

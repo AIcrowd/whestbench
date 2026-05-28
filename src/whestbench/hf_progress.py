@@ -60,6 +60,7 @@ def hf_preflight(
     revision: Optional[str],
     token: Optional[str] = None,
     split: Optional[str] = None,
+    data_subtree_prefix: Optional[str] = None,
 ) -> "Optional[HFPreflight]":
     """Probe HF for download size + cache state before a load/download.
 
@@ -67,9 +68,17 @@ def hf_preflight(
     treat this as "proceed without info" and the progress bar adapts.
 
     For datasets:
-    - if ``split`` is given, only ``data/<split>-*.parquet`` is counted as
-      data; ``metadata.json`` + ``README.md`` are always included.
-    - if ``split`` is None, all ``data/*.parquet`` files count.
+    - if ``data_subtree_prefix`` is given (e.g. ``"prepared/mini/"``),
+      every sibling whose ``rfilename`` starts with that prefix is counted
+      as data. Used by the ``whest run`` path when the dataset ships a
+      prepared-Arrow fast-path subtree — preflight sizes the actual
+      bytes that ``whestbench.load_dataset`` will pull, not the parquet
+      it skips.
+    - else if ``split`` is given, only ``data/<split>-*.parquet`` is
+      counted as data.
+    - else all ``data/*.parquet`` files count.
+
+    In every mode, ``metadata.json`` + ``README.md`` are always included.
     """
     try:
         api = HfApi(token=token)
@@ -84,6 +93,8 @@ def hf_preflight(
         keep = False
         if name in ("metadata.json", "README.md"):
             keep = True
+        elif data_subtree_prefix is not None:
+            keep = name.startswith(data_subtree_prefix)
         elif name.startswith("data/") and name.endswith(".parquet"):
             if split is None:
                 keep = True
