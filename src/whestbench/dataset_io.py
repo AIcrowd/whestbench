@@ -77,6 +77,20 @@ def _validate_split_name(name: str) -> str:
     return name
 
 
+def _validate_config_name(name: str) -> str:
+    """Validate a HuggingFace dataset config name used by whestbench bakes.
+
+    We intentionally use the same conservative convention as split names:
+    lowercase ASCII, digits, and single hyphens after an initial lowercase
+    letter. This keeps local metadata, README frontmatter, and HF config names
+    predictable.
+    """
+    try:
+        return _validate_split_name(name)
+    except ValueError as exc:
+        raise ValueError(f"config name {name!r} is invalid: {exc}") from exc
+
+
 def _validate_mlp_seeds(seeds: "list[int]", n_mlps: int) -> None:
     """Validate that mlp_seeds is a list of n_mlps distinct non-negative int63s.
 
@@ -214,41 +228,90 @@ def generate_readme(
     # config containing all splits — preserves behaviour for old datasets
     # baked before the field existed.
     configs_block = None
-    if splits is not None:
-        declared_default = metadata.get("default_split")
-        if isinstance(declared_default, str) and declared_default in splits:
-            # New layout: one config per split. `default` config = default_split.
+    if splits is None:
+        declared_config = metadata.get("config")
+        if isinstance(declared_config, str) and declared_config != "default":
+            effective_split = (
+                metadata.get("split") if isinstance(metadata.get("split"), str) else split
+            )
             configs_block = [
                 {
-                    "config_name": "default",
+                    "config_name": declared_config,
                     "data_files": [
-                        {"split": declared_default, "path": f"data/{declared_default}-*.parquet"},
+                        {"split": effective_split, "path": f"data/{effective_split}-*.parquet"},
                     ],
                 }
             ]
+    else:
+        metadata_splits = metadata.get("splits")
+        split_config_names: dict[str, str] = {}
+        if isinstance(metadata_splits, dict):
             for name in splits:
-                if name == declared_default:
-                    continue
-                configs_block.append(
+                info = metadata_splits.get(name)
+                if isinstance(info, dict) and isinstance(info.get("config"), str):
+                    split_config_names[name] = info["config"]
+
+        if split_config_names:
+            ordered_configs: list[dict[str, Any]] = []
+            config_to_files: dict[str, list[dict[str, str]]] = {}
+            config_order: list[str] = []
+            for name in splits:
+                config_name = split_config_names.get(name, "default")
+                if config_name not in config_to_files:
+                    config_to_files[config_name] = []
+                    config_order.append(config_name)
+                config_to_files[config_name].append(
+                    {"split": name, "path": f"data/{name}-*.parquet"}
+                )
+            if "default" in config_order:
+                config_order.remove("default")
+                config_order.insert(0, "default")
+            for config_name in config_order:
+                ordered_configs.append(
                     {
-                        "config_name": name,
-                        "data_files": [
-                            {"split": name, "path": f"data/{name}-*.parquet"},
-                        ],
+                        "config_name": config_name,
+                        "data_files": config_to_files[config_name],
                     }
                 )
+            configs_block = ordered_configs
         else:
-            # Legacy layout: all splits under one `default` config (no
-            # default_split declared, so we have no opinion on which split is
-            # canonical for `load_dataset(repo)` calls).
-            configs_block = [
-                {
-                    "config_name": "default",
-                    "data_files": [
-                        {"split": name, "path": f"data/{name}-*.parquet"} for name in splits
-                    ],
-                }
-            ]
+            declared_default = metadata.get("default_split")
+            if isinstance(declared_default, str) and declared_default in splits:
+                # New layout: one config per split. `default` config = default_split.
+                configs_block = [
+                    {
+                        "config_name": "default",
+                        "data_files": [
+                            {
+                                "split": declared_default,
+                                "path": f"data/{declared_default}-*.parquet",
+                            },
+                        ],
+                    }
+                ]
+                for name in splits:
+                    if name == declared_default:
+                        continue
+                    configs_block.append(
+                        {
+                            "config_name": name,
+                            "data_files": [
+                                {"split": name, "path": f"data/{name}-*.parquet"},
+                            ],
+                        }
+                    )
+            else:
+                # Legacy layout: all splits under one `default` config (no
+                # default_split declared, so we have no opinion on which split is
+                # canonical for `load_dataset(repo)` calls).
+                configs_block = [
+                    {
+                        "config_name": "default",
+                        "data_files": [
+                            {"split": name, "path": f"data/{name}-*.parquet"} for name in splits
+                        ],
+                    }
+                ]
 
     card_data = DatasetCardData(
         license="cc-by-4.0",
@@ -439,6 +502,28 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
 
     is_v3 = proto_name == SEED_PROTOCOL_NAME_V3
 
+    if "split" in metadata:
+        split_value = metadata["split"]
+        if not isinstance(split_value, str):
+            raise InvalidDatasetError(
+                f"'split' must be a string; got {type(split_value).__name__}."
+            )
+        try:
+            _validate_split_name(split_value)
+        except ValueError as exc:
+            raise InvalidDatasetError(f"invalid split metadata field: {exc}") from exc
+
+    if "config" in metadata:
+        config_value = metadata["config"]
+        if not isinstance(config_value, str):
+            raise InvalidDatasetError(
+                f"'config' must be a string; got {type(config_value).__name__}."
+            )
+        try:
+            _validate_config_name(config_value)
+        except ValueError as exc:
+            raise InvalidDatasetError(str(exc)) from exc
+
     if "splits" in metadata:
         # Multi-split shape. Discriminator is key presence; value must still be
         # a non-empty dict (catches null, [], {}).
@@ -533,6 +618,19 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
                 raise InvalidDatasetError(
                     f"splits[{split_name!r}] is missing required field 'n_mlps'."
                 )
+            if "config" in info:
+                config_value = info["config"]
+                if not isinstance(config_value, str):
+                    raise InvalidDatasetError(
+                        f"splits[{split_name!r}].config must be a string; "
+                        f"got {type(config_value).__name__}."
+                    )
+                try:
+                    _validate_config_name(config_value)
+                except ValueError as exc:
+                    raise InvalidDatasetError(
+                        f"invalid config in splits[{split_name!r}]: {exc}"
+                    ) from exc
             if is_v3:
                 if "seed" in info:
                     raise InvalidDatasetError(
@@ -1006,8 +1104,8 @@ def combine_split_datasets(
     if not input_dirs:
         raise MergeIncompatibleError("combine_split_datasets requires at least one input directory")
 
-    # Read + validate each input; collect (path, metadata, split_name, parquet_path).
-    entries: list[tuple[Path, Dict[str, Any], str, Path]] = []
+    # Read + validate each input; collect (path, metadata, split_name, config_name, parquet_path).
+    entries: list[tuple[Path, Dict[str, Any], str, str, Path]] = []
     for d in input_dirs:
         d = Path(d)
         md = read_metadata(d)
@@ -1035,7 +1133,16 @@ def combine_split_datasets(
             raise MergeIncompatibleError(
                 f"{d}: split name {split_name!r} from parquet filename is invalid: {exc}"
             ) from exc
-        entries.append((d, md, split_name, parquet_files[0]))
+        config_name = md.get("config", "default")
+        if not isinstance(config_name, str):
+            raise MergeIncompatibleError(
+                f"{d}: config metadata field must be a string; got {type(config_name).__name__}."
+            )
+        try:
+            _validate_config_name(config_name)
+        except ValueError as exc:
+            raise MergeIncompatibleError(f"{d}: {exc}") from exc
+        entries.append((d, md, split_name, config_name, parquet_files[0]))
 
     # Validate pairwise-distinct split names.
     split_names = [e[2] for e in entries]
@@ -1058,7 +1165,7 @@ def combine_split_datasets(
     # Validate invariants match across inputs.
     first_md = entries[0][1]
     invariants = ("schema_version", "format", "backend", "n_samples", "width", "depth")
-    for d, md, _, _ in entries[1:]:
+    for d, md, _, _, _ in entries[1:]:
         for field in invariants:
             if md.get(field) != first_md.get(field):
                 raise MergeIncompatibleError(
@@ -1079,7 +1186,7 @@ def combine_split_datasets(
         staging.mkdir(parents=True)
         data_dst = staging / PARQUET_SUBDIR
         data_dst.mkdir()
-        for _d, _md, _split_name, parquet_path in entries:
+        for _d, _md, _split_name, _config_name, parquet_path in entries:
             shutil.copyfile(parquet_path, data_dst / parquet_path.name)
 
         # Build the multi-split metadata.
@@ -1098,10 +1205,11 @@ def combine_split_datasets(
             )
         }
         splits_md: Dict[str, Dict[str, Any]] = {}
-        for _, md, split_name, _ in entries:
+        for _, md, split_name, config_name, _ in entries:
             entry: Dict[str, Any] = {
                 "n_mlps": md["n_mlps"],
                 "created_at_utc": md["created_at_utc"],
+                "config": config_name,
             }
             # Under seed_protocol 2.0, include the per-split `seed` field.
             # Under seed_protocol 3.0, there is no `seed` field (seeds are in parquet).
@@ -1122,8 +1230,17 @@ def combine_split_datasets(
             "hardware": collect_hardware_fingerprint(),
             "splits": splits_md,
         }
-        if default_split is not None:
-            combined_md["default_split"] = default_split
+        effective_default_split = default_split
+        if effective_default_split is None:
+            default_config_splits = [
+                split_name
+                for _d, _md, split_name, config_name, _parquet_path in entries
+                if config_name == "default"
+            ]
+            if len(default_config_splits) == 1:
+                effective_default_split = default_config_splits[0]
+        if effective_default_split is not None:
+            combined_md["default_split"] = effective_default_split
 
         # Optionally produce prepared-Arrow artifacts under prepared/<split>/.
         # These let `whestbench.load_dataset` skip parquet→arrow conversion

@@ -159,6 +159,23 @@ def test_validate_split_name_rejects_digit_only():
         _validate_split_name("123")
 
 
+def test_validate_config_name_accepts_canonical_names():
+    from whestbench.dataset_io import _validate_config_name
+
+    for name in ("default", "holdout", "full", "round-1-eval"):
+        assert _validate_config_name(name) == name
+
+
+def test_validate_config_name_rejects_invalid_names():
+    import pytest
+
+    from whestbench.dataset_io import _validate_config_name
+
+    for bad in ("", "Full", "my_config", "1-config", "config--x"):
+        with pytest.raises(ValueError, match=r"config name"):
+            _validate_config_name(bad)
+
+
 # ---------------------------------------------------------------------------
 # validate_metadata — multi-split shape
 # ---------------------------------------------------------------------------
@@ -557,10 +574,46 @@ def test_validate_metadata_accepts_v3_single_split():
     validate_metadata(_v3_single_split_md())  # should not raise
 
 
+def test_validate_metadata_accepts_v3_single_split_config_coordinate():
+    from whestbench.dataset_io import validate_metadata
+
+    validate_metadata(_v3_single_split_md(split="mini", config="default"))
+
+
+def test_validate_metadata_rejects_v3_single_split_invalid_config():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _v3_single_split_md(split="mini", config="Full")
+    with pytest.raises(InvalidDatasetError, match=r"config.+lowercase"):
+        validate_metadata(md)
+
+
 def test_validate_metadata_accepts_v3_multi_split():
     from whestbench.dataset_io import validate_metadata
 
     validate_metadata(_v3_multi_split_md())  # should not raise
+
+
+def test_validate_metadata_accepts_v3_multi_split_config_coordinates():
+    from whestbench.dataset_io import validate_metadata
+
+    md = _v3_multi_split_md()
+    md["splits"]["public"]["config"] = "default"
+    md["splits"]["holdout"]["config"] = "holdout"
+    validate_metadata(md)
+
+
+def test_validate_metadata_rejects_v3_multi_split_non_string_config():
+    import pytest
+
+    from whestbench.dataset_io import InvalidDatasetError, validate_metadata
+
+    md = _v3_multi_split_md()
+    md["splits"]["holdout"]["config"] = 42
+    with pytest.raises(InvalidDatasetError, match=r"config.+string"):
+        validate_metadata(md)
 
 
 def test_validate_metadata_rejects_v3_with_top_level_seed():

@@ -338,6 +338,42 @@ def test_load_dataset_multi_split_with_split_returns_dataset(tmp_path):
     assert len(ds_h) == 3
 
 
+def test_load_dataset_local_multi_split_uses_declared_config_for_split(tmp_path):
+    from datasets import Dataset
+
+    from whestbench.dataset import create_dataset, load_dataset
+    from whestbench.dataset_io import combine_split_datasets
+
+    pub = tmp_path / "pub"
+    hold = tmp_path / "hold"
+    create_dataset(
+        n_mlps=2,
+        n_samples=100,
+        width=4,
+        depth=2,
+        mlp_seeds=[1000, 1001],
+        output_path=pub,
+        split="public",
+        config="default",
+    )
+    create_dataset(
+        n_mlps=3,
+        n_samples=100,
+        width=4,
+        depth=2,
+        mlp_seeds=[2000, 2001, 2002],
+        output_path=hold,
+        split="holdout",
+        config="holdout",
+    )
+    combined = tmp_path / "combined"
+    combine_split_datasets([pub, hold], output_dir=combined, write_prepared_arrow=False)
+
+    ds = load_dataset(combined, split="holdout")
+    assert isinstance(ds, Dataset)
+    assert len(ds) == 3
+
+
 def test_load_dataset_multi_split_unknown_split_raises(tmp_path):
     import pytest
 
@@ -369,6 +405,27 @@ def test_load_dataset_single_split_returns_dataset_unchanged(tmp_path):
     ds2 = load_dataset(out, split="public")
     assert isinstance(ds2, Dataset)
     assert len(ds2) == 2
+
+
+def test_load_dataset_single_split_non_default_config_remains_split_oriented(tmp_path):
+    from datasets import Dataset
+
+    from whestbench.dataset import create_dataset, load_dataset
+
+    out = tmp_path / "single-full"
+    create_dataset(
+        n_mlps=2,
+        n_samples=100,
+        width=4,
+        depth=2,
+        mlp_seeds=[1000, 1001],
+        output_path=out,
+        split="full",
+        config="full",
+    )
+    ds = load_dataset(out, split="full")
+    assert isinstance(ds, Dataset)
+    assert len(ds) == 2
 
 
 def test_metadata_on_dataset_dict_returns_full_multi_split_dict(tmp_path):

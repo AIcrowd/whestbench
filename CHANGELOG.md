@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Feat
+
+- **dataset-authoring**: add explicit HF config metadata to `whest dataset bake`, `create_dataset`, and config-preserving `combine-splits`.
+
 ## v0.8.0 (2026-05-27)
 
 ### Feat

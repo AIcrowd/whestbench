@@ -211,6 +211,39 @@ def test_single_split_does_not_emit_configs_block():
     )
 
 
+def test_single_split_non_default_config_emits_configs_block():
+    """A single-split bake can declare an explicit non-default HF config."""
+    from whestbench.dataset_io import generate_readme
+
+    md = {
+        "schema_version": "3.0",
+        "format": "hf-datasets-parquet",
+        "backend": "torch",
+        "seed_protocol": {"name": "whestbench_explicit_per_mlp_seeds", "version": "3.0"},
+        "n_mlps": 100,
+        "n_samples": 1_000_000_000,
+        "width": 256,
+        "depth": 8,
+        "created_at_utc": "2026-05-27T00:00:00+00:00",
+        "hardware": {},
+        "split": "full",
+        "config": "full",
+    }
+    rendered = generate_readme(
+        md,
+        split="full",
+        splits=None,
+        ds_size=100,
+        repo_id="some-org/full-only-ds",
+        revision="v1",
+    )
+    yaml_str = rendered.split("---", 2)[1]
+    assert "configs:" in yaml_str
+    assert "config_name: full" in yaml_str
+    assert "split: full" in yaml_str
+    assert "data/full-*.parquet" in yaml_str
+
+
 # ---------------------------------------------------------------------------
 # Per-split configs (UX1: default_split → independent configs)
 # ---------------------------------------------------------------------------
@@ -321,3 +354,45 @@ def test_configs_block_with_default_split_holdout_layout():
     default_block = yaml_str[default_idx:holdout_idx]
     assert "split: public" in default_block
     assert "split: holdout" not in default_block
+
+
+def test_configs_block_uses_declared_per_split_configs():
+    """Config-aware metadata groups data_files by declared config, not split names."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _base_metadata()
+    md["splits"] = {
+        "public": {
+            "n_mlps": 50,
+            "created_at_utc": "2026-05-26T00:00:00+00:00",
+            "config": "default",
+        },
+        "holdout": {
+            "n_mlps": 50,
+            "created_at_utc": "2026-05-26T00:00:00+00:00",
+            "config": "holdout",
+        },
+    }
+    md["default_split"] = "public"
+    rendered = generate_readme(
+        md,
+        splits={
+            "public": SimpleNamespace(n_mlps=50),
+            "holdout": SimpleNamespace(n_mlps=50),
+        },
+        ds_size=100,
+        repo_id="aicrowd/arc-whestbench-evals-2026",
+        revision="v1-warmup",
+    )
+    yaml_str = rendered.split("---", 2)[1]
+    assert yaml_str.count("config_name:") == 2
+    assert "config_name: default" in yaml_str
+    assert "config_name: holdout" in yaml_str
+    default_idx = yaml_str.find("config_name: default")
+    holdout_idx = yaml_str.find("config_name: holdout")
+    default_block = yaml_str[default_idx:holdout_idx]
+    holdout_block = yaml_str[holdout_idx:]
+    assert "split: public" in default_block
+    assert "split: holdout" not in default_block
+    assert "split: holdout" in holdout_block
+    assert "split: public" not in holdout_block

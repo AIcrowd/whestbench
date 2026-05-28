@@ -45,7 +45,7 @@ except Exception:  # pragma: no cover - optional at runtime
     rich_tqdm = None
 
 from .dataset import metadata as _wb_metadata
-from .dataset_io import _validate_split_name
+from .dataset_io import _validate_config_name, _validate_split_name
 from .dataset_io import metadata_file_hash as _metadata_file_hash
 from .estimators import CombinedEstimator
 from .generation import sample_mlp
@@ -1041,11 +1041,26 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         except ValueError as exc:
             raise argparse.ArgumentTypeError(str(exc)) from exc
 
+    def _config_name_arg(value: str) -> str:
+        try:
+            return _validate_config_name(value)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(str(exc)) from exc
+
     bake_p.add_argument(
         "--split",
         default="public",
         type=_split_name_arg,
         help="Split name. Must match [a-z][a-z0-9-]* (HF Hub split-name convention).",
+    )
+    bake_p.add_argument(
+        "--config",
+        default="default",
+        type=_config_name_arg,
+        help=(
+            "HF dataset config name for this split. Defaults to 'default'. "
+            "Use this when authoring config-per-split datasets."
+        ),
     )
     bake_p.add_argument("--output", required=True, help="Output directory (must not exist).")
     bake_p.add_argument("--torch", action="store_true", help="Use GPU/torch backend.")
@@ -1393,6 +1408,7 @@ def _dispatch_dataset_command(args) -> int:
                         mlp_seeds=mlp_seeds,
                         output_path=args.output,
                         split=args.split,
+                        config=args.config,
                         mlp_range=mlp_range,
                         device=args.device,
                         mlps_per_batch=args.mlps_per_batch,
@@ -1408,6 +1424,7 @@ def _dispatch_dataset_command(args) -> int:
                         mlp_seeds=mlp_seeds,
                         output_path=args.output,
                         split=args.split,
+                        config=args.config,
                         mlp_range=mlp_range,
                         progress=_on_bake_progress,
                     )
@@ -1591,7 +1608,8 @@ def _dispatch_dataset_command(args) -> int:
             for name in sorted(md["splits"]):
                 info = md["splits"][name]
                 seed_str = f"  seed={info['seed']}" if "seed" in info else ""
-                print(f"    {name}:  n_mlps={info['n_mlps']:,}{seed_str}")
+                config_str = f"  config={info['config']}" if "config" in info else ""
+                print(f"    {name}:  n_mlps={info['n_mlps']:,}{seed_str}{config_str}")
             print(f"  created_at_utc: {md['created_at_utc']}")
         else:
             print("WhestBench dataset")
@@ -1600,6 +1618,8 @@ def _dispatch_dataset_command(args) -> int:
                 "format",
                 "backend",
                 "seed",
+                "split",
+                "config",
                 "n_mlps",
                 "n_samples",
                 "width",

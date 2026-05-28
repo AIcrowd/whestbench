@@ -13,6 +13,7 @@ def _bake_single_split(
     name: str,
     *,
     split: str = "public",
+    config: str = "default",
     n_mlps: int = 2,
     seed: int = 42,  # kept for call-site compatibility; used to derive mlp_seeds
     width: int = 8,
@@ -31,6 +32,7 @@ def _bake_single_split(
         mlp_seeds=mlp_seeds,
         output_path=out,
         split=split,
+        config=config,
     )
     return out
 
@@ -265,6 +267,48 @@ def test_combine_splits_writes_default_split_when_given(tmp_path: Path):
 
     md = json.loads((out / "metadata.json").read_text())
     assert md["default_split"] == "public"
+
+
+def test_combine_splits_preserves_declared_configs_and_auto_default_split(tmp_path: Path):
+    from whestbench.dataset_io import combine_split_datasets
+
+    pub = _bake_single_split(tmp_path, "pub", split="public", config="default", seed=42)
+    hold = _bake_single_split(tmp_path, "hold", split="holdout", config="holdout", seed=99)
+    out = tmp_path / "combined"
+    combine_split_datasets([pub, hold], output_dir=out, write_prepared_arrow=False)
+
+    md = json.loads((out / "metadata.json").read_text())
+    assert md["default_split"] == "public"
+    assert md["splits"]["public"]["config"] == "default"
+    assert md["splits"]["holdout"]["config"] == "holdout"
+
+    yaml_frontmatter = (out / "README.md").read_text().split("---", 2)[1]
+    assert "config_name: default" in yaml_frontmatter
+    assert "config_name: holdout" in yaml_frontmatter
+    default_idx = yaml_frontmatter.find("config_name: default")
+    holdout_idx = yaml_frontmatter.find("config_name: holdout")
+    default_block = yaml_frontmatter[default_idx:holdout_idx]
+    holdout_block = yaml_frontmatter[holdout_idx:]
+    assert "split: public" in default_block
+    assert "split: holdout" not in default_block
+    assert "split: holdout" in holdout_block
+
+
+def test_combine_splits_keeps_multiple_default_config_inputs_legacy_shape(tmp_path: Path):
+    from whestbench.dataset_io import combine_split_datasets
+
+    mini = _bake_single_split(tmp_path, "mini", split="mini", config="default", seed=42)
+    full = _bake_single_split(tmp_path, "full", split="full", config="default", seed=99)
+    out = tmp_path / "combined"
+    combine_split_datasets([mini, full], output_dir=out, write_prepared_arrow=False)
+
+    md = json.loads((out / "metadata.json").read_text())
+    assert "default_split" not in md
+    yaml_frontmatter = (out / "README.md").read_text().split("---", 2)[1]
+    assert yaml_frontmatter.count("config_name:") == 1
+    assert "config_name: default" in yaml_frontmatter
+    assert "split: mini" in yaml_frontmatter
+    assert "split: full" in yaml_frontmatter
 
 
 def test_combine_splits_omits_default_split_when_unset(tmp_path: Path):

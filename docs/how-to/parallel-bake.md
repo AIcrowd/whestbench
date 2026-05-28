@@ -289,7 +289,7 @@ whest dataset generate-seeds --n-mlps 50 > holdout-seeds.json
 # Parallel-bake the public split (4 workers, same seeds file).
 for K in 0 1 2 3; do
   whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 \
-    --split public --mlp-seeds public-seeds.json --slice $K/4 \
+    --split public --config default --mlp-seeds public-seeds.json --slice $K/4 \
     --torch --device cuda --output ./pub-p$K &
 done
 wait
@@ -298,7 +298,7 @@ whest dataset merge ./pub-p* --output ./pub-complete
 # Parallel-bake the holdout split (4 workers, different seeds file).
 for K in 0 1 2 3; do
   whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 \
-    --split holdout --mlp-seeds holdout-seeds.json --slice $K/4 \
+    --split holdout --config holdout --mlp-seeds holdout-seeds.json --slice $K/4 \
     --torch --device cuda --output ./hold-p$K &
 done
 wait

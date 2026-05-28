@@ -37,6 +37,7 @@ from .dataset_io import (
     SEED_PROTOCOL_NAME_V3,
     SEED_PROTOCOL_VERSION_V3,
     InvalidDatasetError,
+    _validate_config_name,
     _validate_mlp_seeds,
     make_features,
     read_metadata,
@@ -99,6 +100,7 @@ def create_dataset(
     mlp_seeds: Optional[List[int]] = None,
     output_path: "Path | str",
     split: str = DEFAULT_SPLIT,
+    config: str = "default",
     mlp_range: Optional[Tuple[int, int]] = None,
     progress: Optional[Callable[[Dict[str, Any]], None]] = None,
     **deprecated_kwargs: Any,
@@ -127,6 +129,7 @@ def create_dataset(
             Auto-generated when omitted.
         output_path: Destination directory (must not exist).
         split: HF split name for the parquet file.
+        config: HF dataset config name for this split. Defaults to "default".
         mlp_range: ``(start, end)`` to bake a slice of [0, n_mlps).
         progress: Optional callback for progress events.
 
@@ -145,6 +148,7 @@ def create_dataset(
     if deprecated_kwargs:
         unexpected = ", ".join(repr(k) for k in deprecated_kwargs)
         raise TypeError(f"create_dataset() got unexpected keyword argument(s): {unexpected}")
+    _validate_config_name(config)
 
     output_path = Path(output_path)
     start, end = _resolve_mlp_range(n_mlps, mlp_range)
@@ -275,6 +279,8 @@ def create_dataset(
             "version": SEED_PROTOCOL_VERSION_V3,
         },
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "split": split,
+        "config": config,
         "n_mlps": end - start,
         "n_samples": n_samples,
         "width": width,
@@ -439,6 +445,11 @@ def load_dataset(
         # Multi-split path.
         available_splits = sorted(md["splits"].keys())
         declared_default = md.get("default_split")
+        split_configs: dict[str, str] = {}
+        for name, info in md["splits"].items():
+            config_name = info.get("config") if isinstance(info, dict) else None
+            if isinstance(name, str) and isinstance(config_name, str):
+                split_configs[name] = config_name
         prepared_splits = md.get("prepared_splits") or {}
         if split is not None:
             if split not in available_splits:
@@ -468,6 +479,7 @@ def load_dataset(
                 loader_path,
                 split=split,
                 default_split=declared_default,
+                split_configs=split_configs,
                 hf_kwargs=hf_kwargs,
                 is_local=is_local,
             )
@@ -485,6 +497,7 @@ def load_dataset(
                 loader_path,
                 split=name,
                 default_split=declared_default,
+                split_configs=split_configs,
                 hf_kwargs=hf_kwargs,
                 is_local=is_local,
             )
@@ -493,9 +506,32 @@ def load_dataset(
         _register_dsd_metadata(dsd, md)
         return dsd
 
-    # Single-split path. Preserve prior behavior: default split = "public".
-    effective_split = split if split is not None else DEFAULT_SPLIT
-    ds = hf_datasets.load_dataset(loader_path, split=effective_split, **hf_kwargs)
+    # Single-split path. Preserve prior behavior for legacy metadata, while
+    # honoring explicit single-split config coordinates when present.
+    metadata_split = md.get("split")
+    effective_split = (
+        split
+        if split is not None
+        else (metadata_split if isinstance(metadata_split, str) else DEFAULT_SPLIT)
+    )
+    metadata_config = md.get("config")
+    if isinstance(metadata_config, str) and metadata_config != "default":
+        if is_local:
+            ds = _load_local_parquet_split(
+                hf_datasets,
+                loader_path,
+                split=effective_split,
+                hf_kwargs=hf_kwargs,
+            )
+        else:
+            ds = hf_datasets.load_dataset(
+                loader_path,
+                metadata_config,
+                split=effective_split,
+                **hf_kwargs,
+            )
+    else:
+        ds = hf_datasets.load_dataset(loader_path, split=effective_split, **hf_kwargs)
     _METADATA_BY_DS[ds] = md
     return ds
 
@@ -607,6 +643,7 @@ def _hf_load_split(
     *,
     split: str,
     default_split: "str | None",
+    split_configs: "dict[str, str] | None",
     hf_kwargs: Dict[str, Any],
     is_local: bool,
 ) -> Any:
@@ -622,14 +659,14 @@ def _hf_load_split(
     crammed under one ``default`` config), the ``name=`` lookup will raise;
     fall back to the no-name call.
 
-    Local datasets don't have a card; just pass ``split=`` through.
+    Config-aware local datasets carry the same README card shape as HF repos,
+    so the config mapping applies to both local and remote loads.
     """
-    if is_local:
-        return hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
-
     # Map split → HF config name. Mirrors the layout written by
     # `generate_readme`: default config = default_split; others self-named.
-    if default_split is not None and split == default_split:
+    if split_configs and split in split_configs:
+        config_name = split_configs[split]
+    elif default_split is not None and split == default_split:
         config_name = "default"
     elif default_split is not None:
         config_name = split
@@ -638,6 +675,13 @@ def _hf_load_split(
         config_name = None
 
     try:
+        if is_local and config_name is not None:
+            return _load_local_parquet_split(
+                hf_datasets,
+                loader_path,
+                split=split,
+                hf_kwargs=hf_kwargs,
+            )
         if config_name is None:
             return hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
         return hf_datasets.load_dataset(
@@ -650,6 +694,22 @@ def _hf_load_split(
         # Older dataset card with a single `default` config containing every
         # split — `name=split` doesn't resolve. Retry with the legacy form.
         return hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
+
+
+def _load_local_parquet_split(
+    hf_datasets: Any,
+    loader_path: str,
+    *,
+    split: str,
+    hf_kwargs: Dict[str, Any],
+) -> Any:
+    data_glob = str(Path(loader_path) / "data" / f"{split}-*.parquet")
+    return hf_datasets.load_dataset(
+        "parquet",
+        data_files={split: data_glob},
+        split=split,
+        **hf_kwargs,
+    )
 
 
 def _merge_metadata_for_split(md: Dict[str, Any], split: str) -> Dict[str, Any]:

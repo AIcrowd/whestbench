@@ -23,6 +23,8 @@ def test_torch_bake_metadata_has_schema_3_0(tmp_path: Path):
         depth=2,
         mlp_seeds=[7, 8],
         output_path=out,
+        split="full",
+        config="full",
         device="cpu",
     )
     md = json.loads((out / "metadata.json").read_text())
@@ -30,6 +32,8 @@ def test_torch_bake_metadata_has_schema_3_0(tmp_path: Path):
     assert md["format"] == "hf-datasets-parquet"
     assert md["backend"] == "torch"
     assert md["device"] == "cpu"
+    assert md["split"] == "full"
+    assert md["config"] == "full"
 
 
 def test_torch_bake_three_file_layout(tmp_path: Path):

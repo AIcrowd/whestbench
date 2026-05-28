@@ -104,6 +104,9 @@ my-eval/
 - `--torch` — use the GPU backend (requires `whestbench[gpu]`).
 - `--split <name>` — assign a split name (default `public`). See
   [Multi-split datasets](#multi-split-datasets).
+- `--config <name>` — assign the HF config for this split (default `default`).
+  Dataset authors use this for config-per-split repos; participants normally
+  leave it unset.
 
 > If it broke, see the [Troubleshooting](#troubleshooting) section — bake errors
 > usually trace back to seed shape, an existing output directory, or running
@@ -405,8 +408,8 @@ Each split is baked separately. Make sure to use distinct `--mlp-seeds` files
 so the splits don't overlap:
 
 ```bash
-whest dataset bake --n-mlps 500 --split public  --output ./eval-public
-whest dataset bake --n-mlps 500 --split holdout --output ./eval-holdout
+whest dataset bake --n-mlps 500 --split public  --config default  --output ./eval-public
+whest dataset bake --n-mlps 500 --split holdout --config holdout --output ./eval-holdout
 ```
 
 ### Combining splits into one multi-split directory
@@ -416,7 +419,9 @@ whest dataset combine-splits ./eval-public ./eval-holdout --output ./eval-full
 ```
 
 The result is a single dataset directory with both splits in `data/`,
-suitable for `whest dataset upload` to a single HF repo.
+suitable for `whest dataset upload` to a single HF repo. `combine-splits`
+preserves each bake's `config` metadata, so the published card can expose the
+same config-per-split layout as the official HF datasets.
 
 ### Selecting a split when running
 
