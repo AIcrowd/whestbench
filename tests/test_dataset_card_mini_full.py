@@ -50,6 +50,53 @@ def test_mini_full_intro_says_independent_and_disjoint():
     assert "1,000 MLPs" in rendered or "1000 MLPs" in rendered
 
 
+def test_working_with_dataset_section_present_with_starterkit_link():
+    """The orientation block walks the three entry points and links the deep dive."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _base_metadata()
+    md["default_split"] = "mini"
+    rendered = generate_readme(
+        md,
+        splits=_mini_full_splits(),
+        ds_size=1100,
+        repo_id="aicrowd/arc-whestbench-public-2026",
+        revision="v1-warmup",
+    )
+    assert "## Working with this dataset" in rendered
+    # Three entry points.
+    assert "whest run --dataset hf://aicrowd/arc-whestbench-public-2026@v1-warmup" in rendered
+    assert "whestbench.load_dataset(" in rendered
+    assert "whestbench.iter_mlps(" in rendered
+    # Deep-dive pointer to the starter-kit how-to.
+    assert "whest-starterkit/blob/main/docs/how-to/use-evaluation-datasets.md" in rendered
+
+
+def test_rebake_recipe_is_collapsed_and_not_a_python_dash_c_heredoc():
+    """The re-bake recipe is wrapped in <details> with clean python+bash blocks,
+    not the old `python -c \"...\"` heredoc that rendered badly on HF."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _base_metadata()
+    rendered = generate_readme(
+        md,
+        splits=_mini_full_splits(),
+        ds_size=1100,
+        repo_id="aicrowd/arc-whestbench-public-2026",
+        revision="v1-warmup",
+    )
+    # Collapsed behind a <details> so it stops dominating the page.
+    assert "<details>" in rendered
+    assert "Re-bake this dataset locally from its seeds" in rendered
+    # The old embedded one-liner heredoc must be gone.
+    assert "python -c" not in rendered
+    # Extraction now dogfoods the split-aware wrapper (correct under per-split
+    # configs, where `ds['full']` on a bare load would KeyError).
+    assert 'whestbench.load_dataset("aicrowd/arc-whestbench-public-2026"' in rendered
+    assert "--mlp-seeds mini-seeds.json" in rendered
+    assert "--mlp-seeds full-seeds.json" in rendered
+
+
 def test_mini_full_quickstart_uses_split_mini_first():
     from whestbench.dataset_io import generate_readme
 
