@@ -2899,18 +2899,31 @@ def _main_participant(argv: "list[str]") -> int:
 
             final = sub
             if args.watch and sub_id is not None:
+                # Best-effort poll. The submission is already created+grading
+                # asynchronously on AIcrowd; status polling is a convenience and
+                # must never turn a successful submit into a failure. (Some
+                # deployments don't expose a participant-facing single-submission
+                # status endpoint — degrade gracefully rather than crash.)
                 say.intent("Waiting for grading", quiet=json_output)
                 terminal = {"graded", "failed"}
-                while str(final.get("grading_status")) not in terminal:
-                    _time.sleep(5.0)
-                    final = client.get_submission_status(int(sub_id))
-                    say.step(f"status: {final.get('grading_status')}", quiet=json_output)
-                status = str(final.get("grading_status"))
-                if not json_output:
-                    if status == "graded":
-                        say.ok(f"Graded — score {final.get('score')}")
-                    else:
-                        say.warn(f"Grading {status}: {final.get('grading_message', '')}")
+                try:
+                    while str(final.get("grading_status")) not in terminal:
+                        _time.sleep(5.0)
+                        final = client.get_submission_status(int(sub_id))
+                        say.step(f"status: {final.get('grading_status')}", quiet=json_output)
+                    status = str(final.get("grading_status"))
+                    if not json_output:
+                        if status == "graded":
+                            say.ok(f"Graded — score {final.get('score')}")
+                        else:
+                            say.warn(f"Grading {status}: {final.get('grading_message', '')}")
+                except Exception as e:  # noqa: BLE001 - watch is best-effort
+                    if not json_output:
+                        say.warn(f"Couldn't poll grading status ({e}).")
+                        say.hint(
+                            "The submission was created — track it at "
+                            f"https://www.aicrowd.com/challenges/{args.challenge}/submissions/{sub_id}"
+                        )
 
             if json_output:
                 print(json.dumps({"ok": True, "submission_id": sub_id, "submission": final}))

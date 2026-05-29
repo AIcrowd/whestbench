@@ -51,7 +51,7 @@ def test_login_rejects_invalid_key(monkeypatch):
     assert rc != 0
 
 
-def _stub_submit_pipeline(monkeypatch, *, registered=True, status_after=None):
+def _stub_submit_pipeline(monkeypatch, *, registered=True, status_after=None, watch_raises=False):
     """Stub the whole AIcrowdClient so submit() runs offline.
 
     Matches the real client API (create_submission takes challenge_slug; the
@@ -82,10 +82,26 @@ def _stub_submit_pipeline(monkeypatch, *, registered=True, status_after=None):
             return {"data": {"submission_id": 7777, "created_at": "t"}}
 
         def get_submission_status(self, sid):
+            if watch_raises:
+                from whestbench.aicrowd_client import AIcrowdAPIError
+
+                raise AIcrowdAPIError(status=404, message="no participant status endpoint")
             return status_after or {"id": sid, "grading_status": "graded", "score": 0.9}
 
     monkeypatch.setattr(cli, "AIcrowdClient", _FakeClient, raising=False)
     return calls
+
+
+def test_submit_watch_poll_failure_is_graceful(monkeypatch, tmp_path):
+    # A successful submit must NOT be turned into a failure by a status-poll
+    # error (the submission is created + grades asynchronously).
+    _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    _stub_submit_pipeline(monkeypatch, watch_raises=True)
+    art = tmp_path / "submission.tar.gz"
+    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    rc = cli.main(["submit", str(art), "--watch"])
+    assert rc == 0
 
 
 def test_submit_file_runs_full_hop_a(monkeypatch, tmp_path):
