@@ -44,6 +44,7 @@ try:
 except Exception:  # pragma: no cover - optional at runtime
     rich_tqdm = None
 
+from .aicrowd_client import AIcrowdClient  # module-level for monkeypatch + reuse in `submit`
 from .dataset import metadata as _wb_metadata
 from .dataset_io import _validate_config_name, _validate_split_name
 from .dataset_io import metadata_file_hash as _metadata_file_hash
@@ -810,6 +811,16 @@ def validate_submission_entrypoint(
     }
 
 
+def _aicrowd_verify_identity(api_key: str) -> Dict[str, Any]:
+    """Validate an AIcrowd API key and return identity info ({"id": ...}).
+
+    Raises AIcrowdAPIError (or a transport error) on failure. Kept module-level
+    so tests can monkeypatch it without hitting the network.
+    """
+    pid = AIcrowdClient(api_key=api_key).verify_identity()
+    return {"id": pid}
+
+
 def _build_participant_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="whest",
@@ -1236,6 +1247,47 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Re-raise exceptions from crashing checks instead of capturing them.",
     )
+
+    login_parser = subparsers.add_parser(
+        "login",
+        help="Store your AIcrowd API key (interoperable with aicrowd-cli).",
+    )
+    login_parser.add_argument(
+        "--api-key",
+        dest="api_key",
+        default=None,
+        help="AIcrowd API key (from your AIcrowd profile page). Prompted if omitted.",
+    )
+    add_output_format_arguments(login_parser)
+
+    submit_parser = subparsers.add_parser(
+        "submit",
+        help="Submit to AIcrowd (packages an estimator if needed, then uploads).",
+        epilog=(
+            "Auth comes from `whest login` (or AICROWD_API_KEY / --api-key). "
+            "The default challenge is arc-white-box-estimation-challenge-2026."
+        ),
+    )
+    submit_grp = submit_parser.add_mutually_exclusive_group(required=True)
+    submit_grp.add_argument("artifact", nargs="?", help="Path to a submission .tar.gz.")
+    submit_grp.add_argument("--estimator", help="Path to estimator.py (packaged before submit).")
+    submit_parser.add_argument("--class", dest="class_name", help="Estimator class name.")
+    submit_parser.add_argument("--requirements", help="requirements.txt for packaging.")
+    submit_parser.add_argument("--submission-metadata", help="submission.yaml for packaging.")
+    submit_parser.add_argument("--approach", help="approach.md for packaging.")
+    submit_parser.add_argument(
+        "--challenge",
+        default="arc-white-box-estimation-challenge-2026",
+        help="Challenge slug (default: arc-white-box-estimation-challenge-2026).",
+    )
+    submit_parser.add_argument("--description", default="Submitted via whest submit")
+    submit_parser.add_argument("--api-key", dest="api_key", default=None, help=argparse.SUPPRESS)
+    submit_parser.add_argument(
+        "--watch",
+        action="store_true",
+        help="Poll AIcrowd submission status until graded/failed.",
+    )
+    add_output_format_arguments(submit_parser)
 
     return parser
 
@@ -2773,6 +2825,150 @@ def _main_participant(argv: "list[str]") -> int:
                 quiet=json_output,
             )
             return 0
+
+        if command == "login":
+            import getpass
+
+            from . import aicrowd_config as _cfg
+            from .ui import say
+
+            api_key = args.api_key or os.environ.get("AICROWD_API_KEY")
+            if not api_key:
+                if json_output:
+                    print(json.dumps({"ok": False, "error": "no api key provided"}))
+                    return 2
+                api_key = getpass.getpass("AIcrowd API key: ").strip()
+            if not api_key:
+                say.warn("No API key entered; aborting.")
+                return 2
+
+            say.intent("Verifying AIcrowd API key", quiet=json_output)
+            try:
+                ident = _aicrowd_verify_identity(api_key)
+            except Exception as e:  # AIcrowdAPIError or transport error
+                if json_output:
+                    print(json.dumps({"ok": False, "error": str(e)}))
+                else:
+                    say.warn(f"Login failed: {e}")
+                    say.hint("Copy your key from your AIcrowd profile page and try again.")
+                return 1
+
+            path = _cfg.save_api_key(api_key)
+            name = ident.get("username") or ident.get("id")
+            if json_output:
+                print(json.dumps({"ok": True, "identity": ident, "config_path": str(path)}))
+            else:
+                say.ok(f"Logged in as {name}")
+                say.hint(f"Key saved to {path}")
+            return 0
+
+        if command == "submit":
+            import time as _time
+
+            from . import aicrowd_config as _cfg
+            from .aicrowd_client import extract_submission_id
+            from .ui import say
+
+            try:
+                api_key = _cfg.resolve_api_key(args.api_key)
+            except _cfg.NotLoggedIn as e:
+                if json_output:
+                    print(json.dumps({"ok": False, "error": str(e)}))
+                else:
+                    say.warn(str(e))
+                    say.hint("Run `whest login` first.")
+                return 2
+
+            # Resolve the artifact: package an estimator if --estimator was given.
+            if args.estimator:
+                say.intent(f"Packaging {args.estimator}", quiet=json_output)
+                artifact = str(
+                    package_submission(
+                        args.estimator,
+                        class_name=args.class_name,
+                        requirements_path=args.requirements,
+                        submission_yaml_path=args.submission_metadata,
+                        approach_md_path=args.approach,
+                    )
+                )
+            else:
+                artifact = args.artifact
+            if not Path(artifact).is_file():
+                msg = f"submission artifact not found: {artifact}"
+                if json_output:
+                    print(json.dumps({"ok": False, "error": msg}))
+                else:
+                    say.warn(msg)
+                return 2
+
+            client = AIcrowdClient(api_key=api_key)
+            try:
+                say.intent("Submitting to AIcrowd", quiet=json_output)
+                pid = client.verify_identity()
+                challenge_id = client.resolve_challenge(args.challenge)
+                if not client.check_registration(challenge_id=challenge_id, participant_id=pid):
+                    msg = f"You are not registered for '{args.challenge}'."
+                    if json_output:
+                        print(json.dumps({"ok": False, "error": msg}))
+                    else:
+                        say.warn(msg)
+                        say.hint(
+                            "Accept the challenge rules at "
+                            f"https://www.aicrowd.com/challenges/{args.challenge}"
+                        )
+                    return 1
+                upload = client.get_upload_details(challenge_slug=args.challenge)
+                say.step("Uploading artifact to S3", quiet=json_output)
+                s3_key = client.upload_to_s3(upload=upload, file_path=artifact)
+                sub = client.create_submission(
+                    challenge_slug=args.challenge, s3_key=s3_key, description=args.description
+                )
+            except Exception as e:
+                if json_output:
+                    print(json.dumps({"ok": False, "error": str(e)}))
+                else:
+                    say.warn(f"Submission failed: {e}")
+                return 1
+
+            sub_id = extract_submission_id(sub)
+            if not json_output:
+                say.ok(f"Submitted (submission id {sub_id})")
+                say.hint(
+                    "Track it at "
+                    f"https://www.aicrowd.com/challenges/{args.challenge}/submissions/{sub_id}"
+                )
+
+            final = sub
+            if args.watch and sub_id is not None:
+                # Best-effort poll. The submission is already created+grading
+                # asynchronously on AIcrowd; status polling is a convenience and
+                # must never turn a successful submit into a failure. (Some
+                # deployments don't expose a participant-facing single-submission
+                # status endpoint — degrade gracefully rather than crash.)
+                say.intent("Waiting for grading", quiet=json_output)
+                terminal = {"graded", "failed"}
+                try:
+                    while str(final.get("grading_status")) not in terminal:
+                        _time.sleep(5.0)
+                        final = client.get_submission_status(int(sub_id))
+                        say.step(f"status: {final.get('grading_status')}", quiet=json_output)
+                    status = str(final.get("grading_status"))
+                    if not json_output:
+                        if status == "graded":
+                            say.ok(f"Graded — score {final.get('score')}")
+                        else:
+                            say.warn(f"Grading {status}: {final.get('grading_message', '')}")
+                except Exception as e:  # noqa: BLE001 - watch is best-effort
+                    if not json_output:
+                        say.warn(f"Couldn't poll grading status ({e}).")
+                        say.hint(
+                            "The submission was created — track it at "
+                            f"https://www.aicrowd.com/challenges/{args.challenge}/submissions/{sub_id}"
+                        )
+
+            if json_output:
+                print(json.dumps({"ok": True, "submission_id": sub_id, "submission": final}))
+            return 0 if str(final.get("grading_status", "submitted")) != "failed" else 1
 
         raise ValueError(f"Unsupported command: {command}")
     except Exception as exc:  # pragma: no cover - exercised by CLI tests
