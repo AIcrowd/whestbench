@@ -1,10 +1,12 @@
 # Changelog
 
-## Unreleased
+## v0.9.0 (2026-05-29)
 
 ### Feat
 
-- **dataset-authoring**: add explicit HF config metadata to `whest dataset bake`, `create_dataset`, and config-preserving `combine-splits`.
+- **cli**: add whest login + whest submit (hop-A AIcrowd submission)
+- add config-aware dataset authoring (#72)
+- **prepared-arrow**: friendly upfront notice + CLI preflight sizing (#69)
 
 ## v0.8.0 (2026-05-27)
 
