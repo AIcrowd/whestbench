@@ -98,10 +98,10 @@ def test_create_submission_sends_nested_body():
     )
     body = captured["body"]
     assert body["challenge_id"] == "slugX"
-    assert body["submission"]["description"] == "whest"
-    assert body["submission"]["submission_files_attributes"] == [
-        {"submission_file_s3_key": "subs/sub.tar.gz"}
-    ]
+    assert body["submission"] == {"description": "whest"}
+    # API requests carry a TOP-LEVEL submission_files array (the controller
+    # ignores nested submission_files_attributes for is_api_request).
+    assert body["submission_files"] == [{"submission_file_s3_key": "subs/sub.tar.gz"}]
     assert extract_submission_id(resp) == 7777
 
 

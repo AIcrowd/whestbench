@@ -12,11 +12,12 @@ submissions_controller.rb + api/v1/api_users_controller.rb + base_controller.rb)
                                                                -> {"registered": bool}
 - Presign:      GET  {rails}/submissions?challenge_id=<slug>   -> {"data": {"fields": {...}, "url": ...}, "success": true}
 - S3 upload:    multipart POST to data.url with data.fields; substitute ${filename} in fields["key"].
-- Create:       POST {rails}/submissions  (NESTED body — Rails strong params
-                require(:submission).permit(..., submission_files_attributes: [:submission_file_s3_key])):
+- Create:       POST {rails}/submissions  (handle_artifact_based_submissions, is_api_request:
+                resets submission_files_attributes and reads a TOP-LEVEL `submission_files`
+                array, setting submission_type='artifact' itself):
                   {"challenge_id": "<slug>",
-                   "submission": {"description": ...,
-                                  "submission_files_attributes": [{"submission_file_s3_key": "<key>"}]}}
+                   "submission": {"description": ...},
+                   "submission_files": [{"submission_file_s3_key": "<key>"}]}
                 -> {"data": {"submission_id": <id>, "created_at": ...}, "success": true}
 - Status:       GET  {rails}/submissions/{id}                  -> {..., "grading_status": ...}
 """
@@ -138,16 +139,15 @@ class AIcrowdClient:
         self, *, challenge_slug: str, s3_key: str, description: str
     ) -> dict[str, Any]:
         """Create the submission. challenge_id is the SLUG (Rails set_challenge
-        resolves params[:challenge_id]); the file key rides in the nested
-        submission.submission_files_attributes."""
+        resolves params[:challenge_id]). For API requests the controller reads a
+        TOP-LEVEL `submission_files` array (it ignores any nested
+        submission_files_attributes and sets submission_type='artifact' itself)."""
         r = self._post(
             f"{_rails_base()}/submissions",
             json={
                 "challenge_id": challenge_slug,
-                "submission": {
-                    "description": description,
-                    "submission_files_attributes": [{"submission_file_s3_key": s3_key}],
-                },
+                "submission": {"description": description},
+                "submission_files": [{"submission_file_s3_key": s3_key}],
             },
         )
         return r.json()
