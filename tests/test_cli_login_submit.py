@@ -56,7 +56,7 @@ def _stub_submit_pipeline(monkeypatch, *, registered=True, status_after=None):
 
     Matches the real client API (create_submission takes challenge_slug; the
     create response is `data`-wrapped with submission_id)."""
-    calls = {"created": None}
+    calls: dict = {"created": None}
 
     class _FakeClient:
         def __init__(self, *, api_key, **kw):
