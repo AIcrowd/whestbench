@@ -1,7 +1,8 @@
 """Thin AIcrowd REST client for `whest submit` (hop A only).
 
 Contract VERIFIED against the AIcrowd Rails source (app/controllers/
-submissions_controller.rb + api/v1/api_users_controller.rb + base_controller.rb):
+submissions_controller.rb + app/controllers/api/v1/submissions_controller.rb +
+api/v1/api_users_controller.rb + base_controller.rb):
 
 - Auth header: `Authorization: Token <api_key>`  (NOT Bearer)
 - Rails API base: https://www.aicrowd.com/api/v1   (RAILS_HOST env overrides host)
@@ -19,7 +20,12 @@ submissions_controller.rb + api/v1/api_users_controller.rb + base_controller.rb)
                    "submission": {"description": ...},
                    "submission_files": [{"submission_file_s3_key": "<key>"}]}
                 -> {"data": {"submission_id": <id>, "created_at": ...}, "success": true}
-- Status:       GET  {rails}/submissions/{id}                  -> {..., "grading_status": ...}
+- Status:       GET  {rails}/submissions/{id}  (Api::V1::SubmissionsController#show;
+                participant-token auth, authorized to the caller's own submission)
+                -> {..., "grading_status_cd": "ready"|"submitted"|"initiated"|"graded"|"failed",
+                    "score": ..., "score_secondary": ..., "grading_message": ...}.
+                The --watch loop keeps a best-effort try/except so a poll failure never
+                turns a successful submit into a failure.
 """
 
 from __future__ import annotations
@@ -153,4 +159,6 @@ class AIcrowdClient:
         return r.json()
 
     def get_submission_status(self, submission_id: int) -> dict[str, Any]:
+        """Fetch a single submission's grading state (Api::SubmissionSerializer):
+        {"grading_status_cd": ..., "score": ..., "grading_message": ..., ...}."""
         return self._get(f"{_rails_base()}/submissions/{submission_id}").json()

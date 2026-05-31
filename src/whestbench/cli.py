@@ -2948,11 +2948,11 @@ def _main_participant(argv: "list[str]") -> int:
                 say.intent("Waiting for grading", quiet=json_output)
                 terminal = {"graded", "failed"}
                 try:
-                    while str(final.get("grading_status")) not in terminal:
+                    while str(final.get("grading_status_cd")) not in terminal:
                         _time.sleep(5.0)
                         final = client.get_submission_status(int(sub_id))
-                        say.step(f"status: {final.get('grading_status')}", quiet=json_output)
-                    status = str(final.get("grading_status"))
+                        say.step(f"status: {final.get('grading_status_cd')}", quiet=json_output)
+                    status = str(final.get("grading_status_cd"))
                     if not json_output:
                         if status == "graded":
                             say.ok(f"Graded — score {final.get('score')}")
@@ -2968,7 +2968,7 @@ def _main_participant(argv: "list[str]") -> int:
 
             if json_output:
                 print(json.dumps({"ok": True, "submission_id": sub_id, "submission": final}))
-            return 0 if str(final.get("grading_status", "submitted")) != "failed" else 1
+            return 0 if str(final.get("grading_status_cd", "submitted")) != "failed" else 1
 
         raise ValueError(f"Unsupported command: {command}")
     except Exception as exc:  # pragma: no cover - exercised by CLI tests

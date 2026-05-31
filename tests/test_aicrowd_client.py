@@ -107,11 +107,22 @@ def test_create_submission_sends_nested_body():
 
 def test_get_submission_status():
     def handler(req):
-        assert str(req.url).rstrip("/").endswith("/submissions/7777")
-        return httpx.Response(200, json={"id": 7777, "grading_status": "graded", "score": 0.91})
+        # Api::V1::SubmissionsController#show: participant-token route at
+        # /api/v1/submissions/{id}, returning the grading_status_cd serializer.
+        assert str(req.url).rstrip("/").endswith("/api/v1/submissions/7777")
+        return httpx.Response(
+            200,
+            json={
+                "id": 7777,
+                "grading_status_cd": "graded",
+                "grading_message": "Graded successfully",
+                "score": 0.91,
+            },
+        )
 
     st = _client(handler).get_submission_status(7777)
-    assert st["grading_status"] == "graded"
+    assert st["grading_status_cd"] == "graded"
+    assert st["score"] == 0.91
 
 
 def test_extract_submission_id_handles_response_shapes():

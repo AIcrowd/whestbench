@@ -86,7 +86,12 @@ def _stub_submit_pipeline(monkeypatch, *, registered=True, status_after=None, wa
                 from whestbench.aicrowd_client import AIcrowdAPIError
 
                 raise AIcrowdAPIError(status=404, message="no participant status endpoint")
-            return status_after or {"id": sid, "grading_status": "graded", "score": 0.9}
+            return status_after or {
+                "id": sid,
+                "grading_status_cd": "graded",
+                "grading_message": "Graded successfully",
+                "score": 0.9,
+            }
 
     monkeypatch.setattr(cli, "AIcrowdClient", _FakeClient, raising=False)
     return calls
@@ -95,6 +100,7 @@ def _stub_submit_pipeline(monkeypatch, *, registered=True, status_after=None, wa
 def test_submit_watch_poll_failure_is_graceful(monkeypatch, tmp_path):
     # A successful submit must NOT be turned into a failure by a status-poll
     # error (the submission is created + grades asynchronously).
+    monkeypatch.setattr("time.sleep", lambda *_: None)
     _spy_console_print(monkeypatch)
     monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
     _stub_submit_pipeline(monkeypatch, watch_raises=True)
@@ -102,6 +108,44 @@ def test_submit_watch_poll_failure_is_graceful(monkeypatch, tmp_path):
     art.write_bytes(b"\x1f\x8b\x08\x00fake")
     rc = cli.main(["submit", str(art), "--watch"])
     assert rc == 0
+
+
+def test_submit_watch_reaches_graded_and_prints_score(monkeypatch, tmp_path):
+    # --watch polls until grading_status_cd hits a terminal state and reports
+    # the score (mirrors Api::SubmissionSerializer: grading_status_cd + score).
+    monkeypatch.setattr("time.sleep", lambda *_: None)
+    captured = _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    _stub_submit_pipeline(
+        monkeypatch,
+        status_after={"id": 7777, "grading_status_cd": "graded", "score": 0.0845},
+    )
+    art = tmp_path / "submission.tar.gz"
+    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    rc = cli.main(["submit", str(art), "--watch"])
+    assert rc == 0
+    assert any("0.0845" in line for line in captured)
+    assert any("Graded" in line for line in captured)
+
+
+def test_submit_watch_failed_grading_returns_nonzero(monkeypatch, tmp_path):
+    # A terminal `failed` grade surfaces the message and a non-zero exit code.
+    monkeypatch.setattr("time.sleep", lambda *_: None)
+    captured = _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    _stub_submit_pipeline(
+        monkeypatch,
+        status_after={
+            "id": 7777,
+            "grading_status_cd": "failed",
+            "grading_message": "boom",
+        },
+    )
+    art = tmp_path / "submission.tar.gz"
+    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    rc = cli.main(["submit", str(art), "--watch"])
+    assert rc == 1
+    assert any("boom" in line for line in captured)
 
 
 def test_submit_file_runs_full_hop_a(monkeypatch, tmp_path):
