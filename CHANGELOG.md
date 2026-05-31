@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.1 (2026-05-31)
+
+### Fix
+
+- **cli**: whest submit --watch reaches terminal grading state (#74)
+
 ## v0.9.0 (2026-05-29)
 
 ### Feat
