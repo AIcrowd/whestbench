@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.9.2 (2026-06-01)
+
+### Fix
+
+- bump to track the flopscope 0.4.2 fix for `fnp.random.default_rng()` over the client/server grader boundary; the `flopscope>=0.4.1` floor auto-resolves to 0.4.2 once published (AIcrowd/flopscope#109)
+
 ## v0.9.1 (2026-05-31)
 
 ### Fix

@@ -618,7 +618,7 @@ wheels = [
 
 [[package]]
 name = "flopscope"
-version = "0.4.1"
+version = "0.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -626,14 +626,14 @@ dependencies = [
     { name = "opt-einsum" },
     { name = "rich" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/38/96/f0c7e04e7e8f18b0011572581ccdd92746a7563cd7efbab6a54067d16d11/flopscope-0.4.1.tar.gz", hash = "sha256:6e490892a39684dd45d692a485a72a4738a332bc5b4bc88ec444ea345fe79ec9", size = 10624075, upload-time = "2026-05-26T11:19:38.115Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/51/07/41a5580a7a1fb7ca19011c91b1f891ce185e56dc2de45fcbe34c0cb5822f/flopscope-0.4.2.tar.gz", hash = "sha256:5c1ef8681418b4ff6992e1aced37dc1ef7477dfdedcf6bcb3de2c1646100e915", size = 10629697, upload-time = "2026-06-01T16:54:06.007Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3e/9f/f872765e106ce785104dc8ea33cdc050027d09b56ef3efc3efb0e0a0eaea/flopscope-0.4.1-py3-none-any.whl", hash = "sha256:1d1d26013400138e2adec26f1de656af1314cd2c8d02a35d1a5004de1b12a4e6", size = 369586, upload-time = "2026-05-26T11:19:27.08Z" },
+    { url = "https://files.pythonhosted.org/packages/15/8d/828f889cc42d1f5a362f8b9f4255277f1692562bd55a3e7c99622405dfdc/flopscope-0.4.2-py3-none-any.whl", hash = "sha256:82afe52cf663e7eb52ef26be996105176e2f7ba56e4f9715d2a1169bd1ccd47a", size = 369588, upload-time = "2026-06-01T16:54:04.638Z" },
 ]
 
 [[package]]
 name = "flopscope-server"
-version = "0.4.1"
+version = "0.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flopscope" },
@@ -642,9 +642,9 @@ dependencies = [
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pyzmq" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/66/a4/cceecf3d08cc0caf008b0b654ef93fe74e4f67e55dd3d96e1cc23fba405b/flopscope_server-0.4.1.tar.gz", hash = "sha256:1dcce83746c5adbf3fc2b8eaccc3fc63cb3ec66443eca73c732fd04077830820", size = 59623, upload-time = "2026-05-26T11:19:48.569Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/44/e6/9034d28443b63b609305e518974fc53b24fa73f94c1d2ed93d64a80f8f27/flopscope_server-0.4.2.tar.gz", hash = "sha256:0aae8d5eea9ae4a57cfb8ee09863000e0e7ea1722a219c083ed4524b37c0ce60", size = 60477, upload-time = "2026-06-01T16:54:06.213Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/14/bb/089c637b7643b2fef73c66d2f14974e2ec3ae4ad19ea4d8e3df6e1390216/flopscope_server-0.4.1-py3-none-any.whl", hash = "sha256:5571ae4b1f418e93f8561e1087c15c560db449f48960b951c4d3f8fddd5fdf62", size = 17387, upload-time = "2026-05-26T11:19:47.531Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/54/baf1a8949a8951320339b74e386234da427733600d3f82de1dd04b0af14e/flopscope_server-0.4.2-py3-none-any.whl", hash = "sha256:3c85e09c55dd290eb4c0cb8ca85654cdc47581b96d96826b3ec217b2ec327f55", size = 18247, upload-time = "2026-06-01T16:54:04.75Z" },
 ]
 
 [[package]]
@@ -2524,7 +2524,7 @@ wheels = [
 
 [[package]]
 name = "whestbench"
-version = "0.9.0"
+version = "0.9.2"
 source = { editable = "." }
 dependencies = [
     { name = "datasets" },
