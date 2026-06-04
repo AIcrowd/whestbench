@@ -298,7 +298,7 @@ After a fetch, the HF cache lives at three places:
 |---|---|
 | `~/.cache/huggingface/hub/datasets--<org>--<name>/` | Raw blobs (Git LFS / Xet objects) + the revision snapshot symlinks |
 | `~/.cache/huggingface/datasets/<org>___<name>/` | The `datasets` library's regenerated Arrow tables (memory-mapped) |
-| `~/.cache/huggingface/xet/\{chunk_cache,shard_cache,staging\}/` | Xet chunk-level dedup cache (since `hf_xet ≥ 1.0`) |
+| `~/.cache/huggingface/xet/{chunk_cache,shard_cache,staging}/` | Xet chunk-level dedup cache (since `hf_xet ≥ 1.0`) |
 
 Total disk usage is roughly `2× download size` (the parquet blob + Arrow
 rebuild). The hub cache uses content-addressed dedup, so the same blob is
@@ -596,7 +596,7 @@ warning. v0.7 removes them.
 ### CLI flag conventions
 
 `--repo-type`, `--revision`, `--token`, `--cache-dir`, `--quiet`, `--json`,
-`--format \{auto,human,agent,json,quiet\}`, `--dry-run`, `--exist-ok`. Adopted
+`--format {auto,human,agent,json,quiet}`, `--dry-run`, `--exist-ok`. Adopted
 from [HF's `hf` CLI](https://huggingface.co/docs/huggingface_hub/guides/cli)
 for consistency.
 

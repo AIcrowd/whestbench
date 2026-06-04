@@ -81,7 +81,7 @@ When the estimator raised an unhandled exception (not budget/time exhaustion), t
 
 | Field | Type | Description |
 |---|---|---|
-| `error` | `str \| dict` | Legacy string message, or structured object: `\{"message": str, "details": object\}` |
+| `error` | `str` \| `dict` | Legacy string message, or structured object: `{"message": str, "details": object}` |
 | `error_code` | `str` | Stable identifier: `PREDICT_ERROR` for a `RunnerError`, or the Python exception class name otherwise |
 
 For structured `error` objects, `error.details` includes:

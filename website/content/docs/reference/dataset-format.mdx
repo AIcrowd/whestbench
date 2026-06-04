@@ -524,7 +524,7 @@ the parquet `mlp_seed` column for each split.
 | `schema_version`, `format`, `seed_protocol` | top-level | top-level |
 | `backend`, `width`, `depth`, `n_samples` | top-level | top-level — must match across all splits (validated at combine time) |
 | `split`, `config` | top-level optional coordinate for new bakes | per-split (`splits.<name>.config`) |
-| `n_mlps`, `seed` | top-level | per-split (`splits.<name>.\{n_mlps,seed\}`) |
+| `n_mlps`, `seed` | top-level | per-split (`splits.<name>.{n_mlps,seed}`) |
 | `created_at_utc` | top-level | top-level (= earliest of splits) + optional per-split |
 | `hardware` | top-level (bake host) | top-level (combine host) + per-split `hardware_fingerprints` for provenance |
 | `splits` | absent | present |
