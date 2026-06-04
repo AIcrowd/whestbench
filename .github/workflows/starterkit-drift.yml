@@ -1,0 +1,49 @@
+name: Starter-kit docs drift
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Mondays 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare pinned SHA against whest-starterkit@main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PIN="$(jq -r .sha website/starterkit.lock.json)"
+          HEAD="$(git ls-remote https://github.com/AIcrowd/whest-starterkit main | cut -f1)"
+          echo "pinned=$PIN head=$HEAD"
+          if [ "$PIN" = "$HEAD" ]; then
+            echo "No drift." ; exit 0
+          fi
+          CHANGED="$(gh api "repos/AIcrowd/whest-starterkit/compare/$PIN...$HEAD" \
+            --jq '.files[].filename' | grep '^docs/' || true)"
+          {
+            echo "## Starter-kit docs drift detected"
+            echo "Pinned: \`$PIN\`  →  main: \`$HEAD\`"
+            echo ""
+            echo "Changed docs files:"
+            echo '```'
+            echo "$CHANGED"
+            echo '```'
+            echo ""
+            echo "Bump \`website/starterkit.lock.json\` to adopt (handle overlaps case-by-case)."
+          } > body.md
+          cat body.md >> "$GITHUB_STEP_SUMMARY"
+          TITLE="starter-kit docs drift: pin behind main"
+          EXISTING="$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number' || true)"
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file body.md
+          else
+            gh issue create --title "$TITLE" --body-file body.md --label documentation || \
+              gh issue create --title "$TITLE" --body-file body.md
+          fi
