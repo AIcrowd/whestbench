@@ -5,23 +5,16 @@ import {
   DocsPage,
   DocsTitle,
 } from 'fumadocs-ui/layouts/docs/page';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/mdx';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
-
-// The docs root has no standalone landing page — send visitors straight to
-// the first real page (Installation) so /docs/ doesn't read as empty.
-const DOCS_ROOT_REDIRECT = '/docs/getting-started/installation';
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
 }) {
   const params = await props.params;
-  if (!params.slug || params.slug.length === 0) {
-    redirect(DOCS_ROOT_REDIRECT);
-  }
-  const page = source.getPage(params.slug);
+  const page = source.getPage(params.slug ?? []);
   if (!page) notFound();
 
   const MDX = page.data.body;
@@ -54,10 +47,7 @@ export async function generateMetadata(props: {
   params: Promise<{ slug?: string[] }>;
 }): Promise<Metadata> {
   const params = await props.params;
-  if (!params.slug || params.slug.length === 0) {
-    return { title: 'Documentation' };
-  }
-  const page = source.getPage(params.slug);
+  const page = source.getPage(params.slug ?? []);
   if (!page) notFound();
 
   return {
