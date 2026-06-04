@@ -1,0 +1,9 @@
+/.next/
+/.source/
+/out/
+/node_modules/
+/.generated/
+/content/docs/api/
+/content/docs/cli/
+/content/docs/participant-guide/
+next-env.d.ts

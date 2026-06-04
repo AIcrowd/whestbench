@@ -248,3 +248,6 @@ src/network_estimation/_cython_kernels.c
 internal docs/
 
 .aicrowd/
+
+# website/lib/ is TypeScript source, not a Python virtualenv (root `lib/` rule must not catch it)
+!/website/lib/
