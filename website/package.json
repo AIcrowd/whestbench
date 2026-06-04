@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/generate-llmstxt.mjs",
+    "build": "next build",
     "check:gh-pages": "node --test gh-pages-deploy.check.mjs",
     "test": "node --test",
     "start": "next start"
