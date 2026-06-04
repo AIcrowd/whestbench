@@ -1,0 +1,593 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/lognormal/",
+  "detail_json_href": "/api-data/ops/random-Generator-lognormal.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a log-normal distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a log-normal distribution with specified mean,\nstandard deviation, and array shape.  Note that the mean and standard\ndeviation are not the values for the distribution itself, but of the\nunderlying normal distribution it is derived from."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Mean value of the underlying normal distribution. Default is 0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Mean value of the underlying normal distribution. Default is 0."
+                  }
+                ],
+                "name": "mean",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Standard deviation of the underlying normal distribution. Must be\nnon-negative. Default is 1."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Standard deviation of the underlying normal distribution. Must be\nnon-negative. Default is 1."
+                  }
+                ],
+                "name": "sigma",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/mean/",
+                        "kind": "link",
+                        "target": "mean",
+                        "text": "mean"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "sigma"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are both scalars.\nOtherwise, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.broadcast(mean, sigma).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/mean/",
+                    "kind": "link",
+                    "target": "mean",
+                    "text": "mean"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "sigma"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are both scalars.\nOtherwise, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.broadcast(mean, sigma).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the parameterized log-normal distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the parameterized log-normal distribution."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "probability density function, distribution, cumulative density function, etc.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "probability density function, distribution, cumulative density function, etc."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lognorm.html",
+                "href": "",
+                "label": "scipy.stats.lognorm",
+                "original_target": "scipy.stats.lognorm",
+                "role": "",
+                "target": "stats.lognorm",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "A variable "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " has a log-normal distribution if "
+              },
+              {
+                "kind": "code",
+                "text": "log(x)"
+              },
+              {
+                "kind": "text",
+                "text": " is normally\ndistributed.  The probability density function for the log-normal\ndistribution is:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "p(x) = \\frac{1}{\\sigma x \\sqrt{2\\pi}} e^{(-\\frac{(ln(x)-\\mu)^2}{2\\sigma^2})}"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where "
+              },
+              {
+                "kind": "math",
+                "latex": "\\mu"
+              },
+              {
+                "kind": "text",
+                "text": " is the mean and "
+              },
+              {
+                "kind": "math",
+                "latex": "\\sigma"
+              },
+              {
+                "kind": "text",
+                "text": " is the standard\ndeviation of the normally distributed logarithm of the variable.\nA log-normal distribution results if a random variable is the "
+              },
+              {
+                "kind": "emphasis",
+                "text": "product"
+              },
+              {
+                "kind": "text",
+                "text": "\nof a large number of independent, identically-distributed variables in\nthe same way that a normal distribution results if the variable is the\n"
+              },
+              {
+                "kind": "emphasis",
+                "text": "sum"
+              },
+              {
+                "kind": "text",
+                "text": " of a large number of independent, identically-distributed\nvariables."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nLimpert, E., Stahel, W. A., and Abbt, M., \"Log-normal\nDistributions across the Sciences: Keys and Clues,\"\nBioScience, Vol. 51, No. 5, May, 2001.\nhttps://stat.ethz.ch/~stahel/lognormal/bioscience.pdf",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nReiss, R.D. and Thomas, M., \"Statistical Analysis of Extreme\nValues,\" Basel: Birkhauser Verlag, 2001, pp. 31-32.",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from the distribution:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mu, sigma = 3., 1. # mean and standard deviation"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = rng.lognormal(mu, sigma, 1000)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Display the histogram of the samples, along with\nthe probability density function:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "count, bins, _ = plt.hist(s, 100, density=True, align='mid')"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.linspace(min(bins), max(bins), 10000)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "pdf = (flops.exp(-(flops.log(x) - mu)**2 / (2 * sigma**2))"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "/ (x * sigma * flops.sqrt(2 * flops.pi)))"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(x, pdf, linewidth=2, color='r')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.axis('tight')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Demonstrate that taking the products of random samples from a uniform\ndistribution can be fit well by a log-normal probability density\nfunction."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# Generate a thousand samples: each is the product of 100 random"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# values, drawn from a normal distribution."
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = rng"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = []"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "for i in range(1000):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "a = 10. + rng.standard_normal(100)"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "b.append(flops.prod(a))"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array(b) / flops.min(b) # scale values to be positive"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "count, bins, _ = plt.hist(b, 100, density=True, align='mid')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "sigma = flops.std(flops.log(b))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mu = flops.mean(flops.log(b))"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.linspace(min(bins), max(bins), 10000)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "pdf = (flops.exp(-(flops.log(x) - mu)**2 / (2 * sigma**2))"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "/ (x * sigma * flops.sqrt(2 * flops.pi)))"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(x, pdf, color='r', linewidth=2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.Generator.lognormal",
+    "module": "numpy.random",
+    "name": "random.Generator.lognormal",
+    "notes": "Log-normal distribution; cost = numel(output).",
+    "numpy_ref": "np.random.Generator.lognormal",
+    "signature": "fnp.random.Generator.lognormal(self, mean=0.0, sigma=1.0, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from a log-normal distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-lognormal",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.lognormal.html"
+  }
+}

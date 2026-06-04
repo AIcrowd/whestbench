@@ -1,0 +1,454 @@
+{
+  "detail_href": "/docs/api/numpy/hstack/",
+  "detail_json_href": "/api-data/ops/hstack.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Stack arrays in sequence horizontally (column wise)."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is equivalent to concatenation along the second axis, except for 1-D\narrays where it concatenates along the first axis. Rebuilds arrays divided\nby "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/hsplit/",
+                "kind": "link",
+                "target": "hsplit",
+                "text": "hsplit"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function makes most sense for arrays with up to 3 dimensions. For\ninstance, for pixel-data with a height (first axis), width (second axis),\nand r/g/b channels (third axis). The functions "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/concatenate/",
+                "kind": "link",
+                "target": "concatenate",
+                "text": "concatenate"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/stack/",
+                "kind": "link",
+                "target": "stack",
+                "text": "stack"
+              },
+              {
+                "kind": "text",
+                "text": " and\n"
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/block/",
+                "kind": "link",
+                "target": "block",
+                "text": "block"
+              },
+              {
+                "kind": "text",
+                "text": " provide more general stacking and concatenation operations."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The arrays must have the same shape along all but the second axis,\nexcept 1-D arrays which can be any length. In the case of a single\narray_like input, it will be treated as a sequence of arrays; i.e.,\neach element along the zeroth axis is treated as a separate array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "sequence of ndarrays",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The arrays must have the same shape along all but the second axis,\nexcept 1-D arrays which can be any length. In the case of a single\narray_like input, it will be treated as a sequence of arrays; i.e.,\neach element along the zeroth axis is treated as a separate array."
+                  }
+                ],
+                "name": "tup",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If provided, the destination array will have this dtype. Cannot be\nprovided together with "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.24",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.24"
+                  }
+                ],
+                "data_type": "str or dtype",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If provided, the destination array will have this dtype. Cannot be\nprovided together with "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Controls what kind of data casting may occur. Defaults to 'same_kind'."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.24",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.24"
+                  }
+                ],
+                "data_type": "{'no', 'equiv', 'safe', 'same_kind', 'unsafe'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Controls what kind of data casting may occur. Defaults to 'same_kind'."
+                  }
+                ],
+                "name": "casting",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The array formed by stacking the given arrays."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The array formed by stacking the given arrays."
+                  }
+                ],
+                "name": "stacked",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Join a sequence of arrays along an existing axis.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Join a sequence of arrays along an existing axis."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/concatenate/",
+                "label": "flops.concatenate",
+                "original_target": "concatenate",
+                "role": "",
+                "target": "concatenate",
+                "unresolved": false
+              },
+              {
+                "description": "Join a sequence of arrays along a new axis.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Join a sequence of arrays along a new axis."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/stack/",
+                "label": "flops.stack",
+                "original_target": "stack",
+                "role": "",
+                "target": "stack",
+                "unresolved": false
+              },
+              {
+                "description": "Assemble an nd-array from nested lists of blocks.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Assemble an nd-array from nested lists of blocks."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/block/",
+                "label": "flops.block",
+                "original_target": "block",
+                "role": "",
+                "target": "block",
+                "unresolved": false
+              },
+              {
+                "description": "Stack arrays in sequence vertically (row wise).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Stack arrays in sequence vertically (row wise)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/vstack/",
+                "label": "flops.vstack",
+                "original_target": "vstack",
+                "role": "",
+                "target": "vstack",
+                "unresolved": false
+              },
+              {
+                "description": "Stack arrays in sequence depth wise (along third axis).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Stack arrays in sequence depth wise (along third axis)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/dstack/",
+                "label": "flops.dstack",
+                "original_target": "dstack",
+                "role": "",
+                "target": "dstack",
+                "unresolved": false
+              },
+              {
+                "description": "Stack 1-D arrays as columns into a 2-D array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Stack 1-D arrays as columns into a 2-D array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/column-stack/",
+                "label": "flops.column_stack",
+                "original_target": "column_stack",
+                "role": "",
+                "target": "column_stack",
+                "unresolved": false
+              },
+              {
+                "description": "Split an array into multiple sub-arrays horizontally (column-wise).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Split an array into multiple sub-arrays horizontally (column-wise)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/hsplit/",
+                "label": "flops.hsplit",
+                "original_target": "hsplit",
+                "role": "",
+                "target": "hsplit",
+                "unresolved": false
+              },
+              {
+                "description": "Split an array into a tuple of sub-arrays along an axis.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Split an array into a tuple of sub-arrays along an axis."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/unstack/",
+                "label": "flops.unstack",
+                "original_target": "unstack",
+                "role": "",
+                "target": "unstack",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array((1,2,3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array((4,5,6))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.hstack((a,b))"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 4, 5, 6])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1],[2],[3]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([[4],[5],[6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.hstack((a,b))"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2, 5],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 6]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.hstack",
+    "module": "numpy",
+    "name": "hstack",
+    "notes": "Stack arrays horizontally.",
+    "numpy_ref": "np.hstack",
+    "signature": "fnp.hstack(tup, *, dtype=None, casting='same_kind')",
+    "status": "supported",
+    "summary": "Stack arrays in sequence horizontally (column wise).",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "hstack",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L559",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/shape_base.py#L295"
+  }
+}

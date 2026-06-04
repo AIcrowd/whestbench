@@ -1,0 +1,722 @@
+{
+  "detail_href": "/docs/api/numpy/logspace/",
+  "detail_json_href": "/api-data/ops/logspace.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return numbers spaced evenly on a log scale."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In linear space, the sequence starts at "
+              },
+              {
+                "kind": "code",
+                "text": "base ** start"
+              },
+              {
+                "kind": "text",
+                "text": "\n("
+              },
+              {
+                "kind": "code",
+                "text": "base"
+              },
+              {
+                "kind": "text",
+                "text": " to the power of "
+              },
+              {
+                "kind": "code",
+                "text": "start"
+              },
+              {
+                "kind": "text",
+                "text": ") and ends with "
+              },
+              {
+                "kind": "code",
+                "text": "base ** stop"
+              },
+              {
+                "kind": "text",
+                "text": "\n(see "
+              },
+              {
+                "kind": "code",
+                "text": "endpoint"
+              },
+              {
+                "kind": "text",
+                "text": " below)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [],
+            "directive": "versionchanged",
+            "options": [],
+            "raw_source": ".. versionchanged:: 1.25.0\n    Non-scalar 'base` is now supported",
+            "supported": true,
+            "type": "directive_block",
+            "version": "1.25.0"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "code",
+                        "text": "base ** start"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is the starting value of the sequence."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "code",
+                    "text": "base ** start"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is the starting value of the sequence."
+                  }
+                ],
+                "name": "start",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "code",
+                        "text": "base ** stop"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is the final value of the sequence, unless "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "endpoint"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nis False.  In that case, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "num + 1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " values are spaced over the\ninterval in log-space, of which all but the last (a sequence of\nlength "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "num"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ") are returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "code",
+                    "text": "base ** stop"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is the final value of the sequence, unless "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "endpoint"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nis False.  In that case, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "num + 1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " values are spaced over the\ninterval in log-space, of which all but the last (a sequence of\nlength "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "num"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ") are returned."
+                  }
+                ],
+                "name": "stop",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of samples to generate.  Default is 50."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "integer, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of samples to generate.  Default is 50."
+                  }
+                ],
+                "name": "num",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If true, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "stop"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is the last sample. Otherwise, it is not included.\nDefault is True."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "boolean, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If true, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "stop"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is the last sample. Otherwise, it is not included.\nDefault is True."
+                  }
+                ],
+                "name": "endpoint",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The base of the log space. The step size between the elements in\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ln(samples) / ln(base)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (or "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "log_base(samples)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ") is uniform.\nDefault is 10.0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The base of the log space. The step size between the elements in\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ln(samples) / ln(base)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (or "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "log_base(samples)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ") is uniform.\nDefault is 10.0."
+                  }
+                ],
+                "name": "base",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The type of the output array.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "dtype"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not given, the data type\nis inferred from "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "start"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "stop"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". The inferred type will never be\nan integer; "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is chosen even if the arguments would produce an\narray of integers."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The type of the output array.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "dtype"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not given, the data type\nis inferred from "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "start"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "stop"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". The inferred type will never be\nan integer; "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is chosen even if the arguments would produce an\narray of integers."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis in the result to store the samples.  Relevant only if start,\nstop, or base are array-like.  By default (0), the samples will be\nalong a new axis inserted at the beginning. Use -1 to get an axis at\nthe end."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis in the result to store the samples.  Relevant only if start,\nstop, or base are array-like.  By default (0), the samples will be\nalong a new axis inserted at the beginning. Use -1 to get an axis at\nthe end."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "code",
+                        "text": "num"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples, equally spaced on a log scale."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "code",
+                    "text": "num"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples, equally spaced on a log scale."
+                  }
+                ],
+                "name": "samples",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Similar to linspace, with the step size specified instead of the number of samples. Note that, when used with a float endpoint, the endpoint may or may not be included.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar to linspace, with the step size specified instead of the number of samples. Note that, when used with a float endpoint, the endpoint may or may not be included."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/arange/",
+                "label": "flops.arange",
+                "original_target": "arange",
+                "role": "",
+                "target": "arange",
+                "unresolved": false
+              },
+              {
+                "description": "Similar to logspace, but with the samples uniformly distributed in linear space, instead of log space.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar to logspace, but with the samples uniformly distributed in linear space, instead of log space."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/linspace/",
+                "label": "flops.linspace",
+                "original_target": "linspace",
+                "role": "",
+                "target": "linspace",
+                "unresolved": false
+              },
+              {
+                "description": "Similar to logspace, but with endpoints specified directly.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar to logspace, but with endpoints specified directly."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/geomspace/",
+                "label": "flops.geomspace",
+                "original_target": "geomspace",
+                "role": "",
+                "target": "geomspace",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.how-to-partition.html",
+                "href": "",
+                "label": "how-to-partition",
+                "original_target": "how-to-partition",
+                "role": "ref",
+                "target": "how-to-partition",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If base is a scalar, logspace is equivalent to the code"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.linspace(start, stop, num=num, endpoint=endpoint)"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "# doctest: +SKIP"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "power(base, y).astype(dtype)"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "# doctest: +SKIP"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.logspace(2.0, 3.0, num=4)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 100.        ,  215.443469  ,  464.15888336, 1000.        ])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.logspace(2.0, 3.0, num=4, endpoint=False)"
+              },
+              {
+                "kind": "output",
+                "text": "array([100.        ,  177.827941  ,  316.22776602,  562.34132519])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.logspace(2.0, 3.0, num=4, base=2.0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([4.        ,  5.0396842 ,  6.34960421,  8.        ])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.logspace(2.0, 3.0, num=4, base=[2.0, 3.0], axis=-1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 4.        ,  5.0396842 ,  6.34960421,  8.        ],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 9.        , 12.98024613, 18.72075441, 27.        ]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Graphical illustration:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "N = 10"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1 = flops.logspace(0.1, 1, N, endpoint=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x2 = flops.logspace(0.1, 1, N, endpoint=False)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.zeros(N)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(x1, y, 'o')"
+              },
+              {
+                "kind": "output",
+                "text": "[<matplotlib.lines.Line2D object at 0x...>]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(x2, y + 0.5, 'o')"
+              },
+              {
+                "kind": "output",
+                "text": "[<matplotlib.lines.Line2D object at 0x...>]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.ylim([-0.5, 1])"
+              },
+              {
+                "kind": "output",
+                "text": "(-0.5, 1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.logspace",
+    "module": "numpy",
+    "name": "logspace",
+    "notes": "Log-spaced generation; cost = num.",
+    "numpy_ref": "np.logspace",
+    "signature": "fnp.logspace(start, stop, num=50, endpoint=True, base=10.0, dtype=None, axis=0)",
+    "status": "supported",
+    "summary": "Return numbers spaced evenly on a log scale.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "logspace",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L301",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/function_base.py#L195"
+  }
+}

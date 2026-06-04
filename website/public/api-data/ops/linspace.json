@@ -1,0 +1,863 @@
+{
+  "detail_href": "/docs/api/numpy/linspace/",
+  "detail_json_href": "/api-data/ops/linspace.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return evenly spaced numbers over a specified interval."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns "
+              },
+              {
+                "kind": "code",
+                "text": "num"
+              },
+              {
+                "kind": "text",
+                "text": " evenly spaced samples, calculated over the\ninterval ["
+              },
+              {
+                "kind": "code",
+                "text": "start"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "stop"
+              },
+              {
+                "kind": "text",
+                "text": "]."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The endpoint of the interval can optionally be excluded."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [],
+            "directive": "versionchanged",
+            "options": [],
+            "raw_source": ".. versionchanged:: 1.20.0\n    Values are rounded towards ``-inf`` instead of ``0`` when an\n    integer ``dtype`` is specified. The old behavior can\n    still be obtained with ``flops.linspace(start, stop, num).astype(int)``",
+            "supported": true,
+            "type": "directive_block",
+            "version": "1.20.0"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The starting value of the sequence."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The starting value of the sequence."
+                  }
+                ],
+                "name": "start",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The end value of the sequence, unless "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "endpoint"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is set to False.\nIn that case, the sequence consists of all but the last of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "num + 1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nevenly spaced samples, so that "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "stop"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is excluded.  Note that the step\nsize changes when "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "endpoint"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is False."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The end value of the sequence, unless "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "endpoint"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is set to False.\nIn that case, the sequence consists of all but the last of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "num + 1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nevenly spaced samples, so that "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "stop"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is excluded.  Note that the step\nsize changes when "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "endpoint"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is False."
+                  }
+                ],
+                "name": "stop",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of samples to generate. Default is 50. Must be non-negative."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of samples to generate. Default is 50. Must be non-negative."
+                  }
+                ],
+                "name": "num",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "stop"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is the last sample. Otherwise, it is not included.\nDefault is True."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "stop"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is the last sample. Otherwise, it is not included.\nDefault is True."
+                  }
+                ],
+                "name": "endpoint",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, return ("
+                      },
+                      {
+                        "kind": "code",
+                        "text": "samples"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "step"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "), where "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "step"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is the spacing\nbetween samples."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, return ("
+                  },
+                  {
+                    "kind": "code",
+                    "text": "samples"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "step"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "), where "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "step"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is the spacing\nbetween samples."
+                  }
+                ],
+                "name": "retstep",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The type of the output array.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "dtype"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not given, the data type\nis inferred from "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "start"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "stop"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". The inferred dtype will never be\nan integer; "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is chosen even if the arguments would produce an\narray of integers."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The type of the output array.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "dtype"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not given, the data type\nis inferred from "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "start"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "stop"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". The inferred dtype will never be\nan integer; "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is chosen even if the arguments would produce an\narray of integers."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis in the result to store the samples.  Relevant only if start\nor stop are array-like.  By default (0), the samples will be along a\nnew axis inserted at the beginning. Use -1 to get an axis at the end."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis in the result to store the samples.  Relevant only if start\nor stop are array-like.  By default (0), the samples will be along a\nnew axis inserted at the beginning. Use -1 to get an axis at the end."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The device on which to place the created array. Default: None.\nFor Array-API interoperability only, so must be "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "\"cpu\""
+                      },
+                      {
+                        "kind": "text",
+                        "text": " if passed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.0.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0.0"
+                  }
+                ],
+                "data_type": "str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The device on which to place the created array. Default: None.\nFor Array-API interoperability only, so must be "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "\"cpu\""
+                  },
+                  {
+                    "kind": "text",
+                    "text": " if passed."
+                  }
+                ],
+                "name": "device",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "There are "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "num"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " equally spaced samples in the closed interval\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "[start, stop]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " or the half-open interval "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "[start, stop)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\n(depending on whether "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "endpoint"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True or False)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "There are "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "num"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " equally spaced samples in the closed interval\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "[start, stop]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " or the half-open interval "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "[start, stop)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\n(depending on whether "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "endpoint"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True or False)."
+                  }
+                ],
+                "name": "samples",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Only returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "retstep"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Size of spacing between samples."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Only returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "retstep"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True"
+                  }
+                ],
+                "name": "step",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Similar to `linspace`, but uses a step size (instead of the number of samples).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar to "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/linspace/",
+                    "kind": "link",
+                    "target": "linspace",
+                    "text": "linspace"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", but uses a step size (instead of the number of samples)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/arange/",
+                "label": "flops.arange",
+                "original_target": "arange",
+                "role": "",
+                "target": "arange",
+                "unresolved": false
+              },
+              {
+                "description": "Similar to `linspace`, but with numbers spaced evenly on a log scale (a geometric progression).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar to "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/linspace/",
+                    "kind": "link",
+                    "target": "linspace",
+                    "text": "linspace"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", but with numbers spaced evenly on a log scale (a geometric progression)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/geomspace/",
+                "label": "flops.geomspace",
+                "original_target": "geomspace",
+                "role": "",
+                "target": "geomspace",
+                "unresolved": false
+              },
+              {
+                "description": "Similar to `geomspace`, but with the end points specified as logarithms.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar to "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/geomspace/",
+                    "kind": "link",
+                    "target": "geomspace",
+                    "text": "geomspace"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", but with the end points specified as logarithms."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/logspace/",
+                "label": "flops.logspace",
+                "original_target": "logspace",
+                "role": "",
+                "target": "logspace",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.how-to-partition.html",
+                "href": "",
+                "label": "how-to-partition",
+                "original_target": "how-to-partition",
+                "role": "ref",
+                "target": "how-to-partition",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linspace(2.0, 3.0, num=5)"
+              },
+              {
+                "kind": "output",
+                "text": "array([2.  , 2.25, 2.5 , 2.75, 3.  ])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linspace(2.0, 3.0, num=5, endpoint=False)"
+              },
+              {
+                "kind": "output",
+                "text": "array([2. ,  2.2,  2.4,  2.6,  2.8])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linspace(2.0, 3.0, num=5, retstep=True)"
+              },
+              {
+                "kind": "output",
+                "text": "(array([2.  ,  2.25,  2.5 ,  2.75,  3.  ]), 0.25)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Graphical illustration:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "N = 8"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.zeros(N)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1 = flops.linspace(0, 10, N, endpoint=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x2 = flops.linspace(0, 10, N, endpoint=False)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(x1, y, 'o')"
+              },
+              {
+                "kind": "output",
+                "text": "[<matplotlib.lines.Line2D object at 0x...>]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(x2, y + 0.5, 'o')"
+              },
+              {
+                "kind": "output",
+                "text": "[<matplotlib.lines.Line2D object at 0x...>]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.ylim([-0.5, 1])"
+              },
+              {
+                "kind": "output",
+                "text": "(-0.5, 1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.linspace",
+    "module": "numpy",
+    "name": "linspace",
+    "notes": "Return evenly spaced numbers over interval. Cost: numel(output).",
+    "numpy_ref": "np.linspace",
+    "signature": "fnp.linspace(start, stop, num=50, endpoint=True, retstep=False, dtype=None, axis=0, *, device=None)",
+    "status": "supported",
+    "summary": "Return evenly spaced numbers over a specified interval.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "linspace",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L236",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/function_base.py#L25"
+  }
+}

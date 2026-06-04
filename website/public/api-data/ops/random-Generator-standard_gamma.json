@@ -1,0 +1,492 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/standard-gamma/",
+  "detail_json_href": "/api-data/ops/random-Generator-standard_gamma.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a standard Gamma distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Samples are drawn from a Gamma distribution with specified parameters,\nshape (sometimes designated \"k\") and scale=1."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Parameter, must be non-negative."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Parameter, must be non-negative."
+                  }
+                ],
+                "name": "shape",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/shape/",
+                        "kind": "link",
+                        "target": "shape",
+                        "text": "shape"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar.  Otherwise,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.array(shape).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/shape/",
+                    "kind": "link",
+                    "target": "shape",
+                    "text": "shape"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar.  Otherwise,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.array(shape).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Desired dtype of the result, only "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float64"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float32"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are supported.\nByteorder must be native. The default value is flops.float64."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Desired dtype of the result, only "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float64"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float32"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are supported.\nByteorder must be native. The default value is flops.float64."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Alternative output array in which to place the result. If size is\nnot None, it must have the same shape as the provided size and\nmust match the type of the output values."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Alternative output array in which to place the result. If size is\nnot None, it must have the same shape as the provided size and\nmust match the type of the output values."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the parameterized standard gamma distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the parameterized standard gamma distribution."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "probability density function, distribution or cumulative density function, etc.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "probability density function, distribution or cumulative density function, etc."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gamma.html",
+                "href": "",
+                "label": "scipy.stats.gamma",
+                "original_target": "scipy.stats.gamma",
+                "role": "",
+                "target": "stats.gamma",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability density for the Gamma distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "p(x) = x^{k-1}\\frac{e^{-x/\\theta}}{\\theta^k\\Gamma(k)},"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where "
+              },
+              {
+                "kind": "math",
+                "latex": "k"
+              },
+              {
+                "kind": "text",
+                "text": " is the shape and "
+              },
+              {
+                "kind": "math",
+                "latex": "\\theta"
+              },
+              {
+                "kind": "text",
+                "text": " the scale,\nand "
+              },
+              {
+                "kind": "math",
+                "latex": "\\Gamma"
+              },
+              {
+                "kind": "text",
+                "text": " is the Gamma function."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Gamma distribution is often used to model the times to failure of\nelectronic components, and arises naturally in processes for which the\nwaiting times between Poisson distributed events are relevant."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nWeisstein, Eric W. \"Gamma Distribution.\" From MathWorld--A\nWolfram Web Resource.\nhttps://mathworld.wolfram.com/GammaDistribution.html",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nWikipedia, \"Gamma distribution\",\nhttps://en.wikipedia.org/wiki/Gamma_distribution",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from the distribution:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "shape, scale = 2., 1. # mean and width"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = rng.standard_gamma(shape, 1000000)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Display the histogram of the samples, along with\nthe probability density function:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import scipy.special as sps  # doctest: +SKIP"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "count, bins, _ = plt.hist(s, 50, density=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = bins**(shape-1) * ((flops.exp(-bins/scale))/  # doctest: +SKIP"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "(sps.gamma(shape) * scale**shape))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(bins, y, linewidth=2, color='r')  # doctest: +SKIP"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.Generator.standard_gamma",
+    "module": "numpy.random",
+    "name": "random.Generator.standard_gamma",
+    "notes": "Standard gamma; cost = numel(output).",
+    "numpy_ref": "np.random.Generator.standard_gamma",
+    "signature": "fnp.random.Generator.standard_gamma(self, shape, size=None, dtype=<class 'numpy.float64'>, out=None)",
+    "status": "supported",
+    "summary": "Draw samples from a standard Gamma distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-standard_gamma",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.standard_gamma.html"
+  }
+}

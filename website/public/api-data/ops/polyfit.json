@@ -1,0 +1,1237 @@
+{
+  "detail_href": "/docs/api/numpy/polyfit/",
+  "detail_json_href": "/api-data/ops/polyfit.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Least squares polynomial fit."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This forms part of the old polynomial API. Since version 1.4, the\nnew polynomial API defined in "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.polynomial.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "polynomial",
+                    "text": "flops.polynomial"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is preferred.\nA summary of the differences can be found in the\n"
+                  },
+                  {
+                    "display_text": "transition guide",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "/reference/routines.polynomials",
+                    "role": "doc",
+                    "suppress_link": false,
+                    "target": "/reference/routines.polynomials",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n   This forms part of the old polynomial API. Since version 1.4, the\n   new polynomial API defined in `flops.polynomial` is preferred.\n   A summary of the differences can be found in the\n   :doc:`transition guide </reference/routines.polynomials>`.",
+            "supported": true,
+            "type": "directive_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Fit a polynomial "
+              },
+              {
+                "kind": "code",
+                "text": "p(x) = p[0] * x**deg + ... + p[deg]"
+              },
+              {
+                "kind": "text",
+                "text": " of degree "
+              },
+              {
+                "kind": "code",
+                "text": "deg"
+              },
+              {
+                "kind": "text",
+                "text": "\nto points "
+              },
+              {
+                "kind": "code",
+                "text": "(x, y)"
+              },
+              {
+                "kind": "text",
+                "text": ". Returns a vector of coefficients "
+              },
+              {
+                "kind": "code",
+                "text": "p"
+              },
+              {
+                "kind": "text",
+                "text": " that minimises\nthe squared error in the order "
+              },
+              {
+                "kind": "code",
+                "text": "deg"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "deg-1"
+              },
+              {
+                "kind": "text",
+                "text": ", ... "
+              },
+              {
+                "kind": "code",
+                "text": "0"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The "
+              },
+              {
+                "kind": "code",
+                "text": "Polynomial.fit <flops.polynomial.polynomial.Polynomial.fit>"
+              },
+              {
+                "kind": "text",
+                "text": " class\nmethod is recommended for new code as it is more stable numerically. See\nthe documentation of the method for more information."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "x-coordinates of the M sample points "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(x[i], y[i])"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, shape (M,)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "x-coordinates of the M sample points "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(x[i], y[i])"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "y-coordinates of the sample points. Several data sets of sample\npoints sharing the same x-coordinates can be fitted at once by\npassing in a 2D-array that contains one dataset per column."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, shape (M,) or (M, K)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "y-coordinates of the sample points. Several data sets of sample\npoints sharing the same x-coordinates can be fitted at once by\npassing in a 2D-array that contains one dataset per column."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Degree of the fitting polynomial"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Degree of the fitting polynomial"
+                  }
+                ],
+                "name": "deg",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Relative condition number of the fit. Singular values smaller than\nthis relative to the largest singular value will be ignored. The\ndefault value is len(x)*eps, where eps is the relative precision of\nthe float type, about 2e-16 in most cases."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Relative condition number of the fit. Singular values smaller than\nthis relative to the largest singular value will be ignored. The\ndefault value is len(x)*eps, where eps is the relative precision of\nthe float type, about 2e-16 in most cases."
+                  }
+                ],
+                "name": "rcond",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Switch determining nature of return value. When it is False (the\ndefault) just the coefficients are returned, when True diagnostic\ninformation from the singular value decomposition is also returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Switch determining nature of return value. When it is False (the\ndefault) just the coefficients are returned, when True diagnostic\ninformation from the singular value decomposition is also returned."
+                  }
+                ],
+                "name": "full",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Weights. If not None, the weight "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "w[i]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " applies to the unsquared\nresidual "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "y[i] - y_hat[i]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " at "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x[i]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Ideally the weights are\nchosen so that the errors of the products "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "w[i]*y[i]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " all have the\nsame variance.  When using inverse-variance weighting, use\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "w[i] = 1/sigma(y[i])"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  The default value is None."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, shape (M,), optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Weights. If not None, the weight "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "w[i]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " applies to the unsquared\nresidual "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "y[i] - y_hat[i]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " at "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x[i]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Ideally the weights are\nchosen so that the errors of the products "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "w[i]*y[i]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " all have the\nsame variance.  When using inverse-variance weighting, use\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "w[i] = 1/sigma(y[i])"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  The default value is None."
+                  }
+                ],
+                "name": "w",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If given and not "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", return not just the estimate but also its\ncovariance matrix. By default, the covariance are scaled by\nchi2/dof, where dof = M - (deg + 1), i.e., the weights are presumed\nto be unreliable except in a relative sense and everything is scaled\nsuch that the reduced chi2 is unity. This scaling is omitted if\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "cov='unscaled'"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", as is relevant for the case that the weights are\nw = 1/sigma, with sigma known to be a reliable estimate of the\nuncertainty."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool or str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If given and not "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", return not just the estimate but also its\ncovariance matrix. By default, the covariance are scaled by\nchi2/dof, where dof = M - (deg + 1), i.e., the weights are presumed\nto be unreliable except in a relative sense and everything is scaled\nsuch that the reduced chi2 is unity. This scaling is omitted if\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "cov='unscaled'"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", as is relevant for the case that the weights are\nw = 1/sigma, with sigma known to be a reliable estimate of the\nuncertainty."
+                  }
+                ],
+                "name": "cov",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Polynomial coefficients, highest power first.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "y"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " was 2-D, the\ncoefficients for "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "-th data set are in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "p[:,k]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, shape (deg + 1,) or (deg + 1, K)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Polynomial coefficients, highest power first.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "y"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " was 2-D, the\ncoefficients for "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "-th data set are in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "p[:,k]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "p",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "These values are only returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "full == True"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "residuals -- sum of squared residuals of the least squares fit"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "items": [
+                              {
+                                "blocks": [
+                                  {
+                                    "inline": [
+                                      {
+                                        "kind": "text",
+                                        "text": "coefficient matrix"
+                                      }
+                                    ],
+                                    "type": "paragraph"
+                                  }
+                                ],
+                                "term_inline": [
+                                  {
+                                    "kind": "text",
+                                    "text": "rank -- the effective rank of the scaled Vandermonde"
+                                  }
+                                ]
+                              }
+                            ],
+                            "type": "definition_list"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "items": [
+                              {
+                                "blocks": [
+                                  {
+                                    "inline": [
+                                      {
+                                        "kind": "text",
+                                        "text": "coefficient matrix"
+                                      }
+                                    ],
+                                    "type": "paragraph"
+                                  }
+                                ],
+                                "term_inline": [
+                                  {
+                                    "kind": "text",
+                                    "text": "singular_values -- singular values of the scaled Vandermonde"
+                                  }
+                                ]
+                              }
+                            ],
+                            "type": "definition_list"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "rcond -- value of "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "rcond"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "For more details, see "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/linalg/lstsq/",
+                        "kind": "link",
+                        "target": "linalg.lstsq",
+                        "text": "flops.linalg.lstsq"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "residuals, rank, singular_values, rcond",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "These values are only returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "full == True"
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Present only if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "full == False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "cov == True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  The covariance\nmatrix of the polynomial coefficient estimates.  The diagonal of\nthis matrix are the variance estimates for each coefficient.  If y\nis a 2-D array, then the covariance matrix for the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "-th data set\nare in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "V[:,:,k]"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, shape (deg + 1, deg + 1) or (deg + 1, deg + 1, K)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Present only if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "full == False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "cov == True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  The covariance\nmatrix of the polynomial coefficient estimates.  The diagonal of\nthis matrix are the variance estimates for each coefficient.  If y\nis a 2-D array, then the covariance matrix for the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "-th data set\nare in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "V[:,:,k]"
+                  }
+                ],
+                "name": "V",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The rank of the coefficient matrix in the least-squares fit is\ndeficient. The warning is only raised if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "full == False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The warnings can be turned off by"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "lines": [
+                      {
+                        "kind": "input",
+                        "prompt": ">>>",
+                        "text": "import warnings"
+                      },
+                      {
+                        "kind": "input",
+                        "prompt": ">>>",
+                        "text": "warnings.simplefilter('ignore', flops.exceptions.RankWarning)"
+                      }
+                    ],
+                    "type": "doctest_block"
+                  }
+                ],
+                "data_type": "RankWarning",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The rank of the coefficient matrix in the least-squares fit is\ndeficient. The warning is only raised if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "full == False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Warns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Warns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Compute polynomial values.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Compute polynomial values."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/polyval/",
+                "label": "flops.polyval",
+                "original_target": "polyval",
+                "role": "",
+                "target": "polyval",
+                "unresolved": false
+              },
+              {
+                "description": "Computes a least-squares fit.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Computes a least-squares fit."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/linalg/lstsq/",
+                "label": "flops.linalg.lstsq",
+                "original_target": "linalg.lstsq",
+                "role": "",
+                "target": "linalg.lstsq",
+                "unresolved": false
+              },
+              {
+                "description": "Computes spline fits.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Computes spline fits."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.UnivariateSpline.html",
+                "href": "",
+                "label": "scipy.interpolate.UnivariateSpline",
+                "original_target": "scipy.interpolate.UnivariateSpline",
+                "role": "",
+                "target": "scipy.interpolate.UnivariateSpline",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The solution minimizes the squared error"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "E = \\sum_{j=0}^k |p(x_j) - y_j|^2"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "in the equations:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "x[0]**n * p[0] + ... + x[0] * p[n-1] + p[n] = y[0]\nx[1]**n * p[0] + ... + x[1] * p[n-1] + p[n] = y[1]\n...\nx[k]**n * p[0] + ... + x[k] * p[n-1] + p[n] = y[k]",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The coefficient matrix of the coefficients "
+              },
+              {
+                "kind": "code",
+                "text": "p"
+              },
+              {
+                "kind": "text",
+                "text": " is a Vandermonde matrix."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/polyfit/",
+                "kind": "link",
+                "target": "polyfit",
+                "text": "polyfit"
+              },
+              {
+                "kind": "text",
+                "text": " issues a "
+              },
+              {
+                "kind": "code",
+                "text": "~exceptions.RankWarning"
+              },
+              {
+                "kind": "text",
+                "text": " when the least-squares fit is\nbadly conditioned. This implies that the best fit is not well-defined due\nto numerical error. The results may be improved by lowering the polynomial\ndegree or by replacing "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " by "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " - "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": ".mean(). The "
+              },
+              {
+                "kind": "code",
+                "text": "rcond"
+              },
+              {
+                "kind": "text",
+                "text": " parameter\ncan also be set to a value smaller than its default, but the resulting\nfit may be spurious: including contributions from the small singular\nvalues can add numerical noise to the result."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that fitting polynomial coefficients is inherently badly conditioned\nwhen the degree of the polynomial is large or the interval of sample points\nis badly centered. The quality of the fit should always be checked in these\ncases. When polynomial fits are not satisfactory, splines may be a good\nalternative."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nWikipedia, \"Curve fitting\",\nhttps://en.wikipedia.org/wiki/Curve_fitting",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nWikipedia, \"Polynomial interpolation\",\nhttps://en.wikipedia.org/wiki/Polynomial_interpolation",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import warnings"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([0.0, 1.0, 2.0, 3.0,  4.0,  5.0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.array([0.0, 0.8, 0.9, 0.1, -0.8, -1.0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "z = flops.polyfit(x, y, 3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "z"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 0.08703704, -0.81349206,  1.69312169, -0.03968254]) # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "It is convenient to use "
+              },
+              {
+                "kind": "code",
+                "text": "poly1d"
+              },
+              {
+                "kind": "text",
+                "text": " objects for dealing with polynomials:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p = flops.poly1d(z)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p(0.5)"
+              },
+              {
+                "kind": "output",
+                "text": "0.6143849206349179 # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p(3.5)"
+              },
+              {
+                "kind": "output",
+                "text": "-0.34732142857143039 # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p(10)"
+              },
+              {
+                "kind": "output",
+                "text": "22.579365079365115 # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "High-order polynomials may oscillate wildly:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "with warnings.catch_warnings():"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "warnings.simplefilter('ignore', flops.exceptions.RankWarning)"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "p30 = flops.poly1d(flops.polyfit(x, y, 30))"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p30(4)"
+              },
+              {
+                "kind": "output",
+                "text": "-0.80000000000000204 # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p30(5)"
+              },
+              {
+                "kind": "output",
+                "text": "-0.99999999999999445 # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p30(4.5)"
+              },
+              {
+                "kind": "output",
+                "text": "-0.10547061179440398 # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Illustration:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "xp = flops.linspace(-2, 6, 100)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "_ = plt.plot(x, y, '.', xp, p(xp), '-', xp, p30(xp), '--')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.ylim(-2,2)"
+              },
+              {
+                "kind": "output",
+                "text": "(-2, 2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "2m * (deg+1)^2",
+    "cost_formula_latex": "$2m \\cdot (\\text{deg}+1)^2$",
+    "flopscope_ref": "fnp.polyfit",
+    "module": "flopscope._polynomial",
+    "name": "polyfit",
+    "notes": "Least squares polynomial fit. Cost: 2 * m * (deg+1)^2 FLOPs.",
+    "numpy_ref": "np.polyfit",
+    "signature": "fnp.polyfit(x, y, deg, rcond=None, full=False, w=None, cov=False)",
+    "status": "supported",
+    "summary": "Least squares polynomial fit.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "polyfit",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_polynomial.py#L218",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_polynomial_impl.py#L449"
+  }
+}

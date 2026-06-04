@@ -1,0 +1,441 @@
+{
+  "detail_href": "/docs/api/numpy/extract/",
+  "detail_json_href": "/api-data/ops/extract.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the elements of an array that satisfy some condition."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is equivalent to "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.compress(ravel(condition), ravel(arr)).html",
+                "href": "",
+                "kind": "link",
+                "target": "compress(ravel(condition), ravel(arr))",
+                "text": "flops.compress(ravel(condition), ravel(arr))"
+              },
+              {
+                "kind": "text",
+                "text": ".  If\n"
+              },
+              {
+                "kind": "code",
+                "text": "condition"
+              },
+              {
+                "kind": "text",
+                "text": " is boolean "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/extract/",
+                "kind": "link",
+                "target": "extract",
+                "text": "flops.extract"
+              },
+              {
+                "kind": "text",
+                "text": " is equivalent to "
+              },
+              {
+                "kind": "code",
+                "text": "arr[condition]"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/place/",
+                "kind": "link",
+                "target": "place",
+                "text": "place"
+              },
+              {
+                "kind": "text",
+                "text": " does the exact opposite of "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/extract/",
+                "kind": "link",
+                "target": "extract",
+                "text": "extract"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array whose nonzero or True entries indicate the elements of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nto extract."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array whose nonzero or True entries indicate the elements of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nto extract."
+                  }
+                ],
+                "name": "condition",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array of the same size as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "condition"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array of the same size as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "condition"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "arr",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Rank 1 array of values from "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " where "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "condition"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Rank 1 array of values from "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " where "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "condition"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True."
+                  }
+                ],
+                "name": "extract",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/take/",
+                "label": "flops.take",
+                "original_target": "take",
+                "role": "",
+                "target": "take",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/put/",
+                "label": "flops.put",
+                "original_target": "put",
+                "role": "",
+                "target": "put",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/copyto/",
+                "label": "flops.copyto",
+                "original_target": "copyto",
+                "role": "",
+                "target": "copyto",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/compress/",
+                "label": "flops.compress",
+                "original_target": "compress",
+                "role": "",
+                "target": "compress",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/place/",
+                "label": "flops.place",
+                "original_target": "place",
+                "role": "",
+                "target": "place",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.arange(12).reshape((3, 4))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0,  1,  2,  3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 4,  5,  6,  7],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 8,  9, 10, 11]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "condition = flops.mod(arr, 3)==0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "condition"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ True, False, False,  True],"
+              },
+              {
+                "kind": "output",
+                "text": "       [False, False,  True, False],"
+              },
+              {
+                "kind": "output",
+                "text": "       [False,  True, False, False]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.extract(condition, arr)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 3, 6, 9])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "condition"
+              },
+              {
+                "kind": "text",
+                "text": " is boolean:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr[condition]"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 3, 6, 9])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.extract",
+    "module": "numpy",
+    "name": "extract",
+    "notes": "Return elements satisfying condition. Cost: numel(input).",
+    "numpy_ref": "np.extract",
+    "signature": "fnp.extract(condition, arr)",
+    "status": "supported",
+    "summary": "Return the elements of an array that satisfy some condition.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "extract",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1651",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L1990"
+  }
+}

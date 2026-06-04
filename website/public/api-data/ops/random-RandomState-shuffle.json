@@ -1,0 +1,260 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/shuffle/",
+  "detail_json_href": "/api-data/ops/random-RandomState-shuffle.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Modify a sequence in-place by shuffling its contents."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function only shuffles the array along the first axis of a\nmulti-dimensional array. The order of sub-arrays is changed but\ntheir contents remains the same."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/shuffle/",
+                    "kind": "link",
+                    "target": "random.Generator.shuffle",
+                    "text": "shuffle"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the `~flops.random.Generator.shuffle`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The array, list or mutable sequence to be shuffled."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or MutableSequence",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The array, list or mutable sequence to be shuffled."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [],
+                "data_type": "None",
+                "inline": [],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/shuffle/",
+                "label": "flops.random.Generator.shuffle",
+                "original_target": "random.Generator.shuffle",
+                "role": "",
+                "target": "random.Generator.shuffle",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.arange(10)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.shuffle(arr)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr"
+              },
+              {
+                "kind": "output",
+                "text": "[1 7 5 2 9 4 3 6 0 8] # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Multi-dimensional arrays are only shuffled along the first axis:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.arange(9).reshape((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.shuffle(arr)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr"
+              },
+              {
+                "kind": "output",
+                "text": "array([[3, 4, 5], # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [6, 7, 8],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0, 1, 2]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "shape[axis]",
+    "cost_formula_latex": "$\\text{shape}[\\text{axis}]$",
+    "flopscope_ref": "fnp.random.RandomState.shuffle",
+    "module": "numpy.random",
+    "name": "random.RandomState.shuffle",
+    "notes": "Legacy in-place shuffle; cost = shape[axis] (Fisher-Yates draws). RandomState has no axis kwarg; defaults to 0.",
+    "numpy_ref": "np.random.RandomState.shuffle",
+    "signature": "fnp.random.RandomState.shuffle(self, x)",
+    "status": "supported",
+    "summary": "Modify a sequence in-place by shuffling its contents.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-shuffle",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.shuffle.html"
+  }
+}

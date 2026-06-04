@@ -1,0 +1,1234 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/svd/",
+  "detail_json_href": "/api-data/ops/linalg-svd.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Singular Value Decomposition."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is a 2D array, and "
+              },
+              {
+                "kind": "code",
+                "text": "full_matrices=False"
+              },
+              {
+                "kind": "text",
+                "text": ", then it is\nfactorized as "
+              },
+              {
+                "kind": "code",
+                "text": "u @ flops.diag(s) @ vh = (u * s) @ vh"
+              },
+              {
+                "kind": "text",
+                "text": ", where\n"
+              },
+              {
+                "kind": "code",
+                "text": "u"
+              },
+              {
+                "kind": "text",
+                "text": " and the Hermitian transpose of "
+              },
+              {
+                "kind": "code",
+                "text": "vh"
+              },
+              {
+                "kind": "text",
+                "text": " are 2D arrays with\northonormal columns and "
+              },
+              {
+                "kind": "code",
+                "text": "s"
+              },
+              {
+                "kind": "text",
+                "text": " is a 1D array of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": "'s singular\nvalues. When "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is higher-dimensional, SVD is applied in\nstacked mode as explained below."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A real or complex array with "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.ndim >= 2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, N) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A real or complex array with "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a.ndim >= 2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True (default), "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "u"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "vh"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " have the shapes "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(..., M, M)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(..., N, N)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", respectively.  Otherwise, the shapes are\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(..., M, K)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(..., K, N)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", respectively, where\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "K = min(M, N)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True (default), "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "u"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "vh"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " have the shapes "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(..., M, M)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(..., N, N)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", respectively.  Otherwise, the shapes are\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(..., M, K)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(..., K, N)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", respectively, where\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "K = min(M, N)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "full_matrices",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Whether or not to compute "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "u"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "vh"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " in addition to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "s"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  True\nby default."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Whether or not to compute "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "u"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "vh"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " in addition to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "s"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  True\nby default."
+                  }
+                ],
+                "name": "compute_uv",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is assumed to be Hermitian (symmetric if real-valued),\nenabling a more efficient method for finding singular values.\nDefaults to False."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is assumed to be Hermitian (symmetric if real-valued),\nenabling a more efficient method for finding singular values.\nDefaults to False."
+                  }
+                ],
+                "name": "hermitian",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [],
+                "data_type": "When `compute_uv` is True, the result is a namedtuple with the following",
+                "inline": [],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [],
+                "data_type": "attribute names:",
+                "inline": [],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Unitary array(s). The first "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.ndim - 2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " dimensions have the same\nsize as those of the input "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". The size of the last two dimensions\ndepends on the value of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "full_matrices"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Only returned when\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "compute_uv"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{ (..., M, M), (..., M, K) } array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Unitary array(s). The first "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a.ndim - 2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " dimensions have the same\nsize as those of the input "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". The size of the last two dimensions\ndepends on the value of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "full_matrices"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Only returned when\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "compute_uv"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True."
+                  }
+                ],
+                "name": "U",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Vector(s) with the singular values, within each vector sorted in\ndescending order. The first "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.ndim - 2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " dimensions have the same\nsize as those of the input "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., K) array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Vector(s) with the singular values, within each vector sorted in\ndescending order. The first "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a.ndim - 2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " dimensions have the same\nsize as those of the input "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "S",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Unitary array(s). The first "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.ndim - 2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " dimensions have the same\nsize as those of the input "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". The size of the last two dimensions\ndepends on the value of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "full_matrices"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Only returned when\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "compute_uv"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{ (..., N, N), (..., K, N) } array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Unitary array(s). The first "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a.ndim - 2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " dimensions have the same\nsize as those of the input "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". The size of the last two dimensions\ndepends on the value of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "full_matrices"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Only returned when\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "compute_uv"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True."
+                  }
+                ],
+                "name": "Vh",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If SVD computation does not converge."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If SVD computation does not converge."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Similar function in SciPy.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.svd.html",
+                "href": "",
+                "label": "scipy.linalg.svd",
+                "original_target": "scipy.linalg.svd",
+                "role": "",
+                "target": "scipy.linalg.svd",
+                "unresolved": false
+              },
+              {
+                "description": "Compute singular values of a matrix.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Compute singular values of a matrix."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.svdvals.html",
+                "href": "",
+                "label": "scipy.linalg.svdvals",
+                "original_target": "scipy.linalg.svdvals",
+                "role": "",
+                "target": "scipy.linalg.svdvals",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The decomposition is performed using LAPACK routine "
+              },
+              {
+                "kind": "code",
+                "text": "_gesdd"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "SVD is usually described for the factorization of a 2D matrix "
+              },
+              {
+                "kind": "math",
+                "latex": "A"
+              },
+              {
+                "kind": "text",
+                "text": ".\nThe higher-dimensional case will be discussed below. In the 2D case, SVD is\nwritten as "
+              },
+              {
+                "kind": "math",
+                "latex": "A = U S V^H"
+              },
+              {
+                "kind": "text",
+                "text": ", where "
+              },
+              {
+                "kind": "math",
+                "latex": "A = a"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "math",
+                "latex": "U= u"
+              },
+              {
+                "kind": "text",
+                "text": ",\n"
+              },
+              {
+                "kind": "math",
+                "latex": "S= \\mathtt{flops.diag}(s)"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "math",
+                "latex": "V^H = vh"
+              },
+              {
+                "kind": "text",
+                "text": ". The 1D array "
+              },
+              {
+                "kind": "code",
+                "text": "s"
+              },
+              {
+                "kind": "text",
+                "text": "\ncontains the singular values of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "u"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "vh"
+              },
+              {
+                "kind": "text",
+                "text": " are unitary. The rows\nof "
+              },
+              {
+                "kind": "code",
+                "text": "vh"
+              },
+              {
+                "kind": "text",
+                "text": " are the eigenvectors of "
+              },
+              {
+                "kind": "math",
+                "latex": "A^H A"
+              },
+              {
+                "kind": "text",
+                "text": " and the columns of "
+              },
+              {
+                "kind": "code",
+                "text": "u"
+              },
+              {
+                "kind": "text",
+                "text": " are\nthe eigenvectors of "
+              },
+              {
+                "kind": "math",
+                "latex": "A A^H"
+              },
+              {
+                "kind": "text",
+                "text": ". In both cases the corresponding\n(possibly non-zero) eigenvalues are given by "
+              },
+              {
+                "kind": "code",
+                "text": "s**2"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " has more than two dimensions, then broadcasting rules apply, as\nexplained in "
+              },
+              {
+                "display_text": "routines.linalg-broadcasting",
+                "explicit_title": false,
+                "external_url": "",
+                "href": "",
+                "kind": "role_reference",
+                "original_target": "routines.linalg-broadcasting",
+                "role": "ref",
+                "suppress_link": false,
+                "target": "routines.linalg-broadcasting",
+                "unresolved": true
+              },
+              {
+                "kind": "text",
+                "text": ". This means that SVD is\nworking in \"stacked\" mode: it iterates over all indices of the first\n"
+              },
+              {
+                "kind": "code",
+                "text": "a.ndim - 2"
+              },
+              {
+                "kind": "text",
+                "text": " dimensions and for each combination SVD is applied to the\nlast two indices. The matrix "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " can be reconstructed from the\ndecomposition with either "
+              },
+              {
+                "kind": "code",
+                "text": "(u * s[..., None, :]) @ vh"
+              },
+              {
+                "kind": "text",
+                "text": " or\n"
+              },
+              {
+                "kind": "code",
+                "text": "u @ (s[..., None] * vh)"
+              },
+              {
+                "kind": "text",
+                "text": ". (The "
+              },
+              {
+                "kind": "code",
+                "text": "@"
+              },
+              {
+                "kind": "text",
+                "text": " operator can be replaced by the\nfunction "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/matmul/",
+                "kind": "link",
+                "target": "matmul",
+                "text": "flops.matmul"
+              },
+              {
+                "kind": "text",
+                "text": " for python versions below 3.5.)"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is a "
+              },
+              {
+                "kind": "code",
+                "text": "matrix"
+              },
+              {
+                "kind": "text",
+                "text": " object (as opposed to an "
+              },
+              {
+                "kind": "code",
+                "text": "ndarray"
+              },
+              {
+                "kind": "text",
+                "text": "), then so are\nall the return values."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = rng.normal(size=(9, 6)) + 1j*rng.normal(size=(9, 6))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = rng.normal(size=(2, 7, 8, 3)) + 1j*rng.normal(size=(2, 7, 8, 3))"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Reconstruction based on full SVD, 2D case:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "U, S, Vh = flops.linalg.svd(a, full_matrices=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "U.shape, S.shape, Vh.shape"
+              },
+              {
+                "kind": "output",
+                "text": "((9, 9), (6,), (6, 6))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(a, flops.dot(U[:, :6] * S, Vh))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "smat = flops.zeros((9, 6), dtype=complex)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "smat[:6, :6] = flops.diag(S)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(a, flops.dot(U, flops.dot(smat, Vh)))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Reconstruction based on reduced SVD, 2D case:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "U, S, Vh = flops.linalg.svd(a, full_matrices=False)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "U.shape, S.shape, Vh.shape"
+              },
+              {
+                "kind": "output",
+                "text": "((9, 6), (6,), (6, 6))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(a, flops.dot(U * S, Vh))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "smat = flops.diag(S)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(a, flops.dot(U, flops.dot(smat, Vh)))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Reconstruction based on full SVD, 4D case:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "U, S, Vh = flops.linalg.svd(b, full_matrices=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "U.shape, S.shape, Vh.shape"
+              },
+              {
+                "kind": "output",
+                "text": "((2, 7, 8, 8), (2, 7, 3), (2, 7, 3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(b, flops.matmul(U[..., :3] * S[..., None, :], Vh))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(b, flops.matmul(U[..., :3], S[..., None] * Vh))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Reconstruction based on reduced SVD, 4D case:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "U, S, Vh = flops.linalg.svd(b, full_matrices=False)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "U.shape, S.shape, Vh.shape"
+              },
+              {
+                "kind": "output",
+                "text": "((2, 7, 8, 3), (2, 7, 3), (2, 7, 3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(b, flops.matmul(U * S[..., None, :], Vh))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(b, flops.matmul(U, S[..., None] * Vh))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "m * n * k",
+    "cost_formula_latex": "$m \\cdot n \\cdot k$",
+    "flopscope_ref": "fnp.linalg.svd",
+    "module": "numpy.linalg",
+    "name": "linalg.svd",
+    "notes": "Singular value decomposition; cost ~ O(min(m,n)*m*n).",
+    "numpy_ref": "np.linalg.svd",
+    "signature": "fnp.linalg.svd(a: 'ArrayLike', full_matrices: 'bool' = True, compute_uv: 'bool' = True, hermitian: 'bool' = False, *, k: 'int | None' = None) -> 'tuple[FlopscopeArray, FlopscopeArray, FlopscopeArray] | FlopscopeArray'",
+    "status": "supported",
+    "summary": "Singular Value Decomposition.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-svd",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_svd.py#L30",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L1639"
+  }
+}

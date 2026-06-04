@@ -1,0 +1,714 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/hypergeometric/",
+  "detail_json_href": "/api-data/ops/random-RandomState-hypergeometric.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a Hypergeometric distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Samples are drawn from a hypergeometric distribution with specified\nparameters, "
+              },
+              {
+                "kind": "code",
+                "text": "ngood"
+              },
+              {
+                "kind": "text",
+                "text": " (ways to make a good selection), "
+              },
+              {
+                "kind": "code",
+                "text": "nbad"
+              },
+              {
+                "kind": "text",
+                "text": " (ways to make\na bad selection), and "
+              },
+              {
+                "kind": "code",
+                "text": "nsample"
+              },
+              {
+                "kind": "text",
+                "text": " (number of items sampled, which is less\nthan or equal to the sum "
+              },
+              {
+                "kind": "code",
+                "text": "ngood + nbad"
+              },
+              {
+                "kind": "text",
+                "text": ")."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the\n"
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/hypergeometric/",
+                    "kind": "link",
+                    "target": "random.Generator.hypergeometric",
+                    "text": "hypergeometric"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the\n    `~flops.random.Generator.hypergeometric`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of ways to make a good selection.  Must be nonnegative."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or array_like of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of ways to make a good selection.  Must be nonnegative."
+                  }
+                ],
+                "name": "ngood",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of ways to make a bad selection.  Must be nonnegative."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or array_like of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of ways to make a bad selection.  Must be nonnegative."
+                  }
+                ],
+                "name": "nbad",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of items sampled.  Must be at least 1 and at most\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ngood + nbad"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or array_like of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of items sampled.  Must be at least 1 and at most\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ngood + nbad"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "nsample",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ngood"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "nbad"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "nsample"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nare all scalars.  Otherwise, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.broadcast(ngood, nbad, nsample).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nsamples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ngood"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "nbad"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "nsample"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nare all scalars.  Otherwise, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.broadcast(ngood, nbad, nsample).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nsamples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the parameterized hypergeometric distribution. Each\nsample is the number of good items within a randomly selected subset of\nsize "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "nsample"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " taken from a set of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ngood"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " good items and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "nbad"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " bad items."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the parameterized hypergeometric distribution. Each\nsample is the number of good items within a randomly selected subset of\nsize "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "nsample"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " taken from a set of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ngood"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " good items and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "nbad"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " bad items."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "probability density function, distribution or cumulative density function, etc.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "probability density function, distribution or cumulative density function, etc."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.hypergeom.html",
+                "href": "",
+                "label": "scipy.stats.hypergeom",
+                "original_target": "scipy.stats.hypergeom",
+                "role": "",
+                "target": "stats.hypergeom",
+                "unresolved": false
+              },
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/hypergeometric/",
+                "label": "flops.random.Generator.hypergeometric",
+                "original_target": "random.Generator.hypergeometric",
+                "role": "",
+                "target": "random.Generator.hypergeometric",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability mass function (PMF) for the Hypergeometric distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "P(x) = \\frac{\\binom{g}{x}\\binom{b}{n-x}}{\\binom{g+b}{n}},"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where "
+              },
+              {
+                "kind": "math",
+                "latex": "0 \\le x \\le n"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "math",
+                "latex": "n-b \\le x \\le g"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "for P(x) the probability of "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " good results in the drawn sample,\ng = "
+              },
+              {
+                "kind": "code",
+                "text": "ngood"
+              },
+              {
+                "kind": "text",
+                "text": ", b = "
+              },
+              {
+                "kind": "code",
+                "text": "nbad"
+              },
+              {
+                "kind": "text",
+                "text": ", and n = "
+              },
+              {
+                "kind": "code",
+                "text": "nsample"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Consider an urn with black and white marbles in it, "
+              },
+              {
+                "kind": "code",
+                "text": "ngood"
+              },
+              {
+                "kind": "text",
+                "text": " of them\nare black and "
+              },
+              {
+                "kind": "code",
+                "text": "nbad"
+              },
+              {
+                "kind": "text",
+                "text": " are white. If you draw "
+              },
+              {
+                "kind": "code",
+                "text": "nsample"
+              },
+              {
+                "kind": "text",
+                "text": " balls without\nreplacement, then the hypergeometric distribution describes the\ndistribution of black balls in the drawn sample."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that this distribution is very similar to the binomial\ndistribution, except that in this case, samples are drawn without\nreplacement, whereas in the Binomial case samples are drawn with\nreplacement (or the sample space is infinite). As the sample space\nbecomes large, this distribution approaches the binomial."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nLentner, Marvin, \"Elementary Applied Statistics\", Bogden\nand Quigley, 1972.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nWeisstein, Eric W. \"Hypergeometric Distribution.\" From\nMathWorld--A Wolfram Web Resource.\nhttps://mathworld.wolfram.com/HypergeometricDistribution.html",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "3\n\nWikipedia, \"Hypergeometric distribution\",\nhttps://en.wikipedia.org/wiki/Hypergeometric_distribution",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from the distribution:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ngood, nbad, nsamp = 100, 2, 10"
+              },
+              {
+                "kind": "output",
+                "text": "# number of good, number of bad, and number of samples"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = flops.random.hypergeometric(ngood, nbad, nsamp, 1000)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from matplotlib.pyplot import hist"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "hist(s)"
+              },
+              {
+                "kind": "output",
+                "text": "#   note that it is very unlikely to grab both bad items"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Suppose you have an urn with 15 white and 15 black marbles.\nIf you pull 15 marbles at random, how likely is it that\n12 or more of them are one color?"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = flops.random.hypergeometric(15, 15, 15, 100000)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "sum(s>=12)/100000. + sum(s<=3)/100000."
+              },
+              {
+                "kind": "output",
+                "text": "#   answer = 0.003 ... pretty unlikely!"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.RandomState.hypergeometric",
+    "module": "numpy.random",
+    "name": "random.RandomState.hypergeometric",
+    "notes": "Legacy hypergeometric sampler; cost = numel(output).",
+    "numpy_ref": "np.random.RandomState.hypergeometric",
+    "signature": "fnp.random.RandomState.hypergeometric(self, ngood, nbad, nsample, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from a Hypergeometric distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-hypergeometric",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.hypergeometric.html"
+  }
+}

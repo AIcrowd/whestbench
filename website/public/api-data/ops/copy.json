@@ -1,0 +1,432 @@
+{
+  "detail_href": "/docs/api/numpy/copy/",
+  "detail_json_href": "/api-data/ops/copy.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return an array copy of the given object."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input data."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input data."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Controls the memory layout of the copy. 'C' means C-order,\n'F' means F-order, 'A' means 'F' if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is Fortran contiguous,\n'C' otherwise. 'K' means match the layout of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " as closely\nas possible. (Note that this function and "
+                      },
+                      {
+                        "display_text": "ndarray.copy",
+                        "explicit_title": false,
+                        "external_url": "",
+                        "href": "",
+                        "kind": "role_reference",
+                        "original_target": "ndarray.copy",
+                        "role": "meth",
+                        "suppress_link": false,
+                        "target": "ndarray.copy",
+                        "unresolved": true
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are very\nsimilar, but have different default values for their order=\narguments.)"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'C', 'F', 'A', 'K'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Controls the memory layout of the copy. 'C' means C-order,\n'F' means F-order, 'A' means 'F' if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is Fortran contiguous,\n'C' otherwise. 'K' means match the layout of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " as closely\nas possible. (Note that this function and "
+                  },
+                  {
+                    "display_text": "ndarray.copy",
+                    "explicit_title": false,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "ndarray.copy",
+                    "role": "meth",
+                    "suppress_link": false,
+                    "target": "ndarray.copy",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are very\nsimilar, but have different default values for their order=\narguments.)"
+                  }
+                ],
+                "name": "order",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, then sub-classes will be passed-through, otherwise the\nreturned array will be forced to be a base-class array (defaults to False)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, then sub-classes will be passed-through, otherwise the\nreturned array will be forced to be a base-class array (defaults to False)."
+                  }
+                ],
+                "name": "subok",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array interpretation of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array interpretation of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "arr",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Preferred method for creating an array copy",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Preferred method for creating an array copy"
+                  }
+                ],
+                "external_url": "",
+                "href": "",
+                "label": "ndarray.copy",
+                "original_target": "ndarray.copy",
+                "role": "",
+                "target": "ndarray.copy",
+                "unresolved": true
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is equivalent to:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.array(a, copy=True)  #doctest: +SKIP"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The copy made of the data is shallow, i.e., for arrays with object dtype,\nthe new array will point to the same objects.\nSee Examples from "
+              },
+              {
+                "kind": "code",
+                "text": "ndarray.copy"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Create an array x, with a reference y and a copy z:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([1, 2, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = x"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "z = flops.copy(x)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that, when we modify x, y changes, but not z:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x[0] = 10"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x[0] == y[0]"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x[0] == z[0]"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that, flops.copy clears previously set WRITEABLE=False flag."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1, 2, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a.flags[\"WRITEABLE\"] = False"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.copy(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b.flags[\"WRITEABLE\"]"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b[0] = 3"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b"
+              },
+              {
+                "kind": "output",
+                "text": "array([3, 2, 3])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.copy",
+    "module": "numpy",
+    "name": "copy",
+    "notes": "Return array copy.",
+    "numpy_ref": "np.copy",
+    "signature": "fnp.copy(a, order='K', subok=False)",
+    "status": "supported",
+    "summary": "Return an array copy of the given object.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "copy",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L754",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L898"
+  }
+}

@@ -1,0 +1,282 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/standard-cauchy/",
+  "detail_json_href": "/api-data/ops/random-Generator-standard_cauchy.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a standard Cauchy distribution with mode = 0."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Also known as the Lorentz distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  Default is None, in which case a\nsingle value is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  Default is None, in which case a\nsingle value is returned."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The drawn samples."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The drawn samples."
+                  }
+                ],
+                "name": "samples",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability density function for the full Cauchy distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "P(x; x_0, \\gamma) = \\frac{1}{\\pi \\gamma \\bigl[ 1+ (\\frac{x-x_0}{\\gamma})^2 \\bigr] }"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "and the Standard Cauchy distribution just sets "
+              },
+              {
+                "kind": "math",
+                "latex": "x_0=0"
+              },
+              {
+                "kind": "text",
+                "text": " and\n"
+              },
+              {
+                "kind": "math",
+                "latex": "\\gamma=1"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Cauchy distribution arises in the solution to the driven harmonic\noscillator problem, and also describes spectral line broadening. It\nalso describes the distribution of values at which a line tilted at\na random angle will cut the x axis."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When studying hypothesis tests that assume normality, seeing how the\ntests perform on data from a Cauchy distribution is a good indicator of\ntheir sensitivity to a heavy-tailed distribution, since the Cauchy looks\nvery much like a Gaussian distribution, but with heavier tails."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nNIST/SEMATECH e-Handbook of Statistical Methods, \"Cauchy\nDistribution\",\nhttps://www.itl.nist.gov/div898/handbook/eda/section3/eda3663.htm",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nWeisstein, Eric W. \"Cauchy Distribution.\" From MathWorld--A\nWolfram Web Resource.\nhttps://mathworld.wolfram.com/CauchyDistribution.html",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "3\n\nWikipedia, \"Cauchy distribution\"\nhttps://en.wikipedia.org/wiki/Cauchy_distribution",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples and plot the distribution:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = rng.standard_cauchy(1000000)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = s[(s>-25) & (s<25)]  # truncate distribution so it plots well"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.hist(s, bins=100)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.Generator.standard_cauchy",
+    "module": "numpy.random",
+    "name": "random.Generator.standard_cauchy",
+    "notes": "Standard Cauchy distribution; cost = numel(output).",
+    "numpy_ref": "np.random.Generator.standard_cauchy",
+    "signature": "fnp.random.Generator.standard_cauchy(self, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from a standard Cauchy distribution with mode = 0.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-standard_cauchy",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.standard_cauchy.html"
+  }
+}

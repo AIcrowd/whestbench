@@ -1,0 +1,576 @@
+{
+  "detail_href": "/docs/api/numpy/bitwise-right-shift/",
+  "detail_json_href": "/api-data/ops/bitwise_right_shift.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Shift the bits of an integer to the right."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Bits are shifted to the right "
+              },
+              {
+                "kind": "code",
+                "text": "x2"
+              },
+              {
+                "kind": "text",
+                "text": ".  Because the internal\nrepresentation of numbers is in binary format, this operation is\nequivalent to dividing "
+              },
+              {
+                "kind": "code",
+                "text": "x1"
+              },
+              {
+                "kind": "text",
+                "text": " by "
+              },
+              {
+                "kind": "code",
+                "text": "2**x2"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input values."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input values."
+                  }
+                ],
+                "name": "x1",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of bits to remove at the right of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1.shape != x2.shape"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", they must be broadcastable to a common\nshape (which becomes the shape of the output)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of bits to remove at the right of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1.shape != x2.shape"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", they must be broadcastable to a common\nshape (which becomes the shape of the output)."
+                  }
+                ],
+                "name": "x2",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, None, or tuple of ndarray and None, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will be set to the ufunc result.\nElsewhere, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will retain its original value.\nNote that if an uninitialized "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array is created via the default\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", locations within it where the condition is False will\nremain uninitialized."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will be set to the ufunc result.\nElsewhere, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will retain its original value.\nNote that if an uninitialized "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array is created via the default\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", locations within it where the condition is False will\nremain uninitialized."
+                  }
+                ],
+                "name": "where",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "For other keyword-only arguments, see the\n"
+                      },
+                      {
+                        "display_text": "ufunc docs",
+                        "explicit_title": true,
+                        "external_url": "",
+                        "href": "",
+                        "kind": "role_reference",
+                        "original_target": "ufuncs.kwargs",
+                        "role": "ref",
+                        "suppress_link": false,
+                        "target": "ufuncs.kwargs",
+                        "unresolved": true
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "For other keyword-only arguments, see the\n"
+                  },
+                  {
+                    "display_text": "ufunc docs",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "ufuncs.kwargs",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "ufuncs.kwargs",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "**kwargs",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Return "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " with bits shifted "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " times to the right.\nThis is a scalar if both "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are scalars."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " with bits shifted "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " times to the right.\nThis is a scalar if both "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are scalars."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Shift the bits of an integer to the left.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Shift the bits of an integer to the left."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/left-shift/",
+                "label": "flops.left_shift",
+                "original_target": "left_shift",
+                "role": "",
+                "target": "left_shift",
+                "unresolved": false
+              },
+              {
+                "description": "Return the binary representation of the input number as a string.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return the binary representation of the input number as a string."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.binary_repr.html",
+                "href": "",
+                "label": "binary_repr",
+                "original_target": "binary_repr",
+                "role": "",
+                "target": "binary_repr",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.binary_repr(10)"
+              },
+              {
+                "kind": "output",
+                "text": "'1010'"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.right_shift(10, 1)"
+              },
+              {
+                "kind": "output",
+                "text": "5"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.binary_repr(5)"
+              },
+              {
+                "kind": "output",
+                "text": "'101'"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.right_shift(10, [1,2,3])"
+              },
+              {
+                "kind": "output",
+                "text": "array([5, 2, 1])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The "
+              },
+              {
+                "kind": "code",
+                "text": ">>"
+              },
+              {
+                "kind": "text",
+                "text": " operator can be used as a shorthand for "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/right-shift/",
+                "kind": "link",
+                "target": "right_shift",
+                "text": "flops.right_shift"
+              },
+              {
+                "kind": "text",
+                "text": " on\nndarrays."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1 = 10"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x2 = flops.array([1,2,3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1 >> x2"
+              },
+              {
+                "kind": "output",
+                "text": "array([5, 2, 1])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_binary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.bitwise_right_shift",
+    "module": "numpy",
+    "name": "bitwise_right_shift",
+    "notes": "Element-wise right bit shift.",
+    "numpy_ref": "np.bitwise_right_shift",
+    "signature": "fnp.bitwise_right_shift(x: 'ArrayLike', y: 'ArrayLike', out: 'FlopscopeArray | None' = None, **kwargs: 'Any') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Shift the bits of an integer to the right.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "bitwise_right_shift",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L420",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/code_generators/ufunc_docstrings.py"
+  }
+}

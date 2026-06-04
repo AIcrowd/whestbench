@@ -1,0 +1,593 @@
+{
+  "detail_href": "/docs/api/numpy/take-along-axis/",
+  "detail_json_href": "/api-data/ops/take_along_axis.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Take values from the input array by matching 1d index and data slices."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This iterates over matching 1d slices oriented along the specified axis in\nthe index and data arrays, and uses the former to look up values in the\nlatter. These slices can be different lengths."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Functions returning an index along an axis, like "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/argsort/",
+                "kind": "link",
+                "target": "argsort",
+                "text": "argsort"
+              },
+              {
+                "kind": "text",
+                "text": " and\n"
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/argpartition/",
+                "kind": "link",
+                "target": "argpartition",
+                "text": "argpartition"
+              },
+              {
+                "kind": "text",
+                "text": ", produce suitable indices for this function."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Source array"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray (Ni..., M, Nk...)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Source array"
+                  }
+                ],
+                "name": "arr",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Indices to take along each 1d slice of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". This must match the\ndimension of arr, but dimensions Ni and Nj only need to broadcast\nagainst "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray (Ni..., J, Nk...)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Indices to take along each 1d slice of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". This must match the\ndimension of arr, but dimensions Ni and Nj only need to broadcast\nagainst "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "indices",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis to take 1d slices along. If axis is None, the input array is\ntreated as if it had first been flattened to 1d, for consistency with\n"
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/sort/",
+                        "kind": "link",
+                        "target": "sort",
+                        "text": "sort"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/argsort/",
+                        "kind": "link",
+                        "target": "argsort",
+                        "text": "argsort"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis to take 1d slices along. If axis is None, the input array is\ntreated as if it had first been flattened to 1d, for consistency with\n"
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/sort/",
+                    "kind": "link",
+                    "target": "sort",
+                    "text": "sort"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/argsort/",
+                    "kind": "link",
+                    "target": "argsort",
+                    "text": "argsort"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The indexed result."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "out: ndarray (Ni..., J, Nk...)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The indexed result."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Take along an axis, using the same indices for every 1d slice",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Take along an axis, using the same indices for every 1d slice"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/take/",
+                "label": "flops.take",
+                "original_target": "take",
+                "role": "",
+                "target": "take",
+                "unresolved": false
+              },
+              {
+                "description": "Put values into the destination array by matching 1d index and data slices",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Put values into the destination array by matching 1d index and data slices"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/put-along-axis/",
+                "label": "flops.put_along_axis",
+                "original_target": "put_along_axis",
+                "role": "",
+                "target": "put_along_axis",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is equivalent to (but faster than) the following use of "
+              },
+              {
+                "kind": "code",
+                "text": "ndindex"
+              },
+              {
+                "kind": "text",
+                "text": " and\n"
+              },
+              {
+                "kind": "code",
+                "text": "s_"
+              },
+              {
+                "kind": "text",
+                "text": ", which sets each of "
+              },
+              {
+                "kind": "code",
+                "text": "ii"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "kk"
+              },
+              {
+                "kind": "text",
+                "text": " to a tuple of indices:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "Ni, M, Nk = a.shape[:axis], a.shape[axis], a.shape[axis+1:]\nJ = indices.shape[axis]  # Need not equal M\nout = flops.empty(Ni + (J,) + Nk)\n\nfor ii in ndindex(Ni):\n    for kk in ndindex(Nk):\n        a_1d       = a      [ii + s_[:,] + kk]\n        indices_1d = indices[ii + s_[:,] + kk]\n        out_1d     = out    [ii + s_[:,] + kk]\n        for j in range(J):\n            out_1d[j] = a_1d[indices_1d[j]]",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Equivalently, eliminating the inner loop, the last two lines would be:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "out_1d[:] = a_1d[indices_1d]",
+            "type": "literal_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For this sample array"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[10, 30, 20], [60, 40, 50]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "We can sort either by using sort directly, or argsort and this function"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.sort(a, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[10, 20, 30],"
+              },
+              {
+                "kind": "output",
+                "text": "       [40, 50, 60]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ai = flops.argsort(a, axis=1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ai"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 2, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 2, 0]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.take_along_axis(a, ai, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[10, 20, 30],"
+              },
+              {
+                "kind": "output",
+                "text": "       [40, 50, 60]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The same works for max and min, if you maintain the trivial dimension\nwith "
+              },
+              {
+                "kind": "code",
+                "text": "keepdims"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.max(a, axis=1, keepdims=True)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[30],"
+              },
+              {
+                "kind": "output",
+                "text": "       [60]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ai = flops.argmax(a, axis=1, keepdims=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ai"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.take_along_axis(a, ai, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[30],"
+              },
+              {
+                "kind": "output",
+                "text": "       [60]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If we want to get the max and min at the same time, we can stack the\nindices first"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ai_min = flops.argmin(a, axis=1, keepdims=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ai_max = flops.argmax(a, axis=1, keepdims=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ai = flops.concatenate([ai_min, ai_max], axis=1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ai"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 0]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.take_along_axis(a, ai, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[10, 30],"
+              },
+              {
+                "kind": "output",
+                "text": "       [40, 60]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.take_along_axis",
+    "module": "numpy",
+    "name": "take_along_axis",
+    "notes": "Take values from input array by matching 1-D index. Cost: numel(output).",
+    "numpy_ref": "np.take_along_axis",
+    "signature": "fnp.take_along_axis(arr, indices, axis)",
+    "status": "supported",
+    "summary": "Take values from the input array by matching 1d index and data slices.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "take_along_axis",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L2355",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_shape_base_impl.py#L57"
+  }
+}

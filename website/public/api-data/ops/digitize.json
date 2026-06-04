@@ -1,0 +1,567 @@
+{
+  "detail_href": "/docs/api/numpy/digitize/",
+  "detail_json_href": "/api-data/ops/digitize.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the indices of the bins to which each value in input array belongs."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "table",
+            "raw_text": "\n\n\n\n\n\nright\n\norder of bins\n\nreturned index i satisfies\n\nFalse\n\nincreasing\n\nbins[i-1] <= x < bins[i]\n\nTrue\n\nincreasing\n\nbins[i-1] < x <= bins[i]\n\nFalse\n\ndecreasing\n\nbins[i-1] > x >= bins[i]\n\nTrue\n\ndecreasing\n\nbins[i-1] >= x > bins[i]",
+            "type": "raw_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If values in "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " are beyond the bounds of "
+              },
+              {
+                "kind": "code",
+                "text": "bins"
+              },
+              {
+                "kind": "text",
+                "text": ", 0 or "
+              },
+              {
+                "kind": "code",
+                "text": "len(bins)"
+              },
+              {
+                "kind": "text",
+                "text": " is\nreturned as appropriate."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array to be binned. Prior to NumPy 1.10.0, this array had to\nbe 1-dimensional, but can now have any shape."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array to be binned. Prior to NumPy 1.10.0, this array had to\nbe 1-dimensional, but can now have any shape."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array of bins. It has to be 1-dimensional and monotonic."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array of bins. It has to be 1-dimensional and monotonic."
+                  }
+                ],
+                "name": "bins",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Indicating whether the intervals include the right or the left bin\nedge. Default behavior is (right==False) indicating that the interval\ndoes not include the right edge. The left bin end is open in this\ncase, i.e., bins[i-1] <= x < bins[i] is the default behavior for\nmonotonically increasing bins."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Indicating whether the intervals include the right or the left bin\nedge. Default behavior is (right==False) indicating that the interval\ndoes not include the right edge. The left bin end is open in this\ncase, i.e., bins[i-1] <= x < bins[i] is the default behavior for\nmonotonically increasing bins."
+                  }
+                ],
+                "name": "right",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output array of indices, of same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output array of indices, of same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "indices",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bins"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not monotonic."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "bins"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not monotonic."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the type of the input is complex."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "TypeError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the type of the input is complex."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/bincount/",
+                "label": "flops.bincount",
+                "original_target": "bincount",
+                "role": "",
+                "target": "bincount",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/histogram/",
+                "label": "flops.histogram",
+                "original_target": "histogram",
+                "role": "",
+                "target": "histogram",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/unique/",
+                "label": "flops.unique",
+                "original_target": "unique",
+                "role": "",
+                "target": "unique",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/searchsorted/",
+                "label": "flops.searchsorted",
+                "original_target": "searchsorted",
+                "role": "",
+                "target": "searchsorted",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If values in "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " are such that they fall outside the bin range,\nattempting to index "
+              },
+              {
+                "kind": "code",
+                "text": "bins"
+              },
+              {
+                "kind": "text",
+                "text": " with the indices that "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/digitize/",
+                "kind": "link",
+                "target": "digitize",
+                "text": "digitize"
+              },
+              {
+                "kind": "text",
+                "text": " returns\nwill result in an IndexError."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [],
+            "directive": "versionadded",
+            "options": [],
+            "raw_source": ".. versionadded:: 1.10.0",
+            "supported": true,
+            "type": "directive_block",
+            "version": "1.10.0"
+          },
+          {
+            "inline": [
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/digitize/",
+                "kind": "link",
+                "target": "digitize",
+                "text": "flops.digitize"
+              },
+              {
+                "kind": "text",
+                "text": " is  implemented in terms of "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/searchsorted/",
+                "kind": "link",
+                "target": "searchsorted",
+                "text": "flops.searchsorted"
+              },
+              {
+                "kind": "text",
+                "text": ".\nThis means that a binary search is used to bin the values, which scales\nmuch better for larger number of bins than the previous linear search.\nIt also removes the requirement for the input array to be 1-dimensional."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For monotonically "
+              },
+              {
+                "kind": "emphasis",
+                "text": "increasing"
+              },
+              {
+                "kind": "text",
+                "text": " "
+              },
+              {
+                "kind": "code",
+                "text": "bins"
+              },
+              {
+                "kind": "text",
+                "text": ", the following are equivalent:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "flops.digitize(x, bins, right=True)\nflops.searchsorted(bins, x, side='left')",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that as the order of the arguments are reversed, the side must be too.\nThe "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/searchsorted/",
+                "kind": "link",
+                "target": "searchsorted",
+                "text": "searchsorted"
+              },
+              {
+                "kind": "text",
+                "text": " call is marginally faster, as it does not do any\nmonotonicity checks. Perhaps more importantly, it supports all dtypes."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([0.2, 6.4, 3.0, 1.6])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "bins = flops.array([0.0, 1.0, 2.5, 4.0, 10.0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "inds = flops.digitize(x, bins)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "inds"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 4, 3, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "for n in range(x.size):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "print(bins[inds[n]-1], \"<=\", x[n], \"<\", bins[inds[n]])"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "output",
+                "text": "0.0 <= 0.2 < 1.0"
+              },
+              {
+                "kind": "output",
+                "text": "4.0 <= 6.4 < 10.0"
+              },
+              {
+                "kind": "output",
+                "text": "2.5 <= 3.0 < 4.0"
+              },
+              {
+                "kind": "output",
+                "text": "1.0 <= 1.6 < 2.5"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([1.2, 10.0, 12.4, 15.5, 20.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "bins = flops.array([0, 5, 10, 15, 20])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.digitize(x,bins,right=True)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 4, 4])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.digitize(x,bins,right=False)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 3, 3, 4, 5])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.digitize",
+    "module": "numpy",
+    "name": "digitize",
+    "notes": "Bin search; cost = n*ceil(log2(bins)).",
+    "numpy_ref": "np.digitize",
+    "signature": "fnp.digitize(x, bins, right=False)",
+    "status": "supported",
+    "summary": "Return the indices of the bins to which each value in input array belongs.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "digitize",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_sorting_ops.py#L253",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L5718"
+  }
+}

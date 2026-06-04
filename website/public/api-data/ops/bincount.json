@@ -1,0 +1,546 @@
+{
+  "detail_href": "/docs/api/numpy/bincount/",
+  "detail_json_href": "/api-data/ops/bincount.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Count number of occurrences of each value in array of non-negative ints."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The number of bins (of size 1) is one larger than the largest value in\n"
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": ". If "
+              },
+              {
+                "kind": "code",
+                "text": "minlength"
+              },
+              {
+                "kind": "text",
+                "text": " is specified, there will be at least this number\nof bins in the output array (though it will be longer if necessary,\ndepending on the contents of "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": ").\nEach bin gives the number of occurrences of its index value in "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": ".\nIf "
+              },
+              {
+                "kind": "code",
+                "text": "weights"
+              },
+              {
+                "kind": "text",
+                "text": " is specified the input array is weighted by it, i.e. if a\nvalue "
+              },
+              {
+                "kind": "code",
+                "text": "n"
+              },
+              {
+                "kind": "text",
+                "text": " is found at position "
+              },
+              {
+                "kind": "code",
+                "text": "i"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "out[n] += weight[i]"
+              },
+              {
+                "kind": "text",
+                "text": " instead\nof "
+              },
+              {
+                "kind": "code",
+                "text": "out[n] += 1"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, 1 dimension, nonnegative ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Weights, array of the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Weights, array of the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "weights",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A minimum number of bins for the output array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A minimum number of bins for the output array."
+                  }
+                ],
+                "name": "minlength",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The result of binning the input array.\nThe length of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is equal to "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.amax(x)+1.html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "amax(x)+1",
+                        "text": "flops.amax(x)+1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The result of binning the input array.\nThe length of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is equal to "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.amax(x)+1.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "amax(x)+1",
+                    "text": "flops.amax(x)+1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the input is not 1-dimensional, or contains elements with negative\nvalues, or if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "minlength"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is negative."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the input is not 1-dimensional, or contains elements with negative\nvalues, or if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "minlength"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is negative."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the type of the input is float or complex."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "TypeError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the type of the input is float or complex."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/histogram/",
+                "label": "flops.histogram",
+                "original_target": "histogram",
+                "role": "",
+                "target": "histogram",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/digitize/",
+                "label": "flops.digitize",
+                "original_target": "digitize",
+                "role": "",
+                "target": "digitize",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/unique/",
+                "label": "flops.unique",
+                "original_target": "unique",
+                "role": "",
+                "target": "unique",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.bincount(flops.arange(5))"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 1, 1, 1, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.bincount(flops.array([0, 1, 1, 3, 2, 1, 7]))"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 3, 1, 1, 0, 0, 0, 1])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([0, 1, 1, 3, 2, 1, 7, 23])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.bincount(x).size == flops.amax(x)+1"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The input array needs to be of integer dtype, otherwise a\nTypeError is raised:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.bincount(flops.arange(5, dtype=float))"
+              },
+              {
+                "kind": "output",
+                "text": "Traceback (most recent call last):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "output",
+                "text": "TypeError: Cannot cast array data from dtype('float64') to dtype('int64')"
+              },
+              {
+                "kind": "output",
+                "text": "according to the rule 'safe'"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "A possible use of "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/bincount/",
+                "kind": "link",
+                "target": "bincount",
+                "text": "bincount"
+              },
+              {
+                "kind": "text",
+                "text": " is to perform sums over\nvariable-size chunks of an array, using the "
+              },
+              {
+                "kind": "code",
+                "text": "weights"
+              },
+              {
+                "kind": "text",
+                "text": " keyword."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "w = flops.array([0.3, 0.5, 0.2, 0.7, 1., -0.6]) # weights"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([0, 1, 1, 2, 2, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.bincount(x,  weights=w)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 0.3,  0.7,  1.1])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.bincount",
+    "module": "numpy",
+    "name": "bincount",
+    "notes": "Integer counting; cost = numel(x).",
+    "numpy_ref": "np.bincount",
+    "signature": "fnp.bincount(x: 'ArrayLike', **kwargs: 'Any') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Count number of occurrences of each value in array of non-negative ints.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "bincount",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L279",
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.bincount.html"
+  }
+}

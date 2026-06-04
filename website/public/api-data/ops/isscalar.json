@@ -1,0 +1,386 @@
+{
+  "detail_href": "/docs/api/numpy/isscalar/",
+  "detail_json_href": "/api-data/ops/isscalar.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns True if the type of "
+              },
+              {
+                "kind": "code",
+                "text": "element"
+              },
+              {
+                "kind": "text",
+                "text": " is a scalar type."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input argument, can be of any type and shape."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "any",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input argument, can be of any type and shape."
+                  }
+                ],
+                "name": "element",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "True if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "element"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar type, False if it is not."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "True if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "element"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar type, False if it is not."
+                  }
+                ],
+                "name": "val",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Get the number of dimensions of an array",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Get the number of dimensions of an array"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/ndim/",
+                "label": "flops.ndim",
+                "original_target": "ndim",
+                "role": "",
+                "target": "ndim",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If you need a stricter way to identify a "
+              },
+              {
+                "kind": "emphasis",
+                "text": "numerical"
+              },
+              {
+                "kind": "text",
+                "text": " scalar, use\n"
+              },
+              {
+                "kind": "code",
+                "text": "isinstance(x, numbers.Number)"
+              },
+              {
+                "kind": "text",
+                "text": ", as that returns "
+              },
+              {
+                "kind": "code",
+                "text": "False"
+              },
+              {
+                "kind": "text",
+                "text": " for most\nnon-numerical elements such as strings."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In most cases "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ndim(x) == 0.html",
+                "href": "",
+                "kind": "link",
+                "target": "ndim(x) == 0",
+                "text": "flops.ndim(x) == 0"
+              },
+              {
+                "kind": "text",
+                "text": " should be used instead of this function,\nas that will also return true for 0d arrays. This is how numpy overloads\nfunctions in the style of the "
+              },
+              {
+                "kind": "code",
+                "text": "dx"
+              },
+              {
+                "kind": "text",
+                "text": " arguments to "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/gradient/",
+                "kind": "link",
+                "target": "gradient",
+                "text": "gradient"
+              },
+              {
+                "kind": "text",
+                "text": " and\nthe "
+              },
+              {
+                "kind": "code",
+                "text": "bins"
+              },
+              {
+                "kind": "text",
+                "text": " argument to "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/histogram/",
+                "kind": "link",
+                "target": "histogram",
+                "text": "histogram"
+              },
+              {
+                "kind": "text",
+                "text": ". Some key differences:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "raw_kind": "system_message",
+            "raw_text": "<string>:10: (ERROR/3) Malformed table.\n\n+------------------------------------+---------------+-------------------+\n| x                                  |``isscalar(x)``|``flops.ndim(x) == 0``|\n+====================================+===============+===================+\n| PEP 3141 numeric objects           | ``True``      | ``True``          |\n| (including builtins)               |               |                   |\n+------------------------------------+---------------+-------------------+\n| builtin string and buffer objects  | ``True``      | ``True``          |\n+------------------------------------+---------------+-------------------+\n| other builtin objects, like        | ``False``     | ``True``          |\n| `pathlib.Path`, `Exception`,       |               |                   |\n| the result of `re.compile`         |               |                   |\n+------------------------------------+---------------+-------------------+\n| third-party objects like           | ``False``     | ``True``          |\n| `matplotlib.figure.Figure`         |               |                   |\n+------------------------------------+---------------+-------------------+\n| zero-dimensional numpy arrays      | ``False``     | ``True``          |\n+------------------------------------+---------------+-------------------+\n| other numpy arrays                 | ``False``     | ``False``         |\n+------------------------------------+---------------+-------------------+\n| `list`, `tuple`, and other         | ``False``     | ``False``         |\n| sequence objects                   |               |                   |\n+------------------------------------+---------------+-------------------+",
+            "type": "raw_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isscalar(3.1)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isscalar(flops.array(3.1))"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isscalar([3.1])"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isscalar(False)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isscalar('numpy')"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "NumPy supports PEP 3141 numbers:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from fractions import Fraction"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isscalar(Fraction(5, 17))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from numbers import Number"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isscalar(Number())"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.isscalar",
+    "module": "numpy",
+    "name": "isscalar",
+    "notes": "Return True if input is a scalar.",
+    "numpy_ref": "np.isscalar",
+    "signature": "fnp.isscalar(element)",
+    "status": "supported",
+    "summary": "Returns True if the type of `element` is a scalar type.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "isscalar",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1917",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/numeric.py#L1927"
+  }
+}

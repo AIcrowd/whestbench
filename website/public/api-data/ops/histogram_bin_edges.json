@@ -1,0 +1,885 @@
+{
+  "detail_href": "/docs/api/numpy/histogram-bin-edges/",
+  "detail_json_href": "/api-data/ops/histogram_bin_edges.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Function to calculate only the edges of the bins used by the "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/histogram/",
+                "kind": "link",
+                "target": "histogram",
+                "text": "histogram"
+              },
+              {
+                "kind": "text",
+                "text": " function."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input data. The histogram is computed over the flattened array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input data. The histogram is computed over the flattened array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bins"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an int, it defines the number of equal-width\nbins in the given range (10, by default). If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bins"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a\nsequence, it defines the bin edges, including the rightmost\nedge, allowing for non-uniform bin widths."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bins"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a string from the list below, "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/histogram-bin-edges/",
+                        "kind": "link",
+                        "target": "histogram_bin_edges",
+                        "text": "histogram_bin_edges"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will\nuse the method chosen to calculate the optimal bin width and\nconsequently the number of bins (see the Notes section for more detail\non the estimators) from the data that falls within the requested range.\nWhile the bin width will be optimal for the actual data\nin the range, the number of bins will be computed to fill the\nentire range, including the empty portions. For visualisation,\nusing the 'auto' option is suggested. Weighted data is not\nsupported for automated bin size selection."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "Minimum bin width between the 'sturges' and 'fd' estimators.\nProvides good all-around performance."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'auto'"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "Robust (resilient to outliers) estimator that takes into\naccount data variability and data size."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'fd' (Freedman Diaconis Estimator)"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "An improved version of Sturges' estimator that works better\nwith non-normal datasets."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'doane'"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "Less robust estimator that takes into account data variability\nand data size."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'scott'"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "Estimator based on leave-one-out cross-validation estimate of\nthe integrated squared error. Can be regarded as a generalization\nof Scott's rule."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'stone'"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "Estimator does not take variability into account, only data\nsize. Commonly overestimates number of bins required."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'rice'"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "R's default method, only accounts for data size. Only\noptimal for gaussian data and underestimates number of bins\nfor large non-gaussian datasets."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'sturges'"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "Square root (of data size) estimator, used by Excel and\nother programs for its speed and simplicity."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'sqrt'"
+                          }
+                        ]
+                      }
+                    ],
+                    "type": "definition_list"
+                  }
+                ],
+                "data_type": "int or sequence of scalars or str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "bins"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an int, it defines the number of equal-width\nbins in the given range (10, by default). If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "bins"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a\nsequence, it defines the bin edges, including the rightmost\nedge, allowing for non-uniform bin widths."
+                  }
+                ],
+                "name": "bins",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The lower and upper range of the bins.  If not provided, range\nis simply "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(a.min(), a.max())"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Values outside the range are\nignored. The first element of the range must be less than or\nequal to the second. "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "range"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " affects the automatic bin\ncomputation as well. While bin width is computed to be optimal\nbased on the actual data within "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "range"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", the bin count will fill\nthe entire range including portions containing no data."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(float, float), optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The lower and upper range of the bins.  If not provided, range\nis simply "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(a.min(), a.max())"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Values outside the range are\nignored. The first element of the range must be less than or\nequal to the second. "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "range"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " affects the automatic bin\ncomputation as well. While bin width is computed to be optimal\nbased on the actual data within "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "range"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", the bin count will fill\nthe entire range including portions containing no data."
+                  }
+                ],
+                "name": "range",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array of weights, of the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Each value in\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " only contributes its associated weight towards the bin count\n(instead of 1). This is currently not used by any of the bin estimators,\nbut may be in the future."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array of weights, of the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Each value in\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " only contributes its associated weight towards the bin count\n(instead of 1). This is currently not used by any of the bin estimators,\nbut may be in the future."
+                  }
+                ],
+                "name": "weights",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The edges to pass into "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/histogram/",
+                        "kind": "link",
+                        "target": "histogram",
+                        "text": "histogram"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array of dtype float",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The edges to pass into "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/histogram/",
+                    "kind": "link",
+                    "target": "histogram",
+                    "text": "histogram"
+                  }
+                ],
+                "name": "bin_edges",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/histogram/",
+                "label": "flops.histogram",
+                "original_target": "histogram",
+                "role": "",
+                "target": "histogram",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The methods to estimate the optimal number of bins are well founded\nin literature, and are inspired by the choices R provides for\nhistogram visualisation. Note that having the number of bins\nproportional to "
+              },
+              {
+                "kind": "math",
+                "latex": "n^{1/3}"
+              },
+              {
+                "kind": "text",
+                "text": " is asymptotically optimal, which is\nwhy it appears in most estimators. These are simply plug-in methods\nthat give good starting points for number of bins. In the equations\nbelow, "
+              },
+              {
+                "kind": "math",
+                "latex": "h"
+              },
+              {
+                "kind": "text",
+                "text": " is the binwidth and "
+              },
+              {
+                "kind": "math",
+                "latex": "n_h"
+              },
+              {
+                "kind": "text",
+                "text": " is the number of\nbins. All estimators that compute bin counts are recast to bin width\nusing the "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/ptp/",
+                "kind": "link",
+                "target": "ptp",
+                "text": "ptp"
+              },
+              {
+                "kind": "text",
+                "text": " of the data. The final bin count is obtained from\n"
+              },
+              {
+                "kind": "code",
+                "text": "flops.round(flops.ceil(range / h))"
+              },
+              {
+                "kind": "text",
+                "text": ". The final bin width is often less\nthan what is returned by the estimators below."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "items": [
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A compromise to get a good value. For small datasets the Sturges\nvalue will usually be chosen, while larger datasets will usually\ndefault to FD.  Avoids the overly conservative behaviour of FD\nand Sturges for small and large datasets respectively.\nSwitchover point is usually "
+                      },
+                      {
+                        "kind": "math",
+                        "latex": "a.size \\approx 1000"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "term_inline": [
+                  {
+                    "kind": "text",
+                    "text": "'auto' (minimum bin width of the 'sturges' and 'fd' estimators)"
+                  }
+                ]
+              }
+            ],
+            "type": "definition_list"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "'fd' (Freedman Diaconis Estimator)"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "h = 2 \\frac{IQR}{n^{1/3}} The binwidth is proportional to the interquartile range (IQR) and inversely proportional to cube root of a.size. Can be too conservative for small datasets, but is quite good for large datasets. The IQR is very robust to outliers."
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "'scott'"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "h = \\sigma \\sqrt[3]{\\frac{24 \\sqrt{\\pi}}{n}} The binwidth is proportional to the standard deviation of the data and inversely proportional to cube root of ``x.size``. Can be too conservative for small datasets, but is quite good for large datasets. The standard deviation is not very robust to outliers. Values are very similar to the Freedman-Diaconis estimator in the absence of outliers."
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "'rice'"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "n_h = 2n^{1/3} The number of bins is only proportional to cube root of ``a.size``. It tends to overestimate the number of bins and it does not take into account data variability."
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "'sturges'"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "n_h = \\log _{2}(n) + 1 The number of bins is the base 2 log of ``a.size``.  This estimator assumes normality of data and is too conservative for larger, non-normal datasets. This is the default method in R's ``hist`` method."
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "'doane'"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "n_h = 1 + \\log_{2}(n) + \\log_{2}\\left(1 + \\frac{|g_1|}{\\sigma_{g_1}}\\right)",
+              "g_1 = mean\\left[\\left(\\frac{x - \\mu}{\\sigma}\\right)^3\\right]",
+              "\\sigma_{g_1} = \\sqrt{\\frac{6(n - 2)}{(n + 1)(n + 3)}}",
+              "An improved version of Sturges' formula that produces better estimates for non-normal datasets. This estimator attempts to account for the skew of the data."
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "'sqrt'"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "n_h = \\sqrt n The simplest and fastest estimator. Only takes into account the data size."
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Additionally, if the data is of integer dtype, then the binwidth will never\nbe less than 1."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.array([0, 0, 0, 1, 2, 3, 3, 4, 5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.histogram_bin_edges(arr, bins='auto', range=(0, 1))"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.  , 0.25, 0.5 , 0.75, 1.  ])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.histogram_bin_edges(arr, bins=2)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0. , 2.5, 5. ])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For consistency with histogram, an array of pre-computed bins is\npassed through unmodified:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.histogram_bin_edges(arr, [1, 2])"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function allows one set of bins to be computed, and reused across\nmultiple histograms:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "shared_bins = flops.histogram_bin_edges(arr, bins='auto')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "shared_bins"
+              },
+              {
+                "kind": "output",
+                "text": "array([0., 1., 2., 3., 4., 5.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "group_id = flops.array([0, 1, 1, 0, 1, 1, 0, 1, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "hist_0, _ = flops.histogram(arr[group_id == 0], bins=shared_bins)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "hist_1, _ = flops.histogram(arr[group_id == 1], bins=shared_bins)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "hist_0; hist_1"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 1, 0, 1, 0])"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 0, 1, 1, 2])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Which gives more easily comparable results than using separate bins for\neach histogram:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "hist_0, bins_0 = flops.histogram(arr[group_id == 0], bins='auto')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "hist_1, bins_1 = flops.histogram(arr[group_id == 1], bins='auto')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "hist_0; hist_1"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 1, 1])"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 1, 1, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "bins_0; bins_1"
+              },
+              {
+                "kind": "output",
+                "text": "array([0., 1., 2., 3.])"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.  , 1.25, 2.5 , 3.75, 5.  ])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.histogram_bin_edges",
+    "module": "numpy",
+    "name": "histogram_bin_edges",
+    "notes": "Bin edge computation; cost = numel(a).",
+    "numpy_ref": "np.histogram_bin_edges",
+    "signature": "fnp.histogram_bin_edges(a, bins=10, range=None, weights=None)",
+    "status": "supported",
+    "summary": "Function to calculate only the edges of the bins used by the `histogram` function.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "histogram_bin_edges",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L257",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_histograms_impl.py#L477"
+  }
+}

@@ -1,0 +1,1122 @@
+{
+  "detail_href": "/docs/api/numpy/nanpercentile/",
+  "detail_json_href": "/api-data/ops/nanpercentile.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the qth percentile of the data along the specified axis, while ignoring nan values."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the qth percentile(s) of the array elements."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array or object that can be converted to an array, containing\nnan values to be ignored."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array or object that can be converted to an array, containing\nnan values to be ignored."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Percentile or sequence of percentiles to compute, which must be\nbetween 0 and 100 inclusive."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like of float",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Percentile or sequence of percentiles to compute, which must be\nbetween 0 and 100 inclusive."
+                  }
+                ],
+                "name": "q",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis or axes along which the percentiles are computed. The default\nis to compute the percentile(s) along a flattened version of the\narray."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{int, tuple of int, None}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis or axes along which the percentiles are computed. The default\nis to compute the percentile(s) along a flattened version of the\narray."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Alternative output array in which to place the result. It must have\nthe same shape and buffer length as the expected output, but the\ntype (of the output) will be cast if necessary."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Alternative output array in which to place the result. It must have\nthe same shape and buffer length as the expected output, but the\ntype (of the output) will be cast if necessary."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, then allow the input array "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " to be modified by\nintermediate calculations, to save memory. In this case, the\ncontents of the input "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " after this function completes is\nundefined."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, then allow the input array "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " to be modified by\nintermediate calculations, to save memory. In this case, the\ncontents of the input "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " after this function completes is\nundefined."
+                  }
+                ],
+                "name": "overwrite_input",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "This parameter specifies the method to use for estimating the\npercentile.  There are many different methods, some unique to NumPy.\nSee the notes for explanation.  The options sorted by their R type\nas summarized in the H&F paper "
+                      },
+                      {
+                        "kind": "text",
+                        "text": "[1]_"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'inverted_cdf'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'averaged_inverted_cdf'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'closest_observation'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'interpolated_inverted_cdf'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'hazen'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'weibull'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'linear'  (default)"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'median_unbiased'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'normal_unbiased'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": true,
+                    "type": "list"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The first three methods are discontinuous.  NumPy further defines the\nfollowing discontinuous variations of the default 'linear' (7.) option:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'lower'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'higher',"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'midpoint'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'nearest'"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionchanged",
+                    "options": [],
+                    "raw_source": ".. versionchanged:: 1.22.0\n    This argument was previously called \"interpolation\" and only\n    offered the \"linear\" default and last four options.",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.22.0"
+                  }
+                ],
+                "data_type": "str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This parameter specifies the method to use for estimating the\npercentile.  There are many different methods, some unique to NumPy.\nSee the notes for explanation.  The options sorted by their R type\nas summarized in the H&F paper "
+                  },
+                  {
+                    "kind": "text",
+                    "text": "[1]_"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are:"
+                  }
+                ],
+                "name": "method",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this is set to True, the axes which are reduced are left in\nthe result as dimensions with size one. With this option, the\nresult will broadcast correctly against the original array "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this is anything but the default value it will be passed\nthrough (in the special case of an empty array) to the\n"
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/mean/",
+                        "kind": "link",
+                        "target": "mean",
+                        "text": "mean"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " function of the underlying array.  If the array is\na sub-class and "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/mean/",
+                        "kind": "link",
+                        "target": "mean",
+                        "text": "mean"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " does not have the kwarg "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "keepdims"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " this\nwill raise a RuntimeError."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If this is set to True, the axes which are reduced are left in\nthe result as dimensions with size one. With this option, the\nresult will broadcast correctly against the original array "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "keepdims",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array of weights associated with the values in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Each value in\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " contributes to the percentile according to its associated weight.\nThe weights array can either be 1-D (in which case its length must be\nthe size of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " along the given axis) or of the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then all data in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are assumed to have a\nweight equal to one.\nOnly "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "method=\"inverted_cdf\""
+                      },
+                      {
+                        "kind": "text",
+                        "text": " supports weights."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.0.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0.0"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array of weights associated with the values in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Each value in\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " contributes to the percentile according to its associated weight.\nThe weights array can either be 1-D (in which case its length must be\nthe size of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " along the given axis) or of the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then all data in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are assumed to have a\nweight equal to one.\nOnly "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "method=\"inverted_cdf\""
+                  },
+                  {
+                    "kind": "text",
+                    "text": " supports weights."
+                  }
+                ],
+                "name": "weights",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Deprecated name for the method keyword argument."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "deprecated",
+                    "options": [],
+                    "raw_source": ".. deprecated:: 1.22.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.22.0"
+                  }
+                ],
+                "data_type": "str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Deprecated name for the method keyword argument."
+                  }
+                ],
+                "name": "interpolation",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "q"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a single percentile and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then the result\nis a scalar. If multiple percentiles are given, first axis of\nthe result corresponds to the percentiles. The other axes are\nthe axes that remain after the reduction of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". If the input\ncontains integers or floats smaller than "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float64"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", the output\ndata-type is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float64"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Otherwise, the output data-type is the\nsame as that of the input. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is specified, that array is\nreturned instead."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "scalar or ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "q"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a single percentile and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then the result\nis a scalar. If multiple percentiles are given, first axis of\nthe result corresponds to the percentiles. The other axes are\nthe axes that remain after the reduction of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". If the input\ncontains integers or floats smaller than "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float64"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", the output\ndata-type is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float64"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Otherwise, the output data-type is the\nsame as that of the input. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is specified, that array is\nreturned instead."
+                  }
+                ],
+                "name": "percentile",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/nanmean/",
+                "label": "flops.nanmean",
+                "original_target": "nanmean",
+                "role": "",
+                "target": "nanmean",
+                "unresolved": false
+              },
+              {
+                "description": "equivalent to ``nanpercentile(..., 50)``",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "equivalent to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "nanpercentile(..., 50)"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/nanmedian/",
+                "label": "flops.nanmedian",
+                "original_target": "nanmedian",
+                "role": "",
+                "target": "nanmedian",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/percentile/",
+                "label": "flops.percentile",
+                "original_target": "percentile",
+                "role": "",
+                "target": "percentile",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/median/",
+                "label": "flops.median",
+                "original_target": "median",
+                "role": "",
+                "target": "median",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/mean/",
+                "label": "flops.mean",
+                "original_target": "mean",
+                "role": "",
+                "target": "mean",
+                "unresolved": false
+              },
+              {
+                "description": "equivalent to nanpercentile, except q in range [0, 1].",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "equivalent to nanpercentile, except q in range [0, 1]."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/nanquantile/",
+                "label": "flops.nanquantile",
+                "original_target": "nanquantile",
+                "role": "",
+                "target": "nanquantile",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The behavior of "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/nanpercentile/",
+                "kind": "link",
+                "target": "nanpercentile",
+                "text": "flops.nanpercentile"
+              },
+              {
+                "kind": "text",
+                "text": " with percentage "
+              },
+              {
+                "kind": "code",
+                "text": "q"
+              },
+              {
+                "kind": "text",
+                "text": " is that of\n"
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/quantile/",
+                "kind": "link",
+                "target": "quantile",
+                "text": "flops.quantile"
+              },
+              {
+                "kind": "text",
+                "text": " with argument "
+              },
+              {
+                "kind": "code",
+                "text": "q/100"
+              },
+              {
+                "kind": "text",
+                "text": " (ignoring nan values).\nFor more information, please see "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/quantile/",
+                "kind": "link",
+                "target": "quantile",
+                "text": "flops.quantile"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nR. J. Hyndman and Y. Fan,\n\"Sample quantiles in statistical packages,\"\nThe American Statistician, 50(4), pp. 361-365, 1996",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[10., 7., 4.], [3., 2., 1.]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[0][1] = flops.nan"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[10.,  nan,   4.],"
+              },
+              {
+                "kind": "output",
+                "text": "      [ 3.,   2.,   1.]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.percentile(a, 50)"
+              },
+              {
+                "kind": "output",
+                "text": "flops.float64(nan)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.nanpercentile(a, 50)"
+              },
+              {
+                "kind": "output",
+                "text": "3.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.nanpercentile(a, 50, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([6.5, 2. , 2.5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.nanpercentile(a, 50, axis=1, keepdims=True)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[7.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2.]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "m = flops.nanpercentile(a, 50, axis=0)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "out = flops.zeros_like(m)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.nanpercentile(a, 50, axis=0, out=out)"
+              },
+              {
+                "kind": "output",
+                "text": "array([6.5, 2. , 2.5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "m"
+              },
+              {
+                "kind": "output",
+                "text": "array([6.5,  2. ,  2.5])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = a.copy()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.nanpercentile(b, 50, axis=1, overwrite_input=True)"
+              },
+              {
+                "kind": "output",
+                "text": "array([7., 2.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "assert not flops.all(a==b)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_reduction",
+    "cost_formula": "numel(input)",
+    "cost_formula_latex": "$\\text{numel}(\\text{input})$",
+    "flopscope_ref": "fnp.nanpercentile",
+    "module": "numpy",
+    "name": "nanpercentile",
+    "notes": "q-th percentile ignoring NaNs.",
+    "numpy_ref": "np.nanpercentile",
+    "signature": "fnp.nanpercentile(a, q, axis=None, out=None, overwrite_input=False, method='linear', keepdims=<no value>, *, weights=None, interpolation=None)",
+    "status": "supported",
+    "summary": "Compute the qth percentile of the data along the specified axis, while ignoring nan values.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "nanpercentile",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L853",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_nanfunctions_impl.py#L1228"
+  }
+}

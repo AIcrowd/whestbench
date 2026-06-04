@@ -1,0 +1,481 @@
+{
+  "detail_href": "/docs/api/numpy/expand-dims/",
+  "detail_json_href": "/api-data/ops/expand_dims.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Expand the shape of an array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Insert a new axis that will appear at the "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " position in the expanded\narray shape."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Position in the expanded axes where the new axis (or axes) is placed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "deprecated",
+                    "options": [],
+                    "raw_source": ".. deprecated:: 1.13.0\n    Passing an axis where ``axis > a.ndim`` will be treated as\n    ``axis == a.ndim``, and passing ``axis < -a.ndim - 1`` will\n    be treated as ``axis == 0``. This behavior is deprecated.",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.13.0"
+                  }
+                ],
+                "data_type": "int or tuple of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Position in the expanded axes where the new axis (or axes) is placed."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "View of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " with the number of dimensions increased."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "View of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " with the number of dimensions increased."
+                  }
+                ],
+                "name": "result",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "The inverse operation, removing singleton dimensions",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "The inverse operation, removing singleton dimensions"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/squeeze/",
+                "label": "flops.squeeze",
+                "original_target": "squeeze",
+                "role": "",
+                "target": "squeeze",
+                "unresolved": false
+              },
+              {
+                "description": "Insert, remove, and combine dimensions, and resize existing ones",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Insert, remove, and combine dimensions, and resize existing ones"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/reshape/",
+                "label": "flops.reshape",
+                "original_target": "reshape",
+                "role": "",
+                "target": "reshape",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/atleast-1d/",
+                "label": "flops.atleast_1d",
+                "original_target": "atleast_1d",
+                "role": "",
+                "target": "atleast_1d",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/atleast-2d/",
+                "label": "flops.atleast_2d",
+                "original_target": "atleast_2d",
+                "role": "",
+                "target": "atleast_2d",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/atleast-3d/",
+                "label": "flops.atleast_3d",
+                "original_target": "atleast_3d",
+                "role": "",
+                "target": "atleast_3d",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([1, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(2,)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The following is equivalent to "
+              },
+              {
+                "kind": "code",
+                "text": "x[flops.newaxis, :]"
+              },
+              {
+                "kind": "text",
+                "text": " or "
+              },
+              {
+                "kind": "code",
+                "text": "x[flops.newaxis]"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.expand_dims(x, axis=0)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 2]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(1, 2)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The following is equivalent to "
+              },
+              {
+                "kind": "code",
+                "text": "x[:, flops.newaxis]"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.expand_dims(x, axis=1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(2, 1)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " may also be a tuple:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.expand_dims(x, axis=(0, 1))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[1, 2]]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.expand_dims(x, axis=(2, 0))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[1],"
+              },
+              {
+                "kind": "output",
+                "text": "        [2]]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that some examples may use "
+              },
+              {
+                "kind": "code",
+                "text": "None"
+              },
+              {
+                "kind": "text",
+                "text": " instead of "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.newaxis.html",
+                "href": "",
+                "kind": "link",
+                "target": "newaxis",
+                "text": "flops.newaxis"
+              },
+              {
+                "kind": "text",
+                "text": ".  These\nare the same objects:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.newaxis is None"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.expand_dims",
+    "module": "numpy",
+    "name": "expand_dims",
+    "notes": "Insert new size-1 axis.",
+    "numpy_ref": "np.expand_dims",
+    "signature": "fnp.expand_dims(a: 'ArrayLike', axis) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Expand the shape of an array.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "expand_dims",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L709",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_shape_base_impl.py#L511"
+  }
+}

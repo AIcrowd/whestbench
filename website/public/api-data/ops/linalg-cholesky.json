@@ -1,0 +1,659 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/cholesky/",
+  "detail_json_href": "/api-data/ops/linalg-cholesky.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Cholesky decomposition."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the lower or upper Cholesky decomposition, "
+              },
+              {
+                "kind": "code",
+                "text": "L * L.H"
+              },
+              {
+                "kind": "text",
+                "text": " or\n"
+              },
+              {
+                "kind": "code",
+                "text": "U.H * U"
+              },
+              {
+                "kind": "text",
+                "text": ", of the square matrix "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ", where "
+              },
+              {
+                "kind": "code",
+                "text": "L"
+              },
+              {
+                "kind": "text",
+                "text": " is lower-triangular,\n"
+              },
+              {
+                "kind": "code",
+                "text": "U"
+              },
+              {
+                "kind": "text",
+                "text": " is upper-triangular, and "
+              },
+              {
+                "kind": "code",
+                "text": ".H"
+              },
+              {
+                "kind": "text",
+                "text": " is the conjugate transpose operator\n(which is the ordinary transpose if "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is real-valued). "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " must be\nHermitian (symmetric if real-valued) and positive-definite. No checking is\nperformed to verify whether "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is Hermitian or not. In addition, only\nthe lower or upper-triangular and diagonal elements of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " are used.\nOnly "
+              },
+              {
+                "kind": "code",
+                "text": "L"
+              },
+              {
+                "kind": "text",
+                "text": " or "
+              },
+              {
+                "kind": "code",
+                "text": "U"
+              },
+              {
+                "kind": "text",
+                "text": " is actually returned."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Hermitian (symmetric if all elements are real), positive-definite\ninput matrix."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Hermitian (symmetric if all elements are real), positive-definite\ninput matrix."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", the result must be the upper-triangular Cholesky factor.\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", the result must be the lower-triangular Cholesky factor.\nDefault: "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", the result must be the upper-triangular Cholesky factor.\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", the result must be the lower-triangular Cholesky factor.\nDefault: "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "upper",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Lower or upper-triangular Cholesky factor of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Returns a matrix\nobject if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a matrix object."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Lower or upper-triangular Cholesky factor of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Returns a matrix\nobject if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a matrix object."
+                  }
+                ],
+                "name": "L",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the decomposition fails, for example, if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not\npositive-definite."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the decomposition fails, for example, if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not\npositive-definite."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Similar function in SciPy.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cholesky.html",
+                "href": "",
+                "label": "scipy.linalg.cholesky",
+                "original_target": "scipy.linalg.cholesky",
+                "role": "",
+                "target": "scipy.linalg.cholesky",
+                "unresolved": false
+              },
+              {
+                "description": "Cholesky decompose a banded Hermitian positive-definite matrix.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Cholesky decompose a banded Hermitian positive-definite matrix."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cholesky_banded.html",
+                "href": "",
+                "label": "scipy.linalg.cholesky_banded",
+                "original_target": "scipy.linalg.cholesky_banded",
+                "role": "",
+                "target": "scipy.linalg.cholesky_banded",
+                "unresolved": false
+              },
+              {
+                "description": "Cholesky decomposition of a matrix, to use in `scipy.linalg.cho_solve`.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Cholesky decomposition of a matrix, to use in "
+                  },
+                  {
+                    "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cho_solve.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "scipy.linalg.cho_solve",
+                    "text": "scipy.linalg.cho_solve"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cho_factor.html",
+                "href": "",
+                "label": "scipy.linalg.cho_factor",
+                "original_target": "scipy.linalg.cho_factor",
+                "role": "",
+                "target": "scipy.linalg.cho_factor",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Broadcasting rules apply, see the "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.linalg.html",
+                "href": "",
+                "kind": "link",
+                "target": "linalg",
+                "text": "flops.linalg"
+              },
+              {
+                "kind": "text",
+                "text": " documentation for\ndetails."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Cholesky decomposition is often used as a fast way of solving"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "A \\mathbf{x} = \\mathbf{b}"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "(when "
+              },
+              {
+                "kind": "code",
+                "text": "A"
+              },
+              {
+                "kind": "text",
+                "text": " is both Hermitian/symmetric and positive-definite)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "First, we solve for "
+              },
+              {
+                "kind": "math",
+                "latex": "\\mathbf{y}"
+              },
+              {
+                "kind": "text",
+                "text": " in"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "L \\mathbf{y} = \\mathbf{b},"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "and then for "
+              },
+              {
+                "kind": "math",
+                "latex": "\\mathbf{x}"
+              },
+              {
+                "kind": "text",
+                "text": " in"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "L^{H} \\mathbf{x} = \\mathbf{y}."
+            ],
+            "type": "math_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = flops.array([[1,-2j],[2j,5]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1.+0.j, -0.-2.j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.+2.j,  5.+0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "L = flops.linalg.cholesky(A)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "L"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1.+0.j, 0.+0.j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.+2.j, 1.+0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.dot(L, L.T.conj()) # verify that L * L.H = A"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1.+0.j, 0.-2.j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.+2.j, 5.+0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = [[1,-2j],[2j,5]] # what happens if A is only array_like?"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.cholesky(A) # an ndarray object is returned"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1.+0.j, 0.+0.j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.+2.j, 1.+0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# But a matrix object is returned if A is a matrix object"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.cholesky(flops.matrix(A))"
+              },
+              {
+                "kind": "output",
+                "text": "matrix([[ 1.+0.j,  0.+0.j],"
+              },
+              {
+                "kind": "output",
+                "text": "        [ 0.+2.j,  1.+0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# The upper-triangular Cholesky factor can also be obtained."
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.cholesky(A, upper=True)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1.-0.j, 0.-2.j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.-0.j, 1.-0.j]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n^3",
+    "cost_formula_latex": "$n^3$",
+    "flopscope_ref": "fnp.linalg.cholesky",
+    "module": "numpy.linalg",
+    "name": "linalg.cholesky",
+    "notes": "Cholesky decomposition. Cost: $n^3$.",
+    "numpy_ref": "np.linalg.cholesky",
+    "signature": "fnp.linalg.cholesky(a: 'ArrayLike', /, *, upper: 'bool' = False) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Cholesky decomposition.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-cholesky",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_decompositions.py#L41",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L740"
+  }
+}

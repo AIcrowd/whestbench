@@ -1,0 +1,434 @@
+{
+  "detail_href": "/docs/api/numpy/fabs/",
+  "detail_json_href": "/api-data/ops/fabs.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the absolute values element-wise."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function returns the absolute values (positive magnitude) of the\ndata in "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": ". Complex values are not handled, use "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/absolute/",
+                "kind": "link",
+                "target": "absolute",
+                "text": "absolute"
+              },
+              {
+                "kind": "text",
+                "text": " to find the\nabsolute values of complex data."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The array of numbers for which the absolute values are required. If\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar, the result "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "y"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will also be a scalar."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The array of numbers for which the absolute values are required. If\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar, the result "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "y"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will also be a scalar."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, None, or tuple of ndarray and None, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will be set to the ufunc result.\nElsewhere, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will retain its original value.\nNote that if an uninitialized "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array is created via the default\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", locations within it where the condition is False will\nremain uninitialized."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will be set to the ufunc result.\nElsewhere, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will retain its original value.\nNote that if an uninitialized "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array is created via the default\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", locations within it where the condition is False will\nremain uninitialized."
+                  }
+                ],
+                "name": "where",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "For other keyword-only arguments, see the\n"
+                      },
+                      {
+                        "display_text": "ufunc docs",
+                        "explicit_title": true,
+                        "external_url": "",
+                        "href": "",
+                        "kind": "role_reference",
+                        "original_target": "ufuncs.kwargs",
+                        "role": "ref",
+                        "suppress_link": false,
+                        "target": "ufuncs.kwargs",
+                        "unresolved": true
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "For other keyword-only arguments, see the\n"
+                  },
+                  {
+                    "display_text": "ufunc docs",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "ufuncs.kwargs",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "ufuncs.kwargs",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "**kwargs",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The absolute values of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", the returned values are always floats.\nThis is a scalar if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The absolute values of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", the returned values are always floats.\nThis is a scalar if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Absolute values including `complex` types.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Absolute values including "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "complex"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " types."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/absolute/",
+                "label": "flops.absolute",
+                "original_target": "absolute",
+                "role": "",
+                "target": "absolute",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fabs(-1)"
+              },
+              {
+                "kind": "output",
+                "text": "1.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fabs([-1.2, 1.2])"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 1.2,  1.2])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_unary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.fabs",
+    "module": "numpy",
+    "name": "fabs",
+    "notes": "Element-wise absolute value (always float).",
+    "numpy_ref": "np.fabs",
+    "signature": "fnp.fabs(x: 'ArrayLike', out: 'FlopscopeArray | None' = None, **kwargs: 'Any') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Compute the absolute values element-wise.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "fabs",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L343",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/code_generators/ufunc_docstrings.py"
+  }
+}

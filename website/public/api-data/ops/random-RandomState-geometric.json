@@ -1,0 +1,394 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/geometric/",
+  "detail_json_href": "/api-data/ops/random-RandomState-geometric.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from the geometric distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Bernoulli trials are experiments with one of two outcomes:\nsuccess or failure (an example of such an experiment is flipping\na coin).  The geometric distribution models the number of trials\nthat must be run in order to achieve success.  It is therefore\nsupported on the positive integers, "
+              },
+              {
+                "kind": "code",
+                "text": "k = 1, 2, ..."
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability mass function of the geometric distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "f(k) = (1 - p)^{k - 1} p"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where "
+              },
+              {
+                "kind": "code",
+                "text": "p"
+              },
+              {
+                "kind": "text",
+                "text": " is the probability of success of an individual trial."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/geometric/",
+                    "kind": "link",
+                    "target": "random.Generator.geometric",
+                    "text": "geometric"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the `~flops.random.Generator.geometric`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The probability of success of an individual trial."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The probability of success of an individual trial."
+                  }
+                ],
+                "name": "p",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "p"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar.  Otherwise,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.array(p).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "p"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar.  Otherwise,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.array(p).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the parameterized geometric distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the parameterized geometric distribution."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/geometric/",
+                "label": "flops.random.Generator.geometric",
+                "original_target": "random.Generator.geometric",
+                "role": "",
+                "target": "random.Generator.geometric",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw ten thousand values from the geometric distribution,\nwith the probability of an individual success equal to 0.35:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "z = flops.random.geometric(p=0.35, size=10000)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "How many trials succeeded after a single run?"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "(z == 1).sum() / 10000."
+              },
+              {
+                "kind": "output",
+                "text": "0.34889999999999999 #random"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.RandomState.geometric",
+    "module": "numpy.random",
+    "name": "random.RandomState.geometric",
+    "notes": "Legacy geometric sampler; cost = numel(output).",
+    "numpy_ref": "np.random.RandomState.geometric",
+    "signature": "fnp.random.RandomState.geometric(self, p, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from the geometric distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-geometric",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.geometric.html"
+  }
+}

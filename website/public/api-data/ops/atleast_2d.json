@@ -1,0 +1,222 @@
+{
+  "detail_href": "/docs/api/numpy/atleast-2d/",
+  "detail_json_href": "/api-data/ops/atleast_2d.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "View inputs as arrays with at least two dimensions."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "One or more array-like sequences.  Non-array inputs are converted\nto arrays.  Arrays that already have two or more dimensions are\npreserved."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "One or more array-like sequences.  Non-array inputs are converted\nto arrays.  Arrays that already have two or more dimensions are\npreserved."
+                  }
+                ],
+                "name": "arys1, arys2, ...",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array, or tuple of arrays, each with "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.ndim >= 2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nCopies are avoided where possible, and views with two or more\ndimensions are returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array, or tuple of arrays, each with "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a.ndim >= 2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nCopies are avoided where possible, and views with two or more\ndimensions are returned."
+                  }
+                ],
+                "name": "res, res2, ...",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/atleast-1d/",
+                "label": "flops.atleast_1d",
+                "original_target": "atleast_1d",
+                "role": "",
+                "target": "atleast_1d",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/atleast-3d/",
+                "label": "flops.atleast_3d",
+                "original_target": "atleast_3d",
+                "role": "",
+                "target": "atleast_3d",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.atleast_2d(3.0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[3.]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.arange(3.0)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.atleast_2d(x)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0., 1., 2.]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.atleast_2d(x).base is x"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.atleast_2d(1, [1, 2], [[1, 2]])"
+              },
+              {
+                "kind": "output",
+                "text": "(array([[1]]), array([[1, 2]]), array([[1, 2]]))"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.atleast_2d",
+    "module": "numpy",
+    "name": "atleast_2d",
+    "notes": "View inputs as arrays with at least two dimensions.",
+    "numpy_ref": "np.atleast_2d",
+    "signature": "fnp.atleast_2d(*arys)",
+    "status": "supported",
+    "summary": "View inputs as arrays with at least two dimensions.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "atleast_2d",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1232",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/shape_base.py#L80"
+  }
+}

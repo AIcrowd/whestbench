@@ -1,0 +1,337 @@
+{
+  "detail_href": "/docs/api/numpy/flipud/",
+  "detail_json_href": "/api-data/ops/flipud.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Reverse the order of elements along axis 0 (up/down)."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For a 2-D array, this flips the entries in each column in the up/down\ndirection. Rows are preserved, but appear in a different order than before."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "m",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A view of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " with the rows reversed.  Since a view is\nreturned, this operation is "
+                      },
+                      {
+                        "kind": "math",
+                        "latex": "\\mathcal O(1)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A view of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " with the rows reversed.  Since a view is\nreturned, this operation is "
+                  },
+                  {
+                    "kind": "math",
+                    "latex": "\\mathcal O(1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Flip array in the left/right direction.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Flip array in the left/right direction."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/fliplr/",
+                "label": "flops.fliplr",
+                "original_target": "fliplr",
+                "role": "",
+                "target": "fliplr",
+                "unresolved": false
+              },
+              {
+                "description": "Flip array in one or more dimensions.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Flip array in one or more dimensions."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/flip/",
+                "label": "flops.flip",
+                "original_target": "flip",
+                "role": "",
+                "target": "flip",
+                "unresolved": false
+              },
+              {
+                "description": "Rotate array counterclockwise.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Rotate array counterclockwise."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/rot90/",
+                "label": "flops.rot90",
+                "original_target": "rot90",
+                "role": "",
+                "target": "rot90",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Equivalent to "
+              },
+              {
+                "kind": "code",
+                "text": "m[::-1, ...]"
+              },
+              {
+                "kind": "text",
+                "text": " or "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.flip(m, axis=0).html",
+                "href": "",
+                "kind": "link",
+                "target": "flip(m, axis=0)",
+                "text": "flops.flip(m, axis=0)"
+              },
+              {
+                "kind": "text",
+                "text": ".\nRequires the array to be at least 1-D."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = flops.diag([1.0, 2, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1.,  0.,  0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.,  2.,  0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.,  0.,  3.]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.flipud(A)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0.,  0.,  3.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.,  2.,  0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1.,  0.,  0.]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = rng.normal(size=(2,3,5))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.all(flops.flipud(A) == A[::-1,...])"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.flipud([1,2])"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 1])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.flipud",
+    "module": "numpy",
+    "name": "flipud",
+    "notes": "Flip array up-down.",
+    "numpy_ref": "np.flipud",
+    "signature": "fnp.flipud(m)",
+    "status": "supported",
+    "summary": "Reverse the order of elements along axis 0 (up/down).",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "flipud",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1729",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_twodim_base_impl.py#L105"
+  }
+}

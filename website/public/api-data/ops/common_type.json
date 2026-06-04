@@ -1,0 +1,200 @@
+{
+  "detail_href": "/docs/api/numpy/common-type/",
+  "detail_json_href": "/api-data/ops/common_type.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return a scalar type which is common to the input arrays."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The return type will always be an inexact (i.e. floating point) scalar\ntype, even if all the arrays are integer arrays. If one of the inputs is\nan integer array, the minimum precision type that is returned is a\n64-bit floating point dtype."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "All input arrays except int64 and uint64 can be safely cast to the\nreturned dtype without loss of information."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input arrays."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarrays",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input arrays."
+                  }
+                ],
+                "name": "array1, array2, ...",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Data type code."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "data type code",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Data type code."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.dtype.html",
+                "href": "",
+                "label": "dtype",
+                "original_target": "dtype",
+                "role": "",
+                "target": "dtype",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/mintypecode/",
+                "label": "flops.mintypecode",
+                "original_target": "mintypecode",
+                "role": "",
+                "target": "mintypecode",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.common_type(flops.arange(2, dtype=flops.float32))"
+              },
+              {
+                "kind": "output",
+                "text": "<class 'flops.float32'>"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.common_type(flops.arange(2, dtype=flops.float32), flops.arange(2))"
+              },
+              {
+                "kind": "output",
+                "text": "<class 'flops.float64'>"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.common_type(flops.arange(4), flops.array([45, 6.j]), flops.array([45.0]))"
+              },
+              {
+                "kind": "output",
+                "text": "<class 'flops.complex128'>"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.common_type",
+    "module": "numpy",
+    "name": "common_type",
+    "notes": "Return scalar type common to all input arrays.",
+    "numpy_ref": "np.common_type",
+    "signature": "fnp.common_type(*arrays)",
+    "status": "supported",
+    "summary": "Return a scalar type which is common to the input arrays.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "common_type",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1464",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_type_check_impl.py#L646"
+  }
+}

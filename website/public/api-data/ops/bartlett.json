@@ -1,0 +1,309 @@
+{
+  "detail_href": "/docs/api/numpy/bartlett/",
+  "detail_json_href": "/api-data/ops/bartlett.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the Bartlett window."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Bartlett window is very similar to a triangular window, except\nthat the end points are at zero.  It is often used in signal\nprocessing for tapering a signal, without generating too much\nripple in the frequency domain."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of points in the output window. If zero or less, an\nempty array is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of points in the output window. If zero or less, an\nempty array is returned."
+                  }
+                ],
+                "name": "M",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The triangular window, with the maximum value normalized to one\n(the value one appears only if the number of samples is odd), with\nthe first and last samples equal to zero."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The triangular window, with the maximum value normalized to one\n(the value one appears only if the number of samples is odd), with\nthe first and last samples equal to zero."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/blackman/",
+                "label": "flops.blackman",
+                "original_target": "blackman",
+                "role": "",
+                "target": "blackman",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/hamming/",
+                "label": "flops.hamming",
+                "original_target": "hamming",
+                "role": "",
+                "target": "hamming",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/hanning/",
+                "label": "flops.hanning",
+                "original_target": "hanning",
+                "role": "",
+                "target": "hanning",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/kaiser/",
+                "label": "flops.kaiser",
+                "original_target": "kaiser",
+                "role": "",
+                "target": "kaiser",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Bartlett window is defined as"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "w(n) = \\frac{2}{M-1} \\left( \\frac{M-1}{2} - \\left|n - \\frac{M-1}{2}\\right| \\right)"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Most references to the Bartlett window come from the signal processing\nliterature, where it is used as one of many windowing functions for\nsmoothing values.  Note that convolution with this window produces linear\ninterpolation.  It is also known as an apodization (which means \"removing\nthe foot\", i.e. smoothing discontinuities at the beginning and end of the\nsampled signal) or tapering function. The Fourier transform of the\nBartlett window is the product of two sinc functions. Note the excellent\ndiscussion in Kanasewich "
+              },
+              {
+                "kind": "text",
+                "text": "[2]_"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nM.S. Bartlett, \"Periodogram Analysis and Continuous Spectra\",\nBiometrika 37, 1-16, 1950.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nE.R. Kanasewich, \"Time Sequence Analysis in Geophysics\",\nThe University of Alberta Press, 1975, pp. 109-110.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "3\n\nA.V. Oppenheim and R.W. Schafer, \"Discrete-Time Signal\nProcessing\", Prentice-Hall, 1999, pp. 468-471.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "4\n\nWikipedia, \"Window function\",\nhttps://en.wikipedia.org/wiki/Window_function",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "5\n\nW.H. Press,  B.P. Flannery, S.A. Teukolsky, and W.T. Vetterling,\n\"Numerical Recipes\", Cambridge University Press, 1986, page 429.",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.bartlett(12)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 0.        ,  0.18181818,  0.36363636,  0.54545455,  0.72727273, # may vary"
+              },
+              {
+                "kind": "output",
+                "text": "        0.90909091,  0.90909091,  0.72727273,  0.54545455,  0.36363636,"
+              },
+              {
+                "kind": "output",
+                "text": "        0.18181818,  0.        ])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Plot the window and its frequency response (requires SciPy and matplotlib)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "language": "python",
+                "text": "import matplotlib.pyplot as plt\nfrom flops.fft import fft, fftshift\nwindow = flops.bartlett(51)\nplt.plot(window)\nplt.title(\"Bartlett window\")\nplt.ylabel(\"Amplitude\")\nplt.xlabel(\"Sample\")\nplt.show()\nplt.figure()\nA = fft(window, 2048) / 25.5\nmag = flops.abs(fftshift(A))\nfreq = flops.linspace(-0.5, 0.5, len(A))\nwith flops.errstate(divide='ignore', invalid='ignore'):\n    response = 20 * flops.log10(mag)\nresponse = flops.clip(response, -100, 100)\nplt.plot(freq, response)\nplt.title(\"Frequency response of Bartlett window\")\nplt.ylabel(\"Magnitude [dB]\")\nplt.xlabel(\"Normalized frequency [cycles per sample]\")\nplt.axis('tight')\nplt.show()",
+                "type": "literal_block"
+              }
+            ],
+            "directive": "plot",
+            "options": [
+              {
+                "name": "include-source",
+                "value": ""
+              }
+            ],
+            "raw_source": ".. plot::\n    :include-source:\n\n    import matplotlib.pyplot as plt\n    from numpy.fft import fft, fftshift\n    window = np.bartlett(51)\n    plt.plot(window)\n    plt.title(\"Bartlett window\")\n    plt.ylabel(\"Amplitude\")\n    plt.xlabel(\"Sample\")\n    plt.show()\n    plt.figure()\n    A = fft(window, 2048) / 25.5\n    mag = np.abs(fftshift(A))\n    freq = np.linspace(-0.5, 0.5, len(A))\n    with np.errstate(divide='ignore', invalid='ignore'):\n        response = 20 * np.log10(mag)\n    response = np.clip(response, -100, 100)\n    plt.plot(freq, response)\n    plt.title(\"Frequency response of Bartlett window\")\n    plt.ylabel(\"Magnitude [dB]\")\n    plt.xlabel(\"Normalized frequency [cycles per sample]\")\n    plt.axis('tight')\n    plt.show()",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n",
+    "cost_formula_latex": "$n$",
+    "flopscope_ref": "fnp.bartlett",
+    "module": "flopscope._window",
+    "name": "bartlett",
+    "notes": "Bartlett window. Cost: n (one linear eval per sample).",
+    "numpy_ref": "np.bartlett",
+    "signature": "fnp.bartlett(M: 'int') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Return the Bartlett window.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "bartlett",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_window.py#L34",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L3158"
+  }
+}

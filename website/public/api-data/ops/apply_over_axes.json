@@ -1,0 +1,473 @@
+{
+  "detail_href": "/docs/api/numpy/apply-over-axes/",
+  "detail_json_href": "/api-data/ops/apply_over_axes.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Apply a function repeatedly over multiple axes."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "func"
+              },
+              {
+                "kind": "text",
+                "text": " is called as "
+              },
+              {
+                "kind": "code",
+                "text": "res = func(a, axis)"
+              },
+              {
+                "kind": "text",
+                "text": ", where "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " is the first\nelement of "
+              },
+              {
+                "kind": "code",
+                "text": "axes"
+              },
+              {
+                "kind": "text",
+                "text": ".  The result "
+              },
+              {
+                "kind": "code",
+                "text": "res"
+              },
+              {
+                "kind": "text",
+                "text": " of the function call must have\neither the same dimensions as "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " or one less dimension.  If "
+              },
+              {
+                "kind": "code",
+                "text": "res"
+              },
+              {
+                "kind": "text",
+                "text": "\nhas one less dimension than "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ", a dimension is inserted before\n"
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": ".  The call to "
+              },
+              {
+                "kind": "code",
+                "text": "func"
+              },
+              {
+                "kind": "text",
+                "text": " is then repeated for each axis in "
+              },
+              {
+                "kind": "code",
+                "text": "axes"
+              },
+              {
+                "kind": "text",
+                "text": ",\nwith "
+              },
+              {
+                "kind": "code",
+                "text": "res"
+              },
+              {
+                "kind": "text",
+                "text": " as the first argument."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "This function must take two arguments, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "func(a, axis)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "function",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This function must take two arguments, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "func(a, axis)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "func",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axes over which "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "func"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is applied; the elements must be integers."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axes over which "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "func"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is applied; the elements must be integers."
+                  }
+                ],
+                "name": "axes",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The output array.  The number of dimensions is the same as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ",\nbut the shape can be different.  This depends on whether "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "func"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nchanges the shape of its output with respect to its input."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The output array.  The number of dimensions is the same as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ",\nbut the shape can be different.  This depends on whether "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "func"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nchanges the shape of its output with respect to its input."
+                  }
+                ],
+                "name": "apply_over_axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Apply a function to 1-D slices of an array along the given axis.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Apply a function to 1-D slices of an array along the given axis."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/apply-along-axis/",
+                "label": "flops.apply_along_axis",
+                "original_target": "apply_along_axis",
+                "role": "",
+                "target": "apply_along_axis",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function is equivalent to tuple axis arguments to reorderable ufuncs\nwith keepdims=True. Tuple axis arguments to ufuncs have been available since\nversion 1.7.0."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(24).reshape(2,3,4)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[ 0,  1,  2,  3],"
+              },
+              {
+                "kind": "output",
+                "text": "        [ 4,  5,  6,  7],"
+              },
+              {
+                "kind": "output",
+                "text": "        [ 8,  9, 10, 11]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[12, 13, 14, 15],"
+              },
+              {
+                "kind": "output",
+                "text": "        [16, 17, 18, 19],"
+              },
+              {
+                "kind": "output",
+                "text": "        [20, 21, 22, 23]]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Sum over axes 0 and 2. The result has same number of dimensions\nas the original array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.apply_over_axes(flops.sum, a, [0,2])"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[ 60],"
+              },
+              {
+                "kind": "output",
+                "text": "        [ 92],"
+              },
+              {
+                "kind": "output",
+                "text": "        [124]]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Tuple axis arguments to ufuncs are equivalent:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.sum(a, axis=(0,2), keepdims=True)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[ 60],"
+              },
+              {
+                "kind": "output",
+                "text": "        [ 92],"
+              },
+              {
+                "kind": "output",
+                "text": "        [124]]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.apply_over_axes",
+    "module": "numpy",
+    "name": "apply_over_axes",
+    "notes": "Apply function over multiple axes. Cost: numel(output).",
+    "numpy_ref": "np.apply_over_axes",
+    "signature": "fnp.apply_over_axes(func: 'Any', a: 'ArrayLike', axes: 'int | Sequence[int]') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Apply a function repeatedly over multiple axes.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "apply_over_axes",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L391",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_shape_base_impl.py#L419"
+  }
+}

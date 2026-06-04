@@ -1,0 +1,211 @@
+{
+  "detail_href": "/docs/api/numpy/iterable/",
+  "detail_json_href": "/api-data/ops/iterable.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Check whether or not an object can be iterated over."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input object."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "object",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input object."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Return "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " if the object has an iterator method or is a\nsequence and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " otherwise."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " if the object has an iterator method or is a\nsequence and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " otherwise."
+                  }
+                ],
+                "name": "b",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In most cases, the results of "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.iterable(obj).html",
+                "href": "",
+                "kind": "link",
+                "target": "iterable(obj)",
+                "text": "flops.iterable(obj)"
+              },
+              {
+                "kind": "text",
+                "text": " are consistent with\n"
+              },
+              {
+                "kind": "code",
+                "text": "isinstance(obj, collections.abc.Iterable)"
+              },
+              {
+                "kind": "text",
+                "text": ". One notable exception is\nthe treatment of 0-dimensional arrays:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": ">>> from collections.abc import Iterable\n>>> a = flops.array(1.0)  # 0-dimensional numpy array\n>>> isinstance(a, Iterable)\nTrue\n>>> flops.iterable(a)\nFalse",
+            "type": "literal_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.iterable([1, 2, 3])"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.iterable(2)"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.iterable",
+    "module": "numpy",
+    "name": "iterable",
+    "notes": "Return True if object is iterable.",
+    "numpy_ref": "np.iterable",
+    "signature": "fnp.iterable(y)",
+    "status": "supported",
+    "summary": "Check whether or not an object can be iterated over.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "iterable",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1933",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L339"
+  }
+}

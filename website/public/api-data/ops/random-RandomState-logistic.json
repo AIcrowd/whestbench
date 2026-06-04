@@ -1,0 +1,513 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/logistic/",
+  "detail_json_href": "/api-data/ops/random-RandomState-logistic.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a logistic distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Samples are drawn from a logistic distribution with specified\nparameters, loc (location or mean, also median), and scale (>0)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/logistic/",
+                    "kind": "link",
+                    "target": "random.Generator.logistic",
+                    "text": "logistic"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the `~flops.random.Generator.logistic`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Parameter of the distribution. Default is 0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Parameter of the distribution. Default is 0."
+                  }
+                ],
+                "name": "loc",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Parameter of the distribution. Must be non-negative.\nDefault is 1."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Parameter of the distribution. Must be non-negative.\nDefault is 1."
+                  }
+                ],
+                "name": "scale",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "loc"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "scale"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are both scalars.\nOtherwise, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.broadcast(loc, scale).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "loc"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "scale"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are both scalars.\nOtherwise, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.broadcast(loc, scale).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the parameterized logistic distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the parameterized logistic distribution."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "probability density function, distribution or cumulative density function, etc.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "probability density function, distribution or cumulative density function, etc."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.logistic.html",
+                "href": "",
+                "label": "scipy.stats.logistic",
+                "original_target": "scipy.stats.logistic",
+                "role": "",
+                "target": "stats.logistic",
+                "unresolved": false
+              },
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/logistic/",
+                "label": "flops.random.Generator.logistic",
+                "original_target": "random.Generator.logistic",
+                "role": "",
+                "target": "random.Generator.logistic",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability density for the Logistic distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "P(x) = P(x) = \\frac{e^{-(x-\\mu)/s}}{s(1+e^{-(x-\\mu)/s})^2},"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where "
+              },
+              {
+                "kind": "math",
+                "latex": "\\mu"
+              },
+              {
+                "kind": "text",
+                "text": " = location and "
+              },
+              {
+                "kind": "math",
+                "latex": "s"
+              },
+              {
+                "kind": "text",
+                "text": " = scale."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Logistic distribution is used in Extreme Value problems where it\ncan act as a mixture of Gumbel distributions, in Epidemiology, and by\nthe World Chess Federation (FIDE) where it is used in the Elo ranking\nsystem, assuming the performance of each player is a logistically\ndistributed random variable."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nReiss, R.-D. and Thomas M. (2001), \"Statistical Analysis of\nExtreme Values, from Insurance, Finance, Hydrology and Other\nFields,\" Birkhauser Verlag, Basel, pp 132-133.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nWeisstein, Eric W. \"Logistic Distribution.\" From\nMathWorld--A Wolfram Web Resource.\nhttps://mathworld.wolfram.com/LogisticDistribution.html",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "3\n\nWikipedia, \"Logistic-distribution\",\nhttps://en.wikipedia.org/wiki/Logistic_distribution",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from the distribution:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "loc, scale = 10, 1"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = flops.random.logistic(loc, scale, 10000)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "count, bins, ignored = plt.hist(s, bins=50)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "#   plot against distribution"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "def logist(x, loc, scale):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "return flops.exp((loc-x)/scale)/(scale*(1+flops.exp((loc-x)/scale))**2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "lgst_val = logist(bins, loc, scale)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(bins, lgst_val * count.max() / lgst_val.max())"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.RandomState.logistic",
+    "module": "numpy.random",
+    "name": "random.RandomState.logistic",
+    "notes": "Legacy logistic sampler; cost = numel(output).",
+    "numpy_ref": "np.random.RandomState.logistic",
+    "signature": "fnp.random.RandomState.logistic(self, loc=0.0, scale=1.0, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from a logistic distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-logistic",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.logistic.html"
+  }
+}

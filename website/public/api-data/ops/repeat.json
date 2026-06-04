@@ -1,0 +1,294 @@
+{
+  "detail_href": "/docs/api/numpy/repeat/",
+  "detail_json_href": "/api-data/ops/repeat.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Repeat each element of an array after themselves"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The number of repetitions for each element.  "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "repeats"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is broadcasted\nto fit the shape of the given axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or array of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The number of repetitions for each element.  "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "repeats"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is broadcasted\nto fit the shape of the given axis."
+                  }
+                ],
+                "name": "repeats",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis along which to repeat values.  By default, use the\nflattened input array, and return a flat output array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis along which to repeat values.  By default, use the\nflattened input array, and return a flat output array."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output array which has the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", except along\nthe given axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output array which has the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", except along\nthe given axis."
+                  }
+                ],
+                "name": "repeated_array",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Tile an array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Tile an array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/tile/",
+                "label": "flops.tile",
+                "original_target": "tile",
+                "role": "",
+                "target": "tile",
+                "unresolved": false
+              },
+              {
+                "description": "Find the unique elements of an array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Find the unique elements of an array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/unique/",
+                "label": "flops.unique",
+                "original_target": "unique",
+                "role": "",
+                "target": "unique",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.repeat(3, 4)"
+              },
+              {
+                "kind": "output",
+                "text": "array([3, 3, 3, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([[1,2],[3,4]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.repeat(x, 2)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 1, 2, 2, 3, 3, 4, 4])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.repeat(x, 3, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 1, 1, 2, 2, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 3, 3, 4, 4, 4]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.repeat(x, [1, 2], axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.repeat",
+    "module": "numpy",
+    "name": "repeat",
+    "notes": "Repeat elements of an array. Cost: numel(output).",
+    "numpy_ref": "np.repeat",
+    "signature": "fnp.repeat(a: 'ArrayLike', repeats: 'int | ArrayLike', axis: 'int | None' = None) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Repeat each element of an array after themselves",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "repeat",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L826",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L462"
+  }
+}

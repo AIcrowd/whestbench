@@ -1,0 +1,249 @@
+{
+  "detail_href": "/docs/api/numpy/flatnonzero/",
+  "detail_json_href": "/api-data/ops/flatnonzero.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return indices that are non-zero in the flattened version of a."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is equivalent to "
+              },
+              {
+                "kind": "code",
+                "text": "flops.nonzero(flops.ravel(a))[0]"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input data."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input data."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output array, containing the indices of the elements of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.ravel()"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nthat are non-zero."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output array, containing the indices of the elements of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a.ravel()"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nthat are non-zero."
+                  }
+                ],
+                "name": "res",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Return the indices of the non-zero elements of the input array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return the indices of the non-zero elements of the input array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/nonzero/",
+                "label": "flops.nonzero",
+                "original_target": "nonzero",
+                "role": "",
+                "target": "nonzero",
+                "unresolved": false
+              },
+              {
+                "description": "Return a 1-D array containing the elements of the input array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return a 1-D array containing the elements of the input array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/ravel/",
+                "label": "flops.ravel",
+                "original_target": "ravel",
+                "role": "",
+                "target": "ravel",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.arange(-2, 3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x"
+              },
+              {
+                "kind": "output",
+                "text": "array([-2, -1,  0,  1,  2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.flatnonzero(x)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 1, 3, 4])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Use the indices of the non-zero elements as an index array to extract\nthese elements:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x.ravel()[flops.flatnonzero(x)]"
+              },
+              {
+                "kind": "output",
+                "text": "array([-2, -1,  1,  2])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.flatnonzero",
+    "module": "numpy",
+    "name": "flatnonzero",
+    "notes": "Return indices of non-zero elements in flattened array. Cost: numel(input).",
+    "numpy_ref": "np.flatnonzero",
+    "signature": "fnp.flatnonzero(a)",
+    "status": "supported",
+    "summary": "Return indices that are non-zero in the flattened version of a.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "flatnonzero",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1703",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/numeric.py#L646"
+  }
+}

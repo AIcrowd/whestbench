@@ -1,0 +1,312 @@
+{
+  "detail_href": "/docs/api/numpy/real-if-close/",
+  "detail_json_href": "/api-data/ops/real_if_close.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If input is complex with all imaginary parts close to zero, return real parts."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "\"Close to zero\" is defined as "
+              },
+              {
+                "kind": "code",
+                "text": "tol"
+              },
+              {
+                "kind": "text",
+                "text": " * (machine epsilon of the type for\n"
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ")."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Tolerance in machine epsilons for the complex part of the elements\nin the array. If the tolerance is <=1, then the absolute tolerance\nis used."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Tolerance in machine epsilons for the complex part of the elements\nin the array. If the tolerance is <=1, then the absolute tolerance\nis used."
+                  }
+                ],
+                "name": "tol",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is real, the type of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is used for the output.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nhas complex elements, the returned type is float."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is real, the type of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is used for the output.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nhas complex elements, the returned type is float."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/real/",
+                "label": "flops.real",
+                "original_target": "real",
+                "role": "",
+                "target": "real",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/imag/",
+                "label": "flops.imag",
+                "original_target": "imag",
+                "role": "",
+                "target": "imag",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/angle/",
+                "label": "flops.angle",
+                "original_target": "angle",
+                "role": "",
+                "target": "angle",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Machine epsilon varies from machine to machine and between data types\nbut Python floats on most platforms have a machine epsilon equal to\n2.2204460492503131e-16.  You can use 'flops.finfo(float).eps' to print\nout the machine epsilon for floats."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.finfo(float).eps"
+              },
+              {
+                "kind": "output",
+                "text": "2.2204460492503131e-16 # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.real_if_close([2.1 + 4e-14j, 5.2 + 3e-15j], tol=1000)"
+              },
+              {
+                "kind": "output",
+                "text": "array([2.1, 5.2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.real_if_close([2.1 + 4e-13j, 5.2 + 3e-15j], tol=1000)"
+              },
+              {
+                "kind": "output",
+                "text": "array([2.1+4.e-13j, 5.2 + 3e-15j])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_unary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.real_if_close",
+    "module": "numpy",
+    "name": "real_if_close",
+    "notes": "Return real array if imaginary part is negligible.",
+    "numpy_ref": "np.real_if_close",
+    "signature": "fnp.real_if_close(a, tol=100)",
+    "status": "supported",
+    "summary": "If input is complex with all imaginary parts close to zero, return real parts.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "real_if_close",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L343",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_type_check_impl.py#L489"
+  }
+}

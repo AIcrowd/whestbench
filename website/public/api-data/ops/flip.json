@@ -1,0 +1,453 @@
+{
+  "detail_href": "/docs/api/numpy/flip/",
+  "detail_json_href": "/api-data/ops/flip.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Reverse the order of elements in an array along the given axis."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The shape of the array is preserved, but the elements are reordered."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "m",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis or axes along which to flip over. The default,\naxis=None, will flip over all of the axes of the input array.\nIf axis is negative it counts from the last to the first axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If axis is a tuple of ints, flipping is performed on all of the axes\nspecified in the tuple."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "None or int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis or axes along which to flip over. The default,\naxis=None, will flip over all of the axes of the input array.\nIf axis is negative it counts from the last to the first axis."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A view of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " with the entries of axis reversed.  Since a view is\nreturned, this operation is done in constant time."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A view of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " with the entries of axis reversed.  Since a view is\nreturned, this operation is done in constant time."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Flip an array vertically (axis=0).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Flip an array vertically (axis=0)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/flipud/",
+                "label": "flops.flipud",
+                "original_target": "flipud",
+                "role": "",
+                "target": "flipud",
+                "unresolved": false
+              },
+              {
+                "description": "Flip an array horizontally (axis=1).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Flip an array horizontally (axis=1)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/fliplr/",
+                "label": "flops.fliplr",
+                "original_target": "fliplr",
+                "role": "",
+                "target": "fliplr",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "flip(m, 0) is equivalent to flipud(m)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "flip(m, 1) is equivalent to fliplr(m)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "flip(m, n) corresponds to "
+              },
+              {
+                "kind": "code",
+                "text": "m[...,::-1,...]"
+              },
+              {
+                "kind": "text",
+                "text": " with "
+              },
+              {
+                "kind": "code",
+                "text": "::-1"
+              },
+              {
+                "kind": "text",
+                "text": " at position n."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "flip(m) corresponds to "
+              },
+              {
+                "kind": "code",
+                "text": "m[::-1,::-1,...,::-1]"
+              },
+              {
+                "kind": "text",
+                "text": " with "
+              },
+              {
+                "kind": "code",
+                "text": "::-1"
+              },
+              {
+                "kind": "text",
+                "text": " at all\npositions."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "flip(m, (0, 1)) corresponds to "
+              },
+              {
+                "kind": "code",
+                "text": "m[::-1,::-1,...]"
+              },
+              {
+                "kind": "text",
+                "text": " with "
+              },
+              {
+                "kind": "code",
+                "text": "::-1"
+              },
+              {
+                "kind": "text",
+                "text": " at\nposition 0 and position 1."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = flops.arange(8).reshape((2,2,2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[0, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "        [2, 3]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[4, 5],"
+              },
+              {
+                "kind": "output",
+                "text": "        [6, 7]]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.flip(A, 0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[4, 5],"
+              },
+              {
+                "kind": "output",
+                "text": "        [6, 7]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[0, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "        [2, 3]]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.flip(A, 1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[2, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "        [0, 1]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[6, 7],"
+              },
+              {
+                "kind": "output",
+                "text": "        [4, 5]]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.flip(A)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[7, 6],"
+              },
+              {
+                "kind": "output",
+                "text": "        [5, 4]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[3, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "        [1, 0]]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.flip(A, (0, 2))"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[5, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "        [7, 6]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[1, 0],"
+              },
+              {
+                "kind": "output",
+                "text": "        [3, 2]]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = rng.normal(size=(3,4,5))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.all(flops.flip(A,2) == A[:,:,::-1,...])"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.flip",
+    "module": "numpy",
+    "name": "flip",
+    "notes": "Reverse order of elements along axis.",
+    "numpy_ref": "np.flip",
+    "signature": "fnp.flip(m: 'ArrayLike', axis: 'int | tuple[int, ...] | None' = None) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Reverse the order of elements in an array along the given axis.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "flip",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L860",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L248"
+  }
+}

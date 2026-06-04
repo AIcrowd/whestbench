@@ -1,0 +1,617 @@
+{
+  "detail_href": "/docs/api/numpy/random/default-rng/",
+  "detail_json_href": "/api-data/ops/random-default_rng.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "default_rng(seed=None) Construct a new Generator with the default BitGenerator (PCG64)."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A seed to initialize the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "BitGenerator"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". If None, then fresh,\nunpredictable entropy will be pulled from the OS. If an "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "int"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " or\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "array_like[ints]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is passed, then all values must be non-negative and will be\npassed to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "SeedSequence"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " to derive the initial "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "BitGenerator"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " state. One may also\npass in a "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "SeedSequence"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " instance.\nAdditionally, when passed a "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "BitGenerator"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", it will be wrapped by\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "Generator"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". If passed a "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "Generator"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", it will be returned unaltered.\nWhen passed a legacy "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "RandomState"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " instance it will be coerced to a "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "Generator"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{None, int, array_like[ints], SeedSequence, BitGenerator, Generator, RandomState}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A seed to initialize the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "BitGenerator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". If None, then fresh,\nunpredictable entropy will be pulled from the OS. If an "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "int"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " or\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "array_like[ints]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is passed, then all values must be non-negative and will be\npassed to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "SeedSequence"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " to derive the initial "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "BitGenerator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " state. One may also\npass in a "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "SeedSequence"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance.\nAdditionally, when passed a "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "BitGenerator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", it will be wrapped by\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". If passed a "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", it will be returned unaltered.\nWhen passed a legacy "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "RandomState"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance it will be coerced to a "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "seed",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The initialized generator object."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "Generator",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The initialized generator object."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "seed"
+              },
+              {
+                "kind": "text",
+                "text": " is not a "
+              },
+              {
+                "kind": "code",
+                "text": "BitGenerator"
+              },
+              {
+                "kind": "text",
+                "text": " or a "
+              },
+              {
+                "kind": "code",
+                "text": "Generator"
+              },
+              {
+                "kind": "text",
+                "text": ", a new "
+              },
+              {
+                "kind": "code",
+                "text": "BitGenerator"
+              },
+              {
+                "kind": "text",
+                "text": "\nis instantiated. This function does not manage a default global instance."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "See "
+              },
+              {
+                "display_text": "seeding_and_entropy",
+                "explicit_title": false,
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.seeding_and_entropy.html",
+                "href": "",
+                "kind": "role_reference",
+                "original_target": "seeding_and_entropy",
+                "role": "ref",
+                "suppress_link": false,
+                "target": "seeding_and_entropy",
+                "unresolved": false
+              },
+              {
+                "kind": "text",
+                "text": " for more information about seeding."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "default_rng"
+              },
+              {
+                "kind": "text",
+                "text": " is the recommended constructor for the random number class\n"
+              },
+              {
+                "kind": "code",
+                "text": "Generator"
+              },
+              {
+                "kind": "text",
+                "text": ". Here are several ways we can construct a random\nnumber generator using "
+              },
+              {
+                "kind": "code",
+                "text": "default_rng"
+              },
+              {
+                "kind": "text",
+                "text": " and the "
+              },
+              {
+                "kind": "code",
+                "text": "Generator"
+              },
+              {
+                "kind": "text",
+                "text": " class."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Here we use "
+              },
+              {
+                "kind": "code",
+                "text": "default_rng"
+              },
+              {
+                "kind": "text",
+                "text": " to generate a random float:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng(12345)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "print(rng)"
+              },
+              {
+                "kind": "output",
+                "text": "Generator(PCG64)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rfloat = rng.random()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rfloat"
+              },
+              {
+                "kind": "output",
+                "text": "0.22733602246716966"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "type(rfloat)"
+              },
+              {
+                "kind": "output",
+                "text": "<class 'float'>"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Here we use "
+              },
+              {
+                "kind": "code",
+                "text": "default_rng"
+              },
+              {
+                "kind": "text",
+                "text": " to generate 3 random integers between 0\n(inclusive) and 10 (exclusive):"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng(12345)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rints = rng.integers(low=0, high=10, size=3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rints"
+              },
+              {
+                "kind": "output",
+                "text": "array([6, 2, 7])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "type(rints[0])"
+              },
+              {
+                "kind": "output",
+                "text": "<class 'flops.int64'>"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Here we specify a seed so that we have reproducible results:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng(seed=42)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "print(rng)"
+              },
+              {
+                "kind": "output",
+                "text": "Generator(PCG64)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr1 = rng.random((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr1"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0.77395605, 0.43887844, 0.85859792],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.69736803, 0.09417735, 0.97562235],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.7611397 , 0.78606431, 0.12811363]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If we exit and restart our Python interpreter, we'll see that we\ngenerate the same random numbers again:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng(seed=42)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr2 = rng.random((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr2"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0.77395605, 0.43887844, 0.85859792],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.69736803, 0.09417735, 0.97562235],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.7611397 , 0.78606431, 0.12811363]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.random.default_rng",
+    "module": "numpy.random",
+    "name": "random.default_rng",
+    "notes": "Construct a new Generator with default BitGenerator.",
+    "numpy_ref": "np.random.default_rng",
+    "signature": "fnp.random.default_rng(seed: 'Any' = None) -> '_CountedGenerator'",
+    "status": "supported",
+    "summary": "default_rng(seed=None) Construct a new Generator with the default BitGenerator (PCG64).",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "random-default_rng",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/random/__init__.py#L151",
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.default_rng.html"
+  }
+}

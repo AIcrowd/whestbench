@@ -1,0 +1,343 @@
+{
+  "detail_href": "/docs/api/numpy/kron/",
+  "detail_json_href": "/api-data/ops/kron.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Kronecker product of two arrays."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Computes the Kronecker product, a composite array made of blocks of the\nsecond array scaled by the first."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [],
+                "data_type": "array_like",
+                "inline": [],
+                "name": "a, b",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [],
+                "data_type": "ndarray",
+                "inline": [],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "The outer product",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "The outer product"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/outer/",
+                "label": "flops.outer",
+                "original_target": "outer",
+                "role": "",
+                "target": "outer",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The function assumes that the number of dimensions of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": "\nare the same, if necessary prepending the smallest with ones.\nIf "
+              },
+              {
+                "kind": "code",
+                "text": "a.shape = (r0,r1,..,rN)"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b.shape = (s0,s1,...,sN)"
+              },
+              {
+                "kind": "text",
+                "text": ",\nthe Kronecker product has shape "
+              },
+              {
+                "kind": "code",
+                "text": "(r0*s0, r1*s1, ..., rN*SN)"
+              },
+              {
+                "kind": "text",
+                "text": ".\nThe elements are products of elements from "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": ", organized\nexplicitly by:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "kron(a,b)[k0,k1,...,kN] = a[i0,i1,...,iN] * b[j0,j1,...,jN]",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "kt = it * st + jt,  t = 0,...,N",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In the common 2-D case (N=1), the block structure can be visualized:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "[[ a[0,0]*b,   a[0,1]*b,  ... , a[0,-1]*b  ],\n [  ...                              ...   ],\n [ a[-1,0]*b,  a[-1,1]*b, ... , a[-1,-1]*b ]]",
+            "type": "literal_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.kron([1,10,100], [5,6,7])"
+              },
+              {
+                "kind": "output",
+                "text": "array([  5,   6,   7, ..., 500, 600, 700])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.kron([5,6,7], [1,10,100])"
+              },
+              {
+                "kind": "output",
+                "text": "array([  5,  50, 500, ...,   7,  70, 700])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.kron(flops.eye(2), flops.ones((2,2)))"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1.,  1.,  0.,  0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1.,  1.,  0.,  0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.,  0.,  1.,  1.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.,  0.,  1.,  1.]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(100).reshape((2,5,2,5))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.arange(24).reshape((2,3,4))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c = flops.kron(a,b)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(2, 10, 6, 20)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "I = (1,3,0,2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "J = (0,2,1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "J1 = (0,) + J             # extend to ndim=4"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "S1 = (1,) + b.shape"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "K = tuple(flops.array(I) * flops.array(S1) + flops.array(J1))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c[K] == a[I]*b[J]"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "m1*m2 * n1*n2",
+    "cost_formula_latex": "$m_1 m_2 \\cdot n_1 n_2$",
+    "flopscope_ref": "fnp.kron",
+    "module": "numpy",
+    "name": "kron",
+    "notes": "Kronecker product; cost proportional to output size.",
+    "numpy_ref": "np.kron",
+    "signature": "fnp.kron(a: 'ArrayLike', b: 'ArrayLike') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Kronecker product of two arrays.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "kron",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L2159",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_shape_base_impl.py#L1085"
+  }
+}

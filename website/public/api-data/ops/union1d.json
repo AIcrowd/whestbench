@@ -1,0 +1,174 @@
+{
+  "detail_href": "/docs/api/numpy/union1d/",
+  "detail_json_href": "/api-data/ops/union1d.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Find the union of two arrays."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the unique, sorted array of values that are in either of the two\ninput arrays."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input arrays. They are flattened if they are not already 1D."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input arrays. They are flattened if they are not already 1D."
+                  }
+                ],
+                "name": "ar1, ar2",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Unique, sorted union of the input arrays."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Unique, sorted union of the input arrays."
+                  }
+                ],
+                "name": "union1d",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.union1d([-1, 0, 1], [-2, 0, 2])"
+              },
+              {
+                "kind": "output",
+                "text": "array([-2, -1,  0,  1,  2])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "To find the union of more than two arrays, use functools.reduce:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from functools import reduce"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "reduce(flops.union1d, ([1, 3, 4, 3], [3, 1, 2, 1], [6, 3, 4, 2]))"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 4, 6])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.union1d",
+    "module": "numpy",
+    "name": "union1d",
+    "notes": "Set union; cost = (n+m)*ceil(log2(n+m)).",
+    "numpy_ref": "np.union1d",
+    "signature": "fnp.union1d(ar1: 'ArrayLike', ar2: 'ArrayLike') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Find the union of two arrays.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "union1d",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_sorting_ops.py#L499",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_arraysetops_impl.py#L1140"
+  }
+}

@@ -1,0 +1,638 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/inv/",
+  "detail_json_href": "/api-data/ops/linalg-inv.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the inverse of a matrix."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Given a square matrix "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ", return the matrix "
+              },
+              {
+                "kind": "code",
+                "text": "ainv"
+              },
+              {
+                "kind": "text",
+                "text": " satisfying\n"
+              },
+              {
+                "kind": "code",
+                "text": "a @ ainv = ainv @ a = eye(a.shape[0])"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Matrix to be inverted."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Matrix to be inverted."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Inverse of the matrix "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) ndarray or matrix",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Inverse of the matrix "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "ainv",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not square or inversion fails."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not square or inversion fails."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Similar function in SciPy.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.inv.html",
+                "href": "",
+                "label": "scipy.linalg.inv",
+                "original_target": "scipy.linalg.inv",
+                "role": "",
+                "target": "scipy.linalg.inv",
+                "unresolved": false
+              },
+              {
+                "description": "Compute the condition number of a matrix.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Compute the condition number of a matrix."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/linalg/cond/",
+                "label": "flops.linalg.cond",
+                "original_target": "numpy.linalg.cond",
+                "role": "",
+                "target": "linalg.cond",
+                "unresolved": false
+              },
+              {
+                "description": "Compute the singular value decomposition of a matrix.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Compute the singular value decomposition of a matrix."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/linalg/svd/",
+                "label": "flops.linalg.svd",
+                "original_target": "numpy.linalg.svd",
+                "role": "",
+                "target": "linalg.svd",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Broadcasting rules apply, see the "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.linalg.html",
+                "href": "",
+                "kind": "link",
+                "target": "linalg",
+                "text": "flops.linalg"
+              },
+              {
+                "kind": "text",
+                "text": " documentation for\ndetails."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is detected to be singular, a "
+              },
+              {
+                "kind": "code",
+                "text": "LinAlgError"
+              },
+              {
+                "kind": "text",
+                "text": " is raised. If "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is\nill-conditioned, a "
+              },
+              {
+                "kind": "code",
+                "text": "LinAlgError"
+              },
+              {
+                "kind": "text",
+                "text": " may or may not be raised, and results may\nbe inaccurate due to floating-point errors."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nWikipedia, \"Condition number\",\nhttps://en.wikipedia.org/wiki/Condition_number",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from flops.linalg import inv"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1., 2.], [3., 4.]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ainv = inv(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(a @ ainv, flops.eye(2))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(ainv @ a, flops.eye(2))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If a is a matrix object, then the return value is a matrix as well:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ainv = inv(flops.matrix(a))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ainv"
+              },
+              {
+                "kind": "output",
+                "text": "matrix([[-2. ,  1. ],"
+              },
+              {
+                "kind": "output",
+                "text": "        [ 1.5, -0.5]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Inverses of several matrices can be computed at once:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[[1., 2.], [3., 4.]], [[1, 3], [3, 5]]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "inv(a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[-2.  ,  1.  ],"
+              },
+              {
+                "kind": "output",
+                "text": "        [ 1.5 , -0.5 ]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[-1.25,  0.75],"
+              },
+              {
+                "kind": "output",
+                "text": "        [ 0.75, -0.25]]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If a matrix is close to singular, the computed inverse may not satisfy\n"
+              },
+              {
+                "kind": "code",
+                "text": "a @ ainv = ainv @ a = eye(a.shape[0])"
+              },
+              {
+                "kind": "text",
+                "text": " even if a "
+              },
+              {
+                "kind": "code",
+                "text": "LinAlgError"
+              },
+              {
+                "kind": "text",
+                "text": "\nis not raised:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[2,4,6],[2,0,2],[6,8,14]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "inv(a)  # No errors raised"
+              },
+              {
+                "kind": "output",
+                "text": "array([[-1.12589991e+15, -5.62949953e+14,  5.62949953e+14],"
+              },
+              {
+                "kind": "output",
+                "text": "   [-1.12589991e+15, -5.62949953e+14,  5.62949953e+14],"
+              },
+              {
+                "kind": "output",
+                "text": "   [ 1.12589991e+15,  5.62949953e+14, -5.62949953e+14]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a @ inv(a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0.   , -0.5  ,  0.   ],  # may vary"
+              },
+              {
+                "kind": "output",
+                "text": "       [-0.5  ,  0.625,  0.25 ],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.   ,  0.   ,  1.   ]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "To detect ill-conditioned matrices, you can use "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/linalg/cond/",
+                "kind": "link",
+                "target": "linalg.cond",
+                "text": "flops.linalg.cond"
+              },
+              {
+                "kind": "text",
+                "text": " to\ncompute its "
+              },
+              {
+                "kind": "emphasis",
+                "text": "condition number"
+              },
+              {
+                "kind": "text",
+                "text": " "
+              },
+              {
+                "kind": "text",
+                "text": "[1]_"
+              },
+              {
+                "kind": "text",
+                "text": ". The larger the condition number, the\nmore ill-conditioned the matrix is. As a rule of thumb, if the condition\nnumber "
+              },
+              {
+                "kind": "code",
+                "text": "cond(a) = 10**k"
+              },
+              {
+                "kind": "text",
+                "text": ", then you may lose up to "
+              },
+              {
+                "kind": "code",
+                "text": "k"
+              },
+              {
+                "kind": "text",
+                "text": " digits of\naccuracy on top of what would be lost to the numerical method due to loss\nof precision from arithmetic methods."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from flops.linalg import cond"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "cond(a)"
+              },
+              {
+                "kind": "output",
+                "text": "flops.float64(8.659885634118668e+17)  # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "It is also possible to detect ill-conditioning by inspecting the matrix's\nsingular values directly. The ratio between the largest and the smallest\nsingular value is the condition number:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from flops.linalg import svd"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "sigma = svd(a, compute_uv=False)  # Do not compute singular vectors"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "sigma.max()/sigma.min()"
+              },
+              {
+                "kind": "output",
+                "text": "8.659885634118668e+17  # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n^3",
+    "cost_formula_latex": "$n^3$",
+    "flopscope_ref": "fnp.linalg.inv",
+    "module": "numpy.linalg",
+    "name": "linalg.inv",
+    "notes": "Matrix inverse. Cost: $n^3$ (LU + solve).",
+    "numpy_ref": "np.linalg.inv",
+    "signature": "fnp.linalg.inv(a: 'ArrayLike') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Compute the inverse of a matrix.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-inv",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_solvers.py#L116",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L496"
+  }
+}

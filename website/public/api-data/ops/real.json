@@ -1,0 +1,265 @@
+{
+  "detail_href": "/docs/api/numpy/real/",
+  "detail_json_href": "/api-data/ops/real.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the real part of the complex argument."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "val",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The real component of the complex argument. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "val"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is real, the type\nof "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "val"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is used for the output.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "val"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " has complex elements, the\nreturned type is float."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The real component of the complex argument. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "val"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is real, the type\nof "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "val"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is used for the output.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "val"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " has complex elements, the\nreturned type is float."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/real-if-close/",
+                "label": "flops.real_if_close",
+                "original_target": "real_if_close",
+                "role": "",
+                "target": "real_if_close",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/imag/",
+                "label": "flops.imag",
+                "original_target": "imag",
+                "role": "",
+                "target": "imag",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/angle/",
+                "label": "flops.angle",
+                "original_target": "angle",
+                "role": "",
+                "target": "angle",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1+2j, 3+4j, 5+6j])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a.real"
+              },
+              {
+                "kind": "output",
+                "text": "array([1.,  3.,  5.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a.real = 9"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([9.+2.j,  9.+4.j,  9.+6.j])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a.real = flops.array([9, 8, 7])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([9.+2.j,  8.+4.j,  7.+6.j])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.real(1 + 1j)"
+              },
+              {
+                "kind": "output",
+                "text": "1.0"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_unary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.real",
+    "module": "numpy",
+    "name": "real",
+    "notes": "Return real part of complex array.",
+    "numpy_ref": "np.real",
+    "signature": "fnp.real(val)",
+    "status": "supported",
+    "summary": "Return the real part of the complex argument.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "real",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L343",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_type_check_impl.py#L84"
+  }
+}

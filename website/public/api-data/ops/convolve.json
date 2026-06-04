@@ -1,0 +1,498 @@
+{
+  "detail_href": "/docs/api/numpy/convolve/",
+  "detail_json_href": "/api-data/ops/convolve.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the discrete, linear convolution of two one-dimensional sequences."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The convolution operator is often seen in signal processing, where it\nmodels the effect of a linear time-invariant system on a signal "
+              },
+              {
+                "kind": "text",
+                "text": "[1]_"
+              },
+              {
+                "kind": "text",
+                "text": ".  In\nprobability theory, the sum of two independent random variables is\ndistributed according to the convolution of their individual\ndistributions."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "v"
+              },
+              {
+                "kind": "text",
+                "text": " is longer than "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ", the arrays are swapped before computation."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "First one-dimensional input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(N,) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "First one-dimensional input array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Second one-dimensional input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(M,) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Second one-dimensional input array."
+                  }
+                ],
+                "name": "v",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "By default, mode is 'full'.  This returns the convolution\nat each point of overlap, with an output shape of (N+M-1,). At\nthe end-points of the convolution, the signals do not overlap\ncompletely, and boundary effects may be seen."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'full':"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "Mode 'same' returns output of length "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "max(M, N)"
+                              },
+                              {
+                                "kind": "text",
+                                "text": ".  Boundary\neffects are still visible."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'same':"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "Mode 'valid' returns output of length\n"
+                              },
+                              {
+                                "kind": "code",
+                                "text": "max(M, N) - min(M, N) + 1"
+                              },
+                              {
+                                "kind": "text",
+                                "text": ".  The convolution product is only given\nfor points where the signals overlap completely.  Values outside\nthe signal boundary have no effect."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "'valid':"
+                          }
+                        ]
+                      }
+                    ],
+                    "type": "definition_list"
+                  }
+                ],
+                "data_type": "{'full', 'valid', 'same'}, optional",
+                "inline": [],
+                "name": "mode",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Discrete, linear convolution of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "v"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Discrete, linear convolution of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "v"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Convolve two arrays using the Fast Fourier Transform.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Convolve two arrays using the Fast Fourier Transform."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html",
+                "href": "",
+                "label": "scipy.signal.fftconvolve",
+                "original_target": "scipy.signal.fftconvolve",
+                "role": "",
+                "target": "scipy.signal.fftconvolve",
+                "unresolved": false
+              },
+              {
+                "description": "Used to construct the convolution operator.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Used to construct the convolution operator."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.toeplitz.html",
+                "href": "",
+                "label": "scipy.linalg.toeplitz",
+                "original_target": "scipy.linalg.toeplitz",
+                "role": "",
+                "target": "scipy.linalg.toeplitz",
+                "unresolved": false
+              },
+              {
+                "description": "Polynomial multiplication. Same output as convolve, but also accepts poly1d objects as input.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Polynomial multiplication. Same output as convolve, but also accepts poly1d objects as input."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/polymul/",
+                "label": "flops.polymul",
+                "original_target": "polymul",
+                "role": "",
+                "target": "polymul",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The discrete convolution operation is defined as"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "(a * v)_n = \\sum_{m = -\\infty}^{\\infty} a_m v_{n - m}"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "It can be shown that a convolution "
+              },
+              {
+                "kind": "math",
+                "latex": "x(t) * y(t)"
+              },
+              {
+                "kind": "text",
+                "text": " in time/space\nis equivalent to the multiplication "
+              },
+              {
+                "kind": "math",
+                "latex": "X(f) Y(f)"
+              },
+              {
+                "kind": "text",
+                "text": " in the Fourier\ndomain, after appropriate padding (padding is necessary to prevent\ncircular convolution).  Since multiplication is more efficient (faster)\nthan convolution, the function "
+              },
+              {
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.fftconvolve.html",
+                "href": "",
+                "kind": "link",
+                "target": "scipy.signal.fftconvolve",
+                "text": "scipy.signal.fftconvolve"
+              },
+              {
+                "kind": "text",
+                "text": " exploits the\nFFT to calculate the convolution of large data-sets."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nWikipedia, \"Convolution\",\nhttps://en.wikipedia.org/wiki/Convolution",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note how the convolution operator flips the second array\nbefore \"sliding\" the two across one another:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.convolve([1, 2, 3], [0, 1, 0.5])"
+              },
+              {
+                "kind": "output",
+                "text": "array([0. , 1. , 2.5, 4. , 1.5])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Only return the middle values of the convolution.\nContains boundary effects, where zeros are taken\ninto account:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.convolve([1,2,3],[0,1,0.5], 'same')"
+              },
+              {
+                "kind": "output",
+                "text": "array([1. ,  2.5,  4. ])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The two arrays are of the same length, so there\nis only one position where they completely overlap:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.convolve([1,2,3],[0,1,0.5], 'valid')"
+              },
+              {
+                "kind": "output",
+                "text": "array([2.5])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n * m",
+    "cost_formula_latex": "$n \\cdot m$",
+    "flopscope_ref": "fnp.convolve",
+    "module": "numpy",
+    "name": "convolve",
+    "notes": "1-D discrete convolution.",
+    "numpy_ref": "np.convolve",
+    "signature": "fnp.convolve(a: 'ArrayLike', v: 'ArrayLike', mode: 'str' = 'full') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Returns the discrete, linear convolution of two one-dimensional sequences.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "convolve",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L2329",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/numeric.py#L772"
+  }
+}

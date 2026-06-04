@@ -1,0 +1,405 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/solve/",
+  "detail_json_href": "/api-data/ops/linalg-solve.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Solve a linear matrix equation, or system of linear scalar equations."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Computes the \"exact\" solution, "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": ", of the well-determined, i.e., full\nrank, linear matrix equation "
+              },
+              {
+                "kind": "code",
+                "text": "ax = b"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Coefficient matrix."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Coefficient matrix."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Ordinate or \"dependent variable\" values."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{(M,), (..., M, K)}, array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Ordinate or \"dependent variable\" values."
+                  }
+                ],
+                "name": "b",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Solution to the system a x = b.  Returned shape is (..., M) if b is\nshape (M,) and (..., M, K) if b is (..., M, K), where the \"...\" part is\nbroadcasted between a and b."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{(..., M,), (..., M, K)} ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Solution to the system a x = b.  Returned shape is (..., M) if b is\nshape (M,) and (..., M, K) if b is (..., M, K), where the \"...\" part is\nbroadcasted between a and b."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is singular or not square."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is singular or not square."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Similar function in SciPy.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.solve.html",
+                "href": "",
+                "label": "scipy.linalg.solve",
+                "original_target": "scipy.linalg.solve",
+                "role": "",
+                "target": "scipy.linalg.solve",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Broadcasting rules apply, see the "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.linalg.html",
+                "href": "",
+                "kind": "link",
+                "target": "linalg",
+                "text": "flops.linalg"
+              },
+              {
+                "kind": "text",
+                "text": " documentation for\ndetails."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The solutions are computed using LAPACK routine "
+              },
+              {
+                "kind": "code",
+                "text": "_gesv"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " must be square and of full-rank, i.e., all rows (or, equivalently,\ncolumns) must be linearly independent; if either is not true, use\n"
+              },
+              {
+                "kind": "code",
+                "text": "lstsq"
+              },
+              {
+                "kind": "text",
+                "text": " for the least-squares best \"solution\" of the\nsystem/equation."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [],
+            "directive": "versionchanged",
+            "options": [],
+            "raw_source": ".. versionchanged:: 2.0\n\n   The b array is only treated as a shape (M,) column vector if it is\n   exactly 1-dimensional. In all other instances it is treated as a stack\n   of (M, K) matrices. Previously b would be treated as a stack of (M,)\n   vectors if b.ndim was equal to a.ndim - 1.",
+            "supported": true,
+            "type": "directive_block",
+            "version": "2.0"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nG. Strang, Linear Algebra and Its Applications, 2nd Ed., Orlando,\nFL, Academic Press, Inc., 1980, pg. 22.",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Solve the system of equations:\n"
+              },
+              {
+                "kind": "code",
+                "text": "x0 + 2 * x1 = 1"
+              },
+              {
+                "kind": "text",
+                "text": " and\n"
+              },
+              {
+                "kind": "code",
+                "text": "3 * x0 + 5 * x1 = 2"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, 2], [3, 5]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([1, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.linalg.solve(a, b)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x"
+              },
+              {
+                "kind": "output",
+                "text": "array([-1.,  1.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Check that the solution is correct:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(flops.dot(a, x), b)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n^3",
+    "cost_formula_latex": "$n^3$",
+    "flopscope_ref": "fnp.linalg.solve",
+    "module": "numpy.linalg",
+    "name": "linalg.solve",
+    "notes": "Solve Ax=b. Cost: $n^3$.",
+    "numpy_ref": "np.linalg.solve",
+    "signature": "fnp.linalg.solve(a: 'ArrayLike', b: 'ArrayLike') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Solve a linear matrix equation, or system of linear scalar equations.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-solve",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_solvers.py#L58",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L320"
+  }
+}

@@ -1,0 +1,649 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/randint/",
+  "detail_json_href": "/api-data/ops/random-RandomState-randint.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return random integers from "
+              },
+              {
+                "kind": "code",
+                "text": "low"
+              },
+              {
+                "kind": "text",
+                "text": " (inclusive) to "
+              },
+              {
+                "kind": "code",
+                "text": "high"
+              },
+              {
+                "kind": "text",
+                "text": " (exclusive)."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return random integers from the \"discrete uniform\" distribution of\nthe specified dtype in the \"half-open\" interval ["
+              },
+              {
+                "kind": "code",
+                "text": "low"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "high"
+              },
+              {
+                "kind": "text",
+                "text": "). If\n"
+              },
+              {
+                "kind": "code",
+                "text": "high"
+              },
+              {
+                "kind": "text",
+                "text": " is None (the default), then results are from [0, "
+              },
+              {
+                "kind": "code",
+                "text": "low"
+              },
+              {
+                "kind": "text",
+                "text": ")."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/integers/",
+                    "kind": "link",
+                    "target": "random.Generator.integers",
+                    "text": "integers"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the `~flops.random.Generator.integers`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Lowest (signed) integers to be drawn from the distribution (unless\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "high=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", in which case this parameter is one above the\n"
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "highest"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " such integer)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or array-like of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Lowest (signed) integers to be drawn from the distribution (unless\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "high=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", in which case this parameter is one above the\n"
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "highest"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " such integer)."
+                  }
+                ],
+                "name": "low",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If provided, one above the largest (signed) integer to be drawn\nfrom the distribution (see above for behavior if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "high=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ").\nIf array-like, must contain integer values"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or array-like of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If provided, one above the largest (signed) integer to be drawn\nfrom the distribution (see above for behavior if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "high=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ").\nIf array-like, must contain integer values"
+                  }
+                ],
+                "name": "high",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  Default is None, in which case a\nsingle value is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  Default is None, in which case a\nsingle value is returned."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Desired dtype of the result. Byteorder must be native.\nThe default value is long."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [
+                      {
+                        "inline": [
+                          {
+                            "kind": "text",
+                            "text": "This function defaults to the C-long dtype, which is 32bit on windows\nand otherwise 64bit on 64bit platforms (and 32bit on 32bit ones).\nSince NumPy 2.0, NumPy's default integer is 32bit on 32bit platforms\nand 64bit on 64bit platforms.  Which corresponds to "
+                          },
+                          {
+                            "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.intp.html",
+                            "href": "",
+                            "kind": "link",
+                            "target": "intp",
+                            "text": "flops.intp"
+                          },
+                          {
+                            "kind": "text",
+                            "text": ".\n("
+                          },
+                          {
+                            "kind": "code",
+                            "text": "dtype=int"
+                          },
+                          {
+                            "kind": "text",
+                            "text": " is not the same as in most NumPy functions.)"
+                          }
+                        ],
+                        "type": "paragraph"
+                      }
+                    ],
+                    "directive": "warning",
+                    "options": [],
+                    "raw_source": ".. warning::\n  This function defaults to the C-long dtype, which is 32bit on windows\n  and otherwise 64bit on 64bit platforms (and 32bit on 32bit ones).\n  Since NumPy 2.0, NumPy's default integer is 32bit on 32bit platforms\n  and 64bit on 64bit platforms.  Which corresponds to `flops.intp`.\n  (`dtype=int` is not the same as in most NumPy functions.)",
+                    "supported": true,
+                    "type": "directive_block"
+                  }
+                ],
+                "data_type": "dtype, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Desired dtype of the result. Byteorder must be native.\nThe default value is long."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/size/",
+                        "kind": "link",
+                        "target": "size",
+                        "text": "size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "-shaped array of random integers from the appropriate\ndistribution, or a single such random int if "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/size/",
+                        "kind": "link",
+                        "target": "size",
+                        "text": "size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " not provided."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or ndarray of ints",
+                "inline": [
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/size/",
+                    "kind": "link",
+                    "target": "size",
+                    "text": "size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "-shaped array of random integers from the appropriate\ndistribution, or a single such random int if "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/size/",
+                    "kind": "link",
+                    "target": "size",
+                    "text": "size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " not provided."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "similar to `randint`, only for the closed interval [`low`, `high`], and 1 is the lowest value if `high` is omitted.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "similar to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "randint"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", only for the closed interval ["
+                  },
+                  {
+                    "kind": "code",
+                    "text": "low"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "high"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "], and 1 is the lowest value if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "high"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is omitted."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random_integers.html",
+                "href": "",
+                "label": "random_integers",
+                "original_target": "random_integers",
+                "role": "",
+                "target": "random_integers",
+                "unresolved": false
+              },
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/integers/",
+                "label": "flops.random.Generator.integers",
+                "original_target": "random.Generator.integers",
+                "role": "",
+                "target": "random.Generator.integers",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.randint(2, size=10)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 0, 0, 0, 1, 1, 0, 0, 1, 0]) # random"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.randint(1, size=10)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a 2 x 4 array of ints between 0 and 4, inclusive:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.randint(5, size=(2, 4))"
+              },
+              {
+                "kind": "output",
+                "text": "array([[4, 0, 2, 1], # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 2, 2, 0]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a 1 x 3 array with 3 different upper bounds"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.randint(1, [3, 5, 10])"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 2, 9]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a 1 by 3 array with 3 different lower bounds"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.randint([1, 5, 7], 10)"
+              },
+              {
+                "kind": "output",
+                "text": "array([9, 8, 7]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a 2 by 4 array using broadcasting with dtype of uint8"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.randint([1, 3, 5, 7], [[10], [20]], dtype=flops.uint8)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 8,  6,  9,  7], # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 1, 16,  9, 12]], dtype=uint8)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.RandomState.randint",
+    "module": "numpy.random",
+    "name": "random.RandomState.randint",
+    "notes": "Legacy integer sampler; cost = numel(output).",
+    "numpy_ref": "np.random.RandomState.randint",
+    "signature": "fnp.random.RandomState.randint(self, low, high=None, size=None, dtype=<class 'int'>)",
+    "status": "supported",
+    "summary": "Return random integers from `low` (inclusive) to `high` (exclusive).",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-randint",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.randint.html"
+  }
+}

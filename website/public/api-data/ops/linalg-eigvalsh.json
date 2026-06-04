@@ -1,0 +1,430 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/eigvalsh/",
+  "detail_json_href": "/api-data/ops/linalg-eigvalsh.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the eigenvalues of a complex Hermitian or real symmetric matrix."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Main difference from eigh: the eigenvectors are not computed."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A complex- or real-valued matrix whose eigenvalues are to be\ncomputed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A complex- or real-valued matrix whose eigenvalues are to be\ncomputed."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Specifies whether the calculation is done with the lower triangular\npart of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " ('L', default) or the upper triangular part ('U').\nIrrespective of this value only the real parts of the diagonal will\nbe considered in the computation to preserve the notion of a Hermitian\nmatrix. It therefore follows that the imaginary part of the diagonal\nwill always be treated as zero."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'L', 'U'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Specifies whether the calculation is done with the lower triangular\npart of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " ('L', default) or the upper triangular part ('U').\nIrrespective of this value only the real parts of the diagonal will\nbe considered in the computation to preserve the notion of a Hermitian\nmatrix. It therefore follows that the imaginary part of the diagonal\nwill always be treated as zero."
+                  }
+                ],
+                "name": "UPLO",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The eigenvalues in ascending order, each repeated according to\nits multiplicity."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M,) ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The eigenvalues in ascending order, each repeated according to\nits multiplicity."
+                  }
+                ],
+                "name": "w",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the eigenvalue computation does not converge."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the eigenvalue computation does not converge."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "eigenvalues and eigenvectors of real symmetric or complex Hermitian (conjugate symmetric) arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues and eigenvectors of real symmetric or complex Hermitian (conjugate symmetric) arrays."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eigh.html",
+                "href": "",
+                "label": "eigh",
+                "original_target": "eigh",
+                "role": "",
+                "target": "eigh",
+                "unresolved": false
+              },
+              {
+                "description": "eigenvalues of general real or complex arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues of general real or complex arrays."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eigvals.html",
+                "href": "",
+                "label": "eigvals",
+                "original_target": "eigvals",
+                "role": "",
+                "target": "eigvals",
+                "unresolved": false
+              },
+              {
+                "description": "eigenvalues and right eigenvectors of general real or complex arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues and right eigenvectors of general real or complex arrays."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eig.html",
+                "href": "",
+                "label": "eig",
+                "original_target": "eig",
+                "role": "",
+                "target": "eig",
+                "unresolved": false
+              },
+              {
+                "description": "Similar function in SciPy.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigvalsh.html",
+                "href": "",
+                "label": "scipy.linalg.eigvalsh",
+                "original_target": "scipy.linalg.eigvalsh",
+                "role": "",
+                "target": "scipy.linalg.eigvalsh",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Broadcasting rules apply, see the "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.linalg.html",
+                "href": "",
+                "kind": "link",
+                "target": "linalg",
+                "text": "flops.linalg"
+              },
+              {
+                "kind": "text",
+                "text": " documentation for\ndetails."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The eigenvalues are computed using LAPACK routines "
+              },
+              {
+                "kind": "code",
+                "text": "_syevd"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "_heevd"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from numpy import linalg as LA"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, -2j], [2j, 5]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.eigvalsh(a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 0.17157288,  5.82842712]) # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# demonstrate the treatment of the imaginary part of the diagonal"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[5+2j, 9-2j], [0+2j, 2-1j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[5.+2.j, 9.-2.j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.+2.j, 2.-1.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# with UPLO='L' this is numerically equivalent to using LA.eigvals()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# with:"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([[5.+0.j, 0.-2.j], [0.+2.j, 2.-0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b"
+              },
+              {
+                "kind": "output",
+                "text": "array([[5.+0.j, 0.-2.j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.+2.j, 2.+0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "wa = LA.eigvalsh(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "wb = LA.eigvals(b)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "wa; wb"
+              },
+              {
+                "kind": "output",
+                "text": "array([1., 6.])"
+              },
+              {
+                "kind": "output",
+                "text": "array([6.+0.j, 1.+0.j])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n^3",
+    "cost_formula_latex": "$n^3$",
+    "flopscope_ref": "fnp.linalg.eigvalsh",
+    "module": "numpy.linalg",
+    "name": "linalg.eigvalsh",
+    "notes": "Symmetric eigenvalues. Cost: $n^3$.",
+    "numpy_ref": "np.linalg.eigvalsh",
+    "signature": "fnp.linalg.eigvalsh(a: 'ArrayLike', UPLO: 'str' = 'L') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Compute the eigenvalues of a complex Hermitian or real symmetric matrix.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-eigvalsh",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_decompositions.py#L280",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L1229"
+  }
+}

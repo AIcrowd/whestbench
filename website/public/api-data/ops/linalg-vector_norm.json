@@ -1,0 +1,424 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/vector-norm/",
+  "detail_json_href": "/api-data/ops/linalg-vector_norm.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Computes the vector norm of a vector (or batch of vectors) "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function is Array API compatible."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If an integer, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " specifies the axis (dimension) along which\nto compute vector norms. If an n-tuple, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " specifies the axes\n(dimensions) along which to compute batched vector norms. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ",\nthe vector norm must be computed over all array values (i.e.,\nequivalent to computing the vector norm of a flattened array).\nDefault: "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{None, int, 2-tuple of ints}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If an integer, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " specifies the axis (dimension) along which\nto compute vector norms. If an n-tuple, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " specifies the axes\n(dimensions) along which to compute batched vector norms. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ",\nthe vector norm must be computed over all array values (i.e.,\nequivalent to computing the vector norm of a flattened array).\nDefault: "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this is set to True, the axes which are normed over are left in\nthe result as dimensions with size one. Default: False."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If this is set to True, the axes which are normed over are left in\nthe result as dimensions with size one. Default: False."
+                  }
+                ],
+                "name": "keepdims",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The order of the norm. For details see the table under "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "Notes"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nin "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/linalg/norm/",
+                        "kind": "link",
+                        "target": "linalg.norm",
+                        "text": "flops.linalg.norm"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{int, float, inf, -inf}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The order of the norm. For details see the table under "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "Notes"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nin "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/linalg/norm/",
+                    "kind": "link",
+                    "target": "linalg.norm",
+                    "text": "flops.linalg.norm"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "ord",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Generic norm function",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Generic norm function"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/linalg/norm/",
+                "label": "flops.linalg.norm",
+                "original_target": "numpy.linalg.norm",
+                "role": "",
+                "target": "linalg.norm",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from numpy import linalg as LA"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(9) + 1"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 4, 5, 6, 7, 8, 9])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = a.reshape((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 2, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [4, 5, 6],"
+              },
+              {
+                "kind": "output",
+                "text": "       [7, 8, 9]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.vector_norm(b)"
+              },
+              {
+                "kind": "output",
+                "text": "16.881943016134134"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.vector_norm(b, ord=flops.inf)"
+              },
+              {
+                "kind": "output",
+                "text": "9.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.vector_norm(b, ord=-flops.inf)"
+              },
+              {
+                "kind": "output",
+                "text": "1.0"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.vector_norm(b, ord=0)"
+              },
+              {
+                "kind": "output",
+                "text": "9.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.vector_norm(b, ord=1)"
+              },
+              {
+                "kind": "output",
+                "text": "45.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.vector_norm(b, ord=-1)"
+              },
+              {
+                "kind": "output",
+                "text": "0.3534857623790153"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.vector_norm(b, ord=2)"
+              },
+              {
+                "kind": "output",
+                "text": "16.881943016134134"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.vector_norm(b, ord=-2)"
+              },
+              {
+                "kind": "output",
+                "text": "0.8058837395885292"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "numel",
+    "cost_formula_latex": "$n$",
+    "flopscope_ref": "fnp.linalg.vector_norm",
+    "module": "numpy.linalg",
+    "name": "linalg.vector_norm",
+    "notes": "Vector norm. Cost: numel (or 2*numel for general p-norm).",
+    "numpy_ref": "np.linalg.vector_norm",
+    "signature": "fnp.linalg.vector_norm(x: 'ArrayLike', ord: 'Any' = 2, axis: 'int | tuple[int, ...] | None' = None, keepdims: 'bool' = False) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Computes the vector norm of a vector (or batch of vectors) ``x``.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-vector_norm",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_properties.py#L291",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L3481"
+  }
+}

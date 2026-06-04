@@ -1,0 +1,604 @@
+{
+  "detail_href": "/docs/api/numpy/append/",
+  "detail_json_href": "/api-data/ops/append.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Append values to the end of an array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Values are appended to a copy of this array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Values are appended to a copy of this array."
+                  }
+                ],
+                "name": "arr",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "These values are appended to a copy of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  It must be of the\ncorrect shape (the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", excluding "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ").  If\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not specified, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "values"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " can be any shape and will be\nflattened before use."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "These values are appended to a copy of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  It must be of the\ncorrect shape (the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", excluding "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ").  If\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not specified, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "values"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " can be any shape and will be\nflattened before use."
+                  }
+                ],
+                "name": "values",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis along which "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "values"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are appended.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not\ngiven, both "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "values"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are flattened before use."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis along which "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "values"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are appended.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not\ngiven, both "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "values"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are flattened before use."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A copy of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " with "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "values"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " appended to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Note that\n"
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/append/",
+                        "kind": "link",
+                        "target": "append",
+                        "text": "append"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " does not occur in-place: a new array is allocated and\nfilled.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a flattened array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A copy of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " with "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "values"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " appended to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Note that\n"
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/append/",
+                    "kind": "link",
+                    "target": "append",
+                    "text": "append"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " does not occur in-place: a new array is allocated and\nfilled.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a flattened array."
+                  }
+                ],
+                "name": "append",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Insert elements into an array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Insert elements into an array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/insert/",
+                "label": "flops.insert",
+                "original_target": "insert",
+                "role": "",
+                "target": "insert",
+                "unresolved": false
+              },
+              {
+                "description": "Delete elements from an array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Delete elements from an array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/delete/",
+                "label": "flops.delete",
+                "original_target": "delete",
+                "role": "",
+                "target": "delete",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.append([1, 2, 3], [[4, 5, 6], [7, 8, 9]])"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, ..., 7, 8, 9])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " is specified, "
+              },
+              {
+                "kind": "code",
+                "text": "values"
+              },
+              {
+                "kind": "text",
+                "text": " must have the correct shape."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.append([[1, 2, 3], [4, 5, 6]], [[7, 8, 9]], axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 2, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [4, 5, 6],"
+              },
+              {
+                "kind": "output",
+                "text": "       [7, 8, 9]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.append([[1, 2, 3], [4, 5, 6]], [7, 8, 9], axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "Traceback (most recent call last):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "output",
+                "text": "ValueError: all the input arrays must have same number of dimensions, but"
+              },
+              {
+                "kind": "output",
+                "text": "the array at index 0 has 2 dimension(s) and the array at index 1 has 1"
+              },
+              {
+                "kind": "output",
+                "text": "dimension(s)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1, 2], dtype=int)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c = flops.append(a, [])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c"
+              },
+              {
+                "kind": "output",
+                "text": "array([1., 2.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c.dtype"
+              },
+              {
+                "kind": "output",
+                "text": "float64"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Default dtype for empty ndarrays is "
+              },
+              {
+                "kind": "code",
+                "text": "float64"
+              },
+              {
+                "kind": "text",
+                "text": " thus making the output of dtype\n"
+              },
+              {
+                "kind": "code",
+                "text": "float64"
+              },
+              {
+                "kind": "text",
+                "text": " when appended with dtype "
+              },
+              {
+                "kind": "code",
+                "text": "int64"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.append",
+    "module": "numpy",
+    "name": "append",
+    "notes": "Append values to end of array. Cost: numel(values).",
+    "numpy_ref": "np.append",
+    "signature": "fnp.append(arr, values, axis=None)",
+    "status": "supported",
+    "summary": "Append values to the end of an array.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "append",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1120",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L5644"
+  }
+}

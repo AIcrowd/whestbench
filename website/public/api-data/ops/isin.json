@@ -1,0 +1,834 @@
+{
+  "detail_href": "/docs/api/numpy/isin/",
+  "detail_json_href": "/api-data/ops/isin.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Calculates "
+              },
+              {
+                "kind": "code",
+                "text": "element in test_elements"
+              },
+              {
+                "kind": "text",
+                "text": ", broadcasting over "
+              },
+              {
+                "kind": "code",
+                "text": "element"
+              },
+              {
+                "kind": "text",
+                "text": " only. Returns a boolean array of the same shape as "
+              },
+              {
+                "kind": "code",
+                "text": "element"
+              },
+              {
+                "kind": "text",
+                "text": " that is True where an element of "
+              },
+              {
+                "kind": "code",
+                "text": "element"
+              },
+              {
+                "kind": "text",
+                "text": " is in "
+              },
+              {
+                "kind": "code",
+                "text": "test_elements"
+              },
+              {
+                "kind": "text",
+                "text": " and False otherwise."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "element",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The values against which to test each value of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "element"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nThis argument is flattened if it is an array or array_like.\nSee notes for behavior with non-array-like parameters."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The values against which to test each value of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "element"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nThis argument is flattened if it is an array or array_like.\nSee notes for behavior with non-array-like parameters."
+                  }
+                ],
+                "name": "test_elements",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, the input arrays are both assumed to be unique, which\ncan speed up the calculation.  Default is False."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, the input arrays are both assumed to be unique, which\ncan speed up the calculation.  Default is False."
+                  }
+                ],
+                "name": "assume_unique",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, the values in the returned array are inverted, as if\ncalculating "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "element not in test_elements"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Default is False.\n"
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.isin(a, b, invert=True).html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "isin(a, b, invert=True)",
+                        "text": "flops.isin(a, b, invert=True)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is equivalent to (but faster\nthan) "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.invert(flops.isin(a, b))"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, the values in the returned array are inverted, as if\ncalculating "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "element not in test_elements"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Default is False.\n"
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.isin(a, b, invert=True).html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "isin(a, b, invert=True)",
+                    "text": "flops.isin(a, b, invert=True)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is equivalent to (but faster\nthan) "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.invert(flops.isin(a, b))"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "invert",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The algorithm to use. This will not affect the final result,\nbut will affect the speed and memory use. The default, None,\nwill select automatically based on memory considerations."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "If 'sort', will use a mergesort-based approach. This will have\na memory usage of roughly 6 times the sum of the sizes of\n"
+                              },
+                              {
+                                "kind": "code",
+                                "text": "element"
+                              },
+                              {
+                                "kind": "text",
+                                "text": " and "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "test_elements"
+                              },
+                              {
+                                "kind": "text",
+                                "text": ", not accounting for size of dtypes."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "If 'table', will use a lookup table approach similar\nto a counting sort. This is only available for boolean and\ninteger arrays. This will have a memory usage of the\nsize of "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "element"
+                              },
+                              {
+                                "kind": "text",
+                                "text": " plus the max-min value of "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "test_elements"
+                              },
+                              {
+                                "kind": "text",
+                                "text": ".\n"
+                              },
+                              {
+                                "kind": "code",
+                                "text": "assume_unique"
+                              },
+                              {
+                                "kind": "text",
+                                "text": " has no effect when the 'table' option is used."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "If None, will automatically choose 'table' if\nthe required memory allocation is less than or equal to\n6 times the sum of the sizes of "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "element"
+                              },
+                              {
+                                "kind": "text",
+                                "text": " and "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "test_elements"
+                              },
+                              {
+                                "kind": "text",
+                                "text": ",\notherwise will use 'sort'. This is done to not use\na large amount of memory by default, even though\n'table' may be faster in most cases. If 'table' is chosen,\n"
+                              },
+                              {
+                                "kind": "code",
+                                "text": "assume_unique"
+                              },
+                              {
+                                "kind": "text",
+                                "text": " will have no effect."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  }
+                ],
+                "data_type": "{None, 'sort', 'table'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The algorithm to use. This will not affect the final result,\nbut will affect the speed and memory use. The default, None,\nwill select automatically based on memory considerations."
+                  }
+                ],
+                "name": "kind",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Has the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "element"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". The values "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "element[isin]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nare in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "test_elements"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Has the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "element"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". The values "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "element[isin]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nare in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "test_elements"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "isin",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/isin/",
+                "kind": "link",
+                "target": "isin",
+                "text": "isin"
+              },
+              {
+                "kind": "text",
+                "text": " is an element-wise function version of the python keyword "
+              },
+              {
+                "kind": "code",
+                "text": "in"
+              },
+              {
+                "kind": "text",
+                "text": ".\n"
+              },
+              {
+                "kind": "code",
+                "text": "isin(a, b)"
+              },
+              {
+                "kind": "text",
+                "text": " is roughly equivalent to\n"
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.array([item in b for item in a]).html",
+                "href": "",
+                "kind": "link",
+                "target": "array([item in b for item in a])",
+                "text": "flops.array([item in b for item in a])"
+              },
+              {
+                "kind": "text",
+                "text": " if "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " are 1-D sequences."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "element"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "test_elements"
+              },
+              {
+                "kind": "text",
+                "text": " are converted to arrays if they are not\nalready. If "
+              },
+              {
+                "kind": "code",
+                "text": "test_elements"
+              },
+              {
+                "kind": "text",
+                "text": " is a set (or other non-sequence collection)\nit will be converted to an object array with one element, rather than an\narray of the values contained in "
+              },
+              {
+                "kind": "code",
+                "text": "test_elements"
+              },
+              {
+                "kind": "text",
+                "text": ". This is a consequence\nof the "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/array/",
+                "kind": "link",
+                "target": "array",
+                "text": "array"
+              },
+              {
+                "kind": "text",
+                "text": " constructor's way of handling non-sequence collections.\nConverting the set to a list usually gives the desired behavior."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Using "
+              },
+              {
+                "kind": "code",
+                "text": "kind='table'"
+              },
+              {
+                "kind": "text",
+                "text": " tends to be faster than "
+              },
+              {
+                "kind": "code",
+                "text": "kind='sort'"
+              },
+              {
+                "kind": "text",
+                "text": " if the\nfollowing relationship is true:\n"
+              },
+              {
+                "kind": "code",
+                "text": "log10(len(test_elements)) >\n(log10(max(test_elements)-min(test_elements)) - 2.27) / 0.927"
+              },
+              {
+                "kind": "text",
+                "text": ",\nbut may use greater memory. The default value for "
+              },
+              {
+                "kind": "code",
+                "text": "kind"
+              },
+              {
+                "kind": "text",
+                "text": " will\nbe automatically selected based only on memory usage, so one may\nmanually set "
+              },
+              {
+                "kind": "code",
+                "text": "kind='table'"
+              },
+              {
+                "kind": "text",
+                "text": " if memory constraints can be relaxed."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "element = 2*flops.arange(4).reshape((2, 2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "element"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [4, 6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "test_elements = [1, 2, 4, 8]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mask = flops.isin(element, test_elements)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mask"
+              },
+              {
+                "kind": "output",
+                "text": "array([[False,  True],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ True, False]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "element[mask]"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 4])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The indices of the matched values can be obtained with "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/nonzero/",
+                "kind": "link",
+                "target": "nonzero",
+                "text": "nonzero"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.nonzero(mask)"
+              },
+              {
+                "kind": "output",
+                "text": "(array([0, 1]), array([1, 0]))"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The test can also be inverted:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mask = flops.isin(element, test_elements, invert=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mask"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ True, False],"
+              },
+              {
+                "kind": "output",
+                "text": "       [False,  True]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "element[mask]"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 6])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Because of how "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/array/",
+                "kind": "link",
+                "target": "array",
+                "text": "array"
+              },
+              {
+                "kind": "text",
+                "text": " handles sets, the following does not\nwork as expected:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "test_set = {1, 2, 4, 8}"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isin(element, test_set)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[False, False],"
+              },
+              {
+                "kind": "output",
+                "text": "       [False, False]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Casting the set to a list gives the expected result:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isin(element, list(test_set))"
+              },
+              {
+                "kind": "output",
+                "text": "array([[False,  True],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ True, False]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.isin",
+    "module": "numpy",
+    "name": "isin",
+    "notes": "Set membership; cost = (n+m)*ceil(log2(n+m)).",
+    "numpy_ref": "np.isin",
+    "signature": "fnp.isin(element, test_elements, assume_unique=False, invert=False, *, kind=None)",
+    "status": "supported",
+    "summary": "Calculates ``element in test_elements``, broadcasting over `element` only. Returns a boolean array of the same shape as `element` that is True where an element of `element` is in `test_elements` and False otherwise.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "isin",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_sorting_ops.py#L446",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_arraysetops_impl.py#L1015"
+  }
+}

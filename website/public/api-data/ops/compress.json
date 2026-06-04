@@ -1,0 +1,481 @@
+{
+  "detail_href": "/docs/api/numpy/compress/",
+  "detail_json_href": "/api-data/ops/compress.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return selected slices of an array along given axis."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When working along a given axis, a slice along that axis is returned in\n"
+              },
+              {
+                "kind": "code",
+                "text": "output"
+              },
+              {
+                "kind": "text",
+                "text": " for each index where "
+              },
+              {
+                "kind": "code",
+                "text": "condition"
+              },
+              {
+                "kind": "text",
+                "text": " evaluates to True. When\nworking on a 1-D array, "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/compress/",
+                "kind": "link",
+                "target": "compress",
+                "text": "compress"
+              },
+              {
+                "kind": "text",
+                "text": " is equivalent to "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/extract/",
+                "kind": "link",
+                "target": "extract",
+                "text": "extract"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array that selects which entries to return. If len(condition)\nis less than the size of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " along the given axis, then output is\ntruncated to the length of the condition array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "1-D array of bools",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array that selects which entries to return. If len(condition)\nis less than the size of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " along the given axis, then output is\ntruncated to the length of the condition array."
+                  }
+                ],
+                "name": "condition",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array from which to extract a part."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array from which to extract a part."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis along which to take slices. If None (default), work on the\nflattened array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis along which to take slices. If None (default), work on the\nflattened array."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output array.  Its type is preserved and it must be of the right\nshape to hold the output."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output array.  Its type is preserved and it must be of the right\nshape to hold the output."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A copy of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " without the slices along axis for which "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "condition"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nis false."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A copy of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " without the slices along axis for which "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "condition"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nis false."
+                  }
+                ],
+                "name": "compressed_array",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/take/",
+                "label": "flops.take",
+                "original_target": "take",
+                "role": "",
+                "target": "take",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/choose/",
+                "label": "flops.choose",
+                "original_target": "choose",
+                "role": "",
+                "target": "choose",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/diag/",
+                "label": "flops.diag",
+                "original_target": "diag",
+                "role": "",
+                "target": "diag",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/diagonal/",
+                "label": "flops.diagonal",
+                "original_target": "diagonal",
+                "role": "",
+                "target": "diagonal",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/select/",
+                "label": "flops.select",
+                "original_target": "select",
+                "role": "",
+                "target": "select",
+                "unresolved": false
+              },
+              {
+                "description": "Equivalent method in ndarray",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Equivalent method in ndarray"
+                  }
+                ],
+                "external_url": "",
+                "href": "",
+                "label": "ndarray.compress",
+                "original_target": "ndarray.compress",
+                "role": "",
+                "target": "ndarray.compress",
+                "unresolved": true
+              },
+              {
+                "description": "Equivalent method when working on 1-D arrays",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Equivalent method when working on 1-D arrays"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/extract/",
+                "label": "flops.extract",
+                "original_target": "extract",
+                "role": "",
+                "target": "extract",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ufuncs-output-type.html",
+                "href": "",
+                "label": "ufuncs-output-type",
+                "original_target": "ufuncs-output-type",
+                "role": "ref",
+                "target": "ufuncs-output-type",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, 2], [3, 4], [5, 6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [5, 6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.compress([0, 1], a, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[3, 4]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.compress([False, True, True], a, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[3, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [5, 6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.compress([False, True], a, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [6]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Working on the flattened array does not return slices along an axis but\nselects elements."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.compress([False, True], a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([2])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.compress",
+    "module": "numpy",
+    "name": "compress",
+    "notes": "Return selected slices along axis. Cost: numel(input).",
+    "numpy_ref": "np.compress",
+    "signature": "fnp.compress(condition, a, axis=None, out=None)",
+    "status": "supported",
+    "summary": "Return selected slices of an array along given axis.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "compress",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1472",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L2171"
+  }
+}

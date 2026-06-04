@@ -1,0 +1,600 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/weibull/",
+  "detail_json_href": "/api-data/ops/random-RandomState-weibull.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a Weibull distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a 1-parameter Weibull distribution with the given\nshape parameter "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "X = (-ln(U))^{1/a}"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Here, U is drawn from the uniform distribution over (0,1]."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The more common 2-parameter Weibull, including a scale parameter\n"
+              },
+              {
+                "kind": "math",
+                "latex": "\\lambda"
+              },
+              {
+                "kind": "text",
+                "text": " is just "
+              },
+              {
+                "kind": "math",
+                "latex": "X = \\lambda(-ln(U))^{1/a}"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/weibull/",
+                    "kind": "link",
+                    "target": "random.Generator.weibull",
+                    "text": "weibull"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the `~flops.random.Generator.weibull`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Shape parameter of the distribution.  Must be nonnegative."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Shape parameter of the distribution.  Must be nonnegative."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar.  Otherwise,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.array(a).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar.  Otherwise,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.array(a).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the parameterized Weibull distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the parameterized Weibull distribution."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.weibull_max.html",
+                "href": "",
+                "label": "scipy.stats.weibull_max",
+                "original_target": "scipy.stats.weibull_max",
+                "role": "",
+                "target": "stats.weibull_max",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.weibull_min.html",
+                "href": "",
+                "label": "scipy.stats.weibull_min",
+                "original_target": "scipy.stats.weibull_min",
+                "role": "",
+                "target": "stats.weibull_min",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.genextreme.html",
+                "href": "",
+                "label": "scipy.stats.genextreme",
+                "original_target": "scipy.stats.genextreme",
+                "role": "",
+                "target": "stats.genextreme",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.gumbel.html",
+                "href": "",
+                "label": "gumbel",
+                "original_target": "gumbel",
+                "role": "",
+                "target": "gumbel",
+                "unresolved": false
+              },
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/weibull/",
+                "label": "flops.random.Generator.weibull",
+                "original_target": "random.Generator.weibull",
+                "role": "",
+                "target": "random.Generator.weibull",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Weibull (or Type III asymptotic extreme value distribution\nfor smallest values, SEV Type III, or Rosin-Rammler\ndistribution) is one of a class of Generalized Extreme Value\n(GEV) distributions used in modeling extreme value problems.\nThis class includes the Gumbel and Frechet distributions."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability density for the Weibull distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "p(x) = \\frac{a} {\\lambda}(\\frac{x}{\\lambda})^{a-1}e^{-(x/\\lambda)^a},"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where "
+              },
+              {
+                "kind": "math",
+                "latex": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is the shape and "
+              },
+              {
+                "kind": "math",
+                "latex": "\\lambda"
+              },
+              {
+                "kind": "text",
+                "text": " the scale."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The function has its peak (the mode) at\n"
+              },
+              {
+                "kind": "math",
+                "latex": "\\lambda(\\frac{a-1}{a})^{1/a}"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When "
+              },
+              {
+                "kind": "code",
+                "text": "a = 1"
+              },
+              {
+                "kind": "text",
+                "text": ", the Weibull distribution reduces to the exponential\ndistribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nWaloddi Weibull, Royal Technical University, Stockholm,\n1939 \"A Statistical Theory Of The Strength Of Materials\",\nIngeniorsvetenskapsakademiens Handlingar Nr 151, 1939,\nGeneralstabens Litografiska Anstalts Forlag, Stockholm.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nWaloddi Weibull, \"A Statistical Distribution Function of\nWide Applicability\", Journal Of Applied Mechanics ASME Paper\n1951.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "3\n\nWikipedia, \"Weibull distribution\",\nhttps://en.wikipedia.org/wiki/Weibull_distribution",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from the distribution:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = 5. # shape"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = flops.random.weibull(a, 1000)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Display the histogram of the samples, along with\nthe probability density function:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.arange(1,100.)/50."
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "def weib(x,n,a):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "return (a / n) * (x / n)**(a - 1) * flops.exp(-(x / n)**a)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "count, bins, ignored = plt.hist(flops.random.weibull(5.,1000))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.arange(1,100.)/50."
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "scale = count.max()/weib(x, 1., 5.).max()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(x, weib(x, 1., 5.)*scale)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.RandomState.weibull",
+    "module": "numpy.random",
+    "name": "random.RandomState.weibull",
+    "notes": "Legacy Weibull sampler; cost = numel(output).",
+    "numpy_ref": "np.random.RandomState.weibull",
+    "signature": "fnp.random.RandomState.weibull(self, a, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from a Weibull distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-weibull",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.weibull.html"
+  }
+}

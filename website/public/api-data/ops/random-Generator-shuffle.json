@@ -1,0 +1,388 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/shuffle/",
+  "detail_json_href": "/api-data/ops/random-Generator-shuffle.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Modify an array or sequence in-place by shuffling its contents."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The order of sub-arrays is changed but their contents remains the same."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The array, list or mutable sequence to be shuffled."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or MutableSequence",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The array, list or mutable sequence to be shuffled."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis which "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is shuffled along. Default is 0.\nIt is only supported on "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ndarray"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " objects."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis which "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is shuffled along. Default is 0.\nIt is only supported on "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ndarray"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " objects."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [],
+                "data_type": "None",
+                "inline": [],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.permuted.html",
+                "href": "",
+                "label": "permuted",
+                "original_target": "permuted",
+                "role": "",
+                "target": "permuted",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.permutation.html",
+                "href": "",
+                "label": "permutation",
+                "original_target": "permutation",
+                "role": "",
+                "target": "permutation",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "An important distinction between methods "
+              },
+              {
+                "kind": "code",
+                "text": "shuffle"
+              },
+              {
+                "kind": "text",
+                "text": "  and "
+              },
+              {
+                "kind": "code",
+                "text": "permuted"
+              },
+              {
+                "kind": "text",
+                "text": " is\nhow they both treat the "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " parameter which can be found at\n"
+              },
+              {
+                "display_text": "generator-handling-axis-parameter",
+                "explicit_title": false,
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.generator-handling-axis-parameter.html",
+                "href": "",
+                "kind": "role_reference",
+                "original_target": "generator-handling-axis-parameter",
+                "role": "ref",
+                "suppress_link": false,
+                "target": "generator-handling-axis-parameter",
+                "unresolved": false
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.arange(10)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.shuffle(arr)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 0, 7, 5, 1, 4, 8, 9, 3, 6]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.arange(9).reshape((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4, 5],"
+              },
+              {
+                "kind": "output",
+                "text": "       [6, 7, 8]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.shuffle(arr)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr"
+              },
+              {
+                "kind": "output",
+                "text": "array([[3, 4, 5], # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [6, 7, 8],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0, 1, 2]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.arange(9).reshape((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4, 5],"
+              },
+              {
+                "kind": "output",
+                "text": "       [6, 7, 8]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.shuffle(arr, axis=1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr"
+              },
+              {
+                "kind": "output",
+                "text": "array([[2, 0, 1], # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [5, 3, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [8, 6, 7]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "shape[axis]",
+    "cost_formula_latex": "$\\text{shape}[\\text{axis}]$",
+    "flopscope_ref": "fnp.random.Generator.shuffle",
+    "module": "numpy.random",
+    "name": "random.Generator.shuffle",
+    "notes": "In-place shuffle; cost = shape[axis] (Fisher-Yates draws).",
+    "numpy_ref": "np.random.Generator.shuffle",
+    "signature": "fnp.random.Generator.shuffle(self, x, axis=0)",
+    "status": "supported",
+    "summary": "Modify an array or sequence in-place by shuffling its contents.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-shuffle",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.shuffle.html"
+  }
+}

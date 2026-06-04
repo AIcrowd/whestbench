@@ -1,0 +1,753 @@
+{
+  "detail_href": "/docs/api/numpy/power/",
+  "detail_json_href": "/api-data/ops/power.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "First array elements raised to powers from second array, element-wise."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Raise each base in "
+              },
+              {
+                "kind": "code",
+                "text": "x1"
+              },
+              {
+                "kind": "text",
+                "text": " to the positionally-corresponding power in\n"
+              },
+              {
+                "kind": "code",
+                "text": "x2"
+              },
+              {
+                "kind": "text",
+                "text": ".  "
+              },
+              {
+                "kind": "code",
+                "text": "x1"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "x2"
+              },
+              {
+                "kind": "text",
+                "text": " must be broadcastable to the same shape."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "An integer type raised to a negative integer power will raise a\n"
+              },
+              {
+                "kind": "code",
+                "text": "ValueError"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Negative values raised to a non-integral value will return "
+              },
+              {
+                "kind": "code",
+                "text": "nan"
+              },
+              {
+                "kind": "text",
+                "text": ".\nTo get complex results, cast the input to complex, or specify the\n"
+              },
+              {
+                "kind": "code",
+                "text": "dtype"
+              },
+              {
+                "kind": "text",
+                "text": " to be "
+              },
+              {
+                "kind": "code",
+                "text": "complex"
+              },
+              {
+                "kind": "text",
+                "text": " (see the example below)."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The bases."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The bases."
+                  }
+                ],
+                "name": "x1",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The exponents.\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1.shape != x2.shape"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", they must be broadcastable to a common\nshape (which becomes the shape of the output)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The exponents.\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1.shape != x2.shape"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", they must be broadcastable to a common\nshape (which becomes the shape of the output)."
+                  }
+                ],
+                "name": "x2",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, None, or tuple of ndarray and None, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will be set to the ufunc result.\nElsewhere, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will retain its original value.\nNote that if an uninitialized "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array is created via the default\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", locations within it where the condition is False will\nremain uninitialized."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will be set to the ufunc result.\nElsewhere, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will retain its original value.\nNote that if an uninitialized "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array is created via the default\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", locations within it where the condition is False will\nremain uninitialized."
+                  }
+                ],
+                "name": "where",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "For other keyword-only arguments, see the\n"
+                      },
+                      {
+                        "display_text": "ufunc docs",
+                        "explicit_title": true,
+                        "external_url": "",
+                        "href": "",
+                        "kind": "role_reference",
+                        "original_target": "ufuncs.kwargs",
+                        "role": "ref",
+                        "suppress_link": false,
+                        "target": "ufuncs.kwargs",
+                        "unresolved": true
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "For other keyword-only arguments, see the\n"
+                  },
+                  {
+                    "display_text": "ufunc docs",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "ufuncs.kwargs",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "ufuncs.kwargs",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "**kwargs",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The bases in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " raised to the exponents in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nThis is a scalar if both "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are scalars."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The bases in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " raised to the exponents in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nThis is a scalar if both "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are scalars."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "power function that promotes integers to float",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "power function that promotes integers to float"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/float-power/",
+                "label": "flops.float_power",
+                "original_target": "float_power",
+                "role": "",
+                "target": "float_power",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Cube each element in an array."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1 = flops.arange(6)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1"
+              },
+              {
+                "kind": "output",
+                "text": "[0, 1, 2, 3, 4, 5]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.power(x1, 3)"
+              },
+              {
+                "kind": "output",
+                "text": "array([  0,   1,   8,  27,  64, 125])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Raise the bases to different exponents."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x2 = [1.0, 2.0, 3.0, 3.0, 2.0, 1.0]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.power(x1, x2)"
+              },
+              {
+                "kind": "output",
+                "text": "array([  0.,   1.,   8.,  27.,  16.,   5.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The effect of broadcasting."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x2 = flops.array([[1, 2, 3, 3, 2, 1], [1, 2, 3, 3, 2, 1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x2"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 2, 3, 3, 2, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 2, 3, 3, 2, 1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.power(x1, x2)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0,  1,  8, 27, 16,  5],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0,  1,  8, 27, 16,  5]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The "
+              },
+              {
+                "kind": "code",
+                "text": "**"
+              },
+              {
+                "kind": "text",
+                "text": " operator can be used as a shorthand for "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/power/",
+                "kind": "link",
+                "target": "power",
+                "text": "flops.power"
+              },
+              {
+                "kind": "text",
+                "text": " on\nndarrays."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x2 = flops.array([1, 2, 3, 3, 2, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1 = flops.arange(6)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1 ** x2"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 0,  1,  8, 27, 16,  5])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Negative values raised to a non-integral value will result in "
+              },
+              {
+                "kind": "code",
+                "text": "nan"
+              },
+              {
+                "kind": "text",
+                "text": "\n(and a warning will be generated)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x3 = flops.array([-1.0, -4.0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "with flops.errstate(invalid='ignore'):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "p = flops.power(x3, 1.5)"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p"
+              },
+              {
+                "kind": "output",
+                "text": "array([nan, nan])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "To get complex results, give the argument "
+              },
+              {
+                "kind": "code",
+                "text": "dtype=complex"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.power(x3, 1.5, dtype=complex)"
+              },
+              {
+                "kind": "output",
+                "text": "array([-1.83697020e-16-1.j, -1.46957616e-15-8.j])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_binary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.power",
+    "module": "numpy",
+    "name": "power",
+    "notes": "Element-wise exponentiation x**y.",
+    "numpy_ref": "np.power",
+    "signature": "fnp.power(x: 'ArrayLike', y: 'ArrayLike', out: 'FlopscopeArray | None' = None, **kwargs: 'Any') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "First array elements raised to powers from second array, element-wise.",
+    "weight": 16.0
+  },
+  "schema_version": 1,
+  "slug": "power",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L420",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/code_generators/ufunc_docstrings.py"
+  }
+}

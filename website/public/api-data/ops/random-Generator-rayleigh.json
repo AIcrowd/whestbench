@@ -1,0 +1,362 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/rayleigh/",
+  "detail_json_href": "/api-data/ops/random-Generator-rayleigh.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a Rayleigh distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The "
+              },
+              {
+                "kind": "math",
+                "latex": "\\chi"
+              },
+              {
+                "kind": "text",
+                "text": " and Weibull distributions are generalizations of the\nRayleigh."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Scale, also equals the mode. Must be non-negative. Default is 1."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Scale, also equals the mode. Must be non-negative. Default is 1."
+                  }
+                ],
+                "name": "scale",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "scale"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar.  Otherwise,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.array(scale).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "scale"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar.  Otherwise,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.array(scale).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the parameterized Rayleigh distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the parameterized Rayleigh distribution."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability density function for the Rayleigh distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "P(x;scale) = \\frac{x}{scale^2}e^{\\frac{-x^2}{2 \\cdotp scale^2}}"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Rayleigh distribution would arise, for example, if the East\nand North components of the wind velocity had identical zero-mean\nGaussian distributions.  Then the wind speed would have a Rayleigh\ndistribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nBrighton Webs Ltd., \"Rayleigh Distribution,\"\nhttps://web.archive.org/web/20090514091424/http://brighton-webs.co.uk:80/distributions/rayleigh.asp",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nWikipedia, \"Rayleigh distribution\"\nhttps://en.wikipedia.org/wiki/Rayleigh_distribution",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw values from the distribution and plot the histogram"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from matplotlib.pyplot import hist"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "values = hist(rng.rayleigh(3, 100000), bins=200, density=True)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Wave heights tend to follow a Rayleigh distribution. If the mean wave\nheight is 1 meter, what fraction of waves are likely to be larger than 3\nmeters?"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "meanvalue = 1"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "modevalue = flops.sqrt(2 / flops.pi) * meanvalue"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = rng.rayleigh(modevalue, 1000000)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The percentage of waves larger than 3 meters is:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "100.*sum(s>3)/1000000."
+              },
+              {
+                "kind": "output",
+                "text": "0.087300000000000003 # random"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.Generator.rayleigh",
+    "module": "numpy.random",
+    "name": "random.Generator.rayleigh",
+    "notes": "Rayleigh distribution; cost = numel(output).",
+    "numpy_ref": "np.random.Generator.rayleigh",
+    "signature": "fnp.random.Generator.rayleigh(self, scale=1.0, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from a Rayleigh distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-rayleigh",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.rayleigh.html"
+  }
+}

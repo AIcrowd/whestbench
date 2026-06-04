@@ -1,0 +1,331 @@
+{
+  "detail_href": "/docs/api/numpy/atleast-3d/",
+  "detail_json_href": "/api-data/ops/atleast_3d.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "View inputs as arrays with at least three dimensions."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "One or more array-like sequences.  Non-array inputs are converted to\narrays.  Arrays that already have three or more dimensions are\npreserved."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "One or more array-like sequences.  Non-array inputs are converted to\narrays.  Arrays that already have three or more dimensions are\npreserved."
+                  }
+                ],
+                "name": "arys1, arys2, ...",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array, or tuple of arrays, each with "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.ndim >= 3"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Copies are\navoided where possible, and views with three or more dimensions are\nreturned.  For example, a 1-D array of shape "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(N,)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " becomes a view\nof shape "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(1, N, 1)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", and a 2-D array of shape "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(M, N)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " becomes a\nview of shape "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(M, N, 1)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array, or tuple of arrays, each with "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a.ndim >= 3"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Copies are\navoided where possible, and views with three or more dimensions are\nreturned.  For example, a 1-D array of shape "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(N,)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " becomes a view\nof shape "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(1, N, 1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", and a 2-D array of shape "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(M, N)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " becomes a\nview of shape "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(M, N, 1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "res1, res2, ...",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/atleast-1d/",
+                "label": "flops.atleast_1d",
+                "original_target": "atleast_1d",
+                "role": "",
+                "target": "atleast_1d",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/atleast-2d/",
+                "label": "flops.atleast_2d",
+                "original_target": "atleast_2d",
+                "role": "",
+                "target": "atleast_2d",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.atleast_3d(3.0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[3.]]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.arange(3.0)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.atleast_3d(x).shape"
+              },
+              {
+                "kind": "output",
+                "text": "(1, 3, 1)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.arange(12.0).reshape(4,3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.atleast_3d(x).shape"
+              },
+              {
+                "kind": "output",
+                "text": "(4, 3, 1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.atleast_3d(x).base is x.base  # x is a reshape, so not base itself"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "for arr in flops.atleast_3d([1, 2], [[1, 2]], [[[1, 2]]]):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "print(arr, arr.shape) # doctest: +SKIP"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "output",
+                "text": "[[[1]"
+              },
+              {
+                "kind": "output",
+                "text": "  [2]]] (1, 2, 1)"
+              },
+              {
+                "kind": "output",
+                "text": "[[[1]"
+              },
+              {
+                "kind": "output",
+                "text": "  [2]]] (1, 2, 1)"
+              },
+              {
+                "kind": "output",
+                "text": "[[[1 2]]] (1, 1, 2)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.atleast_3d",
+    "module": "numpy",
+    "name": "atleast_3d",
+    "notes": "View inputs as arrays with at least three dimensions.",
+    "numpy_ref": "np.atleast_3d",
+    "signature": "fnp.atleast_3d(*arys)",
+    "status": "supported",
+    "summary": "View inputs as arrays with at least three dimensions.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "atleast_3d",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1263",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/shape_base.py#L139"
+  }
+}

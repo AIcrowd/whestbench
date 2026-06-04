@@ -1,0 +1,637 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/permuted/",
+  "detail_json_href": "/api-data/ops/random-Generator-permuted.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Randomly permute "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " along axis "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Unlike "
+              },
+              {
+                "kind": "code",
+                "text": "shuffle"
+              },
+              {
+                "kind": "text",
+                "text": ", each slice along the given axis is shuffled\nindependently of the others."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array to be shuffled."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, at least one-dimensional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array to be shuffled."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Slices of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " in this axis are shuffled. Each slice\nis shuffled independently of the others.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is\nNone, the flattened array is shuffled."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Slices of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " in this axis are shuffled. Each slice\nis shuffled independently of the others.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is\nNone, the flattened array is shuffled."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If given, this is the destination of the shuffled array.\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None, a shuffled copy of the array is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If given, this is the destination of the shuffled array.\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None, a shuffled copy of the array is returned."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None, a shuffled copy of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is returned.\nOtherwise, the shuffled array is stored in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ",\nand "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is returned"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None, a shuffled copy of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is returned.\nOtherwise, the shuffled array is stored in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ",\nand "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is returned"
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.shuffle.html",
+                "href": "",
+                "label": "shuffle",
+                "original_target": "shuffle",
+                "role": "",
+                "target": "shuffle",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.permutation.html",
+                "href": "",
+                "label": "permutation",
+                "original_target": "permutation",
+                "role": "",
+                "target": "permutation",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "An important distinction between methods "
+              },
+              {
+                "kind": "code",
+                "text": "shuffle"
+              },
+              {
+                "kind": "text",
+                "text": "  and "
+              },
+              {
+                "kind": "code",
+                "text": "permuted"
+              },
+              {
+                "kind": "text",
+                "text": " is\nhow they both treat the "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " parameter which can be found at\n"
+              },
+              {
+                "display_text": "generator-handling-axis-parameter",
+                "explicit_title": false,
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.generator-handling-axis-parameter.html",
+                "href": "",
+                "kind": "role_reference",
+                "original_target": "generator-handling-axis-parameter",
+                "role": "ref",
+                "suppress_link": false,
+                "target": "generator-handling-axis-parameter",
+                "unresolved": false
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Create a "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                "href": "",
+                "kind": "link",
+                "target": "random.Generator",
+                "text": "flops.random.Generator"
+              },
+              {
+                "kind": "text",
+                "text": " instance:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Create a test array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.arange(24).reshape(3, 8)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0,  1,  2,  3,  4,  5,  6,  7],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 8,  9, 10, 11, 12, 13, 14, 15],"
+              },
+              {
+                "kind": "output",
+                "text": "       [16, 17, 18, 19, 20, 21, 22, 23]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Shuffle the rows of "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = rng.permuted(x, axis=1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 4,  3,  6,  7,  1,  2,  5,  0],  # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [15, 10, 14,  9, 12, 11,  8, 13],"
+              },
+              {
+                "kind": "output",
+                "text": "       [17, 16, 20, 21, 18, 22, 23, 19]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " has not been modified:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0,  1,  2,  3,  4,  5,  6,  7],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 8,  9, 10, 11, 12, 13, 14, 15],"
+              },
+              {
+                "kind": "output",
+                "text": "       [16, 17, 18, 19, 20, 21, 22, 23]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "To shuffle the rows of "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " in-place, pass "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " as the "
+              },
+              {
+                "kind": "code",
+                "text": "out"
+              },
+              {
+                "kind": "text",
+                "text": "\nparameter:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = rng.permuted(x, axis=1, out=x)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 3,  0,  4,  7,  1,  6,  2,  5],  # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 8, 14, 13,  9, 12, 11, 15, 10],"
+              },
+              {
+                "kind": "output",
+                "text": "       [17, 18, 16, 22, 19, 23, 20, 21]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that when the "
+              },
+              {
+                "kind": "code",
+                "text": "out"
+              },
+              {
+                "kind": "text",
+                "text": " parameter is given, the return\nvalue is "
+              },
+              {
+                "kind": "code",
+                "text": "out"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y is x"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(input)",
+    "cost_formula_latex": "$\\text{numel}(\\text{input})$",
+    "flopscope_ref": "fnp.random.Generator.permuted",
+    "module": "numpy.random",
+    "name": "random.Generator.permuted",
+    "notes": "Permute along axis; cost from input array size.",
+    "numpy_ref": "np.random.Generator.permuted",
+    "signature": "fnp.random.Generator.permuted(self, x, *, axis=None, out=None)",
+    "status": "supported",
+    "summary": "Randomly permute `x` along axis `axis`.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-permuted",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.permuted.html"
+  }
+}

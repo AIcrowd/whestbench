@@ -1,0 +1,600 @@
+{
+  "detail_href": "/docs/api/numpy/argmax/",
+  "detail_json_href": "/api-data/ops/argmax.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the indices of the maximum values along an axis."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "By default, the index is into the flattened array, otherwise\nalong the specified axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "By default, the index is into the flattened array, otherwise\nalong the specified axis."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If provided, the result will be inserted into this array. It should\nbe of the appropriate shape and dtype."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If provided, the result will be inserted into this array. It should\nbe of the appropriate shape and dtype."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this is set to True, the axes which are reduced are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.22.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.22.0"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If this is set to True, the axes which are reduced are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the array."
+                  }
+                ],
+                "name": "keepdims",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array of indices into the array. It has the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.shape"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nwith the dimension along "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " removed. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "keepdims"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is set to True,\nthen the size of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will be 1 with the resulting array having same\nshape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.shape"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array of indices into the array. It has the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a.shape"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nwith the dimension along "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " removed. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "keepdims"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is set to True,\nthen the size of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will be 1 with the resulting array having same\nshape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a.shape"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "index_array",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "",
+                "label": "ndarray.argmax",
+                "original_target": "ndarray.argmax",
+                "role": "",
+                "target": "ndarray.argmax",
+                "unresolved": true
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/argmin/",
+                "label": "flops.argmin",
+                "original_target": "argmin",
+                "role": "",
+                "target": "argmin",
+                "unresolved": false
+              },
+              {
+                "description": "The maximum value along a given axis.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "The maximum value along a given axis."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/max/",
+                "label": "flops.max",
+                "original_target": "amax",
+                "role": "",
+                "target": "max",
+                "unresolved": false
+              },
+              {
+                "description": "Convert a flat index into an index tuple.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Convert a flat index into an index tuple."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/unravel-index/",
+                "label": "flops.unravel_index",
+                "original_target": "unravel_index",
+                "role": "",
+                "target": "unravel_index",
+                "unresolved": false
+              },
+              {
+                "description": "Apply ``flops.expand_dims(index_array, axis)`` from argmax to an array as if by calling max.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Apply "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.expand_dims(index_array, axis).html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "expand_dims(index_array, axis)",
+                    "text": "flops.expand_dims(index_array, axis)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " from argmax to an array as if by calling max."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/take-along-axis/",
+                "label": "flops.take_along_axis",
+                "original_target": "take_along_axis",
+                "role": "",
+                "target": "take_along_axis",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In case of multiple occurrences of the maximum values, the indices\ncorresponding to the first occurrence are returned."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(6).reshape(2,3) + 10"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[10, 11, 12],"
+              },
+              {
+                "kind": "output",
+                "text": "       [13, 14, 15]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.argmax(a)"
+              },
+              {
+                "kind": "output",
+                "text": "5"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.argmax(a, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 1, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.argmax(a, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 2])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Indexes of the maximal elements of a N-dimensional array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ind = flops.unravel_index(flops.argmax(a, axis=None), a.shape)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ind"
+              },
+              {
+                "kind": "output",
+                "text": "(1, 2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[ind]"
+              },
+              {
+                "kind": "output",
+                "text": "15"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.arange(6)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b[1] = 5"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 5, 2, 3, 4, 5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.argmax(b)  # Only the first occurrence is returned."
+              },
+              {
+                "kind": "output",
+                "text": "1"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([[4,2,3], [1,0,3]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "index_array = flops.argmax(x, axis=-1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# Same as flops.amax(x, axis=-1, keepdims=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.take_along_axis(x, flops.expand_dims(index_array, axis=-1), axis=-1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# Same as flops.amax(x, axis=-1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.take_along_axis(x, flops.expand_dims(index_array, axis=-1),"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "axis=-1).squeeze(axis=-1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([4, 3])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Setting "
+              },
+              {
+                "kind": "code",
+                "text": "keepdims"
+              },
+              {
+                "kind": "text",
+                "text": " to "
+              },
+              {
+                "kind": "code",
+                "text": "True"
+              },
+              {
+                "kind": "text",
+                "text": ","
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.arange(24).reshape((2, 3, 4))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "res = flops.argmax(x, axis=1, keepdims=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "res.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(2, 1, 4)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_reduction",
+    "cost_formula": "numel(input)",
+    "cost_formula_latex": "$\\text{numel}(\\text{input})$",
+    "flopscope_ref": "fnp.argmax",
+    "module": "numpy",
+    "name": "argmax",
+    "notes": "Index of maximum value.",
+    "numpy_ref": "np.argmax",
+    "signature": "fnp.argmax(a, axis=None, out=None, *, keepdims=<no value>)",
+    "status": "supported",
+    "summary": "Returns the indices of the maximum values along an axis.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "argmax",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L853",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L1251"
+  }
+}

@@ -1,0 +1,382 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/trace/",
+  "detail_json_href": "/api-data/ops/linalg-trace.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the sum along the specified diagonals of a matrix (or a stack of matrices) "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function is Array API compatible, contrary to\n"
+              },
+              {
+                "display_text": "flops.trace",
+                "explicit_title": false,
+                "external_url": "",
+                "href": "/docs/api/numpy/trace/",
+                "kind": "role_reference",
+                "original_target": "flops.trace",
+                "role": "py:func",
+                "suppress_link": false,
+                "target": "trace",
+                "unresolved": false
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array having shape (..., M, N) and whose innermost two\ndimensions form MxN matrices."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(...,M,N) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array having shape (..., M, N) and whose innermost two\ndimensions form MxN matrices."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Offset specifying the off-diagonal relative to the main diagonal,\nwhere:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "language": null,
+                    "text": "* offset = 0: the main diagonal.\n* offset > 0: off-diagonal above the main diagonal.\n* offset < 0: off-diagonal below the main diagonal.",
+                    "type": "literal_block"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Offset specifying the off-diagonal relative to the main diagonal,\nwhere:"
+                  }
+                ],
+                "name": "offset",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Data type of the returned array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Data type of the returned array."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array containing the traces and whose shape is determined by\nremoving the last two dimensions and storing the traces in the last\narray dimension. For example, if x has rank k and shape:\n(I, J, K, ..., L, M, N), then an output array has rank k-2 and shape:\n(I, J, K, ..., L) where:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "language": null,
+                    "text": "out[i, j, k, ..., l] = trace(a[i, j, k, ..., l, :, :])",
+                    "type": "literal_block"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The returned array must have a data type as described by the dtype\nparameter above."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array containing the traces and whose shape is determined by\nremoving the last two dimensions and storing the traces in the last\narray dimension. For example, if x has rank k and shape:\n(I, J, K, ..., L, M, N), then an output array has rank k-2 and shape:\n(I, J, K, ..., L) where:"
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/trace/",
+                "label": "flops.trace",
+                "original_target": "numpy.trace",
+                "role": "",
+                "target": "trace",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.trace(flops.eye(3))"
+              },
+              {
+                "kind": "output",
+                "text": "3.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(8).reshape((2, 2, 2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.trace(a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([3, 11])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Trace is computed with the last two axes as the 2-d sub-arrays.\nThis behavior differs from "
+              },
+              {
+                "display_text": "flops.trace",
+                "explicit_title": false,
+                "external_url": "",
+                "href": "/docs/api/numpy/trace/",
+                "kind": "role_reference",
+                "original_target": "flops.trace",
+                "role": "py:func",
+                "suppress_link": false,
+                "target": "trace",
+                "unresolved": false
+              },
+              {
+                "kind": "text",
+                "text": " which uses the first two\naxes by default."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(24).reshape((3, 2, 2, 2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.trace(a).shape"
+              },
+              {
+                "kind": "output",
+                "text": "(3, 2)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Traces adjacent to the main diagonal can be obtained by using the\n"
+              },
+              {
+                "kind": "code",
+                "text": "offset"
+              },
+              {
+                "kind": "text",
+                "text": " argument:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(9).reshape((3, 3)); a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4, 5],"
+              },
+              {
+                "kind": "output",
+                "text": "       [6, 7, 8]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.trace(a, offset=1)  # First superdiagonal"
+              },
+              {
+                "kind": "output",
+                "text": "6"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.trace(a, offset=2)  # Second superdiagonal"
+              },
+              {
+                "kind": "output",
+                "text": "2"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.trace(a, offset=-1)  # First subdiagonal"
+              },
+              {
+                "kind": "output",
+                "text": "10"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.trace(a, offset=-2)  # Second subdiagonal"
+              },
+              {
+                "kind": "output",
+                "text": "6"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n",
+    "cost_formula_latex": "$n$",
+    "flopscope_ref": "fnp.linalg.trace",
+    "module": "numpy.linalg",
+    "name": "linalg.trace",
+    "notes": "Matrix trace. Cost: n (sum of diagonal elements).",
+    "numpy_ref": "np.linalg.trace",
+    "signature": "fnp.linalg.trace(x: 'ArrayLike', /, *, offset: 'int' = 0, dtype: 'Any' = None) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Returns the sum along the specified diagonals of a matrix (or a stack of matrices) ``x``.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-trace",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_properties.py#L40",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L3138"
+  }
+}

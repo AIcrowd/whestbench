@@ -1,0 +1,507 @@
+{
+  "detail_href": "/docs/api/numpy/greater-equal/",
+  "detail_json_href": "/api-data/ops/greater_equal.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the truth value of (x1 >= x2) element-wise."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input arrays.\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1.shape != x2.shape"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", they must be broadcastable to a common\nshape (which becomes the shape of the output)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input arrays.\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1.shape != x2.shape"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", they must be broadcastable to a common\nshape (which becomes the shape of the output)."
+                  }
+                ],
+                "name": "x1, x2",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, None, or tuple of ndarray and None, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will be set to the ufunc result.\nElsewhere, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will retain its original value.\nNote that if an uninitialized "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array is created via the default\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", locations within it where the condition is False will\nremain uninitialized."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will be set to the ufunc result.\nElsewhere, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will retain its original value.\nNote that if an uninitialized "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array is created via the default\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", locations within it where the condition is False will\nremain uninitialized."
+                  }
+                ],
+                "name": "where",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "For other keyword-only arguments, see the\n"
+                      },
+                      {
+                        "display_text": "ufunc docs",
+                        "explicit_title": true,
+                        "external_url": "",
+                        "href": "",
+                        "kind": "role_reference",
+                        "original_target": "ufuncs.kwargs",
+                        "role": "ref",
+                        "suppress_link": false,
+                        "target": "ufuncs.kwargs",
+                        "unresolved": true
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "For other keyword-only arguments, see the\n"
+                  },
+                  {
+                    "display_text": "ufunc docs",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "ufuncs.kwargs",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "ufuncs.kwargs",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "**kwargs",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output array, element-wise comparison of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nTypically of type bool, unless "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "dtype=object"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is passed.\nThis is a scalar if both "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are scalars."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool or ndarray of bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output array, element-wise comparison of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nTypically of type bool, unless "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "dtype=object"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is passed.\nThis is a scalar if both "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are scalars."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/greater/",
+                "label": "flops.greater",
+                "original_target": "greater",
+                "role": "",
+                "target": "greater",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/less/",
+                "label": "flops.less",
+                "original_target": "less",
+                "role": "",
+                "target": "less",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/less-equal/",
+                "label": "flops.less_equal",
+                "original_target": "less_equal",
+                "role": "",
+                "target": "less_equal",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/equal/",
+                "label": "flops.equal",
+                "original_target": "equal",
+                "role": "",
+                "target": "equal",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/not-equal/",
+                "label": "flops.not_equal",
+                "original_target": "not_equal",
+                "role": "",
+                "target": "not_equal",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.greater_equal([4, 2, 1], [2, 2, 2])"
+              },
+              {
+                "kind": "output",
+                "text": "array([ True, True, False])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The "
+              },
+              {
+                "kind": "code",
+                "text": ">="
+              },
+              {
+                "kind": "text",
+                "text": " operator can be used as a shorthand for "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/greater-equal/",
+                "kind": "link",
+                "target": "greater_equal",
+                "text": "flops.greater_equal"
+              },
+              {
+                "kind": "text",
+                "text": "\non ndarrays."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([4, 2, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([2, 2, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a >= b"
+              },
+              {
+                "kind": "output",
+                "text": "array([ True,  True, False])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_binary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.greater_equal",
+    "module": "numpy",
+    "name": "greater_equal",
+    "notes": "Element-wise x1 >= x2.",
+    "numpy_ref": "np.greater_equal",
+    "signature": "fnp.greater_equal(x: 'ArrayLike', y: 'ArrayLike', out: 'FlopscopeArray | None' = None, **kwargs: 'Any') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Return the truth value of (x1 >= x2) element-wise.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "greater_equal",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L420",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/code_generators/ufunc_docstrings.py"
+  }
+}

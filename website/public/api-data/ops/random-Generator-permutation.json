@@ -1,0 +1,315 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/permutation/",
+  "detail_json_href": "/api-data/ops/random-Generator-permutation.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Randomly permute a sequence, or return a permuted range."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an integer, randomly permute "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.arange(x).html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "arange(x)",
+                        "text": "flops.arange(x)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an array, make a copy and shuffle the elements\nrandomly."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an integer, randomly permute "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.arange(x).html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "arange(x)",
+                    "text": "flops.arange(x)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an array, make a copy and shuffle the elements\nrandomly."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis which "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is shuffled along. Default is 0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis which "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is shuffled along. Default is 0."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Permuted sequence or array range."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Permuted sequence or array range."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.permutation(10)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 7, 4, 3, 0, 9, 2, 5, 8, 6]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.permutation([1, 4, 9, 12, 15])"
+              },
+              {
+                "kind": "output",
+                "text": "array([15,  1,  9,  4, 12]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.arange(9).reshape((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.permutation(arr)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[6, 7, 8], # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [0, 1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4, 5]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.permutation(\"abc\")"
+              },
+              {
+                "kind": "output",
+                "text": "Traceback (most recent call last):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "output",
+                "text": "flops.exceptions.AxisError: axis 0 is out of bounds for array of dimension 0"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.arange(9).reshape((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.permutation(arr, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 2, 1], # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 5, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [6, 8, 7]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "shape[axis]",
+    "cost_formula_latex": "$\\text{shape}[\\text{axis}]$",
+    "flopscope_ref": "fnp.random.Generator.permutation",
+    "module": "numpy.random",
+    "name": "random.Generator.permutation",
+    "notes": "Random permutation; cost = shape[axis] (Fisher-Yates draws).",
+    "numpy_ref": "np.random.Generator.permutation",
+    "signature": "fnp.random.Generator.permutation(self, x, axis=0)",
+    "status": "supported",
+    "summary": "Randomly permute a sequence, or return a permuted range.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-permutation",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.permutation.html"
+  }
+}

@@ -1,0 +1,267 @@
+{
+  "detail_href": "/docs/api/stats/laplace/pdf/",
+  "detail_json_href": "/api-data/ops/stats-laplace-pdf.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Evaluate the probability density function."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Points at which to evaluate the density."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Points at which to evaluate the density."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Location parameter of the distribution. Defaults to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "0"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Location parameter of the distribution. Defaults to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "0"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "loc",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Scale parameter of the distribution. Defaults to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Scale parameter of the distribution. Defaults to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "scale",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Probability density evaluated elementwise at "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "FlopscopeArray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Probability density evaluated elementwise at "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Equivalent to "
+              },
+              {
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.laplace.pdf(x, loc, scale).html",
+                "href": "",
+                "kind": "link",
+                "target": "stats.laplace.pdf(x, loc, scale)",
+                "text": "scipy.stats.laplace.pdf(x, loc, scale)"
+              },
+              {
+                "kind": "text",
+                "text": ".\nFLOP cost: "
+              },
+              {
+                "kind": "code",
+                "text": "1 * numel(x)"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope as flops"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([-1.0, 0.0, 1.0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.round(flops.stats.laplace.pdf(x), 3)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.184, 0.5  , 0.184])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "5n",
+    "cost_formula_latex": "$5n$",
+    "flopscope_ref": "flops.stats.laplace.pdf",
+    "module": "flopscope.stats",
+    "name": "stats.laplace.pdf",
+    "notes": "Laplace PDF; cost = numel(input).",
+    "numpy_ref": "scipy.stats.laplace.pdf",
+    "signature": "flops.stats.laplace.pdf(x, loc=0, scale=1)",
+    "status": "supported",
+    "summary": "Evaluate the probability density function.",
+    "weight": 16.0
+  },
+  "schema_version": 1,
+  "slug": "stats-laplace-pdf",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/stats/_laplace.py#L34",
+    "numpy": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.laplace.html"
+  }
+}

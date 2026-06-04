@@ -1,0 +1,351 @@
+{
+  "detail_href": "/docs/api/numpy/array-equal/",
+  "detail_json_href": "/api-data/ops/array_equal.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "True if two arrays have the same shape and elements, False otherwise."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input arrays."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input arrays."
+                  }
+                ],
+                "name": "a1, a2",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Whether to compare NaN's as equal. If the dtype of a1 and a2 is\ncomplex, values will be considered equal if either the real or the\nimaginary component of a given value is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "nan"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Whether to compare NaN's as equal. If the dtype of a1 and a2 is\ncomplex, values will be considered equal if either the real or the\nimaginary component of a given value is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "nan"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "equal_nan",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Returns True if the arrays are equal."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Returns True if the arrays are equal."
+                  }
+                ],
+                "name": "b",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Returns True if two arrays are element-wise equal within a tolerance.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Returns True if two arrays are element-wise equal within a tolerance."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/allclose/",
+                "label": "flops.allclose",
+                "original_target": "allclose",
+                "role": "",
+                "target": "allclose",
+                "unresolved": false
+              },
+              {
+                "description": "Returns True if input arrays are shape consistent and all elements equal.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Returns True if input arrays are shape consistent and all elements equal."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/array-equiv/",
+                "label": "flops.array_equiv",
+                "original_target": "array_equiv",
+                "role": "",
+                "target": "array_equiv",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.array_equal([1, 2], [1, 2])"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.array_equal(flops.array([1, 2]), flops.array([1, 2]))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.array_equal([1, 2], [1, 2, 3])"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.array_equal([1, 2], [1, 4])"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1, flops.nan])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.array_equal(a, a)"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.array_equal(a, a, equal_nan=True)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When "
+              },
+              {
+                "kind": "code",
+                "text": "equal_nan"
+              },
+              {
+                "kind": "text",
+                "text": " is True, complex values with nan components are\nconsidered equal if either the real "
+              },
+              {
+                "kind": "emphasis",
+                "text": "or"
+              },
+              {
+                "kind": "text",
+                "text": " the imaginary components are nan."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1 + 1j])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = a.copy()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a.real = flops.nan"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b.imag = flops.nan"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.array_equal(a, b, equal_nan=True)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.array_equal",
+    "module": "numpy",
+    "name": "array_equal",
+    "notes": "Element-wise equality; cost = numel(a).",
+    "numpy_ref": "np.array_equal",
+    "signature": "fnp.array_equal(a1, a2, equal_nan=False)",
+    "status": "supported",
+    "summary": "True if two arrays have the same shape and elements, False otherwise.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "array_equal",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L80",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/numeric.py#L2475"
+  }
+}

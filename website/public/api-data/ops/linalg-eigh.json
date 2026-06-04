@@ -1,0 +1,722 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/eigh/",
+  "detail_json_href": "/api-data/ops/linalg-eigh.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the eigenvalues and eigenvectors of a complex Hermitian (conjugate symmetric) or a real symmetric matrix."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns two objects, a 1-D array containing the eigenvalues of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ", and\na 2-D square array or matrix (depending on the input type) of the\ncorresponding eigenvectors (in columns)."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Hermitian or real symmetric matrices whose eigenvalues and\neigenvectors are to be computed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Hermitian or real symmetric matrices whose eigenvalues and\neigenvectors are to be computed."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Specifies whether the calculation is done with the lower triangular\npart of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " ('L', default) or the upper triangular part ('U').\nIrrespective of this value only the real parts of the diagonal will\nbe considered in the computation to preserve the notion of a Hermitian\nmatrix. It therefore follows that the imaginary part of the diagonal\nwill always be treated as zero."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'L', 'U'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Specifies whether the calculation is done with the lower triangular\npart of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " ('L', default) or the upper triangular part ('U').\nIrrespective of this value only the real parts of the diagonal will\nbe considered in the computation to preserve the notion of a Hermitian\nmatrix. It therefore follows that the imaginary part of the diagonal\nwill always be treated as zero."
+                  }
+                ],
+                "name": "UPLO",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [],
+                "data_type": "A namedtuple with the following attributes:",
+                "inline": [],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The eigenvalues in ascending order, each repeated according to\nits multiplicity."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M) ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The eigenvalues in ascending order, each repeated according to\nits multiplicity."
+                  }
+                ],
+                "name": "eigenvalues",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The column "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "eigenvectors[:, i]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is the normalized eigenvector\ncorresponding to the eigenvalue "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "eigenvalues[i]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Will return a\nmatrix object if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a matrix object."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{(..., M, M) ndarray, (..., M, M) matrix}",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The column "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "eigenvectors[:, i]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is the normalized eigenvector\ncorresponding to the eigenvalue "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "eigenvalues[i]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Will return a\nmatrix object if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a matrix object."
+                  }
+                ],
+                "name": "eigenvectors",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the eigenvalue computation does not converge."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the eigenvalue computation does not converge."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "eigenvalues of real symmetric or complex Hermitian (conjugate symmetric) arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues of real symmetric or complex Hermitian (conjugate symmetric) arrays."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eigvalsh.html",
+                "href": "",
+                "label": "eigvalsh",
+                "original_target": "eigvalsh",
+                "role": "",
+                "target": "eigvalsh",
+                "unresolved": false
+              },
+              {
+                "description": "eigenvalues and right eigenvectors for non-symmetric arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues and right eigenvectors for non-symmetric arrays."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eig.html",
+                "href": "",
+                "label": "eig",
+                "original_target": "eig",
+                "role": "",
+                "target": "eig",
+                "unresolved": false
+              },
+              {
+                "description": "eigenvalues of non-symmetric arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues of non-symmetric arrays."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eigvals.html",
+                "href": "",
+                "label": "eigvals",
+                "original_target": "eigvals",
+                "role": "",
+                "target": "eigvals",
+                "unresolved": false
+              },
+              {
+                "description": "Similar function in SciPy (but also solves the generalized eigenvalue problem).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy (but also solves the generalized eigenvalue problem)."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigh.html",
+                "href": "",
+                "label": "scipy.linalg.eigh",
+                "original_target": "scipy.linalg.eigh",
+                "role": "",
+                "target": "scipy.linalg.eigh",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Broadcasting rules apply, see the "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.linalg.html",
+                "href": "",
+                "kind": "link",
+                "target": "linalg",
+                "text": "flops.linalg"
+              },
+              {
+                "kind": "text",
+                "text": " documentation for\ndetails."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The eigenvalues/eigenvectors are computed using LAPACK routines "
+              },
+              {
+                "kind": "code",
+                "text": "_syevd"
+              },
+              {
+                "kind": "text",
+                "text": ",\n"
+              },
+              {
+                "kind": "code",
+                "text": "_heevd"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The eigenvalues of real symmetric or complex Hermitian matrices are always\nreal. "
+              },
+              {
+                "kind": "text",
+                "text": "[1]_"
+              },
+              {
+                "kind": "text",
+                "text": " The array "
+              },
+              {
+                "kind": "code",
+                "text": "eigenvalues"
+              },
+              {
+                "kind": "text",
+                "text": " of (column) eigenvectors is unitary and\n"
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "eigenvalues"
+              },
+              {
+                "kind": "text",
+                "text": ", and "
+              },
+              {
+                "kind": "code",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "text",
+                "text": " satisfy the equations "
+              },
+              {
+                "kind": "code",
+                "text": "dot(a,\neigenvectors[:, i]) = eigenvalues[i] * eigenvectors[:, i]"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nG. Strang, Linear Algebra and Its Applications, 2nd Ed., Orlando,\nFL, Academic Press, Inc., 1980, pg. 222.",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from numpy import linalg as LA"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, -2j], [2j, 5]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1.+0.j, -0.-2.j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.+2.j,  5.+0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues, eigenvectors = LA.eigh(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.17157288, 5.82842712])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "output",
+                "text": "array([[-0.92387953+0.j        , -0.38268343+0.j        ], # may vary"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.        +0.38268343j,  0.        -0.92387953j]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "(flops.dot(a, eigenvectors[:, 0]) -"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "eigenvalues[0] * eigenvectors[:, 0])  # verify 1st eigenval/vec pair"
+              },
+              {
+                "kind": "output",
+                "text": "array([5.55111512e-17+0.0000000e+00j, 0.00000000e+00+1.2490009e-16j])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "(flops.dot(a, eigenvectors[:, 1]) -"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "eigenvalues[1] * eigenvectors[:, 1])  # verify 2nd eigenval/vec pair"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.+0.j, 0.+0.j])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = flops.matrix(a) # what happens if input is a matrix object"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A"
+              },
+              {
+                "kind": "output",
+                "text": "matrix([[ 1.+0.j, -0.-2.j],"
+              },
+              {
+                "kind": "output",
+                "text": "        [ 0.+2.j,  5.+0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues, eigenvectors = LA.eigh(A)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.17157288, 5.82842712])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "output",
+                "text": "matrix([[-0.92387953+0.j        , -0.38268343+0.j        ], # may vary"
+              },
+              {
+                "kind": "output",
+                "text": "        [ 0.        +0.38268343j,  0.        -0.92387953j]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# demonstrate the treatment of the imaginary part of the diagonal"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[5+2j, 9-2j], [0+2j, 2-1j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[5.+2.j, 9.-2.j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.+2.j, 2.-1.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# with UPLO='L' this is numerically equivalent to using LA.eig() with:"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([[5.+0.j, 0.-2.j], [0.+2.j, 2.-0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b"
+              },
+              {
+                "kind": "output",
+                "text": "array([[5.+0.j, 0.-2.j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.+2.j, 2.+0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "wa, va = LA.eigh(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "wb, vb = LA.eig(b)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "wa"
+              },
+              {
+                "kind": "output",
+                "text": "array([1., 6.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "wb"
+              },
+              {
+                "kind": "output",
+                "text": "array([6.+0.j, 1.+0.j])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "va"
+              },
+              {
+                "kind": "output",
+                "text": "array([[-0.4472136 +0.j        , -0.89442719+0.j        ], # may vary"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.        +0.89442719j,  0.        -0.4472136j ]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "vb"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0.89442719+0.j       , -0.        +0.4472136j],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-0.        +0.4472136j,  0.89442719+0.j       ]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n^3",
+    "cost_formula_latex": "$n^3$",
+    "flopscope_ref": "fnp.linalg.eigh",
+    "module": "numpy.linalg",
+    "name": "linalg.eigh",
+    "notes": "Symmetric eigendecomposition. Cost: $n^3$.",
+    "numpy_ref": "np.linalg.eigh",
+    "signature": "fnp.linalg.eigh(a: 'ArrayLike', UPLO: 'str' = 'L') -> 'tuple[FlopscopeArray, FlopscopeArray]'",
+    "status": "supported",
+    "summary": "Return the eigenvalues and eigenvectors of a complex Hermitian (conjugate symmetric) or a real symmetric matrix.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-eigh",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_decompositions.py#L194",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L1485"
+  }
+}

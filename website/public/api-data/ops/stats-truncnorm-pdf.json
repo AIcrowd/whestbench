@@ -1,0 +1,311 @@
+{
+  "detail_href": "/docs/api/stats/truncnorm/pdf/",
+  "detail_json_href": "/api-data/ops/stats-truncnorm-pdf.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Evaluate the probability density function."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Points at which to evaluate the density."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Points at which to evaluate the density."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Lower standardized bound."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Lower standardized bound."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Upper standardized bound."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Upper standardized bound."
+                  }
+                ],
+                "name": "b",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Mean of the underlying normal distribution. Defaults to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "0"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Mean of the underlying normal distribution. Defaults to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "0"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "loc",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Standard deviation of the underlying normal distribution.\nDefaults to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Standard deviation of the underlying normal distribution.\nDefaults to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "scale",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Probability density evaluated elementwise at "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "FlopscopeArray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Probability density evaluated elementwise at "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Equivalent to "
+              },
+              {
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.pdf(x, a, b, loc, scale).html",
+                "href": "",
+                "kind": "link",
+                "target": "stats.truncnorm.pdf(x, a, b, loc, scale)",
+                "text": "scipy.stats.truncnorm.pdf(x, a, b, loc, scale)"
+              },
+              {
+                "kind": "text",
+                "text": ".\nFLOP cost: "
+              },
+              {
+                "kind": "code",
+                "text": "1 * numel(x)"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope as flops"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([-0.5, 0.0, 0.5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.round(flops.stats.truncnorm.pdf(x, a=-1.0, b=1.0), 3)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.516, 0.584, 0.516])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "30n",
+    "cost_formula_latex": "$30n$",
+    "flopscope_ref": "flops.stats.truncnorm.pdf",
+    "module": "flopscope.stats",
+    "name": "stats.truncnorm.pdf",
+    "notes": "Truncated normal PDF; cost = numel(input).",
+    "numpy_ref": "scipy.stats.truncnorm.pdf",
+    "signature": "flops.stats.truncnorm.pdf(x, a, b, loc=0, scale=1)",
+    "status": "supported",
+    "summary": "Evaluate the probability density function.",
+    "weight": 16.0
+  },
+  "schema_version": 1,
+  "slug": "stats-truncnorm-pdf",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/stats/_truncnorm.py#L50",
+    "numpy": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html"
+  }
+}

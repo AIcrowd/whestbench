@@ -1,0 +1,586 @@
+{
+  "detail_href": "/docs/api/numpy/reshape/",
+  "detail_json_href": "/api-data/ops/reshape.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Gives a new shape to an array without changing its data."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array to be reshaped."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array to be reshaped."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The new shape should be compatible with the original shape. If\nan integer, then the result will be a 1-D array of that length.\nOne shape dimension can be -1. In this case, the value is\ninferred from the length of the array and remaining dimensions."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The new shape should be compatible with the original shape. If\nan integer, then the result will be a 1-D array of that length.\nOne shape dimension can be -1. In this case, the value is\ninferred from the length of the array and remaining dimensions."
+                  }
+                ],
+                "name": "shape",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Read the elements of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " using this index order, and place the\nelements into the reshaped array using this index order. 'C'\nmeans to read / write the elements using C-like index order,\nwith the last axis index changing fastest, back to the first\naxis index changing slowest. 'F' means to read / write the\nelements using Fortran-like index order, with the first index\nchanging fastest, and the last index changing slowest. Note that\nthe 'C' and 'F' options take no account of the memory layout of\nthe underlying array, and only refer to the order of indexing.\n'A' means to read / write the elements in Fortran-like index\norder if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is Fortran "
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "contiguous"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " in memory, C-like order\notherwise."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'C', 'F', 'A'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Read the elements of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " using this index order, and place the\nelements into the reshaped array using this index order. 'C'\nmeans to read / write the elements using C-like index order,\nwith the last axis index changing fastest, back to the first\naxis index changing slowest. 'F' means to read / write the\nelements using Fortran-like index order, with the first index\nchanging fastest, and the last index changing slowest. Note that\nthe 'C' and 'F' options take no account of the memory layout of\nthe underlying array, and only refer to the order of indexing.\n'A' means to read / write the elements in Fortran-like index\norder if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is Fortran "
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "contiguous"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " in memory, C-like order\notherwise."
+                  }
+                ],
+                "name": "order",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "deprecated",
+                    "options": [],
+                    "raw_source": ".. deprecated:: 2.1\n    Replaced by ``shape`` argument. Retained for backward\n    compatibility.",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.1"
+                  }
+                ],
+                "data_type": "int or tuple of ints",
+                "inline": [],
+                "name": "newshape",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then the array data is copied. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", a copy will\nonly be made if it's required by "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "order"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". For "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " it raises\na "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ValueError"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " if a copy cannot be avoided. Default: "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then the array data is copied. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", a copy will\nonly be made if it's required by "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "order"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". For "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " it raises\na "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ValueError"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " if a copy cannot be avoided. Default: "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "copy",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "This will be a new view object if possible; otherwise, it will\nbe a copy.  Note there is no guarantee of the "
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "memory layout"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (C- or\nFortran- contiguous) of the returned array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This will be a new view object if possible; otherwise, it will\nbe a copy.  Note there is no guarantee of the "
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "memory layout"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (C- or\nFortran- contiguous) of the returned array."
+                  }
+                ],
+                "name": "reshaped_array",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Equivalent method.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Equivalent method."
+                  }
+                ],
+                "external_url": "",
+                "href": "",
+                "label": "ndarray.reshape",
+                "original_target": "ndarray.reshape",
+                "role": "",
+                "target": "ndarray.reshape",
+                "unresolved": true
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "It is not always possible to change the shape of an array without copying\nthe data."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The "
+              },
+              {
+                "kind": "code",
+                "text": "order"
+              },
+              {
+                "kind": "text",
+                "text": " keyword gives the index ordering both for "
+              },
+              {
+                "kind": "emphasis",
+                "text": "fetching"
+              },
+              {
+                "kind": "text",
+                "text": "\nthe values from "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ", and then "
+              },
+              {
+                "kind": "emphasis",
+                "text": "placing"
+              },
+              {
+                "kind": "text",
+                "text": " the values into the output\narray. For example, let's say you have an array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(6).reshape((3, 2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [4, 5]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "You can think of reshaping as first raveling the array (using the given\nindex order), then inserting the elements from the raveled array into the\nnew array using the same kind of index ordering as was used for the\nraveling."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.reshape(a, (2, 3)) # C-like index ordering"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4, 5]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.reshape(flops.ravel(a), (2, 3)) # equivalent to C ravel then C reshape"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4, 5]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.reshape(a, (2, 3), order='F') # Fortran-like index ordering"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 4, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2, 1, 5]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.reshape(flops.ravel(a, order='F'), (2, 3), order='F')"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 4, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2, 1, 5]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1,2,3], [4,5,6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.reshape(a, 6)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 4, 5, 6])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.reshape(a, 6, order='F')"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 4, 2, 5, 3, 6])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.reshape(a, (3,-1))       # the unspecified value is inferred to be 2"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [5, 6]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.reshape",
+    "module": "numpy",
+    "name": "reshape",
+    "notes": "Reshape array without copying.",
+    "numpy_ref": "np.reshape",
+    "signature": "fnp.reshape(a, /, shape=None, order='C', *, newshape=None, copy=None)",
+    "status": "supported",
+    "summary": "Gives a new shape to an array without changing its data.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "reshape",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L371",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L211"
+  }
+}

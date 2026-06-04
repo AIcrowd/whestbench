@@ -1,0 +1,317 @@
+{
+  "detail_href": "/docs/api/numpy/isreal/",
+  "detail_json_href": "/api-data/ops/isreal.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns a bool array, where True if input element is real."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If element has complex type with zero imaginary part, the return value\nfor that element is True."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Boolean array of same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Boolean array of same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/iscomplex/",
+                "label": "flops.iscomplex",
+                "original_target": "iscomplex",
+                "role": "",
+                "target": "iscomplex",
+                "unresolved": false
+              },
+              {
+                "description": "Return True if x is not a complex type.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return True if x is not a complex type."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/isrealobj/",
+                "label": "flops.isrealobj",
+                "original_target": "isrealobj",
+                "role": "",
+                "target": "isrealobj",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/isreal/",
+                "kind": "link",
+                "target": "isreal",
+                "text": "isreal"
+              },
+              {
+                "kind": "text",
+                "text": " may behave unexpectedly for string or object arrays (see examples)"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1+1j, 1+0j, 4.5, 3, 2, 2j], dtype=complex)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isreal(a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([False,  True,  True,  True,  True, False])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The function does not work on string arrays."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([2j, \"a\"], dtype=\"U\")"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isreal(a)  # Warns about non-elementwise comparison"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns True for all elements in input array of "
+              },
+              {
+                "kind": "code",
+                "text": "dtype=object"
+              },
+              {
+                "kind": "text",
+                "text": " even if\nany of the elements is complex."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1, \"2\", 3+4j], dtype=object)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isreal(a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ True,  True,  True])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "isreal should not be used with object arrays"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1+2j, 2+1j], dtype=object)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isreal(a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ True,  True])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_unary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.isreal",
+    "module": "numpy",
+    "name": "isreal",
+    "notes": "Test if element is real (imag == 0) element-wise.",
+    "numpy_ref": "np.isreal",
+    "signature": "fnp.isreal(x)",
+    "status": "supported",
+    "summary": "Returns a bool array, where True if input element is real.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "isreal",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L343",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_type_check_impl.py#L213"
+  }
+}

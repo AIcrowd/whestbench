@@ -1,0 +1,461 @@
+{
+  "detail_href": "/docs/api/numpy/sign/",
+  "detail_json_href": "/api-data/ops/sign.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns an element-wise indication of the sign of a number."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/sign/",
+                "kind": "link",
+                "target": "sign",
+                "text": "sign"
+              },
+              {
+                "kind": "text",
+                "text": " function returns "
+              },
+              {
+                "kind": "code",
+                "text": "-1 if x < 0, 0 if x==0, 1 if x > 0"
+              },
+              {
+                "kind": "text",
+                "text": ".  nan\nis returned for nan inputs."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For complex inputs, the "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/sign/",
+                "kind": "link",
+                "target": "sign",
+                "text": "sign"
+              },
+              {
+                "kind": "text",
+                "text": " function returns "
+              },
+              {
+                "kind": "code",
+                "text": "x / abs(x)"
+              },
+              {
+                "kind": "text",
+                "text": ", the\ngeneralization of the above (and "
+              },
+              {
+                "kind": "code",
+                "text": "0 if x==0"
+              },
+              {
+                "kind": "text",
+                "text": ")."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [],
+            "directive": "versionchanged",
+            "options": [],
+            "raw_source": ".. versionchanged:: 2.0.0\n    Definition of complex sign changed to follow the Array API standard.",
+            "supported": true,
+            "type": "directive_block",
+            "version": "2.0.0"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input values."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input values."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, None, or tuple of ndarray and None, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will be set to the ufunc result.\nElsewhere, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will retain its original value.\nNote that if an uninitialized "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array is created via the default\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", locations within it where the condition is False will\nremain uninitialized."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will be set to the ufunc result.\nElsewhere, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will retain its original value.\nNote that if an uninitialized "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array is created via the default\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", locations within it where the condition is False will\nremain uninitialized."
+                  }
+                ],
+                "name": "where",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "For other keyword-only arguments, see the\n"
+                      },
+                      {
+                        "display_text": "ufunc docs",
+                        "explicit_title": true,
+                        "external_url": "",
+                        "href": "",
+                        "kind": "role_reference",
+                        "original_target": "ufuncs.kwargs",
+                        "role": "ref",
+                        "suppress_link": false,
+                        "target": "ufuncs.kwargs",
+                        "unresolved": true
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "For other keyword-only arguments, see the\n"
+                  },
+                  {
+                    "display_text": "ufunc docs",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "ufuncs.kwargs",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "ufuncs.kwargs",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "**kwargs",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The sign of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nThis is a scalar if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The sign of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nThis is a scalar if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "There is more than one definition of sign in common use for complex\nnumbers.  The definition used here, "
+              },
+              {
+                "kind": "math",
+                "latex": "x/|x|"
+              },
+              {
+                "kind": "text",
+                "text": ", is the more common\nand useful one, but is different from the one used in numpy prior to\nversion 2.0, "
+              },
+              {
+                "kind": "math",
+                "latex": "x/\\sqrt{x*x}"
+              },
+              {
+                "kind": "text",
+                "text": ", which is equivalent to\n"
+              },
+              {
+                "kind": "code",
+                "text": "sign(x.real) + 0j if x.real != 0 else sign(x.imag) + 0j"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.sign([-5., 4.5])"
+              },
+              {
+                "kind": "output",
+                "text": "array([-1.,  1.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.sign(0)"
+              },
+              {
+                "kind": "output",
+                "text": "0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.sign([3-4j, 8j])"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.6-0.8j, 0. +1.j ])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_unary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.sign",
+    "module": "numpy",
+    "name": "sign",
+    "notes": "Element-wise sign function.",
+    "numpy_ref": "np.sign",
+    "signature": "fnp.sign(x: 'ArrayLike', out: 'FlopscopeArray | None' = None, **kwargs: 'Any') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Returns an element-wise indication of the sign of a number.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "sign",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L343",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/code_generators/ufunc_docstrings.py"
+  }
+}

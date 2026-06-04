@@ -1,0 +1,291 @@
+{
+  "detail_href": "/docs/api/numpy/hamming/",
+  "detail_json_href": "/api-data/ops/hamming.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the Hamming window."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Hamming window is a taper formed by using a weighted cosine."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of points in the output window. If zero or less, an\nempty array is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of points in the output window. If zero or less, an\nempty array is returned."
+                  }
+                ],
+                "name": "M",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The window, with the maximum value normalized to one (the value\none appears only if the number of samples is odd)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The window, with the maximum value normalized to one (the value\none appears only if the number of samples is odd)."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/bartlett/",
+                "label": "flops.bartlett",
+                "original_target": "bartlett",
+                "role": "",
+                "target": "bartlett",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/blackman/",
+                "label": "flops.blackman",
+                "original_target": "blackman",
+                "role": "",
+                "target": "blackman",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/hanning/",
+                "label": "flops.hanning",
+                "original_target": "hanning",
+                "role": "",
+                "target": "hanning",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/kaiser/",
+                "label": "flops.kaiser",
+                "original_target": "kaiser",
+                "role": "",
+                "target": "kaiser",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Hamming window is defined as"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "w(n) = 0.54 - 0.46\\cos\\left(\\frac{2\\pi{n}}{M-1}\\right) \\qquad 0 \\leq n \\leq M-1"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Hamming was named for R. W. Hamming, an associate of J. W. Tukey\nand is described in Blackman and Tukey. It was recommended for\nsmoothing the truncated autocovariance function in the time domain.\nMost references to the Hamming window come from the signal processing\nliterature, where it is used as one of many windowing functions for\nsmoothing values.  It is also known as an apodization (which means\n\"removing the foot\", i.e. smoothing discontinuities at the beginning\nand end of the sampled signal) or tapering function."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nBlackman, R.B. and Tukey, J.W., (1958) The measurement of power\nspectra, Dover Publications, New York.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nE.R. Kanasewich, \"Time Sequence Analysis in Geophysics\", The\nUniversity of Alberta Press, 1975, pp. 109-110.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "3\n\nWikipedia, \"Window function\",\nhttps://en.wikipedia.org/wiki/Window_function",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "4\n\nW.H. Press,  B.P. Flannery, S.A. Teukolsky, and W.T. Vetterling,\n\"Numerical Recipes\", Cambridge University Press, 1986, page 425.",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.hamming(12)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 0.08      ,  0.15302337,  0.34890909,  0.60546483,  0.84123594, # may vary"
+              },
+              {
+                "kind": "output",
+                "text": "        0.98136677,  0.98136677,  0.84123594,  0.60546483,  0.34890909,"
+              },
+              {
+                "kind": "output",
+                "text": "        0.15302337,  0.08      ])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Plot the window and the frequency response."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "language": "python",
+                "text": "import matplotlib.pyplot as plt\nfrom flops.fft import fft, fftshift\nwindow = flops.hamming(51)\nplt.plot(window)\nplt.title(\"Hamming window\")\nplt.ylabel(\"Amplitude\")\nplt.xlabel(\"Sample\")\nplt.show()\n\nplt.figure()\nA = fft(window, 2048) / 25.5\nmag = flops.abs(fftshift(A))\nfreq = flops.linspace(-0.5, 0.5, len(A))\nresponse = 20 * flops.log10(mag)\nresponse = flops.clip(response, -100, 100)\nplt.plot(freq, response)\nplt.title(\"Frequency response of Hamming window\")\nplt.ylabel(\"Magnitude [dB]\")\nplt.xlabel(\"Normalized frequency [cycles per sample]\")\nplt.axis('tight')\nplt.show()",
+                "type": "literal_block"
+              }
+            ],
+            "directive": "plot",
+            "options": [
+              {
+                "name": "include-source",
+                "value": ""
+              }
+            ],
+            "raw_source": ".. plot::\n    :include-source:\n\n    import matplotlib.pyplot as plt\n    from numpy.fft import fft, fftshift\n    window = np.hamming(51)\n    plt.plot(window)\n    plt.title(\"Hamming window\")\n    plt.ylabel(\"Amplitude\")\n    plt.xlabel(\"Sample\")\n    plt.show()\n\n    plt.figure()\n    A = fft(window, 2048) / 25.5\n    mag = np.abs(fftshift(A))\n    freq = np.linspace(-0.5, 0.5, len(A))\n    response = 20 * np.log10(mag)\n    response = np.clip(response, -100, 100)\n    plt.plot(freq, response)\n    plt.title(\"Frequency response of Hamming window\")\n    plt.ylabel(\"Magnitude [dB]\")\n    plt.xlabel(\"Normalized frequency [cycles per sample]\")\n    plt.axis('tight')\n    plt.show()",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n",
+    "cost_formula_latex": "$n$",
+    "flopscope_ref": "fnp.hamming",
+    "module": "flopscope._window",
+    "name": "hamming",
+    "notes": "Hamming window. Cost: n (one cosine per sample).",
+    "numpy_ref": "np.hamming",
+    "signature": "fnp.hamming(M: 'int') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Return the Hamming window.",
+    "weight": 8.0
+  },
+  "schema_version": 1,
+  "slug": "hamming",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_window.py#L98",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L3367"
+  }
+}

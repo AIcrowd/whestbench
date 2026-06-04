@@ -1,0 +1,888 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/norm/",
+  "detail_json_href": "/api-data/ops/linalg-norm.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Matrix or vector norm."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function is able to return one of eight different matrix norms,\nor one of an infinite number of vector norms (described below), depending\non the value of the "
+              },
+              {
+                "kind": "code",
+                "text": "ord"
+              },
+              {
+                "kind": "text",
+                "text": " parameter."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " must be 1-D or 2-D, unless "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ord"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nis None. If both "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ord"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are None, the 2-norm of\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x.ravel"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will be returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " must be 1-D or 2-D, unless "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ord"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nis None. If both "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ord"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are None, the 2-norm of\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x.ravel"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will be returned."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Order of the norm (see table under "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "Notes"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " for what values are\nsupported for matrices and vectors respectively). inf means numpy's\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "inf"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " object. The default is None."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{int, float, inf, -inf, 'fro', 'nuc'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Order of the norm (see table under "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "Notes"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " for what values are\nsupported for matrices and vectors respectively). inf means numpy's\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "inf"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " object. The default is None."
+                  }
+                ],
+                "name": "ord",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an integer, it specifies the axis of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " along which to\ncompute the vector norms.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a 2-tuple, it specifies the\naxes that hold 2-D matrices, and the matrix norms of these matrices\nare computed.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None then either a vector norm (when "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nis 1-D) or a matrix norm (when "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is 2-D) is returned. The default\nis None."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{None, int, 2-tuple of ints}, optional.",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an integer, it specifies the axis of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " along which to\ncompute the vector norms.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a 2-tuple, it specifies the\naxes that hold 2-D matrices, and the matrix norms of these matrices\nare computed.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None then either a vector norm (when "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nis 1-D) or a matrix norm (when "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is 2-D) is returned. The default\nis None."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this is set to True, the axes which are normed over are left in the\nresult as dimensions with size one.  With this option the result will\nbroadcast correctly against the original "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If this is set to True, the axes which are normed over are left in the\nresult as dimensions with size one.  With this option the result will\nbroadcast correctly against the original "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "keepdims",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Norm of the matrix or vector(s)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Norm of the matrix or vector(s)."
+                  }
+                ],
+                "name": "n",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Similar function in SciPy.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.norm.html",
+                "href": "",
+                "label": "scipy.linalg.norm",
+                "original_target": "scipy.linalg.norm",
+                "role": "",
+                "target": "scipy.linalg.norm",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For values of "
+              },
+              {
+                "kind": "code",
+                "text": "ord < 1"
+              },
+              {
+                "kind": "text",
+                "text": ", the result is, strictly speaking, not a\nmathematical 'norm', but it may still be useful for various numerical\npurposes."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The following norms can be calculated:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "raw_kind": "table",
+            "raw_text": "\n\n\n\n\n\nord\n\nnorm for matrices\n\nnorm for vectors\n\nNone\n\nFrobenius norm\n\n2-norm\n\n'fro'\n\nFrobenius norm\n\n<string>:12: (INFO/1) Unexpected possible title overline or transition.\nTreating it as ordinary text because it's so short.\n\n--\n\n'nuc'\n\nnuclear norm\n\n<string>:13: (INFO/1) Unexpected possible title overline or transition.\nTreating it as ordinary text because it's so short.\n\n--\n\ninf\n\nmax(sum(abs(x), axis=1))\n\nmax(abs(x))\n\n-inf\n\nmin(sum(abs(x), axis=1))\n\nmin(abs(x))\n\n0\n\n<string>:16: (INFO/1) Unexpected possible title overline or transition.\nTreating it as ordinary text because it's so short.\n\n--\n\nsum(x != 0)\n\n1\n\nmax(sum(abs(x), axis=0))\n\nas below\n\n-1\n\nmin(sum(abs(x), axis=0))\n\nas below\n\n2\n\n2-norm (largest sing. value)\n\nas below\n\n-2\n\nsmallest singular value\n\nas below\n\nother\n\n<string>:21: (INFO/1) Unexpected possible title overline or transition.\nTreating it as ordinary text because it's so short.\n\n--\n\nsum(abs(x)**ord)**(1./ord)",
+            "type": "raw_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Frobenius norm is given by "
+              },
+              {
+                "kind": "text",
+                "text": "[1]_"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "math",
+                "latex": "||A||_F = [\\sum_{i,j} abs(a_{i,j})^2]^{1/2}"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The nuclear norm is the sum of the singular values."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Both the Frobenius and nuclear norm orders are only defined for\nmatrices and raise a ValueError when "
+              },
+              {
+                "kind": "code",
+                "text": "x.ndim != 2"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nG. H. Golub and C. F. Van Loan, Matrix Computations,\nBaltimore, MD, Johns Hopkins University Press, 1985, pg. 15",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from numpy import linalg as LA"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(9) - 4"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([-4, -3, -2, ...,  2,  3,  4])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = a.reshape((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b"
+              },
+              {
+                "kind": "output",
+                "text": "array([[-4, -3, -2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-1,  0,  1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 2,  3,  4]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(a)"
+              },
+              {
+                "kind": "output",
+                "text": "7.745966692414834"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(b)"
+              },
+              {
+                "kind": "output",
+                "text": "7.745966692414834"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(b, 'fro')"
+              },
+              {
+                "kind": "output",
+                "text": "7.745966692414834"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(a, flops.inf)"
+              },
+              {
+                "kind": "output",
+                "text": "4.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(b, flops.inf)"
+              },
+              {
+                "kind": "output",
+                "text": "9.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(a, -flops.inf)"
+              },
+              {
+                "kind": "output",
+                "text": "0.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(b, -flops.inf)"
+              },
+              {
+                "kind": "output",
+                "text": "2.0"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(a, 1)"
+              },
+              {
+                "kind": "output",
+                "text": "20.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(b, 1)"
+              },
+              {
+                "kind": "output",
+                "text": "7.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(a, -1)"
+              },
+              {
+                "kind": "output",
+                "text": "-4.6566128774142013e-010"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(b, -1)"
+              },
+              {
+                "kind": "output",
+                "text": "6.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(a, 2)"
+              },
+              {
+                "kind": "output",
+                "text": "7.745966692414834"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(b, 2)"
+              },
+              {
+                "kind": "output",
+                "text": "7.3484692283495345"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(a, -2)"
+              },
+              {
+                "kind": "output",
+                "text": "0.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(b, -2)"
+              },
+              {
+                "kind": "output",
+                "text": "1.8570331885190563e-016 # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(a, 3)"
+              },
+              {
+                "kind": "output",
+                "text": "5.8480354764257312 # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(a, -3)"
+              },
+              {
+                "kind": "output",
+                "text": "0.0"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Using the "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " argument to compute vector norms:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c = flops.array([[ 1, 2, 3],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[-1, 1, 4]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(c, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 1.41421356,  2.23606798,  5.        ])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(c, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 3.74165739,  4.24264069])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(c, ord=1, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 6.,  6.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Using the "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " argument to compute matrix norms:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "m = flops.arange(8).reshape(2,2,2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(m, axis=(1,2))"
+              },
+              {
+                "kind": "output",
+                "text": "array([  3.74165739,  11.22497216])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(m[0, :, :]), LA.norm(m[1, :, :])"
+              },
+              {
+                "kind": "output",
+                "text": "(3.7416573867739413, 11.224972160321824)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "depends on ord",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.linalg.norm",
+    "module": "numpy.linalg",
+    "name": "linalg.norm",
+    "notes": "Norm. Cost depends on ord: numel for L1/inf, 2*numel for Frobenius, m*n*min(m,n) for ord=2.",
+    "numpy_ref": "np.linalg.norm",
+    "signature": "fnp.linalg.norm(x: 'ArrayLike', ord: 'Any' = None, axis: 'int | tuple[int, ...] | None' = None, keepdims: 'bool' = False) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Matrix or vector norm.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-norm",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_properties.py#L214",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L2575"
+  }
+}

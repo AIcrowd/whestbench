@@ -1,0 +1,579 @@
+{
+  "detail_href": "/docs/api/numpy/argpartition/",
+  "detail_json_href": "/api-data/ops/argpartition.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Perform an indirect partition along the given axis using the algorithm specified by the "
+              },
+              {
+                "kind": "code",
+                "text": "kind"
+              },
+              {
+                "kind": "text",
+                "text": " keyword. It returns an array of indices of the same shape as "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " that index data along the given axis in partitioned order."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array to sort."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array to sort."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Element index to partition by. The k-th element will be in its\nfinal sorted position and all smaller elements will be moved\nbefore it and all larger elements behind it. The order of all\nelements in the partitions is undefined. If provided with a\nsequence of k-th it will partition all of them into their sorted\nposition at once."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "deprecated",
+                    "options": [],
+                    "raw_source": ".. deprecated:: 1.22.0\n    Passing booleans as index is deprecated.",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.22.0"
+                  }
+                ],
+                "data_type": "int or sequence of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Element index to partition by. The k-th element will be in its\nfinal sorted position and all smaller elements will be moved\nbefore it and all larger elements behind it. The order of all\nelements in the partitions is undefined. If provided with a\nsequence of k-th it will partition all of them into their sorted\nposition at once."
+                  }
+                ],
+                "name": "kth",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis along which to sort. The default is -1 (the last axis). If\nNone, the flattened array is used."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or None, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis along which to sort. The default is -1 (the last axis). If\nNone, the flattened array is used."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Selection algorithm. Default is 'introselect'"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'introselect'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Selection algorithm. Default is 'introselect'"
+                  }
+                ],
+                "name": "kind",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "When "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an array with fields defined, this argument\nspecifies which fields to compare first, second, etc. A single\nfield can be specified as a string, and not all fields need be\nspecified, but unspecified fields will still be used, in the\norder in which they come up in the dtype, to break ties."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "str or list of str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "When "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an array with fields defined, this argument\nspecifies which fields to compare first, second, etc. A single\nfield can be specified as a string, and not all fields need be\nspecified, but unspecified fields will still be used, in the\norder in which they come up in the dtype, to break ties."
+                  }
+                ],
+                "name": "order",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array of indices that partition "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " along the specified axis.\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is one-dimensional, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a[index_array]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " yields a partitioned "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nMore generally, "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.take_along_axis(a, index_array, axis=axis).html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "take_along_axis(a, index_array, axis=axis)",
+                        "text": "flops.take_along_axis(a, index_array, axis=axis)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nalways yields the partitioned "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", irrespective of dimensionality."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array of indices that partition "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " along the specified axis.\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is one-dimensional, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a[index_array]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " yields a partitioned "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nMore generally, "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.take_along_axis(a, index_array, axis=axis).html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "take_along_axis(a, index_array, axis=axis)",
+                    "text": "flops.take_along_axis(a, index_array, axis=axis)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nalways yields the partitioned "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", irrespective of dimensionality."
+                  }
+                ],
+                "name": "index_array",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Describes partition algorithms used.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Describes partition algorithms used."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/partition/",
+                "label": "flops.partition",
+                "original_target": "partition",
+                "role": "",
+                "target": "partition",
+                "unresolved": false
+              },
+              {
+                "description": "Inplace partition.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Inplace partition."
+                  }
+                ],
+                "external_url": "",
+                "href": "",
+                "label": "ndarray.partition",
+                "original_target": "ndarray.partition",
+                "role": "",
+                "target": "ndarray.partition",
+                "unresolved": true
+              },
+              {
+                "description": "Full indirect sort.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Full indirect sort."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/argsort/",
+                "label": "flops.argsort",
+                "original_target": "argsort",
+                "role": "",
+                "target": "argsort",
+                "unresolved": false
+              },
+              {
+                "description": "Apply ``index_array`` from argpartition to an array as if by calling partition.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Apply "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "index_array"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " from argpartition to an array as if by calling partition."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/take-along-axis/",
+                "label": "flops.take_along_axis",
+                "original_target": "take_along_axis",
+                "role": "",
+                "target": "take_along_axis",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The returned indices are not guaranteed to be sorted according to\nthe values. Furthermore, the default selection algorithm "
+              },
+              {
+                "kind": "code",
+                "text": "introselect"
+              },
+              {
+                "kind": "text",
+                "text": "\nis unstable, and hence the returned indices are not guaranteed\nto be the earliest/latest occurrence of the element."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/argpartition/",
+                "kind": "link",
+                "target": "argpartition",
+                "text": "argpartition"
+              },
+              {
+                "kind": "text",
+                "text": " works for real/complex inputs with nan values,\nsee "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/partition/",
+                "kind": "link",
+                "target": "partition",
+                "text": "partition"
+              },
+              {
+                "kind": "text",
+                "text": " for notes on the enhanced sort order and\ndifferent selection algorithms."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "One dimensional array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([3, 4, 2, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x[flops.argpartition(x, 3)]"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 1, 3, 4]) # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x[flops.argpartition(x, (1, 3))]"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 4]) # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = [3, 4, 2, 1]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.array(x)[flops.argpartition(x, 3)]"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 1, 3, 4]) # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Multi-dimensional array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([[3, 4, 2], [1, 3, 1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "index_array = flops.argpartition(x, kth=1, axis=-1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# below is the same as flops.partition(x, kth=1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.take_along_axis(x, index_array, axis=-1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[2, 3, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 1, 3]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.argpartition",
+    "module": "numpy",
+    "name": "argpartition",
+    "notes": "Indirect partition; cost = n per slice.",
+    "numpy_ref": "np.argpartition",
+    "signature": "fnp.argpartition(a, kth, axis=-1, kind='introselect', order=None)",
+    "status": "supported",
+    "summary": "Perform an indirect partition along the given axis using the algorithm specified by the `kind` keyword. It returns an array of indices of the same shape as `a` that index data along the given axis in partitioned order.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "argpartition",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_sorting_ops.py#L168",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L876"
+  }
+}

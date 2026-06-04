@@ -1,0 +1,578 @@
+{
+  "detail_href": "/docs/api/numpy/split/",
+  "detail_json_href": "/api-data/ops/split.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Split an array into multiple sub-arrays as views into "
+              },
+              {
+                "kind": "code",
+                "text": "ary"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array to be divided into sub-arrays."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array to be divided into sub-arrays."
+                  }
+                ],
+                "name": "ary",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "indices_or_sections"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an integer, N, the array will be divided\ninto N equal arrays along "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  If such a split is not possible,\nan error is raised."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "indices_or_sections"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a 1-D array of sorted integers, the entries\nindicate where along "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " the array is split.  For example,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "[2, 3]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " would, for "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis=0"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", result in"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "ary[:2]"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "ary[2:3]"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "ary[3:]"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If an index exceeds the dimension of the array along "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ",\nan empty sub-array is returned correspondingly."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or 1-D array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "indices_or_sections"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an integer, N, the array will be divided\ninto N equal arrays along "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  If such a split is not possible,\nan error is raised."
+                  }
+                ],
+                "name": "indices_or_sections",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis along which to split, default is 0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis along which to split, default is 0."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A list of sub-arrays as views into "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ary"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "list of ndarrays",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A list of sub-arrays as views into "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ary"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "sub-arrays",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "indices_or_sections"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is given as an integer, but\na split does not result in equal division."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "indices_or_sections"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is given as an integer, but\na split does not result in equal division."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Split an array into multiple sub-arrays of equal or near-equal size.  Does not raise an exception if an equal division cannot be made.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Split an array into multiple sub-arrays of equal or near-equal size.  Does not raise an exception if an equal division cannot be made."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/array-split/",
+                "label": "flops.array_split",
+                "original_target": "array_split",
+                "role": "",
+                "target": "array_split",
+                "unresolved": false
+              },
+              {
+                "description": "Split array into multiple sub-arrays horizontally (column-wise).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Split array into multiple sub-arrays horizontally (column-wise)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/hsplit/",
+                "label": "flops.hsplit",
+                "original_target": "hsplit",
+                "role": "",
+                "target": "hsplit",
+                "unresolved": false
+              },
+              {
+                "description": "Split array into multiple sub-arrays vertically (row wise).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Split array into multiple sub-arrays vertically (row wise)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/vsplit/",
+                "label": "flops.vsplit",
+                "original_target": "vsplit",
+                "role": "",
+                "target": "vsplit",
+                "unresolved": false
+              },
+              {
+                "description": "Split array into multiple sub-arrays along the 3rd axis (depth).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Split array into multiple sub-arrays along the 3rd axis (depth)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/dsplit/",
+                "label": "flops.dsplit",
+                "original_target": "dsplit",
+                "role": "",
+                "target": "dsplit",
+                "unresolved": false
+              },
+              {
+                "description": "Join a sequence of arrays along an existing axis.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Join a sequence of arrays along an existing axis."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/concatenate/",
+                "label": "flops.concatenate",
+                "original_target": "concatenate",
+                "role": "",
+                "target": "concatenate",
+                "unresolved": false
+              },
+              {
+                "description": "Join a sequence of arrays along a new axis.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Join a sequence of arrays along a new axis."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/stack/",
+                "label": "flops.stack",
+                "original_target": "stack",
+                "role": "",
+                "target": "stack",
+                "unresolved": false
+              },
+              {
+                "description": "Stack arrays in sequence horizontally (column wise).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Stack arrays in sequence horizontally (column wise)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/hstack/",
+                "label": "flops.hstack",
+                "original_target": "hstack",
+                "role": "",
+                "target": "hstack",
+                "unresolved": false
+              },
+              {
+                "description": "Stack arrays in sequence vertically (row wise).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Stack arrays in sequence vertically (row wise)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/vstack/",
+                "label": "flops.vstack",
+                "original_target": "vstack",
+                "role": "",
+                "target": "vstack",
+                "unresolved": false
+              },
+              {
+                "description": "Stack arrays in sequence depth wise (along third dimension).",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Stack arrays in sequence depth wise (along third dimension)."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/dstack/",
+                "label": "flops.dstack",
+                "original_target": "dstack",
+                "role": "",
+                "target": "dstack",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.arange(9.0)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.split(x, 3)"
+              },
+              {
+                "kind": "output",
+                "text": "[array([0.,  1.,  2.]), array([3.,  4.,  5.]), array([6.,  7.,  8.])]"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.arange(8.0)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.split(x, [3, 5, 6, 10])"
+              },
+              {
+                "kind": "output",
+                "text": "[array([0.,  1.,  2.]),"
+              },
+              {
+                "kind": "output",
+                "text": " array([3.,  4.]),"
+              },
+              {
+                "kind": "output",
+                "text": " array([5.]),"
+              },
+              {
+                "kind": "output",
+                "text": " array([6.,  7.]),"
+              },
+              {
+                "kind": "output",
+                "text": " array([], dtype=float64)]"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.split",
+    "module": "numpy",
+    "name": "split",
+    "notes": "Split array into sub-arrays. Cost: numel(output).",
+    "numpy_ref": "np.split",
+    "signature": "fnp.split(ary: 'ArrayLike', indices_or_sections: 'int | Sequence[int]', axis: 'int' = 0) -> 'list[FlopscopeArray]'",
+    "status": "supported",
+    "summary": "Split an array into multiple sub-arrays as views into `ary`.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "split",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L587",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_shape_base_impl.py#L803"
+  }
+}

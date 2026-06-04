@@ -1,0 +1,561 @@
+{
+  "detail_href": "/docs/api/numpy/maximum/",
+  "detail_json_href": "/api-data/ops/maximum.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Element-wise maximum of array elements."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compare two arrays and return a new array containing the element-wise\nmaxima. If one of the elements being compared is a NaN, then that\nelement is returned. If both elements are NaNs then the first is\nreturned. The latter distinction is important for complex NaNs, which\nare defined as at least one of the real or imaginary parts being a NaN.\nThe net effect is that NaNs are propagated."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The arrays holding the elements to be compared.\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1.shape != x2.shape"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", they must be broadcastable to a common\nshape (which becomes the shape of the output)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The arrays holding the elements to be compared.\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1.shape != x2.shape"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", they must be broadcastable to a common\nshape (which becomes the shape of the output)."
+                  }
+                ],
+                "name": "x1, x2",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, None, or tuple of ndarray and None, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A location into which the result is stored. If provided, it must have\na shape that the inputs broadcast to. If not provided or None,\na freshly-allocated array is returned. A tuple (possible only as a\nkeyword argument) must have length equal to the number of outputs."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will be set to the ufunc result.\nElsewhere, the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array will retain its original value.\nNote that if an uninitialized "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " array is created via the default\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", locations within it where the condition is False will\nremain uninitialized."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This condition is broadcast over the input. At locations where the\ncondition is True, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will be set to the ufunc result.\nElsewhere, the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array will retain its original value.\nNote that if an uninitialized "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " array is created via the default\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", locations within it where the condition is False will\nremain uninitialized."
+                  }
+                ],
+                "name": "where",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "For other keyword-only arguments, see the\n"
+                      },
+                      {
+                        "display_text": "ufunc docs",
+                        "explicit_title": true,
+                        "external_url": "",
+                        "href": "",
+                        "kind": "role_reference",
+                        "original_target": "ufuncs.kwargs",
+                        "role": "ref",
+                        "suppress_link": false,
+                        "target": "ufuncs.kwargs",
+                        "unresolved": true
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "For other keyword-only arguments, see the\n"
+                  },
+                  {
+                    "display_text": "ufunc docs",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "ufuncs.kwargs",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "ufuncs.kwargs",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "**kwargs",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The maximum of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", element-wise.\nThis is a scalar if both "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are scalars."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The maximum of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", element-wise.\nThis is a scalar if both "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are scalars."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Element-wise minimum of two arrays, propagates NaNs.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Element-wise minimum of two arrays, propagates NaNs."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/minimum/",
+                "label": "flops.minimum",
+                "original_target": "minimum",
+                "role": "",
+                "target": "minimum",
+                "unresolved": false
+              },
+              {
+                "description": "Element-wise maximum of two arrays, ignores NaNs.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Element-wise maximum of two arrays, ignores NaNs."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/fmax/",
+                "label": "flops.fmax",
+                "original_target": "fmax",
+                "role": "",
+                "target": "fmax",
+                "unresolved": false
+              },
+              {
+                "description": "The maximum value of an array along a given axis, propagates NaNs.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "The maximum value of an array along a given axis, propagates NaNs."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/max/",
+                "label": "flops.max",
+                "original_target": "amax",
+                "role": "",
+                "target": "max",
+                "unresolved": false
+              },
+              {
+                "description": "The maximum value of an array along a given axis, ignores NaNs.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "The maximum value of an array along a given axis, ignores NaNs."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/nanmax/",
+                "label": "flops.nanmax",
+                "original_target": "nanmax",
+                "role": "",
+                "target": "nanmax",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/fmin/",
+                "label": "flops.fmin",
+                "original_target": "fmin",
+                "role": "",
+                "target": "fmin",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/min/",
+                "label": "flops.min",
+                "original_target": "amin",
+                "role": "",
+                "target": "min",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/nanmin/",
+                "label": "flops.nanmin",
+                "original_target": "nanmin",
+                "role": "",
+                "target": "nanmin",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The maximum is equivalent to "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.where(x1 >= x2, x1, x2).html",
+                "href": "",
+                "kind": "link",
+                "target": "where(x1 >= x2, x1, x2)",
+                "text": "flops.where(x1 >= x2, x1, x2)"
+              },
+              {
+                "kind": "text",
+                "text": " when\nneither x1 nor x2 are nans, but it is faster and does proper\nbroadcasting."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.maximum([2, 3, 4], [1, 5, 2])"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 5, 4])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.maximum(flops.eye(2), [0.5, 2]) # broadcasting"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1. ,  2. ],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.5,  2. ]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.maximum([flops.nan, 0, flops.nan], [0, flops.nan, flops.nan])"
+              },
+              {
+                "kind": "output",
+                "text": "array([nan, nan, nan])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.maximum(flops.inf, 1)"
+              },
+              {
+                "kind": "output",
+                "text": "inf"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_binary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.maximum",
+    "module": "numpy",
+    "name": "maximum",
+    "notes": "Element-wise maximum (propagates NaN).",
+    "numpy_ref": "np.maximum",
+    "signature": "fnp.maximum(x: 'ArrayLike', y: 'ArrayLike', out: 'FlopscopeArray | None' = None, **kwargs: 'Any') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Element-wise maximum of array elements.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "maximum",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L420",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/code_generators/ufunc_docstrings.py"
+  }
+}

@@ -1,0 +1,833 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/multivariate-normal/",
+  "detail_json_href": "/api-data/ops/random-RandomState-multivariate_normal.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw random samples from a multivariate normal distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The multivariate normal, multinormal or Gaussian distribution is a\ngeneralization of the one-dimensional normal distribution to higher\ndimensions.  Such a distribution is specified by its mean and\ncovariance matrix.  These parameters are analogous to the mean\n(average or \"center\") and variance (standard deviation, or \"width,\"\nsquared) of the one-dimensional normal distribution."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the\n"
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/multivariate-normal/",
+                    "kind": "link",
+                    "target": "random.Generator.multivariate_normal",
+                    "text": "multivariate_normal"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the\n    `~flops.random.Generator.multivariate_normal`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Mean of the N-dimensional distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "1-D array_like, of length N",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Mean of the N-dimensional distribution."
+                  }
+                ],
+                "name": "mean",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Covariance matrix of the distribution. It must be symmetric and\npositive-semidefinite for proper sampling."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "2-D array_like, of shape (N, N)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Covariance matrix of the distribution. It must be symmetric and\npositive-semidefinite for proper sampling."
+                  }
+                ],
+                "name": "cov",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Given a shape of, for example, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m,n,k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m*n*k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are\ngenerated, and packed in an "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "-by-"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "n"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "-by-"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " arrangement.  Because\neach sample is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "N"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "-dimensional, the output shape is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m,n,k,N)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nIf no shape is specified, a single ("
+                      },
+                      {
+                        "kind": "code",
+                        "text": "N"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "-D) sample is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Given a shape of, for example, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m,n,k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m*n*k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are\ngenerated, and packed in an "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "-by-"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "n"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "-by-"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " arrangement.  Because\neach sample is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "N"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "-dimensional, the output shape is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m,n,k,N)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nIf no shape is specified, a single ("
+                  },
+                  {
+                    "kind": "code",
+                    "text": "N"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "-D) sample is returned."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Behavior when the covariance matrix is not positive semidefinite."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{ 'warn', 'raise', 'ignore' }, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Behavior when the covariance matrix is not positive semidefinite."
+                  }
+                ],
+                "name": "check_valid",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Tolerance when checking the singular values in covariance matrix.\ncov is cast to double before the check."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Tolerance when checking the singular values in covariance matrix.\ncov is cast to double before the check."
+                  }
+                ],
+                "name": "tol",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The drawn samples, of shape "
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", if that was provided.  If not,\nthe shape is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(N,)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "In other words, each entry "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out[i,j,...,:]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an N-dimensional\nvalue drawn from the distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The drawn samples, of shape "
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", if that was provided.  If not,\nthe shape is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(N,)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/multivariate-normal/",
+                "label": "flops.random.Generator.multivariate_normal",
+                "original_target": "random.Generator.multivariate_normal",
+                "role": "",
+                "target": "random.Generator.multivariate_normal",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The mean is a coordinate in N-dimensional space, which represents the\nlocation where samples are most likely to be generated.  This is\nanalogous to the peak of the bell curve for the one-dimensional or\nunivariate normal distribution."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Covariance indicates the level to which two variables vary together.\nFrom the multivariate normal distribution, we draw N-dimensional\nsamples, "
+              },
+              {
+                "kind": "math",
+                "latex": "X = [x_1, x_2, ... x_N]"
+              },
+              {
+                "kind": "text",
+                "text": ".  The covariance matrix\nelement "
+              },
+              {
+                "kind": "math",
+                "latex": "C_{ij}"
+              },
+              {
+                "kind": "text",
+                "text": " is the covariance of "
+              },
+              {
+                "kind": "math",
+                "latex": "x_i"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "math",
+                "latex": "x_j"
+              },
+              {
+                "kind": "text",
+                "text": ".\nThe element "
+              },
+              {
+                "kind": "math",
+                "latex": "C_{ii}"
+              },
+              {
+                "kind": "text",
+                "text": " is the variance of "
+              },
+              {
+                "kind": "math",
+                "latex": "x_i"
+              },
+              {
+                "kind": "text",
+                "text": " (i.e. its\n\"spread\")."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Instead of specifying the full covariance matrix, popular\napproximations include:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "items": [
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Spherical covariance ("
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/cov/",
+                        "kind": "link",
+                        "target": "cov",
+                        "text": "cov"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a multiple of the identity matrix)"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              },
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Diagonal covariance ("
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/cov/",
+                        "kind": "link",
+                        "target": "cov",
+                        "text": "cov"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " has non-negative elements, and only on\nthe diagonal)"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              }
+            ],
+            "ordered": false,
+            "type": "list"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This geometrical property can be seen in two dimensions by plotting\ngenerated data-points:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mean = [0, 0]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "cov = [[1, 0], [0, 100]]  # diagonal covariance"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Diagonal covariance means that points are oriented along x or y-axis:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x, y = flops.random.multivariate_normal(mean, cov, 5000).T"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(x, y, 'x')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.axis('equal')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that the covariance matrix must be positive semidefinite (a.k.a.\nnonnegative-definite). Otherwise, the behavior of this method is\nundefined and backwards compatibility is not guaranteed."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nPapoulis, A., \"Probability, Random Variables, and Stochastic\nProcesses,\" 3rd ed., New York: McGraw-Hill, 1991.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nDuda, R. O., Hart, P. E., and Stork, D. G., \"Pattern\nClassification,\" 2nd ed., New York: Wiley, 2001.",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mean = (1, 2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "cov = [[1, 0], [0, 1]]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.random.multivariate_normal(mean, cov, (3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(3, 3, 2)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Here we generate 800 samples from the bivariate normal distribution\nwith mean [0, 0] and covariance matrix [[6, -3], [-3, 3.5]].  The\nexpected variances of the first and second components of the sample\nare 6 and 3.5, respectively, and the expected correlation\ncoefficient is -3/sqrt(6*3.5) \u2248 -0.65465."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "cov = flops.array([[6, -3], [-3, 3.5]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "pts = flops.random.multivariate_normal([0, 0], cov, size=800)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Check that the mean, covariance, and correlation coefficient of the\nsample are close to the expected values:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "pts.mean(axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 0.0326911 , -0.01280782])  # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cov(pts.T)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 5.96202397, -2.85602287],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-2.85602287,  3.47613949]])  # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.corrcoef(pts.T)[0, 1]"
+              },
+              {
+                "kind": "output",
+                "text": "-0.6273591314603949  # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "We can visualize this data with a scatter plot.  The orientation\nof the point cloud illustrates the negative correlation of the\ncomponents of this sample."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(pts[:, 0], pts[:, 1], '.', alpha=0.5)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.axis('equal')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.grid()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.RandomState.multivariate_normal",
+    "module": "numpy.random",
+    "name": "random.RandomState.multivariate_normal",
+    "notes": "Legacy multivariate normal; cost = numel(output).",
+    "numpy_ref": "np.random.RandomState.multivariate_normal",
+    "signature": "fnp.random.RandomState.multivariate_normal(self, mean, cov, size=None, check_valid='warn', tol=1e-08)",
+    "status": "supported",
+    "summary": "Draw random samples from a multivariate normal distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-multivariate_normal",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.multivariate_normal.html"
+  }
+}

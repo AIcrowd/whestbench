@@ -1,0 +1,353 @@
+{
+  "detail_href": "/docs/api/numpy/can-cast/",
+  "detail_json_href": "/api-data/ops/can_cast.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns True if cast between data types can occur according to the casting rule."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Data type, NumPy scalar, or array to cast from."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype, dtype specifier, NumPy scalar, or array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Data type, NumPy scalar, or array to cast from."
+                  }
+                ],
+                "name": "from_",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Data type to cast to."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype or dtype specifier",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Data type to cast to."
+                  }
+                ],
+                "name": "to",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Controls what kind of data casting may occur."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'no' means the data types should not be cast at all."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'equiv' means only byte-order changes are allowed."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'safe' means only casts which can preserve values are allowed."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'same_kind' means only safe casts or casts within a kind,\nlike float64 to float32, are allowed."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'unsafe' means any data conversions may be done."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  }
+                ],
+                "data_type": "{'no', 'equiv', 'safe', 'same_kind', 'unsafe'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Controls what kind of data casting may occur."
+                  }
+                ],
+                "name": "casting",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "True if cast can occur according to the casting rule."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "True if cast can occur according to the casting rule."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.dtype.html",
+                "href": "",
+                "label": "dtype",
+                "original_target": "dtype",
+                "role": "",
+                "target": "dtype",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/result-type/",
+                "label": "flops.result_type",
+                "original_target": "result_type",
+                "role": "",
+                "target": "result_type",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "argument_inline": [],
+            "content_blocks": [],
+            "directive": "versionchanged",
+            "options": [],
+            "raw_source": ".. versionchanged:: 2.0\n   This function does not support Python scalars anymore and does not\n   apply any value-based logic for 0-D arrays and NumPy scalars.",
+            "supported": true,
+            "type": "directive_block",
+            "version": "2.0"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Basic examples"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.can_cast(flops.int32, flops.int64)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.can_cast(flops.float64, complex)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.can_cast(complex, float)"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.can_cast('i8', 'f8')"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.can_cast('i8', 'f4')"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.can_cast('i4', 'S4')"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.can_cast",
+    "module": "numpy",
+    "name": "can_cast",
+    "notes": "Returns True if cast is safe.",
+    "numpy_ref": "np.can_cast",
+    "signature": "fnp.can_cast(*args, **kwargs)",
+    "status": "supported",
+    "summary": "Returns True if cast between data types can occur according to the casting rule.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "can_cast",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1402",
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.can_cast.html"
+  }
+}

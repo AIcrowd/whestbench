@@ -1,0 +1,470 @@
+{
+  "detail_href": "/docs/api/numpy/triu-indices/",
+  "detail_json_href": "/api-data/ops/triu_indices.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the indices for the upper-triangle of an (n, m) array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The size of the arrays for which the returned indices will\nbe valid."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The size of the arrays for which the returned indices will\nbe valid."
+                  }
+                ],
+                "name": "n",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Diagonal offset (see "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/triu/",
+                        "kind": "link",
+                        "target": "triu",
+                        "text": "triu"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " for details)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Diagonal offset (see "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/triu/",
+                    "kind": "link",
+                    "target": "triu",
+                    "text": "triu"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " for details)."
+                  }
+                ],
+                "name": "k",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The column dimension of the arrays for which the returned\narrays will be valid.\nBy default "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is taken equal to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "n"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The column dimension of the arrays for which the returned\narrays will be valid.\nBy default "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is taken equal to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "n"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "m",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The row and column indices, respectively. The row indices are sorted\nin non-decreasing order, and the correspdonding column indices are\nstrictly increasing for each row."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "tuple, shape(2) of ndarrays, shape(`n`)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The row and column indices, respectively. The row indices are sorted\nin non-decreasing order, and the correspdonding column indices are\nstrictly increasing for each row."
+                  }
+                ],
+                "name": "inds",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "similar function, for lower-triangular.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "similar function, for lower-triangular."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/tril-indices/",
+                "label": "flops.tril_indices",
+                "original_target": "tril_indices",
+                "role": "",
+                "target": "tril_indices",
+                "unresolved": false
+              },
+              {
+                "description": "generic function accepting an arbitrary mask function.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "generic function accepting an arbitrary mask function."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/mask-indices/",
+                "label": "flops.mask_indices",
+                "original_target": "mask_indices",
+                "role": "",
+                "target": "mask_indices",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/triu/",
+                "label": "flops.triu",
+                "original_target": "triu",
+                "role": "",
+                "target": "triu",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/tril/",
+                "label": "flops.tril",
+                "original_target": "tril",
+                "role": "",
+                "target": "tril",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute two different sets of indices to access 4x4 arrays, one for the\nupper triangular part starting at the main diagonal, and one starting two\ndiagonals further right:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "iu1 = flops.triu_indices(4)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "iu1"
+              },
+              {
+                "kind": "output",
+                "text": "(array([0, 0, 0, 0, 1, 1, 1, 2, 2, 3]), array([0, 1, 2, 3, 1, 2, 3, 2, 3, 3]))"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that row indices (first array) are non-decreasing, and the corresponding\ncolumn indices (second array) are strictly increasing for each row."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Here is how they can be used with a sample array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(16).reshape(4, 4)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0,  1,  2,  3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 4,  5,  6,  7],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 8,  9, 10, 11],"
+              },
+              {
+                "kind": "output",
+                "text": "       [12, 13, 14, 15]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Both for indexing:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[iu1]"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 0,  1,  2, ..., 10, 11, 15])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "And for assigning values:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[iu1] = -1"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[-1, -1, -1, -1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 4, -1, -1, -1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 8,  9, -1, -1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [12, 13, 14, -1]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "These cover only a small part of the whole array (two diagonals right\nof the main one):"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "iu2 = flops.triu_indices(4, 2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[iu2] = -10"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ -1,  -1, -10, -10],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  4,  -1,  -1, -10],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  8,   9,  -1,  -1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 12,  13,  14,  -1]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.triu_indices",
+    "module": "numpy",
+    "name": "triu_indices",
+    "notes": "Return upper-triangle indices for n x n array.",
+    "numpy_ref": "np.triu_indices",
+    "signature": "fnp.triu_indices(n, k=0, m=None)",
+    "status": "supported",
+    "summary": "Return the indices for the upper-triangle of an (n, m) array.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "triu_indices",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L2417",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_twodim_base_impl.py#L1041"
+  }
+}

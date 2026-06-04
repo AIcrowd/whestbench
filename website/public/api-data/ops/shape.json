@@ -1,0 +1,257 @@
+{
+  "detail_href": "/docs/api/numpy/shape/",
+  "detail_json_href": "/api-data/ops/shape.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the shape of an array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The elements of the shape tuple give the lengths of the\ncorresponding array dimensions."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "tuple of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The elements of the shape tuple give the lengths of the\ncorresponding array dimensions."
+                  }
+                ],
+                "name": "shape",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "``len(a)`` is equivalent to ``flops.shape(a)[0]`` for N-D arrays with ``N>=1``.",
+                "description_inline": [
+                  {
+                    "kind": "code",
+                    "text": "len(a)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is equivalent to "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.shape(a)[0].html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "shape(a)[0]",
+                    "text": "flops.shape(a)[0]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " for N-D arrays with "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "N>=1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.len.html",
+                "href": "",
+                "label": "len",
+                "original_target": "len",
+                "role": "",
+                "target": "len",
+                "unresolved": false
+              },
+              {
+                "description": "Equivalent array method.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Equivalent array method."
+                  }
+                ],
+                "external_url": "",
+                "href": "",
+                "label": "ndarray.shape",
+                "original_target": "ndarray.shape",
+                "role": "",
+                "target": "ndarray.shape",
+                "unresolved": true
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.shape(flops.eye(3))"
+              },
+              {
+                "kind": "output",
+                "text": "(3, 3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.shape([[1, 3]])"
+              },
+              {
+                "kind": "output",
+                "text": "(1, 2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.shape([0])"
+              },
+              {
+                "kind": "output",
+                "text": "(1,)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.shape(0)"
+              },
+              {
+                "kind": "output",
+                "text": "()"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([(1, 2), (3, 4), (5, 6)],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "dtype=[('x', 'i4'), ('y', 'i4')])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.shape(a)"
+              },
+              {
+                "kind": "output",
+                "text": "(3,)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(3,)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.shape",
+    "module": "numpy",
+    "name": "shape",
+    "notes": "Return shape of array.",
+    "numpy_ref": "np.shape",
+    "signature": "fnp.shape(a)",
+    "status": "supported",
+    "summary": "Return the shape of an array.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "shape",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L2305",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L2118"
+  }
+}

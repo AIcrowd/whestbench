@@ -1,0 +1,418 @@
+{
+  "detail_href": "/docs/api/numpy/cumprod/",
+  "detail_json_href": "/api-data/ops/cumprod.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the cumulative product of elements along a given axis."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis along which the cumulative product is computed.  By default\nthe input is flattened."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis along which the cumulative product is computed.  By default\nthe input is flattened."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Type of the returned array, as well as of the accumulator in which\nthe elements are multiplied.  If "
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "dtype"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not specified, it\ndefaults to the dtype of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", unless "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " has an integer dtype with\na precision less than that of the default platform integer.  In\nthat case, the default platform integer is used instead."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Type of the returned array, as well as of the accumulator in which\nthe elements are multiplied.  If "
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "dtype"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not specified, it\ndefaults to the dtype of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", unless "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " has an integer dtype with\na precision less than that of the default platform integer.  In\nthat case, the default platform integer is used instead."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Alternative output array in which to place the result. It must\nhave the same shape and buffer length as the expected output\nbut the type of the resulting values will be cast if necessary."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Alternative output array in which to place the result. It must\nhave the same shape and buffer length as the expected output\nbut the type of the resulting values will be cast if necessary."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A new array holding the result is returned unless "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is\nspecified, in which case a reference to out is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A new array holding the result is returned unless "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is\nspecified, in which case a reference to out is returned."
+                  }
+                ],
+                "name": "cumprod",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Array API compatible alternative for ``cumprod``.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array API compatible alternative for "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/cumprod/",
+                    "kind": "link",
+                    "target": "cumprod",
+                    "text": "cumprod"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/cumulative-prod/",
+                "label": "flops.cumulative_prod",
+                "original_target": "cumulative_prod",
+                "role": "",
+                "target": "cumulative_prod",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ufuncs-output-type.html",
+                "href": "",
+                "label": "ufuncs-output-type",
+                "original_target": "ufuncs-output-type",
+                "role": "ref",
+                "target": "ufuncs-output-type",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Arithmetic is modular when using integer types, and no error is\nraised on overflow."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1,2,3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cumprod(a) # intermediate results 1, 1*2"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "# total product 1*2*3 = 6"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 6])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, 2, 3], [4, 5, 6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cumprod(a, dtype=float) # specify type of output"
+              },
+              {
+                "kind": "output",
+                "text": "array([   1.,    2.,    6.,   24.,  120.,  720.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The cumulative product for each column (i.e., over the rows) of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cumprod(a, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1,  2,  3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 4, 10, 18]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The cumulative product for each row (i.e. over the columns) of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cumprod(a,axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[  1,   2,   6],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  4,  20, 120]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_reduction",
+    "cost_formula": "numel(input)",
+    "cost_formula_latex": "$\\text{numel}(\\text{input})$",
+    "flopscope_ref": "fnp.cumprod",
+    "module": "numpy",
+    "name": "cumprod",
+    "notes": "Cumulative product of array elements.",
+    "numpy_ref": "np.cumprod",
+    "signature": "fnp.cumprod(a, axis=None, dtype=None, out=None)",
+    "status": "supported",
+    "summary": "Return the cumulative product of elements along a given axis.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "cumprod",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L853",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L3453"
+  }
+}

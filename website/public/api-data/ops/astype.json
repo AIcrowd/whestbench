@@ -1,0 +1,389 @@
+{
+  "detail_href": "/docs/api/numpy/astype/",
+  "detail_json_href": "/api-data/ops/astype.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Copies an array to a specified data type."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function is an Array API compatible alternative to\n"
+              },
+              {
+                "kind": "code",
+                "text": "flops.ndarray.astype"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input NumPy array to cast. "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "array_likes"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are explicitly not\nsupported here."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input NumPy array to cast. "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "array_likes"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are explicitly not\nsupported here."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Data type of the result."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Data type of the result."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Specifies whether to copy an array when the specified dtype matches\nthe data type of the input array "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", a newly allocated\narray must always be returned. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and the specified dtype\nmatches the data type of the input array, the input array must be\nreturned; otherwise, a newly allocated array must be returned.\nDefaults to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Specifies whether to copy an array when the specified dtype matches\nthe data type of the input array "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", a newly allocated\narray must always be returned. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and the specified dtype\nmatches the data type of the input array, the input array must be\nreturned; otherwise, a newly allocated array must be returned.\nDefaults to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "copy",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The device on which to place the returned array. Default: None.\nFor Array-API interoperability only, so must be "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "\"cpu\""
+                      },
+                      {
+                        "kind": "text",
+                        "text": " if passed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.1.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.1.0"
+                  }
+                ],
+                "data_type": "str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The device on which to place the returned array. Default: None.\nFor Array-API interoperability only, so must be "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "\"cpu\""
+                  },
+                  {
+                    "kind": "text",
+                    "text": " if passed."
+                  }
+                ],
+                "name": "device",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array having the specified data type."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array having the specified data type."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "",
+                "label": "ndarray.astype",
+                "original_target": "ndarray.astype",
+                "role": "",
+                "target": "ndarray.astype",
+                "unresolved": true
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.array([1, 2, 3]); arr"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.astype(arr, flops.float64)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1., 2., 3.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Non-copy case:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.array([1, 2, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr_noncpy = flops.astype(arr, arr.dtype, copy=False)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.shares_memory(arr, arr_noncpy)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.astype",
+    "module": "numpy",
+    "name": "astype",
+    "notes": "Cast array to specified type.",
+    "numpy_ref": "np.astype",
+    "signature": "fnp.astype(x, dtype, /, *, copy=True, device=None)",
+    "status": "supported",
+    "summary": "Copies an array to a specified data type.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "astype",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1037",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/numeric.py#L2618"
+  }
+}

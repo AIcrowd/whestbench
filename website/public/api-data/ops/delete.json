@@ -1,0 +1,494 @@
+{
+  "detail_href": "/docs/api/numpy/delete/",
+  "detail_json_href": "/api-data/ops/delete.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return a new array with sub-arrays along an axis deleted. For a one dimensional array, this returns those entries not returned by "
+              },
+              {
+                "kind": "code",
+                "text": "arr[obj]"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "arr",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Indicate indices of sub-arrays to remove along the specified axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionchanged",
+                    "options": [],
+                    "raw_source": ".. versionchanged:: 1.19.0\n    Boolean indices are now treated as a mask of elements to remove,\n    rather than being cast to the integers 0 and 1.",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.19.0"
+                  }
+                ],
+                "data_type": "slice, int, array-like of ints or bools",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Indicate indices of sub-arrays to remove along the specified axis."
+                  }
+                ],
+                "name": "obj",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis along which to delete the subarray defined by "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "obj"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "obj"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is applied to the flattened array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis along which to delete the subarray defined by "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "obj"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "obj"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is applied to the flattened array."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A copy of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " with the elements specified by "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "obj"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " removed. Note\nthat "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/delete/",
+                        "kind": "link",
+                        "target": "delete",
+                        "text": "delete"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " does not occur in-place. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is\na flattened array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A copy of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " with the elements specified by "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "obj"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " removed. Note\nthat "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/delete/",
+                    "kind": "link",
+                    "target": "delete",
+                    "text": "delete"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " does not occur in-place. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is\na flattened array."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Insert elements into an array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Insert elements into an array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/insert/",
+                "label": "flops.insert",
+                "original_target": "insert",
+                "role": "",
+                "target": "insert",
+                "unresolved": false
+              },
+              {
+                "description": "Append elements at the end of an array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Append elements at the end of an array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/append/",
+                "label": "flops.append",
+                "original_target": "append",
+                "role": "",
+                "target": "append",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Often it is preferable to use a boolean mask. For example:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.arange(12) + 1"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mask = flops.ones(len(arr), dtype=bool)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mask[[0,2,4]] = False"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "result = arr[mask,...]"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Is equivalent to "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.delete(arr, [0,2,4], axis=0).html",
+                "href": "",
+                "kind": "link",
+                "target": "delete(arr, [0,2,4], axis=0)",
+                "text": "flops.delete(arr, [0,2,4], axis=0)"
+              },
+              {
+                "kind": "text",
+                "text": ", but allows further\nuse of "
+              },
+              {
+                "kind": "code",
+                "text": "mask"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.array([[1,2,3,4], [5,6,7,8], [9,10,11,12]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1,  2,  3,  4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 5,  6,  7,  8],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 9, 10, 11, 12]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.delete(arr, 1, 0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1,  2,  3,  4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 9, 10, 11, 12]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.delete(arr, flops.s_[::2], 1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 2,  4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 6,  8],"
+              },
+              {
+                "kind": "output",
+                "text": "       [10, 12]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.delete(arr, [1,3,5], None)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 1,  3,  5,  7,  8,  9, 10, 11, 12])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.delete",
+    "module": "numpy",
+    "name": "delete",
+    "notes": "Return array with sub-arrays deleted along axis. Cost: num deleted.",
+    "numpy_ref": "np.delete",
+    "signature": "fnp.delete(arr, obj, axis=None)",
+    "status": "supported",
+    "summary": "Return a new array with sub-arrays along an axis deleted. For a one dimensional array, this returns those entries not returned by `arr[obj]`.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "delete",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1547",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L5272"
+  }
+}

@@ -1,0 +1,337 @@
+{
+  "detail_href": "/docs/api/numpy/ix-/",
+  "detail_json_href": "/api-data/ops/ix_.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Construct an open mesh from multiple sequences."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function takes N 1-D sequences and returns N outputs with N\ndimensions each, such that the shape is 1 in all but one dimension\nand the dimension with the non-unit shape value cycles through all\nN dimensions."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Using "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/ix-/",
+                "kind": "link",
+                "target": "ix_",
+                "text": "ix_"
+              },
+              {
+                "kind": "text",
+                "text": " one can quickly construct index arrays that will index\nthe cross product. "
+              },
+              {
+                "kind": "code",
+                "text": "a[flops.ix_([1,3],[2,5])]"
+              },
+              {
+                "kind": "text",
+                "text": " returns the array\n"
+              },
+              {
+                "kind": "code",
+                "text": "[[a[1,2] a[1,5]], [a[3,2] a[3,5]]]"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Each sequence should be of integer or boolean type.\nBoolean sequences will be interpreted as boolean masks for the\ncorresponding dimension (equivalent to passing in\n"
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.nonzero(boolean_sequence).html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "nonzero(boolean_sequence)",
+                        "text": "flops.nonzero(boolean_sequence)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ")."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "1-D sequences",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Each sequence should be of integer or boolean type.\nBoolean sequences will be interpreted as boolean masks for the\ncorresponding dimension (equivalent to passing in\n"
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.nonzero(boolean_sequence).html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "nonzero(boolean_sequence)",
+                    "text": "flops.nonzero(boolean_sequence)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ")."
+                  }
+                ],
+                "name": "args",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "N arrays with N dimensions each, with N the number of input\nsequences. Together these arrays form an open mesh."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "tuple of ndarrays",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "N arrays with N dimensions each, with N the number of input\nsequences. Together these arrays form an open mesh."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ogrid.html",
+                "href": "",
+                "label": "ogrid",
+                "original_target": "ogrid",
+                "role": "",
+                "target": "ogrid",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.mgrid.html",
+                "href": "",
+                "label": "mgrid",
+                "original_target": "mgrid",
+                "role": "",
+                "target": "mgrid",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/meshgrid/",
+                "label": "flops.meshgrid",
+                "original_target": "meshgrid",
+                "role": "",
+                "target": "meshgrid",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(10).reshape(2, 5)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1, 2, 3, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [5, 6, 7, 8, 9]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ixgrid = flops.ix_([0, 1], [2, 4])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ixgrid"
+              },
+              {
+                "kind": "output",
+                "text": "(array([[0],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1]]), array([[2, 4]]))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ixgrid[0].shape, ixgrid[1].shape"
+              },
+              {
+                "kind": "output",
+                "text": "((2, 1), (1, 2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[ixgrid]"
+              },
+              {
+                "kind": "output",
+                "text": "array([[2, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [7, 9]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ixgrid = flops.ix_([True, True], [2, 4])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[ixgrid]"
+              },
+              {
+                "kind": "output",
+                "text": "array([[2, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [7, 9]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ixgrid = flops.ix_([True, True], [False, False, True, False, True])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[ixgrid]"
+              },
+              {
+                "kind": "output",
+                "text": "array([[2, 4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [7, 9]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.ix_",
+    "module": "numpy",
+    "name": "ix_",
+    "notes": "Construct open mesh from multiple sequences. Cost: numel(output).",
+    "numpy_ref": "np.ix_",
+    "signature": "fnp.ix_(*args)",
+    "status": "supported",
+    "summary": "Construct an open mesh from multiple sequences.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "ix_",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1941",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_index_tricks_impl.py#L34"
+  }
+}

@@ -1,0 +1,348 @@
+{
+  "detail_href": "/docs/api/numpy/diag-indices/",
+  "detail_json_href": "/api-data/ops/diag_indices.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the indices to access the main diagonal of an array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This returns a tuple of indices that can be used to access the main\ndiagonal of an array "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " with "
+              },
+              {
+                "kind": "code",
+                "text": "a.ndim >= 2"
+              },
+              {
+                "kind": "text",
+                "text": " dimensions and shape\n(n, n, ..., n). For "
+              },
+              {
+                "kind": "code",
+                "text": "a.ndim = 2"
+              },
+              {
+                "kind": "text",
+                "text": " this is the usual diagonal, for\n"
+              },
+              {
+                "kind": "code",
+                "text": "a.ndim > 2"
+              },
+              {
+                "kind": "text",
+                "text": " this is the set of indices to access "
+              },
+              {
+                "kind": "code",
+                "text": "a[i, i, ..., i]"
+              },
+              {
+                "kind": "text",
+                "text": "\nfor "
+              },
+              {
+                "kind": "code",
+                "text": "i = [0..n-1]"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The size, along each dimension, of the arrays for which the returned\nindices can be used."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The size, along each dimension, of the arrays for which the returned\nindices can be used."
+                  }
+                ],
+                "name": "n",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The number of dimensions."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The number of dimensions."
+                  }
+                ],
+                "name": "ndim",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/diag-indices-from/",
+                "label": "flops.diag_indices_from",
+                "original_target": "diag_indices_from",
+                "role": "",
+                "target": "diag_indices_from",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Create a set of indices to access the diagonal of a (4, 4) array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "di = flops.diag_indices(4)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "di"
+              },
+              {
+                "kind": "output",
+                "text": "(array([0, 1, 2, 3]), array([0, 1, 2, 3]))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(16).reshape(4, 4)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0,  1,  2,  3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 4,  5,  6,  7],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 8,  9, 10, 11],"
+              },
+              {
+                "kind": "output",
+                "text": "       [12, 13, 14, 15]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[di] = 100"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[100,   1,   2,   3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  4, 100,   6,   7],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  8,   9, 100,  11],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 12,  13,  14, 100]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Now, we create indices to manipulate a 3-D array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "d3 = flops.diag_indices(2, 3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "d3"
+              },
+              {
+                "kind": "output",
+                "text": "(array([0, 1]), array([0, 1]), array([0, 1]))"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "And use it to set the diagonal of an array of zeros to 1:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.zeros((2, 2, 2), dtype=int)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[d3] = 1"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[1, 0],"
+              },
+              {
+                "kind": "output",
+                "text": "        [0, 0]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[0, 0],"
+              },
+              {
+                "kind": "output",
+                "text": "        [0, 1]]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.diag_indices",
+    "module": "numpy",
+    "name": "diag_indices",
+    "notes": "Return indices to access main diagonal of n-D array.",
+    "numpy_ref": "np.diag_indices",
+    "signature": "fnp.diag_indices(n, ndim=2)",
+    "status": "supported",
+    "summary": "Return the indices to access the main diagonal of an array.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "diag_indices",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1568",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_index_tricks_impl.py#L947"
+  }
+}

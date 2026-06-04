@@ -1,0 +1,94 @@
+.wrapper {
+  margin: 1rem 0;
+}
+
+/* ── Filter input ─────────────────────────────────────── */
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.filterInput {
+  flex: 1;
+  max-width: 360px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.filterInput:focus {
+  border-color: #F0524D;
+  box-shadow: 0 0 0 2px rgba(240, 82, 77, 0.15);
+}
+
+.rowCount {
+  font-size: 0.8rem;
+  color: #5D5F60;
+  margin-left: auto;
+}
+
+/* ── Table ─────────────────────────────────────────────── */
+.tableContainer {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+/* ── Header ────────────────────────────────────────────── */
+.table thead th {
+  background: #F6F8FA;
+  color: #292C2D;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 2px solid #E3E8EE;
+  white-space: nowrap;
+  user-select: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.table thead th:hover {
+  background: #eef0f3;
+}
+
+.stickyHeader thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.sortIndicator {
+  margin-left: 0.35rem;
+  opacity: 0.5;
+  font-size: 0.75em;
+}
+
+.sortActive {
+  opacity: 1;
+}
+
+/* ── Body ──────────────────────────────────────────────── */
+.table tbody td {
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid #E3E8EE;
+}
+
+.table tbody tr {
+  transition: background 0.15s ease;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}

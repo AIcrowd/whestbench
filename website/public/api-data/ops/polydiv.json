@@ -1,0 +1,439 @@
+{
+  "detail_href": "/docs/api/numpy/polydiv/",
+  "detail_json_href": "/api-data/ops/polydiv.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the quotient and remainder of polynomial division."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This forms part of the old polynomial API. Since version 1.4, the\nnew polynomial API defined in "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.polynomial.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "polynomial",
+                    "text": "flops.polynomial"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is preferred.\nA summary of the differences can be found in the\n"
+                  },
+                  {
+                    "display_text": "transition guide",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "/reference/routines.polynomials",
+                    "role": "doc",
+                    "suppress_link": false,
+                    "target": "/reference/routines.polynomials",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n   This forms part of the old polynomial API. Since version 1.4, the\n   new polynomial API defined in `flops.polynomial` is preferred.\n   A summary of the differences can be found in the\n   :doc:`transition guide </reference/routines.polynomials>`.",
+            "supported": true,
+            "type": "directive_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The input arrays are the coefficients (including any coefficients\nequal to zero) of the \"numerator\" (dividend) and \"denominator\"\n(divisor) polynomials, respectively."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Dividend polynomial's coefficients."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like or poly1d",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Dividend polynomial's coefficients."
+                  }
+                ],
+                "name": "u",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Divisor polynomial's coefficients."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like or poly1d",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Divisor polynomial's coefficients."
+                  }
+                ],
+                "name": "v",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Coefficients, including those equal to zero, of the quotient."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Coefficients, including those equal to zero, of the quotient."
+                  }
+                ],
+                "name": "q",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Coefficients, including those equal to zero, of the remainder."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Coefficients, including those equal to zero, of the remainder."
+                  }
+                ],
+                "name": "r",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/poly/",
+                "label": "flops.poly",
+                "original_target": "poly",
+                "role": "",
+                "target": "poly",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/polyadd/",
+                "label": "flops.polyadd",
+                "original_target": "polyadd",
+                "role": "",
+                "target": "polyadd",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/polyder/",
+                "label": "flops.polyder",
+                "original_target": "polyder",
+                "role": "",
+                "target": "polyder",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/polydiv/",
+                "label": "flops.polydiv",
+                "original_target": "polydiv",
+                "role": "",
+                "target": "polydiv",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/polyfit/",
+                "label": "flops.polyfit",
+                "original_target": "polyfit",
+                "role": "",
+                "target": "polyfit",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/polyint/",
+                "label": "flops.polyint",
+                "original_target": "polyint",
+                "role": "",
+                "target": "polyint",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/polymul/",
+                "label": "flops.polymul",
+                "original_target": "polymul",
+                "role": "",
+                "target": "polymul",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/polysub/",
+                "label": "flops.polysub",
+                "original_target": "polysub",
+                "role": "",
+                "target": "polysub",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/polyval/",
+                "label": "flops.polyval",
+                "original_target": "polyval",
+                "role": "",
+                "target": "polyval",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Both "
+              },
+              {
+                "kind": "code",
+                "text": "u"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "v"
+              },
+              {
+                "kind": "text",
+                "text": " must be 0-d or 1-d (ndim = 0 or 1), but "
+              },
+              {
+                "kind": "code",
+                "text": "u.ndim"
+              },
+              {
+                "kind": "text",
+                "text": " need\nnot equal "
+              },
+              {
+                "kind": "code",
+                "text": "v.ndim"
+              },
+              {
+                "kind": "text",
+                "text": ". In other words, all four possible combinations -\n"
+              },
+              {
+                "kind": "code",
+                "text": "u.ndim = v.ndim = 0"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "u.ndim = v.ndim = 1"
+              },
+              {
+                "kind": "text",
+                "text": ",\n"
+              },
+              {
+                "kind": "code",
+                "text": "u.ndim = 1, v.ndim = 0"
+              },
+              {
+                "kind": "text",
+                "text": ", and "
+              },
+              {
+                "kind": "code",
+                "text": "u.ndim = 0, v.ndim = 1"
+              },
+              {
+                "kind": "text",
+                "text": " - work."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "formulas": [
+              "\\frac{3x^2 + 5x + 2}{2x + 1} = 1.5x + 1.75, remainder 0.25"
+            ],
+            "type": "math_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([3.0, 5.0, 2.0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.array([2.0, 1.0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.polydiv(x, y)"
+              },
+              {
+                "kind": "output",
+                "text": "(array([1.5 , 1.75]), array([0.25]))"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n1 * n2",
+    "cost_formula_latex": "$n_1 \\cdot n_2$",
+    "flopscope_ref": "fnp.polydiv",
+    "module": "flopscope._polynomial",
+    "name": "polydiv",
+    "notes": "Divide one polynomial by another. Cost: n1 * n2 FLOPs.",
+    "numpy_ref": "np.polydiv",
+    "signature": "fnp.polydiv(u: 'ArrayLike', v: 'ArrayLike') -> 'tuple[FlopscopeArray, FlopscopeArray]'",
+    "status": "supported",
+    "summary": "Returns the quotient and remainder of polynomial division.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "polydiv",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_polynomial.py#L199",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_polynomial_impl.py#L979"
+  }
+}

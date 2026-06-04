@@ -1,0 +1,264 @@
+{
+  "detail_href": "/docs/api/numpy/setdiff1d/",
+  "detail_json_href": "/api-data/ops/setdiff1d.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Find the set difference of two arrays."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the unique values in "
+              },
+              {
+                "kind": "code",
+                "text": "ar1"
+              },
+              {
+                "kind": "text",
+                "text": " that are not in "
+              },
+              {
+                "kind": "code",
+                "text": "ar2"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "ar1",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input comparison array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input comparison array."
+                  }
+                ],
+                "name": "ar2",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, the input arrays are both assumed to be unique, which\ncan speed up the calculation.  Default is False."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, the input arrays are both assumed to be unique, which\ncan speed up the calculation.  Default is False."
+                  }
+                ],
+                "name": "assume_unique",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "1D array of values in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " that are not in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". The result\nis sorted when "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "assume_unique=False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", but otherwise only sorted\nif the input is sorted."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "1D array of values in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " that are not in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". The result\nis sorted when "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "assume_unique=False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", but otherwise only sorted\nif the input is sorted."
+                  }
+                ],
+                "name": "setdiff1d",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1, 2, 3, 2, 4, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([3, 4, 5, 6])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.setdiff1d(a, b)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.setdiff1d",
+    "module": "numpy",
+    "name": "setdiff1d",
+    "notes": "Set difference; cost = (n+m)*ceil(log2(n+m)).",
+    "numpy_ref": "np.setdiff1d",
+    "signature": "fnp.setdiff1d(ar1, ar2, assume_unique=False)",
+    "status": "supported",
+    "summary": "Find the set difference of two arrays.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "setdiff1d",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_sorting_ops.py#L516",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_arraysetops_impl.py#L1177"
+  }
+}

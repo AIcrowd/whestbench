@@ -1,0 +1,289 @@
+{
+  "detail_href": "/docs/api/numpy/i0/",
+  "detail_json_href": "/api-data/ops/i0.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Modified Bessel function of the first kind, order 0."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Usually denoted "
+              },
+              {
+                "kind": "math",
+                "latex": "I_0"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Argument of the Bessel function."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like of float",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Argument of the Bessel function."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The modified Bessel function evaluated at each of the elements of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, shape = x.shape, dtype = float",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The modified Bessel function evaluated at each of the elements of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.i0.html",
+                "href": "",
+                "label": "scipy.special.i0",
+                "original_target": "scipy.special.i0",
+                "role": "",
+                "target": "scipy.special.i0",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.iv.html",
+                "href": "",
+                "label": "scipy.special.iv",
+                "original_target": "scipy.special.iv",
+                "role": "",
+                "target": "scipy.special.iv",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ive.html",
+                "href": "",
+                "label": "scipy.special.ive",
+                "original_target": "scipy.special.ive",
+                "role": "",
+                "target": "scipy.special.ive",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The scipy implementation is recommended over this function: it is a\nproper ufunc written in C, and more than an order of magnitude faster."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "We use the algorithm published by Clenshaw "
+              },
+              {
+                "kind": "text",
+                "text": "[1]_"
+              },
+              {
+                "kind": "text",
+                "text": " and referenced by\nAbramowitz and Stegun "
+              },
+              {
+                "kind": "text",
+                "text": "[2]_"
+              },
+              {
+                "kind": "text",
+                "text": ", for which the function domain is\npartitioned into the two intervals [0,8] and (8,inf), and Chebyshev\npolynomial expansions are employed in each interval. Relative error on\nthe domain [0,30] using IEEE arithmetic is documented "
+              },
+              {
+                "kind": "text",
+                "text": "[3]_"
+              },
+              {
+                "kind": "text",
+                "text": " as having a\npeak of 5.8e-16 with an rms of 1.4e-16 (n = 30000)."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nC. W. Clenshaw, \"Chebyshev series for mathematical functions\", in\nNational Physical Laboratory Mathematical Tables, vol. 5, London:\nHer Majesty's Stationery Office, 1962.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nM. Abramowitz and I. A. Stegun, Handbook of Mathematical\nFunctions, 10th printing, New York: Dover, 1964, pp. 379.\nhttps://personal.math.ubc.ca/~cbm/aands/page_379.htm",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "3\n\nhttps://metacpan.org/pod/distribution/Math-Cephes/lib/Math/Cephes.pod#i0:-Modified-Bessel-function-of-order-zero",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.i0(0.)"
+              },
+              {
+                "kind": "output",
+                "text": "array(1.0)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.i0([0, 1, 2, 3])"
+              },
+              {
+                "kind": "output",
+                "text": "array([1.        , 1.26606588, 2.2795853 , 4.88079259])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_unary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.i0",
+    "module": "numpy",
+    "name": "i0",
+    "notes": "Modified Bessel function of order 0, element-wise.",
+    "numpy_ref": "np.i0",
+    "signature": "fnp.i0(x)",
+    "status": "supported",
+    "summary": "Modified Bessel function of the first kind, order 0.",
+    "weight": 16.0
+  },
+  "schema_version": 1,
+  "slug": "i0",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L343",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L3554"
+  }
+}

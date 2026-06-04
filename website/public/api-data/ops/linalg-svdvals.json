@@ -1,0 +1,258 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/svdvals/",
+  "detail_json_href": "/api-data/ops/linalg-svdvals.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the singular values of a matrix (or a stack of matrices) "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": ". When x is a stack of matrices, the function will compute the singular values for each matrix in the stack."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function is Array API compatible."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Calling "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.svdvals(x).html",
+                "href": "",
+                "kind": "link",
+                "target": "svdvals(x)",
+                "text": "flops.svdvals(x)"
+              },
+              {
+                "kind": "text",
+                "text": " to get singular values is the same as\n"
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.svd(x, compute_uv=False, hermitian=False).html",
+                "href": "",
+                "kind": "link",
+                "target": "svd(x, compute_uv=False, hermitian=False)",
+                "text": "flops.svd(x, compute_uv=False, hermitian=False)"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array having shape (..., M, N) and whose last two\ndimensions form matrices on which to perform singular value\ndecomposition. Should have a floating-point data type."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, N) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array having shape (..., M, N) and whose last two\ndimensions form matrices on which to perform singular value\ndecomposition. Should have a floating-point data type."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array with shape (..., K) that contains the vector(s)\nof singular values of length K, where K = min(M, N)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array with shape (..., K) that contains the vector(s)\nof singular values of length K, where K = min(M, N)."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Compute singular values of a matrix.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Compute singular values of a matrix."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.svdvals.html",
+                "href": "",
+                "label": "scipy.linalg.svdvals",
+                "original_target": "scipy.linalg.svdvals",
+                "role": "",
+                "target": "scipy.linalg.svdvals",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.svdvals([[1, 2, 3, 4, 5],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[1, 4, 9, 16, 25],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[1, 8, 27, 64, 125]])"
+              },
+              {
+                "kind": "output",
+                "text": "array([146.68862757,   5.57510612,   0.60393245])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Determine the rank of a matrix using singular values:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = flops.linalg.svdvals([[1, 2, 3],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[2, 4, 6],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[-1, 1, -1]]); s"
+              },
+              {
+                "kind": "output",
+                "text": "array([8.38434191e+00, 1.64402274e+00, 2.31534378e-16])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.count_nonzero(s > 1e-10)  # Matrix of rank 2"
+              },
+              {
+                "kind": "output",
+                "text": "2"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "m * n * min(m,n)",
+    "cost_formula_latex": "$m \\cdot n \\cdot \\min(m,n)$",
+    "flopscope_ref": "fnp.linalg.svdvals",
+    "module": "numpy.linalg",
+    "name": "linalg.svdvals",
+    "notes": "Singular values only. Cost: m*n*min(m,n) (Golub-Reinsch).",
+    "numpy_ref": "np.linalg.svdvals",
+    "signature": "fnp.linalg.svdvals(x: 'ArrayLike', /, *, k: 'int | None' = None) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Returns the singular values of a matrix (or a stack of matrices) ``x``. When x is a stack of matrices, the function will compute the singular values for each matrix in the stack.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-svdvals",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_decompositions.py#L328",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L1831"
+  }
+}

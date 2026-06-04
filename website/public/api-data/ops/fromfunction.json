@@ -1,0 +1,652 @@
+{
+  "detail_href": "/docs/api/numpy/fromfunction/",
+  "detail_json_href": "/api-data/ops/fromfunction.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Construct an array by executing a function over each coordinate."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The resulting array therefore has a value "
+              },
+              {
+                "kind": "code",
+                "text": "fn(x, y, z)"
+              },
+              {
+                "kind": "text",
+                "text": " at\ncoordinate "
+              },
+              {
+                "kind": "code",
+                "text": "(x, y, z)"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The function is called with N parameters, where N is the rank of\n"
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/shape/",
+                        "kind": "link",
+                        "target": "shape",
+                        "text": "shape"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Each parameter represents the coordinates of the array\nvarying along a specific axis.  For example, if "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/shape/",
+                        "kind": "link",
+                        "target": "shape",
+                        "text": "shape"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nwere "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(2, 2)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then the parameters would be\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "array([[0, 0], [1, 1]])"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "array([[0, 1], [0, 1]])"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "callable",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The function is called with N parameters, where N is the rank of\n"
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/shape/",
+                    "kind": "link",
+                    "target": "shape",
+                    "text": "shape"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Each parameter represents the coordinates of the array\nvarying along a specific axis.  For example, if "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/shape/",
+                    "kind": "link",
+                    "target": "shape",
+                    "text": "shape"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nwere "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(2, 2)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then the parameters would be\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "array([[0, 0], [1, 1]])"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "array([[0, 1], [0, 1]])"
+                  }
+                ],
+                "name": "function",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Shape of the output array, which also determines the shape of\nthe coordinate arrays passed to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "function"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(N,) tuple of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Shape of the output array, which also determines the shape of\nthe coordinate arrays passed to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "function"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "shape",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Data-type of the coordinate arrays passed to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "function"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nBy default, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "dtype"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is float."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "data-type, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Data-type of the coordinate arrays passed to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "function"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nBy default, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "dtype"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is float."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Reference object to allow the creation of arrays which are not\nNumPy arrays. If an array-like passed in as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "like"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " supports\nthe "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "__array_function__"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " protocol, the result will be defined\nby it. In this case, it ensures the creation of an array object\ncompatible with that passed in via this argument."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.20.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.20.0"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Reference object to allow the creation of arrays which are not\nNumPy arrays. If an array-like passed in as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "like"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " supports\nthe "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "__array_function__"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " protocol, the result will be defined\nby it. In this case, it ensures the creation of an array object\ncompatible with that passed in via this argument."
+                  }
+                ],
+                "name": "like",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The result of the call to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "function"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is passed back directly.\nTherefore the shape of "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/fromfunction/",
+                        "kind": "link",
+                        "target": "fromfunction",
+                        "text": "fromfunction"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is completely determined by\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "function"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "function"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " returns a scalar value, the shape of\n"
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/fromfunction/",
+                        "kind": "link",
+                        "target": "fromfunction",
+                        "text": "fromfunction"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " would not match the "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/shape/",
+                        "kind": "link",
+                        "target": "shape",
+                        "text": "shape"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " parameter."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "any",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The result of the call to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "function"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is passed back directly.\nTherefore the shape of "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/fromfunction/",
+                    "kind": "link",
+                    "target": "fromfunction",
+                    "text": "fromfunction"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is completely determined by\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "function"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "function"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " returns a scalar value, the shape of\n"
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/fromfunction/",
+                    "kind": "link",
+                    "target": "fromfunction",
+                    "text": "fromfunction"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " would not match the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/shape/",
+                    "kind": "link",
+                    "target": "shape",
+                    "text": "shape"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " parameter."
+                  }
+                ],
+                "name": "fromfunction",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/indices/",
+                "label": "flops.indices",
+                "original_target": "indices",
+                "role": "",
+                "target": "indices",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/meshgrid/",
+                "label": "flops.meshgrid",
+                "original_target": "meshgrid",
+                "role": "",
+                "target": "meshgrid",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Keywords other than "
+              },
+              {
+                "kind": "code",
+                "text": "dtype"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "like"
+              },
+              {
+                "kind": "text",
+                "text": " are passed to "
+              },
+              {
+                "kind": "code",
+                "text": "function"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fromfunction(lambda i, j: i, (2, 2), dtype=float)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0., 0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1., 1.]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fromfunction(lambda i, j: j, (2, 2), dtype=float)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0., 1.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0., 1.]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fromfunction(lambda i, j: i == j, (3, 3), dtype=int)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ True, False, False],"
+              },
+              {
+                "kind": "output",
+                "text": "       [False,  True, False],"
+              },
+              {
+                "kind": "output",
+                "text": "       [False, False,  True]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fromfunction(lambda i, j: i + j, (3, 3), dtype=int)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 2, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2, 3, 4]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.fromfunction",
+    "module": "numpy",
+    "name": "fromfunction",
+    "notes": "Construct array by executing function over each coordinate. Cost: numel(output).",
+    "numpy_ref": "np.fromfunction",
+    "signature": "fnp.fromfunction(function, shape, *, dtype=<class 'float'>, like=None, **kwargs)",
+    "status": "supported",
+    "summary": "Construct an array by executing a function over each coordinate.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "fromfunction",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1786",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/numeric.py#L1847"
+  }
+}

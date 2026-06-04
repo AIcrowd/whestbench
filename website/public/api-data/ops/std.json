@@ -1,0 +1,1026 @@
+{
+  "detail_href": "/docs/api/numpy/std/",
+  "detail_json_href": "/api-data/ops/std.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the standard deviation along the specified axis."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the standard deviation, a measure of the spread of a distribution,\nof the array elements. The standard deviation is computed for the\nflattened array by default, otherwise over the specified axis."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Calculate the standard deviation of these values."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Calculate the standard deviation of these values."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis or axes along which the standard deviation is computed. The\ndefault is to compute the standard deviation of the flattened array.\nIf this is a tuple of ints, a standard deviation is performed over\nmultiple axes, instead of a single axis or all the axes as before."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "None or int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis or axes along which the standard deviation is computed. The\ndefault is to compute the standard deviation of the flattened array.\nIf this is a tuple of ints, a standard deviation is performed over\nmultiple axes, instead of a single axis or all the axes as before."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Type to use in computing the standard deviation. For arrays of\ninteger type the default is float64, for arrays of float types it is\nthe same as the array type."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Type to use in computing the standard deviation. For arrays of\ninteger type the default is float64, for arrays of float types it is\nthe same as the array type."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Alternative output array in which to place the result. It must have\nthe same shape as the expected output but the type (of the calculated\nvalues) will be cast if necessary.\nSee "
+                      },
+                      {
+                        "display_text": "ufuncs-output-type",
+                        "explicit_title": false,
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ufuncs-output-type.html",
+                        "href": "",
+                        "kind": "role_reference",
+                        "original_target": "ufuncs-output-type",
+                        "role": "ref",
+                        "suppress_link": false,
+                        "target": "ufuncs-output-type",
+                        "unresolved": false
+                      },
+                      {
+                        "kind": "text",
+                        "text": " for more details."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Alternative output array in which to place the result. It must have\nthe same shape as the expected output but the type (of the calculated\nvalues) will be cast if necessary.\nSee "
+                  },
+                  {
+                    "display_text": "ufuncs-output-type",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ufuncs-output-type.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "ufuncs-output-type",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "ufuncs-output-type",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": " for more details."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Means Delta Degrees of Freedom.  The divisor used in calculations\nis "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "N - ddof"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", where "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "N"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " represents the number of elements.\nBy default "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ddof"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is zero. See Notes for details about use of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ddof"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{int, float}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Means Delta Degrees of Freedom.  The divisor used in calculations\nis "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "N - ddof"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", where "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "N"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " represents the number of elements.\nBy default "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ddof"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is zero. See Notes for details about use of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ddof"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "ddof",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this is set to True, the axes which are reduced are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the default value is passed, then "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "keepdims"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will not be\npassed through to the "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/std/",
+                        "kind": "link",
+                        "target": "std",
+                        "text": "std"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " method of sub-classes of\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ndarray"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", however any non-default value will be.  If the\nsub-class' method does not implement "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "keepdims"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " any\nexceptions will be raised."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If this is set to True, the axes which are reduced are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the input array."
+                  }
+                ],
+                "name": "keepdims",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Elements to include in the standard deviation.\nSee "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ufunc.reduce.html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "ufunc.reduce",
+                        "text": "reduce"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " for details."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.20.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.20.0"
+                  }
+                ],
+                "data_type": "array_like of bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Elements to include in the standard deviation.\nSee "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ufunc.reduce.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "ufunc.reduce",
+                    "text": "reduce"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " for details."
+                  }
+                ],
+                "name": "where",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Provide the mean to prevent its recalculation. The mean should have\na shape as if it was calculated with "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "keepdims=True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nThe axis for the calculation of the mean should be the same as used in\nthe call to this std function."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.0.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0.0"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Provide the mean to prevent its recalculation. The mean should have\na shape as if it was calculated with "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "keepdims=True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nThe axis for the calculation of the mean should be the same as used in\nthe call to this std function."
+                  }
+                ],
+                "name": "mean",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array API compatible name for the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ddof"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " parameter. Only one of them\ncan be provided at the same time."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.0.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0.0"
+                  }
+                ],
+                "data_type": "{int, float}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array API compatible name for the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ddof"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " parameter. Only one of them\ncan be provided at the same time."
+                  }
+                ],
+                "name": "correction",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None, return a new array containing the standard deviation,\notherwise return a reference to the output array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, see dtype parameter above.",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None, return a new array containing the standard deviation,\notherwise return a reference to the output array."
+                  }
+                ],
+                "name": "standard_deviation",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/var/",
+                "label": "flops.var",
+                "original_target": "var",
+                "role": "",
+                "target": "var",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/mean/",
+                "label": "flops.mean",
+                "original_target": "mean",
+                "role": "",
+                "target": "mean",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/nanmean/",
+                "label": "flops.nanmean",
+                "original_target": "nanmean",
+                "role": "",
+                "target": "nanmean",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/nanstd/",
+                "label": "flops.nanstd",
+                "original_target": "nanstd",
+                "role": "",
+                "target": "nanstd",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/nanvar/",
+                "label": "flops.nanvar",
+                "original_target": "nanvar",
+                "role": "",
+                "target": "nanvar",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ufuncs-output-type.html",
+                "href": "",
+                "label": "ufuncs-output-type",
+                "original_target": "ufuncs-output-type",
+                "role": "ref",
+                "target": "ufuncs-output-type",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "There are several common variants of the array standard deviation\ncalculation. Assuming the input "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is a one-dimensional NumPy array\nand "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/mean/",
+                "kind": "link",
+                "target": "mean",
+                "text": "mean"
+              },
+              {
+                "kind": "text",
+                "text": " is either provided as an argument or computed as\n"
+              },
+              {
+                "kind": "code",
+                "text": "a.mean()"
+              },
+              {
+                "kind": "text",
+                "text": ", NumPy computes the standard deviation of an array as:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "N = len(a)\nd2 = abs(a - mean)**2  # abs is for complex `a`\nvar = d2.sum() / (N - ddof)  # note use of `ddof`\nstd = var**0.5",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Different values of the argument "
+              },
+              {
+                "kind": "code",
+                "text": "ddof"
+              },
+              {
+                "kind": "text",
+                "text": " are useful in different\ncontexts. NumPy's default "
+              },
+              {
+                "kind": "code",
+                "text": "ddof=0"
+              },
+              {
+                "kind": "text",
+                "text": " corresponds with the expression:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "\\sqrt{\\frac{\\sum_i{|a_i - \\bar{a}|^2 }}{N}}"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "which is sometimes called the \"population standard deviation\" in the field\nof statistics because it applies the definition of standard deviation to\n"
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " as if "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " were a complete population of possible observations."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Many other libraries define the standard deviation of an array\ndifferently, e.g.:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "\\sqrt{\\frac{\\sum_i{|a_i - \\bar{a}|^2 }}{N - 1}}"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In statistics, the resulting quantity is sometimes called the \"sample\nstandard deviation\" because if "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is a random sample from a larger\npopulation, this calculation provides the square root of an unbiased\nestimate of the variance of the population. The use of "
+              },
+              {
+                "kind": "math",
+                "latex": "N-1"
+              },
+              {
+                "kind": "text",
+                "text": " in the\ndenominator is often called \"Bessel's correction\" because it corrects for\nbias (toward lower values) in the variance estimate introduced when the\nsample mean of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is used in place of the true mean of the population.\nThe resulting estimate of the standard deviation is still biased, but less\nthan it would have been without the correction. For this quantity, use\n"
+              },
+              {
+                "kind": "code",
+                "text": "ddof=1"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that, for complex numbers, "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/std/",
+                "kind": "link",
+                "target": "std",
+                "text": "std"
+              },
+              {
+                "kind": "text",
+                "text": " takes the absolute\nvalue before squaring, so that the result is always real and nonnegative."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For floating-point input, the standard deviation is computed using the same\nprecision the input has. Depending on the input data, this can cause\nthe results to be inaccurate, especially for float32 (see example below).\nSpecifying a higher-accuracy accumulator using the "
+              },
+              {
+                "kind": "code",
+                "text": "dtype"
+              },
+              {
+                "kind": "text",
+                "text": " keyword can\nalleviate this issue."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, 2], [3, 4]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.std(a)"
+              },
+              {
+                "kind": "output",
+                "text": "1.1180339887498949 # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.std(a, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1.,  1.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.std(a, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.5,  0.5])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In single precision, std() can be inaccurate:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.zeros((2, 512*512), dtype=flops.float32)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[0, :] = 1.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[1, :] = 0.1"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.std(a)"
+              },
+              {
+                "kind": "output",
+                "text": "flops.float32(0.45000005)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Computing the standard deviation in float64 is more accurate:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.std(a, dtype=flops.float64)"
+              },
+              {
+                "kind": "output",
+                "text": "0.44999999925494177 # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Specifying a where argument:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[14, 8, 11, 10], [7, 9, 10, 11], [10, 15, 5, 10]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.std(a)"
+              },
+              {
+                "kind": "output",
+                "text": "2.614064523559687 # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.std(a, where=[[True], [True], [False]])"
+              },
+              {
+                "kind": "output",
+                "text": "2.0"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Using the mean keyword to save computation time:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from timeit import timeit"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[14, 8, 11, 10], [7, 9, 10, 11], [10, 15, 5, 10]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mean = flops.mean(a, axis=1, keepdims=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": ""
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "g = globals()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "n = 10000"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "t1 = timeit(\"std = flops.std(a, axis=1, mean=mean)\", globals=g, number=n)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "t2 = timeit(\"std = flops.std(a, axis=1)\", globals=g, number=n)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "print(f'Percentage execution time saved {100*(t2-t1)/t2:.0f}%')"
+              },
+              {
+                "kind": "output",
+                "text": "#doctest: +SKIP"
+              },
+              {
+                "kind": "output",
+                "text": "Percentage execution time saved 30%"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_reduction",
+    "cost_formula": "numel(input)",
+    "cost_formula_latex": "$\\text{numel}(\\text{input})$",
+    "flopscope_ref": "fnp.std",
+    "module": "numpy",
+    "name": "std",
+    "notes": "Standard deviation; cost_multiplier=2 (two passes).",
+    "numpy_ref": "np.std",
+    "signature": "fnp.std(a, axis=None, dtype=None, out=None, ddof=0, keepdims=<no value>, *, where=<no value>, mean=<no value>, correction=<no value>)",
+    "status": "supported",
+    "summary": "Compute the standard deviation along the specified axis.",
+    "weight": 2.0
+  },
+  "schema_version": 1,
+  "slug": "std",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L853",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L3869"
+  }
+}

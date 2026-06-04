@@ -1,0 +1,489 @@
+{
+  "detail_href": "/docs/api/numpy/full/",
+  "detail_json_href": "/api-data/ops/full.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return a new array of given shape and type, filled with "
+              },
+              {
+                "kind": "code",
+                "text": "fill_value"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Shape of the new array, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(2, 3)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " or "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or sequence of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Shape of the new array, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(2, 3)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " or "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "shape",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Fill value."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "scalar or array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Fill value."
+                  }
+                ],
+                "name": "fill_value",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "code",
+                                "text": "flops.array(fill_value).dtype"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "The desired data-type for the array  The default, None, means"
+                          }
+                        ]
+                      }
+                    ],
+                    "type": "definition_list"
+                  }
+                ],
+                "data_type": "data-type, optional",
+                "inline": [],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Whether to store multidimensional data in C- or Fortran-contiguous\n(row- or column-wise) order in memory."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'C', 'F'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Whether to store multidimensional data in C- or Fortran-contiguous\n(row- or column-wise) order in memory."
+                  }
+                ],
+                "name": "order",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The device on which to place the created array. Default: None.\nFor Array-API interoperability only, so must be "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "\"cpu\""
+                      },
+                      {
+                        "kind": "text",
+                        "text": " if passed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.0.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0.0"
+                  }
+                ],
+                "data_type": "str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The device on which to place the created array. Default: None.\nFor Array-API interoperability only, so must be "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "\"cpu\""
+                  },
+                  {
+                    "kind": "text",
+                    "text": " if passed."
+                  }
+                ],
+                "name": "device",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Reference object to allow the creation of arrays which are not\nNumPy arrays. If an array-like passed in as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "like"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " supports\nthe "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "__array_function__"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " protocol, the result will be defined\nby it. In this case, it ensures the creation of an array object\ncompatible with that passed in via this argument."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.20.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.20.0"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Reference object to allow the creation of arrays which are not\nNumPy arrays. If an array-like passed in as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "like"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " supports\nthe "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "__array_function__"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " protocol, the result will be defined\nby it. In this case, it ensures the creation of an array object\ncompatible with that passed in via this argument."
+                  }
+                ],
+                "name": "like",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "fill_value"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " with the given shape, dtype, and order."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "fill_value"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " with the given shape, dtype, and order."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Return a new array with shape of input filled with value.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return a new array with shape of input filled with value."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/full-like/",
+                "label": "flops.full_like",
+                "original_target": "full_like",
+                "role": "",
+                "target": "full_like",
+                "unresolved": false
+              },
+              {
+                "description": "Return a new uninitialized array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return a new uninitialized array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/empty/",
+                "label": "flops.empty",
+                "original_target": "empty",
+                "role": "",
+                "target": "empty",
+                "unresolved": false
+              },
+              {
+                "description": "Return a new array setting values to one.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return a new array setting values to one."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/ones/",
+                "label": "flops.ones",
+                "original_target": "ones",
+                "role": "",
+                "target": "ones",
+                "unresolved": false
+              },
+              {
+                "description": "Return a new array setting values to zero.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return a new array setting values to zero."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/zeros/",
+                "label": "flops.zeros",
+                "original_target": "zeros",
+                "role": "",
+                "target": "zeros",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.full((2, 2), flops.inf)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[inf, inf],"
+              },
+              {
+                "kind": "output",
+                "text": "       [inf, inf]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.full((2, 2), 10)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[10, 10],"
+              },
+              {
+                "kind": "output",
+                "text": "       [10, 10]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.full((2, 2), [1, 2])"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 2]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.full",
+    "module": "numpy",
+    "name": "full",
+    "notes": "Create array filled with scalar value. Cost: num copied.",
+    "numpy_ref": "np.full",
+    "signature": "fnp.full(shape, fill_value, dtype=None, order='C', *, device=None, like=None)",
+    "status": "supported",
+    "summary": "Return a new array of given shape and type, filled with `fill_value`.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "full",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L156",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/numeric.py#L290"
+  }
+}

@@ -1,0 +1,966 @@
+{
+  "detail_href": "/docs/api/numpy/cross/",
+  "detail_json_href": "/api-data/ops/cross.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the cross product of two (arrays of) vectors."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The cross product of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " in "
+              },
+              {
+                "kind": "math",
+                "latex": "R^3"
+              },
+              {
+                "kind": "text",
+                "text": " is a vector perpendicular\nto both "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": ".  If "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " are arrays of vectors, the vectors\nare defined by the last axis of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " by default, and these axes\ncan have dimensions 2 or 3.  Where the dimension of either "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " or "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " is\n2, the third component of the input vector is assumed to be zero and the\ncross product calculated accordingly.  In cases where both input vectors\nhave dimension 2, the z-component of the cross product is returned."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Components of the first vector(s)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Components of the first vector(s)."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Components of the second vector(s)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Components of the second vector(s)."
+                  }
+                ],
+                "name": "b",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " that defines the vector(s).  By default, the last axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " that defines the vector(s).  By default, the last axis."
+                  }
+                ],
+                "name": "axisa",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " that defines the vector(s).  By default, the last axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " that defines the vector(s).  By default, the last axis."
+                  }
+                ],
+                "name": "axisb",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "c"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " containing the cross product vector(s).  Ignored if\nboth input vectors have dimension 2, as the return is scalar.\nBy default, the last axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "c"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " containing the cross product vector(s).  Ignored if\nboth input vectors have dimension 2, as the return is scalar.\nBy default, the last axis."
+                  }
+                ],
+                "name": "axisc",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If defined, the axis of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "c"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " that defines the vector(s)\nand cross product(s).  Overrides "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axisa"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axisb"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axisc"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If defined, the axis of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "c"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " that defines the vector(s)\nand cross product(s).  Overrides "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axisa"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axisb"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axisc"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Vector cross product(s)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Vector cross product(s)."
+                  }
+                ],
+                "name": "c",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "When the dimension of the vector(s) in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and/or "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " does not\nequal 2 or 3."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "When the dimension of the vector(s) in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and/or "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " does not\nequal 2 or 3."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Inner product",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Inner product"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/inner/",
+                "label": "flops.inner",
+                "original_target": "inner",
+                "role": "",
+                "target": "inner",
+                "unresolved": false
+              },
+              {
+                "description": "Outer product.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Outer product."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/outer/",
+                "label": "flops.outer",
+                "original_target": "outer",
+                "role": "",
+                "target": "outer",
+                "unresolved": false
+              },
+              {
+                "description": "An Array API compatible variation of ``flops.cross``, which accepts (arrays of) 3-element vectors only.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "An Array API compatible variation of "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/cross/",
+                    "kind": "link",
+                    "target": "cross",
+                    "text": "flops.cross"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", which accepts (arrays of) 3-element vectors only."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/linalg/cross/",
+                "label": "flops.linalg.cross",
+                "original_target": "linalg.cross",
+                "role": "",
+                "target": "linalg.cross",
+                "unresolved": false
+              },
+              {
+                "description": "Construct index arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Construct index arrays."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/ix-/",
+                "label": "flops.ix_",
+                "original_target": "ix_",
+                "role": "",
+                "target": "ix_",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Supports full broadcasting of the inputs."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Dimension-2 input arrays were deprecated in 2.0.0. If you do need this\nfunctionality, you can use:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "def cross2d(x, y):\n    return x[..., 0] * y[..., 1] - x[..., 1] * y[..., 0]",
+            "type": "literal_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Vector cross-product."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = [1, 2, 3]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = [4, 5, 6]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cross(x, y)"
+              },
+              {
+                "kind": "output",
+                "text": "array([-3,  6, -3])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "One vector with dimension 2."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = [1, 2]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = [4, 5, 6]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cross(x, y)"
+              },
+              {
+                "kind": "output",
+                "text": "array([12, -6, -3])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Equivalently:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = [1, 2, 0]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = [4, 5, 6]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cross(x, y)"
+              },
+              {
+                "kind": "output",
+                "text": "array([12, -6, -3])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Both vectors with dimension 2."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = [1,2]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = [4,5]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cross(x, y)"
+              },
+              {
+                "kind": "output",
+                "text": "array(-3)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Multiple vector cross-products. Note that the direction of the cross\nproduct vector is defined by the "
+              },
+              {
+                "kind": "emphasis",
+                "text": "right-hand rule"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([[1,2,3], [4,5,6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.array([[4,5,6], [1,2,3]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cross(x, y)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[-3,  6, -3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 3, -6,  3]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The orientation of "
+              },
+              {
+                "kind": "code",
+                "text": "c"
+              },
+              {
+                "kind": "text",
+                "text": " can be changed using the "
+              },
+              {
+                "kind": "code",
+                "text": "axisc"
+              },
+              {
+                "kind": "text",
+                "text": " keyword."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cross(x, y, axisc=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[-3,  3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 6, -6],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-3,  3]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Change the vector definition of "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "y"
+              },
+              {
+                "kind": "text",
+                "text": " using "
+              },
+              {
+                "kind": "code",
+                "text": "axisa"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "axisb"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([[1,2,3], [4,5,6], [7, 8, 9]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.array([[7, 8, 9], [4,5,6], [1,2,3]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cross(x, y)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ -6,  12,  -6],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  0,   0,   0],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  6, -12,   6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.cross(x, y, axisa=0, axisb=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[-24,  48, -24],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-30,  60, -30],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-36,  72, -36]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.cross",
+    "module": "numpy",
+    "name": "cross",
+    "notes": "Cross product of two 3-D vectors.",
+    "numpy_ref": "np.cross",
+    "signature": "fnp.cross(a, b, axisa=-1, axisb=-1, axisc=-1, axis=None)",
+    "status": "supported",
+    "summary": "Return the cross product of two (arrays of) vectors.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "cross",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L2179",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/numeric.py#L1522"
+  }
+}

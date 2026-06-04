@@ -1,0 +1,305 @@
+{
+  "detail_href": "/docs/api/stats/lognorm/ppf/",
+  "detail_json_href": "/api-data/ops/stats-lognorm-ppf.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Evaluate the percent-point function."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Probabilities in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "[0, 1]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Probabilities in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "[0, 1]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "q",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Shape parameter of the distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Shape parameter of the distribution."
+                  }
+                ],
+                "name": "s",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Location parameter. Defaults to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "0"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Location parameter. Defaults to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "0"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "loc",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Scale parameter. Defaults to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Scale parameter. Defaults to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "scale",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Quantiles corresponding to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "q"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "FlopscopeArray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Quantiles corresponding to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "q"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Equivalent to "
+              },
+              {
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lognorm.ppf(q, s, loc, scale).html",
+                "href": "",
+                "kind": "link",
+                "target": "stats.lognorm.ppf(q, s, loc, scale)",
+                "text": "scipy.stats.lognorm.ppf(q, s, loc, scale)"
+              },
+              {
+                "kind": "text",
+                "text": ".\nFLOP cost: "
+              },
+              {
+                "kind": "code",
+                "text": "1 * numel(q)"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope as flops"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "q = flops.array([0.25, 0.5, 0.75])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.round(flops.stats.lognorm.ppf(q, s=0.5), 3)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.714, 1.   , 1.401])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "45n",
+    "cost_formula_latex": "$45n$",
+    "flopscope_ref": "flops.stats.lognorm.ppf",
+    "module": "flopscope.stats",
+    "name": "stats.lognorm.ppf",
+    "notes": "Log-normal PPF; cost = numel(input).",
+    "numpy_ref": "scipy.stats.lognorm.ppf",
+    "signature": "flops.stats.lognorm.ppf(q, s, loc=0, scale=1)",
+    "status": "supported",
+    "summary": "Evaluate the percent-point function.",
+    "weight": 16.0
+  },
+  "schema_version": 1,
+  "slug": "stats-lognorm-ppf",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/stats/_lognorm.py#L108",
+    "numpy": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lognorm.html"
+  }
+}

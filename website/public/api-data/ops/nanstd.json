@@ -1,0 +1,751 @@
+{
+  "detail_href": "/docs/api/numpy/nanstd/",
+  "detail_json_href": "/api-data/ops/nanstd.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the standard deviation along the specified axis, while ignoring NaNs."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the standard deviation, a measure of the spread of a\ndistribution, of the non-NaN array elements. The standard deviation is\ncomputed for the flattened array by default, otherwise over the\nspecified axis."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For all-NaN slices or slices with zero degrees of freedom, NaN is\nreturned and a "
+              },
+              {
+                "kind": "code",
+                "text": "RuntimeWarning"
+              },
+              {
+                "kind": "text",
+                "text": " is raised."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Calculate the standard deviation of the non-NaN values."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Calculate the standard deviation of the non-NaN values."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis or axes along which the standard deviation is computed. The default is\nto compute the standard deviation of the flattened array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{int, tuple of int, None}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis or axes along which the standard deviation is computed. The default is\nto compute the standard deviation of the flattened array."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Type to use in computing the standard deviation. For arrays of\ninteger type the default is float64, for arrays of float types it\nis the same as the array type."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Type to use in computing the standard deviation. For arrays of\ninteger type the default is float64, for arrays of float types it\nis the same as the array type."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Alternative output array in which to place the result. It must have\nthe same shape as the expected output but the type (of the\ncalculated values) will be cast if necessary."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Alternative output array in which to place the result. It must have\nthe same shape as the expected output but the type (of the\ncalculated values) will be cast if necessary."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Means Delta Degrees of Freedom.  The divisor used in calculations\nis "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "N - ddof"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", where "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "N"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " represents the number of non-NaN\nelements.  By default "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ddof"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is zero."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{int, float}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Means Delta Degrees of Freedom.  The divisor used in calculations\nis "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "N - ddof"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", where "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "N"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " represents the number of non-NaN\nelements.  By default "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ddof"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is zero."
+                  }
+                ],
+                "name": "ddof",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this is set to True, the axes which are reduced are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the original "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this value is anything but the default it is passed through\nas-is to the relevant functions of the sub-classes.  If these\nfunctions do not have a "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "keepdims"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " kwarg, a RuntimeError will\nbe raised."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If this is set to True, the axes which are reduced are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the original "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "keepdims",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Elements to include in the standard deviation.\nSee "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ufunc.reduce.html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "ufunc.reduce",
+                        "text": "reduce"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " for details."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.22.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.22.0"
+                  }
+                ],
+                "data_type": "array_like of bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Elements to include in the standard deviation.\nSee "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ufunc.reduce.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "ufunc.reduce",
+                    "text": "reduce"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " for details."
+                  }
+                ],
+                "name": "where",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Provide the mean to prevent its recalculation. The mean should have\na shape as if it was calculated with "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "keepdims=True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nThe axis for the calculation of the mean should be the same as used in\nthe call to this std function."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.0.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0.0"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Provide the mean to prevent its recalculation. The mean should have\na shape as if it was calculated with "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "keepdims=True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nThe axis for the calculation of the mean should be the same as used in\nthe call to this std function."
+                  }
+                ],
+                "name": "mean",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array API compatible name for the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ddof"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " parameter. Only one of them\ncan be provided at the same time."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.0.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0.0"
+                  }
+                ],
+                "data_type": "{int, float}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array API compatible name for the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ddof"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " parameter. Only one of them\ncan be provided at the same time."
+                  }
+                ],
+                "name": "correction",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None, return a new array containing the standard\ndeviation, otherwise return a reference to the output array. If\nddof is >= the number of non-NaN elements in a slice or the slice\ncontains only NaNs, then the result for that slice is NaN."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, see dtype parameter above.",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None, return a new array containing the standard\ndeviation, otherwise return a reference to the output array. If\nddof is >= the number of non-NaN elements in a slice or the slice\ncontains only NaNs, then the result for that slice is NaN."
+                  }
+                ],
+                "name": "standard_deviation",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/var/",
+                "label": "flops.var",
+                "original_target": "var",
+                "role": "",
+                "target": "var",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/mean/",
+                "label": "flops.mean",
+                "original_target": "mean",
+                "role": "",
+                "target": "mean",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/std/",
+                "label": "flops.std",
+                "original_target": "std",
+                "role": "",
+                "target": "std",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/nanvar/",
+                "label": "flops.nanvar",
+                "original_target": "nanvar",
+                "role": "",
+                "target": "nanvar",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/nanmean/",
+                "label": "flops.nanmean",
+                "original_target": "nanmean",
+                "role": "",
+                "target": "nanmean",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ufuncs-output-type.html",
+                "href": "",
+                "label": "ufuncs-output-type",
+                "original_target": "ufuncs-output-type",
+                "role": "ref",
+                "target": "ufuncs-output-type",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The standard deviation is the square root of the average of the squared\ndeviations from the mean: "
+              },
+              {
+                "kind": "code",
+                "text": "std = sqrt(mean(abs(x - x.mean())**2))"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The average squared deviation is normally calculated as\n"
+              },
+              {
+                "kind": "code",
+                "text": "x.sum() / N"
+              },
+              {
+                "kind": "text",
+                "text": ", where "
+              },
+              {
+                "kind": "code",
+                "text": "N = len(x)"
+              },
+              {
+                "kind": "text",
+                "text": ".  If, however, "
+              },
+              {
+                "kind": "code",
+                "text": "ddof"
+              },
+              {
+                "kind": "text",
+                "text": " is\nspecified, the divisor "
+              },
+              {
+                "kind": "code",
+                "text": "N - ddof"
+              },
+              {
+                "kind": "text",
+                "text": " is used instead. In standard\nstatistical practice, "
+              },
+              {
+                "kind": "code",
+                "text": "ddof=1"
+              },
+              {
+                "kind": "text",
+                "text": " provides an unbiased estimator of the\nvariance of the infinite population. "
+              },
+              {
+                "kind": "code",
+                "text": "ddof=0"
+              },
+              {
+                "kind": "text",
+                "text": " provides a maximum\nlikelihood estimate of the variance for normally distributed variables.\nThe standard deviation computed in this function is the square root of\nthe estimated variance, so even with "
+              },
+              {
+                "kind": "code",
+                "text": "ddof=1"
+              },
+              {
+                "kind": "text",
+                "text": ", it will not be an\nunbiased estimate of the standard deviation per se."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that, for complex numbers, "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/std/",
+                "kind": "link",
+                "target": "std",
+                "text": "std"
+              },
+              {
+                "kind": "text",
+                "text": " takes the absolute value before\nsquaring, so that the result is always real and nonnegative."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For floating-point input, the "
+              },
+              {
+                "kind": "emphasis",
+                "text": "std"
+              },
+              {
+                "kind": "text",
+                "text": " is computed using the same\nprecision the input has. Depending on the input data, this can cause\nthe results to be inaccurate, especially for float32 (see example\nbelow).  Specifying a higher-accuracy accumulator using the "
+              },
+              {
+                "kind": "code",
+                "text": "dtype"
+              },
+              {
+                "kind": "text",
+                "text": "\nkeyword can alleviate this issue."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, flops.nan], [3, 4]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.nanstd(a)"
+              },
+              {
+                "kind": "output",
+                "text": "1.247219128924647"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.nanstd(a, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1., 0.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.nanstd(a, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.,  0.5]) # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_reduction",
+    "cost_formula": "numel(input)",
+    "cost_formula_latex": "$\\text{numel}(\\text{input})$",
+    "flopscope_ref": "fnp.nanstd",
+    "module": "numpy",
+    "name": "nanstd",
+    "notes": "Standard deviation ignoring NaNs.",
+    "numpy_ref": "np.nanstd",
+    "signature": "fnp.nanstd(a, axis=None, dtype=None, out=None, ddof=0, keepdims=<no value>, *, where=<no value>, mean=<no value>, correction=<no value>)",
+    "status": "supported",
+    "summary": "Compute the standard deviation along the specified axis, while ignoring NaNs.",
+    "weight": 2.0
+  },
+  "schema_version": 1,
+  "slug": "nanstd",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L853",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_nanfunctions_impl.py#L1905"
+  }
+}

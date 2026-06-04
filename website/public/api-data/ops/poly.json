@@ -1,0 +1,548 @@
+{
+  "detail_href": "/docs/api/numpy/poly/",
+  "detail_json_href": "/api-data/ops/poly.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Find the coefficients of a polynomial with the given sequence of roots."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This forms part of the old polynomial API. Since version 1.4, the\nnew polynomial API defined in "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.polynomial.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "polynomial",
+                    "text": "flops.polynomial"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is preferred.\nA summary of the differences can be found in the\n"
+                  },
+                  {
+                    "display_text": "transition guide",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "/reference/routines.polynomials",
+                    "role": "doc",
+                    "suppress_link": false,
+                    "target": "/reference/routines.polynomials",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n   This forms part of the old polynomial API. Since version 1.4, the\n   new polynomial API defined in `flops.polynomial` is preferred.\n   A summary of the differences can be found in the\n   :doc:`transition guide </reference/routines.polynomials>`.",
+            "supported": true,
+            "type": "directive_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the coefficients of the polynomial whose leading coefficient\nis one for the given sequence of zeros (multiple roots must be included\nin the sequence as many times as their multiplicity; see Examples).\nA square matrix (or array, which will be treated as a matrix) can also\nbe given, in which case the coefficients of the characteristic polynomial\nof the matrix are returned."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A sequence of polynomial roots, or a square array or matrix object."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, shape (N,) or (N, N)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A sequence of polynomial roots, or a square array or matrix object."
+                  }
+                ],
+                "name": "seq_of_zeros",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "1D array of polynomial coefficients from highest to lowest degree:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "code",
+                        "text": "c[0] * x**(N) + c[1] * x**(N-1) + ... + c[N-1] * x + c[N]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nwhere c[0] always equals 1."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "1D array of polynomial coefficients from highest to lowest degree:"
+                  }
+                ],
+                "name": "c",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If input is the wrong shape (the input must be a 1-D or square\n2-D array)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If input is the wrong shape (the input must be a 1-D or square\n2-D array)."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Compute polynomial values.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Compute polynomial values."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/polyval/",
+                "label": "flops.polyval",
+                "original_target": "polyval",
+                "role": "",
+                "target": "polyval",
+                "unresolved": false
+              },
+              {
+                "description": "Return the roots of a polynomial.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return the roots of a polynomial."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/roots/",
+                "label": "flops.roots",
+                "original_target": "roots",
+                "role": "",
+                "target": "roots",
+                "unresolved": false
+              },
+              {
+                "description": "Least squares polynomial fit.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Least squares polynomial fit."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/polyfit/",
+                "label": "flops.polyfit",
+                "original_target": "polyfit",
+                "role": "",
+                "target": "polyfit",
+                "unresolved": false
+              },
+              {
+                "description": "A one-dimensional polynomial class.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "A one-dimensional polynomial class."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.poly1d.html",
+                "href": "",
+                "label": "poly1d",
+                "original_target": "poly1d",
+                "role": "",
+                "target": "poly1d",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Specifying the roots of a polynomial still leaves one degree of\nfreedom, typically represented by an undetermined leading\ncoefficient. "
+              },
+              {
+                "kind": "text",
+                "text": "[1]_"
+              },
+              {
+                "kind": "text",
+                "text": " In the case of this function, that coefficient -\nthe first one in the returned array - is always taken as one. (If\nfor some reason you have one other point, the only automatic way\npresently to leverage that information is to use "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/polyfit/",
+                "kind": "link",
+                "target": "polyfit",
+                "text": "polyfit"
+              },
+              {
+                "kind": "text",
+                "text": ".)"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The characteristic polynomial, "
+              },
+              {
+                "kind": "math",
+                "latex": "p_a(t)"
+              },
+              {
+                "kind": "text",
+                "text": ", of an "
+              },
+              {
+                "kind": "code",
+                "text": "n"
+              },
+              {
+                "kind": "text",
+                "text": "-by-"
+              },
+              {
+                "kind": "code",
+                "text": "n"
+              },
+              {
+                "kind": "text",
+                "text": "\nmatrix "
+              },
+              {
+                "kind": "strong",
+                "text": "A"
+              },
+              {
+                "kind": "text",
+                "text": " is given by"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "math",
+                "latex": "p_a(t) = \\mathrm{det}(t\\, \\mathbf{I} - \\mathbf{A})"
+              },
+              {
+                "kind": "text",
+                "text": ","
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where "
+              },
+              {
+                "kind": "strong",
+                "text": "I"
+              },
+              {
+                "kind": "text",
+                "text": " is the "
+              },
+              {
+                "kind": "code",
+                "text": "n"
+              },
+              {
+                "kind": "text",
+                "text": "-by-"
+              },
+              {
+                "kind": "code",
+                "text": "n"
+              },
+              {
+                "kind": "text",
+                "text": " identity matrix. "
+              },
+              {
+                "kind": "text",
+                "text": "[2]_"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nM. Sullivan and M. Sullivan, III, \"Algebra and Trigonometry,\nEnhanced With Graphing Utilities,\" Prentice-Hall, pg. 318, 1996.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nG. Strang, \"Linear Algebra and Its Applications, 2nd Edition,\"\nAcademic Press, pg. 182, 1980.",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Given a sequence of a polynomial's zeros:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.poly((0, 0, 0)) # Multiple root example"
+              },
+              {
+                "kind": "output",
+                "text": "array([1., 0., 0., 0.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The line above represents z**3 + 0*z**2 + 0*z + 0."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.poly((-1./2, 0, 1./2))"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 1.  ,  0.  , -0.25,  0.  ])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The line above represents z**3 - z/4"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.poly((flops.random.random(1)[0], 0, flops.random.random(1)[0]))"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 1.        , -0.77086955,  0.08618131,  0.        ]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Given a square array object:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "P = flops.array([[0, 1./3], [-1./2, 0]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.poly(P)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1.        , 0.        , 0.16666667])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note how in all cases the leading coefficient is always 1."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n^2",
+    "cost_formula_latex": "$n^2$",
+    "flopscope_ref": "fnp.poly",
+    "module": "flopscope._polynomial",
+    "name": "poly",
+    "notes": "Polynomial from roots. Cost: $n^2$ FLOPs.",
+    "numpy_ref": "np.poly",
+    "signature": "fnp.poly(seq_of_zeros: 'ArrayLike') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Find the coefficients of a polynomial with the given sequence of roots.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "poly",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_polynomial.py#L239",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_polynomial_impl.py#L34"
+  }
+}

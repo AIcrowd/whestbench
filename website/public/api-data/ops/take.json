@@ -1,0 +1,606 @@
+{
+  "detail_href": "/docs/api/numpy/take/",
+  "detail_json_href": "/api-data/ops/take.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Take elements from an array along an axis."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When axis is not None, this function does the same thing as \"fancy\"\nindexing (indexing arrays using arrays); however, it can be easier to use\nif you need elements along a given axis. A call such as\n"
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.take(arr, indices, axis=3).html",
+                "href": "",
+                "kind": "link",
+                "target": "take(arr, indices, axis=3)",
+                "text": "flops.take(arr, indices, axis=3)"
+              },
+              {
+                "kind": "text",
+                "text": " is equivalent to\n"
+              },
+              {
+                "kind": "code",
+                "text": "arr[:,:,:,indices,...]"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Explained without fancy indexing, this is equivalent to the following use\nof "
+              },
+              {
+                "kind": "code",
+                "text": "ndindex"
+              },
+              {
+                "kind": "text",
+                "text": ", which sets each of "
+              },
+              {
+                "kind": "code",
+                "text": "ii"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "jj"
+              },
+              {
+                "kind": "text",
+                "text": ", and "
+              },
+              {
+                "kind": "code",
+                "text": "kk"
+              },
+              {
+                "kind": "text",
+                "text": " to a tuple of\nindices:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "Ni, Nk = a.shape[:axis], a.shape[axis+1:]\nNj = indices.shape\nfor ii in ndindex(Ni):\n    for jj in ndindex(Nj):\n        for kk in ndindex(Nk):\n            out[ii + jj + kk] = a[ii + (indices[jj],) + kk]",
+            "type": "literal_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The source array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like (Ni..., M, Nk...)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The source array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The indices of the values to extract.\nAlso allow scalars for indices."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like (Nj...)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The indices of the values to extract.\nAlso allow scalars for indices."
+                  }
+                ],
+                "name": "indices",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis over which to select values. By default, the flattened\ninput array is used."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis over which to select values. By default, the flattened\ninput array is used."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If provided, the result will be placed in this array. It should\nbe of the appropriate shape and dtype. Note that "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is always\nbuffered if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "mode='raise'"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "; use other modes for better performance."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional (Ni..., Nj..., Nk...)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If provided, the result will be placed in this array. It should\nbe of the appropriate shape and dtype. Note that "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is always\nbuffered if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "mode='raise'"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "; use other modes for better performance."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Specifies how out-of-bounds indices will behave."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'raise' -- raise an error (default)"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'wrap' -- wrap around"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'clip' -- clip to the range"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "'clip' mode means that all indices that are too large are replaced\nby the index that addresses the last element along that axis. Note\nthat this disables indexing with negative numbers."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'raise', 'wrap', 'clip'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Specifies how out-of-bounds indices will behave."
+                  }
+                ],
+                "name": "mode",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The returned array has the same type as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray (Ni..., Nj..., Nk...)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The returned array has the same type as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Take elements using a boolean mask",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Take elements using a boolean mask"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/compress/",
+                "label": "flops.compress",
+                "original_target": "compress",
+                "role": "",
+                "target": "compress",
+                "unresolved": false
+              },
+              {
+                "description": "equivalent method",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "equivalent method"
+                  }
+                ],
+                "external_url": "",
+                "href": "",
+                "label": "ndarray.take",
+                "original_target": "ndarray.take",
+                "role": "",
+                "target": "ndarray.take",
+                "unresolved": true
+              },
+              {
+                "description": "Take elements by matching the array and the index arrays",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Take elements by matching the array and the index arrays"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/take-along-axis/",
+                "label": "flops.take_along_axis",
+                "original_target": "take_along_axis",
+                "role": "",
+                "target": "take_along_axis",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "By eliminating the inner loop in the description above, and using "
+              },
+              {
+                "kind": "code",
+                "text": "s_"
+              },
+              {
+                "kind": "text",
+                "text": " to\nbuild simple slice objects, "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/take/",
+                "kind": "link",
+                "target": "take",
+                "text": "take"
+              },
+              {
+                "kind": "text",
+                "text": " can be expressed  in terms of applying\nfancy indexing to each 1-d slice:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "Ni, Nk = a.shape[:axis], a.shape[axis+1:]\nfor ii in ndindex(Ni):\n    for kk in ndindex(Nj):\n        out[ii + s_[...,] + kk] = a[ii + s_[:,] + kk][indices]",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For this reason, it is equivalent to (but faster than) the following use\nof "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/apply-along-axis/",
+                "kind": "link",
+                "target": "apply_along_axis",
+                "text": "apply_along_axis"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "out = flops.apply_along_axis(lambda a_1d: a_1d[indices], axis, a)",
+            "type": "literal_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = [4, 3, 5, 7, 6, 8]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "indices = [0, 1, 4]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.take(a, indices)"
+              },
+              {
+                "kind": "output",
+                "text": "array([4, 3, 6])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In this example if "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is an ndarray, \"fancy\" indexing can be used."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[indices]"
+              },
+              {
+                "kind": "output",
+                "text": "array([4, 3, 6])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/indices/",
+                "kind": "link",
+                "target": "indices",
+                "text": "indices"
+              },
+              {
+                "kind": "text",
+                "text": " is not one dimensional, the output also has these dimensions."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.take(a, [[0, 1], [2, 3]])"
+              },
+              {
+                "kind": "output",
+                "text": "array([[4, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [5, 7]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.take",
+    "module": "numpy",
+    "name": "take",
+    "notes": "Take elements from array along axis. Cost: numel(output).",
+    "numpy_ref": "np.take",
+    "signature": "fnp.take(a, indices, axis=None, out=None, mode='raise')",
+    "status": "supported",
+    "summary": "Take elements from an array along an axis.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "take",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L2329",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L109"
+  }
+}

@@ -1,0 +1,635 @@
+{
+  "detail_href": "/docs/api/numpy/median/",
+  "detail_json_href": "/api-data/ops/median.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the median along the specified axis."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the median of the array elements."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array or object that can be converted to an array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array or object that can be converted to an array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis or axes along which the medians are computed. The default,\naxis=None, will compute the median along a flattened version of\nthe array. If a sequence of axes, the array is first flattened\nalong the given axes, then the median is computed along the\nresulting flattened axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{int, sequence of int, None}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis or axes along which the medians are computed. The default,\naxis=None, will compute the median along a flattened version of\nthe array. If a sequence of axes, the array is first flattened\nalong the given axes, then the median is computed along the\nresulting flattened axis."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Alternative output array in which to place the result. It must\nhave the same shape and buffer length as the expected output,\nbut the type (of the output) will be cast if necessary."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Alternative output array in which to place the result. It must\nhave the same shape and buffer length as the expected output,\nbut the type (of the output) will be cast if necessary."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, then allow use of memory of input array "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " for\ncalculations. The input array will be modified by the call to\n"
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/median/",
+                        "kind": "link",
+                        "target": "median",
+                        "text": "median"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". This will save memory when you do not need to preserve\nthe contents of the input array. Treat the input as undefined,\nbut it will probably be fully or partially sorted. Default is\nFalse. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "overwrite_input"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not already an\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ndarray"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", an error will be raised."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, then allow use of memory of input array "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " for\ncalculations. The input array will be modified by the call to\n"
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/median/",
+                    "kind": "link",
+                    "target": "median",
+                    "text": "median"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". This will save memory when you do not need to preserve\nthe contents of the input array. Treat the input as undefined,\nbut it will probably be fully or partially sorted. Default is\nFalse. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "overwrite_input"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not already an\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ndarray"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", an error will be raised."
+                  }
+                ],
+                "name": "overwrite_input",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this is set to True, the axes which are reduced are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the original "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If this is set to True, the axes which are reduced are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the original "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "keepdims",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A new array holding the result. If the input contains integers\nor floats smaller than "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float64"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then the output data-type is\n"
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.float64.html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "float64",
+                        "text": "flops.float64"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Otherwise, the data-type of the output is the\nsame as that of the input. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is specified, that array is\nreturned instead."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A new array holding the result. If the input contains integers\nor floats smaller than "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float64"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then the output data-type is\n"
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.float64.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "float64",
+                    "text": "flops.float64"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Otherwise, the data-type of the output is the\nsame as that of the input. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is specified, that array is\nreturned instead."
+                  }
+                ],
+                "name": "median",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/mean/",
+                "label": "flops.mean",
+                "original_target": "mean",
+                "role": "",
+                "target": "mean",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/percentile/",
+                "label": "flops.percentile",
+                "original_target": "percentile",
+                "role": "",
+                "target": "percentile",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Given a vector "
+              },
+              {
+                "kind": "code",
+                "text": "V"
+              },
+              {
+                "kind": "text",
+                "text": " of length "
+              },
+              {
+                "kind": "code",
+                "text": "N"
+              },
+              {
+                "kind": "text",
+                "text": ", the median of "
+              },
+              {
+                "kind": "code",
+                "text": "V"
+              },
+              {
+                "kind": "text",
+                "text": " is the\nmiddle value of a sorted copy of "
+              },
+              {
+                "kind": "code",
+                "text": "V"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "V_sorted"
+              },
+              {
+                "kind": "text",
+                "text": " - i\ne., "
+              },
+              {
+                "kind": "code",
+                "text": "V_sorted[(N-1)/2]"
+              },
+              {
+                "kind": "text",
+                "text": ", when "
+              },
+              {
+                "kind": "code",
+                "text": "N"
+              },
+              {
+                "kind": "text",
+                "text": " is odd, and the average of the\ntwo middle values of "
+              },
+              {
+                "kind": "code",
+                "text": "V_sorted"
+              },
+              {
+                "kind": "text",
+                "text": " when "
+              },
+              {
+                "kind": "code",
+                "text": "N"
+              },
+              {
+                "kind": "text",
+                "text": " is even."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[10, 7, 4], [3, 2, 1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[10,  7,  4],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 3,  2,  1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.median(a)"
+              },
+              {
+                "kind": "output",
+                "text": "flops.float64(3.5)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.median(a, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([6.5, 4.5, 2.5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.median(a, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([7.,  2.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.median(a, axis=(0, 1))"
+              },
+              {
+                "kind": "output",
+                "text": "flops.float64(3.5)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "m = flops.median(a, axis=0)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "out = flops.zeros_like(m)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.median(a, axis=0, out=m)"
+              },
+              {
+                "kind": "output",
+                "text": "array([6.5,  4.5,  2.5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "m"
+              },
+              {
+                "kind": "output",
+                "text": "array([6.5,  4.5,  2.5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = a.copy()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.median(b, axis=1, overwrite_input=True)"
+              },
+              {
+                "kind": "output",
+                "text": "array([7.,  2.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "assert not flops.all(a==b)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = a.copy()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.median(b, axis=None, overwrite_input=True)"
+              },
+              {
+                "kind": "output",
+                "text": "flops.float64(3.5)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "assert not flops.all(a==b)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_reduction",
+    "cost_formula": "numel(input)",
+    "cost_formula_latex": "$\\text{numel}(\\text{input})$",
+    "flopscope_ref": "fnp.median",
+    "module": "numpy",
+    "name": "median",
+    "notes": "Median of array elements (sorts internally).",
+    "numpy_ref": "np.median",
+    "signature": "fnp.median(a, axis=None, out=None, overwrite_input=False, keepdims=False)",
+    "status": "supported",
+    "summary": "Compute the median along the specified axis.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "median",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L1583",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L3916"
+  }
+}

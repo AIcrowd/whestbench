@@ -1,0 +1,285 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/standard-exponential/",
+  "detail_json_href": "/api-data/ops/random-Generator-standard_exponential.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from the standard exponential distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "standard_exponential"
+              },
+              {
+                "kind": "text",
+                "text": " is identical to the exponential distribution\nwith a scale parameter of 1."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  Default is None, in which case a\nsingle value is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  Default is None, in which case a\nsingle value is returned."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Desired dtype of the result, only "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float64"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float32"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are supported.\nByteorder must be native. The default value is flops.float64."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Desired dtype of the result, only "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float64"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float32"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are supported.\nByteorder must be native. The default value is flops.float64."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Either 'inv' or 'zig'. 'inv' uses the default inverse CDF method.\n'zig' uses the much faster Ziggurat method of Marsaglia and Tsang."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Either 'inv' or 'zig'. 'inv' uses the default inverse CDF method.\n'zig' uses the much faster Ziggurat method of Marsaglia and Tsang."
+                  }
+                ],
+                "name": "method",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Alternative output array in which to place the result. If size is not None,\nit must have the same shape as the provided size and must match the type of\nthe output values."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Alternative output array in which to place the result. If size is not None,\nit must have the same shape as the provided size and must match the type of\nthe output values."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Output a 3x8000 array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "n = rng.standard_exponential((3, 8000))"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.Generator.standard_exponential",
+    "module": "numpy.random",
+    "name": "random.Generator.standard_exponential",
+    "notes": "Standard exponential; cost = numel(output).",
+    "numpy_ref": "np.random.Generator.standard_exponential",
+    "signature": "fnp.random.Generator.standard_exponential(self, size=None, dtype=<class 'numpy.float64'>, method='zig', out=None)",
+    "status": "supported",
+    "summary": "Draw samples from the standard exponential distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-standard_exponential",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.standard_exponential.html"
+  }
+}

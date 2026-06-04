@@ -1,0 +1,1098 @@
+{
+  "detail_href": "/docs/api/numpy/histogram2d/",
+  "detail_json_href": "/api-data/ops/histogram2d.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the bi-dimensional histogram of two data samples."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array containing the x coordinates of the points to be\nhistogrammed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, shape (N,)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array containing the x coordinates of the points to be\nhistogrammed."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array containing the y coordinates of the points to be\nhistogrammed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, shape (N,)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array containing the y coordinates of the points to be\nhistogrammed."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The bin specification:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "If int, the number of bins for the two dimensions (nx=ny=bins)."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "If array_like, the bin edges for the two dimensions\n(x_edges=y_edges=bins)."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "If [int, int], the number of bins in each dimension\n(nx, ny = bins)."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "If [array, array], the bin edges in each dimension\n(x_edges, y_edges = bins)."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "A combination [int, array] or [array, int], where int\nis the number of bins and array is the bin edges."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  }
+                ],
+                "data_type": "int or array_like or [int, int] or [array, array], optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The bin specification:"
+                  }
+                ],
+                "name": "bins",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The leftmost and rightmost edges of the bins along each dimension\n(if not specified explicitly in the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bins"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " parameters):\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "[[xmin, xmax], [ymin, ymax]]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". All values outside of this range\nwill be considered outliers and not tallied in the histogram."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, shape(2,2), optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The leftmost and rightmost edges of the bins along each dimension\n(if not specified explicitly in the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "bins"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " parameters):\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "[[xmin, xmax], [ymin, ymax]]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". All values outside of this range\nwill be considered outliers and not tallied in the histogram."
+                  }
+                ],
+                "name": "range",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If False, the default, returns the number of samples in each bin.\nIf True, returns the probability "
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "density"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " function at the bin,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bin_count / sample_count / bin_area"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If False, the default, returns the number of samples in each bin.\nIf True, returns the probability "
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "density"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " function at the bin,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "bin_count / sample_count / bin_area"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "density",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array of values "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "w_i"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " weighing each sample "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(x_i, y_i)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nWeights are normalized to 1 if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "density"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "density"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is\nFalse, the values of the returned histogram are equal to the sum of\nthe weights belonging to the samples falling into each bin."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, shape(N,), optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array of values "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "w_i"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " weighing each sample "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(x_i, y_i)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nWeights are normalized to 1 if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "density"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "density"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is\nFalse, the values of the returned histogram are equal to the sum of\nthe weights belonging to the samples falling into each bin."
+                  }
+                ],
+                "name": "weights",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The bi-dimensional histogram of samples "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "y"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Values in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nare histogrammed along the first dimension and values in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "y"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are\nhistogrammed along the second dimension."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, shape(nx, ny)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The bi-dimensional histogram of samples "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "y"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Values in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nare histogrammed along the first dimension and values in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "y"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are\nhistogrammed along the second dimension."
+                  }
+                ],
+                "name": "H",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The bin edges along the first dimension."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, shape(nx+1,)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The bin edges along the first dimension."
+                  }
+                ],
+                "name": "xedges",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The bin edges along the second dimension."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, shape(ny+1,)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The bin edges along the second dimension."
+                  }
+                ],
+                "name": "yedges",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "1D histogram",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "1D histogram"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/histogram/",
+                "label": "flops.histogram",
+                "original_target": "histogram",
+                "role": "",
+                "target": "histogram",
+                "unresolved": false
+              },
+              {
+                "description": "Multidimensional histogram",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Multidimensional histogram"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/histogramdd/",
+                "label": "flops.histogramdd",
+                "original_target": "histogramdd",
+                "role": "",
+                "target": "histogramdd",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When "
+              },
+              {
+                "kind": "code",
+                "text": "density"
+              },
+              {
+                "kind": "text",
+                "text": " is True, then the returned histogram is the sample\ndensity, defined such that the sum over bins of the product\n"
+              },
+              {
+                "kind": "code",
+                "text": "bin_value * bin_area"
+              },
+              {
+                "kind": "text",
+                "text": " is 1."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Please note that the histogram does not follow the Cartesian convention\nwhere "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " values are on the abscissa and "
+              },
+              {
+                "kind": "code",
+                "text": "y"
+              },
+              {
+                "kind": "text",
+                "text": " values on the ordinate\naxis.  Rather, "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " is histogrammed along the first dimension of the\narray (vertical), and "
+              },
+              {
+                "kind": "code",
+                "text": "y"
+              },
+              {
+                "kind": "text",
+                "text": " along the second dimension of the array\n(horizontal).  This ensures compatibility with "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/histogramdd/",
+                "kind": "link",
+                "target": "histogramdd",
+                "text": "histogramdd"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from matplotlib.image import NonUniformImage"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Construct a 2-D histogram with variable bin width. First define the bin\nedges:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "xedges = [0, 1, 3, 5]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "yedges = [0, 2, 3, 4, 6]"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Next we create a histogram H with random bin content:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.random.normal(2, 1, 100)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.random.normal(1, 1, 100)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "H, xedges, yedges = flops.histogram2d(x, y, bins=(xedges, yedges))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# Histogram does not follow Cartesian convention (see Notes),"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# therefore transpose H for visualization purposes."
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "H = H.T"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "display_text": "imshow",
+                "explicit_title": true,
+                "external_url": "",
+                "href": "",
+                "kind": "role_reference",
+                "original_target": "matplotlib.pyplot.imshow",
+                "role": "func",
+                "suppress_link": false,
+                "target": "matplotlib.pyplot.imshow",
+                "unresolved": true
+              },
+              {
+                "kind": "text",
+                "text": " can only display square bins:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "fig = plt.figure(figsize=(7, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax = fig.add_subplot(131, title='imshow: square bins')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.imshow(H, interpolation='nearest', origin='lower',"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])"
+              },
+              {
+                "kind": "output",
+                "text": "<matplotlib.image.AxesImage object at 0x...>"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "display_text": "pcolormesh",
+                "explicit_title": true,
+                "external_url": "",
+                "href": "",
+                "kind": "role_reference",
+                "original_target": "matplotlib.pyplot.pcolormesh",
+                "role": "func",
+                "suppress_link": false,
+                "target": "matplotlib.pyplot.pcolormesh",
+                "unresolved": true
+              },
+              {
+                "kind": "text",
+                "text": " can display actual edges:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax = fig.add_subplot(132, title='pcolormesh: actual edges',"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "aspect='equal')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "X, Y = flops.meshgrid(xedges, yedges)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax.pcolormesh(X, Y, H)"
+              },
+              {
+                "kind": "output",
+                "text": "<matplotlib.collections.QuadMesh object at 0x...>"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "display_text": "NonUniformImage",
+                "explicit_title": true,
+                "external_url": "",
+                "href": "",
+                "kind": "role_reference",
+                "original_target": "matplotlib.image.NonUniformImage",
+                "role": "class",
+                "suppress_link": false,
+                "target": "matplotlib.image.NonUniformImage",
+                "unresolved": true
+              },
+              {
+                "kind": "text",
+                "text": " can be used to\ndisplay actual bin edges with interpolation:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax = fig.add_subplot(133, title='NonUniformImage: interpolated',"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "aspect='equal', xlim=xedges[[0, -1]], ylim=yedges[[0, -1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "im = NonUniformImage(ax, interpolation='bilinear')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "xcenters = (xedges[:-1] + xedges[1:]) / 2"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ycenters = (yedges[:-1] + yedges[1:]) / 2"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "im.set_data(xcenters, ycenters, H)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax.add_image(im)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "It is also possible to construct a 2-D histogram without specifying bin\nedges:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# Generate non-symmetric test data"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "n = 10000"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.linspace(1, 100, n)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = 2*flops.log(x) + flops.random.rand(n) - 0.5"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# Compute 2d histogram. Note the order of x/y and xedges/yedges"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "H, yedges, xedges = flops.histogram2d(y, x, bins=20)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Now we can plot the histogram using\n"
+              },
+              {
+                "display_text": "pcolormesh",
+                "explicit_title": true,
+                "external_url": "",
+                "href": "",
+                "kind": "role_reference",
+                "original_target": "matplotlib.pyplot.pcolormesh",
+                "role": "func",
+                "suppress_link": false,
+                "target": "matplotlib.pyplot.pcolormesh",
+                "unresolved": true
+              },
+              {
+                "kind": "text",
+                "text": ", and a\n"
+              },
+              {
+                "display_text": "hexbin",
+                "explicit_title": true,
+                "external_url": "",
+                "href": "",
+                "kind": "role_reference",
+                "original_target": "matplotlib.pyplot.hexbin",
+                "role": "func",
+                "suppress_link": false,
+                "target": "matplotlib.pyplot.hexbin",
+                "unresolved": true
+              },
+              {
+                "kind": "text",
+                "text": " for comparison."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# Plot histogram using pcolormesh"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "fig, (ax1, ax2) = plt.subplots(ncols=2, sharey=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax1.pcolormesh(xedges, yedges, H, cmap='rainbow')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax1.plot(x, 2*flops.log(x), 'k-')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax1.set_xlim(x.min(), x.max())"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax1.set_ylim(y.min(), y.max())"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax1.set_xlabel('x')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax1.set_ylabel('y')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax1.set_title('histogram2d')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax1.grid()"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# Create hexbin plot for comparison"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax2.hexbin(x, y, gridsize=20, cmap='rainbow')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax2.plot(x, 2*flops.log(x), 'k-')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax2.set_title('hexbin')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax2.set_xlim(x.min(), x.max())"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax2.set_xlabel('x')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "ax2.grid()"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.histogram2d",
+    "module": "numpy",
+    "name": "histogram2d",
+    "notes": "2D binning; cost = n*(ceil(log2(bx))+ceil(log2(by))).",
+    "numpy_ref": "np.histogram2d",
+    "signature": "fnp.histogram2d(x, y, bins=10, range=None, density=None, weights=None)",
+    "status": "supported",
+    "summary": "Compute the bi-dimensional histogram of two data samples.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "histogram2d",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L158",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_twodim_base_impl.py#L655"
+  }
+}

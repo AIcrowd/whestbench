@@ -1,0 +1,357 @@
+{
+  "detail_href": "/docs/api/numpy/result-type/",
+  "detail_json_href": "/api-data/ops/result_type.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the type that results from applying the NumPy type promotion rules to the arguments."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Type promotion in NumPy works similarly to the rules in languages\nlike C++, with some slight differences.  When both scalars and\narrays are used, the array's type takes precedence and the actual value\nof the scalar is taken into account."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For example, calculating 3*a, where a is an array of 32-bit floats,\nintuitively should result in a 32-bit float output.  If the 3 is a\n32-bit integer, the NumPy rules indicate it can't convert losslessly\ninto a 32-bit float, so a 64-bit float should be the result type.\nBy examining the value of the constant, '3', we see that it fits in\nan 8-bit integer, which can be cast losslessly into the 32-bit float."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The operands of some operation whose result type is needed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "list of arrays and dtypes",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The operands of some operation whose result type is needed."
+                  }
+                ],
+                "name": "arrays_and_dtypes",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The result type."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The result type."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.dtype.html",
+                "href": "",
+                "label": "dtype",
+                "original_target": "dtype",
+                "role": "",
+                "target": "dtype",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/promote-types/",
+                "label": "flops.promote_types",
+                "original_target": "promote_types",
+                "role": "",
+                "target": "promote_types",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/min-scalar-type/",
+                "label": "flops.min_scalar_type",
+                "original_target": "min_scalar_type",
+                "role": "",
+                "target": "min_scalar_type",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/can-cast/",
+                "label": "flops.can_cast",
+                "original_target": "can_cast",
+                "role": "",
+                "target": "can_cast",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The specific algorithm used is as follows."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Categories are determined by first checking which of boolean,\ninteger (int/uint), or floating point (float/complex) the maximum\nkind of all the arrays and the scalars are."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If there are only scalars or the maximum category of the scalars\nis higher than the maximum category of the arrays,\nthe data types are combined with "
+              },
+              {
+                "display_text": "promote_types",
+                "explicit_title": false,
+                "external_url": "",
+                "href": "/docs/api/numpy/promote-types/",
+                "kind": "role_reference",
+                "original_target": "promote_types",
+                "role": "func",
+                "suppress_link": false,
+                "target": "promote_types",
+                "unresolved": false
+              },
+              {
+                "kind": "text",
+                "text": "\nto produce the return value."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Otherwise, "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/min-scalar-type/",
+                "kind": "link",
+                "target": "min_scalar_type",
+                "text": "min_scalar_type"
+              },
+              {
+                "kind": "text",
+                "text": " is called on each scalar, and\nthe resulting data types are all combined with "
+              },
+              {
+                "display_text": "promote_types",
+                "explicit_title": false,
+                "external_url": "",
+                "href": "/docs/api/numpy/promote-types/",
+                "kind": "role_reference",
+                "original_target": "promote_types",
+                "role": "func",
+                "suppress_link": false,
+                "target": "promote_types",
+                "unresolved": false
+              },
+              {
+                "kind": "text",
+                "text": "\nto produce the return value."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The set of int values is not a subset of the uint values for types\nwith the same number of bits, something not reflected in\n"
+              },
+              {
+                "display_text": "min_scalar_type",
+                "explicit_title": false,
+                "external_url": "",
+                "href": "/docs/api/numpy/min-scalar-type/",
+                "kind": "role_reference",
+                "original_target": "min_scalar_type",
+                "role": "func",
+                "suppress_link": false,
+                "target": "min_scalar_type",
+                "unresolved": false
+              },
+              {
+                "kind": "text",
+                "text": ", but handled as a special case in "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/result-type/",
+                "kind": "link",
+                "target": "result_type",
+                "text": "result_type"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.result_type(3, flops.arange(7, dtype='i1'))"
+              },
+              {
+                "kind": "output",
+                "text": "dtype('int8')"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.result_type('i4', 'c8')"
+              },
+              {
+                "kind": "output",
+                "text": "dtype('complex128')"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.result_type(3.0, -2)"
+              },
+              {
+                "kind": "output",
+                "text": "dtype('float64')"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.result_type",
+    "module": "numpy",
+    "name": "result_type",
+    "notes": "Return type that results from applying NumPy type promotion.",
+    "numpy_ref": "np.result_type",
+    "signature": "fnp.result_type(*args, **kwargs)",
+    "status": "supported",
+    "summary": "Returns the type that results from applying the NumPy type promotion rules to the arguments.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "result_type",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L2241",
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.result_type.html"
+  }
+}

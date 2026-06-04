@@ -1,0 +1,695 @@
+{
+  "detail_href": "/docs/api/numpy/in1d/",
+  "detail_json_href": "/api-data/ops/in1d.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Test whether each element of a 1-D array is also present in a second array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "argument_inline": [],
+            "content_blocks": [],
+            "directive": "deprecated",
+            "options": [],
+            "raw_source": ".. deprecated:: 2.0\n    Use :func:`isin` instead of `in1d` for new code.",
+            "supported": true,
+            "type": "directive_block",
+            "version": "2.0"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns a boolean array the same length as "
+              },
+              {
+                "kind": "code",
+                "text": "ar1"
+              },
+              {
+                "kind": "text",
+                "text": " that is True\nwhere an element of "
+              },
+              {
+                "kind": "code",
+                "text": "ar1"
+              },
+              {
+                "kind": "text",
+                "text": " is in "
+              },
+              {
+                "kind": "code",
+                "text": "ar2"
+              },
+              {
+                "kind": "text",
+                "text": " and False otherwise."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(M,) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "ar1",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The values against which to test each value of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The values against which to test each value of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "ar2",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, the input arrays are both assumed to be unique, which\ncan speed up the calculation.  Default is False."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, the input arrays are both assumed to be unique, which\ncan speed up the calculation.  Default is False."
+                  }
+                ],
+                "name": "assume_unique",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, the values in the returned array are inverted (that is,\nFalse where an element of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and True otherwise).\nDefault is False. "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.in1d(a, b, invert=True).html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "in1d(a, b, invert=True)",
+                        "text": "flops.in1d(a, b, invert=True)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is equivalent\nto (but is faster than) "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.invert(in1d(a, b)).html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "invert(in1d(a, b))",
+                        "text": "flops.invert(in1d(a, b))"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, the values in the returned array are inverted (that is,\nFalse where an element of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and True otherwise).\nDefault is False. "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.in1d(a, b, invert=True).html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "in1d(a, b, invert=True)",
+                    "text": "flops.in1d(a, b, invert=True)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is equivalent\nto (but is faster than) "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.invert(in1d(a, b)).html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "invert(in1d(a, b))",
+                    "text": "flops.invert(in1d(a, b))"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "invert",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The algorithm to use. This will not affect the final result,\nbut will affect the speed and memory use. The default, None,\nwill select automatically based on memory considerations."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "If 'sort', will use a mergesort-based approach. This will have\na memory usage of roughly 6 times the sum of the sizes of\n"
+                              },
+                              {
+                                "kind": "code",
+                                "text": "ar1"
+                              },
+                              {
+                                "kind": "text",
+                                "text": " and "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "ar2"
+                              },
+                              {
+                                "kind": "text",
+                                "text": ", not accounting for size of dtypes."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "If 'table', will use a lookup table approach similar\nto a counting sort. This is only available for boolean and\ninteger arrays. This will have a memory usage of the\nsize of "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "ar1"
+                              },
+                              {
+                                "kind": "text",
+                                "text": " plus the max-min value of "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "ar2"
+                              },
+                              {
+                                "kind": "text",
+                                "text": ". "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "assume_unique"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "\nhas no effect when the 'table' option is used."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "If None, will automatically choose 'table' if\nthe required memory allocation is less than or equal to\n6 times the sum of the sizes of "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "ar1"
+                              },
+                              {
+                                "kind": "text",
+                                "text": " and "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "ar2"
+                              },
+                              {
+                                "kind": "text",
+                                "text": ",\notherwise will use 'sort'. This is done to not use\na large amount of memory by default, even though\n'table' may be faster in most cases. If 'table' is chosen,\n"
+                              },
+                              {
+                                "kind": "code",
+                                "text": "assume_unique"
+                              },
+                              {
+                                "kind": "text",
+                                "text": " will have no effect."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  }
+                ],
+                "data_type": "{None, 'sort', 'table'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The algorithm to use. This will not affect the final result,\nbut will affect the speed and memory use. The default, None,\nwill select automatically based on memory considerations."
+                  }
+                ],
+                "name": "kind",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The values "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar1[in1d]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(M,) ndarray, bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The values "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar1[in1d]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "in1d",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Version of this function that preserves the shape of ar1.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Version of this function that preserves the shape of ar1."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/isin/",
+                "label": "flops.isin",
+                "original_target": "isin",
+                "role": "",
+                "target": "isin",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/in1d/",
+                "kind": "link",
+                "target": "in1d",
+                "text": "in1d"
+              },
+              {
+                "kind": "text",
+                "text": " can be considered as an element-wise function version of the\npython keyword "
+              },
+              {
+                "kind": "code",
+                "text": "in"
+              },
+              {
+                "kind": "text",
+                "text": ", for 1-D sequences. "
+              },
+              {
+                "kind": "code",
+                "text": "in1d(a, b)"
+              },
+              {
+                "kind": "text",
+                "text": " is roughly\nequivalent to "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.array([item in b for item in a]).html",
+                "href": "",
+                "kind": "link",
+                "target": "array([item in b for item in a])",
+                "text": "flops.array([item in b for item in a])"
+              },
+              {
+                "kind": "text",
+                "text": ".\nHowever, this idea fails if "
+              },
+              {
+                "kind": "code",
+                "text": "ar2"
+              },
+              {
+                "kind": "text",
+                "text": " is a set, or similar (non-sequence)\ncontainer:  As "
+              },
+              {
+                "kind": "code",
+                "text": "ar2"
+              },
+              {
+                "kind": "text",
+                "text": " is converted to an array, in those cases\n"
+              },
+              {
+                "kind": "code",
+                "text": "asarray(ar2)"
+              },
+              {
+                "kind": "text",
+                "text": " is an object array rather than the expected array of\ncontained values."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Using "
+              },
+              {
+                "kind": "code",
+                "text": "kind='table'"
+              },
+              {
+                "kind": "text",
+                "text": " tends to be faster than "
+              },
+              {
+                "kind": "code",
+                "text": "kind='sort'"
+              },
+              {
+                "kind": "text",
+                "text": " if the\nfollowing relationship is true:\n"
+              },
+              {
+                "kind": "code",
+                "text": "log10(len(ar2)) > (log10(max(ar2)-min(ar2)) - 2.27) / 0.927"
+              },
+              {
+                "kind": "text",
+                "text": ",\nbut may use greater memory. The default value for "
+              },
+              {
+                "kind": "code",
+                "text": "kind"
+              },
+              {
+                "kind": "text",
+                "text": " will\nbe automatically selected based only on memory usage, so one may\nmanually set "
+              },
+              {
+                "kind": "code",
+                "text": "kind='table'"
+              },
+              {
+                "kind": "text",
+                "text": " if memory constraints can be relaxed."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "test = flops.array([0, 1, 2, 5, 0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "states = [0, 2]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mask = flops.in1d(test, states)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mask"
+              },
+              {
+                "kind": "output",
+                "text": "array([ True, False,  True, False,  True])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "test[mask]"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 2, 0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mask = flops.in1d(test, states, invert=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mask"
+              },
+              {
+                "kind": "output",
+                "text": "array([False,  True, False,  True, False])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "test[mask]"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 5])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.in1d",
+    "module": "numpy",
+    "name": "in1d",
+    "notes": "Set membership; cost = (n+m)*ceil(log2(n+m)). Removed in numpy 2.4; use `isin` instead.",
+    "numpy_ref": "np.in1d",
+    "signature": "fnp.in1d(ar1, ar2, assume_unique=False, invert=False, *, kind=None)",
+    "status": "supported",
+    "summary": "Test whether each element of a 1-D array is also present in a second array.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "in1d",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_sorting_ops.py#L422",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_arraysetops_impl.py#L762"
+  }
+}

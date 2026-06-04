@@ -1,0 +1,346 @@
+/* =========================================================================
+   Flopscope Design System — Core tokens
+   COPIED FROM /design-system/colors_and_type.css — DO NOT EDIT HERE.
+   Update the source file and re-copy. The adapter layer lives in
+   ./docs-surface.css.
+   ========================================================================= */
+
+/* Google Fonts @import — moved to global.css to ensure it precedes all CSS
+   rules in the compiled output (PostCSS requirement). Do not add it back here. */
+
+:root {
+  /* ═══════════════════════════════════════════════════════════
+     TIER 1 — Foundation  (cross-surface, required)
+     Brand coral + neutral scale. Every flopscope surface uses these.
+     ═══════════════════════════════════════════════════════════ */
+  --coral:        #F0524D;
+  --coral-hover:  #D23934;
+  --coral-light:  #FEF2F1;
+
+  --gray-900: #292C2D;
+  --gray-600: #5D5F60;
+  --gray-400: #AAACAD;
+  --gray-200: #D9DCDC;
+  --gray-100: #F1F3F5;
+  --gray-50:  #F8F9F9;
+  --white:    #FFFFFF;
+  --grid-faint: #F4F6F6;
+
+  /* ═══════════════════════════════════════════════════════════
+     TIER 2 — Universal semantics  (cross-surface, meaning-bound)
+     Four roles. Same hex everywhere.
+     ═══════════════════════════════════════════════════════════ */
+  --success: #23B761;
+  --warning: #FA9E33;
+  --info:    #4A7CFF;
+  --error:   #F0524D;  /* intentional overload with coral */
+
+  /* Back-compat aliases used in existing components */
+  --color-success:     var(--success);
+  --color-success-alt: #16a34a;
+  --color-warning:     var(--warning);
+  --color-op-tag:      var(--warning);  /* einsum's op-tag = warning amber */
+  --color-error:       var(--error);
+
+  /* ═══════════════════════════════════════════════════════════
+     TIER 3A — Einsum explorer extension  (surface-scoped)
+     Bipartite V/W + 10-way operand palette.
+     ═══════════════════════════════════════════════════════════ */
+  --ein-v: #4A7CFF;  /* free-label side  (= info) */
+  --ein-w: #64748B;  /* summed-label side */
+
+  /* Back-compat alias */
+  --color-v: var(--ein-v);
+  --color-w: var(--ein-w);
+
+  --op-1:  #E85D04;
+  --op-2:  #9B5DE5;
+  --op-3:  #00BBF9;
+  --op-4:  #F15BB5;
+  --op-5:  #00F5D4;
+  --op-6:  #FEE440;
+  --op-7:  #D62828;
+  --op-8:  #06D6A0;
+  --op-9:  #118AB2;
+  --op-10: #073B4C;
+
+  /* ═══════════════════════════════════════════════════════════
+     TIER 3B — Whestbench extension  (surface-scoped)
+     Estimator identity + circuit gate-type chart scale. Naming kept
+     as ``whestbench`` (and ``--wb-*`` token prefix) intentionally —
+     this is a separate sub-brand for the bench surface, not a stale
+     reference to the former library name.
+     ═══════════════════════════════════════════════════════════ */
+  --wb-gt:        #292C2D;  /* = gray-900 */
+  --wb-sampling:  #F0524D;  /* = coral */
+  --wb-meanprop:  #334155;
+  --wb-covprop:   #B29F9E;
+
+  --wb-gate-1: #D1D5DB;  /* constant */
+  --wb-gate-2: #94A3B8;  /* linear */
+  --wb-gate-3: #334155;  /* mean (−1) */
+  --wb-gate-4: #F0524D;  /* product */
+  --wb-gate-5: #F7A09D;  /* mixed */
+
+  /* Signed weight / activation scale — slate (neg) → gray-400 (zero) → coral (pos).
+     Gray-400 is the structural zero-crossing, not white. Used by NetworkHeatmap,
+     weight strips, and ErrorHeatmap. */
+  --wb-heat-neg:  #334155;
+  --wb-heat-zero: #AAACAD;
+  --wb-heat-pos:  #F0524D;
+
+  /* ═══════════════════════════════════════════════════════════
+     TIER 3C — Docs / marketing extension  (surface-scoped)
+     Warm paper register. Reserved for the Flopscope docs and
+     marketing surfaces (the /docs/* and /(home) routes).
+     Do NOT import on technical explorer surfaces.
+     ═══════════════════════════════════════════════════════════ */
+  --docs-paper:      #FBF7F2;
+  --docs-paper-card: #FFFDF9;
+  --docs-ink:        #132228;
+  --docs-muted:      #5F6B71;
+  --docs-ember:      #C7632F;  /* warm editorial sibling of coral */
+  --docs-line:       rgba(19, 34, 40, 0.12);
+
+  /* ═══════════════════════════════════════════════════════════
+     TIER 4 — Code syntax  (cross-surface; derived from 1+2)
+     Nine token roles, each traced back to a declared token.
+     ═══════════════════════════════════════════════════════════ */
+  --code-bg:        var(--white);
+  --code-border:    var(--gray-200);
+  --code-chead-bg:  var(--gray-50);
+  --code-ink:       var(--gray-900);
+  --code-punc:      var(--gray-600);
+  --code-comment:   var(--gray-400);
+  --code-op:        var(--coral);
+  --code-string:    var(--coral-hover);  /* AA at body size */
+  --code-fn:        #2959C4;             /* info deepened */
+  --code-keyword:   #5E36C4;             /* violet */
+  --code-number:    #0B6D7A;             /* teal */
+  --code-class:     var(--warning);      /* amber */
+
+  /* Dark terminal — NEUTRAL gray-900, not warm-brown */
+  --code-bg-dark:       #1A1D1E;
+  --code-border-dark:   #2B2F30;
+  --code-chead-bg-dark: #22262A;
+  --code-ink-dark:      #E8EAEB;
+  --code-punc-dark:     #A8ACAD;
+  --code-comment-dark:  #6B7072;
+  --code-op-dark:       var(--coral);
+  --code-string-dark:   #FF8A7A;
+  --code-fn-dark:       #8FB4FF;
+  --code-keyword-dark:  #B99BFF;
+  --code-number-dark:   #6BD4CE;
+  --code-class-dark:    #FFC27A;
+
+  /* ── Surface / shadcn tokens (light) ─────────────────────── */
+  --background: var(--white);
+  --foreground: var(--gray-900);
+  --card: var(--white);
+  --muted: var(--gray-100);
+  --muted-foreground: var(--gray-600);
+  --accent: var(--coral-light);
+  --border: var(--gray-200);
+  --ring: var(--coral);
+
+  /* ── Typography — four registers ────────────────────────────
+     Editorial / display  (logo, H1–H3):       Newsreader (variable opsz 6–72)
+     Paper register       (long-form body):    Source Serif 4
+     App register         (UI, dense panels):  Inter
+     Code                 (blocks, inline):    JetBrains Mono (primary),
+                                               IBM Plex Mono (math alt)
+     ────────────────────────────────────────────────────────── */
+  --font-display-serif: 'Newsreader', 'Source Serif 4', Georgia,
+                        'Times New Roman', serif;
+  --font-paper-serif: 'Source Serif 4', 'Source Serif Pro', Georgia,
+                      'Times New Roman', serif;
+  --font-app-sans:    'Inter', ui-sans-serif, system-ui, -apple-system,
+                      BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:        'JetBrains Mono', 'IBM Plex Mono', ui-monospace,
+                      SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono-math:   'IBM Plex Mono', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Newsreader variation-axis presets */
+  --vs-display-xl:  'opsz' 72;   /* hero, wordmark ≥ 56px */
+  --vs-display-md:  'opsz' 32;   /* section h1–h2, 24–48px */
+  --vs-display-sm:  'opsz' 18;   /* h3, 18–22px */
+  --vs-paper-body:  'opsz' 18;   /* body prose, 16–18px */
+  --vs-paper-small: 'opsz' 10;   /* captions, footnotes */
+
+  /* Legacy aliases (default to app register for backward compat) */
+  --font-sans:  var(--font-app-sans);
+  --font-serif: var(--font-paper-serif);
+
+  /* Type scale (pixel values as used across the explorer) */
+  --text-9:   9px;
+  --text-10: 10px;
+  --text-11: 11px;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg:  18px;
+  --text-xl:  20px;
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+
+  /* Weights */
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semibold: 600;
+  --fw-bold:    700;
+
+  /* Tracking */
+  --tracking-tight:   -0.01em;
+  --tracking-normal:   0;
+  --tracking-wide:    0.04em;
+  --tracking-kicker:  0.16em;   /* uppercase eyebrows */
+  --tracking-kicker-loose: 0.2em;
+
+  /* Line-heights */
+  --leading-tight:   1.2;
+  --leading-snug:    1.35;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.7;
+
+  /* ── Radii ───────────────────────────────────────────────── */
+  --radius:     0.5rem;           /*  8px base */
+  --radius-sm:  calc(var(--radius) * 0.6);  /* 4.8px */
+  --radius-md:  calc(var(--radius) * 0.8);  /* 6.4px */
+  --radius-lg:  var(--radius);              /* 8px   */
+  --radius-xl:  calc(var(--radius) * 1.4);  /* 11.2  */
+  --radius-2xl: calc(var(--radius) * 1.8);  /* 14.4  */
+  --radius-3xl: calc(var(--radius) * 2.2);  /* 17.6  */
+  --radius-pill: 999px;
+
+  /* ── Spacing (used throughout) ───────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Borders ─────────────────────────────────────────────── */
+  --border-w-hair:   1px;
+  --border-w-reg:    1.5px;
+  --border-w-strong: 2px;
+
+  /* ── Shadows ─────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+               0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --ring-focus:  0 0 0 3px rgba(74, 124, 255, 0.12);
+  --ring-coral:  0 0 0 3px rgba(240, 82, 77, 0.18);
+
+  /* ── Motion ──────────────────────────────────────────────── */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast:   180ms;
+  --dur-normal: 250ms;
+  --dur-slow:   500ms;
+  --dur-xslow:  600ms;
+
+  /* ── Layout ──────────────────────────────────────────────── */
+  --content-max: 1460px;
+  --prose-max:   720px;
+  --sidebar-w:   18rem;      /* 288px preset sidebar */
+  --sticky-top:  0;
+  --sticky-inner-top: 5rem;  /* 80px under sticky bar */
+}
+
+/* =========================================================================
+   Utility primitives (tiny, no build-tool required)
+   ========================================================================= */
+
+/* Kicker / eyebrow — small-caps-feel uppercase */
+.w-kicker {
+  font-family: var(--font-sans);
+  font-size: var(--text-10);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-kicker);
+  color: var(--gray-400);
+}
+.w-kicker--loose { letter-spacing: var(--tracking-kicker-loose); }
+.w-kicker--coral { color: var(--coral); }
+
+/* Section number — the one serif-italic flourish */
+.w-section-num {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: var(--fw-bold);
+  font-size: 22px;
+  color: var(--coral);
+  line-height: 1;
+}
+
+/* Paper register — long-form prose (Distill-like) */
+.w-paper {
+  font-family: var(--font-paper-serif);
+  font-variation-settings: var(--vs-paper-body);
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--gray-900);
+  font-feature-settings: 'onum', 'kern';
+}
+.w-paper h1, .w-paper h2, .w-paper h3 {
+  font-family: var(--font-display-serif);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+.w-paper h1 { font-variation-settings: var(--vs-display-xl); }
+.w-paper h2 { font-variation-settings: var(--vs-display-md); }
+.w-paper h3 { font-variation-settings: var(--vs-display-sm); font-weight: 600; }
+
+/* Drop cap — first letter of section lede */
+.w-dropcap::first-letter {
+  float: left;
+  font-family: var(--font-display-serif);
+  font-variation-settings: var(--vs-display-xl);
+  font-weight: 700;
+  font-size: 3.3em;
+  line-height: 0.9;
+  padding: 4px 10px 0 0;
+  color: var(--coral);
+}
+
+/* App register — dense UIs, panels */
+.w-app {
+  font-family: var(--font-app-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--gray-900);
+}
+
+/* Legacy prose (backward compat) */
+.w-prose {
+  max-width: var(--prose-max);
+  font-family: var(--font-paper-serif);
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--gray-900);
+}
+.w-prose p + p { margin-top: 0.85em; }
+.w-prose strong { font-weight: var(--fw-semibold); color: var(--gray-900); }
+.w-prose em     { font-style: italic; color: var(--gray-600); }
+
+/* Mono / code inline */
+.w-mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--gray-100);
+  padding: 0.08em 0.4em;
+  border-radius: var(--radius-sm);
+  color: var(--gray-900);
+}
+
+/* Focus ring */
+.w-focus:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+  border-color: var(--color-v);
+}

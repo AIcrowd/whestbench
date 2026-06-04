@@ -1,0 +1,75 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/bit-generator/",
+  "detail_json_href": "/api-data/ops/random-Generator-bit_generator.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Gets the bit generator instance used by the generator"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The bit generator instance used by the generator"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "BitGenerator",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The bit generator instance used by the generator"
+                  }
+                ],
+                "name": "bit_generator",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      }
+    ]
+  },
+  "op": {
+    "category": "free_random_method",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.random.Generator.bit_generator",
+    "module": "numpy.random",
+    "name": "random.Generator.bit_generator",
+    "notes": "Underlying BitGenerator; attribute access, no math.",
+    "numpy_ref": "np.random.Generator.bit_generator",
+    "signature": "fnp.random.Generator.bit_generator(...)",
+    "status": "supported",
+    "summary": "Gets the bit generator instance used by the generator",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-bit_generator",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.bit_generator.html"
+  }
+}

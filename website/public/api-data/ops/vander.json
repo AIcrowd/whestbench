@@ -1,0 +1,487 @@
+{
+  "detail_href": "/docs/api/numpy/vander/",
+  "detail_json_href": "/api-data/ops/vander.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a Vandermonde matrix."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The columns of the output matrix are powers of the input vector. The\norder of the powers is determined by the "
+              },
+              {
+                "kind": "code",
+                "text": "increasing"
+              },
+              {
+                "kind": "text",
+                "text": " boolean argument.\nSpecifically, when "
+              },
+              {
+                "kind": "code",
+                "text": "increasing"
+              },
+              {
+                "kind": "text",
+                "text": " is False, the "
+              },
+              {
+                "kind": "code",
+                "text": "i"
+              },
+              {
+                "kind": "text",
+                "text": "-th output column is\nthe input vector raised element-wise to the power of "
+              },
+              {
+                "kind": "code",
+                "text": "N - i - 1"
+              },
+              {
+                "kind": "text",
+                "text": ". Such\na matrix with a geometric progression in each row is named for Alexandre-\nTheophile Vandermonde."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "1-D input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "1-D input array."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of columns in the output.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "N"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not specified, a square\narray is returned ("
+                      },
+                      {
+                        "kind": "code",
+                        "text": "N = len(x)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ")."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of columns in the output.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "N"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not specified, a square\narray is returned ("
+                  },
+                  {
+                    "kind": "code",
+                    "text": "N = len(x)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ")."
+                  }
+                ],
+                "name": "N",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Order of the powers of the columns.  If True, the powers increase\nfrom left to right, if False (the default) they are reversed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Order of the powers of the columns.  If True, the powers increase\nfrom left to right, if False (the default) they are reversed."
+                  }
+                ],
+                "name": "increasing",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Vandermonde matrix.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "increasing"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is False, the first column is\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x^(N-1)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", the second "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x^(N-2)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and so forth. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "increasing"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is\nTrue, the columns are "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x^0, x^1, ..., x^(N-1)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Vandermonde matrix.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "increasing"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is False, the first column is\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x^(N-1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", the second "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x^(N-2)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and so forth. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "increasing"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is\nTrue, the columns are "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x^0, x^1, ..., x^(N-1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "",
+                "label": "polynomial.polynomial.polyvander",
+                "original_target": "polynomial.polynomial.polyvander",
+                "role": "",
+                "target": "polynomial.polynomial.polyvander",
+                "unresolved": true
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([1, 2, 3, 5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "N = 3"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.vander(x, N)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1,  1,  1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 4,  2,  1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 9,  3,  1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [25,  5,  1]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.column_stack([x**(N-1-i) for i in range(N)])"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1,  1,  1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 4,  2,  1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 9,  3,  1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [25,  5,  1]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([1, 2, 3, 5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.vander(x)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[  1,   1,   1,   1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  8,   4,   2,   1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 27,   9,   3,   1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [125,  25,   5,   1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.vander(x, increasing=True)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[  1,   1,   1,   1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  1,   2,   4,   8],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  1,   3,   9,  27],"
+              },
+              {
+                "kind": "output",
+                "text": "       [  1,   5,  25, 125]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The determinant of a square Vandermonde matrix is the product\nof the differences between the values of the input vector:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.linalg.det(flops.vander(x))"
+              },
+              {
+                "kind": "output",
+                "text": "48.000000000000043 # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "(5-3)*(5-2)*(5-1)*(3-2)*(3-1)*(2-1)"
+              },
+              {
+                "kind": "output",
+                "text": "48"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.vander",
+    "module": "numpy",
+    "name": "vander",
+    "notes": "Vandermonde matrix; cost = len(x)*(N-1).",
+    "numpy_ref": "np.vander",
+    "signature": "fnp.vander(x, N=None, increasing=False)",
+    "status": "supported",
+    "summary": "Generate a Vandermonde matrix.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "vander",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L337",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_twodim_base_impl.py#L547"
+  }
+}

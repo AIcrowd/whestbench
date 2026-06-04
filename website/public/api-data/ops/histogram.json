@@ -1,0 +1,860 @@
+{
+  "detail_href": "/docs/api/numpy/histogram/",
+  "detail_json_href": "/api-data/ops/histogram.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the histogram of a dataset."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input data. The histogram is computed over the flattened array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input data. The histogram is computed over the flattened array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bins"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an int, it defines the number of equal-width\nbins in the given range (10, by default). If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bins"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a\nsequence, it defines a monotonically increasing array of bin edges,\nincluding the rightmost edge, allowing for non-uniform bin widths."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bins"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a string, it defines the method used to calculate the\noptimal bin width, as defined by "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/histogram-bin-edges/",
+                        "kind": "link",
+                        "target": "histogram_bin_edges",
+                        "text": "histogram_bin_edges"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or sequence of scalars or str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "bins"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an int, it defines the number of equal-width\nbins in the given range (10, by default). If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "bins"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a\nsequence, it defines a monotonically increasing array of bin edges,\nincluding the rightmost edge, allowing for non-uniform bin widths."
+                  }
+                ],
+                "name": "bins",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The lower and upper range of the bins.  If not provided, range\nis simply "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(a.min(), a.max())"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Values outside the range are\nignored. The first element of the range must be less than or\nequal to the second. "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "range"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " affects the automatic bin\ncomputation as well. While bin width is computed to be optimal\nbased on the actual data within "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "range"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", the bin count will fill\nthe entire range including portions containing no data."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(float, float), optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The lower and upper range of the bins.  If not provided, range\nis simply "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(a.min(), a.max())"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Values outside the range are\nignored. The first element of the range must be less than or\nequal to the second. "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "range"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " affects the automatic bin\ncomputation as well. While bin width is computed to be optimal\nbased on the actual data within "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "range"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", the bin count will fill\nthe entire range including portions containing no data."
+                  }
+                ],
+                "name": "range",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array of weights, of the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Each value in\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " only contributes its associated weight towards the bin count\n(instead of 1). If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "density"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True, the weights are\nnormalized, so that the integral of the density over the range\nremains 1.\nPlease note that the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "dtype"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will also become the\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "dtype"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " of the returned accumulator ("
+                      },
+                      {
+                        "kind": "code",
+                        "text": "hist"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "), so it must be\nlarge enough to hold accumulated values as well."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array of weights, of the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Each value in\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " only contributes its associated weight towards the bin count\n(instead of 1). If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "density"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True, the weights are\nnormalized, so that the integral of the density over the range\nremains 1.\nPlease note that the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "dtype"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will also become the\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "dtype"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " of the returned accumulator ("
+                  },
+                  {
+                    "kind": "code",
+                    "text": "hist"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "), so it must be\nlarge enough to hold accumulated values as well."
+                  }
+                ],
+                "name": "weights",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", the result will contain the number of samples in\neach bin. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", the result is the value of the\nprobability "
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "density"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " function at the bin, normalized such that\nthe "
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "integral"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " over the range is 1. Note that the sum of the\nhistogram values will not be equal to 1 unless bins of unity\nwidth are chosen; it is not a probability "
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "mass"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " function."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", the result will contain the number of samples in\neach bin. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", the result is the value of the\nprobability "
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "density"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " function at the bin, normalized such that\nthe "
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "integral"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " over the range is 1. Note that the sum of the\nhistogram values will not be equal to 1 unless bins of unity\nwidth are chosen; it is not a probability "
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "mass"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " function."
+                  }
+                ],
+                "name": "density",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The values of the histogram. See "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "density"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " for a\ndescription of the possible semantics.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are given,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "hist.dtype"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will be taken from "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The values of the histogram. See "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "density"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " for a\ndescription of the possible semantics.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are given,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "hist.dtype"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will be taken from "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "hist",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Return the bin edges "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(length(hist)+1)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array of dtype float",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return the bin edges "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(length(hist)+1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "bin_edges",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/histogramdd/",
+                "label": "flops.histogramdd",
+                "original_target": "histogramdd",
+                "role": "",
+                "target": "histogramdd",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/bincount/",
+                "label": "flops.bincount",
+                "original_target": "bincount",
+                "role": "",
+                "target": "bincount",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/searchsorted/",
+                "label": "flops.searchsorted",
+                "original_target": "searchsorted",
+                "role": "",
+                "target": "searchsorted",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/digitize/",
+                "label": "flops.digitize",
+                "original_target": "digitize",
+                "role": "",
+                "target": "digitize",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/histogram-bin-edges/",
+                "label": "flops.histogram_bin_edges",
+                "original_target": "histogram_bin_edges",
+                "role": "",
+                "target": "histogram_bin_edges",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "All but the last (righthand-most) bin is half-open.  In other words,\nif "
+              },
+              {
+                "kind": "code",
+                "text": "bins"
+              },
+              {
+                "kind": "text",
+                "text": " is:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "[1, 2, 3, 4]",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "then the first bin is "
+              },
+              {
+                "kind": "code",
+                "text": "[1, 2)"
+              },
+              {
+                "kind": "text",
+                "text": " (including 1, but excluding 2) and\nthe second "
+              },
+              {
+                "kind": "code",
+                "text": "[2, 3)"
+              },
+              {
+                "kind": "text",
+                "text": ".  The last bin, however, is "
+              },
+              {
+                "kind": "code",
+                "text": "[3, 4]"
+              },
+              {
+                "kind": "text",
+                "text": ", which\n"
+              },
+              {
+                "kind": "emphasis",
+                "text": "includes"
+              },
+              {
+                "kind": "text",
+                "text": " 4."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.histogram([1, 2, 1], bins=[0, 1, 2, 3])"
+              },
+              {
+                "kind": "output",
+                "text": "(array([0, 2, 1]), array([0, 1, 2, 3]))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.histogram(flops.arange(4), bins=flops.arange(5), density=True)"
+              },
+              {
+                "kind": "output",
+                "text": "(array([0.25, 0.25, 0.25, 0.25]), array([0, 1, 2, 3, 4]))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.histogram([[1, 2, 1], [1, 0, 1]], bins=[0,1,2,3])"
+              },
+              {
+                "kind": "output",
+                "text": "(array([1, 4, 1]), array([0, 1, 2, 3]))"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(5)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "hist, bin_edges = flops.histogram(a, density=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "hist"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.5, 0. , 0.5, 0. , 0. , 0.5, 0. , 0.5, 0. , 0.5])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "hist.sum()"
+              },
+              {
+                "kind": "output",
+                "text": "2.4999999999999996"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.sum(hist * flops.diff(bin_edges))"
+              },
+              {
+                "kind": "output",
+                "text": "1.0"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Automated Bin Selection Methods example, using 2 peak random data\nwith 2000 points."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "language": "python",
+                "text": "import matplotlib.pyplot as plt\nimport flopscope.numpy as fnp\n\nrng = flops.random.RandomState(10)  # deterministic random data\na = flops.hstack((rng.normal(size=1000),\n               rng.normal(loc=5, scale=2, size=1000)))\nplt.hist(a, bins='auto')  # arguments are passed to flops.histogram\nplt.title(\"Histogram with 'auto' bins\")\nplt.show()",
+                "type": "literal_block"
+              }
+            ],
+            "directive": "plot",
+            "options": [
+              {
+                "name": "include-source",
+                "value": ""
+              }
+            ],
+            "raw_source": ".. plot::\n    :include-source:\n\n    import matplotlib.pyplot as plt\n    import numpy as np\n\n    rng = np.random.RandomState(10)  # deterministic random data\n    a = np.hstack((rng.normal(size=1000),\n                   rng.normal(loc=5, scale=2, size=1000)))\n    plt.hist(a, bins='auto')  # arguments are passed to np.histogram\n    plt.title(\"Histogram with 'auto' bins\")\n    plt.show()",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.histogram",
+    "module": "numpy",
+    "name": "histogram",
+    "notes": "Binning; cost = n*ceil(log2(bins)).",
+    "numpy_ref": "np.histogram",
+    "signature": "fnp.histogram(a, bins=10, range=None, density=None, weights=None)",
+    "status": "supported",
+    "summary": "Compute the histogram of a dataset.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "histogram",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L128",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_histograms_impl.py#L689"
+  }
+}

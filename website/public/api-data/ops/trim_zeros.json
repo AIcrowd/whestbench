@@ -1,0 +1,344 @@
+{
+  "detail_href": "/docs/api/numpy/trim-zeros/",
+  "detail_json_href": "/api-data/ops/trim_zeros.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Remove values along a dimension which are zero along all other."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "filt",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A string with 'f' representing trim from front and 'b' to trim from\nback. By default, zeros are trimmed on both sides.\nFront and back refer to the edges of a dimension, with \"front\" refering\nto the side with the lowest index 0, and \"back\" refering to the highest\nindex (or index -1)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{\"fb\", \"f\", \"b\"}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A string with 'f' representing trim from front and 'b' to trim from\nback. By default, zeros are trimmed on both sides.\nFront and back refer to the edges of a dimension, with \"front\" refering\nto the side with the lowest index 0, and \"back\" refering to the highest\nindex (or index -1)."
+                  }
+                ],
+                "name": "trim",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If None, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "filt"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is cropped such, that the smallest bounding box is\nreturned that still contains all values which are not zero.\nIf an axis is specified, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "filt"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will be sliced in that dimension only\non the sides specified by "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "trim"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". The remaining area will be the\nsmallest that still contains all values wich are not zero."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or sequence, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If None, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "filt"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is cropped such, that the smallest bounding box is\nreturned that still contains all values which are not zero.\nIf an axis is specified, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "filt"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will be sliced in that dimension only\non the sides specified by "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "trim"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". The remaining area will be the\nsmallest that still contains all values wich are not zero."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The result of trimming the input. The number of dimensions and the\ninput data type are preserved."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or sequence",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The result of trimming the input. The number of dimensions and the\ninput data type are preserved."
+                  }
+                ],
+                "name": "trimmed",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For all-zero arrays, the first axis is trimmed first."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array((0, 0, 0, 1, 2, 3, 0, 2, 1, 0))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.trim_zeros(a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 0, 2, 1])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.trim_zeros(a, trim='b')"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 0, 0, ..., 0, 2, 1])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Multiple dimensions are supported."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([[0, 0, 2, 3, 0, 0],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[0, 1, 0, 3, 0, 0],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[0, 0, 0, 0, 0, 0]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.trim_zeros(b)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 2, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 0, 3]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.trim_zeros(b, axis=-1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 2, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 0, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0, 0, 0]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The input data type is preserved, list/tuple in means list/tuple out."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.trim_zeros([0, 1, 2, 0])"
+              },
+              {
+                "kind": "output",
+                "text": "[1, 2]"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.trim_zeros",
+    "module": "numpy",
+    "name": "trim_zeros",
+    "notes": "Trim leading/trailing zeros from 1-D array. Cost: num trimmed.",
+    "numpy_ref": "np.trim_zeros",
+    "signature": "fnp.trim_zeros(filt, trim='fb', axis=None)",
+    "status": "supported",
+    "summary": "Remove values along a dimension which are zero along all other.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "trim_zeros",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L2401",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L1889"
+  }
+}

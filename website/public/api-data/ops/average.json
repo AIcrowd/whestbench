@@ -1,0 +1,1236 @@
+{
+  "detail_href": "/docs/api/numpy/average/",
+  "detail_json_href": "/api-data/ops/average.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the weighted average along the specified axis."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array containing data to be averaged. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not an array, a\nconversion is attempted."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array containing data to be averaged. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not an array, a\nconversion is attempted."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis or axes along which to average "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  The default,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", will average over all of the elements of the input array.\nIf axis is negative it counts from the last to the first axis.\nIf axis is a tuple of ints, averaging is performed on all of the axes\nspecified in the tuple instead of a single axis or all the axes as\nbefore."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "None or int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis or axes along which to average "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  The default,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", will average over all of the elements of the input array.\nIf axis is negative it counts from the last to the first axis.\nIf axis is a tuple of ints, averaging is performed on all of the axes\nspecified in the tuple instead of a single axis or all the axes as\nbefore."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array of weights associated with the values in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Each value in\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " contributes to the average according to its associated weight.\nThe array of weights must be the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " if no axis is\nspecified, otherwise the weights must have dimensions and shape\nconsistent with "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " along the specified axis.\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then all data in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are assumed to have a\nweight equal to one.\nThe calculation is:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "language": null,
+                    "text": "avg = sum(a * weights) / sum(weights)",
+                    "type": "literal_block"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "where the sum is over all included elements.\nThe only constraint on the values of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is that "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "sum(weights)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nmust not be 0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array of weights associated with the values in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Each value in\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " contributes to the average according to its associated weight.\nThe array of weights must be the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " if no axis is\nspecified, otherwise the weights must have dimensions and shape\nconsistent with "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " along the specified axis.\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then all data in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are assumed to have a\nweight equal to one.\nThe calculation is:"
+                  }
+                ],
+                "name": "weights",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Default is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "False"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", the tuple ("
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/average/",
+                        "kind": "link",
+                        "target": "average",
+                        "text": "average"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "sum_of_weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ")\nis returned, otherwise only the average is returned.\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "sum_of_weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is equivalent to the number of\nelements over which the average is taken."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Default is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "False"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", the tuple ("
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/average/",
+                    "kind": "link",
+                    "target": "average",
+                    "text": "average"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "sum_of_weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ")\nis returned, otherwise only the average is returned.\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "sum_of_weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is equivalent to the number of\nelements over which the average is taken."
+                  }
+                ],
+                "name": "returned",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this is set to True, the axes which are reduced are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the original "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\n"
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "Note:"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "keepdims"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will not work with instances of "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.matrix.html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "matrix",
+                        "text": "flops.matrix"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nor other classes whose methods do not support "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "keepdims"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.23.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.23.0"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If this is set to True, the axes which are reduced are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the original "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\n"
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "Note:"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "keepdims"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will not work with instances of "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.matrix.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "matrix",
+                    "text": "flops.matrix"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nor other classes whose methods do not support "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "keepdims"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "keepdims",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Return the average along the specified axis. When "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "returned"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "True"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ",\nreturn a tuple with the average as the first element and the sum\nof the weights as the second element. "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "sum_of_weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is of the\nsame type as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "retval"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". The result dtype follows a general pattern.\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None, the result dtype will be that of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " , or "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float64"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nif "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is integral. Otherwise, if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not None and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is non-\nintegral, the result type will be the type of lowest precision capable of\nrepresenting values of both "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " happens to be\nintegral, the previous rules still applies but the result dtype will\nat least be "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "float64"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_type or double",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return the average along the specified axis. When "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "returned"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "True"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ",\nreturn a tuple with the average as the first element and the sum\nof the weights as the second element. "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "sum_of_weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is of the\nsame type as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "retval"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". The result dtype follows a general pattern.\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None, the result dtype will be that of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " , or "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float64"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nif "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is integral. Otherwise, if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not None and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is non-\nintegral, the result type will be the type of lowest precision capable of\nrepresenting values of both "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " happens to be\nintegral, the previous rules still applies but the result dtype will\nat least be "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "float64"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "retval, [sum_of_weights]",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "When all weights along axis are zero. See "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.ma.average"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " for a\nversion robust to this type of error."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ZeroDivisionError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "When all weights along axis are zero. See "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.ma.average"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " for a\nversion robust to this type of error."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "When "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " does not have the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "TypeError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "When "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " does not have the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "When "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "weights"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " does not have dimensions and shape consistent with "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nalong specified "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "When "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "weights"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " does not have dimensions and shape consistent with "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nalong specified "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/mean/",
+                "label": "flops.mean",
+                "original_target": "mean",
+                "role": "",
+                "target": "mean",
+                "unresolved": false
+              },
+              {
+                "description": "average for masked arrays -- useful if your data contains \"missing\" values",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "average for masked arrays -- useful if your data contains \"missing\" values"
+                  }
+                ],
+                "external_url": "",
+                "href": "",
+                "label": "ma.average",
+                "original_target": "ma.average",
+                "role": "",
+                "target": "ma.average",
+                "unresolved": true
+              },
+              {
+                "description": "Returns the type that results from applying the numpy type promotion rules to the arguments.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Returns the type that results from applying the numpy type promotion rules to the arguments."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/result-type/",
+                "label": "flops.result_type",
+                "original_target": "numpy.result_type",
+                "role": "",
+                "target": "result_type",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "data = flops.arange(1, 5)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "data"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 4])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.average(data)"
+              },
+              {
+                "kind": "output",
+                "text": "2.5"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.average(flops.arange(1, 11), weights=flops.arange(10, 0, -1))"
+              },
+              {
+                "kind": "output",
+                "text": "4.0"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "data = flops.arange(6).reshape((3, 2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "data"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [4, 5]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.average(data, axis=1, weights=[1./4, 3./4])"
+              },
+              {
+                "kind": "output",
+                "text": "array([0.75, 2.75, 4.75])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.average(data, weights=[1./4, 3./4])"
+              },
+              {
+                "kind": "output",
+                "text": "Traceback (most recent call last):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "output",
+                "text": "TypeError: Axis must be specified when shapes of a and weights differ."
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "With "
+              },
+              {
+                "kind": "code",
+                "text": "keepdims=True"
+              },
+              {
+                "kind": "text",
+                "text": ", the following result has shape (3, 1)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.average(data, axis=1, keepdims=True)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0.5],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2.5],"
+              },
+              {
+                "kind": "output",
+                "text": "       [4.5]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "data = flops.arange(8).reshape((2, 2, 2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "data"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[0, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "        [2, 3]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[4, 5],"
+              },
+              {
+                "kind": "output",
+                "text": "        [6, 7]]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.average(data, axis=(0, 1), weights=[[1./4, 3./4], [1., 1./2]])"
+              },
+              {
+                "kind": "output",
+                "text": "array([3.4, 4.4])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.average(data, axis=0, weights=[[1./4, 3./4], [1., 1./2]])"
+              },
+              {
+                "kind": "output",
+                "text": "Traceback (most recent call last):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "output",
+                "text": "ValueError: Shape of weights must be consistent"
+              },
+              {
+                "kind": "output",
+                "text": "with shape of a along specified axis."
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_reduction",
+    "cost_formula": "numel(input)",
+    "cost_formula_latex": "$\\text{numel}(\\text{input})$",
+    "flopscope_ref": "fnp.average",
+    "module": "numpy",
+    "name": "average",
+    "notes": "Weighted average of array elements.",
+    "numpy_ref": "np.average",
+    "signature": "fnp.average(a, axis=None, weights=None, returned=False, *, keepdims=<no value>)",
+    "status": "supported",
+    "summary": "Compute the weighted average along the specified axis.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "average",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L853",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L415"
+  }
+}

@@ -1,0 +1,490 @@
+{
+  "detail_href": "/docs/api/numpy/histogramdd/",
+  "detail_json_href": "/api-data/ops/histogramdd.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the multidimensional histogram of some data."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The data to be histogrammed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Note the unusual interpretation of sample when an array_like:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "When an array, each row is a coordinate in a D-dimensional space -\nsuch as "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "histogramdd(flops.array([p1, p2, p3]))"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "When an array_like, each element is the list of values for single\ncoordinate - such as "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "histogramdd((X, Y, Z))"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The first form should be preferred."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(N, D) array, or (N, D) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The data to be histogrammed."
+                  }
+                ],
+                "name": "sample",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The bin specification:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "A sequence of arrays describing the monotonically increasing bin\nedges along each dimension."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "The number of bins for each dimension (nx, ny, ... =bins)"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "The number of bins for all dimensions (nx=ny=...=bins)."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  }
+                ],
+                "data_type": "sequence or int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The bin specification:"
+                  }
+                ],
+                "name": "bins",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A sequence of length D, each an optional (lower, upper) tuple giving\nthe outer bin edges to be used if the edges are not given explicitly in\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bins"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nAn entry of None in the sequence results in the minimum and maximum\nvalues being used for the corresponding dimension.\nThe default, None, is equivalent to passing a tuple of D None values."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "sequence, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A sequence of length D, each an optional (lower, upper) tuple giving\nthe outer bin edges to be used if the edges are not given explicitly in\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "bins"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nAn entry of None in the sequence results in the minimum and maximum\nvalues being used for the corresponding dimension.\nThe default, None, is equivalent to passing a tuple of D None values."
+                  }
+                ],
+                "name": "range",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If False, the default, returns the number of samples in each bin.\nIf True, returns the probability "
+                      },
+                      {
+                        "kind": "emphasis",
+                        "text": "density"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " function at the bin,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "bin_count / sample_count / bin_volume"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If False, the default, returns the number of samples in each bin.\nIf True, returns the probability "
+                  },
+                  {
+                    "kind": "emphasis",
+                    "text": "density"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " function at the bin,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "bin_count / sample_count / bin_volume"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "density",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array of values "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "w_i"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " weighing each sample "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(x_i, y_i, z_i, ...)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nWeights are normalized to 1 if density is True. If density is False,\nthe values of the returned histogram are equal to the sum of the\nweights belonging to the samples falling into each bin."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(N,) array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array of values "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "w_i"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " weighing each sample "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(x_i, y_i, z_i, ...)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nWeights are normalized to 1 if density is True. If density is False,\nthe values of the returned histogram are equal to the sum of the\nweights belonging to the samples falling into each bin."
+                  }
+                ],
+                "name": "weights",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The multidimensional histogram of sample x. See density and weights\nfor the different possible semantics."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The multidimensional histogram of sample x. See density and weights\nfor the different possible semantics."
+                  }
+                ],
+                "name": "H",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A tuple of D arrays describing the bin edges for each dimension."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "tuple of ndarrays",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A tuple of D arrays describing the bin edges for each dimension."
+                  }
+                ],
+                "name": "edges",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "1-D histogram",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "1-D histogram"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/histogram/",
+                "label": "flops.histogram",
+                "original_target": "histogram",
+                "role": "",
+                "target": "histogram",
+                "unresolved": false
+              },
+              {
+                "description": "2-D histogram",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "2-D histogram"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/histogram2d/",
+                "label": "flops.histogram2d",
+                "original_target": "histogram2d",
+                "role": "",
+                "target": "histogram2d",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "r = rng.normal(size=(100,3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "H, edges = flops.histogramdd(r, bins = (5, 8, 4))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "H.shape, edges[0].size, edges[1].size, edges[2].size"
+              },
+              {
+                "kind": "output",
+                "text": "((5, 8, 4), 6, 9, 5)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.histogramdd",
+    "module": "numpy",
+    "name": "histogramdd",
+    "notes": "ND binning; cost = n*sum(ceil(log2(b_i))).",
+    "numpy_ref": "np.histogramdd",
+    "signature": "fnp.histogramdd(sample, bins=10, range=None, density=None, weights=None)",
+    "status": "supported",
+    "summary": "Compute the multidimensional histogram of some data.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "histogramdd",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L209",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_histograms_impl.py#L917"
+  }
+}

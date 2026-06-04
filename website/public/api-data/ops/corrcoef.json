@@ -1,0 +1,816 @@
+{
+  "detail_href": "/docs/api/numpy/corrcoef/",
+  "detail_json_href": "/api-data/ops/corrcoef.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return Pearson product-moment correlation coefficients."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Please refer to the documentation for "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/cov/",
+                "kind": "link",
+                "target": "cov",
+                "text": "cov"
+              },
+              {
+                "kind": "text",
+                "text": " for more detail.  The\nrelationship between the correlation coefficient matrix, "
+              },
+              {
+                "kind": "code",
+                "text": "R"
+              },
+              {
+                "kind": "text",
+                "text": ", and the\ncovariance matrix, "
+              },
+              {
+                "kind": "code",
+                "text": "C"
+              },
+              {
+                "kind": "text",
+                "text": ", is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "R_{ij} = \\frac{ C_{ij} } { \\sqrt{ C_{ii} C_{jj} } }"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The values of "
+              },
+              {
+                "kind": "code",
+                "text": "R"
+              },
+              {
+                "kind": "text",
+                "text": " are between -1 and 1, inclusive."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A 1-D or 2-D array containing multiple variables and observations.\nEach row of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " represents a variable, and each column a single\nobservation of all those variables. Also see "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "rowvar"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " below."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A 1-D or 2-D array containing multiple variables and observations.\nEach row of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " represents a variable, and each column a single\nobservation of all those variables. Also see "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "rowvar"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " below."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An additional set of variables and observations. "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "y"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " has the same\nshape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An additional set of variables and observations. "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "y"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " has the same\nshape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "rowvar"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True (default), then each row represents a\nvariable, with observations in the columns. Otherwise, the relationship\nis transposed: each column represents a variable, while the rows\ncontain observations."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "rowvar"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True (default), then each row represents a\nvariable, with observations in the columns. Otherwise, the relationship\nis transposed: each column represents a variable, while the rows\ncontain observations."
+                  }
+                ],
+                "name": "rowvar",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Has no effect, do not use."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "deprecated",
+                    "options": [],
+                    "raw_source": ".. deprecated:: 1.10.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.10.0"
+                  }
+                ],
+                "data_type": "_NoValue, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Has no effect, do not use."
+                  }
+                ],
+                "name": "bias",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Has no effect, do not use."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "deprecated",
+                    "options": [],
+                    "raw_source": ".. deprecated:: 1.10.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.10.0"
+                  }
+                ],
+                "data_type": "_NoValue, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Has no effect, do not use."
+                  }
+                ],
+                "name": "ddof",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Data-type of the result. By default, the return data-type will have\nat least "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.float64.html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "float64",
+                        "text": "flops.float64"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " precision."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.20",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.20"
+                  }
+                ],
+                "data_type": "data-type, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Data-type of the result. By default, the return data-type will have\nat least "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.float64.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "float64",
+                    "text": "flops.float64"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " precision."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The correlation coefficient matrix of the variables."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The correlation coefficient matrix of the variables."
+                  }
+                ],
+                "name": "R",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Covariance matrix",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Covariance matrix"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/cov/",
+                "label": "flops.cov",
+                "original_target": "cov",
+                "role": "",
+                "target": "cov",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Due to floating point rounding the resulting array may not be Hermitian,\nthe diagonal elements may not be 1, and the elements may not satisfy the\ninequality abs(a) <= 1. The real and imaginary parts are clipped to the\ninterval [-1,  1] in an attempt to improve on that situation but is not\nmuch help in the complex case."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function accepts but discards arguments "
+              },
+              {
+                "kind": "code",
+                "text": "bias"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "ddof"
+              },
+              {
+                "kind": "text",
+                "text": ".  This is\nfor backwards compatibility with previous versions of this function.  These\narguments had no effect on the return values of the function and can be\nsafely ignored in this and previous versions of numpy."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In this example we generate two random arrays, "
+              },
+              {
+                "kind": "code",
+                "text": "xarr"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "yarr"
+              },
+              {
+                "kind": "text",
+                "text": ", and\ncompute the row-wise and column-wise Pearson correlation coefficients,\n"
+              },
+              {
+                "kind": "code",
+                "text": "R"
+              },
+              {
+                "kind": "text",
+                "text": ". Since "
+              },
+              {
+                "kind": "code",
+                "text": "rowvar"
+              },
+              {
+                "kind": "text",
+                "text": " is  true by  default, we first find the row-wise\nPearson correlation coefficients between the variables of "
+              },
+              {
+                "kind": "code",
+                "text": "xarr"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng(seed=42)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "xarr = rng.random((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "xarr"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0.77395605, 0.43887844, 0.85859792],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.69736803, 0.09417735, 0.97562235],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.7611397 , 0.78606431, 0.12811363]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "R1 = flops.corrcoef(xarr)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "R1"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1.        ,  0.99256089, -0.68080986],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.99256089,  1.        , -0.76492172],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-0.68080986, -0.76492172,  1.        ]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If we add another set of variables and observations "
+              },
+              {
+                "kind": "code",
+                "text": "yarr"
+              },
+              {
+                "kind": "text",
+                "text": ", we can\ncompute the row-wise Pearson correlation coefficients between the\nvariables in "
+              },
+              {
+                "kind": "code",
+                "text": "xarr"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "yarr"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "yarr = rng.random((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "yarr"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0.45038594, 0.37079802, 0.92676499],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.64386512, 0.82276161, 0.4434142 ],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.22723872, 0.55458479, 0.06381726]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "R2 = flops.corrcoef(xarr, yarr)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "R2"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1.        ,  0.99256089, -0.68080986,  0.75008178, -0.934284  ,"
+              },
+              {
+                "kind": "output",
+                "text": "        -0.99004057],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.99256089,  1.        , -0.76492172,  0.82502011, -0.97074098,"
+              },
+              {
+                "kind": "output",
+                "text": "        -0.99981569],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-0.68080986, -0.76492172,  1.        , -0.99507202,  0.89721355,"
+              },
+              {
+                "kind": "output",
+                "text": "         0.77714685],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.75008178,  0.82502011, -0.99507202,  1.        , -0.93657855,"
+              },
+              {
+                "kind": "output",
+                "text": "        -0.83571711],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-0.934284  , -0.97074098,  0.89721355, -0.93657855,  1.        ,"
+              },
+              {
+                "kind": "output",
+                "text": "         0.97517215],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-0.99004057, -0.99981569,  0.77714685, -0.83571711,  0.97517215,"
+              },
+              {
+                "kind": "output",
+                "text": "         1.        ]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Finally if we use the option "
+              },
+              {
+                "kind": "code",
+                "text": "rowvar=False"
+              },
+              {
+                "kind": "text",
+                "text": ", the columns are now\nbeing treated as the variables and we will find the column-wise Pearson\ncorrelation coefficients between variables in "
+              },
+              {
+                "kind": "code",
+                "text": "xarr"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "yarr"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "R3 = flops.corrcoef(xarr, yarr, rowvar=False)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "R3"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1.        ,  0.77598074, -0.47458546, -0.75078643, -0.9665554 ,"
+              },
+              {
+                "kind": "output",
+                "text": "         0.22423734],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.77598074,  1.        , -0.92346708, -0.99923895, -0.58826587,"
+              },
+              {
+                "kind": "output",
+                "text": "        -0.44069024],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-0.47458546, -0.92346708,  1.        ,  0.93773029,  0.23297648,"
+              },
+              {
+                "kind": "output",
+                "text": "         0.75137473],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-0.75078643, -0.99923895,  0.93773029,  1.        ,  0.55627469,"
+              },
+              {
+                "kind": "output",
+                "text": "         0.47536961],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-0.9665554 , -0.58826587,  0.23297648,  0.55627469,  1.        ,"
+              },
+              {
+                "kind": "output",
+                "text": "        -0.46666491],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.22423734, -0.44069024,  0.75137473,  0.47536961, -0.46666491,"
+              },
+              {
+                "kind": "output",
+                "text": "         1.        ]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n^2 * m",
+    "cost_formula_latex": "$n^2 \\cdot m$",
+    "flopscope_ref": "fnp.corrcoef",
+    "module": "numpy",
+    "name": "corrcoef",
+    "notes": "Pearson correlation coefficients.",
+    "numpy_ref": "np.corrcoef",
+    "signature": "fnp.corrcoef(x, y=None, rowvar=True, bias=<no value>, ddof=<no value>, *, dtype=None)",
+    "status": "supported",
+    "summary": "Return Pearson product-moment correlation coefficients.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "corrcoef",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L2400",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L2903"
+  }
+}

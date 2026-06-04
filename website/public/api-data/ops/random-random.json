@@ -1,0 +1,50 @@
+{
+  "detail_href": "/docs/api/numpy/random/random/",
+  "detail_json_href": "/api-data/ops/random-random.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return random floats in the half-open interval [0.0, 1.0). Alias for "
+              },
+              {
+                "kind": "code",
+                "text": "random_sample"
+              },
+              {
+                "kind": "text",
+                "text": " to ease forward-porting to the new random API."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.random.random",
+    "module": "numpy.random",
+    "name": "random.random",
+    "notes": "Sampling; cost = numel(output).",
+    "numpy_ref": "np.random.random",
+    "signature": "fnp.random.random(size=None)",
+    "status": "supported",
+    "summary": "Return random floats in the half-open interval [0.0, 1.0). Alias for `random_sample` to ease forward-porting to the new random API.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-random",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/random/__init__.py#L371",
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.random.html"
+  }
+}

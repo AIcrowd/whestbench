@@ -1,0 +1,354 @@
+{
+  "detail_href": "/docs/api/numpy/frombuffer/",
+  "detail_json_href": "/api-data/ops/frombuffer.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Interpret a buffer as a 1-dimensional array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An object that exposes the buffer interface."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "buffer_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An object that exposes the buffer interface."
+                  }
+                ],
+                "name": "buffer",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Data-type of the returned array; default: float."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "data-type, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Data-type of the returned array; default: float."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of items to read. "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "-1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " means all data in the buffer."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of items to read. "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "-1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " means all data in the buffer."
+                  }
+                ],
+                "name": "count",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Start reading the buffer from this offset (in bytes); default: 0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Start reading the buffer from this offset (in bytes); default: 0."
+                  }
+                ],
+                "name": "offset",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Reference object to allow the creation of arrays which are not\nNumPy arrays. If an array-like passed in as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "like"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " supports\nthe "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "__array_function__"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " protocol, the result will be defined\nby it. In this case, it ensures the creation of an array object\ncompatible with that passed in via this argument."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.20.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.20.0"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Reference object to allow the creation of arrays which are not\nNumPy arrays. If an array-like passed in as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "like"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " supports\nthe "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "__array_function__"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " protocol, the result will be defined\nby it. In this case, it ensures the creation of an array object\ncompatible with that passed in via this argument."
+                  }
+                ],
+                "name": "like",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [],
+                "data_type": "ndarray",
+                "inline": [],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Inverse of this operation, construct Python bytes from the raw data bytes in the array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Inverse of this operation, construct Python bytes from the raw data bytes in the array."
+                  }
+                ],
+                "external_url": "",
+                "href": "",
+                "label": "ndarray.tobytes",
+                "original_target": "ndarray.tobytes",
+                "role": "",
+                "target": "ndarray.tobytes",
+                "unresolved": true
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If the buffer has data that is not in machine byte-order, this should\nbe specified as part of the data-type, e.g.:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": ">>> dt = flops.dtype(int)\n>>> dt = dt.newbyteorder('>')\n>>> flops.frombuffer(buf, dtype=dt) # doctest: +SKIP",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The data of the resulting array will not be byteswapped, but will be\ninterpreted correctly."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function creates a view into the original object.  This should be safe\nin general, but it may make sense to copy the result when the original\nobject is mutable or untrusted."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = b'hello world'"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.frombuffer(s, dtype='S1', count=5, offset=6)"
+              },
+              {
+                "kind": "output",
+                "text": "array([b'w', b'o', b'r', b'l', b'd'], dtype='|S1')"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.frombuffer(b'\\x01\\x02', dtype=flops.uint8)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2], dtype=uint8)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.frombuffer(b'\\x01\\x02\\x03\\x04\\x05', dtype=flops.uint8, count=3)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3], dtype=uint8)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.frombuffer",
+    "module": "numpy",
+    "name": "frombuffer",
+    "notes": "Interpret buffer as 1-D array. Cost: numel(output).",
+    "numpy_ref": "np.frombuffer",
+    "signature": "fnp.frombuffer(buffer: 'Any', dtype: 'DTypeLike' = <class 'float'>, count: 'int' = -1, offset: 'int' = 0) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Interpret a buffer as a 1-dimensional array.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "frombuffer",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1753",
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.frombuffer.html"
+  }
+}

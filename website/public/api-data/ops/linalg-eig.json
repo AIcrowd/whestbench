@@ -1,0 +1,822 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/eig/",
+  "detail_json_href": "/api-data/ops/linalg-eig.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the eigenvalues and right eigenvectors of a square array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Matrices for which the eigenvalues and right eigenvectors will\nbe computed"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Matrices for which the eigenvalues and right eigenvectors will\nbe computed"
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [],
+                "data_type": "A namedtuple with the following attributes:",
+                "inline": [],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The eigenvalues, each repeated according to its multiplicity.\nThe eigenvalues are not necessarily ordered. The resulting\narray will be of complex type, unless the imaginary part is\nzero in which case it will be cast to a real type. When "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nis real the resulting eigenvalues will be real (0 imaginary\npart) or occur in conjugate pairs"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M) array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The eigenvalues, each repeated according to its multiplicity.\nThe eigenvalues are not necessarily ordered. The resulting\narray will be of complex type, unless the imaginary part is\nzero in which case it will be cast to a real type. When "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nis real the resulting eigenvalues will be real (0 imaginary\npart) or occur in conjugate pairs"
+                  }
+                ],
+                "name": "eigenvalues",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The normalized (unit \"length\") eigenvectors, such that the\ncolumn "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "eigenvectors[:,i]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is the eigenvector corresponding to the\neigenvalue "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "eigenvalues[i]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) array",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The normalized (unit \"length\") eigenvectors, such that the\ncolumn "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "eigenvectors[:,i]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is the eigenvector corresponding to the\neigenvalue "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "eigenvalues[i]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "eigenvectors",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the eigenvalue computation does not converge."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the eigenvalue computation does not converge."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "eigenvalues of a non-symmetric array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues of a non-symmetric array."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eigvals.html",
+                "href": "",
+                "label": "eigvals",
+                "original_target": "eigvals",
+                "role": "",
+                "target": "eigvals",
+                "unresolved": false
+              },
+              {
+                "description": "eigenvalues and eigenvectors of a real symmetric or complex Hermitian (conjugate symmetric) array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues and eigenvectors of a real symmetric or complex Hermitian (conjugate symmetric) array."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eigh.html",
+                "href": "",
+                "label": "eigh",
+                "original_target": "eigh",
+                "role": "",
+                "target": "eigh",
+                "unresolved": false
+              },
+              {
+                "description": "eigenvalues of a real symmetric or complex Hermitian (conjugate symmetric) array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues of a real symmetric or complex Hermitian (conjugate symmetric) array."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eigvalsh.html",
+                "href": "",
+                "label": "eigvalsh",
+                "original_target": "eigvalsh",
+                "role": "",
+                "target": "eigvalsh",
+                "unresolved": false
+              },
+              {
+                "description": "Similar function in SciPy that also solves the generalized eigenvalue problem.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy that also solves the generalized eigenvalue problem."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eig.html",
+                "href": "",
+                "label": "scipy.linalg.eig",
+                "original_target": "scipy.linalg.eig",
+                "role": "",
+                "target": "scipy.linalg.eig",
+                "unresolved": false
+              },
+              {
+                "description": "Best choice for unitary and other non-Hermitian normal matrices.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Best choice for unitary and other non-Hermitian normal matrices."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.schur.html",
+                "href": "",
+                "label": "scipy.linalg.schur",
+                "original_target": "scipy.linalg.schur",
+                "role": "",
+                "target": "scipy.linalg.schur",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Broadcasting rules apply, see the "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.linalg.html",
+                "href": "",
+                "kind": "link",
+                "target": "linalg",
+                "text": "flops.linalg"
+              },
+              {
+                "kind": "text",
+                "text": " documentation for\ndetails."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is implemented using the "
+              },
+              {
+                "kind": "code",
+                "text": "_geev"
+              },
+              {
+                "kind": "text",
+                "text": " LAPACK routines which compute\nthe eigenvalues and eigenvectors of general square arrays."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The number "
+              },
+              {
+                "kind": "code",
+                "text": "w"
+              },
+              {
+                "kind": "text",
+                "text": " is an eigenvalue of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " if there exists a vector "
+              },
+              {
+                "kind": "code",
+                "text": "v"
+              },
+              {
+                "kind": "text",
+                "text": " such\nthat "
+              },
+              {
+                "kind": "code",
+                "text": "a @ v = w * v"
+              },
+              {
+                "kind": "text",
+                "text": ". Thus, the arrays "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "eigenvalues"
+              },
+              {
+                "kind": "text",
+                "text": ", and\n"
+              },
+              {
+                "kind": "code",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "text",
+                "text": " satisfy the equations "
+              },
+              {
+                "kind": "code",
+                "text": "a @ eigenvectors[:,i] =\neigenvalues[i] * eigenvectors[:,i]"
+              },
+              {
+                "kind": "text",
+                "text": " for "
+              },
+              {
+                "kind": "math",
+                "latex": "i \\in \\{0,...,M-1\\}"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The array "
+              },
+              {
+                "kind": "code",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "text",
+                "text": " may not be of maximum rank, that is, some of the\ncolumns may be linearly dependent, although round-off error may obscure\nthat fact. If the eigenvalues are all different, then theoretically the\neigenvectors are linearly independent and "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " can be diagonalized by a\nsimilarity transformation using "
+              },
+              {
+                "kind": "code",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "text",
+                "text": ", i.e, "
+              },
+              {
+                "kind": "code",
+                "text": "inv(eigenvectors) @\na @ eigenvectors"
+              },
+              {
+                "kind": "text",
+                "text": " is diagonal."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For non-Hermitian normal matrices the SciPy function "
+              },
+              {
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.schur.html",
+                "href": "",
+                "kind": "link",
+                "target": "scipy.linalg.schur",
+                "text": "scipy.linalg.schur"
+              },
+              {
+                "kind": "text",
+                "text": "\nis preferred because the matrix "
+              },
+              {
+                "kind": "code",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "text",
+                "text": " is guaranteed to be\nunitary, which is not the case when using "
+              },
+              {
+                "kind": "code",
+                "text": "eig"
+              },
+              {
+                "kind": "text",
+                "text": ". The Schur factorization\nproduces an upper triangular matrix rather than a diagonal matrix, but for\nnormal matrices only the diagonal of the upper triangular matrix is\nneeded, the rest is roundoff error."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Finally, it is emphasized that "
+              },
+              {
+                "kind": "code",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "text",
+                "text": " consists of the "
+              },
+              {
+                "kind": "emphasis",
+                "text": "right"
+              },
+              {
+                "kind": "text",
+                "text": " (as\nin right-hand side) eigenvectors of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ". A vector "
+              },
+              {
+                "kind": "code",
+                "text": "y"
+              },
+              {
+                "kind": "text",
+                "text": " satisfying "
+              },
+              {
+                "kind": "code",
+                "text": "y.T @ a\n= z * y.T"
+              },
+              {
+                "kind": "text",
+                "text": " for some number "
+              },
+              {
+                "kind": "code",
+                "text": "z"
+              },
+              {
+                "kind": "text",
+                "text": " is called a "
+              },
+              {
+                "kind": "emphasis",
+                "text": "left"
+              },
+              {
+                "kind": "text",
+                "text": " eigenvector of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ",\nand, in general, the left and right eigenvectors of a matrix are not\nnecessarily the (perhaps conjugate) transposes of each other."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "G. Strang, "
+              },
+              {
+                "kind": "emphasis",
+                "text": "Linear Algebra and Its Applications"
+              },
+              {
+                "kind": "text",
+                "text": ", 2nd Ed., Orlando, FL,\nAcademic Press, Inc., 1980, Various pp."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from numpy import linalg as LA"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "(Almost) trivial example with real eigenvalues and eigenvectors."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues, eigenvectors = LA.eig(flops.diag((1, 2, 3)))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues"
+              },
+              {
+                "kind": "output",
+                "text": "array([1., 2., 3.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1., 0., 0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0., 1., 0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0., 0., 1.]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Real matrix possessing complex eigenvalues and eigenvectors;\nnote that the eigenvalues are complex conjugates of each other."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues, eigenvectors = LA.eig(flops.array([[1, -1], [1, 1]]))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues"
+              },
+              {
+                "kind": "output",
+                "text": "array([1.+1.j, 1.-1.j])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0.70710678+0.j        , 0.70710678-0.j        ],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0.        -0.70710678j, 0.        +0.70710678j]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Complex-valued matrix with real eigenvalues (but complex-valued\neigenvectors); note that "
+              },
+              {
+                "kind": "code",
+                "text": "a.conj().T == a"
+              },
+              {
+                "kind": "text",
+                "text": ", i.e., "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is Hermitian."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, 1j], [-1j, 1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues, eigenvectors = LA.eig(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues"
+              },
+              {
+                "kind": "output",
+                "text": "array([2.+0.j, 0.+0.j])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0.        +0.70710678j,  0.70710678+0.j        ], # may vary"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.70710678+0.j        , -0.        +0.70710678j]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Be careful about round-off error!"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1 + 1e-9, 0], [0, 1 - 1e-9]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "# Theor. eigenvalues are 1 +/- 1e-9"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues, eigenvectors = LA.eig(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvalues"
+              },
+              {
+                "kind": "output",
+                "text": "array([1., 1.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "eigenvectors"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1., 0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0., 1.]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n^3",
+    "cost_formula_latex": "$n^3$",
+    "flopscope_ref": "fnp.linalg.eig",
+    "module": "numpy.linalg",
+    "name": "linalg.eig",
+    "notes": "Eigendecomposition. Cost: $n^3$.",
+    "numpy_ref": "np.linalg.eig",
+    "signature": "fnp.linalg.eig(a: 'ArrayLike') -> 'tuple[FlopscopeArray, FlopscopeArray]'",
+    "status": "supported",
+    "summary": "Compute the eigenvalues and right eigenvectors of a square array.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-eig",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_decompositions.py#L150",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L1331"
+  }
+}

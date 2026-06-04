@@ -1,0 +1,796 @@
+{
+  "detail_href": "/docs/api/numpy/fft/hfft/",
+  "detail_json_href": "/api-data/ops/fft-hfft.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the FFT of a signal that has Hermitian symmetry, i.e., a real spectrum."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The input array."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Length of the transformed axis of the output. For "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "n"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " output\npoints, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "n//2 + 1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " input points are necessary.  If the input is\nlonger than this, it is cropped.  If it is shorter than this, it is\npadded with zeros.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "n"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not given, it is taken to be "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "2*(m-1)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nwhere "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is the length of the input along the axis specified by\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Length of the transformed axis of the output. For "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "n"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " output\npoints, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "n//2 + 1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " input points are necessary.  If the input is\nlonger than this, it is cropped.  If it is shorter than this, it is\npadded with zeros.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "n"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not given, it is taken to be "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "2*(m-1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nwhere "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is the length of the input along the axis specified by\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "n",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis over which to compute the FFT. If not given, the last\naxis is used."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis over which to compute the FFT. If not given, the last\naxis is used."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Normalization mode (see "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.fft.html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "fft",
+                        "text": "flops.fft"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "). Default is \"backward\".\nIndicates which direction of the forward/backward pair of transforms\nis scaled and with what normalization factor."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.20.0\n\n    The \"backward\", \"forward\" values were added.",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.20.0"
+                  }
+                ],
+                "data_type": "{\"backward\", \"ortho\", \"forward\"}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Normalization mode (see "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.fft.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "fft",
+                    "text": "flops.fft"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "). Default is \"backward\".\nIndicates which direction of the forward/backward pair of transforms\nis scaled and with what normalization factor."
+                  }
+                ],
+                "name": "norm",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If provided, the result will be placed in this array. It should be\nof the appropriate shape and dtype."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.0.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0.0"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If provided, the result will be placed in this array. It should be\nof the appropriate shape and dtype."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The truncated or zero-padded input, transformed along the axis\nindicated by "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", or the last one if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not specified.\nThe length of the transformed axis is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "n"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", or, if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "n"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not given,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "2*m - 2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " where "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is the length of the transformed axis of\nthe input. To get an odd number of output points, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "n"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " must be\nspecified, for instance as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "2*m - 1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " in the typical case,"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The truncated or zero-padded input, transformed along the axis\nindicated by "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", or the last one if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not specified.\nThe length of the transformed axis is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "n"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", or, if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "n"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not given,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "2*m - 2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " where "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is the length of the transformed axis of\nthe input. To get an odd number of output points, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "n"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " must be\nspecified, for instance as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "2*m - 1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " in the typical case,"
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not a valid axis of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "IndexError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not a valid axis of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Compute the one-dimensional FFT for real input.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Compute the one-dimensional FFT for real input."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.rfft.html",
+                "href": "",
+                "label": "rfft",
+                "original_target": "rfft",
+                "role": "",
+                "target": "rfft",
+                "unresolved": false
+              },
+              {
+                "description": "The inverse of `hfft`.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "The inverse of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "hfft"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ihfft.html",
+                "href": "",
+                "label": "ihfft",
+                "original_target": "ihfft",
+                "role": "",
+                "target": "ihfft",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "hfft"
+              },
+              {
+                "kind": "text",
+                "text": "/"
+              },
+              {
+                "kind": "code",
+                "text": "ihfft"
+              },
+              {
+                "kind": "text",
+                "text": " are a pair analogous to "
+              },
+              {
+                "kind": "code",
+                "text": "rfft"
+              },
+              {
+                "kind": "text",
+                "text": "/"
+              },
+              {
+                "kind": "code",
+                "text": "irfft"
+              },
+              {
+                "kind": "text",
+                "text": ", but for the\nopposite case: here the signal has Hermitian symmetry in the time\ndomain and is real in the frequency domain. So here it's "
+              },
+              {
+                "kind": "code",
+                "text": "hfft"
+              },
+              {
+                "kind": "text",
+                "text": " for\nwhich you must supply the length of the result if it is to be odd."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "items": [
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "even: "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ihfft(hfft(a, 2*len(a) - 2)) == a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", within roundoff error,"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              },
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "odd: "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ihfft(hfft(a, 2*len(a) - 1)) == a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", within roundoff error."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              }
+            ],
+            "ordered": false,
+            "type": "list"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The correct interpretation of the hermitian input depends on the length of\nthe original data, as given by "
+              },
+              {
+                "kind": "code",
+                "text": "n"
+              },
+              {
+                "kind": "text",
+                "text": ". This is because each input shape could\ncorrespond to either an odd or even length signal. By default, "
+              },
+              {
+                "kind": "code",
+                "text": "hfft"
+              },
+              {
+                "kind": "text",
+                "text": "\nassumes an even output length which puts the last entry at the Nyquist\nfrequency; aliasing with its symmetric counterpart. By Hermitian symmetry,\nthe value is thus treated as purely real. To avoid losing information, the\nshape of the full signal "
+              },
+              {
+                "kind": "strong",
+                "text": "must"
+              },
+              {
+                "kind": "text",
+                "text": " be given."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "signal = flops.array([1, 2, 3, 4, 3, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fft.fft(signal)"
+              },
+              {
+                "kind": "output",
+                "text": "array([15.+0.j,  -4.+0.j,   0.+0.j,  -1.-0.j,   0.+0.j,  -4.+0.j]) # may vary"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fft.hfft(signal[:4]) # Input first half of signal"
+              },
+              {
+                "kind": "output",
+                "text": "array([15.,  -4.,   0.,  -1.,   0.,  -4.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fft.hfft(signal, 6)  # Input entire signal and truncate"
+              },
+              {
+                "kind": "output",
+                "text": "array([15.,  -4.,   0.,  -1.,   0.,  -4.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "signal = flops.array([[1, 1.j], [-1.j, 2]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.conj(signal.T) - signal   # check Hermitian symmetry"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0.-0.j,  -0.+0.j], # may vary"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.+0.j,  0.-0.j]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "freq_spectrum = flops.fft.hfft(signal)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "freq_spectrum"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 1.,  1.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 2., -2.]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "5n * ceil(log2(n))",
+    "cost_formula_latex": "$5n \\cdot \\lceil\\log_2 n\\rceil$",
+    "flopscope_ref": "fnp.fft.hfft",
+    "module": "numpy.fft",
+    "name": "fft.hfft",
+    "notes": "FFT of Hermitian-symmetric signal. Cost: 5*n_out*ceil(log2(n_out)) (Cooley-Tukey radix-2; Van Loan 1992 \u00a71.4).",
+    "numpy_ref": "np.fft.hfft",
+    "signature": "fnp.fft.hfft(a: 'ArrayLike', n: 'int | None' = None, axis: 'int' = -1, norm: 'str | None' = None, out: 'ArrayLike | None' = None) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Compute the FFT of a signal that has Hermitian symmetry, i.e., a real spectrum.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "fft-hfft",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/fft/_transforms.py#L624",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/fft/_pocketfft.py#L523"
+  }
+}

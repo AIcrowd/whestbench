@@ -1,0 +1,408 @@
+{
+  "detail_href": "/docs/api/numpy/shares-memory/",
+  "detail_json_href": "/api-data/ops/shares_memory.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Determine if two arrays share memory."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This function can be exponentially slow for some inputs, unless\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "max_work"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is set to zero or a positive integer.\nIf in doubt, use "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/may-share-memory/",
+                    "kind": "link",
+                    "target": "may_share_memory",
+                    "text": "flops.may_share_memory"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instead."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "warning",
+            "options": [],
+            "raw_source": ".. warning::\n\n   This function can be exponentially slow for some inputs, unless\n   `max_work` is set to zero or a positive integer.\n   If in doubt, use `flops.may_share_memory` instead.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input arrays"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input arrays"
+                  }
+                ],
+                "name": "a, b",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Effort to spend on solving the overlap problem (maximum number\nof candidate solutions to consider). The following special\nvalues are recognized:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "The problem is solved exactly. In this case, the function returns\nTrue only if there is an element shared between the arrays. Finding\nthe exact solution may take extremely long in some cases."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "max_work=-1 (default)"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "Only the memory bounds of a and b are checked.\nThis is equivalent to using "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "may_share_memory()"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ],
+                        "term_inline": [
+                          {
+                            "kind": "text",
+                            "text": "max_work=0"
+                          }
+                        ]
+                      }
+                    ],
+                    "type": "definition_list"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Effort to spend on solving the overlap problem (maximum number\nof candidate solutions to consider). The following special\nvalues are recognized:"
+                  }
+                ],
+                "name": "max_work",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [],
+                "data_type": "bool",
+                "inline": [],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Exceeded max_work."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "flops.exceptions.TooHardError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Exceeded max_work."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/may-share-memory/",
+                "label": "flops.may_share_memory",
+                "original_target": "may_share_memory",
+                "role": "",
+                "target": "may_share_memory",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([1, 2, 3, 4])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.shares_memory(x, flops.array([5, 6, 7]))"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.shares_memory(x[::2], x)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.shares_memory(x[::2], x[1::2])"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Checking whether two arrays share memory is NP-complete, and\nruntime may increase exponentially in the number of\ndimensions. Hence, "
+              },
+              {
+                "kind": "code",
+                "text": "max_work"
+              },
+              {
+                "kind": "text",
+                "text": " should generally be set to a finite\nnumber, as it is possible to construct examples that take\nextremely long to run:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from flops.lib.stride_tricks import as_strided"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.zeros([192163377], dtype=flops.int8)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1 = as_strided("
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "x, strides=(36674, 61119, 85569), shape=(1049, 1049, 1049))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x2 = as_strided("
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "x[64023025:], strides=(12223, 12224, 1), shape=(1049, 1049, 1))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.shares_memory(x1, x2, max_work=1000)"
+              },
+              {
+                "kind": "output",
+                "text": "Traceback (most recent call last):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "output",
+                "text": "flops.exceptions.TooHardError: Exceeded max_work"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Running "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.shares_memory(x1, x2).html",
+                "href": "",
+                "kind": "link",
+                "target": "shares_memory(x1, x2)",
+                "text": "flops.shares_memory(x1, x2)"
+              },
+              {
+                "kind": "text",
+                "text": " without "
+              },
+              {
+                "kind": "code",
+                "text": "max_work"
+              },
+              {
+                "kind": "text",
+                "text": " set takes\naround 1 minute for this case. It is possible to find problems\nthat take still significantly longer."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.shares_memory",
+    "module": "numpy",
+    "name": "shares_memory",
+    "notes": "Determine if two arrays share memory.",
+    "numpy_ref": "np.shares_memory",
+    "signature": "fnp.shares_memory(*args, **kwargs)",
+    "status": "supported",
+    "summary": "Determine if two arrays share memory.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "shares_memory",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L2313",
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.shares_memory.html"
+  }
+}

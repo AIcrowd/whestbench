@@ -1,0 +1,338 @@
+{
+  "detail_href": "/docs/api/numpy/count-nonzero/",
+  "detail_json_href": "/api-data/ops/count_nonzero.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Counts the number of non-zero values in the array "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The word \"non-zero\" is in reference to the Python 2.x\nbuilt-in method "
+              },
+              {
+                "kind": "code",
+                "text": "__nonzero__()"
+              },
+              {
+                "kind": "text",
+                "text": " (renamed "
+              },
+              {
+                "kind": "code",
+                "text": "__bool__()"
+              },
+              {
+                "kind": "text",
+                "text": "\nin Python 3.x) of Python objects that tests an object's\n\"truthfulness\". For example, any number is considered\ntruthful if it is nonzero, whereas any string is considered\ntruthful if it is not the empty string. Thus, this function\n(recursively) counts how many elements in "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " (and in\nsub-arrays thereof) have their "
+              },
+              {
+                "kind": "code",
+                "text": "__nonzero__()"
+              },
+              {
+                "kind": "text",
+                "text": " or "
+              },
+              {
+                "kind": "code",
+                "text": "__bool__()"
+              },
+              {
+                "kind": "text",
+                "text": "\nmethod evaluated to "
+              },
+              {
+                "kind": "code",
+                "text": "True"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The array for which to count non-zeros."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The array for which to count non-zeros."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis or tuple of axes along which to count non-zeros.\nDefault is None, meaning that non-zeros will be counted\nalong a flattened version of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis or tuple of axes along which to count non-zeros.\nDefault is None, meaning that non-zeros will be counted\nalong a flattened version of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If this is set to True, the axes that are counted are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If this is set to True, the axes that are counted are left\nin the result as dimensions with size one. With this option,\nthe result will broadcast correctly against the input array."
+                  }
+                ],
+                "name": "keepdims",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Number of non-zero values in the array along a given axis.\nOtherwise, the total number of non-zero values in the array\nis returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or array of int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Number of non-zero values in the array along a given axis.\nOtherwise, the total number of non-zero values in the array\nis returned."
+                  }
+                ],
+                "name": "count",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Return the coordinates of all the non-zero values.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return the coordinates of all the non-zero values."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/nonzero/",
+                "label": "flops.nonzero",
+                "original_target": "nonzero",
+                "role": "",
+                "target": "nonzero",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.count_nonzero(flops.eye(4))"
+              },
+              {
+                "kind": "output",
+                "text": "4"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[0, 1, 7, 0],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[3, 0, 2, 19]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.count_nonzero(a)"
+              },
+              {
+                "kind": "output",
+                "text": "5"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.count_nonzero(a, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 1, 2, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.count_nonzero(a, axis=1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.count_nonzero(a, axis=1, keepdims=True)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_reduction",
+    "cost_formula": "numel(input)",
+    "cost_formula_latex": "$\\text{numel}(\\text{input})$",
+    "flopscope_ref": "fnp.count_nonzero",
+    "module": "numpy",
+    "name": "count_nonzero",
+    "notes": "Count non-zero elements.",
+    "numpy_ref": "np.count_nonzero",
+    "signature": "fnp.count_nonzero(a: 'ArrayLike', axis: 'int | tuple[int, ...] | None' = None, *, keepdims: 'bool' = False) -> 'FlopscopeArray | int'",
+    "status": "supported",
+    "summary": "Counts the number of non-zero values in the array ``a``.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "count_nonzero",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L1523",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/numeric.py#L450"
+  }
+}

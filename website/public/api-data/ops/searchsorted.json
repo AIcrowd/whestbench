@@ -1,0 +1,596 @@
+{
+  "detail_href": "/docs/api/numpy/searchsorted/",
+  "detail_json_href": "/api-data/ops/searchsorted.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Find indices where elements should be inserted to maintain order."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Find the indices into a sorted array "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " such that, if the\ncorresponding elements in "
+              },
+              {
+                "kind": "code",
+                "text": "v"
+              },
+              {
+                "kind": "text",
+                "text": " were inserted before the indices, the\norder of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " would be preserved."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Assuming that "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is sorted:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "raw_kind": "table",
+            "raw_text": "\n\n\n\nside\n\nreturned index i satisfies\n\nleft\n\na[i-1] < v <= a[i]\n\nright\n\na[i-1] <= v < a[i]",
+            "type": "raw_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "sorter"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None, then it must be sorted in\nascending order, otherwise "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "sorter"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " must be an array of indices\nthat sort it."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "1-D array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "sorter"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None, then it must be sorted in\nascending order, otherwise "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "sorter"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " must be an array of indices\nthat sort it."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Values to insert into "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Values to insert into "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "v",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If 'left', the index of the first suitable location found is given.\nIf 'right', return the last such index.  If there is no suitable\nindex, return either 0 or N (where N is the length of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ")."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'left', 'right'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If 'left', the index of the first suitable location found is given.\nIf 'right', return the last such index.  If there is no suitable\nindex, return either 0 or N (where N is the length of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ")."
+                  }
+                ],
+                "name": "side",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Optional array of integer indices that sort array a into ascending\norder. They are typically the result of argsort."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "1-D array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Optional array of integer indices that sort array a into ascending\norder. They are typically the result of argsort."
+                  }
+                ],
+                "name": "sorter",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array of insertion points with the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "v"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ",\nor an integer if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "v"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or array of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array of insertion points with the same shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "v"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ",\nor an integer if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "v"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar."
+                  }
+                ],
+                "name": "indices",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Return a sorted copy of an array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return a sorted copy of an array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/sort/",
+                "label": "flops.sort",
+                "original_target": "sort",
+                "role": "",
+                "target": "sort",
+                "unresolved": false
+              },
+              {
+                "description": "Produce histogram from 1-D data.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Produce histogram from 1-D data."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/histogram/",
+                "label": "flops.histogram",
+                "original_target": "histogram",
+                "role": "",
+                "target": "histogram",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Binary search is used to find the required insertion points."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "As of NumPy 1.4.0 "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/searchsorted/",
+                "kind": "link",
+                "target": "searchsorted",
+                "text": "searchsorted"
+              },
+              {
+                "kind": "text",
+                "text": " works with real/complex arrays containing\n"
+              },
+              {
+                "kind": "code",
+                "text": "nan"
+              },
+              {
+                "kind": "text",
+                "text": " values. The enhanced sort order is documented in "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/sort/",
+                "kind": "link",
+                "target": "sort",
+                "text": "sort"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function uses the same algorithm as the builtin python\n"
+              },
+              {
+                "kind": "code",
+                "text": "bisect.bisect_left"
+              },
+              {
+                "kind": "text",
+                "text": " ("
+              },
+              {
+                "kind": "code",
+                "text": "side='left'"
+              },
+              {
+                "kind": "text",
+                "text": ") and "
+              },
+              {
+                "kind": "code",
+                "text": "bisect.bisect_right"
+              },
+              {
+                "kind": "text",
+                "text": "\n("
+              },
+              {
+                "kind": "code",
+                "text": "side='right'"
+              },
+              {
+                "kind": "text",
+                "text": ") functions, which is also vectorized\nin the "
+              },
+              {
+                "kind": "code",
+                "text": "v"
+              },
+              {
+                "kind": "text",
+                "text": " argument."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.searchsorted([11,12,13,14,15], 13)"
+              },
+              {
+                "kind": "output",
+                "text": "2"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.searchsorted([11,12,13,14,15], 13, side='right')"
+              },
+              {
+                "kind": "output",
+                "text": "3"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.searchsorted([11,12,13,14,15], [-10, 20, 12, 13])"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 5, 1, 2])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When "
+              },
+              {
+                "kind": "code",
+                "text": "sorter"
+              },
+              {
+                "kind": "text",
+                "text": " is used, the returned indices refer to the sorted\narray of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and not "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " itself:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([40, 10, 20, 30])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "sorter = flops.argsort(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "sorter"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 0])  # Indices that would sort the array 'a'"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "result = flops.searchsorted(a, 25, sorter=sorter)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "result"
+              },
+              {
+                "kind": "output",
+                "text": "2"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[sorter[result]]"
+              },
+              {
+                "kind": "output",
+                "text": "30  # The element at index 2 of the sorted array is 30."
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.searchsorted",
+    "module": "numpy",
+    "name": "searchsorted",
+    "notes": "Binary search; cost = m*ceil(log2(n)).",
+    "numpy_ref": "np.searchsorted",
+    "signature": "fnp.searchsorted(a, v, side='left', sorter=None)",
+    "status": "supported",
+    "summary": "Find indices where elements should be inserted to maintain order.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "searchsorted",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_sorting_ops.py#L215",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L1447"
+  }
+}

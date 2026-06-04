@@ -1,0 +1,741 @@
+{
+  "detail_href": "/docs/api/numpy/piecewise/",
+  "detail_json_href": "/api-data/ops/piecewise.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Evaluate a piecewise-defined function."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Given a set of conditions and corresponding functions, evaluate each\nfunction on the input data wherever its condition is true."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The input domain."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The input domain."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Each boolean array corresponds to a function in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "funclist"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Wherever\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "condlist[i]"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "funclist[i](x)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is used as the output value."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Each boolean array in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "condlist"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " selects a piece of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ",\nand should therefore be of the same shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The length of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "condlist"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " must correspond to that of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "funclist"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nIf one extra function is given, i.e. if\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "len(funclist) == len(condlist) + 1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then that extra function\nis the default value, used wherever all conditions are false."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "list of bool arrays or bool scalars",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Each boolean array corresponds to a function in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "funclist"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Wherever\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "condlist[i]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "funclist[i](x)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is used as the output value."
+                  }
+                ],
+                "name": "condlist",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Each function is evaluated over "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " wherever its corresponding\ncondition is True.  It should take a 1d array as input and give an 1d\narray or a scalar value as output.  If, instead of a callable,\na scalar is provided then a constant function ("
+                      },
+                      {
+                        "kind": "code",
+                        "text": "lambda x: scalar"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ") is\nassumed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "list of callables, f(x,*args,**kw), or scalars",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Each function is evaluated over "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " wherever its corresponding\ncondition is True.  It should take a 1d array as input and give an 1d\narray or a scalar value as output.  If, instead of a callable,\na scalar is provided then a constant function ("
+                  },
+                  {
+                    "kind": "code",
+                    "text": "lambda x: scalar"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ") is\nassumed."
+                  }
+                ],
+                "name": "funclist",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Any further arguments given to "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/piecewise/",
+                        "kind": "link",
+                        "target": "piecewise",
+                        "text": "piecewise"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are passed to the functions\nupon execution, i.e., if called "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "piecewise(..., ..., 1, 'a')"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\neach function is called as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "f(x, 1, 'a')"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "tuple, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Any further arguments given to "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/piecewise/",
+                    "kind": "link",
+                    "target": "piecewise",
+                    "text": "piecewise"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are passed to the functions\nupon execution, i.e., if called "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "piecewise(..., ..., 1, 'a')"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\neach function is called as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "f(x, 1, 'a')"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "args",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Keyword arguments used in calling "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/piecewise/",
+                        "kind": "link",
+                        "target": "piecewise",
+                        "text": "piecewise"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are passed to the\nfunctions upon execution, i.e., if called\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "piecewise(..., ..., alpha=1)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then each function is called as\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "f(x, alpha=1)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dict, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Keyword arguments used in calling "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/piecewise/",
+                    "kind": "link",
+                    "target": "piecewise",
+                    "text": "piecewise"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are passed to the\nfunctions upon execution, i.e., if called\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "piecewise(..., ..., alpha=1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then each function is called as\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "f(x, alpha=1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "kw",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The output is the same shape and type as x and is found by\ncalling the functions in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "funclist"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " on the appropriate portions of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ",\nas defined by the boolean arrays in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "condlist"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Portions not covered\nby any condition have a default value of 0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The output is the same shape and type as x and is found by\ncalling the functions in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "funclist"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " on the appropriate portions of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ",\nas defined by the boolean arrays in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "condlist"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Portions not covered\nby any condition have a default value of 0."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/choose/",
+                "label": "flops.choose",
+                "original_target": "choose",
+                "role": "",
+                "target": "choose",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/select/",
+                "label": "flops.select",
+                "original_target": "select",
+                "role": "",
+                "target": "select",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/where/",
+                "label": "flops.where",
+                "original_target": "where",
+                "role": "",
+                "target": "where",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is similar to choose or select, except that functions are\nevaluated on elements of "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " that satisfy the corresponding condition from\n"
+              },
+              {
+                "kind": "code",
+                "text": "condlist"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The result is:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "      |--\n      |funclist[0](x[condlist[0]])\nout = |funclist[1](x[condlist[1]])\n      |...\n      |funclist[n2](x[condlist[n2]])\n      |--",
+            "type": "literal_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Define the signum function, which is -1 for "
+              },
+              {
+                "kind": "code",
+                "text": "x < 0"
+              },
+              {
+                "kind": "text",
+                "text": " and +1 for "
+              },
+              {
+                "kind": "code",
+                "text": "x >= 0"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.linspace(-2.5, 2.5, 6)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.piecewise(x, [x < 0, x >= 0], [-1, 1])"
+              },
+              {
+                "kind": "output",
+                "text": "array([-1., -1., -1.,  1.,  1.,  1.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Define the absolute value, which is "
+              },
+              {
+                "kind": "code",
+                "text": "-x"
+              },
+              {
+                "kind": "text",
+                "text": " for "
+              },
+              {
+                "kind": "code",
+                "text": "x <0"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " for\n"
+              },
+              {
+                "kind": "code",
+                "text": "x >= 0"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.piecewise(x, [x < 0, x >= 0], [lambda x: -x, lambda x: x])"
+              },
+              {
+                "kind": "output",
+                "text": "array([2.5,  1.5,  0.5,  0.5,  1.5,  2.5])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Apply the same function to a scalar value."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = -2"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.piecewise(y, [y < 0, y >= 0], [lambda x: -x, lambda x: x])"
+              },
+              {
+                "kind": "output",
+                "text": "array(2)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.piecewise",
+    "module": "numpy",
+    "name": "piecewise",
+    "notes": "Piecewise function. Cost: numel(input).",
+    "numpy_ref": "np.piecewise",
+    "signature": "fnp.piecewise(x: 'ArrayLike', condlist: 'Any', funclist: 'Any', *args: 'Any', **kw: 'Any') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Evaluate a piecewise-defined function.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "piecewise",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L418",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L658"
+  }
+}

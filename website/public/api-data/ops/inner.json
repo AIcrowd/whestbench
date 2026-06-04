@@ -1,0 +1,601 @@
+{
+  "detail_href": "/docs/api/numpy/inner/",
+  "detail_json_href": "/api-data/ops/inner.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Inner product of two arrays."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Ordinary inner product of vectors for 1-D arrays (without complex\nconjugation), in higher dimensions a sum product over the last axes."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are nonscalar, their last dimensions must match."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are nonscalar, their last dimensions must match."
+                  }
+                ],
+                "name": "a, b",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are both\nscalars or both 1-D arrays then a scalar is returned; otherwise\nan array is returned.\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out.shape = (*a.shape[:-1], *b.shape[:-1])"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are both\nscalars or both 1-D arrays then a scalar is returned; otherwise\nan array is returned.\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out.shape = (*a.shape[:-1], *b.shape[:-1])"
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If both "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are nonscalar and their last dimensions have\ndifferent sizes."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If both "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are nonscalar and their last dimensions have\ndifferent sizes."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Sum products over arbitrary axes.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Sum products over arbitrary axes."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/tensordot/",
+                "label": "flops.tensordot",
+                "original_target": "tensordot",
+                "role": "",
+                "target": "tensordot",
+                "unresolved": false
+              },
+              {
+                "description": "Generalised matrix product, using second last dimension of `b`.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Generalised matrix product, using second last dimension of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/dot/",
+                "label": "flops.dot",
+                "original_target": "dot",
+                "role": "",
+                "target": "dot",
+                "unresolved": false
+              },
+              {
+                "description": "Vector dot product of two arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Vector dot product of two arrays."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/vecdot/",
+                "label": "flops.vecdot",
+                "original_target": "vecdot",
+                "role": "",
+                "target": "vecdot",
+                "unresolved": false
+              },
+              {
+                "description": "Einstein summation convention.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Einstein summation convention."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/einsum/",
+                "label": "flops.einsum",
+                "original_target": "einsum",
+                "role": "",
+                "target": "einsum",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For vectors (1-D arrays) it computes the ordinary inner-product:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "flops.inner(a, b) = sum(a[:]*b[:])",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "More generally, if "
+              },
+              {
+                "kind": "code",
+                "text": "ndim(a) = r > 0"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "ndim(b) = s > 0"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "flops.inner(a, b) = flops.tensordot(a, b, axes=(-1,-1))",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "or explicitly:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "flops.inner(a, b)[i0,...,ir-2,j0,...,js-2]\n     = sum(a[i0,...,ir-2,:]*b[j0,...,js-2,:])",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In addition "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " or "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " may be scalars, in which case:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "flops.inner(a,b) = a*b",
+            "type": "literal_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Ordinary inner product for vectors:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1,2,3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([0,1,0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.inner(a, b)"
+              },
+              {
+                "kind": "output",
+                "text": "2"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Some multidimensional examples:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(24).reshape((2,3,4))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.arange(4)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c = flops.inner(a, b)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(2, 3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 14,  38,  62],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 86, 110, 134]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(2).reshape((1,1,2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.arange(6).reshape((3,2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c = flops.inner(a, b)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(1, 1, 3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "c"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[1, 3, 5]]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "An example where "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " is a scalar:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.inner(flops.eye(2), 7)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[7., 0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0., 7.]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n",
+    "cost_formula_latex": "$n$",
+    "flopscope_ref": "fnp.inner",
+    "module": "numpy",
+    "name": "inner",
+    "notes": "Inner product; cost = N (weight-calibrated).",
+    "numpy_ref": "np.inner",
+    "signature": "fnp.inner(a: 'ArrayLike', b: 'ArrayLike') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Inner product of two arrays.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "inner",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L1887",
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.inner.html"
+  }
+}

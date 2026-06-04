@@ -1,0 +1,353 @@
+{
+  "detail_href": "/docs/api/numpy/fft/rfftfreq/",
+  "detail_json_href": "/api-data/ops/fft-rfftfreq.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the Discrete Fourier Transform sample frequencies (for usage with rfft, irfft)."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The returned float array "
+              },
+              {
+                "kind": "code",
+                "text": "f"
+              },
+              {
+                "kind": "text",
+                "text": " contains the frequency bin centers in cycles\nper unit of the sample spacing (with zero at the start).  For instance, if\nthe sample spacing is in seconds, then the frequency unit is cycles/second."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Given a window length "
+              },
+              {
+                "kind": "code",
+                "text": "n"
+              },
+              {
+                "kind": "text",
+                "text": " and a sample spacing "
+              },
+              {
+                "kind": "code",
+                "text": "d"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "f = [0, 1, ...,     n/2-1,     n/2] / (d*n)   if n is even\nf = [0, 1, ..., (n-1)/2-1, (n-1)/2] / (d*n)   if n is odd",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Unlike "
+              },
+              {
+                "kind": "code",
+                "text": "fftfreq"
+              },
+              {
+                "kind": "text",
+                "text": " (but like "
+              },
+              {
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.rfftfreq.html",
+                "href": "",
+                "kind": "link",
+                "target": "scipy.fftpack.rfftfreq",
+                "text": "scipy.fftpack.rfftfreq"
+              },
+              {
+                "kind": "text",
+                "text": ")\nthe Nyquist frequency component is considered to be positive."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Window length."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Window length."
+                  }
+                ],
+                "name": "n",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Sample spacing (inverse of the sampling rate). Defaults to 1."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "scalar, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Sample spacing (inverse of the sampling rate). Defaults to 1."
+                  }
+                ],
+                "name": "d",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The device on which to place the created array. Default: "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nFor Array-API interoperability only, so must be "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "\"cpu\""
+                      },
+                      {
+                        "kind": "text",
+                        "text": " if passed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.0.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0.0"
+                  }
+                ],
+                "data_type": "str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The device on which to place the created array. Default: "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nFor Array-API interoperability only, so must be "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "\"cpu\""
+                  },
+                  {
+                    "kind": "text",
+                    "text": " if passed."
+                  }
+                ],
+                "name": "device",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array of length "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "n//2 + 1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " containing the sample frequencies."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array of length "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "n//2 + 1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " containing the sample frequencies."
+                  }
+                ],
+                "name": "f",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "signal = flops.array([-2, 8, 6, 4, 1, 0, 3, 5, -3, 4], dtype=float)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "fourier = flops.fft.rfft(signal)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "n = signal.size"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "sample_rate = 100"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "freq = flops.fft.fftfreq(n, d=1./sample_rate)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "freq"
+              },
+              {
+                "kind": "output",
+                "text": "array([  0.,  10.,  20., ..., -30., -20., -10.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "freq = flops.fft.rfftfreq(n, d=1./sample_rate)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "freq"
+              },
+              {
+                "kind": "output",
+                "text": "array([  0.,  10.,  20.,  30.,  40.,  50.])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.fft.rfftfreq",
+    "module": "numpy.fft",
+    "name": "fft.rfftfreq",
+    "notes": "Real FFT sample frequencies. No arithmetic; returns index array.",
+    "numpy_ref": "np.fft.rfftfreq",
+    "signature": "fnp.fft.rfftfreq(n: 'int', d: 'float' = 1.0, device: 'Any' = None) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Return the Discrete Fourier Transform sample frequencies (for usage with rfft, irfft).",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "fft-rfftfreq",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/fft/_free.py#L27",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/fft/_helper.py#L180"
+  }
+}

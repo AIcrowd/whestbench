@@ -1,0 +1,832 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/lstsq/",
+  "detail_json_href": "/api-data/ops/linalg-lstsq.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the least-squares solution to a linear matrix equation."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Computes the vector "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " that approximately solves the equation\n"
+              },
+              {
+                "kind": "code",
+                "text": "a @ x = b"
+              },
+              {
+                "kind": "text",
+                "text": ". The equation may be under-, well-, or over-determined\n(i.e., the number of linearly independent rows of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " can be less than,\nequal to, or greater than its number of linearly independent columns).\nIf "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is square and of full rank, then "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " (but for round-off error)\nis the \"exact\" solution of the equation. Else, "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " minimizes the\nEuclidean 2-norm "
+              },
+              {
+                "kind": "math",
+                "latex": "||b - ax||"
+              },
+              {
+                "kind": "text",
+                "text": ". If there are multiple minimizing\nsolutions, the one with the smallest 2-norm "
+              },
+              {
+                "kind": "math",
+                "latex": "||x||"
+              },
+              {
+                "kind": "text",
+                "text": " is returned."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "\"Coefficient\" matrix."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(M, N) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "\"Coefficient\" matrix."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Ordinate or \"dependent variable\" values. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is two-dimensional,\nthe least-squares solution is calculated for each of the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "K"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " columns\nof "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{(M,), (M, K)} array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Ordinate or \"dependent variable\" values. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is two-dimensional,\nthe least-squares solution is calculated for each of the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "K"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " columns\nof "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "b",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Cut-off ratio for small singular values of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nFor the purposes of rank determination, singular values are treated\nas zero if they are smaller than "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "rcond"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " times the largest singular\nvalue of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nThe default uses the machine precision times "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "max(M, N)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  Passing\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "-1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will use machine precision."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionchanged",
+                    "options": [],
+                    "raw_source": ".. versionchanged:: 2.0\n    Previously, the default was ``-1``, but a warning was given that\n    this would change.",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0"
+                  }
+                ],
+                "data_type": "float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Cut-off ratio for small singular values of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nFor the purposes of rank determination, singular values are treated\nas zero if they are smaller than "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "rcond"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " times the largest singular\nvalue of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nThe default uses the machine precision times "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "max(M, N)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  Passing\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "-1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will use machine precision."
+                  }
+                ],
+                "name": "rcond",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Least-squares solution. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is two-dimensional,\nthe solutions are in the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "K"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " columns of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{(N,), (N, K)} ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Least-squares solution. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is two-dimensional,\nthe solutions are in the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "K"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " columns of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Sums of squared residuals: Squared Euclidean 2-norm for each column in\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b - a @ x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nIf the rank of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is < N or M <= N, this is an empty array.\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is 1-dimensional, this is a (1,) shape array.\nOtherwise the shape is (K,)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{(1,), (K,), (0,)} ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Sums of squared residuals: Squared Euclidean 2-norm for each column in\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b - a @ x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nIf the rank of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is < N or M <= N, this is an empty array.\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is 1-dimensional, this is a (1,) shape array.\nOtherwise the shape is (K,)."
+                  }
+                ],
+                "name": "residuals",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Rank of matrix "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Rank of matrix "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "rank",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Singular values of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(min(M, N),) ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Singular values of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "s",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If computation does not converge."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If computation does not converge."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Similar function in SciPy.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lstsq.html",
+                "href": "",
+                "label": "scipy.linalg.lstsq",
+                "original_target": "scipy.linalg.lstsq",
+                "role": "",
+                "target": "scipy.linalg.lstsq",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " is a matrix, then all array results are returned as matrices."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Fit a line, "
+              },
+              {
+                "kind": "code",
+                "text": "y = mx + c"
+              },
+              {
+                "kind": "text",
+                "text": ", through some noisy data-points:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([0, 1, 2, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.array([-1, 0.2, 0.9, 2.1])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "By examining the coefficients, we see that the line should have a\ngradient of roughly 1 and cut the y-axis at, more or less, -1."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "We can rewrite the line equation as "
+              },
+              {
+                "kind": "code",
+                "text": "y = Ap"
+              },
+              {
+                "kind": "text",
+                "text": ", where "
+              },
+              {
+                "kind": "code",
+                "text": "A = [[x 1]]"
+              },
+              {
+                "kind": "text",
+                "text": "\nand "
+              },
+              {
+                "kind": "code",
+                "text": "p = [[m], [c]]"
+              },
+              {
+                "kind": "text",
+                "text": ".  Now use "
+              },
+              {
+                "kind": "code",
+                "text": "lstsq"
+              },
+              {
+                "kind": "text",
+                "text": " to solve for "
+              },
+              {
+                "kind": "code",
+                "text": "p"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = flops.vstack([x, flops.ones(len(x))]).T"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0.,  1.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 1.,  1.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 2.,  1.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 3.,  1.]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "m, c = flops.linalg.lstsq(A, y)[0]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "m, c"
+              },
+              {
+                "kind": "output",
+                "text": "(1.0 -0.95) # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Plot the data along with the fitted line:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "_ = plt.plot(x, y, 'o', label='Original data', markersize=10)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "_ = plt.plot(x, m*x + c, 'r', label='Fitted line')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "_ = plt.legend()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "m * n * min(m,n)",
+    "cost_formula_latex": "$m \\cdot n \\cdot \\min(m,n)$",
+    "flopscope_ref": "fnp.linalg.lstsq",
+    "module": "numpy.linalg",
+    "name": "linalg.lstsq",
+    "notes": "Least squares. Cost: m*n*min(m,n) (LAPACK gelsd/SVD).",
+    "numpy_ref": "np.linalg.lstsq",
+    "signature": "fnp.linalg.lstsq(a: 'ArrayLike', b: 'ArrayLike', rcond: 'float | None' = None) -> 'tuple[FlopscopeArray, FlopscopeArray, int, FlopscopeArray]'",
+    "status": "supported",
+    "summary": "Return the least-squares solution to a linear matrix equation.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-lstsq",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_solvers.py#L215",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L2394"
+  }
+}

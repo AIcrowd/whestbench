@@ -1,0 +1,338 @@
+{
+  "detail_href": "/docs/api/numpy/bmat/",
+  "detail_json_href": "/api-data/ops/bmat.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Build a matrix object from a string, nested sequence, or array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input data. If a string, variables in the current scope may be\nreferenced by name."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "str or array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input data. If a string, variables in the current scope may be\nreferenced by name."
+                  }
+                ],
+                "name": "obj",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A dictionary that replaces local operands in current frame.\nIgnored if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "obj"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not a string or "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "gdict"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is None."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dict, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A dictionary that replaces local operands in current frame.\nIgnored if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "obj"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not a string or "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "gdict"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is None."
+                  }
+                ],
+                "name": "ldict",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A dictionary that replaces global operands in current frame.\nIgnored if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "obj"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not a string."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dict, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A dictionary that replaces global operands in current frame.\nIgnored if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "obj"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not a string."
+                  }
+                ],
+                "name": "gdict",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Returns a matrix object, which is a specialized 2-D array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "matrix",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Returns a matrix object, which is a specialized 2-D array."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "A generalization of this function for N-d arrays, that returns normal ndarrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "A generalization of this function for N-d arrays, that returns normal ndarrays."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/block/",
+                "label": "flops.block",
+                "original_target": "block",
+                "role": "",
+                "target": "block",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = flops.asmatrix('1 1; 1 1')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "B = flops.asmatrix('2 2; 2 2')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "C = flops.asmatrix('3 4; 5 6')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "D = flops.asmatrix('7 8; 9 0')"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "All the following expressions construct the same block matrix:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.bmat([[A, B], [C, D]])"
+              },
+              {
+                "kind": "output",
+                "text": "matrix([[1, 1, 2, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "        [1, 1, 2, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "        [3, 4, 7, 8],"
+              },
+              {
+                "kind": "output",
+                "text": "        [5, 6, 9, 0]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.bmat(flops.r_[flops.c_[A, B], flops.c_[C, D]])"
+              },
+              {
+                "kind": "output",
+                "text": "matrix([[1, 1, 2, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "        [1, 1, 2, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "        [3, 4, 7, 8],"
+              },
+              {
+                "kind": "output",
+                "text": "        [5, 6, 9, 0]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.bmat('A,B; C,D')"
+              },
+              {
+                "kind": "output",
+                "text": "matrix([[1, 1, 2, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "        [1, 1, 2, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "        [3, 4, 7, 8],"
+              },
+              {
+                "kind": "output",
+                "text": "        [5, 6, 9, 0]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.bmat",
+    "module": "numpy",
+    "name": "bmat",
+    "notes": "Build matrix from nested list of matrices. Cost: numel(output).",
+    "numpy_ref": "np.bmat",
+    "signature": "fnp.bmat(obj, ldict=None, gdict=None)",
+    "status": "supported",
+    "summary": "Build a matrix object from a string, nested sequence, or array.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "bmat",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1347",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/matrixlib/defmatrix.py#L1041"
+  }
+}

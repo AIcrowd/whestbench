@@ -1,0 +1,289 @@
+{
+  "detail_href": "/docs/api/numpy/unique-all/",
+  "detail_json_href": "/api-data/ops/unique_all.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Find the unique elements of an array, and counts, inverse, and indices."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function is an Array API compatible alternative to:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "flops.unique(x, return_index=True, return_inverse=True,\n          return_counts=True, equal_nan=False)",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "but returns a namedtuple for easier access to each output."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array. It will be flattened if it is not already 1-D."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array. It will be flattened if it is not already 1-D."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The result containing:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "values - The unique elements of an input array."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "indices - The first occurring indices for each unique element."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "inverse_indices - The indices from the set of unique elements\nthat reconstruct "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "x"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "counts - The corresponding counts for each unique element."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  }
+                ],
+                "data_type": "namedtuple",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The result containing:"
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Find the unique elements of an array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Find the unique elements of an array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/unique/",
+                "label": "flops.unique",
+                "original_target": "unique",
+                "role": "",
+                "target": "unique",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = [1, 1, 2]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "uniq = flops.unique_all(x)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "uniq.values"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "uniq.indices"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "uniq.inverse_indices"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 0, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "uniq.counts"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 1])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.unique_all",
+    "module": "numpy",
+    "name": "unique_all",
+    "notes": "Sort-based unique; cost = n*ceil(log2(n)).",
+    "numpy_ref": "np.unique_all",
+    "signature": "fnp.unique_all(x: 'ArrayLike', /) -> 'Any'",
+    "status": "supported",
+    "summary": "Find the unique elements of an array, and counts, inverse, and indices.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "unique_all",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_sorting_ops.py#L337",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_arraysetops_impl.py#L408"
+  }
+}

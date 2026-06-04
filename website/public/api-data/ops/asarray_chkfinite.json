@@ -1,0 +1,468 @@
+{
+  "detail_href": "/docs/api/numpy/asarray-chkfinite/",
+  "detail_json_href": "/api-data/ops/asarray_chkfinite.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Convert the input to an array, checking for NaNs or Infs."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input data, in any form that can be converted to an array.  This\nincludes lists, lists of tuples, tuples, tuples of tuples, tuples\nof lists and ndarrays.  Success requires no NaNs or Infs."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input data, in any form that can be converted to an array.  This\nincludes lists, lists of tuples, tuples, tuples of tuples, tuples\nof lists and ndarrays.  Success requires no NaNs or Infs."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "By default, the data-type is inferred from the input data."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "data-type, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "By default, the data-type is inferred from the input data."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Memory layout.  'A' and 'K' depend on the order of input array a.\n'C' row-major (C-style),\n'F' column-major (Fortran-style) memory representation.\n'A' (any) means 'F' if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is Fortran contiguous, 'C' otherwise\n'K' (keep) preserve input order\nDefaults to 'C'."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'C', 'F', 'A', 'K'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Memory layout.  'A' and 'K' depend on the order of input array a.\n'C' row-major (C-style),\n'F' column-major (Fortran-style) memory representation.\n'A' (any) means 'F' if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is Fortran contiguous, 'C' otherwise\n'K' (keep) preserve input order\nDefaults to 'C'."
+                  }
+                ],
+                "name": "order",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array interpretation of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  No copy is performed if the input\nis already an ndarray.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a subclass of ndarray, a base\nclass ndarray is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array interpretation of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  No copy is performed if the input\nis already an ndarray.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a subclass of ndarray, a base\nclass ndarray is returned."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Raises ValueError if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " contains NaN (Not a Number) or Inf (Infinity)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Raises ValueError if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " contains NaN (Not a Number) or Inf (Infinity)."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Create and array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Create and array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/asarray/",
+                "label": "flops.asarray",
+                "original_target": "asarray",
+                "role": "",
+                "target": "asarray",
+                "unresolved": false
+              },
+              {
+                "description": "Similar function which passes through subclasses.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function which passes through subclasses."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.asanyarray.html",
+                "href": "",
+                "label": "asanyarray",
+                "original_target": "asanyarray",
+                "role": "",
+                "target": "asanyarray",
+                "unresolved": false
+              },
+              {
+                "description": "Convert input to a contiguous array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Convert input to a contiguous array."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ascontiguousarray.html",
+                "href": "",
+                "label": "ascontiguousarray",
+                "original_target": "ascontiguousarray",
+                "role": "",
+                "target": "ascontiguousarray",
+                "unresolved": false
+              },
+              {
+                "description": "Convert input to an ndarray with column-major memory order.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Convert input to an ndarray with column-major memory order."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.asfortranarray.html",
+                "href": "",
+                "label": "asfortranarray",
+                "original_target": "asfortranarray",
+                "role": "",
+                "target": "asfortranarray",
+                "unresolved": false
+              },
+              {
+                "description": "Create an array from an iterator.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Create an array from an iterator."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/fromiter/",
+                "label": "flops.fromiter",
+                "original_target": "fromiter",
+                "role": "",
+                "target": "fromiter",
+                "unresolved": false
+              },
+              {
+                "description": "Construct an array by executing a function on grid positions.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Construct an array by executing a function on grid positions."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/fromfunction/",
+                "label": "flops.fromfunction",
+                "original_target": "fromfunction",
+                "role": "",
+                "target": "fromfunction",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Convert a list into an array. If all elements are finite, then\n"
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/asarray-chkfinite/",
+                "kind": "link",
+                "target": "asarray_chkfinite",
+                "text": "asarray_chkfinite"
+              },
+              {
+                "kind": "text",
+                "text": " is identical to "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/asarray/",
+                "kind": "link",
+                "target": "asarray",
+                "text": "asarray"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = [1, 2]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.asarray_chkfinite(a, dtype=float)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1., 2.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Raises ValueError if array_like contains Nans or Infs."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = [1, 2, flops.inf]"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "try:"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "flops.asarray_chkfinite(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "except ValueError:"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "print('ValueError')"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "output",
+                "text": "ValueError"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.asarray_chkfinite",
+    "module": "numpy",
+    "name": "asarray_chkfinite",
+    "notes": "Convert to array, raising if NaN or inf. Cost: numel(input).",
+    "numpy_ref": "np.asarray_chkfinite",
+    "signature": "fnp.asarray_chkfinite(a, dtype=None, order=None)",
+    "status": "supported",
+    "summary": "Convert the input to an array, checking for NaNs or Infs.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "asarray_chkfinite",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1179",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_function_base_impl.py#L579"
+  }
+}

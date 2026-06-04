@@ -1,0 +1,720 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/qr/",
+  "detail_json_href": "/api-data/ops/linalg-qr.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the qr factorization of a matrix."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Factor the matrix "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " as "
+              },
+              {
+                "kind": "emphasis",
+                "text": "qr"
+              },
+              {
+                "kind": "text",
+                "text": ", where "
+              },
+              {
+                "kind": "code",
+                "text": "q"
+              },
+              {
+                "kind": "text",
+                "text": " is orthonormal and "
+              },
+              {
+                "kind": "code",
+                "text": "r"
+              },
+              {
+                "kind": "text",
+                "text": " is\nupper-triangular."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An array-like object with the dimensionality of at least 2."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, shape (..., M, N)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An array-like object with the dimensionality of at least 2."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If K = min(M, N), then"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'reduced'  : returns Q, R with dimensions (..., M, K), (..., K, N)"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'complete' : returns Q, R with dimensions (..., M, M), (..., M, N)"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'r'        : returns R only with dimensions (..., K, N)"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "'raw'      : returns h, tau with dimensions (..., N, M), (..., K,)"
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": false,
+                    "type": "list"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The options 'reduced', 'complete, and 'raw' are new in numpy 1.8,\nsee the notes for more information. The default is 'reduced', and to\nmaintain backward compatibility with earlier versions of numpy both\nit and the old default 'full' can be omitted. Note that array h\nreturned in 'raw' mode is transposed for calling Fortran. The\n'economic' mode is deprecated.  The modes 'full' and 'economic' may\nbe passed using only the first letter for backwards compatibility,\nbut all others must be spelled out. See the Notes for more\nexplanation."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'reduced', 'complete', 'r', 'raw'}, optional, default: 'reduced'",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If K = min(M, N), then"
+                  }
+                ],
+                "name": "mode",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [],
+                "data_type": "When mode is 'reduced' or 'complete', the result will be a namedtuple with",
+                "inline": [],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [],
+                "data_type": "the attributes `Q` and `R`.",
+                "inline": [],
+                "name": "",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A matrix with orthonormal columns. When mode = 'complete' the\nresult is an orthogonal/unitary matrix depending on whether or not\na is real/complex. The determinant may be either +/- 1 in that\ncase. In case the number of dimensions in the input array is\ngreater than 2 then a stack of the matrices with above properties\nis returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray of float or complex, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A matrix with orthonormal columns. When mode = 'complete' the\nresult is an orthogonal/unitary matrix depending on whether or not\na is real/complex. The determinant may be either +/- 1 in that\ncase. In case the number of dimensions in the input array is\ngreater than 2 then a stack of the matrices with above properties\nis returned."
+                  }
+                ],
+                "name": "Q",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The upper-triangular matrix or a stack of upper-triangular\nmatrices if the number of dimensions in the input array is greater\nthan 2."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray of float or complex, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The upper-triangular matrix or a stack of upper-triangular\nmatrices if the number of dimensions in the input array is greater\nthan 2."
+                  }
+                ],
+                "name": "R",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The array h contains the Householder reflectors that generate q\nalong with r. The tau array contains scaling factors for the\nreflectors. In the deprecated  'economic' mode only h is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarrays of flops.double or flops.cdouble, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The array h contains the Householder reflectors that generate q\nalong with r. The tau array contains scaling factors for the\nreflectors. In the deprecated  'economic' mode only h is returned."
+                  }
+                ],
+                "name": "(h, tau)",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If factoring fails."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If factoring fails."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Similar function in SciPy.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.qr.html",
+                "href": "",
+                "label": "scipy.linalg.qr",
+                "original_target": "scipy.linalg.qr",
+                "role": "",
+                "target": "scipy.linalg.qr",
+                "unresolved": false
+              },
+              {
+                "description": "Compute RQ decomposition of a matrix.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Compute RQ decomposition of a matrix."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.rq.html",
+                "href": "",
+                "label": "scipy.linalg.rq",
+                "original_target": "scipy.linalg.rq",
+                "role": "",
+                "target": "scipy.linalg.rq",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is an interface to the LAPACK routines "
+              },
+              {
+                "kind": "code",
+                "text": "dgeqrf"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "zgeqrf"
+              },
+              {
+                "kind": "text",
+                "text": ",\n"
+              },
+              {
+                "kind": "code",
+                "text": "dorgqr"
+              },
+              {
+                "kind": "text",
+                "text": ", and "
+              },
+              {
+                "kind": "code",
+                "text": "zungqr"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For more information on the qr factorization, see for example:\n"
+              },
+              {
+                "external_url": "https://en.wikipedia.org/wiki/QR_factorization",
+                "href": "https://en.wikipedia.org/wiki/QR_factorization",
+                "kind": "link",
+                "text": "https://en.wikipedia.org/wiki/QR_factorization"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Subclasses of "
+              },
+              {
+                "kind": "code",
+                "text": "ndarray"
+              },
+              {
+                "kind": "text",
+                "text": " are preserved except for the 'raw' mode. So if\n"
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is of type "
+              },
+              {
+                "kind": "code",
+                "text": "matrix"
+              },
+              {
+                "kind": "text",
+                "text": ", all the return values will be matrices too."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "New 'reduced', 'complete', and 'raw' options for mode were added in\nNumPy 1.8.0 and the old option 'full' was made an alias of 'reduced'.  In\naddition the options 'full' and 'economic' were deprecated.  Because\n'full' was the previous default and 'reduced' is the new default,\nbackward compatibility can be maintained by letting "
+              },
+              {
+                "kind": "code",
+                "text": "mode"
+              },
+              {
+                "kind": "text",
+                "text": " default.\nThe 'raw' option was added so that LAPACK routines that can multiply\narrays by q using the Householder reflectors can be used. Note that in\nthis case the returned arrays are of type flops.double or flops.cdouble and\nthe h array is transposed to be FORTRAN compatible.  No routines using\nthe 'raw' return are currently exposed by numpy, but some are available\nin lapack_lite and just await the necessary work."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = rng.normal(size=(9, 6))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "Q, R = flops.linalg.qr(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(a, flops.dot(Q, R))  # a does equal QR"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "R2 = flops.linalg.qr(a, mode='r')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(R, R2)  # mode='r' returns the same R as mode='full'"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.random.normal(size=(3, 2, 2)) # Stack of 2 x 2 matrices as input"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "Q, R = flops.linalg.qr(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "Q.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(3, 2, 2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "R.shape"
+              },
+              {
+                "kind": "output",
+                "text": "(3, 2, 2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(a, flops.matmul(Q, R))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Example illustrating a common use of "
+              },
+              {
+                "kind": "code",
+                "text": "qr"
+              },
+              {
+                "kind": "text",
+                "text": ": solving of least squares\nproblems"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "What are the least-squares-best "
+              },
+              {
+                "kind": "code",
+                "text": "m"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "y0"
+              },
+              {
+                "kind": "text",
+                "text": " in "
+              },
+              {
+                "kind": "code",
+                "text": "y = y0 + mx"
+              },
+              {
+                "kind": "text",
+                "text": " for\nthe following data: {(0,1), (1,0), (1,2), (2,1)}. (Graph the points\nand you'll see that it should be y0 = 0, m = 1.)  The answer is provided\nby solving the over-determined matrix equation "
+              },
+              {
+                "kind": "code",
+                "text": "Ax = b"
+              },
+              {
+                "kind": "text",
+                "text": ", where:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "A = array([[0, 1], [1, 1], [1, 1], [2, 1]])\nx = array([[y0], [m]])\nb = array([[1], [0], [2], [1]])",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If A = QR such that Q is orthonormal (which is always possible via\nGram-Schmidt), then "
+              },
+              {
+                "kind": "code",
+                "text": "x = inv(R) * (Q.T) * b"
+              },
+              {
+                "kind": "text",
+                "text": ".  (In numpy practice,\nhowever, we simply use "
+              },
+              {
+                "kind": "code",
+                "text": "lstsq"
+              },
+              {
+                "kind": "text",
+                "text": ".)"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = flops.array([[0, 1], [1, 1], [1, 1], [2, 1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2, 1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([1, 2, 2, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "Q, R = flops.linalg.qr(A)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p = flops.dot(Q.T, b)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.dot(flops.linalg.inv(R), p)"
+              },
+              {
+                "kind": "output",
+                "text": "array([  1.,   1.])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "m * n * min(m,n)",
+    "cost_formula_latex": "$m \\cdot n \\cdot \\min(m,n)$",
+    "flopscope_ref": "fnp.linalg.qr",
+    "module": "numpy.linalg",
+    "name": "linalg.qr",
+    "notes": "QR decomposition. Cost: $m \\cdot n \\cdot \\min(m,n)$.",
+    "numpy_ref": "np.linalg.qr",
+    "signature": "fnp.linalg.qr(a: 'ArrayLike', mode: 'str' = 'reduced') -> 'tuple[FlopscopeArray, FlopscopeArray] | FlopscopeArray'",
+    "status": "supported",
+    "summary": "Compute the qr factorization of a matrix.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-qr",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_decompositions.py#L85",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L928"
+  }
+}

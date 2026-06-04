@@ -1,0 +1,272 @@
+{
+  "detail_href": "/docs/api/numpy/min-scalar-type/",
+  "detail_json_href": "/api-data/ops/min_scalar_type.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For scalar "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ", returns the data type with the smallest size and smallest scalar kind which can hold its value.  For non-scalar array "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": ", returns the vector's dtype unmodified."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Floating point values are not demoted to integers,\nand complex values are not demoted to floats."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The value whose minimal data type is to be found."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "scalar or array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The value whose minimal data type is to be found."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The minimal data type."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The minimal data type."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/result-type/",
+                "label": "flops.result_type",
+                "original_target": "result_type",
+                "role": "",
+                "target": "result_type",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/promote-types/",
+                "label": "flops.promote_types",
+                "original_target": "promote_types",
+                "role": "",
+                "target": "promote_types",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.dtype.html",
+                "href": "",
+                "label": "dtype",
+                "original_target": "dtype",
+                "role": "",
+                "target": "dtype",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/can-cast/",
+                "label": "flops.can_cast",
+                "original_target": "can_cast",
+                "role": "",
+                "target": "can_cast",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.min_scalar_type(10)"
+              },
+              {
+                "kind": "output",
+                "text": "dtype('uint8')"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.min_scalar_type(-260)"
+              },
+              {
+                "kind": "output",
+                "text": "dtype('int16')"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.min_scalar_type(3.1)"
+              },
+              {
+                "kind": "output",
+                "text": "dtype('float16')"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.min_scalar_type(1e50)"
+              },
+              {
+                "kind": "output",
+                "text": "dtype('float64')"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.min_scalar_type(flops.arange(4,dtype='f8'))"
+              },
+              {
+                "kind": "output",
+                "text": "dtype('float64')"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.min_scalar_type",
+    "module": "numpy",
+    "name": "min_scalar_type",
+    "notes": "Return the minimum scalar type for a value.",
+    "numpy_ref": "np.min_scalar_type",
+    "signature": "fnp.min_scalar_type(*args, **kwargs)",
+    "status": "supported",
+    "summary": "For scalar ``a``, returns the data type with the smallest size and smallest scalar kind which can hold its value.  For non-scalar array ``a``, returns the vector's dtype unmodified.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "min_scalar_type",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L2002",
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.min_scalar_type.html"
+  }
+}

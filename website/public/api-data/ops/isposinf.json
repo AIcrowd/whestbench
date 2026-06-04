@@ -1,0 +1,299 @@
+{
+  "detail_href": "/docs/api/numpy/isposinf/",
+  "detail_json_href": "/api-data/ops/isposinf.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Test element-wise for positive infinity, return result as bool array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The input array."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A location into which the result is stored. If provided, it must have a\nshape that the input broadcasts to. If not provided or None, a\nfreshly-allocated boolean array is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A location into which the result is stored. If provided, it must have a\nshape that the input broadcasts to. If not provided or None, a\nfreshly-allocated boolean array is returned."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A boolean array with the same dimensions as the input.\nIf second argument is not supplied then a boolean array is returned\nwith values True where the corresponding element of the input is\npositive infinity and values False where the element of the input is\nnot positive infinity."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If a second argument is supplied the result is stored there. If the\ntype of that array is a numeric type the result is represented as zeros\nand ones, if the type is boolean then as False and True.\nThe return value "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is then a reference to that array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A boolean array with the same dimensions as the input.\nIf second argument is not supplied then a boolean array is returned\nwith values True where the corresponding element of the input is\npositive infinity and values False where the element of the input is\nnot positive infinity."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/isinf/",
+                "label": "flops.isinf",
+                "original_target": "isinf",
+                "role": "",
+                "target": "isinf",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/isneginf/",
+                "label": "flops.isneginf",
+                "original_target": "isneginf",
+                "role": "",
+                "target": "isneginf",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/isfinite/",
+                "label": "flops.isfinite",
+                "original_target": "isfinite",
+                "role": "",
+                "target": "isfinite",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/isnan/",
+                "label": "flops.isnan",
+                "original_target": "isnan",
+                "role": "",
+                "target": "isnan",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "NumPy uses the IEEE Standard for Binary Floating-Point for Arithmetic\n(IEEE 754)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Errors result if the second argument is also supplied when x is a scalar\ninput, if first and second arguments have different shapes, or if the\nfirst argument has complex values"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isposinf(flops.inf)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isposinf(-flops.inf)"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isposinf([-flops.inf, 0., flops.inf])"
+              },
+              {
+                "kind": "output",
+                "text": "array([False, False,  True])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.array([-flops.inf, 0., flops.inf])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.array([2, 2, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.isposinf(x, y)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 0, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 0, 1])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_unary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.isposinf",
+    "module": "numpy",
+    "name": "isposinf",
+    "notes": "Test for positive infinity element-wise.",
+    "numpy_ref": "np.isposinf",
+    "signature": "fnp.isposinf(x, out=None)",
+    "status": "supported",
+    "summary": "Test element-wise for positive infinity, return result as bool array.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "isposinf",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L343",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_ufunclike_impl.py#L70"
+  }
+}

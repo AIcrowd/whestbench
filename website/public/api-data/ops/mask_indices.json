@@ -1,0 +1,587 @@
+{
+  "detail_href": "/docs/api/numpy/mask-indices/",
+  "detail_json_href": "/api-data/ops/mask_indices.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the indices to access (n, n) arrays, given a masking function."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Assume "
+              },
+              {
+                "kind": "code",
+                "text": "mask_func"
+              },
+              {
+                "kind": "text",
+                "text": " is a function that, for a square array a of size\n"
+              },
+              {
+                "kind": "code",
+                "text": "(n, n)"
+              },
+              {
+                "kind": "text",
+                "text": " with a possible offset argument "
+              },
+              {
+                "kind": "code",
+                "text": "k"
+              },
+              {
+                "kind": "text",
+                "text": ", when called as\n"
+              },
+              {
+                "kind": "code",
+                "text": "mask_func(a, k)"
+              },
+              {
+                "kind": "text",
+                "text": " returns a new array with zeros in certain locations\n(functions like "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/triu/",
+                "kind": "link",
+                "target": "triu",
+                "text": "triu"
+              },
+              {
+                "kind": "text",
+                "text": " or "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/tril/",
+                "kind": "link",
+                "target": "tril",
+                "text": "tril"
+              },
+              {
+                "kind": "text",
+                "text": " do precisely this). Then this function\nreturns the indices where the non-zero values would be located."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The returned indices will be valid to access arrays of shape (n, n)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The returned indices will be valid to access arrays of shape (n, n)."
+                  }
+                ],
+                "name": "n",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A function whose call signature is similar to that of "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/triu/",
+                        "kind": "link",
+                        "target": "triu",
+                        "text": "triu"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/tril/",
+                        "kind": "link",
+                        "target": "tril",
+                        "text": "tril"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nThat is, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "mask_func(x, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " returns a boolean array, shaped like "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an optional argument to the function."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "callable",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A function whose call signature is similar to that of "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/triu/",
+                    "kind": "link",
+                    "target": "triu",
+                    "text": "triu"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/tril/",
+                    "kind": "link",
+                    "target": "tril",
+                    "text": "tril"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nThat is, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "mask_func(x, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " returns a boolean array, shaped like "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an optional argument to the function."
+                  }
+                ],
+                "name": "mask_func",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "An optional argument which is passed through to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "mask_func"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Functions\nlike "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/triu/",
+                        "kind": "link",
+                        "target": "triu",
+                        "text": "triu"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/tril/",
+                        "kind": "link",
+                        "target": "tril",
+                        "text": "tril"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " take a second argument that is interpreted as an\noffset."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "An optional argument which is passed through to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "mask_func"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Functions\nlike "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/triu/",
+                    "kind": "link",
+                    "target": "triu",
+                    "text": "triu"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/tril/",
+                    "kind": "link",
+                    "target": "tril",
+                    "text": "tril"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " take a second argument that is interpreted as an\noffset."
+                  }
+                ],
+                "name": "k",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "n"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " arrays of indices corresponding to the locations where\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "mask_func(flops.ones((n, n)), k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "tuple of arrays.",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "n"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " arrays of indices corresponding to the locations where\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "mask_func(flops.ones((n, n)), k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True."
+                  }
+                ],
+                "name": "indices",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/triu/",
+                "label": "flops.triu",
+                "original_target": "triu",
+                "role": "",
+                "target": "triu",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/tril/",
+                "label": "flops.tril",
+                "original_target": "tril",
+                "role": "",
+                "target": "tril",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/triu-indices/",
+                "label": "flops.triu_indices",
+                "original_target": "triu_indices",
+                "role": "",
+                "target": "triu_indices",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/tril-indices/",
+                "label": "flops.tril_indices",
+                "original_target": "tril_indices",
+                "role": "",
+                "target": "tril_indices",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "These are the indices that would allow you to access the upper triangular\npart of any 3x3 array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "iu = flops.mask_indices(3, flops.triu)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For example, if "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is a 3x3 array:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(9).reshape(3, 3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4, 5],"
+              },
+              {
+                "kind": "output",
+                "text": "       [6, 7, 8]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[iu]"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 1, 2, 4, 5, 8])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "An offset can be passed also to the masking function.  This gets us the\nindices starting on the first diagonal right of the main one:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "iu1 = flops.mask_indices(3, flops.triu, 1)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "with which we now extract only three elements:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[iu1]"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 5])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.mask_indices",
+    "module": "numpy",
+    "name": "mask_indices",
+    "notes": "Return indices of mask for n x n array. Cost: numel(output).",
+    "numpy_ref": "np.mask_indices",
+    "signature": "fnp.mask_indices(n, mask_func, k=0)",
+    "status": "supported",
+    "summary": "Return the indices to access (n, n) arrays, given a masking function.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "mask_indices",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L1956",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_twodim_base_impl.py#L825"
+  }
+}

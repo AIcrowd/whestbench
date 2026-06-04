@@ -1,0 +1,779 @@
+{
+  "detail_href": "/docs/api/numpy/diagonal/",
+  "detail_json_href": "/api-data/ops/diagonal.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return specified diagonals."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is 2-D, returns the diagonal of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " with the given offset,\ni.e., the collection of elements of the form "
+              },
+              {
+                "kind": "code",
+                "text": "a[i, i+offset]"
+              },
+              {
+                "kind": "text",
+                "text": ".  If\n"
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " has more than two dimensions, then the axes specified by "
+              },
+              {
+                "kind": "code",
+                "text": "axis1"
+              },
+              {
+                "kind": "text",
+                "text": "\nand "
+              },
+              {
+                "kind": "code",
+                "text": "axis2"
+              },
+              {
+                "kind": "text",
+                "text": " are used to determine the 2-D sub-array whose diagonal is\nreturned.  The shape of the resulting array can be determined by\nremoving "
+              },
+              {
+                "kind": "code",
+                "text": "axis1"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "axis2"
+              },
+              {
+                "kind": "text",
+                "text": " and appending an index to the right equal\nto the size of the resulting diagonals."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In versions of NumPy prior to 1.7, this function always returned a new,\nindependent array containing a copy of the values in the diagonal."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In NumPy 1.7 and 1.8, it continues to return a copy of the diagonal,\nbut depending on this fact is deprecated. Writing to the resulting\narray continues to work as it used to, but a FutureWarning is issued."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Starting in NumPy 1.9 it returns a read-only view on the original array.\nAttempting to write to the resulting array will produce an error."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "In some future release, it will return a read/write view and writing to\nthe returned array will alter your original array.  The returned array\nwill have the same type as the input array."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If you don't write to the array returned by this function, then you can\njust ignore all of the above."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If you depend on the current behavior, then we suggest copying the\nreturned array explicitly, i.e., use "
+              },
+              {
+                "kind": "code",
+                "text": "flops.diagonal(a).copy()"
+              },
+              {
+                "kind": "text",
+                "text": " instead\nof just "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.diagonal(a).html",
+                "href": "",
+                "kind": "link",
+                "target": "diagonal(a)",
+                "text": "flops.diagonal(a)"
+              },
+              {
+                "kind": "text",
+                "text": ". This will work with both past and future\nversions of NumPy."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array from which the diagonals are taken."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array from which the diagonals are taken."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Offset of the diagonal from the main diagonal.  Can be positive or\nnegative.  Defaults to main diagonal (0)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Offset of the diagonal from the main diagonal.  Can be positive or\nnegative.  Defaults to main diagonal (0)."
+                  }
+                ],
+                "name": "offset",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis to be used as the first axis of the 2-D sub-arrays from which\nthe diagonals should be taken.  Defaults to first axis (0)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis to be used as the first axis of the 2-D sub-arrays from which\nthe diagonals should be taken.  Defaults to first axis (0)."
+                  }
+                ],
+                "name": "axis1",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis to be used as the second axis of the 2-D sub-arrays from\nwhich the diagonals should be taken. Defaults to second axis (1)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis to be used as the second axis of the 2-D sub-arrays from\nwhich the diagonals should be taken. Defaults to second axis (1)."
+                  }
+                ],
+                "name": "axis2",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is 2-D, then a 1-D array containing the diagonal and of the\nsame type as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is returned unless "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "matrix"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", in which case\na 1-D array rather than a (2-D) "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "matrix"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is returned in order to\nmaintain backward compatibility."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.ndim > 2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then the dimensions specified by "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nare removed, and a new axis inserted at the end corresponding to the\ndiagonal."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is 2-D, then a 1-D array containing the diagonal and of the\nsame type as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is returned unless "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "matrix"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", in which case\na 1-D array rather than a (2-D) "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "matrix"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is returned in order to\nmaintain backward compatibility."
+                  }
+                ],
+                "name": "array_of_diagonals",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the dimension of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is less than 2."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the dimension of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is less than 2."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "MATLAB work-a-like for 1-D and 2-D arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "MATLAB work-a-like for 1-D and 2-D arrays."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/diag/",
+                "label": "flops.diag",
+                "original_target": "diag",
+                "role": "",
+                "target": "diag",
+                "unresolved": false
+              },
+              {
+                "description": "Create diagonal arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Create diagonal arrays."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/diagflat/",
+                "label": "flops.diagflat",
+                "original_target": "diagflat",
+                "role": "",
+                "target": "diagflat",
+                "unresolved": false
+              },
+              {
+                "description": "Sum along diagonals.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Sum along diagonals."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/trace/",
+                "label": "flops.trace",
+                "original_target": "trace",
+                "role": "",
+                "target": "trace",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(4).reshape(2,2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2, 3]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a.diagonal()"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a.diagonal(1)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "A 3-D example:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(8).reshape(2,2,2); a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[0, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "        [2, 3]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[4, 5],"
+              },
+              {
+                "kind": "output",
+                "text": "        [6, 7]]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a.diagonal(0,  # Main diagonals of two arrays created by skipping"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "0,  # across the outer(left)-most axis last and"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "1)  # the \"middle\" (row) axis first."
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 6],"
+              },
+              {
+                "kind": "output",
+                "text": "       [1, 7]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The sub-arrays whose main diagonals we just obtained; note that each\ncorresponds to fixing the right-most (column) axis, and that the\ndiagonals are \"packed\" in rows."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[:,:,0]  # main diagonal is [0 6]"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [4, 6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[:,:,1]  # main diagonal is [1 7]"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 3],"
+              },
+              {
+                "kind": "output",
+                "text": "       [5, 7]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The anti-diagonal can be obtained by reversing the order of elements\nusing either "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/flipud/",
+                "kind": "link",
+                "target": "flipud",
+                "text": "flops.flipud"
+              },
+              {
+                "kind": "text",
+                "text": " or "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/fliplr/",
+                "kind": "link",
+                "target": "fliplr",
+                "text": "flops.fliplr"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(9).reshape(3, 3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a"
+              },
+              {
+                "kind": "output",
+                "text": "array([[0, 1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4, 5],"
+              },
+              {
+                "kind": "output",
+                "text": "       [6, 7, 8]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fliplr(a).diagonal()  # Horizontal flip"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 4, 6])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.flipud(a).diagonal()  # Vertical flip"
+              },
+              {
+                "kind": "output",
+                "text": "array([6, 4, 2])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Note that the order in which the diagonal is retrieved varies depending\non the flip function."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.diagonal",
+    "module": "numpy",
+    "name": "diagonal",
+    "notes": "Return specified diagonals. Cost: numel(input).",
+    "numpy_ref": "np.diagonal",
+    "signature": "fnp.diagonal(a: 'ArrayLike', offset: 'int' = 0, axis1: 'int' = 0, axis2: 'int' = 1) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Return specified diagonals.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "diagonal",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_free_ops.py#L952",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L1695"
+  }
+}

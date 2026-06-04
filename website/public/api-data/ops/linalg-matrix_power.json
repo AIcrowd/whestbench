@@ -1,0 +1,398 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/matrix-power/",
+  "detail_json_href": "/api-data/ops/linalg-matrix_power.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Raise a square matrix to the (integer) power "
+              },
+              {
+                "kind": "code",
+                "text": "n"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For positive integers "
+              },
+              {
+                "kind": "code",
+                "text": "n"
+              },
+              {
+                "kind": "text",
+                "text": ", the power is computed by repeated matrix\nsquarings and matrix multiplications. If "
+              },
+              {
+                "kind": "code",
+                "text": "n == 0"
+              },
+              {
+                "kind": "text",
+                "text": ", the identity matrix\nof the same shape as M is returned. If "
+              },
+              {
+                "kind": "code",
+                "text": "n < 0"
+              },
+              {
+                "kind": "text",
+                "text": ", the inverse\nis computed and then raised to the "
+              },
+              {
+                "kind": "code",
+                "text": "abs(n)"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [
+              {
+                "kind": "text",
+                "text": "Stacks of object matrices are not currently supported."
+              }
+            ],
+            "content_blocks": [],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note:: Stacks of object matrices are not currently supported.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Matrix to be \"powered\"."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Matrix to be \"powered\"."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The exponent can be any integer or long integer, positive,\nnegative, or zero."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The exponent can be any integer or long integer, positive,\nnegative, or zero."
+                  }
+                ],
+                "name": "n",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The return value is the same shape and type as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "M"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ";\nif the exponent is positive or zero then the type of the\nelements is the same as those of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "M"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". If the exponent is\nnegative the elements are floating-point."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) ndarray or matrix object",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The return value is the same shape and type as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "M"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ";\nif the exponent is positive or zero then the type of the\nelements is the same as those of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "M"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". If the exponent is\nnegative the elements are floating-point."
+                  }
+                ],
+                "name": "a**n",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "For matrices that are not square or that (for negative powers) cannot\nbe inverted numerically."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "For matrices that are not square or that (for negative powers) cannot\nbe inverted numerically."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from flops.linalg import matrix_power"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "i = flops.array([[0, 1], [-1, 0]]) # matrix equiv. of the imaginary unit"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "matrix_power(i, 3) # should = -i"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0, -1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 1,  0]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "matrix_power(i, 0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 0],"
+              },
+              {
+                "kind": "output",
+                "text": "       [0, 1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "matrix_power(i, -3) # should = 1/(-i) = i, but w/ f.p. elements"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0.,  1.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-1.,  0.]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Somewhat more sophisticated example"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "q = flops.zeros((4, 4))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "q[0:2, 0:2] = -i"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "q[2:4, 2:4] = i"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "q # one of the three quaternion units not equal to 1"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0., -1.,  0.,  0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 1.,  0.,  0.,  0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.,  0.,  0.,  1.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.,  0., -1.,  0.]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "matrix_power(q, 2) # = -flops.eye(4)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[-1.,  0.,  0.,  0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0., -1.,  0.,  0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.,  0., -1.,  0.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 0.,  0.,  0., -1.]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "log2(k) * n^3",
+    "cost_formula_latex": "$\\lfloor\\log_2 k\\rfloor \\cdot n^3$",
+    "flopscope_ref": "fnp.linalg.matrix_power",
+    "module": "numpy.linalg",
+    "name": "linalg.matrix_power",
+    "notes": "Matrix power. Cost: $(\\lfloor\\log_2 k\\rfloor + \\text{popcount}(k) - 1) \\cdot n^3$ (exponentiation by squaring).",
+    "numpy_ref": "np.linalg.matrix_power",
+    "signature": "fnp.linalg.matrix_power(a: 'ArrayLike', n: 'int') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Raise a square matrix to the (integer) power `n`.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-matrix_power",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_compound.py#L137",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L617"
+  }
+}

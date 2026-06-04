@@ -1,0 +1,546 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/standard-t/",
+  "detail_json_href": "/api-data/ops/random-RandomState-standard_t.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a standard Student's t distribution with "
+              },
+              {
+                "kind": "code",
+                "text": "df"
+              },
+              {
+                "kind": "text",
+                "text": " degrees of freedom."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "A special case of the hyperbolic distribution.  As "
+              },
+              {
+                "kind": "code",
+                "text": "df"
+              },
+              {
+                "kind": "text",
+                "text": " gets\nlarge, the result resembles that of the standard normal\ndistribution ("
+              },
+              {
+                "kind": "code",
+                "text": "standard_normal"
+              },
+              {
+                "kind": "text",
+                "text": ")."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/standard-t/",
+                    "kind": "link",
+                    "target": "random.Generator.standard_t",
+                    "text": "standard_t"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the `~flops.random.Generator.standard_t`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Degrees of freedom, must be > 0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Degrees of freedom, must be > 0."
+                  }
+                ],
+                "name": "df",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "df"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar.  Otherwise,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.array(df).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "df"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar.  Otherwise,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.array(df).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the parameterized standard Student's t distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the parameterized standard Student's t distribution."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/standard-t/",
+                "label": "flops.random.Generator.standard_t",
+                "original_target": "random.Generator.standard_t",
+                "role": "",
+                "target": "random.Generator.standard_t",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability density function for the t distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "P(x, df) = \\frac{\\Gamma(\\frac{df+1}{2})}{\\sqrt{\\pi df} \\Gamma(\\frac{df}{2})}\\Bigl( 1+\\frac{x^2}{df} \\Bigr)^{-(df+1)/2}"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The t test is based on an assumption that the data come from a\nNormal distribution. The t test provides a way to test whether\nthe sample mean (that is the mean calculated from the data) is\na good estimate of the true mean."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The derivation of the t-distribution was first published in\n1908 by William Gosset while working for the Guinness Brewery\nin Dublin. Due to proprietary issues, he had to publish under\na pseudonym, and so he used the name Student."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nDalgaard, Peter, \"Introductory Statistics With R\",\nSpringer, 2002.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nWikipedia, \"Student's t-distribution\"\nhttps://en.wikipedia.org/wiki/Student's_t-distribution",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "From Dalgaard page 83 "
+              },
+              {
+                "kind": "text",
+                "text": "[1]_"
+              },
+              {
+                "kind": "text",
+                "text": ", suppose the daily energy intake for 11\nwomen in kilojoules (kJ) is:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "intake = flops.array([5260., 5470, 5640, 6180, 6390, 6515, 6805, 7515, \\"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "7515, 8230, 8770])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Does their energy intake deviate systematically from the recommended\nvalue of 7725 kJ? Our null hypothesis will be the absence of deviation,\nand the alternate hypothesis will be the presence of an effect that could be\neither positive or negative, hence making our test 2-tailed."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Because we are estimating the mean and we have N=11 values in our sample,\nwe have N-1=10 degrees of freedom. We set our significance level to 95% and\ncompute the t statistic using the empirical mean and empirical standard\ndeviation of our intake. We use a ddof of 1 to base the computation of our\nempirical standard deviation on an unbiased estimate of the variance (note:\nthe final estimate is not unbiased due to the concave nature of the square\nroot)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.mean(intake)"
+              },
+              {
+                "kind": "output",
+                "text": "6753.636363636364"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "intake.std(ddof=1)"
+              },
+              {
+                "kind": "output",
+                "text": "1142.1232221373727"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "t = (flops.mean(intake)-7725)/(intake.std(ddof=1)/flops.sqrt(len(intake)))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "t"
+              },
+              {
+                "kind": "output",
+                "text": "-2.8207540608310198"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "We draw 1000000 samples from Student's t distribution with the adequate\ndegrees of freedom."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = flops.random.standard_t(10, size=1000000)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "h = plt.hist(s, bins=100, density=True)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Does our t statistic land in one of the two critical regions found at\nboth tails of the distribution?"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.sum(flops.abs(t) < flops.abs(s)) / float(len(s))"
+              },
+              {
+                "kind": "output",
+                "text": "0.018318  #random < 0.05, statistic is in critical region"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability value for this 2-tailed test is about 1.83%, which is\nlower than the 5% pre-determined significance threshold."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Therefore, the probability of observing values as extreme as our intake\nconditionally on the null hypothesis being true is too low, and we reject\nthe null hypothesis of no deviation."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.RandomState.standard_t",
+    "module": "numpy.random",
+    "name": "random.RandomState.standard_t",
+    "notes": "Legacy standard Student-t; cost = numel(output).",
+    "numpy_ref": "np.random.RandomState.standard_t",
+    "signature": "fnp.random.RandomState.standard_t(self, df, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from a standard Student's t distribution with `df` degrees of freedom.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-standard_t",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.standard_t.html"
+  }
+}

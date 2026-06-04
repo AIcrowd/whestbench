@@ -1,0 +1,732 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/choice/",
+  "detail_json_href": "/api-data/ops/random-Generator-choice.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generates a random sample from a given array"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If an ndarray, a random sample is generated from its elements.\nIf an int, the random sample is generated from flops.arange(a)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{array_like, int}",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If an ndarray, a random sample is generated from its elements.\nIf an int, the random sample is generated from flops.arange(a)."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn from the 1-d "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " has more\nthan one dimension, the "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/size/",
+                        "kind": "link",
+                        "target": "size",
+                        "text": "size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " shape will be inserted into the\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " dimension, so the output "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/ndim/",
+                        "kind": "link",
+                        "target": "ndim",
+                        "text": "ndim"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will be "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a.ndim - 1 +\nlen(size)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". Default is None, in which case a single value is\nreturned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{int, tuple[int]}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn from the 1-d "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " has more\nthan one dimension, the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/size/",
+                    "kind": "link",
+                    "target": "size",
+                    "text": "size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " shape will be inserted into the\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " dimension, so the output "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/ndim/",
+                    "kind": "link",
+                    "target": "ndim",
+                    "text": "ndim"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will be "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a.ndim - 1 +\nlen(size)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". Default is None, in which case a single value is\nreturned."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Whether the sample is with or without replacement. Default is True,\nmeaning that a value of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " can be selected multiple times."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Whether the sample is with or without replacement. Default is True,\nmeaning that a value of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " can be selected multiple times."
+                  }
+                ],
+                "name": "replace",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The probabilities associated with each entry in a.\nIf not given, the sample assumes a uniform distribution over all\nentries in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "1-D array_like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The probabilities associated with each entry in a.\nIf not given, the sample assumes a uniform distribution over all\nentries in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "p",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis along which the selection is performed. The default, 0,\nselects by row."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis along which the selection is performed. The default, 0,\nselects by row."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Whether the sample is shuffled when sampling without replacement.\nDefault is True, False provides a speedup."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Whether the sample is shuffled when sampling without replacement.\nDefault is True, False provides a speedup."
+                  }
+                ],
+                "name": "shuffle",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The generated random samples"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "single item or ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The generated random samples"
+                  }
+                ],
+                "name": "samples",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If a is an int and less than zero, if p is not 1-dimensional, if\na is array-like with a size 0, if p is not a vector of\nprobabilities, if a and p have different lengths, or if\nreplace=False and the sample size is greater than the population\nsize."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If a is an int and less than zero, if p is not 1-dimensional, if\na is array-like with a size 0, if p is not a vector of\nprobabilities, if a and p have different lengths, or if\nreplace=False and the sample size is greater than the population\nsize."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.integers.html",
+                "href": "",
+                "label": "integers",
+                "original_target": "integers",
+                "role": "",
+                "target": "integers",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.shuffle.html",
+                "href": "",
+                "label": "shuffle",
+                "original_target": "shuffle",
+                "role": "",
+                "target": "shuffle",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.permutation.html",
+                "href": "",
+                "label": "permutation",
+                "original_target": "permutation",
+                "role": "",
+                "target": "permutation",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Setting user-specified probabilities through "
+              },
+              {
+                "kind": "code",
+                "text": "p"
+              },
+              {
+                "kind": "text",
+                "text": " uses a more general but less\nefficient sampler than the default. The general sampler produces a different sample\nthan the optimized sampler even if each element of "
+              },
+              {
+                "kind": "code",
+                "text": "p"
+              },
+              {
+                "kind": "text",
+                "text": " is 1 / len(a)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "p"
+              },
+              {
+                "kind": "text",
+                "text": " must sum to 1 when cast to "
+              },
+              {
+                "kind": "code",
+                "text": "float64"
+              },
+              {
+                "kind": "text",
+                "text": ". To ensure this, you may wish\nto normalize using "
+              },
+              {
+                "kind": "code",
+                "text": "p = p / flops.sum(p, dtype=float)"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When passing "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " as an integer type and "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/size/",
+                "kind": "link",
+                "target": "size",
+                "text": "size"
+              },
+              {
+                "kind": "text",
+                "text": " is not specified, the return\ntype is a native Python "
+              },
+              {
+                "kind": "code",
+                "text": "int"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a uniform random sample from flops.arange(5) of size 3:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.choice(5, 3)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 3, 4]) # random"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "#This is equivalent to rng.integers(0,5,3)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a non-uniform random sample from flops.arange(5) of size 3:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.choice(5, 3, p=[0.1, 0, 0.3, 0.6, 0])"
+              },
+              {
+                "kind": "output",
+                "text": "array([3, 3, 0]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a uniform random sample from flops.arange(5) of size 3 without\nreplacement:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.choice(5, 3, replace=False)"
+              },
+              {
+                "kind": "output",
+                "text": "array([3,1,0]) # random"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "#This is equivalent to rng.permutation(flops.arange(5))[:3]"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a uniform random sample from a 2-D array along the first\naxis (the default), without replacement:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.choice([[0, 1, 2], [3, 4, 5], [6, 7, 8]], 2, replace=False)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[3, 4, 5], # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [0, 1, 2]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a non-uniform random sample from flops.arange(5) of size\n3 without replacement:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.choice(5, 3, replace=False, p=[0.1, 0, 0.3, 0.6, 0])"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 3, 0]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Any of the above can be repeated with an arbitrary array-like\ninstead of just integers. For instance:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "aa_milne_arr = ['pooh', 'rabbit', 'piglet', 'Christopher']"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng.choice(aa_milne_arr, 5, p=[0.5, 0.1, 0.1, 0.3])"
+              },
+              {
+                "kind": "output",
+                "text": "array(['pooh', 'pooh', 'pooh', 'Christopher', 'piglet'], # random"
+              },
+              {
+                "kind": "output",
+                "text": "      dtype='<U11')"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output) if replace, else sort_cost(n)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$ if replace, else $n \\cdot \\lceil \\log_2 n \\rceil$",
+    "flopscope_ref": "fnp.random.Generator.choice",
+    "module": "numpy.random",
+    "name": "random.Generator.choice",
+    "notes": "numel(output) if replace else sort_cost(n).",
+    "numpy_ref": "np.random.Generator.choice",
+    "signature": "fnp.random.Generator.choice(self, a, size=None, replace=True, p=None, axis=0, shuffle=True)",
+    "status": "supported",
+    "summary": "Generates a random sample from a given array",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-choice",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.choice.html"
+  }
+}

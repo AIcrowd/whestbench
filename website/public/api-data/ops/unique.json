@@ -1,0 +1,792 @@
+{
+  "detail_href": "/docs/api/numpy/unique/",
+  "detail_json_href": "/api-data/ops/unique.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Find the unique elements of an array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns the sorted unique elements of an array. There are three optional\noutputs in addition to the unique elements:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "items": [
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "the indices of the input array that give the unique values"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              },
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "the indices of the unique array that reconstruct the input array"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              },
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "the number of times each unique value comes up in the input array"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              }
+            ],
+            "ordered": false,
+            "type": "list"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array. Unless "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is specified, this will be flattened if it\nis not already 1-D."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array. Unless "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is specified, this will be flattened if it\nis not already 1-D."
+                  }
+                ],
+                "name": "ar",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, also return the indices of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (along the specified axis,\nif provided, or in the flattened array) that result in the unique array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, also return the indices of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (along the specified axis,\nif provided, or in the flattened array) that result in the unique array."
+                  }
+                ],
+                "name": "return_index",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, also return the indices of the unique array (for the specified\naxis, if provided) that can be used to reconstruct "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, also return the indices of the unique array (for the specified\naxis, if provided) that can be used to reconstruct "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "return_inverse",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, also return the number of times each unique item appears\nin "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, also return the number of times each unique item appears\nin "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "return_counts",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The axis to operate on. If None, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "ar"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will be flattened. If an integer,\nthe subarrays indexed by the given axis will be flattened and treated\nas the elements of a 1-D array with the dimension of the given axis,\nsee the notes for more details.  Object arrays or structured arrays\nthat contain objects are not supported if the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " kwarg is used. The\ndefault is None."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or None, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The axis to operate on. If None, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "ar"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will be flattened. If an integer,\nthe subarrays indexed by the given axis will be flattened and treated\nas the elements of a 1-D array with the dimension of the given axis,\nsee the notes for more details.  Object arrays or structured arrays\nthat contain objects are not supported if the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " kwarg is used. The\ndefault is None."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, collapses multiple NaN values in the return array into one."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 1.24",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.24"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, collapses multiple NaN values in the return array into one."
+                  }
+                ],
+                "name": "equal_nan",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The sorted unique values."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The sorted unique values."
+                  }
+                ],
+                "name": "unique",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The indices of the first occurrences of the unique values in the\noriginal array. Only provided if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "return_index"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The indices of the first occurrences of the unique values in the\noriginal array. Only provided if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "return_index"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True."
+                  }
+                ],
+                "name": "unique_indices",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The indices to reconstruct the original array from the\nunique array. Only provided if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "return_inverse"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The indices to reconstruct the original array from the\nunique array. Only provided if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "return_inverse"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True."
+                  }
+                ],
+                "name": "unique_inverse",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The number of times each of the unique values comes up in the\noriginal array. Only provided if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "return_counts"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is True."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The number of times each of the unique values comes up in the\noriginal array. Only provided if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "return_counts"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is True."
+                  }
+                ],
+                "name": "unique_counts",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Repeat elements of an array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Repeat elements of an array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/repeat/",
+                "label": "flops.repeat",
+                "original_target": "repeat",
+                "role": "",
+                "target": "repeat",
+                "unresolved": false
+              },
+              {
+                "description": "Return a sorted copy of an array.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return a sorted copy of an array."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/sort/",
+                "label": "flops.sort",
+                "original_target": "sort",
+                "role": "",
+                "target": "sort",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When an axis is specified the subarrays indexed by the axis are sorted.\nThis is done by making the specified axis the first dimension of the array\n(move the axis to the first dimension to keep the order of the other axes)\nand then flattening the subarrays in C order. The flattened subarrays are\nthen viewed as a structured type with each element given a label, with the\neffect that we end up with a 1-D array of structured types that can be\ntreated in the same way as any other 1-D array. The result is that the\nflattened subarrays are sorted in lexicographic order starting with the\nfirst element."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [],
+            "directive": "versionchanged",
+            "options": [],
+            "raw_source": ".. versionchanged:: 1.21\n    Like flops.sort, NaN will sort to the end of the values.\n    For complex arrays all NaN values are considered equivalent\n    (no matter whether the NaN is in the real or imaginary part).\n    As the representant for the returned array the smallest one in the\n    lexicographical order is chosen - see flops.sort for how the lexicographical\n    order is defined for complex arrays.",
+            "supported": true,
+            "type": "directive_block",
+            "version": "1.21"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [],
+            "directive": "versionchanged",
+            "options": [],
+            "raw_source": ".. versionchanged:: 2.0\n    For multi-dimensional inputs, ``unique_inverse`` is reshaped\n    such that the input can be reconstructed using\n    ``flops.take(unique, unique_inverse, axis=axis)``. The result is\n    now not 1-dimensional when ``axis=None``.\n\n    Note that in NumPy 2.0.0 a higher dimensional array was returned also\n    when ``axis`` was not ``None``.  This was reverted, but\n    ``inverse.reshape(-1)`` can be used to ensure compatibility with both\n    versions.",
+            "supported": true,
+            "type": "directive_block",
+            "version": "2.0"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.unique([1, 1, 2, 2, 3, 3])"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, 1], [2, 3]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.unique(a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the unique rows of a 2D array"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, 0, 0], [1, 0, 0], [2, 3, 4]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.unique(a, axis=0)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 0, 0], [2, 3, 4]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the indices of the original array that give the unique values:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array(['a', 'b', 'b', 'c', 'a'])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "u, indices = flops.unique(a, return_index=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "u"
+              },
+              {
+                "kind": "output",
+                "text": "array(['a', 'b', 'c'], dtype='<U1')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "indices"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 1, 3])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a[indices]"
+              },
+              {
+                "kind": "output",
+                "text": "array(['a', 'b', 'c'], dtype='<U1')"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Reconstruct the input array from the unique values and inverse:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1, 2, 6, 4, 2, 3, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "u, indices = flops.unique(a, return_inverse=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "u"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 4, 6])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "indices"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 1, 4, 3, 1, 2, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "u[indices]"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 6, 4, 2, 3, 2])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Reconstruct the input values from the unique values and counts:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([1, 2, 6, 4, 2, 3, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "values, counts = flops.unique(a, return_counts=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "values"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 3, 4, 6])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "counts"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 3, 1, 1, 1])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.repeat(values, counts)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2, 2, 2, 3, 4, 6])    # original order not preserved"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.unique",
+    "module": "numpy",
+    "name": "unique",
+    "notes": "Sort-based unique; cost = n*ceil(log2(n)).",
+    "numpy_ref": "np.unique",
+    "signature": "fnp.unique(ar, return_index=False, return_inverse=False, return_counts=False, axis=None, *, equal_nan=True)",
+    "status": "supported",
+    "summary": "Find the unique elements of an array.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "unique",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_sorting_ops.py#L302",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_arraysetops_impl.py#L145"
+  }
+}

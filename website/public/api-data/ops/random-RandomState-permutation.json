@@ -1,0 +1,327 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/permutation/",
+  "detail_json_href": "/api-data/ops/random-RandomState-permutation.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Randomly permute a sequence, or return a permuted range."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " is a multi-dimensional array, it is only shuffled along its\nfirst index."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the\n"
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/permutation/",
+                    "kind": "link",
+                    "target": "random.Generator.permutation",
+                    "text": "permutation"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the\n    `~flops.random.Generator.permutation`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an integer, randomly permute "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.arange(x).html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "arange(x)",
+                        "text": "flops.arange(x)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".\nIf "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an array, make a copy and shuffle the elements\nrandomly."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an integer, randomly permute "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.arange(x).html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "arange(x)",
+                    "text": "flops.arange(x)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".\nIf "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an array, make a copy and shuffle the elements\nrandomly."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Permuted sequence or array range."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Permuted sequence or array range."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/permutation/",
+                "label": "flops.random.Generator.permutation",
+                "original_target": "random.Generator.permutation",
+                "role": "",
+                "target": "random.Generator.permutation",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.permutation(10)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 7, 4, 3, 0, 9, 2, 5, 8, 6]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.permutation([1, 4, 9, 12, 15])"
+              },
+              {
+                "kind": "output",
+                "text": "array([15,  1,  9,  4, 12]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "arr = flops.arange(9).reshape((3, 3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.permutation(arr)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[6, 7, 8], # random"
+              },
+              {
+                "kind": "output",
+                "text": "       [0, 1, 2],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4, 5]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "shape[axis]",
+    "cost_formula_latex": "$\\text{shape}[\\text{axis}]$",
+    "flopscope_ref": "fnp.random.RandomState.permutation",
+    "module": "numpy.random",
+    "name": "random.RandomState.permutation",
+    "notes": "Legacy permutation; cost = shape[axis] (Fisher-Yates draws). RandomState has no axis kwarg; defaults to 0.",
+    "numpy_ref": "np.random.RandomState.permutation",
+    "signature": "fnp.random.RandomState.permutation(self, x)",
+    "status": "supported",
+    "summary": "Randomly permute a sequence, or return a permuted range.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-permutation",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.permutation.html"
+  }
+}

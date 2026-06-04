@@ -1,0 +1,102 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/seed/",
+  "detail_json_href": "/api-data/ops/random-RandomState-seed.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Reseed a legacy MT19937 BitGenerator"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is a convenience, legacy function."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The best practice is to "
+              },
+              {
+                "kind": "strong",
+                "text": "not"
+              },
+              {
+                "kind": "text",
+                "text": " reseed a BitGenerator, rather to\nrecreate a new one. This method is here for legacy reasons.\nThis example demonstrates best practice."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from flops.random import MT19937"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from flops.random import RandomState, SeedSequence"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rs = RandomState(MT19937(SeedSequence(123456789)))"
+              },
+              {
+                "kind": "output",
+                "text": "# Later, you want to restart the stream"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rs = RandomState(MT19937(SeedSequence(987654321)))"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Notes"
+      }
+    ]
+  },
+  "op": {
+    "category": "free_random_method",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.random.RandomState.seed",
+    "module": "numpy.random",
+    "name": "random.RandomState.seed",
+    "notes": "Seed setter; no math.",
+    "numpy_ref": "np.random.RandomState.seed",
+    "signature": "fnp.random.RandomState.seed(self, seed=None)",
+    "status": "supported",
+    "summary": "Reseed a legacy MT19937 BitGenerator",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-seed",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.seed.html"
+  }
+}

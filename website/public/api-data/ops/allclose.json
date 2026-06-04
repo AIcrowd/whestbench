@@ -1,0 +1,679 @@
+{
+  "detail_href": "/docs/api/numpy/allclose/",
+  "detail_json_href": "/api-data/ops/allclose.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns True if two arrays are element-wise equal within a tolerance."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The tolerance values are positive, typically very small numbers.  The\nrelative difference ("
+              },
+              {
+                "kind": "code",
+                "text": "rtol"
+              },
+              {
+                "kind": "text",
+                "text": " * abs("
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": ")) and the absolute difference\n"
+              },
+              {
+                "kind": "code",
+                "text": "atol"
+              },
+              {
+                "kind": "text",
+                "text": " are added together to compare against the absolute difference\nbetween "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [
+              {
+                "kind": "text",
+                "text": "The default "
+              },
+              {
+                "kind": "code",
+                "text": "atol"
+              },
+              {
+                "kind": "text",
+                "text": " is not appropriate for comparing numbers"
+              }
+            ],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "with magnitudes much smaller than one (see Notes)."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "warning",
+            "options": [],
+            "raw_source": ".. warning:: The default `atol` is not appropriate for comparing numbers\n             with magnitudes much smaller than one (see Notes).",
+            "supported": true,
+            "type": "directive_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "NaNs are treated as equal if they are in the same place and if\n"
+              },
+              {
+                "kind": "code",
+                "text": "equal_nan=True"
+              },
+              {
+                "kind": "text",
+                "text": ".  Infs are treated as equal if they are in the same\nplace and of the same sign in both arrays."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input arrays to compare."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input arrays to compare."
+                  }
+                ],
+                "name": "a, b",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The relative tolerance parameter (see Notes)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The relative tolerance parameter (see Notes)."
+                  }
+                ],
+                "name": "rtol",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The absolute tolerance parameter (see Notes)."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The absolute tolerance parameter (see Notes)."
+                  }
+                ],
+                "name": "atol",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Whether to compare NaN's as equal.  If True, NaN's in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will be\nconsidered equal to NaN's in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "b"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " in the output array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Whether to compare NaN's as equal.  If True, NaN's in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will be\nconsidered equal to NaN's in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "b"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " in the output array."
+                  }
+                ],
+                "name": "equal_nan",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Returns True if the two arrays are equal within the given\ntolerance; False otherwise."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Returns True if the two arrays are equal within the given\ntolerance; False otherwise."
+                  }
+                ],
+                "name": "allclose",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/isclose/",
+                "label": "flops.isclose",
+                "original_target": "isclose",
+                "role": "",
+                "target": "isclose",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/all/",
+                "label": "flops.all",
+                "original_target": "all",
+                "role": "",
+                "target": "all",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/any/",
+                "label": "flops.any",
+                "original_target": "any",
+                "role": "",
+                "target": "any",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/equal/",
+                "label": "flops.equal",
+                "original_target": "equal",
+                "role": "",
+                "target": "equal",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If the following equation is element-wise True, then allclose returns\nTrue.:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "absolute(a - b) <= (atol + rtol * absolute(b))",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The above equation is not symmetric in "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": ", so that\n"
+              },
+              {
+                "kind": "code",
+                "text": "allclose(a, b)"
+              },
+              {
+                "kind": "text",
+                "text": " might be different from "
+              },
+              {
+                "kind": "code",
+                "text": "allclose(b, a)"
+              },
+              {
+                "kind": "text",
+                "text": " in\nsome rare cases."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The default value of "
+              },
+              {
+                "kind": "code",
+                "text": "atol"
+              },
+              {
+                "kind": "text",
+                "text": " is not appropriate when the reference value\n"
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " has magnitude smaller than one. For example, it is unlikely that\n"
+              },
+              {
+                "kind": "code",
+                "text": "a = 1e-9"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b = 2e-9"
+              },
+              {
+                "kind": "text",
+                "text": " should be considered \"close\", yet\n"
+              },
+              {
+                "kind": "code",
+                "text": "allclose(1e-9, 2e-9)"
+              },
+              {
+                "kind": "text",
+                "text": " is "
+              },
+              {
+                "kind": "code",
+                "text": "True"
+              },
+              {
+                "kind": "text",
+                "text": " with default settings. Be sure\nto select "
+              },
+              {
+                "kind": "code",
+                "text": "atol"
+              },
+              {
+                "kind": "text",
+                "text": " for the use case at hand, especially for defining the\nthreshold below which a non-zero value in "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " will be considered \"close\"\nto a very small or zero value in "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The comparison of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " uses standard broadcasting, which\nmeans that "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "b"
+              },
+              {
+                "kind": "text",
+                "text": " need not have the same shape in order for\n"
+              },
+              {
+                "kind": "code",
+                "text": "allclose(a, b)"
+              },
+              {
+                "kind": "text",
+                "text": " to evaluate to True.  The same is true for\n"
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/equal/",
+                "kind": "link",
+                "target": "equal",
+                "text": "equal"
+              },
+              {
+                "kind": "text",
+                "text": " but not "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/array-equal/",
+                "kind": "link",
+                "target": "array_equal",
+                "text": "array_equal"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/allclose/",
+                "kind": "link",
+                "target": "allclose",
+                "text": "allclose"
+              },
+              {
+                "kind": "text",
+                "text": " is not defined for non-numeric data types.\n"
+              },
+              {
+                "kind": "code",
+                "text": "bool"
+              },
+              {
+                "kind": "text",
+                "text": " is considered a numeric data-type for this purpose."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose([1e10,1e-7], [1.00001e10,1e-8])"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose([1e10,1e-8], [1.00001e10,1e-9])"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose([1e10,1e-8], [1.0001e10,1e-9])"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose([1.0, flops.nan], [1.0, flops.nan])"
+              },
+              {
+                "kind": "output",
+                "text": "False"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose([1.0, flops.nan], [1.0, flops.nan], equal_nan=True)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.allclose",
+    "module": "numpy",
+    "name": "allclose",
+    "notes": "Element-wise tolerance check; cost = numel(a).",
+    "numpy_ref": "np.allclose",
+    "signature": "fnp.allclose(a, b, rtol=1e-05, atol=1e-08, equal_nan=False)",
+    "status": "supported",
+    "summary": "Returns True if two arrays are element-wise equal within a tolerance.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "allclose",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L59",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/numeric.py#L2243"
+  }
+}

@@ -1,0 +1,183 @@
+{
+  "detail_href": "/docs/api/numpy/iscomplex/",
+  "detail_json_href": "/api-data/ops/iscomplex.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Returns a bool array, where True if input element is complex."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "What is tested is whether the input has a non-zero imaginary part, not if\nthe input type is complex."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray of bools",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output array."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/isreal/",
+                "label": "flops.isreal",
+                "original_target": "isreal",
+                "role": "",
+                "target": "isreal",
+                "unresolved": false
+              },
+              {
+                "description": "Return True if x is a complex type or an array of complex numbers.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Return True if x is a complex type or an array of complex numbers."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/iscomplexobj/",
+                "label": "flops.iscomplexobj",
+                "original_target": "iscomplexobj",
+                "role": "",
+                "target": "iscomplexobj",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.iscomplex([1+1j, 1+0j, 4.5, 3, 2, 2j])"
+              },
+              {
+                "kind": "output",
+                "text": "array([ True, False, False, False, False,  True])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_unary",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.iscomplex",
+    "module": "numpy",
+    "name": "iscomplex",
+    "notes": "Test if element is complex element-wise.",
+    "numpy_ref": "np.iscomplex",
+    "signature": "fnp.iscomplex(x)",
+    "status": "supported",
+    "summary": "Returns a bool array, where True if input element is complex.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "iscomplex",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L343",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_type_check_impl.py#L175"
+  }
+}

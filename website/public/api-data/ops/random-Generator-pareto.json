@@ -1,0 +1,438 @@
+{
+  "detail_href": "/docs/api/numpy/random/generator/pareto/",
+  "detail_json_href": "/api-data/ops/random-Generator-pareto.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a Pareto II (AKA Lomax) distribution with specified shape."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Shape of the distribution. Must be positive."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Shape of the distribution. Must be positive."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a scalar.  Otherwise,\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.array(a).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a scalar.  Otherwise,\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.array(a).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the Pareto II distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the Pareto II distribution."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Pareto I distribution",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Pareto I distribution"
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pareto.html",
+                "href": "",
+                "label": "scipy.stats.pareto",
+                "original_target": "scipy.stats.pareto",
+                "role": "",
+                "target": "stats.pareto",
+                "unresolved": false
+              },
+              {
+                "description": "Lomax (Pareto II) distribution",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Lomax (Pareto II) distribution"
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lomax.html",
+                "href": "",
+                "label": "scipy.stats.lomax",
+                "original_target": "scipy.stats.lomax",
+                "role": "",
+                "target": "stats.lomax",
+                "unresolved": false
+              },
+              {
+                "description": "Generalized Pareto distribution",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Generalized Pareto distribution"
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.genpareto.html",
+                "href": "",
+                "label": "scipy.stats.genpareto",
+                "original_target": "scipy.stats.genpareto",
+                "role": "",
+                "target": "stats.genpareto",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability density for the Pareto II distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "p(x) = \\frac{a}{{x+1}^{a+1}} , x \\ge 0"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where "
+              },
+              {
+                "kind": "math",
+                "latex": "a > 0"
+              },
+              {
+                "kind": "text",
+                "text": " is the shape."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The Pareto II distribution is a shifted and scaled version of the\nPareto I distribution, which can be found in "
+              },
+              {
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pareto.html",
+                "href": "",
+                "kind": "link",
+                "target": "stats.pareto",
+                "text": "scipy.stats.pareto"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nFrancis Hunt and Paul Johnson, On the Pareto Distribution of\nSourceforge projects.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nPareto, V. (1896). Course of Political Economy. Lausanne.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "3\n\nReiss, R.D., Thomas, M.(2001), Statistical Analysis of Extreme\nValues, Birkhauser Verlag, Basel, pp 23-30.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "4\n\nWikipedia, \"Pareto distribution\",\nhttps://en.wikipedia.org/wiki/Pareto_distribution",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from the distribution:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = 3."
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = rng.pareto(a, 10000)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Display the histogram of the samples, along with the probability\ndensity function:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.linspace(0, 3, 50)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "pdf = a / (x+1)**(a+1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.hist(s, bins=x, density=True, label='histogram')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(x, pdf, linewidth=2, color='r', label='pdf')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.xlim(x.min(), x.max())"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.legend()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.Generator.pareto",
+    "module": "numpy.random",
+    "name": "random.Generator.pareto",
+    "notes": "Pareto distribution; cost = numel(output).",
+    "numpy_ref": "np.random.Generator.pareto",
+    "signature": "fnp.random.Generator.pareto(self, a, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from a Pareto II (AKA Lomax) distribution with specified shape.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-Generator-pareto",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.pareto.html"
+  }
+}

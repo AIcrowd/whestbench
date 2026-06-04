@@ -1,0 +1,693 @@
+{
+  "detail_href": "/docs/api/numpy/apply-along-axis/",
+  "detail_json_href": "/api-data/ops/apply_along_axis.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Apply a function to 1-D slices along the given axis."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Execute "
+              },
+              {
+                "kind": "code",
+                "text": "func1d(a, *args, **kwargs)"
+              },
+              {
+                "kind": "text",
+                "text": " where "
+              },
+              {
+                "kind": "code",
+                "text": "func1d"
+              },
+              {
+                "kind": "text",
+                "text": " operates on 1-D arrays\nand "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is a 1-D slice of "
+              },
+              {
+                "kind": "code",
+                "text": "arr"
+              },
+              {
+                "kind": "text",
+                "text": " along "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is equivalent to (but faster than) the following use of "
+              },
+              {
+                "kind": "code",
+                "text": "ndindex"
+              },
+              {
+                "kind": "text",
+                "text": " and\n"
+              },
+              {
+                "kind": "code",
+                "text": "s_"
+              },
+              {
+                "kind": "text",
+                "text": ", which sets each of "
+              },
+              {
+                "kind": "code",
+                "text": "ii"
+              },
+              {
+                "kind": "text",
+                "text": ", "
+              },
+              {
+                "kind": "code",
+                "text": "jj"
+              },
+              {
+                "kind": "text",
+                "text": ", and "
+              },
+              {
+                "kind": "code",
+                "text": "kk"
+              },
+              {
+                "kind": "text",
+                "text": " to a tuple of indices:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "Ni, Nk = a.shape[:axis], a.shape[axis+1:]\nfor ii in ndindex(Ni):\n    for kk in ndindex(Nk):\n        f = func1d(arr[ii + s_[:,] + kk])\n        Nj = f.shape\n        for jj in ndindex(Nj):\n            out[ii + jj + kk] = f[jj]",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Equivalently, eliminating the inner loop, this can be expressed as:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "Ni, Nk = a.shape[:axis], a.shape[axis+1:]\nfor ii in ndindex(Ni):\n    for kk in ndindex(Nk):\n        out[ii + s_[...,] + kk] = func1d(arr[ii + s_[:,] + kk])",
+            "type": "literal_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "This function should accept 1-D arrays. It is applied to 1-D\nslices of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " along the specified axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "function (M,) -> (Nj...)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This function should accept 1-D arrays. It is applied to 1-D\nslices of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " along the specified axis."
+                  }
+                ],
+                "name": "func1d",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis along which "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is sliced."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "integer",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis along which "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is sliced."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray (Ni..., M, Nk...)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "arr",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Additional arguments to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "func1d"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "any",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Additional arguments to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "func1d"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "args",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Additional named arguments to "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "func1d"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "any",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Additional named arguments to "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "func1d"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "kwargs",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The output array. The shape of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is identical to the shape of\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", except along the "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "axis"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " dimension. This axis is removed, and\nreplaced with new dimensions equal to the shape of the return value\nof "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "func1d"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". So if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "func1d"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " returns a scalar "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "out"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " will have one\nfewer dimensions than "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "arr"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray  (Ni..., Nj..., Nk...)",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The output array. The shape of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is identical to the shape of\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", except along the "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "axis"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " dimension. This axis is removed, and\nreplaced with new dimensions equal to the shape of the return value\nof "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "func1d"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". So if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "func1d"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " returns a scalar "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "out"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " will have one\nfewer dimensions than "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "arr"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Apply a function repeatedly over multiple axes.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Apply a function repeatedly over multiple axes."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/apply-over-axes/",
+                "label": "flops.apply_over_axes",
+                "original_target": "apply_over_axes",
+                "role": "",
+                "target": "apply_over_axes",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "def my_func(a):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "\"\"\"Average first and last element of a 1-D array\"\"\""
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "return (a[0] + a[-1]) * 0.5"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([[1,2,3], [4,5,6], [7,8,9]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.apply_along_axis(my_func, 0, b)"
+              },
+              {
+                "kind": "output",
+                "text": "array([4., 5., 6.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.apply_along_axis(my_func, 1, b)"
+              },
+              {
+                "kind": "output",
+                "text": "array([2.,  5.,  8.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For a function that returns a 1D array, the number of dimensions in\n"
+              },
+              {
+                "kind": "code",
+                "text": "outarr"
+              },
+              {
+                "kind": "text",
+                "text": " is the same as "
+              },
+              {
+                "kind": "code",
+                "text": "arr"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([[8,1,7], [4,3,9], [5,2,6]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.apply_along_axis(sorted, 1, b)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[1, 7, 8],"
+              },
+              {
+                "kind": "output",
+                "text": "       [3, 4, 9],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2, 5, 6]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For a function that returns a higher dimensional array, those dimensions\nare inserted in place of the "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " dimension."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([[1,2,3], [4,5,6], [7,8,9]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.apply_along_axis(flops.diag, -1, b)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[[1, 0, 0],"
+              },
+              {
+                "kind": "output",
+                "text": "        [0, 2, 0],"
+              },
+              {
+                "kind": "output",
+                "text": "        [0, 0, 3]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[4, 0, 0],"
+              },
+              {
+                "kind": "output",
+                "text": "        [0, 5, 0],"
+              },
+              {
+                "kind": "output",
+                "text": "        [0, 0, 6]],"
+              },
+              {
+                "kind": "output",
+                "text": "       [[7, 0, 0],"
+              },
+              {
+                "kind": "output",
+                "text": "        [0, 8, 0],"
+              },
+              {
+                "kind": "output",
+                "text": "        [0, 0, 9]]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.apply_along_axis",
+    "module": "numpy",
+    "name": "apply_along_axis",
+    "notes": "Apply function along axis. Cost: numel(output). Inner function costs tracked separately.",
+    "numpy_ref": "np.apply_along_axis",
+    "signature": "fnp.apply_along_axis(func1d: 'Any', axis: 'int', arr: 'ArrayLike', *args: 'Any', **kwargs: 'Any') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Apply a function to 1-D slices along the given axis.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "apply_along_axis",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L362",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/lib/_shape_base_impl.py#L274"
+  }
+}

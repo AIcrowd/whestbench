@@ -1,0 +1,340 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/set-state/",
+  "detail_json_href": "/api-data/ops/random-RandomState-set_state.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Set the internal state of the generator from a tuple."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For use if one has reason to manually (re-)set the internal state of\nthe bit generator used by the RandomState instance. By default,\nRandomState uses the \"Mersenne Twister\""
+              },
+              {
+                "kind": "text",
+                "text": "[1]_"
+              },
+              {
+                "kind": "text",
+                "text": " pseudo-random number\ngenerating algorithm."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "state"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " tuple has the following items:"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "items": [
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "the string 'MT19937', specifying the Mersenne Twister algorithm."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "a 1-D array of 624 unsigned integers "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "keys"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "an integer "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "pos"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "an integer "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "has_gauss"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      },
+                      {
+                        "blocks": [
+                          {
+                            "inline": [
+                              {
+                                "kind": "text",
+                                "text": "a float "
+                              },
+                              {
+                                "kind": "code",
+                                "text": "cached_gaussian"
+                              },
+                              {
+                                "kind": "text",
+                                "text": "."
+                              }
+                            ],
+                            "type": "paragraph"
+                          }
+                        ]
+                      }
+                    ],
+                    "ordered": true,
+                    "type": "list"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If state is a dictionary, it is directly set using the BitGenerators\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "state"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " property."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{tuple(str, ndarray of 624 uints, int, int, float), dict}",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "state"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " tuple has the following items:"
+                  }
+                ],
+                "name": "state",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Returns 'None' on success."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "None",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Returns 'None' on success."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.get_state.html",
+                "href": "",
+                "label": "get_state",
+                "original_target": "get_state",
+                "role": "",
+                "target": "get_state",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "set_state"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "get_state"
+              },
+              {
+                "kind": "text",
+                "text": " are not needed to work with any of the\nrandom distributions in NumPy. If the internal state is manually altered,\nthe user should know exactly what he/she is doing."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For backwards compatibility, the form (str, array of 624 uints, int) is\nalso accepted although it is missing some information about the cached\nGaussian value: "
+              },
+              {
+                "kind": "code",
+                "text": "state = ('MT19937', keys, pos)"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nM. Matsumoto and T. Nishimura, \"Mersenne Twister: A\n623-dimensionally equidistributed uniform pseudorandom number\ngenerator,\" ACM Trans. on Modeling and Computer Simulation,\nVol. 8, No. 1, pp. 3-30, Jan. 1998.",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      }
+    ]
+  },
+  "op": {
+    "category": "free_random_method",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.random.RandomState.set_state",
+    "module": "numpy.random",
+    "name": "random.RandomState.set_state",
+    "notes": "State setter; no math.",
+    "numpy_ref": "np.random.RandomState.set_state",
+    "signature": "fnp.random.RandomState.set_state(self, state)",
+    "status": "supported",
+    "summary": "Set the internal state of the generator from a tuple.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-set_state",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.set_state.html"
+  }
+}

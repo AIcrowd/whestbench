@@ -1,0 +1,447 @@
+{
+  "detail_href": "/docs/api/numpy/trace/",
+  "detail_json_href": "/api-data/ops/trace.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return the sum along diagonals of the array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " is 2-D, the sum along its diagonal with the given offset\nis returned, i.e., the sum of elements "
+              },
+              {
+                "kind": "code",
+                "text": "a[i,i+offset]"
+              },
+              {
+                "kind": "text",
+                "text": " for all i."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "If "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " has more than two dimensions, then the axes specified by axis1 and\naxis2 are used to determine the 2-D sub-arrays whose traces are returned.\nThe shape of the resulting array is the same as that of "
+              },
+              {
+                "kind": "code",
+                "text": "a"
+              },
+              {
+                "kind": "text",
+                "text": " with "
+              },
+              {
+                "kind": "code",
+                "text": "axis1"
+              },
+              {
+                "kind": "text",
+                "text": "\nand "
+              },
+              {
+                "kind": "code",
+                "text": "axis2"
+              },
+              {
+                "kind": "text",
+                "text": " removed."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array, from which the diagonals are taken."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array, from which the diagonals are taken."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Offset of the diagonal from the main diagonal. Can be both positive\nand negative. Defaults to 0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Offset of the diagonal from the main diagonal. Can be both positive\nand negative. Defaults to 0."
+                  }
+                ],
+                "name": "offset",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axes to be used as the first and second axis of the 2-D sub-arrays\nfrom which the diagonals should be taken. Defaults are the first two\naxes of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axes to be used as the first and second axis of the 2-D sub-arrays\nfrom which the diagonals should be taken. Defaults are the first two\naxes of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "axis1, axis2",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Determines the data-type of the returned array and of the accumulator\nwhere the elements are summed. If dtype has the value None and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is\nof integer type of precision less than the default integer\nprecision, then the default integer precision is used. Otherwise,\nthe precision is the same as that of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "dtype, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Determines the data-type of the returned array and of the accumulator\nwhere the elements are summed. If dtype has the value None and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is\nof integer type of precision less than the default integer\nprecision, then the default integer precision is used. Otherwise,\nthe precision is the same as that of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "dtype",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array into which the output is placed. Its type is preserved and\nit must be of the right shape to hold the output."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array into which the output is placed. Its type is preserved and\nit must be of the right shape to hold the output."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is 2-D, the sum along the diagonal is returned.  If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " has\nlarger dimensions, then an array of sums along diagonals is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is 2-D, the sum along the diagonal is returned.  If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " has\nlarger dimensions, then an array of sums along diagonals is returned."
+                  }
+                ],
+                "name": "sum_along_diagonals",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/diag/",
+                "label": "flops.diag",
+                "original_target": "diag",
+                "role": "",
+                "target": "diag",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/diagonal/",
+                "label": "flops.diagonal",
+                "original_target": "diagonal",
+                "role": "",
+                "target": "diagonal",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "",
+                "href": "/docs/api/numpy/diagflat/",
+                "label": "flops.diagflat",
+                "original_target": "diagflat",
+                "role": "",
+                "target": "diagflat",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.trace(flops.eye(3))"
+              },
+              {
+                "kind": "output",
+                "text": "3.0"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(8).reshape((2,2,2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.trace(a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([6, 8])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(24).reshape((2,2,2,3))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.trace(a).shape"
+              },
+              {
+                "kind": "output",
+                "text": "(2, 3)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.trace",
+    "module": "numpy",
+    "name": "trace",
+    "notes": "Diagonal sum; cost = min(n,m).",
+    "numpy_ref": "np.trace",
+    "signature": "fnp.trace(a: 'ArrayLike', offset: 'int' = 0, axis1: 'int' = 0, axis2: 'int' = 1, dtype: 'DTypeLike | None' = None, out: 'FlopscopeArray | None' = None) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Return the sum along diagonals of the array.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "trace",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_counting_ops.py#L28",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L1831"
+  }
+}

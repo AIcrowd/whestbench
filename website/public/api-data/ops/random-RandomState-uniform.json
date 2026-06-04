@@ -1,0 +1,708 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/uniform/",
+  "detail_json_href": "/api-data/ops/random-RandomState-uniform.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a uniform distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Samples are uniformly distributed over the half-open interval\n"
+              },
+              {
+                "kind": "code",
+                "text": "[low, high)"
+              },
+              {
+                "kind": "text",
+                "text": " (includes low, but excludes high).  In other words,\nany value within the given interval is equally likely to be drawn\nby "
+              },
+              {
+                "kind": "code",
+                "text": "uniform"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/uniform/",
+                    "kind": "link",
+                    "target": "random.Generator.uniform",
+                    "text": "uniform"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the `~flops.random.Generator.uniform`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Lower boundary of the output interval.  All values generated will be\ngreater than or equal to low.  The default value is 0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Lower boundary of the output interval.  All values generated will be\ngreater than or equal to low.  The default value is 0."
+                  }
+                ],
+                "name": "low",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Upper boundary of the output interval.  All values generated will be\nless than or equal to high.  The high limit may be included in the\nreturned array of floats due to floating-point rounding in the\nequation "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "low + (high-low) * random_sample()"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".  The default value\nis 1.0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Upper boundary of the output interval.  All values generated will be\nless than or equal to high.  The high limit may be included in the\nreturned array of floats due to floating-point rounding in the\nequation "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "low + (high-low) * random_sample()"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ".  The default value\nis 1.0."
+                  }
+                ],
+                "name": "high",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "low"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "high"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are both scalars.\nOtherwise, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.broadcast(low, high).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "low"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "high"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are both scalars.\nOtherwise, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.broadcast(low, high).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the parameterized uniform distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the parameterized uniform distribution."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Discrete uniform distribution, yielding integers.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Discrete uniform distribution, yielding integers."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.randint.html",
+                "href": "",
+                "label": "randint",
+                "original_target": "randint",
+                "role": "",
+                "target": "randint",
+                "unresolved": false
+              },
+              {
+                "description": "Discrete uniform distribution over the closed interval ``[low, high]``.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Discrete uniform distribution over the closed interval "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "[low, high]"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random_integers.html",
+                "href": "",
+                "label": "random_integers",
+                "original_target": "random_integers",
+                "role": "",
+                "target": "random_integers",
+                "unresolved": false
+              },
+              {
+                "description": "Floats uniformly distributed over ``[0, 1)``.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Floats uniformly distributed over "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "[0, 1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random_sample.html",
+                "href": "",
+                "label": "random_sample",
+                "original_target": "random_sample",
+                "role": "",
+                "target": "random_sample",
+                "unresolved": false
+              },
+              {
+                "description": "Alias for `random_sample`.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Alias for "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "random_sample"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.html",
+                "href": "",
+                "label": "random",
+                "original_target": "random",
+                "role": "",
+                "target": "random",
+                "unresolved": false
+              },
+              {
+                "description": "Convenience function that accepts dimensions as input, e.g., ``rand(2,2)`` would generate a 2-by-2 array of floats, uniformly distributed over ``[0, 1)``.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Convenience function that accepts dimensions as input, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "rand(2,2)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " would generate a 2-by-2 array of floats, uniformly distributed over "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "[0, 1)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.rand.html",
+                "href": "",
+                "label": "rand",
+                "original_target": "rand",
+                "role": "",
+                "target": "rand",
+                "unresolved": false
+              },
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/uniform/",
+                "label": "flops.random.Generator.uniform",
+                "original_target": "random.Generator.uniform",
+                "role": "",
+                "target": "random.Generator.uniform",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability density function of the uniform distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "p(x) = \\frac{1}{b - a}"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "anywhere within the interval "
+              },
+              {
+                "kind": "code",
+                "text": "[a, b)"
+              },
+              {
+                "kind": "text",
+                "text": ", and zero elsewhere."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "When "
+              },
+              {
+                "kind": "code",
+                "text": "high"
+              },
+              {
+                "kind": "text",
+                "text": " == "
+              },
+              {
+                "kind": "code",
+                "text": "low"
+              },
+              {
+                "kind": "text",
+                "text": ", values of "
+              },
+              {
+                "kind": "code",
+                "text": "low"
+              },
+              {
+                "kind": "text",
+                "text": " will be returned.\nIf "
+              },
+              {
+                "kind": "code",
+                "text": "high"
+              },
+              {
+                "kind": "text",
+                "text": " < "
+              },
+              {
+                "kind": "code",
+                "text": "low"
+              },
+              {
+                "kind": "text",
+                "text": ", the results are officially undefined\nand may eventually raise an error, i.e. do not rely on this\nfunction to behave when passed arguments satisfying that\ninequality condition. The "
+              },
+              {
+                "kind": "code",
+                "text": "high"
+              },
+              {
+                "kind": "text",
+                "text": " limit may be included in the\nreturned array of floats due to floating-point rounding in the\nequation "
+              },
+              {
+                "kind": "code",
+                "text": "low + (high-low) * random_sample()"
+              },
+              {
+                "kind": "text",
+                "text": ". For example:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.float32(5*0.99999999)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x"
+              },
+              {
+                "kind": "output",
+                "text": "flops.float32(5.0)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from the distribution:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = flops.random.uniform(-1,0,1000)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "All values are within the given interval:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.all(s >= -1)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.all(s < 0)"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Display the histogram of the samples, along with the\nprobability density function:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "count, bins, ignored = plt.hist(s, 15, density=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(bins, flops.ones_like(bins), linewidth=2, color='r')"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.RandomState.uniform",
+    "module": "numpy.random",
+    "name": "random.RandomState.uniform",
+    "notes": "Legacy uniform sampler; cost = numel(output).",
+    "numpy_ref": "np.random.RandomState.uniform",
+    "signature": "fnp.random.RandomState.uniform(self, low=0.0, high=1.0, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from a uniform distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-uniform",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.uniform.html"
+  }
+}

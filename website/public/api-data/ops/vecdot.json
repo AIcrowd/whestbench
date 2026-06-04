@@ -1,0 +1,523 @@
+{
+  "detail_href": "/docs/api/numpy/vecdot/",
+  "detail_json_href": "/api-data/ops/vecdot.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Vector dot product of two arrays."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Let "
+              },
+              {
+                "kind": "math",
+                "latex": "\\mathbf{a}"
+              },
+              {
+                "kind": "text",
+                "text": " be a vector in "
+              },
+              {
+                "kind": "code",
+                "text": "x1"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "math",
+                "latex": "\\mathbf{b}"
+              },
+              {
+                "kind": "text",
+                "text": " be\na corresponding vector in "
+              },
+              {
+                "kind": "code",
+                "text": "x2"
+              },
+              {
+                "kind": "text",
+                "text": ". The dot product is defined as:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "\\mathbf{a} \\cdot \\mathbf{b} = \\sum_{i=0}^{n-1} \\overline{a_i}b_i"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where the sum is over the last dimension (unless "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " is specified) and\nwhere "
+              },
+              {
+                "kind": "math",
+                "latex": "\\overline{a_i}"
+              },
+              {
+                "kind": "text",
+                "text": " denotes the complex conjugate if "
+              },
+              {
+                "kind": "math",
+                "latex": "a_i"
+              },
+              {
+                "kind": "text",
+                "text": "\nis complex and the identity otherwise."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [],
+            "directive": "versionadded",
+            "options": [],
+            "raw_source": ".. versionadded:: 2.0.0",
+            "supported": true,
+            "type": "directive_block",
+            "version": "2.0.0"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input arrays, scalars not allowed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input arrays, scalars not allowed."
+                  }
+                ],
+                "name": "x1, x2",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A location into which the result is stored. If provided, it must have\nthe broadcasted shape of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " with the last axis removed.\nIf not provided or None, a freshly-allocated array is used."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A location into which the result is stored. If provided, it must have\nthe broadcasted shape of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " with the last axis removed.\nIf not provided or None, a freshly-allocated array is used."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "For other keyword-only arguments, see the\n"
+                      },
+                      {
+                        "display_text": "ufunc docs",
+                        "explicit_title": true,
+                        "external_url": "",
+                        "href": "",
+                        "kind": "role_reference",
+                        "original_target": "ufuncs.kwargs",
+                        "role": "ref",
+                        "suppress_link": false,
+                        "target": "ufuncs.kwargs",
+                        "unresolved": true
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "For other keyword-only arguments, see the\n"
+                  },
+                  {
+                    "display_text": "ufunc docs",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "ufuncs.kwargs",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "ufuncs.kwargs",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "**kwargs",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The vector dot product of the inputs.\nThis is a scalar only when both x1, x2 are 1-d vectors."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The vector dot product of the inputs.\nThis is a scalar only when both x1, x2 are 1-d vectors."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the last dimension of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not the same size as\nthe last dimension of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If a scalar value is passed in."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the last dimension of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not the same size as\nthe last dimension of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "same but flattens arguments first",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "same but flattens arguments first"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/vdot/",
+                "label": "flops.vdot",
+                "original_target": "vdot",
+                "role": "",
+                "target": "vdot",
+                "unresolved": false
+              },
+              {
+                "description": "Matrix-matrix product.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Matrix-matrix product."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/matmul/",
+                "label": "flops.matmul",
+                "original_target": "matmul",
+                "role": "",
+                "target": "matmul",
+                "unresolved": false
+              },
+              {
+                "description": "Vector-matrix product.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Vector-matrix product."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/vecmat/",
+                "label": "flops.vecmat",
+                "original_target": "vecmat",
+                "role": "",
+                "target": "vecmat",
+                "unresolved": false
+              },
+              {
+                "description": "Matrix-vector product.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Matrix-vector product."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/matvec/",
+                "label": "flops.matvec",
+                "original_target": "matvec",
+                "role": "",
+                "target": "matvec",
+                "unresolved": false
+              },
+              {
+                "description": "Einstein summation convention.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Einstein summation convention."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/einsum/",
+                "label": "flops.einsum",
+                "original_target": "einsum",
+                "role": "",
+                "target": "einsum",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Get the projected size along a given normal for an array of vectors."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "v = flops.array([[0., 5., 0.], [0., 0., 10.], [0., 6., 8.]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "n = flops.array([0., 0.6, 0.8])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.vecdot(v, n)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 3.,  8., 10.])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_binary",
+    "cost_formula": "n",
+    "cost_formula_latex": "$n$",
+    "flopscope_ref": "fnp.vecdot",
+    "module": "numpy",
+    "name": "vecdot",
+    "notes": "Vector dot product along last axis.",
+    "numpy_ref": "np.vecdot",
+    "signature": "fnp.vecdot(a: 'ArrayLike', b: 'ArrayLike', **kwargs: 'Any') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Vector dot product of two arrays.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "vecdot",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L1252",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/code_generators/ufunc_docstrings.py"
+  }
+}

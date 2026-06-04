@@ -1,0 +1,663 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/pinv/",
+  "detail_json_href": "/api-data/ops/linalg-pinv.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the (Moore-Penrose) pseudo-inverse of a matrix."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Calculate the generalized inverse of a matrix using its\nsingular-value decomposition (SVD) and including all\n"
+              },
+              {
+                "kind": "emphasis",
+                "text": "large"
+              },
+              {
+                "kind": "text",
+                "text": " singular values."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Matrix or stack of matrices to be pseudo-inverted."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, N) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Matrix or stack of matrices to be pseudo-inverted."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Cutoff for small singular values.\nSingular values less than or equal to\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "rcond * largest_singular_value"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are set to zero.\nBroadcasts against the stack of matrices. Default: "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "1e-15"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(...) array_like of float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Cutoff for small singular values.\nSingular values less than or equal to\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "rcond * largest_singular_value"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are set to zero.\nBroadcasts against the stack of matrices. Default: "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "1e-15"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "rcond",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If True, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is assumed to be Hermitian (symmetric if real-valued),\nenabling a more efficient method for finding singular values.\nDefaults to False."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "bool, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If True, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is assumed to be Hermitian (symmetric if real-valued),\nenabling a more efficient method for finding singular values.\nDefaults to False."
+                  }
+                ],
+                "name": "hermitian",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Same as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "rcond"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", but it's an Array API compatible parameter name.\nOnly "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "rcond"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " or "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "rtol"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " can be set at a time. If none of them are\nprovided then NumPy's "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "1e-15"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " default is used. If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "rtol=None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "\nis passed then the API standard default is used."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "versionadded",
+                    "options": [],
+                    "raw_source": ".. versionadded:: 2.0.0",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "2.0.0"
+                  }
+                ],
+                "data_type": "(...) array_like of float, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Same as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "rcond"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", but it's an Array API compatible parameter name.\nOnly "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "rcond"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " or "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "rtol"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " can be set at a time. If none of them are\nprovided then NumPy's "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "1e-15"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " default is used. If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "rtol=None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nis passed then the API standard default is used."
+                  }
+                ],
+                "name": "rtol",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The pseudo-inverse of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". If "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is a "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "matrix"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " instance, then so\nis "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "B"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., N, M) ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The pseudo-inverse of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". If "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is a "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "matrix"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance, then so\nis "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "B"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "B",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the SVD computation does not converge."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the SVD computation does not converge."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Similar function in SciPy.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.pinv.html",
+                "href": "",
+                "label": "scipy.linalg.pinv",
+                "original_target": "scipy.linalg.pinv",
+                "role": "",
+                "target": "scipy.linalg.pinv",
+                "unresolved": false
+              },
+              {
+                "description": "Compute the (Moore-Penrose) pseudo-inverse of a Hermitian matrix.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Compute the (Moore-Penrose) pseudo-inverse of a Hermitian matrix."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.pinvh.html",
+                "href": "",
+                "label": "scipy.linalg.pinvh",
+                "original_target": "scipy.linalg.pinvh",
+                "role": "",
+                "target": "scipy.linalg.pinvh",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The pseudo-inverse of a matrix A, denoted "
+              },
+              {
+                "kind": "math",
+                "latex": "A^+"
+              },
+              {
+                "kind": "text",
+                "text": ", is\ndefined as: \"the matrix that 'solves' [the least-squares problem]\n"
+              },
+              {
+                "kind": "math",
+                "latex": "Ax = b"
+              },
+              {
+                "kind": "text",
+                "text": ",\" i.e., if "
+              },
+              {
+                "kind": "math",
+                "latex": "\\bar{x}"
+              },
+              {
+                "kind": "text",
+                "text": " is said solution, then\n"
+              },
+              {
+                "kind": "math",
+                "latex": "A^+"
+              },
+              {
+                "kind": "text",
+                "text": " is that matrix such that "
+              },
+              {
+                "kind": "math",
+                "latex": "\\bar{x} = A^+b"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "It can be shown that if "
+              },
+              {
+                "kind": "math",
+                "latex": "Q_1 \\Sigma Q_2^T = A"
+              },
+              {
+                "kind": "text",
+                "text": " is the singular\nvalue decomposition of A, then\n"
+              },
+              {
+                "kind": "math",
+                "latex": "A^+ = Q_2 \\Sigma^+ Q_1^T"
+              },
+              {
+                "kind": "text",
+                "text": ", where "
+              },
+              {
+                "kind": "math",
+                "latex": "Q_{1,2}"
+              },
+              {
+                "kind": "text",
+                "text": " are\northogonal matrices, "
+              },
+              {
+                "kind": "math",
+                "latex": "\\Sigma"
+              },
+              {
+                "kind": "text",
+                "text": " is a diagonal matrix consisting\nof A's so-called singular values, (followed, typically, by\nzeros), and then "
+              },
+              {
+                "kind": "math",
+                "latex": "\\Sigma^+"
+              },
+              {
+                "kind": "text",
+                "text": " is simply the diagonal matrix\nconsisting of the reciprocals of A's singular values\n(again, followed by zeros). "
+              },
+              {
+                "kind": "text",
+                "text": "[1]_"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nG. Strang, Linear Algebra and Its Applications, 2nd Ed., Orlando,\nFL, Academic Press, Inc., 1980, pp. 139-142.",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The following example checks that "
+              },
+              {
+                "kind": "code",
+                "text": "a * a+ * a == a"
+              },
+              {
+                "kind": "text",
+                "text": " and\n"
+              },
+              {
+                "kind": "code",
+                "text": "a+ * a * a+ == a+"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "rng = flops.random.default_rng()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = rng.normal(size=(9, 6))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "B = flops.linalg.pinv(a)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(a, flops.dot(a, flops.dot(B, a)))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.allclose(B, flops.dot(B, flops.dot(a, B)))"
+              },
+              {
+                "kind": "output",
+                "text": "True"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "m * n * min(m,n)",
+    "cost_formula_latex": "$m \\cdot n \\cdot \\min(m,n)$",
+    "flopscope_ref": "fnp.linalg.pinv",
+    "module": "numpy.linalg",
+    "name": "linalg.pinv",
+    "notes": "Pseudoinverse. Cost: m*n*min(m,n) (via SVD).",
+    "numpy_ref": "np.linalg.pinv",
+    "signature": "fnp.linalg.pinv(a: 'ArrayLike', rcond: 'float | None' = None, hermitian: 'bool' = False, *, rtol: 'float | None' = None) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Compute the (Moore-Penrose) pseudo-inverse of a matrix.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-pinv",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_solvers.py#L305",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L2128"
+  }
+}

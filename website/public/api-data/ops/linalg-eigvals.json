@@ -1,0 +1,446 @@
+{
+  "detail_href": "/docs/api/numpy/linalg/eigvals/",
+  "detail_json_href": "/api-data/ops/linalg-eigvals.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Compute the eigenvalues of a general matrix."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Main difference between "
+              },
+              {
+                "kind": "code",
+                "text": "eigvals"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "eig"
+              },
+              {
+                "kind": "text",
+                "text": ": the eigenvectors aren't\nreturned."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A complex- or real-valued matrix whose eigenvalues will be computed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M, M) array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A complex- or real-valued matrix whose eigenvalues will be computed."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The eigenvalues, each repeated according to its multiplicity.\nThey are not necessarily ordered, nor are they necessarily\nreal for real matrices."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "(..., M,) ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The eigenvalues, each repeated according to its multiplicity.\nThey are not necessarily ordered, nor are they necessarily\nreal for real matrices."
+                  }
+                ],
+                "name": "w",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the eigenvalue computation does not converge."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "LinAlgError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the eigenvalue computation does not converge."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "eigenvalues and right eigenvectors of general arrays",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues and right eigenvectors of general arrays"
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eig.html",
+                "href": "",
+                "label": "eig",
+                "original_target": "eig",
+                "role": "",
+                "target": "eig",
+                "unresolved": false
+              },
+              {
+                "description": "eigenvalues of real symmetric or complex Hermitian (conjugate symmetric) arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues of real symmetric or complex Hermitian (conjugate symmetric) arrays."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eigvalsh.html",
+                "href": "",
+                "label": "eigvalsh",
+                "original_target": "eigvalsh",
+                "role": "",
+                "target": "eigvalsh",
+                "unresolved": false
+              },
+              {
+                "description": "eigenvalues and eigenvectors of real symmetric or complex Hermitian (conjugate symmetric) arrays.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "eigenvalues and eigenvectors of real symmetric or complex Hermitian (conjugate symmetric) arrays."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.eigh.html",
+                "href": "",
+                "label": "eigh",
+                "original_target": "eigh",
+                "role": "",
+                "target": "eigh",
+                "unresolved": false
+              },
+              {
+                "description": "Similar function in SciPy.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Similar function in SciPy."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigvals.html",
+                "href": "",
+                "label": "scipy.linalg.eigvals",
+                "original_target": "scipy.linalg.eigvals",
+                "role": "",
+                "target": "scipy.linalg.eigvals",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Broadcasting rules apply, see the "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.linalg.html",
+                "href": "",
+                "kind": "link",
+                "target": "linalg",
+                "text": "flops.linalg"
+              },
+              {
+                "kind": "text",
+                "text": " documentation for\ndetails."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This is implemented using the "
+              },
+              {
+                "kind": "code",
+                "text": "_geev"
+              },
+              {
+                "kind": "text",
+                "text": " LAPACK routines which compute\nthe eigenvalues and eigenvectors of general square arrays."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Illustration, using the fact that the eigenvalues of a diagonal matrix\nare its diagonal elements, that multiplying a matrix on the left\nby an orthogonal matrix, "
+              },
+              {
+                "kind": "code",
+                "text": "Q"
+              },
+              {
+                "kind": "text",
+                "text": ", and on the right by "
+              },
+              {
+                "kind": "code",
+                "text": "Q.T"
+              },
+              {
+                "kind": "text",
+                "text": " (the transpose\nof "
+              },
+              {
+                "kind": "code",
+                "text": "Q"
+              },
+              {
+                "kind": "text",
+                "text": "), preserves the eigenvalues of the \"middle\" matrix. In other words,\nif "
+              },
+              {
+                "kind": "code",
+                "text": "Q"
+              },
+              {
+                "kind": "text",
+                "text": " is orthogonal, then "
+              },
+              {
+                "kind": "code",
+                "text": "Q * A * Q.T"
+              },
+              {
+                "kind": "text",
+                "text": " has the same eigenvalues as\n"
+              },
+              {
+                "kind": "code",
+                "text": "A"
+              },
+              {
+                "kind": "text",
+                "text": ":"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from numpy import linalg as LA"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.random.random()"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "Q = flops.array([[flops.cos(x), -flops.sin(x)], [flops.sin(x), flops.cos(x)]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.norm(Q[0, :]), LA.norm(Q[1, :]), flops.dot(Q[0, :],Q[1, :])"
+              },
+              {
+                "kind": "output",
+                "text": "(1.0, 1.0, 0.0)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Now multiply a diagonal matrix by "
+              },
+              {
+                "kind": "code",
+                "text": "Q"
+              },
+              {
+                "kind": "text",
+                "text": " on one side and\nby "
+              },
+              {
+                "kind": "code",
+                "text": "Q.T"
+              },
+              {
+                "kind": "text",
+                "text": " on the other:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "D = flops.diag((-1,1))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.eigvals(D)"
+              },
+              {
+                "kind": "output",
+                "text": "array([-1.,  1.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = flops.dot(Q, D)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "A = flops.dot(A, Q.T)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "LA.eigvals(A)"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 1., -1.]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "n^3",
+    "cost_formula_latex": "$n^3$",
+    "flopscope_ref": "fnp.linalg.eigvals",
+    "module": "numpy.linalg",
+    "name": "linalg.eigvals",
+    "notes": "Eigenvalues only. Cost: $n^3$.",
+    "numpy_ref": "np.linalg.eigvals",
+    "signature": "fnp.linalg.eigvals(a: 'ArrayLike') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Compute the eigenvalues of a general matrix.",
+    "weight": 4.0
+  },
+  "schema_version": 1,
+  "slug": "linalg-eigvals",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/linalg/_decompositions.py#L238",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/linalg/_linalg.py#L1133"
+  }
+}

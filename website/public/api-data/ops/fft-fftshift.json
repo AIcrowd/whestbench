@@ -1,0 +1,285 @@
+{
+  "detail_href": "/docs/api/numpy/fft/fftshift/",
+  "detail_json_href": "/api-data/ops/fft-fftshift.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Shift the zero-frequency component to the center of the spectrum."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "This function swaps half-spaces for all axes listed (defaults to all).\nNote that "
+              },
+              {
+                "kind": "code",
+                "text": "y[0]"
+              },
+              {
+                "kind": "text",
+                "text": " is the Nyquist component only if "
+              },
+              {
+                "kind": "code",
+                "text": "len(x)"
+              },
+              {
+                "kind": "text",
+                "text": " is even."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input array."
+                  }
+                ],
+                "name": "x",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axes over which to shift.  Default is None, which shifts all axes."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or shape tuple, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axes over which to shift.  Default is None, which shifts all axes."
+                  }
+                ],
+                "name": "axes",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The shifted array."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The shifted array."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "The inverse of `fftshift`.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "The inverse of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "fftshift"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.ifftshift.html",
+                "href": "",
+                "label": "ifftshift",
+                "original_target": "ifftshift",
+                "role": "",
+                "target": "ifftshift",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "freqs = flops.fft.fftfreq(10, 0.1)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "freqs"
+              },
+              {
+                "kind": "output",
+                "text": "array([ 0.,  1.,  2., ..., -3., -2., -1.])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fft.fftshift(freqs)"
+              },
+              {
+                "kind": "output",
+                "text": "array([-5., -4., -3., -2., -1.,  0.,  1.,  2.,  3.,  4.])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Shift the zero-frequency component only along the second axis:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "freqs = flops.fft.fftfreq(9, d=1./9).reshape(3, 3)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "freqs"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 0.,  1.,  2.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [ 3.,  4., -4.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-3., -2., -1.]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.fft.fftshift(freqs, axes=(1,))"
+              },
+              {
+                "kind": "output",
+                "text": "array([[ 2.,  0.,  1.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-4.,  3.,  4.],"
+              },
+              {
+                "kind": "output",
+                "text": "       [-1., -3., -2.]])"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "free",
+    "cost_formula": "0",
+    "cost_formula_latex": "$0$",
+    "flopscope_ref": "fnp.fft.fftshift",
+    "module": "numpy.fft",
+    "name": "fft.fftshift",
+    "notes": "Shift zero-frequency component to center. No arithmetic; index reordering only.",
+    "numpy_ref": "np.fft.fftshift",
+    "signature": "fnp.fft.fftshift(x: 'ArrayLike', axes: 'int | Sequence[int] | None' = None) -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Shift the zero-frequency component to the center of the spectrum.",
+    "weight": 0.0
+  },
+  "schema_version": 1,
+  "slug": "fft-fftshift",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/numpy/fft/_free.py#L38",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/fft/_helper.py#L19"
+  }
+}

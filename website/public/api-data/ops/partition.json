@@ -1,0 +1,580 @@
+{
+  "detail_href": "/docs/api/numpy/partition/",
+  "detail_json_href": "/api-data/ops/partition.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Return a partitioned copy of an array."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Creates a copy of the array and partially sorts it in such a way that\nthe value of the element in k-th position is in the position it would be\nin a sorted array. In the output array, all elements smaller than the k-th\nelement are located to the left of this element and all equal or greater\nare located to its right. The ordering of the elements in the two\npartitions on the either side of the k-th element in the output array is\nundefined."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array to be sorted."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array to be sorted."
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Element index to partition by. The k-th value of the element\nwill be in its final sorted position and all smaller elements\nwill be moved before it and all equal or greater elements behind\nit. The order of all elements in the partitions is undefined. If\nprovided with a sequence of k-th it will partition all elements\nindexed by k-th  of them into their sorted position at once."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "argument_inline": [],
+                    "content_blocks": [],
+                    "directive": "deprecated",
+                    "options": [],
+                    "raw_source": ".. deprecated:: 1.22.0\n    Passing booleans as index is deprecated.",
+                    "supported": true,
+                    "type": "directive_block",
+                    "version": "1.22.0"
+                  }
+                ],
+                "data_type": "int or sequence of ints",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Element index to partition by. The k-th value of the element\nwill be in its final sorted position and all smaller elements\nwill be moved before it and all equal or greater elements behind\nit. The order of all elements in the partitions is undefined. If\nprovided with a sequence of k-th it will partition all elements\nindexed by k-th  of them into their sorted position at once."
+                  }
+                ],
+                "name": "kth",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Axis along which to sort. If None, the array is flattened before\nsorting. The default is -1, which sorts along the last axis."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or None, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Axis along which to sort. If None, the array is flattened before\nsorting. The default is -1, which sorts along the last axis."
+                  }
+                ],
+                "name": "axis",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Selection algorithm. Default is 'introselect'."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "{'introselect'}, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Selection algorithm. Default is 'introselect'."
+                  }
+                ],
+                "name": "kind",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "When "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is an array with fields defined, this argument\nspecifies which fields to compare first, second, etc.  A single\nfield can be specified as a string.  Not all fields need be\nspecified, but unspecified fields will still be used, in the\norder in which they come up in the dtype, to break ties."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "str or list of str, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "When "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is an array with fields defined, this argument\nspecifies which fields to compare first, second, etc.  A single\nfield can be specified as a string.  Not all fields need be\nspecified, but unspecified fields will still be used, in the\norder in which they come up in the dtype, to break ties."
+                  }
+                ],
+                "name": "order",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Array of the same type and shape as "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Array of the same type and shape as "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "partitioned_array",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Method to sort an array in-place.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Method to sort an array in-place."
+                  }
+                ],
+                "external_url": "",
+                "href": "",
+                "label": "ndarray.partition",
+                "original_target": "ndarray.partition",
+                "role": "",
+                "target": "ndarray.partition",
+                "unresolved": true
+              },
+              {
+                "description": "Indirect partition.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Indirect partition."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/argpartition/",
+                "label": "flops.argpartition",
+                "original_target": "argpartition",
+                "role": "",
+                "target": "argpartition",
+                "unresolved": false
+              },
+              {
+                "description": "Full sorting",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Full sorting"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/sort/",
+                "label": "flops.sort",
+                "original_target": "sort",
+                "role": "",
+                "target": "sort",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The various selection algorithms are characterized by their average\nspeed, worst case performance, work space size, and whether they are\nstable. A stable sort keeps items with the same key in the same\nrelative order. The available algorithms have the following\nproperties:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "raw_kind": "table",
+            "raw_text": "\n\n\n\n\n\n\n\n\n\nkind\n\nspeed\n\nworst case\n\nwork space\n\nstable\n\n'introselect'\n\n1\n\nO(n)\n\n0\n\nno",
+            "type": "raw_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "All the partition algorithms make temporary copies of the data when\npartitioning along any but the last axis.  Consequently,\npartitioning along the last axis is faster and uses less space than\npartitioning along any other axis."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The sort order for complex numbers is lexicographic. If both the\nreal and imaginary parts are non-nan then the order is determined by\nthe real parts except when they are equal, in which case the order\nis determined by the imaginary parts."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The sort order of "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.nan.html",
+                "href": "",
+                "kind": "link",
+                "target": "nan",
+                "text": "flops.nan"
+              },
+              {
+                "kind": "text",
+                "text": " is bigger than "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.inf.html",
+                "href": "",
+                "kind": "link",
+                "target": "inf",
+                "text": "flops.inf"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([7, 1, 7, 7, 1, 5, 7, 2, 3, 2, 6, 2, 3, 0])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p = flops.partition(a, 4)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 1, 2, 1, 2, 5, 2, 3, 3, 6, 7, 7, 7, 7]) # may vary"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "p[4]"
+              },
+              {
+                "kind": "text",
+                "text": " is 2;  all elements in "
+              },
+              {
+                "kind": "code",
+                "text": "p[:4]"
+              },
+              {
+                "kind": "text",
+                "text": " are less than or equal\nto "
+              },
+              {
+                "kind": "code",
+                "text": "p[4]"
+              },
+              {
+                "kind": "text",
+                "text": ", and all elements in "
+              },
+              {
+                "kind": "code",
+                "text": "p[5:]"
+              },
+              {
+                "kind": "text",
+                "text": " are greater than or\nequal to "
+              },
+              {
+                "kind": "code",
+                "text": "p[4]"
+              },
+              {
+                "kind": "text",
+                "text": ".  The partition is:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "[0, 1, 2, 1], [2], [5, 2, 3, 3, 6, 7, 7, 7, 7]",
+            "type": "literal_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The next example shows the use of multiple values passed to "
+              },
+              {
+                "kind": "code",
+                "text": "kth"
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p2 = flops.partition(a, (4, 8))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "p2"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 1, 2, 1, 2, 3, 3, 2, 5, 6, 7, 7, 7, 7])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "code",
+                "text": "p2[4]"
+              },
+              {
+                "kind": "text",
+                "text": " is 2  and "
+              },
+              {
+                "kind": "code",
+                "text": "p2[8]"
+              },
+              {
+                "kind": "text",
+                "text": " is 5.  All elements in "
+              },
+              {
+                "kind": "code",
+                "text": "p2[:4]"
+              },
+              {
+                "kind": "text",
+                "text": "\nare less than or equal to "
+              },
+              {
+                "kind": "code",
+                "text": "p2[4]"
+              },
+              {
+                "kind": "text",
+                "text": ", all elements in "
+              },
+              {
+                "kind": "code",
+                "text": "p2[5:8]"
+              },
+              {
+                "kind": "text",
+                "text": "\nare greater than or equal to "
+              },
+              {
+                "kind": "code",
+                "text": "p2[4]"
+              },
+              {
+                "kind": "text",
+                "text": " and less than or equal to\n"
+              },
+              {
+                "kind": "code",
+                "text": "p2[8]"
+              },
+              {
+                "kind": "text",
+                "text": ", and all elements in "
+              },
+              {
+                "kind": "code",
+                "text": "p2[9:]"
+              },
+              {
+                "kind": "text",
+                "text": " are greater than or\nequal to "
+              },
+              {
+                "kind": "code",
+                "text": "p2[8]"
+              },
+              {
+                "kind": "text",
+                "text": ".  The partition is:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "language": null,
+            "text": "[0, 1, 2, 1], [2], [3, 3, 2], [5], [6, 7, 7, 7, 7]",
+            "type": "literal_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "per-operation",
+    "cost_formula_latex": "varies",
+    "flopscope_ref": "fnp.partition",
+    "module": "numpy",
+    "name": "partition",
+    "notes": "Quickselect; cost = n per slice.",
+    "numpy_ref": "np.partition",
+    "signature": "fnp.partition(a, kth, axis=-1, kind='introselect', order=None)",
+    "status": "supported",
+    "summary": "Return a partitioned copy of an array.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "partition",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_sorting_ops.py#L131",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/fromnumeric.py#L758"
+  }
+}

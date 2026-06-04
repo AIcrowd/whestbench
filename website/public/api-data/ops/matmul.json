@@ -1,0 +1,907 @@
+{
+  "detail_href": "/docs/api/numpy/matmul/",
+  "detail_json_href": "/api-data/ops/matmul.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Matrix product of two arrays."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Input arrays, scalars not allowed."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "array_like",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Input arrays, scalars not allowed."
+                  }
+                ],
+                "name": "x1, x2",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "A location into which the result is stored. If provided, it must have\na shape that matches the signature "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(n,k),(k,m)->(n,m)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ". If not\nprovided or None, a freshly-allocated array is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "A location into which the result is stored. If provided, it must have\na shape that matches the signature "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(n,k),(k,m)->(n,m)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ". If not\nprovided or None, a freshly-allocated array is returned."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "For other keyword-only arguments, see the\n"
+                      },
+                      {
+                        "display_text": "ufunc docs",
+                        "explicit_title": true,
+                        "external_url": "",
+                        "href": "",
+                        "kind": "role_reference",
+                        "original_target": "ufuncs.kwargs",
+                        "role": "ref",
+                        "suppress_link": false,
+                        "target": "ufuncs.kwargs",
+                        "unresolved": true
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "For other keyword-only arguments, see the\n"
+                  },
+                  {
+                    "display_text": "ufunc docs",
+                    "explicit_title": true,
+                    "external_url": "",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "ufuncs.kwargs",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "ufuncs.kwargs",
+                    "unresolved": true
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "**kwargs",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The matrix product of the inputs.\nThis is a scalar only when both x1, x2 are 1-d vectors."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The matrix product of the inputs.\nThis is a scalar only when both x1, x2 are 1-d vectors."
+                  }
+                ],
+                "name": "y",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the last dimension of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x1"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " is not the same size as\nthe second-to-last dimension of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "x2"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If a scalar value is passed in."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If the last dimension of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " is not the same size as\nthe second-to-last dimension of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "x2"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "Complex-conjugating dot product for stacks of vectors.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Complex-conjugating dot product for stacks of vectors."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/vecdot/",
+                "label": "flops.vecdot",
+                "original_target": "vecdot",
+                "role": "",
+                "target": "vecdot",
+                "unresolved": false
+              },
+              {
+                "description": "Matrix-vector product for stacks of matrices and vectors.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Matrix-vector product for stacks of matrices and vectors."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/matvec/",
+                "label": "flops.matvec",
+                "original_target": "matvec",
+                "role": "",
+                "target": "matvec",
+                "unresolved": false
+              },
+              {
+                "description": "Vector-matrix product for stacks of vectors and matrices.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Vector-matrix product for stacks of vectors and matrices."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/vecmat/",
+                "label": "flops.vecmat",
+                "original_target": "vecmat",
+                "role": "",
+                "target": "vecmat",
+                "unresolved": false
+              },
+              {
+                "description": "Sum products over arbitrary axes.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Sum products over arbitrary axes."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/tensordot/",
+                "label": "flops.tensordot",
+                "original_target": "tensordot",
+                "role": "",
+                "target": "tensordot",
+                "unresolved": false
+              },
+              {
+                "description": "Einstein summation convention.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "Einstein summation convention."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/einsum/",
+                "label": "flops.einsum",
+                "original_target": "einsum",
+                "role": "",
+                "target": "einsum",
+                "unresolved": false
+              },
+              {
+                "description": "alternative matrix product with different broadcasting rules.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "alternative matrix product with different broadcasting rules."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/dot/",
+                "label": "flops.dot",
+                "original_target": "dot",
+                "role": "",
+                "target": "dot",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The behavior depends on the arguments in the following way."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "items": [
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If both arguments are 2-D they are multiplied like conventional\nmatrices."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              },
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If either argument is N-D, N > 2, it is treated as a stack of\nmatrices residing in the last two indexes and broadcast accordingly."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              },
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the first argument is 1-D, it is promoted to a matrix by\nprepending a 1 to its dimensions. After matrix multiplication\nthe prepended 1 is removed. (For stacks of vectors, use "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/vecmat/",
+                        "kind": "link",
+                        "target": "vecmat",
+                        "text": "vecmat"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".)"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              },
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If the second argument is 1-D, it is promoted to a matrix by\nappending a 1 to its dimensions. After matrix multiplication\nthe appended 1 is removed. (For stacks of vectors, use "
+                      },
+                      {
+                        "external_url": "",
+                        "href": "/docs/api/numpy/matvec/",
+                        "kind": "link",
+                        "target": "matvec",
+                        "text": "matvec"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ".)"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              }
+            ],
+            "ordered": false,
+            "type": "list"
+          },
+          {
+            "inline": [
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/matmul/",
+                "kind": "link",
+                "target": "matmul",
+                "text": "matmul"
+              },
+              {
+                "kind": "text",
+                "text": " differs from "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/dot/",
+                "kind": "link",
+                "target": "dot",
+                "text": "dot"
+              },
+              {
+                "kind": "text",
+                "text": " in two important ways:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "items": [
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Multiplication by scalars is not allowed, use "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "*"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " instead."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ]
+              },
+              {
+                "blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Stacks of matrices are broadcast together as if the matrices\nwere elements, respecting the signature "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(n,k),(k,m)->(n,m)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ":"
+                      }
+                    ],
+                    "type": "paragraph"
+                  },
+                  {
+                    "lines": [
+                      {
+                        "kind": "input",
+                        "prompt": ">>>",
+                        "text": "a = flops.ones([9, 5, 7, 4])"
+                      },
+                      {
+                        "kind": "input",
+                        "prompt": ">>>",
+                        "text": "c = flops.ones([9, 5, 4, 3])"
+                      },
+                      {
+                        "kind": "input",
+                        "prompt": ">>>",
+                        "text": "flops.dot(a, c).shape"
+                      },
+                      {
+                        "kind": "output",
+                        "text": "(9, 5, 7, 9, 5, 3)"
+                      },
+                      {
+                        "kind": "input",
+                        "prompt": ">>>",
+                        "text": "flops.matmul(a, c).shape"
+                      },
+                      {
+                        "kind": "output",
+                        "text": "(9, 5, 7, 3)"
+                      },
+                      {
+                        "kind": "input",
+                        "prompt": ">>>",
+                        "text": "# n is 7, k is 4, m is 3"
+                      }
+                    ],
+                    "type": "doctest_block"
+                  }
+                ]
+              }
+            ],
+            "ordered": false,
+            "type": "list"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The matmul function implements the semantics of the "
+              },
+              {
+                "kind": "code",
+                "text": "@"
+              },
+              {
+                "kind": "text",
+                "text": " operator\nintroduced in Python 3.5 following "
+              },
+              {
+                "display_text": "465",
+                "explicit_title": false,
+                "external_url": "https://peps.python.org/pep-0465/",
+                "href": "",
+                "kind": "role_reference",
+                "original_target": "465",
+                "role": "pep",
+                "suppress_link": false,
+                "target": "465",
+                "unresolved": false
+              },
+              {
+                "kind": "text",
+                "text": "."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "It uses an optimized BLAS library when possible (see "
+              },
+              {
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.linalg.html",
+                "href": "",
+                "kind": "link",
+                "target": "linalg",
+                "text": "flops.linalg"
+              },
+              {
+                "kind": "text",
+                "text": ")."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For 2-D arrays it is the matrix product:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import flopscope.numpy as fnp"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, 0],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[0, 1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([[4, 1],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[2, 2]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.matmul(a, b)"
+              },
+              {
+                "kind": "output",
+                "text": "array([[4, 1],"
+              },
+              {
+                "kind": "output",
+                "text": "       [2, 2]])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "For 2-D mixed with 1-D, the result is the usual."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.array([[1, 0],"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": "[0, 1]])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.array([1, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.matmul(a, b)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.matmul(b, a)"
+              },
+              {
+                "kind": "output",
+                "text": "array([1, 2])"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Broadcasting is conventional for stacks of arrays"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "a = flops.arange(2 * 2 * 4).reshape((2, 2, 4))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "b = flops.arange(2 * 2 * 4).reshape((2, 4, 2))"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.matmul(a,b).shape"
+              },
+              {
+                "kind": "output",
+                "text": "(2, 2, 2)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.matmul(a, b)[0, 1, 1]"
+              },
+              {
+                "kind": "output",
+                "text": "98"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "sum(a[0, 1, :] * b[0 , :, 1])"
+              },
+              {
+                "kind": "output",
+                "text": "98"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Vector, vector returns the scalar inner product, but neither argument\nis complex-conjugated:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.matmul([2j, 3j], [2j, 3j])"
+              },
+              {
+                "kind": "output",
+                "text": "(-13+0j)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Scalar multiplication raises an error."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.matmul([1,2], 3)"
+              },
+              {
+                "kind": "output",
+                "text": "Traceback (most recent call last):"
+              },
+              {
+                "kind": "input",
+                "prompt": "...",
+                "text": ""
+              },
+              {
+                "kind": "output",
+                "text": "ValueError: matmul: Input operand 1 does not have enough dimensions ..."
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The "
+              },
+              {
+                "kind": "code",
+                "text": "@"
+              },
+              {
+                "kind": "text",
+                "text": " operator can be used as a shorthand for "
+              },
+              {
+                "external_url": "",
+                "href": "/docs/api/numpy/matmul/",
+                "kind": "link",
+                "target": "matmul",
+                "text": "flops.matmul"
+              },
+              {
+                "kind": "text",
+                "text": " on\nndarrays."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1 = flops.array([2j, 3j])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x2 = flops.array([2j, 3j])"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x1 @ x2"
+              },
+              {
+                "kind": "output",
+                "text": "(-13+0j)"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_custom",
+    "cost_formula": "2 * m * k * n - m * n (FMA=2)",
+    "cost_formula_latex": "$2 \\cdot m \\cdot k \\cdot n - m \\cdot n$",
+    "flopscope_ref": "fnp.matmul",
+    "module": "numpy",
+    "name": "matmul",
+    "notes": "Matrix multiplication; cost = M*K*N (weight-calibrated).",
+    "numpy_ref": "np.matmul",
+    "signature": "fnp.matmul(a: 'ArrayLike', b: 'ArrayLike') -> 'FlopscopeArray'",
+    "status": "supported",
+    "summary": "Matrix product of two arrays.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "matmul",
+  "source": {
+    "flopscope": "https://github.com/AIcrowd/flopscope/blob/main/src/flopscope/_pointwise.py#L1836",
+    "numpy": "https://github.com/numpy/numpy/blob/v2.2.6/numpy/_core/code_generators/ufunc_docstrings.py"
+  }
+}

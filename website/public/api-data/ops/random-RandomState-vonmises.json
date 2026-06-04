@@ -1,0 +1,525 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/vonmises/",
+  "detail_json_href": "/api-data/ops/random-RandomState-vonmises.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from a von Mises distribution."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Samples are drawn from a von Mises distribution with specified mode\n(mu) and concentration (kappa), on the interval [-pi, pi]."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The von Mises distribution (also known as the circular normal\ndistribution) is a continuous probability distribution on the unit\ncircle.  It may be thought of as the circular analogue of the normal\ndistribution."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/vonmises/",
+                    "kind": "link",
+                    "target": "random.Generator.vonmises",
+                    "text": "vonmises"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the `~flops.random.Generator.vonmises`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Mode (\"center\") of the distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Mode (\"center\") of the distribution."
+                  }
+                ],
+                "name": "mu",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Concentration of the distribution, has to be >=0."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "float or array_like of floats",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Concentration of the distribution, has to be >=0."
+                  }
+                ],
+                "name": "kappa",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  If size is "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "None"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " (default),\na single value is returned if "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "mu"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " and "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "kappa"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " are both scalars.\nOtherwise, "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "flops.broadcast(mu, kappa).size"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  If size is "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "None"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " (default),\na single value is returned if "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "mu"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " and "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "kappa"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " are both scalars.\nOtherwise, "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "flops.broadcast(mu, kappa).size"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Drawn samples from the parameterized von Mises distribution."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ndarray or scalar",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Drawn samples from the parameterized von Mises distribution."
+                  }
+                ],
+                "name": "out",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "probability density function, distribution, or cumulative density function, etc.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "probability density function, distribution, or cumulative density function, etc."
+                  }
+                ],
+                "external_url": "https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.vonmises.html",
+                "href": "",
+                "label": "scipy.stats.vonmises",
+                "original_target": "scipy.stats.vonmises",
+                "role": "",
+                "target": "stats.vonmises",
+                "unresolved": false
+              },
+              {
+                "description": "which should be used for new code.",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used for new code."
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/vonmises/",
+                "label": "flops.random.Generator.vonmises",
+                "original_target": "random.Generator.vonmises",
+                "role": "",
+                "target": "random.Generator.vonmises",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The probability density for the von Mises distribution is"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "formulas": [
+              "p(x) = \\frac{e^{\\kappa cos(x-\\mu)}}{2\\pi I_0(\\kappa)},"
+            ],
+            "type": "math_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "where "
+              },
+              {
+                "kind": "math",
+                "latex": "\\mu"
+              },
+              {
+                "kind": "text",
+                "text": " is the mode and "
+              },
+              {
+                "kind": "math",
+                "latex": "\\kappa"
+              },
+              {
+                "kind": "text",
+                "text": " the concentration,\nand "
+              },
+              {
+                "kind": "math",
+                "latex": "I_0(\\kappa)"
+              },
+              {
+                "kind": "text",
+                "text": " is the modified Bessel function of order 0."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "The von Mises is named for Richard Edler von Mises, who was born in\nAustria-Hungary, in what is now the Ukraine.  He fled to the United\nStates in 1939 and became a professor at Harvard.  He worked in\nprobability theory, aerodynamics, fluid mechanics, and philosophy of\nscience."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "raw_kind": "footnote",
+            "raw_text": "1\n\nAbramowitz, M. and Stegun, I. A. (Eds.). \"Handbook of\nMathematical Functions with Formulas, Graphs, and Mathematical\nTables, 9th printing,\" New York: Dover, 1972.",
+            "type": "raw_block"
+          },
+          {
+            "raw_kind": "footnote",
+            "raw_text": "2\n\nvon Mises, R., \"Mathematical Theory of Probability\nand Statistics\", New York: Academic Press, 1964.",
+            "type": "raw_block"
+          }
+        ],
+        "title": "References"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Draw samples from the distribution:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "mu, kappa = 0.0, 4.0 # mean and concentration"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "s = flops.random.vonmises(mu, kappa, 1000)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Display the histogram of the samples, along with\nthe probability density function:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "import matplotlib.pyplot as plt"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "from scipy.special import i0  # doctest: +SKIP"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.hist(s, 50, density=True)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "x = flops.linspace(-flops.pi, flops.pi, num=51)"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "y = flops.exp(kappa*flops.cos(x-mu))/(2*flops.pi*i0(kappa))  # doctest: +SKIP"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.plot(x, y, linewidth=2, color='r')  # doctest: +SKIP"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "plt.show()"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$",
+    "flopscope_ref": "fnp.random.RandomState.vonmises",
+    "module": "numpy.random",
+    "name": "random.RandomState.vonmises",
+    "notes": "Legacy Von Mises sampler; cost = numel(output).",
+    "numpy_ref": "np.random.RandomState.vonmises",
+    "signature": "fnp.random.RandomState.vonmises(self, mu, kappa, size=None)",
+    "status": "supported",
+    "summary": "Draw samples from a von Mises distribution.",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-vonmises",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.vonmises.html"
+  }
+}

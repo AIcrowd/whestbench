@@ -1,0 +1,619 @@
+{
+  "detail_href": "/docs/api/numpy/random/random-state/choice/",
+  "detail_json_href": "/api-data/ops/random-RandomState-choice.json",
+  "docs": {
+    "sections": [
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generates a random sample from a given 1-D array"
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Summary"
+      },
+      {
+        "blocks": [
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "New code should use the "
+                  },
+                  {
+                    "external_url": "",
+                    "href": "/docs/api/numpy/random/generator/choice/",
+                    "kind": "link",
+                    "target": "random.Generator.choice",
+                    "text": "choice"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "\nmethod of a "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random.Generator.html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "random.Generator",
+                    "text": "Generator"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " instance instead;\nplease see the "
+                  },
+                  {
+                    "display_text": "random-quick-start",
+                    "explicit_title": false,
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.random-quick-start.html",
+                    "href": "",
+                    "kind": "role_reference",
+                    "original_target": "random-quick-start",
+                    "role": "ref",
+                    "suppress_link": false,
+                    "target": "random-quick-start",
+                    "unresolved": false
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "note",
+            "options": [],
+            "raw_source": ".. note::\n    New code should use the `~flops.random.Generator.choice`\n    method of a `~flops.random.Generator` instance instead;\n    please see the :ref:`random-quick-start`.",
+            "supported": true,
+            "type": "directive_block"
+          },
+          {
+            "argument_inline": [],
+            "content_blocks": [
+              {
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "This function uses the C-long dtype, which is 32bit on windows\nand otherwise 64bit on 64bit platforms (and 32bit on 32bit ones).\nSince NumPy 2.0, NumPy's default integer is 32bit on 32bit platforms\nand 64bit on 64bit platforms."
+                  }
+                ],
+                "type": "paragraph"
+              }
+            ],
+            "directive": "warning",
+            "options": [],
+            "raw_source": ".. warning::\n    This function uses the C-long dtype, which is 32bit on windows\n    and otherwise 64bit on 64bit platforms (and 32bit on 32bit ones).\n    Since NumPy 2.0, NumPy's default integer is 32bit on 32bit platforms\n    and 64bit on 64bit platforms.",
+            "supported": true,
+            "type": "directive_block"
+          }
+        ],
+        "title": "Extended Summary"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If an ndarray, a random sample is generated from its elements.\nIf an int, the random sample is generated as if it were "
+                      },
+                      {
+                        "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.arange(a).html",
+                        "href": "",
+                        "kind": "link",
+                        "target": "arange(a)",
+                        "text": "flops.arange(a)"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "1-D array-like or int",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If an ndarray, a random sample is generated from its elements.\nIf an int, the random sample is generated as if it were "
+                  },
+                  {
+                    "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.arange(a).html",
+                    "href": "",
+                    "kind": "link",
+                    "target": "arange(a)",
+                    "text": "flops.arange(a)"
+                  }
+                ],
+                "name": "a",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Output shape.  If the given shape is, e.g., "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "(m, n, k)"
+                      },
+                      {
+                        "kind": "text",
+                        "text": ", then\n"
+                      },
+                      {
+                        "kind": "code",
+                        "text": "m * n * k"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " samples are drawn.  Default is None, in which case a\nsingle value is returned."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "int or tuple of ints, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Output shape.  If the given shape is, e.g., "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "(m, n, k)"
+                  },
+                  {
+                    "kind": "text",
+                    "text": ", then\n"
+                  },
+                  {
+                    "kind": "code",
+                    "text": "m * n * k"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " samples are drawn.  Default is None, in which case a\nsingle value is returned."
+                  }
+                ],
+                "name": "size",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "Whether the sample is with or without replacement. Default is True,\nmeaning that a value of "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": " can be selected multiple times."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "boolean, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "Whether the sample is with or without replacement. Default is True,\nmeaning that a value of "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": " can be selected multiple times."
+                  }
+                ],
+                "name": "replace",
+                "type": "field_list"
+              },
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The probabilities associated with each entry in a.\nIf not given, the sample assumes a uniform distribution over all\nentries in "
+                      },
+                      {
+                        "kind": "code",
+                        "text": "a"
+                      },
+                      {
+                        "kind": "text",
+                        "text": "."
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "1-D array-like, optional",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The probabilities associated with each entry in a.\nIf not given, the sample assumes a uniform distribution over all\nentries in "
+                  },
+                  {
+                    "kind": "code",
+                    "text": "a"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "."
+                  }
+                ],
+                "name": "p",
+                "type": "field_list"
+              }
+            ],
+            "title": "Parameters",
+            "type": "field_list"
+          }
+        ],
+        "title": "Parameters"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "The generated random samples"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "single item or ndarray",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "The generated random samples"
+                  }
+                ],
+                "name": "samples",
+                "type": "field_list"
+              }
+            ],
+            "title": "Returns",
+            "type": "field_list"
+          }
+        ],
+        "title": "Returns"
+      },
+      {
+        "blocks": [
+          {
+            "items": [
+              {
+                "body_blocks": [
+                  {
+                    "inline": [
+                      {
+                        "kind": "text",
+                        "text": "If a is an int and less than zero, if a or p are not 1-dimensional,\nif a is an array-like of size 0, if p is not a vector of\nprobabilities, if a and p have different lengths, or if\nreplace=False and the sample size is greater than the population\nsize"
+                      }
+                    ],
+                    "type": "paragraph"
+                  }
+                ],
+                "data_type": "ValueError",
+                "inline": [
+                  {
+                    "kind": "text",
+                    "text": "If a is an int and less than zero, if a or p are not 1-dimensional,\nif a is an array-like of size 0, if p is not a vector of\nprobabilities, if a and p have different lengths, or if\nreplace=False and the sample size is greater than the population\nsize"
+                  }
+                ],
+                "name": "",
+                "type": "field_list"
+              }
+            ],
+            "title": "Raises",
+            "type": "field_list"
+          }
+        ],
+        "title": "Raises"
+      },
+      {
+        "blocks": [
+          {
+            "links": [
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.randint.html",
+                "href": "",
+                "label": "randint",
+                "original_target": "randint",
+                "role": "",
+                "target": "randint",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.shuffle.html",
+                "href": "",
+                "label": "shuffle",
+                "original_target": "shuffle",
+                "role": "",
+                "target": "shuffle",
+                "unresolved": false
+              },
+              {
+                "description": "",
+                "description_inline": [],
+                "external_url": "https://numpy.org/doc/stable/reference/generated/numpy.permutation.html",
+                "href": "",
+                "label": "permutation",
+                "original_target": "permutation",
+                "role": "",
+                "target": "permutation",
+                "unresolved": false
+              },
+              {
+                "description": "which should be used in new code",
+                "description_inline": [
+                  {
+                    "kind": "text",
+                    "text": "which should be used in new code"
+                  }
+                ],
+                "external_url": "",
+                "href": "/docs/api/numpy/random/generator/choice/",
+                "label": "flops.random.Generator.choice",
+                "original_target": "random.Generator.choice",
+                "role": "",
+                "target": "random.Generator.choice",
+                "unresolved": false
+              }
+            ],
+            "type": "link_list"
+          }
+        ],
+        "title": "See also"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Setting user-specified probabilities through "
+              },
+              {
+                "kind": "code",
+                "text": "p"
+              },
+              {
+                "kind": "text",
+                "text": " uses a more general but less\nefficient sampler than the default. The general sampler produces a different sample\nthan the optimized sampler even if each element of "
+              },
+              {
+                "kind": "code",
+                "text": "p"
+              },
+              {
+                "kind": "text",
+                "text": " is 1 / len(a)."
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Sampling random rows from a 2-D array is not possible with this function,\nbut is possible with "
+              },
+              {
+                "kind": "code",
+                "text": "Generator.choice"
+              },
+              {
+                "kind": "text",
+                "text": " through its "
+              },
+              {
+                "kind": "code",
+                "text": "axis"
+              },
+              {
+                "kind": "text",
+                "text": " keyword."
+              }
+            ],
+            "type": "paragraph"
+          }
+        ],
+        "title": "Notes"
+      },
+      {
+        "blocks": [
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a uniform random sample from flops.arange(5) of size 3:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.choice(5, 3)"
+              },
+              {
+                "kind": "output",
+                "text": "array([0, 3, 4]) # random"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "#This is equivalent to flops.random.randint(0,5,3)"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a non-uniform random sample from flops.arange(5) of size 3:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.choice(5, 3, p=[0.1, 0, 0.3, 0.6, 0])"
+              },
+              {
+                "kind": "output",
+                "text": "array([3, 3, 0]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a uniform random sample from flops.arange(5) of size 3 without\nreplacement:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.choice(5, 3, replace=False)"
+              },
+              {
+                "kind": "output",
+                "text": "array([3,1,0]) # random"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "#This is equivalent to flops.random.permutation(flops.arange(5))[:3]"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Generate a non-uniform random sample from flops.arange(5) of size\n3 without replacement:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.choice(5, 3, replace=False, p=[0.1, 0, 0.3, 0.6, 0])"
+              },
+              {
+                "kind": "output",
+                "text": "array([2, 3, 0]) # random"
+              }
+            ],
+            "type": "doctest_block"
+          },
+          {
+            "inline": [
+              {
+                "kind": "text",
+                "text": "Any of the above can be repeated with an arbitrary array-like\ninstead of just integers. For instance:"
+              }
+            ],
+            "type": "paragraph"
+          },
+          {
+            "lines": [
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "aa_milne_arr = ['pooh', 'rabbit', 'piglet', 'Christopher']"
+              },
+              {
+                "kind": "input",
+                "prompt": ">>>",
+                "text": "flops.random.choice(aa_milne_arr, 5, p=[0.5, 0.1, 0.1, 0.3])"
+              },
+              {
+                "kind": "output",
+                "text": "array(['pooh', 'pooh', 'pooh', 'Christopher', 'piglet'], # random"
+              },
+              {
+                "kind": "output",
+                "text": "      dtype='<U11')"
+              }
+            ],
+            "type": "doctest_block"
+          }
+        ],
+        "title": "Examples"
+      }
+    ]
+  },
+  "op": {
+    "category": "counted_random_method",
+    "cost_formula": "numel(output) if replace, else sort_cost(n)",
+    "cost_formula_latex": "$\\text{numel}(\\text{output})$ if replace, else $n \\cdot \\lceil \\log_2 n \\rceil$",
+    "flopscope_ref": "fnp.random.RandomState.choice",
+    "module": "numpy.random",
+    "name": "random.RandomState.choice",
+    "notes": "Legacy choice sampler; numel(output) if replace else sort_cost(n).",
+    "numpy_ref": "np.random.RandomState.choice",
+    "signature": "fnp.random.RandomState.choice(self, a, size=None, replace=True, p=None)",
+    "status": "supported",
+    "summary": "Generates a random sample from a given 1-D array",
+    "weight": 1.0
+  },
+  "schema_version": 1,
+  "slug": "random-RandomState-choice",
+  "source": {
+    "flopscope": null,
+    "numpy": "https://numpy.org/doc/stable/reference/generated/numpy.random.RandomState.choice.html"
+  }
+}
