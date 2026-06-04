@@ -1,1 +1,4 @@
-{ "title": "Documentation", "pages": ["index"] }
+{
+  "title": "Documentation",
+  "pages": ["index","participant-guide","guides","how-to","reference","cli","api","development","changelog","for-agents"]
+}
