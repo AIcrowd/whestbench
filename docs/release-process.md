@@ -130,3 +130,9 @@ When flopscope ships a new minor or major version, bump these floors
 in `pyproject.toml` and re-run `uv lock` before cutting the next
 whestbench release. (Out of scope for an automated workflow; flag if
 Dependabot becomes worth the noise.)
+
+### Docs
+
+Docs deploy automatically on push to `main` (`.github/workflows/docs.yml`).
+To adopt new starter-kit curriculum, bump `website/starterkit.lock.json` (the
+`starter-kit drift` workflow opens an issue when the pin falls behind `main`).
