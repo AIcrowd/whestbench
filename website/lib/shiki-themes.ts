@@ -23,7 +23,7 @@ type FlopscopeTheme = {
   }>;
 };
 
-export const flopscopeLight: FlopscopeTheme = {
+export const whestbenchLight: FlopscopeTheme = {
   name: 'flopscope-paper',
   type: 'light',
   colors: {
@@ -55,7 +55,7 @@ export const flopscopeLight: FlopscopeTheme = {
   ],
 };
 
-export const flopscopeDark: FlopscopeTheme = {
+export const whestbenchDark: FlopscopeTheme = {
   name: 'flopscope-ink',
   type: 'dark',
   colors: {

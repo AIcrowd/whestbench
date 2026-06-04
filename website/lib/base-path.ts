@@ -1,4 +1,4 @@
-const DEPLOY_BASE_PATH = '/flopscope';
+const DEPLOY_BASE_PATH = '/whestbench';
 
 export function withBasePath(href: string): string {
   if (!href) return process.env.NODE_ENV === 'production' ? DEPLOY_BASE_PATH : '/';
@@ -8,10 +8,8 @@ export function withBasePath(href: string): string {
   if (process.env.NODE_ENV !== 'production') {
     return normalized;
   }
-
   if (normalized === DEPLOY_BASE_PATH || normalized.startsWith(`${DEPLOY_BASE_PATH}/`)) {
     return normalized;
   }
-
   return `${DEPLOY_BASE_PATH}${normalized}`;
 }
