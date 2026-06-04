@@ -837,10 +837,27 @@ def _build_participant_parser() -> argparse.ArgumentParser:
             "for participant workflows."
         ),
     )
-    smoke_test_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
-    smoke_test_parser.add_argument("--profile", action="store_true")
-    smoke_test_parser.add_argument("--show-diagnostic-plots", action="store_true")
-    smoke_test_parser.add_argument("--debug", action="store_true")
+    smoke_test_parser.add_argument(
+        "--detail",
+        choices=("raw", "full"),
+        default="raw",
+        help="Report verbosity: 'raw' for a concise summary or 'full' for expanded per-MLP detail (default: raw).",
+    )
+    smoke_test_parser.add_argument(
+        "--profile",
+        action="store_true",
+        help="Collect and display per-MLP FLOP/budget profiling breakdowns in the report.",
+    )
+    smoke_test_parser.add_argument(
+        "--show-diagnostic-plots",
+        action="store_true",
+        help="Include diagnostic plot panes in the rendered (non-JSON) report.",
+    )
+    smoke_test_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show full Python tracebacks for errors instead of condensed messages.",
+    )
     add_output_format_arguments(smoke_test_parser)
     smoke_test_parser.add_argument(
         "--max-threads",
@@ -854,8 +871,17 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     add_output_format_arguments(version_parser)
 
     init_parser = subparsers.add_parser("init", help="Create starter estimator files.")
-    init_parser.add_argument("path", nargs="?", default=".")
-    init_parser.add_argument("--debug", action="store_true")
+    init_parser.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Target directory to write starter estimator.py and requirements.txt into (default: current directory).",
+    )
+    init_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show full Python tracebacks for errors instead of condensed messages.",
+    )
     add_output_format_arguments(init_parser)
 
     validate_parser = subparsers.add_parser("validate", help="Validate estimator contract.")
@@ -864,14 +890,22 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         required=True,
         help="Path to estimator.py (see https://github.com/AIcrowd/whest-starterkit for starter files).",
     )
-    validate_parser.add_argument("--class", dest="class_name")
+    validate_parser.add_argument(
+        "--class",
+        dest="class_name",
+        help="Estimator class name to load from the estimator file (auto-detected if omitted).",
+    )
     validate_parser.add_argument(
         "--seed",
         type=int,
         default=None,
         help="Random seed for the validation run. Seeds estimator setup via ctx.seed. Default: omitted (ctx.seed = 0).",
     )
-    validate_parser.add_argument("--debug", action="store_true")
+    validate_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show full Python tracebacks for errors instead of condensed messages.",
+    )
     add_output_format_arguments(validate_parser)
 
     run_parser = subparsers.add_parser(
@@ -887,9 +921,16 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         required=True,
         help="Path to estimator.py (see https://github.com/AIcrowd/whest-starterkit for starter files).",
     )
-    run_parser.add_argument("--class", dest="class_name")
     run_parser.add_argument(
-        "--runner", choices=("local", "subprocess", "server", "inprocess"), default="local"
+        "--class",
+        dest="class_name",
+        help="Estimator class name to load from the estimator file (auto-detected if omitted).",
+    )
+    run_parser.add_argument(
+        "--runner",
+        choices=("local", "subprocess", "server", "inprocess"),
+        default="local",
+        help="Execution backend: 'local'/'inprocess' run in-process; 'subprocess'/'server' run in an isolated subprocess (default: local).",
     )
     run_parser.add_argument(
         "--n-mlps",
@@ -901,9 +942,22 @@ def _build_participant_parser() -> argparse.ArgumentParser:
             "size when --dataset is set and --n-mlps exceeds it."
         ),
     )
-    run_parser.add_argument("--detail", choices=("raw", "full"), default="raw")
-    run_parser.add_argument("--profile", action="store_true")
-    run_parser.add_argument("--show-diagnostic-plots", action="store_true")
+    run_parser.add_argument(
+        "--detail",
+        choices=("raw", "full"),
+        default="raw",
+        help="Report verbosity: 'raw' for a concise summary or 'full' for expanded per-MLP detail (default: raw).",
+    )
+    run_parser.add_argument(
+        "--profile",
+        action="store_true",
+        help="Collect and display per-MLP FLOP/budget profiling breakdowns in the report.",
+    )
+    run_parser.add_argument(
+        "--show-diagnostic-plots",
+        action="store_true",
+        help="Include diagnostic plot panes in the rendered (non-JSON) report.",
+    )
     add_output_format_arguments(run_parser)
     run_parser.add_argument(
         "--dataset",
@@ -955,7 +1009,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Ground truth samples per MLP (default: width*width*256). Lower values speed up generation at the cost of noisier scores.",
     )
-    run_parser.add_argument("--debug", action="store_true")
+    run_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show full Python tracebacks for errors instead of condensed messages.",
+    )
     run_parser.add_argument(
         "--fail-fast",
         action="store_true",
@@ -1186,13 +1244,37 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
 
     package_parser = subparsers.add_parser("package", help="Package submission artifact.")
-    package_parser.add_argument("--estimator", required=True)
-    package_parser.add_argument("--class", dest="class_name")
-    package_parser.add_argument("--requirements")
-    package_parser.add_argument("--submission-metadata")
-    package_parser.add_argument("--approach")
-    package_parser.add_argument("--output")
-    package_parser.add_argument("--debug", action="store_true")
+    package_parser.add_argument(
+        "--estimator",
+        required=True,
+        help="Path to estimator.py to package into the submission archive.",
+    )
+    package_parser.add_argument(
+        "--class",
+        dest="class_name",
+        help="Estimator class name to load from the estimator file (auto-detected if omitted).",
+    )
+    package_parser.add_argument(
+        "--requirements",
+        help="Path to a requirements.txt to include in the submission archive.",
+    )
+    package_parser.add_argument(
+        "--submission-metadata",
+        help="Path to a submission.yaml metadata file to include in the submission archive.",
+    )
+    package_parser.add_argument(
+        "--approach",
+        help="Path to an approach.md write-up to include in the submission archive.",
+    )
+    package_parser.add_argument(
+        "--output",
+        help="Output path for the .tar.gz archive (default: submission-<timestamp>.tar.gz in the current directory).",
+    )
+    package_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show full Python tracebacks for errors instead of condensed messages.",
+    )
     add_output_format_arguments(package_parser)
 
     profile_parser = subparsers.add_parser(
@@ -1210,7 +1292,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         default=None,
         help="Path to save JSON results.",
     )
-    profile_parser.add_argument("--debug", action="store_true")
+    profile_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show full Python tracebacks for errors instead of condensed messages.",
+    )
     add_output_format_arguments(profile_parser)
     profile_parser.add_argument(
         "--max-threads",
@@ -1280,7 +1366,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         default="arc-white-box-estimation-challenge-2026",
         help="Challenge slug (default: arc-white-box-estimation-challenge-2026).",
     )
-    submit_parser.add_argument("--description", default="Submitted via whest submit")
+    submit_parser.add_argument(
+        "--description",
+        default="Submitted via whest submit",
+        help="Description label attached to the AIcrowd submission (default: 'Submitted via whest submit').",
+    )
     submit_parser.add_argument("--api-key", dest="api_key", default=None, help=argparse.SUPPRESS)
     submit_parser.add_argument(
         "--watch",
