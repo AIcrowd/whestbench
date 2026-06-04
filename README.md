@@ -119,6 +119,7 @@ from a pinned commit of [`whest-starterkit`](https://github.com/AIcrowd/whest-st
 - Local preview: `make docs-serve`
 - Full build (+ `llms.txt`): `make docs-build`
 - Coverage gate: `make docs-verify`
+- Update starter-kit pin: `python scripts/bump_starterkit_pin.py` (then `make docs-build` + commit)
 
 `llms.txt` / `llms-full.txt` are generated for agent ingestion and served at the site root.
 

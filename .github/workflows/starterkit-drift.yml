@@ -36,7 +36,7 @@ jobs:
             echo "$CHANGED"
             echo '```'
             echo ""
-            echo "Bump \`website/starterkit.lock.json\` to adopt (handle overlaps case-by-case)."
+            echo "Run \`python scripts/bump_starterkit_pin.py\` to bump the pin to main, then review + \`make docs-build\` + commit."
           } > body.md
           cat body.md >> "$GITHUB_STEP_SUMMARY"
           TITLE="starter-kit docs drift: pin behind main"

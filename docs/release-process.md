@@ -134,5 +134,4 @@ Dependabot becomes worth the noise.)
 ### Docs
 
 Docs deploy automatically on push to `main` (`.github/workflows/docs.yml`).
-To adopt new starter-kit curriculum, bump `website/starterkit.lock.json` (the
-`starter-kit drift` workflow opens an issue when the pin falls behind `main`).
+To adopt new starter-kit curriculum, run `python scripts/bump_starterkit_pin.py` (it bumps the pin to the latest starter-kit `main` and lists the changed docs); then `make docs-build` and commit. The `starter-kit drift` workflow opens an issue when the pin falls behind `main`.
