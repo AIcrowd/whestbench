@@ -96,3 +96,19 @@ def test_verify_passes_for_documented(monkeypatch):
     monkeypatch.setattr(gd, "public_symbols", lambda: [("documented", documented)])
     monkeypatch.setattr(gd, "cli_parser", _toy_parser)
     assert gd.verify() == []
+
+
+def test_mdx_escapes_special_chars():
+    assert gd._mdx("a < b") == "a &lt; b"
+    assert gd._mdx("use {x}") == "use \\{x}"
+    assert gd._mdx("x | y") == "x \\| y"
+
+
+def test_render_cli_page_escapes_help_in_table_and_prose():
+    p = argparse.ArgumentParser(prog="whest")
+    sub = p.add_subparsers(dest="command", required=True)
+    cmd = sub.add_parser("demo", help="demo cmd")
+    cmd.add_argument("--n", help="ints < 2**63 in {a,b} or x|y")
+    demo = dict((n, s) for n, s, _h in gd.iter_subcommands(p))["demo"]
+    page = gd.render_cli_page("demo", demo, "demo cmd")
+    assert "ints &lt; 2**63 in \\{a,b} or x\\|y" in page

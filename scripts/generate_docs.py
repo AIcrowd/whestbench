@@ -71,10 +71,15 @@ def _first_line(text: str) -> str:
     return line[:157] + "…" if len(line) > 158 else line
 
 
+def _mdx(text: str) -> str:
+    """Escape inline text emitted as MDX prose or markdown table cells."""
+    return text.replace("\\", "\\\\").replace("<", "&lt;").replace("{", "\\{").replace("|", "\\|")
+
+
 def render_api_page(name: str, obj: object) -> str:
     kind = symbol_kind(obj)
     sig = signature_str(name, obj)
-    doc = docstring(obj)
+    doc = docstring(obj) if kind != "value" else ""
     link = source_link(obj)
     desc = _first_line(doc) or f"{kind} {name}"
     lines = [
@@ -106,9 +111,9 @@ def write_api() -> list[Path]:
         page.write_text(render_api_page(name, obj), encoding="utf-8")
         written.append(page)
         pages.append(slug)
-        index_rows.append(
-            f"- [`{name}`]({slug}) — {_first_line(docstring(obj)) or symbol_kind(obj)}"
-        )
+        kind = symbol_kind(obj)
+        doc = docstring(obj) if kind != "value" else ""
+        index_rows.append(f"- [`{name}`]({slug}) — {_mdx(_first_line(doc) or kind)}")
 
     index = (
         "---\ntitle: API Reference\n"
@@ -160,16 +165,16 @@ def _nested(subparser: argparse.ArgumentParser):
 
 
 def render_cli_page(name: str, subparser: argparse.ArgumentParser, help_text: str | None) -> str:
-    desc = (help_text or "").strip()
+    desc_raw = (help_text or "").strip()
     lines = [
         "---",
         f"title: whest {name}",
-        f"description: {json.dumps(desc or f'whest {name} command')}",
+        f"description: {json.dumps(desc_raw or f'whest {name} command')}",
         "---",
         "",
         f"# `whest {name}`",
         "",
-        desc,
+        _mdx(desc_raw),
         "",
         "```text",
         f"whest {name} [options]",
@@ -179,7 +184,8 @@ def render_cli_page(name: str, subparser: argparse.ArgumentParser, help_text: st
 
     def _opts_table(sp: argparse.ArgumentParser) -> list[str]:
         rows = [
-            f"| `{flag}` | {('`' + d + '`') if d else ''} | {h} |" for flag, d, h in _options(sp)
+            f"| `{flag}` | {('`' + d + '`') if d else ''} | {_mdx(h)} |"
+            for flag, d, h in _options(sp)
         ]
         if not rows:
             return []
@@ -188,7 +194,7 @@ def render_cli_page(name: str, subparser: argparse.ArgumentParser, help_text: st
     nested = _nested(subparser)
     if nested:
         for sub_name, sub_parser, sub_help in nested:
-            lines += [f"## `whest {name} {sub_name}`", "", (sub_help or "").strip(), ""]
+            lines += [f"## `whest {name} {sub_name}`", "", _mdx((sub_help or "").strip()), ""]
             lines += _opts_table(sub_parser)
     else:
         lines += _opts_table(subparser)
@@ -208,7 +214,7 @@ def write_cli() -> list[Path]:
         )
         written.append(CLI_DIR / f"{slug}.mdx")
         pages.append(slug)
-        index_rows.append(f"- [`whest {name}`]({slug}) — {(help_text or '').strip()}")
+        index_rows.append(f"- [`whest {name}`]({slug}) — {_mdx((help_text or '').strip())}")
 
     index = (
         "---\ntitle: CLI Reference\n"
@@ -227,7 +233,7 @@ def write_cli() -> list[Path]:
 def verify() -> list[str]:
     problems: list[str] = []
     for name, obj in public_symbols():
-        if not docstring(obj):
+        if symbol_kind(obj) != "value" and not docstring(obj):
             problems.append(f"API symbol `{name}` has no docstring")
     for name, sub, help_text in iter_subcommands(cli_parser()):
         if not (help_text or "").strip():
