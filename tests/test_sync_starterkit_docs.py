@@ -25,6 +25,26 @@ def test_sanitize_escapes_prose_but_not_code():
     assert "`a<b`" in out  # inline code untouched
 
 
+def test_rewrite_links_same_section_bare_and_dot_slash():
+    out = sk._rewrite_links("[a](sibling.md) [b](./other.md)", "getting-started/install")
+    assert "/docs/participant-guide/getting-started/sibling" in out
+    assert "/docs/participant-guide/getting-started/other" in out
+
+
+def test_rewrite_links_cross_section_and_anchor_preserved():
+    out = sk._rewrite_links("[s](../concepts/scoring-model.md#why)", "how-to/write-an-estimator")
+    assert "/docs/participant-guide/concepts/scoring-model#why" in out
+
+
+def test_rewrite_images_leaves_absolute_and_remote_untouched():
+    out = sk._rewrite_images(
+        "![a](/assets/x.svg) ![b](https://e.com/y.png)", "advanced/use", "deadbeef"
+    )
+    assert "(/assets/x.svg)" in out
+    assert "(https://e.com/y.png)" in out
+    assert "raw.githubusercontent.com" not in out
+
+
 def test_local_image_rewritten_to_raw_url_and_remote_left_alone():
     md = (
         "![viz](assets/explorer.svg)\n\n"

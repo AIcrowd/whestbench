@@ -47,7 +47,7 @@ def _rewrite_images(md: str, rel_slug: str, sha: str) -> str:
 
     def repl(m: re.Match) -> str:
         prefix, target, suffix = m.group(1), m.group(2), m.group(3)
-        if target.startswith(("http://", "https://", "//", "data:")):
+        if target.startswith(("http://", "https://", "//", "data:", "/")):
             return m.group(0)
         resolved = os.path.normpath((src_dir / target).as_posix())
         return f"{prefix}{RAW_BASE}/{sha}/{resolved}{suffix}"
@@ -55,14 +55,29 @@ def _rewrite_images(md: str, rel_slug: str, sha: str) -> str:
     return _IMG_RE.sub(repl, md)
 
 
-def _rewrite_links(md: str) -> str:
-    def repl(m: re.Match) -> str:
+def _resolve_doc_route(rel_slug: str, target: str) -> str | None:
+    """Resolve a local doc-link target (relative to the source file's dir under
+    docs/) to a /docs/participant-guide route, or None if it escapes the tree."""
+    src_dir = PurePosixPath("docs") / PurePosixPath(rel_slug).parent
+    resolved = os.path.normpath((src_dir / target).as_posix())
+    resolved = re.sub(r"\.mdx?$", "", resolved)
+    if resolved == "docs":
+        return NAMESPACE
+    if resolved.startswith("docs/"):
+        return NAMESPACE + "/" + resolved[len("docs/") :]
+    return None
+
+
+def _rewrite_links(md: str, rel_slug: str) -> str:
+    def repl(m: "re.Match[str]") -> str:
         target = m.group(1)
-        if target.startswith(("http://", "https://", "#", "mailto:")):
+        if target.startswith(("http://", "https://", "//", "#", "mailto:", "data:", "/")):
             return m.group(0)
-        target = re.sub(r"\.mdx?($|#)", r"\1", target)
-        cleaned = target.lstrip("./")
-        return f"]({NAMESPACE}/{cleaned})"
+        path, sep, frag = target.partition("#")
+        route = _resolve_doc_route(rel_slug, path)
+        if route is None:
+            return m.group(0)
+        return f"]({route}{sep}{frag})"
 
     return re.sub(r"\]\(([^)]+)\)", repl, md)
 
@@ -90,7 +105,7 @@ def _sanitize_mdx(md: str) -> str:
 
 def to_mdx(md: str, rel_slug: str, sha: str) -> str:
     title = _title(md)
-    body = _sanitize_mdx(_rewrite_links(_rewrite_images(md, rel_slug, sha)))
+    body = _sanitize_mdx(_rewrite_links(_rewrite_images(md, rel_slug, sha), rel_slug))
     banner = (
         f"> Sourced from [whest-starterkit](https://github.com/AIcrowd/whest-starterkit/"
         f"blob/{sha}/docs/{rel_slug}.md) @ `{sha[:7]}`.\n\n"
