@@ -7,3 +7,5 @@
 /content/docs/cli/
 /content/docs/participant-guide/
 next-env.d.ts
+/public/llms.txt
+/public/llms-full.txt
