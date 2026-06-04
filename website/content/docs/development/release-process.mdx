@@ -1,4 +1,7 @@
-# Release process
+---
+title: Release process
+description: The authoritative reference for cutting a new release of whestbench to PyPI, covering the steady-state flow, one-time setup, and troubleshooting notes.
+---
 
 This document is the authoritative reference for cutting a new release
 of `whestbench` to PyPI. It covers the steady-state flow, the one-time
@@ -130,8 +133,3 @@ When flopscope ships a new minor or major version, bump these floors
 in `pyproject.toml` and re-run `uv lock` before cutting the next
 whestbench release. (Out of scope for an automated workflow; flag if
 Dependabot becomes worth the noise.)
-
-### Docs
-
-Docs deploy automatically on push to `main` (`.github/workflows/docs.yml`).
-To adopt new starter-kit curriculum, run `python scripts/bump_starterkit_pin.py` (it bumps the pin to the latest starter-kit `main` and lists the changed docs); then `make docs-build` and commit. The `starter-kit drift` workflow opens an issue when the pin falls behind `main`.

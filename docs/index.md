@@ -4,6 +4,10 @@
 > troubleshooting) lives in the [whest-starterkit](https://github.com/AIcrowd/whest-starterkit).
 > This site documents the library and CLI surface only.
 
+> Hosted docs: <https://aicrowd.github.io/whestbench>. Participant curriculum is
+> federated there from [whest-starterkit](https://github.com/AIcrowd/whest-starterkit);
+> this repo owns the library + CLI reference.
+
 ## Library reference
 
 - [CLI reference](reference/cli-reference.md)

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Flopscope">
+  <!--
+    Flopscope favicon — per design-system/brand/logo-system.html §03 size ladder:
+    "< 16px · dot only — the whole identity compresses to the glyph."
+  -->
+  <circle cx="16" cy="16" r="10" fill="#F0524D"/>
+</svg>

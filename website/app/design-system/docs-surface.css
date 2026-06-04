@@ -1,0 +1,131 @@
+/* =========================================================================
+   Flopscope Design System — Docs Surface Adapter
+   Local composition layer. Responsibilities:
+   - Foundation white surface register (light mode)
+   - Bridge canonical tokens into shadcn (--color-*) + Fumadocs (--fd-*)
+   - Focus ring (global :focus-visible)
+   - Prose headings and utility classes
+
+   The authoritative tokens live in ./tokens.css — do not redefine them here.
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   Foundation Register — Clean White Surface
+   Routes canonical Foundation tokens into the shadcn + Fumadocs variable
+   layers that existing components consume. Pure #ffffff page and cards
+   (no off-white, no warm paper). Dark mode keeps the current near-black
+   palette defined in global.css.
+   ------------------------------------------------------------------------- */
+:root {
+  /* --radius is already 0.5rem in tokens.css; the prior
+     `--radius: var(--radius-lg)` alias here created a circular
+     reference (--radius-lg is itself var(--radius)), which the browser
+     resolved to the invalid/empty value and silently broke every
+     rounded-lg utility (computed to 0px). Dropping the alias — tokens.css
+     is the single source of truth. */
+
+  /* shadcn / Tailwind theme vars */
+  --background: #ffffff;
+  --foreground: var(--gray-900);
+  --card: #ffffff;
+  --card-foreground: var(--gray-900);
+  --popover: #ffffff;
+  --popover-foreground: var(--gray-900);
+  --muted: var(--gray-100);
+  --muted-foreground: var(--gray-600);
+  --border: var(--gray-200);
+  --input: var(--gray-200);
+  --secondary: var(--gray-50);
+  --secondary-foreground: var(--gray-900);
+  --accent: var(--coral-light);
+  --accent-foreground: var(--gray-900);
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--gray-900);
+  --sidebar-border: var(--gray-200);
+  --sidebar-accent: var(--coral-light);
+  --sidebar-accent-foreground: var(--gray-900);
+
+  /* Fumadocs vars (mirror shadcn where applicable) */
+  --fd-background: #ffffff;
+  --fd-foreground: var(--gray-900);
+  --fd-card: #ffffff;
+  --fd-muted: var(--gray-100);
+  --fd-muted-foreground: var(--gray-600);
+  --fd-border: var(--gray-200);
+  --fd-accent: var(--coral-light);
+  --fd-accent-foreground: var(--gray-900);
+  --fd-primary: var(--coral);
+  --fd-primary-foreground: #ffffff;
+}
+
+/* Code blocks stay on white in light mode (--code-bg: #FFFFFF). In dark
+   mode, let the Shiki theme wrapper carry the --code-bg-dark background. */
+:root:not(.dark) article pre,
+:root:not(.dark) article pre[class*="language-"] {
+  background: var(--code-bg, #ffffff);
+}
+.dark article pre,
+.dark article pre[class*="language-"] {
+  background: var(--code-bg-dark, #1A1D1E);
+}
+
+/* -------------------------------------------------------------------------
+   Prose headings — Flopscope Design System spec
+   H1–H3 = Newsreader display serif with opsz presets (--vs-display-*)
+   H4    = Inter app-sans
+   ------------------------------------------------------------------------- */
+article > div.prose :where(h1, h2, h3) {
+  font-family: var(--font-display-serif), 'Source Serif 4', Georgia, serif;
+  font-weight: 600;
+}
+
+article > div.prose h1 {
+  font-size: 2.5rem;                               /* 40px */
+  font-variation-settings: var(--vs-display-xl);   /* opsz 72 */
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+article > div.prose h2 {
+  font-size: 2rem;                                 /* 32px */
+  font-variation-settings: var(--vs-display-md);   /* opsz 32 */
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-top: 2.25em;
+}
+article > div.prose h3 {
+  font-size: 1.375rem;                             /* 22px */
+  font-variation-settings: var(--vs-display-sm);   /* opsz 18 */
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+article > div.prose h4 {
+  font-family: var(--font-app-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9375rem;                            /* 15px */
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+}
+
+/* -------------------------------------------------------------------------
+   Focus ring — spec --ring-focus (info-blue, 3px at 12% opacity)
+   --ring-coral is available for primary-on-primary surfaces.
+   ------------------------------------------------------------------------- */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--ring-focus);
+}
+
+/* -------------------------------------------------------------------------
+   Sidebar active item — dark mode override
+   The light-mode rule in global.css uses coral-light at 50% opacity, which
+   reads muddy against the near-black dark ground. Swap to base-coral at low
+   opacity so the active item keeps a warm tint in dark mode, and lift the
+   text color to coral for additional contrast.
+   Lives here (not global.css) because global.css declares
+   `@custom-variant dark` which causes Tailwind v4's Lightning CSS compiler
+   to drop raw `.dark` selectors from the output.
+   ------------------------------------------------------------------------- */
+.dark aside#nd-sidebar a[data-active='true'] {
+  background: color-mix(in oklab, var(--coral) 18%, transparent);
+  color: var(--coral);
+}
