@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 dependencies = [
     "datasets>=2.20",
     "faker~=37.0",
-    "flopscope>=0.4.1",  # 0.4.2 fixes default_rng over the client/server boundary; auto-resolves once published
+    "flopscope>=0.5.0",  # 0.5.0: precise client/server timing split + FLOP cost-model re-baseline
     "httpx>=0.27",
     "huggingface_hub>=0.24",
     "jinja2>=3.1",
@@ -41,7 +41,7 @@ dev = [
     "ruff>=0.6.0",
 ]
 server = [
-    "flopscope-server>=0.4.1",
+    "flopscope-server>=0.5.0",
 ]
 
 [tool.ruff]
