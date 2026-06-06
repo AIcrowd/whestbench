@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.10.0 (2026-06-06)
+
+### BREAKING CHANGE
+
+- FLOP costs re-baseline under flopscope 0.5.0 (FMA=2 einsum path; dot/inner N-D; vecmat/matvec/vecdot batch axes). Consumers that pin or budget on absolute FLOP counts should re-baseline.
+
+### Feat
+
+- **deps**: require flopscope>=0.5.0
+- **docs**: add starter-kit pin-bump helper and document it
+- **website**: generate llms.txt and llms-full.txt for agents
+- **docs**: federate whest-starterkit participant docs from pinned sha
+- **cli**: add help text for all participant CLI options
+- **docs**: generate api and cli reference mdx with coverage gate
+- **website**: convert existing docs to MDX content
+- **website**: reset content tree to whestbench placeholder
+- **website**: rebrand shell to whestbench (base path, wordmark, themes)
+- **website**: scaffold fumadocs shell ported from flopscope
+
+### Fix
+
+- **website**: render docs index at /docs instead of redirecting to a missing page
+- **docs**: resolve federated links section-relative and guard absolute image paths
+- **docs**: MDX-escape generated prose and table cells
+- **website**: unescape braces/pipes inside MDX inline code spans
+- **website**: remove orphaned flopscope api-reference machinery from scaffold
+
 ## v0.9.2 (2026-06-01)
 
 ### Fix
