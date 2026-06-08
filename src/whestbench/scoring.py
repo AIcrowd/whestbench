@@ -771,6 +771,13 @@ def evaluate_estimator(
         ):
             predictions = fnp.zeros((spec.depth, spec.width))
             residual_wall_time_exhausted = True
+            warnings.warn(
+                f"MLP {i} (depth={spec.depth}, width={spec.width}) exhausted residual "
+                f"wall-time budget: {residual_wall_time_s:.3f}s > "
+                f"limit {spec.residual_wall_time_limit_s:.3f}s; estimator output set to zeros.",
+                ResidualWallTimeExhaustionWarning,
+                stacklevel=2,
+            )
 
         effective_compute = float(flops_used) + LAMBDA_FLOPS_PER_SECOND * float(
             residual_wall_time_s
@@ -790,6 +797,13 @@ def evaluate_estimator(
         ):
             predictions = fnp.zeros((spec.depth, spec.width))
             combined_budget_exhausted = True
+            warnings.warn(
+                f"MLP {i} (depth={spec.depth}, width={spec.width}) exhausted combined budget: "
+                f"C_m={effective_compute:,.0f} > B={spec.flop_budget:,} "
+                f"(FLOPs={flops_used:,} + lambda*residual); estimator output set to zeros.",
+                CombinedBudgetExhaustionWarning,
+                stacklevel=2,
+            )
 
         # Convert predictions for MSE computation
         pred_np = fnp.asarray(predictions, dtype=fnp.float32)

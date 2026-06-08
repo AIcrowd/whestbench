@@ -11,6 +11,7 @@ from whestbench.domain import MLP
 from whestbench.runner import PredictStats
 from whestbench.scoring import (
     LAMBDA_FLOPS_PER_SECOND,
+    CombinedBudgetExhaustionWarning,
     ContestData,
     ContestSpec,
     evaluate_estimator,
@@ -66,7 +67,8 @@ def test_combined_budget_exhausted_when_c_m_exceeds_b_m():
         )
     )
     data = _make_data(flop_budget=flop_budget)
-    result = evaluate_estimator(estimator, data)
+    with pytest.warns(CombinedBudgetExhaustionWarning):
+        result = evaluate_estimator(estimator, data)
     per_mlp = result["per_mlp"][0]
 
     assert per_mlp["combined_budget_exhausted"] is True
