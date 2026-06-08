@@ -40,6 +40,14 @@ class TimeExhaustionWarning(ScoringExhaustionWarning):
     """Raised when an estimator exhausts its wall-clock budget on a single MLP."""
 
 
+class ResidualWallTimeExhaustionWarning(ScoringExhaustionWarning):
+    """Raised when an estimator exhausts its residual wall-time budget on a single MLP."""
+
+
+class CombinedBudgetExhaustionWarning(ScoringExhaustionWarning):
+    """Raised when combined compute C_m = F_m + lambda*R_m exceeds the FLOP budget on a single MLP."""
+
+
 @dataclass
 class ContestSpec:
     """Evaluator configuration for one scoring run."""

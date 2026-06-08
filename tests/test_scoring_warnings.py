@@ -129,3 +129,23 @@ def test_fail_fast_reraises_time_exhausted() -> None:
     data = _make_tiny_data(n_mlps=2)
     with pytest.raises(flops.TimeExhaustedError):
         evaluate_estimator(_SlowEstimator(), data, fail_fast=True)
+
+
+def test_combined_and_residual_warning_hierarchy() -> None:
+    from whestbench.scoring import (
+        CombinedBudgetExhaustionWarning,
+        ResidualWallTimeExhaustionWarning,
+    )
+
+    assert issubclass(CombinedBudgetExhaustionWarning, ScoringExhaustionWarning)
+    assert issubclass(ResidualWallTimeExhaustionWarning, ScoringExhaustionWarning)
+
+
+def test_combined_and_residual_warnings_reexported_from_package() -> None:
+    from whestbench.scoring import (
+        CombinedBudgetExhaustionWarning,
+        ResidualWallTimeExhaustionWarning,
+    )
+
+    assert whestbench.CombinedBudgetExhaustionWarning is CombinedBudgetExhaustionWarning
+    assert whestbench.ResidualWallTimeExhaustionWarning is ResidualWallTimeExhaustionWarning
