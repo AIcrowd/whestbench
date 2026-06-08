@@ -273,17 +273,17 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
                 title="Sampling Budget Breakdown (Ground Truth)",
                 available=True,
                 total_flops="80",
-                flopscope_backend_time="0.020000s",
-                flopscope_overhead_time="0.005000s",
-                residual_wall_time="0.010000s",
+                flopscope_backend_time_s="0.020000s",
+                flopscope_overhead_time_s="0.005000s",
+                residual_wall_time_s="0.010000s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
                         namespace="sampling.sample_layer_statistics",
                         total_flops="80",
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="40",
-                        flopscope_backend_time="0.020000s",
-                        flopscope_overhead_time="0.005000s",
+                        flopscope_backend_time_s="0.020000s",
+                        flopscope_overhead_time_s="0.005000s",
                     )
                 ],
                 source_note="restored from dataset metadata for the MLPs used in this run.",
@@ -292,17 +292,17 @@ def test_renderers_render_budget_breakdowns_before_final_score() -> None:
                 title="Estimator Budget Breakdown",
                 available=True,
                 total_flops="90",
-                flopscope_backend_time="0.030000s",
-                flopscope_overhead_time="0.007500s",
-                residual_wall_time="0.010000s",
+                flopscope_backend_time_s="0.030000s",
+                flopscope_overhead_time_s="0.007500s",
+                residual_wall_time_s="0.010000s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
                         namespace="estimator.estimator-client",
                         total_flops="90",
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="45",
-                        flopscope_backend_time="0.030000s",
-                        flopscope_overhead_time="0.007500s",
+                        flopscope_backend_time_s="0.030000s",
+                        flopscope_overhead_time_s="0.007500s",
                     )
                 ],
                 gauge=BudgetBreakdownGauge(
@@ -385,17 +385,17 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                 title="Sampling Budget Breakdown (Ground Truth)",
                 available=True,
                 total_flops="1.33e+06",
-                flopscope_backend_time="0.000841s",
-                flopscope_overhead_time="0.000210s",
-                residual_wall_time="0.003194s",
+                flopscope_backend_time_s="0.000841s",
+                flopscope_overhead_time_s="0.000210s",
+                residual_wall_time_s="0.003194s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
                         namespace="sampling.sample_layer_statistics",
                         total_flops="1.33e+06",
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="1.33e+06",
-                        flopscope_backend_time="0.000841s",
-                        flopscope_overhead_time="0.000210s",
+                        flopscope_backend_time_s="0.000841s",
+                        flopscope_overhead_time_s="0.000210s",
                     )
                 ],
             ),
@@ -403,17 +403,17 @@ def test_renderers_match_main_style_run_score_and_breakdown_information() -> Non
                 title="Estimator Budget Breakdown",
                 available=True,
                 total_flops="4.84e+07",
-                flopscope_backend_time="0.005277s",
-                flopscope_overhead_time="0.001319s",
-                residual_wall_time="0.012066s",
+                flopscope_backend_time_s="0.005277s",
+                flopscope_overhead_time_s="0.001319s",
+                residual_wall_time_s="0.012066s",
                 namespace_rows=[
                     BudgetBreakdownNamespaceRow(
                         namespace="estimator.estimator-client",
                         total_flops="4.84e+07",
                         percent_of_section_flops="100.0%",
                         mean_flops_per_mlp="4.84e+07",
-                        flopscope_backend_time="0.005277s",
-                        flopscope_overhead_time="0.001319s",
+                        flopscope_backend_time_s="0.005277s",
+                        flopscope_overhead_time_s="0.001319s",
                     )
                 ],
                 gauge=BudgetBreakdownGauge(
@@ -472,17 +472,17 @@ def test_budget_breakdown_rich_renderer_uses_centered_rich_tables() -> None:
         title="Sampling Budget Breakdown (Ground Truth)",
         available=True,
         total_flops="1.33e+06",
-        flopscope_backend_time="0.000841s",
-        flopscope_overhead_time="0.000210s",
-        residual_wall_time="0.003194s",
+        flopscope_backend_time_s="0.000841s",
+        flopscope_overhead_time_s="0.000210s",
+        residual_wall_time_s="0.003194s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
                 namespace="sampling.sample_layer_statistics",
                 total_flops="1.33e+06",
                 percent_of_section_flops="100.0%",
                 mean_flops_per_mlp="1.33e+06",
-                flopscope_backend_time="0.000841s",
-                flopscope_overhead_time="0.000210s",
+                flopscope_backend_time_s="0.000841s",
+                flopscope_overhead_time_s="0.000210s",
             )
         ],
     )
@@ -505,9 +505,9 @@ def test_budget_breakdown_rich_summary_labels_keep_old_color_spans() -> None:
         title="Sampling Budget Breakdown (Ground Truth)",
         available=True,
         total_flops="1.33e+06",
-        flopscope_backend_time="0.000841s",
-        flopscope_overhead_time="0.000210s",
-        residual_wall_time="0.003194s",
+        flopscope_backend_time_s="0.000841s",
+        flopscope_overhead_time_s="0.000210s",
+        residual_wall_time_s="0.003194s",
     )
 
     panel = build_section_renderables(section)[0]
@@ -626,17 +626,17 @@ def test_shared_human_document_renders_budget_before_final_score_in_rich_and_pla
         title="Estimator Budget Breakdown",
         available=True,
         total_flops="4.84e+07",
-        flopscope_backend_time="0.005277s",
-        flopscope_overhead_time="0.001319s",
-        residual_wall_time="0.012066s",
+        flopscope_backend_time_s="0.005277s",
+        flopscope_overhead_time_s="0.001319s",
+        residual_wall_time_s="0.012066s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
                 namespace="estimator.estimator-client",
                 total_flops="4.84e+07",
                 percent_of_section_flops="100.0%",
                 mean_flops_per_mlp="4.84e+07",
-                flopscope_backend_time="0.005277s",
-                flopscope_overhead_time="0.001319s",
+                flopscope_backend_time_s="0.005277s",
+                flopscope_overhead_time_s="0.001319s",
             )
         ],
     )
@@ -685,17 +685,17 @@ def test_shared_human_plain_output_uses_rich_safe_text_layout() -> None:
         title="Estimator Budget Breakdown",
         available=True,
         total_flops="4.84e+07",
-        flopscope_backend_time="0.005277s",
-        flopscope_overhead_time="0.001319s",
-        residual_wall_time="0.012066s",
+        flopscope_backend_time_s="0.005277s",
+        flopscope_overhead_time_s="0.001319s",
+        residual_wall_time_s="0.012066s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
                 namespace="estimator.estimator-client",
                 total_flops="4.84e+07",
                 percent_of_section_flops="100.0%",
                 mean_flops_per_mlp="4.84e+07",
-                flopscope_backend_time="0.005277s",
-                flopscope_overhead_time="0.001319s",
+                flopscope_backend_time_s="0.005277s",
+                flopscope_overhead_time_s="0.001319s",
             )
         ],
     )
@@ -740,17 +740,17 @@ def test_shared_human_plain_output_keeps_long_values_readable_under_rich_safe_te
         title="Estimator Budget Breakdown",
         available=True,
         total_flops="123456789012345678901234567890",
-        flopscope_backend_time="0.12345678901234567890s",
-        flopscope_overhead_time="0.030864s",
-        residual_wall_time="0.98765432109876543210s",
+        flopscope_backend_time_s="0.12345678901234567890s",
+        flopscope_overhead_time_s="0.030864s",
+        residual_wall_time_s="0.98765432109876543210s",
         namespace_rows=[
             BudgetBreakdownNamespaceRow(
                 namespace="sampling.sample_layer_statistics.really_long_namespace",
                 total_flops="123456789012345678901234567890",
                 percent_of_section_flops="100.0000000000%",
                 mean_flops_per_mlp="12345678901234567890",
-                flopscope_backend_time="0.12345678901234567890s",
-                flopscope_overhead_time="0.030864s",
+                flopscope_backend_time_s="0.12345678901234567890s",
+                flopscope_overhead_time_s="0.030864s",
             )
         ],
     )

@@ -155,22 +155,22 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
             make_keyed_label("Effective Compute", "effective_compute", "bold bright_yellow"),
             Text(section.effective_compute),
         )
-    if section.flopscope_backend_time is not None:
+    if section.flopscope_backend_time_s is not None:
         summary.add_row(
             make_keyed_label("Flopscope Backend", "flopscope_backend_time_s", "bold bright_green"),
-            Text(section.flopscope_backend_time),
+            Text(section.flopscope_backend_time_s),
         )
-    if section.flopscope_overhead_time is not None:
+    if section.flopscope_overhead_time_s is not None:
         summary.add_row(
             make_keyed_label(
                 "Flopscope Overhead", "flopscope_overhead_time_s", "bold bright_yellow"
             ),
-            Text(section.flopscope_overhead_time),
+            Text(section.flopscope_overhead_time_s),
         )
-    if section.residual_wall_time is not None:
+    if section.residual_wall_time_s is not None:
         summary.add_row(
             make_keyed_label("Residual Wall Time", "residual_wall_time_s", "bold bright_green"),
-            Text(section.residual_wall_time),
+            Text(section.residual_wall_time_s),
         )
     if summary.row_count:
         body.append(Align.center(summary))
@@ -198,8 +198,8 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
                 row.total_flops,
                 row.percent_of_section_flops,
                 row.mean_flops_per_mlp,
-                row.flopscope_backend_time,
-                row.flopscope_overhead_time,
+                row.flopscope_backend_time_s,
+                row.flopscope_overhead_time_s,
             )
         body.append(Align.center(table))
 
