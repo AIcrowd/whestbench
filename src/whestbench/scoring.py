@@ -744,19 +744,19 @@ def evaluate_estimator(
         if stats is not None:
             wall_time_s = float(stats.get("wall_time_s", budget_ctx.wall_time_s or 0.0) or 0.0)
             flopscope_backend_time_s = float(
-                stats.get("flopscope_backend_time_s", budget_ctx.flopscope_backend_time)
+                stats.get("flopscope_backend_time_s", budget_ctx.flopscope_backend_time_s)
             )
             flopscope_overhead_time_s = float(
-                stats.get("flopscope_overhead_time_s", budget_ctx.flopscope_overhead_time)
+                stats.get("flopscope_overhead_time_s", budget_ctx.flopscope_overhead_time_s)
             )
             residual_wall_time_s = float(
-                stats.get("residual_wall_time_s", budget_ctx.residual_wall_time or 0.0) or 0.0
+                stats.get("residual_wall_time_s", budget_ctx.residual_wall_time_s or 0.0) or 0.0
             )
         else:
             wall_time_s = budget_ctx.wall_time_s or 0.0
-            flopscope_backend_time_s = budget_ctx.flopscope_backend_time
-            flopscope_overhead_time_s = budget_ctx.flopscope_overhead_time
-            residual_wall_time_s = budget_ctx.residual_wall_time or 0.0
+            flopscope_backend_time_s = budget_ctx.flopscope_backend_time_s
+            flopscope_overhead_time_s = budget_ctx.flopscope_overhead_time_s
+            residual_wall_time_s = budget_ctx.residual_wall_time_s or 0.0
 
         if (
             not budget_exhausted

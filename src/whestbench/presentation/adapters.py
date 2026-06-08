@@ -380,10 +380,12 @@ def _breakdown_section(
                     f"{(flops_used / total_flops * 100.0):.1f}%" if total_flops > 0 else "0.0%"
                 ),
                 mean_flops_per_mlp=fmt_flops(flops_used / n_mlps if n_mlps > 0 else 0.0),
-                flopscope_backend_time=_display_time_seconds(
+                flopscope_backend_time_s=_display_time_seconds(
                     bucket.get("flopscope_backend_time_s", 0.0)
                 ),
-                flopscope_overhead_time=_display_time_seconds(bucket["flopscope_overhead_time_s"]),
+                flopscope_overhead_time_s=_display_time_seconds(
+                    bucket["flopscope_overhead_time_s"]
+                ),
             )
         )
 
@@ -448,11 +450,11 @@ def _breakdown_section(
         available=True,
         total_flops=fmt_flops(total_flops),
         effective_compute=effective_compute_value,
-        flopscope_backend_time=_display_time_seconds(
+        flopscope_backend_time_s=_display_time_seconds(
             breakdown.get("flopscope_backend_time_s", 0.0)
         ),
-        flopscope_overhead_time=_display_time_seconds(breakdown["flopscope_overhead_time_s"]),
-        residual_wall_time=_display_time_seconds(breakdown.get("residual_wall_time_s", 0.0)),
+        flopscope_overhead_time_s=_display_time_seconds(breakdown["flopscope_overhead_time_s"]),
+        residual_wall_time_s=_display_time_seconds(breakdown.get("residual_wall_time_s", 0.0)),
         namespace_rows=namespace_rows,
         gauge=gauge,
         over_budget_rows=over_budget_rows,
