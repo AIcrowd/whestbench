@@ -11,6 +11,11 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 import flopscope as flops
 import flopscope.numpy as fnp
 
+from .budget import (
+    LAMBDA_FLOPS_PER_SECOND,
+    is_combined_budget_exhausted,
+    score_multiplier,
+)
 from .domain import MLP
 from .generation import sample_mlp
 from .naming import assign_unique_names
@@ -20,12 +25,6 @@ from .simulation import sample_layer_statistics, sample_layer_statistics_chunk_c
 
 if TYPE_CHECKING:
     import datasets as hf_datasets
-
-# FLOP-equivalent rate for residual wall time. Used in budget-adjusted scoring:
-#   effective compute C_m = F_m + LAMBDA_FLOPS_PER_SECOND * R_m
-# Where R_m is the residual wall-time bucket (NOT total wall, NOT flopscope dispatch).
-# Per the NeurIPS proposal, the initial rate is 10^11 FLOPs/second.
-LAMBDA_FLOPS_PER_SECOND: float = 1e11
 
 
 class ScoringExhaustionWarning(UserWarning):
@@ -38,6 +37,14 @@ class BudgetExhaustionWarning(ScoringExhaustionWarning):
 
 class TimeExhaustionWarning(ScoringExhaustionWarning):
     """Raised when an estimator exhausts its wall-clock budget on a single MLP."""
+
+
+class ResidualWallTimeExhaustionWarning(ScoringExhaustionWarning):
+    """Raised when an estimator exhausts its residual wall-time budget on a single MLP."""
+
+
+class CombinedBudgetExhaustionWarning(ScoringExhaustionWarning):
+    """Raised when combined compute C_m = F_m + lambda*R_m exceeds the FLOP budget on a single MLP."""
 
 
 @dataclass
@@ -531,24 +538,12 @@ def _aggregate_budget_breakdowns(
 def _compute_budget_adjusted_score(
     *, mse_final: float, effective_compute: float, flop_budget: int, failure: bool
 ) -> float:
-    """Compute the per-MLP budget-adjusted score s_m.
+    """Per-MLP budget-adjusted score ``s_m = mse_final * score_multiplier(C_m, B_m)``.
 
-    For valid runs: s_m = mse_final * max(0.1, C_m / B_m).
-    For failures: s_m = mse_final * 1.0 (no compute discount).
-
-    The 0.1 floor on the success-path multiplier (factor-of-ten cap)
-    prevents an arbitrarily cheap submission from dominating the ranking.
-    The 1.0 multiplier on failures ensures that a failed run is strictly
-    worse than a trivial-zero submission that succeeds (which gets the
-    0.1 floor — i.e. failure is 10× worse than the cheapest success).
+    See ``whestbench.budget.score_multiplier`` for the canonical multiplier
+    (1.0 on failure / no budget; otherwise ``max(0.1, C_m / B_m)``, uncapped above).
     """
-    if failure:
-        return float(mse_final)
-    if flop_budget <= 0:
-        return float(mse_final)
-    ratio = effective_compute / float(flop_budget)
-    multiplier = max(0.1, ratio)
-    return float(mse_final) * multiplier
+    return float(mse_final) * score_multiplier(effective_compute, flop_budget, failed=failure)
 
 
 def evaluate_estimator(
@@ -776,6 +771,13 @@ def evaluate_estimator(
         ):
             predictions = fnp.zeros((spec.depth, spec.width))
             residual_wall_time_exhausted = True
+            warnings.warn(
+                f"MLP {i} (depth={spec.depth}, width={spec.width}) exhausted residual "
+                f"wall-time budget: {residual_wall_time_s:.3f}s > "
+                f"limit {spec.residual_wall_time_limit_s:.3f}s; estimator output set to zeros.",
+                ResidualWallTimeExhaustionWarning,
+                stacklevel=2,
+            )
 
         effective_compute = float(flops_used) + LAMBDA_FLOPS_PER_SECOND * float(
             residual_wall_time_s
@@ -791,10 +793,17 @@ def evaluate_estimator(
             not budget_exhausted
             and not time_exhausted
             and not residual_wall_time_exhausted
-            and effective_compute > spec.flop_budget
+            and is_combined_budget_exhausted(flops_used, residual_wall_time_s, spec.flop_budget)
         ):
             predictions = fnp.zeros((spec.depth, spec.width))
             combined_budget_exhausted = True
+            warnings.warn(
+                f"MLP {i} (depth={spec.depth}, width={spec.width}) exhausted combined budget: "
+                f"C_m={effective_compute:,.0f} > B={spec.flop_budget:,} "
+                f"(FLOPs={flops_used:,} + lambda*residual); estimator output set to zeros.",
+                CombinedBudgetExhaustionWarning,
+                stacklevel=2,
+            )
 
         # Convert predictions for MSE computation
         pred_np = fnp.asarray(predictions, dtype=fnp.float32)
@@ -909,10 +918,7 @@ def evaluate_estimator(
         cm = float(entry.get("effective_compute", 0.0))
         u = (cm / float(b)) if b > 0 else 0.0
         utilizations.append(u)
-        if _is_failed_entry(entry):
-            multipliers.append(1.0)
-        else:
-            multipliers.append(max(0.1, u))
+        multipliers.append(score_multiplier(cm, b, failed=_is_failed_entry(entry)))
 
     n_failed = sum(1 for entry in per_mlp if isinstance(entry, dict) and _is_failed_entry(entry))
 

@@ -18,6 +18,8 @@ from .generation import sample_mlp
 from .hub import publish_dataset
 from .scoring import (
     BudgetExhaustionWarning,
+    CombinedBudgetExhaustionWarning,
+    ResidualWallTimeExhaustionWarning,
     ScoringExhaustionWarning,
     TimeExhaustionWarning,
 )
@@ -27,6 +29,8 @@ from .simulation import relu, run_mlp, run_mlp_all_layers, sample_layer_statisti
 __all__ = [
     "BaseEstimator",
     "BudgetExhaustionWarning",
+    "CombinedBudgetExhaustionWarning",
+    "ResidualWallTimeExhaustionWarning",
     "combine_split_datasets",
     "InvalidDatasetError",
     "MLP",

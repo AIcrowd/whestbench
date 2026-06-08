@@ -129,3 +129,76 @@ def test_fail_fast_reraises_time_exhausted() -> None:
     data = _make_tiny_data(n_mlps=2)
     with pytest.raises(flops.TimeExhaustedError):
         evaluate_estimator(_SlowEstimator(), data, fail_fast=True)
+
+
+def test_combined_and_residual_warning_hierarchy() -> None:
+    from whestbench.scoring import (
+        CombinedBudgetExhaustionWarning,
+        ResidualWallTimeExhaustionWarning,
+    )
+
+    assert issubclass(CombinedBudgetExhaustionWarning, ScoringExhaustionWarning)
+    assert issubclass(ResidualWallTimeExhaustionWarning, ScoringExhaustionWarning)
+
+
+def test_combined_and_residual_warnings_reexported_from_package() -> None:
+    from whestbench.scoring import (
+        CombinedBudgetExhaustionWarning,
+        ResidualWallTimeExhaustionWarning,
+    )
+
+    assert whestbench.CombinedBudgetExhaustionWarning is CombinedBudgetExhaustionWarning
+    assert whestbench.ResidualWallTimeExhaustionWarning is ResidualWallTimeExhaustionWarning
+
+
+def test_residual_wall_time_exhaustion_emits_warning() -> None:
+    """evaluate_estimator emits ResidualWallTimeExhaustionWarning past the residual limit."""
+    from typing import Optional
+
+    from whestbench.runner import PredictStats
+    from whestbench.scoring import (
+        ContestData,
+        ContestSpec,
+        ResidualWallTimeExhaustionWarning,
+        evaluate_estimator,
+    )
+
+    class _ResidualEstimator(BaseEstimator):
+        def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
+            return fnp.zeros((mlp.depth, mlp.width))
+
+        def last_predict_stats(self) -> Optional[PredictStats]:
+            return PredictStats(
+                flops_used=0,
+                wall_time_s=0.2,
+                flopscope_backend_time_s=0.0,
+                flopscope_overhead_time_s=0.0,
+                residual_wall_time_s=0.2,  # > limit 0.05 below
+            )
+
+    width, depth = 4, 2
+    data = ContestData(
+        spec=ContestSpec(
+            width=width,
+            depth=depth,
+            n_mlps=1,
+            flop_budget=10_000_000_000,
+            ground_truth_samples=100,
+            residual_wall_time_limit_s=0.05,
+        ),
+        mlps=[
+            MLP(
+                width=width,
+                depth=depth,
+                weights=[
+                    fnp.array(fnp.zeros((width, width), dtype=fnp.float32)) for _ in range(depth)
+                ],
+            )
+        ],
+        all_layer_targets=[fnp.zeros((depth, width), dtype=fnp.float32)],
+        final_targets=[fnp.zeros(width, dtype=fnp.float32)],
+        avg_variances=[0.0],
+    )
+    with pytest.warns(ResidualWallTimeExhaustionWarning):
+        result = evaluate_estimator(_ResidualEstimator(), data)
+    assert result["per_mlp"][0]["residual_wall_time_exhausted"] is True
