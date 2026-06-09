@@ -84,3 +84,23 @@ def test_effective_compute_with_zero_residual_equals_flops_used():
     )
     result = evaluate_estimator(estimator, data)
     assert result["per_mlp"][0]["effective_compute"] == pytest.approx(500_000_000)
+
+
+def test_effective_compute_respects_configured_lambda():
+    """ContestSpec.lambda_flops_per_second flows into the surfaced C_m (single source)."""
+    data = _make_data()
+    data.spec.lambda_flops_per_second = 2e11  # double the default rate
+    flops_used = 1_000_000_000  # 1e9
+    residual_s = 0.5
+    expected_c_m = flops_used + 2e11 * residual_s  # 1e9 + 1e11 = 1.01e11
+    estimator = _StatsEstimator(
+        PredictStats(
+            flops_used=flops_used,
+            wall_time_s=0.6,
+            flopscope_backend_time_s=0.05,
+            flopscope_overhead_time_s=0.05,
+            residual_wall_time_s=residual_s,
+        )
+    )
+    result = evaluate_estimator(estimator, data)
+    assert result["per_mlp"][0]["effective_compute"] == pytest.approx(expected_c_m)

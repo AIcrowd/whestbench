@@ -23,6 +23,7 @@ Typical report sections include:
 | Field | Description |
 |---|---|
 | `seed` | The `--seed` value passed at the CLI, or `null` when `--seed` is omitted. When set, it determines both MLP generation (without `--dataset`) and `SetupContext.seed` for the participant's `setup()` call. When `null`, `ctx.seed` defaults to `0`. See [estimator-contract.md](estimator-contract.md) for the reproducibility contract and [cli-reference.md](cli-reference.md) for `--seed` flag semantics. |
+| `lambda_flops_per_second` | The configured residual-penalty rate λ used for this run (default `1e11` FLOPs/s). Controls the `C_m = F_m + λ·R_m` effective-compute formula. Set per-run with `whest run --lambda-flops-per-second`. |
 | `dataset` | Present when `--dataset` is used. See [Dataset traceability fields](#dataset-traceability-fields) below. |
 
 ## Host metadata
@@ -137,7 +138,7 @@ adjusted_final_layer_score = final_layer_mse × max(0.1, C_m / B_m)   for valid 
 adjusted_final_layer_score = final_layer_mse × 1.0                    for failures (no compute discount)
 
 C_m = F_m + λ · R_m                      (effective compute, FLOPs and FLOP-equivalents)
-λ = 1e11 FLOPs/second                    (conversion rate; see flopscope-primer.md)
+λ = run_config.lambda_flops_per_second   (default 1e11 FLOPs/s; set with --lambda-flops-per-second; see flopscope-primer.md)
 ```
 
 Where `F_m` is the analytical FLOPs counted by flopscope (`flops_used`), `R_m` is the

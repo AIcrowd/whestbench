@@ -1025,3 +1025,14 @@ def test_default_resource_limits_matches_proposal():
 
     limits = _default_resource_limits()
     assert limits.flop_budget == 68_000_000_000
+
+
+def test_run_parser_accepts_lambda_flops_per_second():
+    """`whest run --lambda-flops-per-second` parses to a float arg."""
+    from whestbench.cli import _build_participant_parser
+
+    parser = _build_participant_parser()
+    args = parser.parse_args(
+        ["run", "--estimator", "estimator.py", "--lambda-flops-per-second", "2e11"]
+    )
+    assert args.lambda_flops_per_second == 2e11

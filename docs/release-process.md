@@ -125,11 +125,13 @@ specific version explicitly, use `cz bump --increment PATCH|MINOR|MAJOR`.
 
 ### Pin updates for flopscope
 
-Whestbench pins `flopscope>=0.4.1` and `flopscope-server>=0.4.1`.
+Whestbench pins `flopscope>=0.7.0` and `flopscope-server>=0.7.0`.
 When flopscope ships a new minor or major version, bump these floors
 in `pyproject.toml` and re-run `uv lock` before cutting the next
 whestbench release. (Out of scope for an automated workflow; flag if
 Dependabot becomes worth the noise.)
+
+A flopscope bump that changes absolute FLOP *counts* requires a re-baseline + full re-eval plan (see the 0.5.0 incident). A bump that only re-attributes *timing* (e.g. 0.7.0: data-movement → backend) shifts residual-based scores and warrants a measure-then-decide re-eval.
 
 ### Docs
 
