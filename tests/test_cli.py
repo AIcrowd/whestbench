@@ -1054,3 +1054,12 @@ def test_no_drift_no_warning():
         cli._version_drift_warning(installed={"flopscope": "0.7.0"}, pinned={"flopscope": "0.7.0"})
         == ""
     )
+
+
+def test_submit_dry_run_parses():
+    from whestbench.cli import _build_participant_parser
+
+    args = _build_participant_parser().parse_args(
+        ["submit", "--estimator", "estimator.py", "--dry-run"]
+    )
+    assert args.dry_run is True
