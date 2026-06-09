@@ -14,13 +14,21 @@ from __future__ import annotations
 LAMBDA_FLOPS_PER_SECOND: float = 1e11
 
 
-def effective_compute(flops_used: float, residual_wall_time_s: float) -> float:
-    """C_m = F_m + LAMBDA * R_m."""
-    return float(flops_used) + LAMBDA_FLOPS_PER_SECOND * float(residual_wall_time_s)
+def effective_compute(
+    flops_used: float,
+    residual_wall_time_s: float,
+    lambda_flops_per_second: float = LAMBDA_FLOPS_PER_SECOND,
+) -> float:
+    """C_m = F_m + lambda * R_m. ``lambda_flops_per_second`` defaults to the
+    canonical rate; pass a value to re-calibrate without touching code."""
+    return float(flops_used) + float(lambda_flops_per_second) * float(residual_wall_time_s)
 
 
 def is_combined_budget_exhausted(
-    flops_used: float, residual_wall_time_s: float, flop_budget: float
+    flops_used: float,
+    residual_wall_time_s: float,
+    flop_budget: float,
+    lambda_flops_per_second: float = LAMBDA_FLOPS_PER_SECOND,
 ) -> bool:
     """True when combined effective compute strictly exceeds the budget.
 
@@ -31,7 +39,9 @@ def is_combined_budget_exhausted(
     """
     if flop_budget <= 0:
         return False
-    return effective_compute(flops_used, residual_wall_time_s) > float(flop_budget)
+    return effective_compute(flops_used, residual_wall_time_s, lambda_flops_per_second) > float(
+        flop_budget
+    )
 
 
 def score_multiplier(effective_compute: float, flop_budget: float, *, failed: bool) -> float:
