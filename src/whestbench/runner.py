@@ -270,6 +270,7 @@ class SubprocessRunner:
                     "flop_budget": context.flop_budget,
                     "api_version": context.api_version,
                     "scratch_dir": context.scratch_dir,
+                    "submission_dir": context.submission_dir,
                     "seed": int(context.seed),
                 },
                 "wall_time_limit_s": limits.wall_time_limit_s,

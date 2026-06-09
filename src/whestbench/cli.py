@@ -769,6 +769,7 @@ def _run_validate_checks(
         depth=2,
         flop_budget=100,
         api_version="1.0",
+        submission_dir=str(Path(estimator_path).resolve().parent),
         seed=seed if seed is not None else 0,
     )
     mlp = sample_mlp(width=4, depth=2)
@@ -2024,6 +2025,7 @@ def _run_estimator_with_runner(
         depth=spec.depth,
         flop_budget=spec.flop_budget,
         api_version="1.0",
+        submission_dir=str(Path(entrypoint.file_path).resolve().parent),
         seed=spec.seed if spec.seed is not None else 0,
     )
     limits = ResourceLimits(

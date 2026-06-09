@@ -20,6 +20,11 @@ class SetupContext:
     flop_budget: int
     api_version: str
     scratch_dir: Optional[str] = None
+    submission_dir: Optional[str] = None
+    """Read-only path to the extracted submission directory (estimator.py plus
+    any files shipped alongside it, e.g. weights). Load shipped files with
+    ``fnp.load(Path(ctx.submission_dir) / "weights.npz")`` (0 FLOPs) or
+    ``MyModule.from_file(...)``. ``None`` outside the runner/grader."""
     seed: int = 0
     """Run-level seed for setup-time randomness.
 
