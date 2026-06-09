@@ -88,7 +88,9 @@ def test_package_bundles_sibling_module_and_data(tmp_path):
     package_submission(tmp_path / "estimator.py", output_path=out)
     with tarfile.open(out) as tf:
         names = set(tf.getnames())
-        manifest = json.loads(tf.extractfile("manifest.json").read())
+        manifest_member = tf.extractfile("manifest.json")
+        assert manifest_member is not None
+        manifest = json.loads(manifest_member.read())
     assert {"estimator.py", "helper.py", "weights.npz", "manifest.json"} <= names
     manifest_names = {f["name"] for f in manifest["files"]}
     assert {"estimator.py", "helper.py", "weights.npz"} <= manifest_names
