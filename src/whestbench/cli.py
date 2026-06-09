@@ -45,6 +45,7 @@ except Exception:  # pragma: no cover - optional at runtime
     rich_tqdm = None
 
 from .aicrowd_client import AIcrowdClient  # module-level for monkeypatch + reuse in `submit`
+from .budget import LAMBDA_FLOPS_PER_SECOND
 from .dataset import metadata as _wb_metadata
 from .dataset_io import _validate_config_name, _validate_split_name
 from .dataset_io import metadata_file_hash as _metadata_file_hash
@@ -324,6 +325,7 @@ def run_default_report(
             "flop_budget": spec.flop_budget,
             "wall_time_limit_s": spec.wall_time_limit_s,
             "residual_wall_time_limit_s": spec.residual_wall_time_limit_s,
+            "lambda_flops_per_second": spec.lambda_flops_per_second,
         },
     }
 
@@ -1000,6 +1002,16 @@ def _build_participant_parser() -> argparse.ArgumentParser:
             "wall time). Always honored; any flop_budget stored in "
             "--dataset's metadata is ignored. "
             "Default: 68_000_000_000 (6.8e10)."
+        ),
+    )
+    run_parser.add_argument(
+        "--lambda-flops-per-second",
+        type=float,
+        default=None,
+        metavar="RATE",
+        help=(
+            "Residual wall-time penalty rate lambda in C_m = F_m + lambda*R_m "
+            "(FLOP-equivalents per second of residual wall time). Default: 1e11."
         ),
     )
     run_parser.add_argument(
@@ -2347,6 +2359,11 @@ def _main_participant(argv: "list[str]") -> int:
             flop_budget = (
                 int(args.flop_budget) if args.flop_budget is not None else contest_spec.flop_budget
             )
+            lambda_flops_per_second = (
+                float(args.lambda_flops_per_second)
+                if args.lambda_flops_per_second is not None
+                else LAMBDA_FLOPS_PER_SECOND
+            )
             gt_samples = (
                 int(args.n_samples)
                 if args.n_samples is not None
@@ -2617,6 +2634,7 @@ def _main_participant(argv: "list[str]") -> int:
                     seed=run_seed,
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
                     residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
+                    lambda_flops_per_second=lambda_flops_per_second,
                 )
                 contest_data = make_contest_from_dataset(contest_spec, ds, n_mlps)
             else:
@@ -2630,6 +2648,7 @@ def _main_participant(argv: "list[str]") -> int:
                     seed=run_seed,
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
                     residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
+                    lambda_flops_per_second=lambda_flops_per_second,
                 )
 
             score_kwargs: Dict[str, Any] = {
