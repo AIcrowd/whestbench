@@ -46,23 +46,16 @@ def _sha256(path: Path) -> str:
 def build_manifest(
     *,
     class_name: str,
-    files: SubmissionFiles,
+    root: Path,
+    files: "List[Path]",
     packager_version: str = "0.1.0",
 ) -> Dict[str, Any]:
-    included_files: List["tuple[str, Path]"] = [("estimator.py", files.estimator)]
-    if files.requirements is not None:
-        included_files.append(("requirements.txt", files.requirements))
-    if files.submission_yaml is not None:
-        included_files.append(("submission.yaml", files.submission_yaml))
-    if files.approach_md is not None:
-        included_files.append(("APPROACH.md", files.approach_md))
-
     manifest_files = [
         {
-            "name": arcname,
-            "sha256": _sha256(path),
+            "name": str(p.relative_to(root)),
+            "sha256": _sha256(p),
         }
-        for arcname, path in included_files
+        for p in files
     ]
     return {
         "schema_version": "1.0",
@@ -124,18 +117,10 @@ def package_submission(
     # Resolve and validate class entrypoint before packing.
     _, metadata = load_estimator_from_path(estimator, class_name=class_name)
 
-    requirements = Path(requirements_path).resolve() if requirements_path is not None else None
-    submission_yaml = (
-        Path(submission_yaml_path).resolve() if submission_yaml_path is not None else None
-    )
-    approach_md = Path(approach_md_path).resolve() if approach_md_path is not None else None
-    files = SubmissionFiles(
-        estimator=estimator,
-        requirements=requirements if requirements and requirements.is_file() else None,
-        submission_yaml=submission_yaml if submission_yaml and submission_yaml.is_file() else None,
-        approach_md=approach_md if approach_md and approach_md.is_file() else None,
-    )
-    manifest = build_manifest(class_name=metadata.class_name, files=files)
+    root = estimator.parent
+    bundled = collect_submission_files(root)
+    enforce_submission_caps(bundled)
+    manifest = build_manifest(class_name=metadata.class_name, root=root, files=bundled)
     manifest_blob = json.dumps(manifest, indent=2).encode("utf-8")
 
     target = (
@@ -148,13 +133,8 @@ def package_submission(
 
     def _write_archive(fileobj: Any) -> None:
         with tarfile.open(fileobj=fileobj, mode="w:gz") as archive:
-            archive.add(estimator, arcname="estimator.py")
-            if files.requirements is not None:
-                archive.add(files.requirements, arcname="requirements.txt")
-            if files.submission_yaml is not None:
-                archive.add(files.submission_yaml, arcname="submission.yaml")
-            if files.approach_md is not None:
-                archive.add(files.approach_md, arcname="APPROACH.md")
+            for path in bundled:
+                archive.add(path, arcname=str(path.relative_to(root)))
             info = tarfile.TarInfo(name="manifest.json")
             info.size = len(manifest_blob)
             info.mtime = datetime.now(timezone.utc).timestamp()

@@ -1,3 +1,5 @@
+import json
+import tarfile
 from pathlib import Path
 
 import pytest
@@ -6,6 +8,7 @@ from whestbench import limits
 from whestbench.packaging import (
     collect_submission_files,
     enforce_submission_caps,
+    package_submission,
     summarize_submission,
 )
 
@@ -68,3 +71,24 @@ def test_summary_reports_total_count_and_unreachable(tmp_path):
     assert s.total_bytes > 0
     assert "orphan.py" in s.unreachable_py
     assert "helper.py" not in s.unreachable_py
+
+
+def test_package_bundles_sibling_module_and_data(tmp_path):
+    (tmp_path / "estimator.py").write_text(
+        "from whestbench import BaseEstimator\n"
+        "from helper import f\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        import flopscope.numpy as fnp\n"
+        "        return fnp.zeros((mlp.depth, mlp.width))\n"
+    )
+    (tmp_path / "helper.py").write_text("def f():\n    return 0\n")
+    (tmp_path / "weights.npz").write_bytes(b"\x00" * 16)
+    out = tmp_path / "submission.tar.gz"
+    package_submission(tmp_path / "estimator.py", output_path=out)
+    with tarfile.open(out) as tf:
+        names = set(tf.getnames())
+        manifest = json.loads(tf.extractfile("manifest.json").read())
+    assert {"estimator.py", "helper.py", "weights.npz", "manifest.json"} <= names
+    manifest_names = {f["name"] for f in manifest["files"]}
+    assert {"estimator.py", "helper.py", "weights.npz"} <= manifest_names
