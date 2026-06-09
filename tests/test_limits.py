@@ -13,7 +13,18 @@ def test_caps_values():
 
 def test_limits_module_is_import_light():
     # Must not pull flopscope/datasets so the evaluator's constrained venv can import it.
-    for mod in ("flopscope", "datasets"):
-        sys.modules.pop(mod, None)
-    importlib.reload(limits)
-    assert "flopscope" not in sys.modules
+    evicted = {name: sys.modules.get(name) for name in ("flopscope", "datasets")}
+    try:
+        for name in evicted:
+            sys.modules.pop(name, None)
+        importlib.reload(limits)
+        assert "flopscope" not in sys.modules
+        assert "datasets" not in sys.modules
+    finally:
+        # Restore exactly what we evicted. A half-reimported 'datasets' corrupts
+        # dill fingerprinting (table.array_cast self-reference) for later tests.
+        for name, module in evicted.items():
+            if module is not None:
+                sys.modules[name] = module
+            else:
+                sys.modules.pop(name, None)
