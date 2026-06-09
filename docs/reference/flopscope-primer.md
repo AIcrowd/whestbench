@@ -118,7 +118,8 @@ logic comparing Flopscope's measured `residual_wall_time_s` with the configured
 ## Residual wall-time charging (lambda)
 
 WhestBench's effective compute budget combines analytical FLOPs and residual wall time
-via a conversion rate `λ` (`LAMBDA_FLOPS_PER_SECOND` in `whestbench.scoring`):
+via a conversion rate `λ` (`whestbench.budget.LAMBDA_FLOPS_PER_SECOND`, default `1e11`;
+configurable per run via `whest run --lambda-flops-per-second`):
 
 ```
 C_m = F_m + λ · R_m
