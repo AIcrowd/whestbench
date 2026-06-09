@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.11.0 (2026-06-09)
+
+### Feat
+
+- **deps**: require flopscope>=0.7.0. Timing is re-attributed (data-movement NumPy → backend, callbacks → residual); FLOP counts are unchanged. Residual-based effective compute (and thus budget-adjusted scores) shift; re-baseline any pinned timing assertions.
+- **scoring**: configurable residual-penalty rate λ — `ContestSpec.lambda_flops_per_second` + `whest run --lambda-flops-per-second` (default 1e11), surfaced in `run_config`.
+
+### Refactor
+
+- **scoring**: compute C_m via `whestbench.budget.effective_compute` (single source of truth); removed the inlined formula in `scoring.py`.
+
 ## v0.10.0 (2026-06-06)
 
 ### BREAKING CHANGE

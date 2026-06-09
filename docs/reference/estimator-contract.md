@@ -48,6 +48,10 @@ For traversal examples, see [Inspect and Traverse MLP Structure](https://github.
 Your estimator must use flopscope primitives (`import flopscope as flops
 import flopscope.numpy as fnp`) for all numerical computation. flopscope tracks FLOP usage analytically. If the total FLOPs across your entire `predict` call exceed `flop_budget`, all predictions for that MLP are replaced with zero vectors and your MSE for that MLP is computed against zeros.
 
+### Ops not supported on the grader
+
+Five NumPy callback ops — `apply_along_axis`, `apply_over_axes`, `fromfunction`, `fromiter`, `frompyfunc` — run in-process locally but raise `flopscope.errors.RemoteCallbackError` on the AIcrowd grader (they run a Python callback that can't cross the client/server boundary). Enumerate them at runtime with `flopscope.remote_unsupported_ops()`. Precompute the result or avoid these ops in submitted code.
+
 ## Failure semantics
 
 When `predict()` cannot return a valid result — for any reason — the affected MLP is

@@ -90,9 +90,11 @@ decomposition identity, `wall_time_s = flopscope_backend_time_s + flopscope_over
 - `wall_time_s`: total elapsed time in the context
 - `flopscope_backend_time_s`: time spent inside counted flopscope numpy kernels
 - `flopscope_overhead_time_s`: time spent inside flopscope's own dispatch (wrapper preambles, FLOP bookkeeping, namespace push/pop)
-- `residual_wall_time_s`: everything else - participant Python, GC, uninstrumented numpy
+- `residual_wall_time_s`: everything else - participant Python, GC, and any ops not attributed to a flopscope backend or callback bucket (see the 0.7.0 note below)
 
 This decomposition lets you see whether time is going to numpy compute, framework dispatch, or your own Python.
+
+> **flopscope 0.7.0 timing re-attribution.** As of flopscope 0.7.0, data-movement NumPy ops (concatenate, stack-family, tile, repeat, take, pad, …) are timed as `flopscope_backend_time_s`, not `residual_wall_time_s`; Python-callback ops bill their callback time to residual. The identity `wall_time_s = flopscope_backend_time_s + flopscope_overhead_time_s + residual_wall_time_s` still holds; FLOP counts are unchanged.
 
 ## WhestBench-specific limits
 
@@ -125,9 +127,10 @@ C_m = F_m + λ · R_m
 - `F_m` = analytical FLOPs counted by flopscope (`flops_used`)
 - `R_m` = residual wall time — the third bucket of the time decomposition. Specifically,
   `residual_wall_time_s` = `wall_time_s − flopscope_backend_time_s − flopscope_overhead_time_s`.
-  This is participant Python (loops, control flow), GC pauses, and uninstrumented numpy.
-  It explicitly **excludes** flopscope's own dispatch overhead (the second bucket).
-- `λ` = 1e11 FLOPs/second. This rate is fixed for the initial competition round.
+  This is participant Python (loops, control flow), GC pauses, and Python-callback ops.
+  It explicitly **excludes** flopscope's own dispatch overhead (the second bucket) and,
+  as of flopscope 0.7.0, data-movement numpy ops (those now bill to backend).
+- `λ` = the configured residual-penalty rate λ (default 1e11 FLOPs/s; set per-run with `whest run --lambda-flops-per-second`).
 
 The combined `C_m` is capped at `B_m = flop_budget`. If `C_m > B_m`, the MLP is marked
 `combined_budget_exhausted` and the prediction is replaced with zeros.
