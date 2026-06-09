@@ -1,10 +1,13 @@
 """λ (residual penalty rate) is a configurable parameter with a 1e11 default."""
 
+import pytest
+
 from whestbench.budget import (
     LAMBDA_FLOPS_PER_SECOND,
     effective_compute,
     is_combined_budget_exhausted,
 )
+from whestbench.scoring import ContestSpec
 
 
 def test_default_lambda_is_1e11():
@@ -28,3 +31,22 @@ def test_combined_exhaustion_respects_lambda():
     assert (
         is_combined_budget_exhausted(0, 1.0, 1_000, lambda_flops_per_second=10_000.0) is True
     )  # 1e4 > 1000
+
+
+def _spec(**over):
+    base = dict(width=4, depth=2, n_mlps=1, flop_budget=100, ground_truth_samples=10)
+    base.update(over)
+    return ContestSpec(**base)
+
+
+def test_contestspec_lambda_defaults_to_1e11():
+    assert _spec().lambda_flops_per_second == 1e11
+
+
+def test_contestspec_accepts_custom_lambda():
+    assert _spec(lambda_flops_per_second=2e11).lambda_flops_per_second == 2e11
+
+
+def test_contestspec_rejects_nonpositive_lambda():
+    with pytest.raises(ValueError, match="lambda_flops_per_second"):
+        _spec(lambda_flops_per_second=0.0).validate()
