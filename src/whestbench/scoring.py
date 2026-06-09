@@ -16,6 +16,9 @@ from .budget import (
     is_combined_budget_exhausted,
     score_multiplier,
 )
+from .budget import (
+    effective_compute as _effective_compute,
+)
 from .domain import MLP
 from .generation import sample_mlp
 from .naming import assign_unique_names
@@ -782,8 +785,8 @@ def evaluate_estimator(
                 stacklevel=2,
             )
 
-        effective_compute = float(flops_used) + LAMBDA_FLOPS_PER_SECOND * float(
-            residual_wall_time_s
+        effective_compute = _effective_compute(
+            flops_used, residual_wall_time_s, spec.lambda_flops_per_second
         )
 
         # Post-hoc combined-budget check: C_m = F_m + lambda * R_m > B_m → zero out.
@@ -796,7 +799,9 @@ def evaluate_estimator(
             not budget_exhausted
             and not time_exhausted
             and not residual_wall_time_exhausted
-            and is_combined_budget_exhausted(flops_used, residual_wall_time_s, spec.flop_budget)
+            and is_combined_budget_exhausted(
+                flops_used, residual_wall_time_s, spec.flop_budget, spec.lambda_flops_per_second
+            )
         ):
             predictions = fnp.zeros((spec.depth, spec.width))
             combined_budget_exhausted = True
