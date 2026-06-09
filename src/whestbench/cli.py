@@ -133,6 +133,23 @@ def _resolve_whestbench_version() -> str:
         return "unknown"
 
 
+def _version_drift_warning(installed: "dict[str, str]", pinned: "dict[str, str]") -> str:
+    """Return a human-readable warning string if any installed version differs from the pin.
+
+    Returns an empty string when all versions match (no drift).
+    """
+    drifts = [
+        f"{k}: installed {installed[k]} but project pins {pinned[k]}"
+        for k in pinned
+        if k in installed and installed[k] != pinned[k]
+    ]
+    if not drifts:
+        return ""
+    return "Version drift — run `uv sync` so your submission matches your pins:\n  " + "\n  ".join(
+        drifts
+    )
+
+
 def _json_payload_with_metadata(payload: Dict[str, Any]) -> Dict[str, Any]:
     payload_with_metadata = dict(payload)
     payload_with_metadata["whestbench_version"] = _resolve_whestbench_version()
@@ -1282,6 +1299,12 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     package_parser.add_argument(
         "--output",
         help="Output path for the .tar.gz archive (default: submission-<timestamp>.tar.gz in the current directory).",
+    )
+    package_parser.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        help="Skip the confirmation prompt (for CI).",
     )
     package_parser.add_argument(
         "--debug",
@@ -2809,9 +2832,87 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "package":
+            import importlib.metadata as _ilmd
             import time as _time
 
+            from .packaging import summarize_submission as _summarize_submission
             from .ui import format_bytes, format_duration, progress_bytes, say
+
+            # --- Preview: show files, sizes, total, count, and unreachable-py warnings ---
+            if not json_output:
+                _summary = _summarize_submission(args.estimator)
+                _root = Path(args.estimator).resolve().parent
+                say.intent(
+                    f"Packaging {args.estimator} → {args.output or 'submission-*.tar.gz'}",
+                    quiet=json_output,
+                )
+                say.step(
+                    f"Files to bundle ({_summary.file_count} file{'s' if _summary.file_count != 1 else ''}, "
+                    f"{format_bytes(_summary.total_bytes)}):",
+                    quiet=json_output,
+                )
+                for _f in _summary.files:
+                    try:
+                        _rel = _f.relative_to(_root)
+                    except ValueError:
+                        _rel = _f
+                    _fsz = format_bytes(_f.stat().st_size)
+                    say.step(f"  {_rel}  ({_fsz})", quiet=json_output)
+                for _unr in _summary.unreachable_py:
+                    say.warn(
+                        f"⚠ {_unr} is not imported from estimator.py — "
+                        f"add to .whestignore if it shouldn't ship",
+                        quiet=json_output,
+                    )
+
+                # --- Drift check ---
+                _installed: dict[str, str] = {}
+                for _pkg in ("flopscope", "whestbench"):
+                    try:
+                        _installed[_pkg] = _ilmd.version(_pkg)
+                    except _ilmd.PackageNotFoundError:
+                        pass
+
+                # Best-effort: parse requirements.txt adjacent to estimator.py
+                _pinned: dict[str, str] = {}
+                _req_path = _root / "requirements.txt"
+                if _req_path.is_file():
+                    import re as _re
+
+                    _req_text = _req_path.read_text(encoding="utf-8", errors="replace")
+                    for _line in _req_text.splitlines():
+                        _line = _line.strip()
+                        if _line.startswith("#") or not _line:
+                            continue
+                        for _pkg in ("flopscope", "whestbench"):
+                            # Match lines like: flopscope>=0.7.0 or flopscope==0.7.0
+                            _m = _re.match(
+                                rf"^{_re.escape(_pkg)}\s*[><=!]{{1,2}}\s*([^\s,;]+)",
+                                _line,
+                                _re.IGNORECASE,
+                            )
+                            if _m:
+                                _pinned[_pkg] = _m.group(1)
+
+                _drift_msg = _version_drift_warning(_installed, _pinned)
+                if _drift_msg:
+                    say.warn(_drift_msg, quiet=json_output)
+
+                # --- Confirmation prompt (skip in CI / with --yes) ---
+                if not getattr(args, "yes", False) and sys.stdin.isatty():
+                    _prompt = (
+                        f"Package these {_summary.file_count} files "
+                        f"({format_bytes(_summary.total_bytes)})? [y/N] "
+                    )
+                    _answer = input(_prompt).strip().lower()
+                    if _answer not in ("y", "yes"):
+                        say.hint("Aborted. No archive written.")
+                        return 0
+            else:
+                say.intent(
+                    f"Packaging {args.estimator} → {args.output or 'submission-*.tar.gz'}",
+                    quiet=json_output,
+                )
 
             # The bytes flowing into the bar are gzipped output bytes; counting
             # uncompressed input bytes as the bar's target gives a roughly
@@ -2831,10 +2932,6 @@ def _main_participant(argv: "list[str]") -> int:
                     _input_paths.append(_p)
             _total = sum(p.stat().st_size for p in _input_paths) + 1024
 
-            say.intent(
-                f"Packaging {args.estimator} → {args.output or 'submission-*.tar.gz'}",
-                quiet=json_output,
-            )
             _t0 = _time.perf_counter()
             with progress_bytes(total=_total, label="Packaging", quiet=json_output) as _bar:
                 artifact_path = package_submission(

@@ -1036,3 +1036,21 @@ def test_run_parser_accepts_lambda_flops_per_second():
         ["run", "--estimator", "estimator.py", "--lambda-flops-per-second", "2e11"]
     )
     assert args.lambda_flops_per_second == 2e11
+
+
+def test_version_drift_warning():
+    from whestbench import cli
+
+    msg = cli._version_drift_warning(
+        installed={"flopscope": "0.4.2"}, pinned={"flopscope": "0.7.0"}
+    )
+    assert msg and "flopscope" in msg and "0.4.2" in msg and "0.7.0" in msg
+
+
+def test_no_drift_no_warning():
+    from whestbench import cli
+
+    assert (
+        cli._version_drift_warning(installed={"flopscope": "0.7.0"}, pinned={"flopscope": "0.7.0"})
+        == ""
+    )
