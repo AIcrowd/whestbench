@@ -410,22 +410,85 @@ whest run --estimator ./estimator.py \
 
 ## `whest package`
 
-Build a submission artifact.
+Build a submission artifact from a project folder.
 
 ```bash
-whest package --estimator <path> [options]
+whest package --estimator <path> [--output <path>] [--yes|-y] [options]
+```
+
+`whest package` bundles the **entire project folder** containing `estimator.py` (i.e. the directory that `estimator.py` lives in), minus a built-in ignore set plus any patterns in `.gitignore` and `.whestignore` in that directory.
+
+Before writing the archive, `whest package` prints a **preview** listing each file, its size, the total size, and the file count. It also warns about any `.py` files that are not reachable by import from `estimator.py` (likely dead code; add to `.whestignore` if they shouldn't ship). After the preview, it prompts for confirmation unless `--yes` / `-y` is passed or stdin is non-interactive.
+
+Submissions are capped at **50 MB** total and **50 files**. Exceeding either cap aborts with an actionable error that names the largest files and suggests using `.whestignore`.
+
+Key options:
+
+- `--class <name>` — estimator class name (auto-detected if omitted)
+- `--requirements <path>` — `requirements.txt` to include
+- `--submission-metadata <path>` — `submission.yaml` metadata file to include
+- `--approach <path>` — `approach.md` write-up to include
+- `--output <path>` — output path for the `.tar.gz` archive (default: `submission-<timestamp>.tar.gz` in the current directory)
+- `--yes` / `-y` — skip the confirmation prompt (for CI)
+- `--format rich|plain|json`
+- `--json` — alias for `--format json`
+- `--debug`
+
+### Built-in ignore set
+
+The following are always excluded, regardless of `.gitignore` / `.whestignore`:
+
+`.git`, `.hg`, `.svn`, `.venv`, `venv`, `env`, `__pycache__`, `*.pyc`, `*.pyo`,
+`.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `.ipynb_checkpoints`, `.DS_Store`,
+`*.tar.gz`, `*.tgz`, `*.zip`, `.whestignore`, `.gitignore`, `manifest.json`
+
+To exclude additional files (scratch data, notebooks, large test fixtures), add patterns to `.whestignore` using the same glob syntax as `.gitignore`. `whest init` creates a starter `.whestignore` in new project directories.
+
+### Examples
+
+```bash
+# Preview and confirm interactively
+whest package --estimator ./estimator.py
+
+# Skip confirmation (CI)
+whest package --estimator ./estimator.py --yes
+
+# Custom output path
+whest package --estimator ./estimator.py --output ./my-submission.tar.gz --yes
+```
+
+## `whest submit`
+
+Submit a packaged artifact (or an estimator folder) to the AIcrowd leaderboard.
+
+```bash
+whest submit <artifact.tar.gz> [options]
+whest submit --estimator <path> [options]
+whest submit --estimator <path> --dry-run [options]
 ```
 
 Key options:
 
-- `--class <name>`
-- `--requirements <path>`
-- `--submission-metadata <path>`
-- `--approach <path>`
-- `--output <path>`
+- `--estimator <path>` — package `estimator.py` on-the-fly before submitting (equivalent to running `whest package` then `whest submit`).
+- `--dry-run` — preview what would be uploaded (runs packaging, shows the file list and sizes), then stop without submitting. Useful for inspecting a submission before it goes to the leaderboard.
+- `--class <name>` — estimator class name (for `--estimator` packaging).
+- `--description <text>` — label attached to the submission on AIcrowd (default: `"Submitted via whest submit"`).
 - `--format rich|plain|json`
 - `--json` — alias for `--format json`
 - `--debug`
+
+### Examples
+
+```bash
+# Submit a pre-packaged artifact
+whest submit ./my-submission.tar.gz
+
+# Package and submit in one step
+whest submit --estimator ./estimator.py
+
+# Preview (dry run) without submitting
+whest submit --estimator ./estimator.py --dry-run
+```
 
 ## `whest profile-simulation`
 

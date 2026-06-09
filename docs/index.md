@@ -8,6 +8,12 @@
 > federated there from [whest-starterkit](https://github.com/AIcrowd/whest-starterkit);
 > this repo owns the library + CLI reference.
 
+## How-to guides
+
+- [Ship weights and helper modules](how-to/ship-weights.md) — bundle pre-trained weights and multi-file code; load at predict time
+- [Parallel bake across multiple GPUs / hosts](how-to/parallel-bake.md)
+- [Publishing a dataset to HuggingFace Hub](how-to/publish-to-hf-hub.md)
+
 ## Library reference
 
 - [CLI reference](reference/cli-reference.md)
