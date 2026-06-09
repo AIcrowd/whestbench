@@ -52,6 +52,12 @@ def _import_module_from_path(module_path: Path) -> ModuleType:
 
     module_hash = hashlib.sha1(str(module_path).encode("utf-8")).hexdigest()[:12]
     module_name = f"_whestbench_submission_{module_hash}"
+    # Put the estimator's own directory on sys.path so multi-file submissions
+    # (e.g. `from helper import ...`) resolve. The grader extracts the whole
+    # submission folder, so sibling modules sit next to estimator.py.
+    submission_dir = str(module_path.parent)
+    if submission_dir not in sys.path:
+        sys.path.insert(0, submission_dir)
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:
         raise ImportError(f"Failed to import estimator module from path: {module_path}")
