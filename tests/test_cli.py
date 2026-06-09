@@ -1056,6 +1056,19 @@ def test_no_drift_no_warning():
     )
 
 
+def test_init_scaffolds_whestignore_and_setup(tmp_path):
+    from pathlib import Path
+
+    from whestbench.cli import _write_init_template
+
+    created = _write_init_template(tmp_path)
+    names = {Path(p).name for p in created}
+    assert {"estimator.py", "requirements.txt", ".whestignore"} <= names
+    est = (tmp_path / "estimator.py").read_text()
+    assert "def setup(self, ctx" in est
+    assert "submission_dir" in est  # the commented weight-load example
+
+
 def test_submit_dry_run_parses():
     from whestbench.cli import _build_participant_parser
 

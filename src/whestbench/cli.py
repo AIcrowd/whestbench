@@ -771,6 +771,12 @@ def _write_init_template(target_dir: Path) -> "list[str]":
         requirements_file.write_text("# Optional custom dependencies\n", encoding="utf-8")
         created.append(str(requirements_file))
 
+    whestignore_file = target_dir / ".whestignore"
+    if not whestignore_file.exists():
+        whestignore_tmpl = files("whestbench") / "templates" / "whestignore.tmpl"
+        whestignore_file.write_text(whestignore_tmpl.read_text(encoding="utf-8"), encoding="utf-8")
+        created.append(str(whestignore_file))
+
     return created
 
 

@@ -1,11 +1,24 @@
 from __future__ import annotations
 
+from pathlib import Path  # noqa: F401  (used by the commented weight-loading example)
+
 import flopscope.numpy as fnp
 
-from whestbench import BaseEstimator, MLP
+from whestbench import BaseEstimator, MLP, SetupContext
 
 
 class Estimator(BaseEstimator):
+    def setup(self, ctx: SetupContext) -> None:
+        # setup() runs once, off the FLOP budget. Files you ship next to
+        # estimator.py are bundled automatically by `whest package` and
+        # extracted to ctx.submission_dir on the grader. Load weights there:
+        #
+        #   weights = fnp.load(Path(ctx.submission_dir) / "weights.npz")  # 0 FLOPs
+        #   self._W = weights["W"]
+        #
+        # You can also split your code across modules — siblings ship + import fine.
+        self._ctx = ctx
+
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
         _ = budget
         return fnp.zeros((mlp.depth, mlp.width))
