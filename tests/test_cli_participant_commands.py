@@ -353,8 +353,12 @@ def test_version_command_falls_back_to_unknown(
 
 
 def test_package_command_renders_artifact_summary(
-    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    # A real estimator file so the package preview's summarize_submission() runs;
+    # package_submission itself is mocked so no real archive is written.
+    estimator = tmp_path / "estimator.py"
+    estimator.write_text("x = 1\n")
     artifact_path = Path("/tmp/submission.tar.gz")
     monkeypatch.setattr(
         cli,
@@ -362,7 +366,7 @@ def test_package_command_renders_artifact_summary(
         lambda *_args, **_kwargs: artifact_path,
     )
 
-    exit_code = cli.main(["package", "--estimator", "estimator.py"])
+    exit_code = cli.main(["package", "--estimator", str(estimator)])
     captured = capsys.readouterr()
 
     assert exit_code == 0
