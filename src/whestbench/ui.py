@@ -208,6 +208,12 @@ class _Say:
             return
         _get_console(console).print(f"[dim]tip: {msg}[/dim]")
 
+    def next(self, msg: str, *, console: Optional[Console] = None, quiet: bool = False) -> None:
+        """Print a 'Next:' footer guiding the participant to the next workflow step."""
+        if quiet:
+            return
+        _get_console(console).print(f"[bold cyan]Next:[/bold cyan] {msg}")
+
 
 say = _Say()
 

@@ -133,6 +133,23 @@ def _resolve_whestbench_version() -> str:
         return "unknown"
 
 
+def _version_drift_warning(installed: "dict[str, str]", pinned: "dict[str, str]") -> str:
+    """Return a human-readable warning string if any installed version differs from the pin.
+
+    Returns an empty string when all versions match (no drift).
+    """
+    drifts = [
+        f"{k}: installed {installed[k]} but project pins {pinned[k]}"
+        for k in pinned
+        if k in installed and installed[k] != pinned[k]
+    ]
+    if not drifts:
+        return ""
+    return "Version drift — run `uv sync` so your submission matches your pins:\n  " + "\n  ".join(
+        drifts
+    )
+
+
 def _json_payload_with_metadata(payload: Dict[str, Any]) -> Dict[str, Any]:
     payload_with_metadata = dict(payload)
     payload_with_metadata["whestbench_version"] = _resolve_whestbench_version()
@@ -754,6 +771,12 @@ def _write_init_template(target_dir: Path) -> "list[str]":
         requirements_file.write_text("# Optional custom dependencies\n", encoding="utf-8")
         created.append(str(requirements_file))
 
+    whestignore_file = target_dir / ".whestignore"
+    if not whestignore_file.exists():
+        whestignore_tmpl = files("whestbench") / "templates" / "whestignore.tmpl"
+        whestignore_file.write_text(whestignore_tmpl.read_text(encoding="utf-8"), encoding="utf-8")
+        created.append(str(whestignore_file))
+
     return created
 
 
@@ -769,6 +792,7 @@ def _run_validate_checks(
         depth=2,
         flop_budget=100,
         api_version="1.0",
+        submission_dir=str(Path(estimator_path).resolve().parent),
         seed=seed if seed is not None else 0,
     )
     mlp = sample_mlp(width=4, depth=2)
@@ -1069,7 +1093,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
 
     # Deprecated: redirect to `whest dataset bake`
-    create_ds_parser = subparsers.add_parser("create-dataset", help=argparse.SUPPRESS)
+    create_ds_parser = subparsers.add_parser(
+        "create-dataset", help="[Deprecated] Use `whest dataset bake` instead."
+    )
     create_ds_parser.add_argument("--n-mlps", type=int, default=None)
     create_ds_parser.add_argument("--n-samples", type=int, default=None)
     create_ds_parser.add_argument("--width", type=int, default=None)
@@ -1283,6 +1309,12 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help="Output path for the .tar.gz archive (default: submission-<timestamp>.tar.gz in the current directory).",
     )
     package_parser.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        help="Skip the confirmation prompt (for CI).",
+    )
+    package_parser.add_argument(
         "--debug",
         action="store_true",
         help="Show full Python tracebacks for errors instead of condensed messages.",
@@ -1388,6 +1420,15 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--watch",
         action="store_true",
         help="Poll AIcrowd submission status until graded/failed.",
+    )
+    submit_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        dest="dry_run",
+        help=(
+            "Package and show exactly what would upload (files, sizes, versions, manifest); "
+            "do not submit."
+        ),
     )
     add_output_format_arguments(submit_parser)
 
@@ -2024,6 +2065,7 @@ def _run_estimator_with_runner(
         depth=spec.depth,
         flop_budget=spec.flop_budget,
         api_version="1.0",
+        submission_dir=str(Path(entrypoint.file_path).resolve().parent),
         seed=spec.seed if spec.seed is not None else 0,
     )
     limits = ResourceLimits(
@@ -2078,6 +2120,56 @@ def _run_estimator_with_runner(
             "residual_wall_time_limit_s": spec.residual_wall_time_limit_s,
         },
     }
+
+
+def _submit_dry_run(args: "Any", *, json_output: bool) -> int:
+    """Execute `whest submit --dry-run`: package to temp dir, show preview, no upload."""
+    import importlib.metadata as _ilmd
+    import tempfile as _tempfile
+
+    from .packaging import summarize_submission as _summarize_submission
+    from .ui import format_bytes, say
+
+    if not args.estimator:
+        say.warn("--dry-run requires --estimator (no artifact path to inspect).")
+        return 2
+    say.intent(f"Dry-run preview for {args.estimator}", quiet=json_output)
+    _summary = _summarize_submission(args.estimator)
+    _root = Path(args.estimator).resolve().parent
+    say.step(
+        f"Files to bundle ({_summary.file_count} file{'s' if _summary.file_count != 1 else ''}, "
+        f"{format_bytes(_summary.total_bytes)}):",
+        quiet=json_output,
+    )
+    for _f in _summary.files:
+        try:
+            _rel = _f.relative_to(_root)
+        except ValueError:
+            _rel = _f
+        say.step(f"  {_rel}  ({format_bytes(_f.stat().st_size)})", quiet=json_output)
+    for _pkg in ("flopscope", "whestbench"):
+        try:
+            _ver = _ilmd.version(_pkg)
+            say.step(f"  {_pkg}=={_ver}", quiet=json_output)
+        except _ilmd.PackageNotFoundError:
+            pass
+    with _tempfile.TemporaryDirectory() as _tmp:
+        _dry_artifact = package_submission(
+            args.estimator,
+            class_name=getattr(args, "class_name", None),
+            requirements_path=getattr(args, "requirements", None),
+            submission_yaml_path=getattr(args, "submission_metadata", None),
+            approach_md_path=getattr(args, "approach", None),
+            output_path=str(Path(_tmp) / "submission-dryrun.tar.gz"),
+        )
+        _dry_size = _dry_artifact.stat().st_size
+    say.ok(
+        f"Archive would be {format_bytes(_dry_size)} "
+        f"({_summary.file_count} file{'s' if _summary.file_count != 1 else ''})",
+        quiet=json_output,
+    )
+    say.hint("dry run — not submitted", quiet=json_output)
+    return 0
 
 
 def _main_participant(argv: "list[str]") -> int:
@@ -2291,6 +2383,10 @@ def _main_participant(argv: "list[str]") -> int:
                     f"Starter files already present (checked in {format_duration(_elapsed)})",
                     quiet=json_output,
                 )
+            say.next(
+                "edit estimator.py, then `whest validate --estimator estimator.py`",
+                quiet=json_output,
+            )
             return 0
 
         if command == "validate":
@@ -2332,6 +2428,10 @@ def _main_participant(argv: "list[str]") -> int:
                 )
             say.ok(
                 f"Validation passed in {format_duration(_elapsed)}",
+                quiet=json_output,
+            )
+            say.next(
+                "`whest run --estimator estimator.py --split mini`",
                 quiet=json_output,
             )
             return 0
@@ -2804,12 +2904,94 @@ def _main_participant(argv: "list[str]") -> int:
                     file=sys.stderr,
                 )
                 return 1
+            if not json_output:
+                from .ui import say as _run_say
+
+                _run_say.next("`whest package --estimator estimator.py`")
             return 0
 
         if command == "package":
+            import importlib.metadata as _ilmd
             import time as _time
 
+            from .packaging import summarize_submission as _summarize_submission
             from .ui import format_bytes, format_duration, progress_bytes, say
+
+            # --- Preview: show files, sizes, total, count, and unreachable-py warnings ---
+            if not json_output:
+                _summary = _summarize_submission(args.estimator)
+                _root = Path(args.estimator).resolve().parent
+                say.intent(
+                    f"Packaging {args.estimator} → {args.output or 'submission-*.tar.gz'}",
+                    quiet=json_output,
+                )
+                say.step(
+                    f"Files to bundle ({_summary.file_count} file{'s' if _summary.file_count != 1 else ''}, "
+                    f"{format_bytes(_summary.total_bytes)}):",
+                    quiet=json_output,
+                )
+                for _f in _summary.files:
+                    try:
+                        _rel = _f.relative_to(_root)
+                    except ValueError:
+                        _rel = _f
+                    _fsz = format_bytes(_f.stat().st_size)
+                    say.step(f"  {_rel}  ({_fsz})", quiet=json_output)
+                for _unr in _summary.unreachable_py:
+                    say.warn(
+                        f"⚠ {_unr} is not imported from estimator.py — "
+                        f"add to .whestignore if it shouldn't ship",
+                        quiet=json_output,
+                    )
+
+                # --- Drift check ---
+                _installed: dict[str, str] = {}
+                for _pkg in ("flopscope", "whestbench"):
+                    try:
+                        _installed[_pkg] = _ilmd.version(_pkg)
+                    except _ilmd.PackageNotFoundError:
+                        pass
+
+                # Best-effort: parse requirements.txt adjacent to estimator.py
+                _pinned: dict[str, str] = {}
+                _req_path = _root / "requirements.txt"
+                if _req_path.is_file():
+                    import re as _re
+
+                    _req_text = _req_path.read_text(encoding="utf-8", errors="replace")
+                    for _line in _req_text.splitlines():
+                        _line = _line.strip()
+                        if _line.startswith("#") or not _line:
+                            continue
+                        for _pkg in ("flopscope", "whestbench"):
+                            # Match lines like: flopscope>=0.7.0 or flopscope==0.7.0
+                            _m = _re.match(
+                                rf"^{_re.escape(_pkg)}\s*[><=!]{{1,2}}\s*([^\s,;]+)",
+                                _line,
+                                _re.IGNORECASE,
+                            )
+                            if _m:
+                                _pinned[_pkg] = _m.group(1)
+
+                _drift_msg = _version_drift_warning(_installed, _pinned)
+                if _drift_msg:
+                    say.warn(_drift_msg, quiet=json_output)
+
+                # --- Confirmation prompt (skip in CI / with --yes) ---
+                if not getattr(args, "yes", False) and sys.stdin.isatty():
+                    _prompt = (
+                        f"Package these {_summary.file_count} files "
+                        f"({format_bytes(_summary.total_bytes)})? [y/N] "
+                    )
+                    _answer = input(_prompt).strip().lower()
+                    if _answer not in ("y", "yes"):
+                        say.hint("Aborted. No archive written.")
+                        return 0
+            else:
+                say.intent(
+                    f"Packaging {args.estimator} → {args.output or 'submission-*.tar.gz'}",
+                    quiet=json_output,
+                )
 
             # The bytes flowing into the bar are gzipped output bytes; counting
             # uncompressed input bytes as the bar's target gives a roughly
@@ -2829,10 +3011,6 @@ def _main_participant(argv: "list[str]") -> int:
                     _input_paths.append(_p)
             _total = sum(p.stat().st_size for p in _input_paths) + 1024
 
-            say.intent(
-                f"Packaging {args.estimator} → {args.output or 'submission-*.tar.gz'}",
-                quiet=json_output,
-            )
             _t0 = _time.perf_counter()
             with progress_bytes(total=_total, label="Packaging", quiet=json_output) as _bar:
                 artifact_path = package_submission(
@@ -2867,6 +3045,9 @@ def _main_participant(argv: "list[str]") -> int:
                         force_terminal=stdout_is_tty,
                     ),
                     end="",
+                )
+                say.next(
+                    f"`whest submit {artifact_path}` (or `whest submit --estimator estimator.py`)"
                 )
             return 0
 
@@ -2978,6 +3159,10 @@ def _main_participant(argv: "list[str]") -> int:
             from .aicrowd_client import extract_submission_id
             from .ui import say
 
+            # --dry-run: package to a temp path, show preview, then stop.
+            if getattr(args, "dry_run", False):
+                return _submit_dry_run(args, json_output=json_output)
+
             try:
                 api_key = _cfg.resolve_api_key(args.api_key)
             except _cfg.NotLoggedIn as e:
@@ -3077,6 +3262,11 @@ def _main_participant(argv: "list[str]") -> int:
 
             if json_output:
                 print(json.dumps({"ok": True, "submission_id": sub_id, "submission": final}))
+            else:
+                say.next(
+                    "track grading with `whest submit --watch` "
+                    "(or check the AIcrowd submissions page)"
+                )
             return 0 if str(final.get("grading_status_cd", "submitted")) != "failed" else 1
 
         raise ValueError(f"Unsupported command: {command}")
@@ -3137,6 +3327,22 @@ def _extract_exception_details(exc: Exception) -> Dict[str, Any] | None:
     return None
 
 
+def _enriched_import_error_message(exc: ModuleNotFoundError) -> str:
+    """Return an actionable message for a missing-module import failure.
+
+    Extracts the missing module name from ``exc.name`` when available and
+    explains how to fix it (either as a sibling file or a requirements.txt
+    entry). Keeps the original bare error as a fallback.
+    """
+    missing = getattr(exc, "name", None) or str(exc)
+    return (
+        f"Your estimator couldn't import `{missing}`. "
+        "Submissions are packaged as a folder — keep your helper modules "
+        "next to estimator.py and they ship automatically. "
+        f"If `{missing}` is a third-party package, add it to requirements.txt."
+    )
+
+
 def _error_payload(
     exc: Exception,
     *,
@@ -3144,7 +3350,10 @@ def _error_payload(
     stage: str = "scoring",
 ) -> Dict[str, Any]:
     """Build stable error payload shape for human/JSON mode outputs."""
-    message = str(exc) or exc.__class__.__name__
+    if isinstance(exc, ModuleNotFoundError):
+        message = _enriched_import_error_message(exc)
+    else:
+        message = str(exc) or exc.__class__.__name__
     error: Dict[str, Any] = {
         "stage": stage,
         "code": _error_code(exc, message),
@@ -3162,6 +3371,8 @@ def _error_code(exc: Exception, message: str) -> str:
     """Map common failures to stable error codes."""
     if isinstance(exc, RunnerError):
         return exc.detail.code
+    if isinstance(exc, ModuleNotFoundError):
+        return "ESTIMATOR_MISSING_MODULE"
     lowered = message.lower()
     if isinstance(exc, ValueError):
         if "must have shape" in lowered:

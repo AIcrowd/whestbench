@@ -625,3 +625,17 @@ class Estimator(BaseEstimator):
         f"whest validate --seed 7 should be accepted; got returncode "
         f"{result.returncode}, stderr: {result.stderr}"
     )
+
+
+def test_setup_context_has_submission_dir_default_none():
+    from whestbench.sdk import SetupContext
+
+    ctx = SetupContext(width=4, depth=2, flop_budget=100, api_version="1.0")
+    assert ctx.submission_dir is None
+
+
+def test_setup_context_accepts_submission_dir():
+    from whestbench.sdk import SetupContext
+
+    ctx = SetupContext(width=4, depth=2, flop_budget=100, api_version="1.0", submission_dir="/x")
+    assert ctx.submission_dir == "/x"

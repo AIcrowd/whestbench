@@ -22,7 +22,39 @@ Optional lifecycle hooks:
 | `flop_budget` | `int` | FLOP cap for the estimator |
 | `api_version` | `str` | Contract version string |
 | `scratch_dir` | `str \| None` | Optional writable directory for caching |
+| `submission_dir` | `str \| None` | Read-only path to the extracted submission directory. All files shipped beside `estimator.py` are extracted here and importable as modules. Load shipped data files with `fnp.load(Path(ctx.submission_dir) / "weights.npz")` (0 FLOPs, pickle-free) or `MyModel.from_file(...)`. `None` outside the runner/grader (e.g. in plain `whest run` without a packaged submission). |
 | `seed` | `int` | Per-run seed from `--seed` (default `0`). Use in `setup()` to reproduce one-time random initialisation. See [Setup-time reproducibility](#setup-time-reproducibility). |
+
+### Multi-file submissions
+
+Submissions are folder-based: `whest package` bundles every file in the `estimator.py` directory (minus the built-in ignore set, `.gitignore`, and `.whestignore`). Helper modules placed next to `estimator.py` are automatically included and importable at run time — no special registration needed.
+
+```python
+# myproject/
+#   estimator.py       ← entrypoint
+#   layers.py          ← helper module
+#   weights.npz        ← pre-trained weights
+
+# estimator.py
+from pathlib import Path
+import flopscope.numpy as fnp
+from layers import build_model   # importable: layers.py is in the same directory
+
+class MyEstimator(BaseEstimator):
+    def setup(self, ctx: SetupContext) -> None:
+        if ctx.submission_dir is not None:
+            data = fnp.load(Path(ctx.submission_dir) / "weights.npz")
+            self.model = build_model(data["W"])
+
+    def predict(self, mlp, budget):
+        ...
+```
+
+`ctx.submission_dir` points to the directory where the submission was extracted; it is `None` when running outside a packaged submission context (e.g. bare `whest run --estimator estimator.py` without a tarball). Guard with `if ctx.submission_dir is not None` or fall back to a default.
+
+Loading shipped weights with `fnp.load` (or `np.load`) costs **0 FLOPs** — the load happens in `setup()`, which runs before any FLOP tracking starts. If you use a `flops.Module` subclass, call `MyModel.from_file(Path(ctx.submission_dir) / "model.npz")` in `setup()` for the same reason.
+
+See [Ship weights and helper modules](https://github.com/AIcrowd/whestbench/blob/main/docs/how-to/ship-weights.md) for a step-by-step walkthrough.
 
 ## Input object quick reference
 

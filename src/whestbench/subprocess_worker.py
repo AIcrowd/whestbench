@@ -187,6 +187,11 @@ def main() -> int:
                         if ctx_payload.get("scratch_dir") is not None
                         else None
                     ),
+                    submission_dir=(
+                        str(ctx_payload["submission_dir"])
+                        if ctx_payload.get("submission_dir") is not None
+                        else None
+                    ),
                     seed=int(ctx_payload.get("seed", 0)),
                 )
                 estimator.setup(context)

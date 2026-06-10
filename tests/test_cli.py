@@ -1036,3 +1036,43 @@ def test_run_parser_accepts_lambda_flops_per_second():
         ["run", "--estimator", "estimator.py", "--lambda-flops-per-second", "2e11"]
     )
     assert args.lambda_flops_per_second == 2e11
+
+
+def test_version_drift_warning():
+    from whestbench import cli
+
+    msg = cli._version_drift_warning(
+        installed={"flopscope": "0.4.2"}, pinned={"flopscope": "0.7.0"}
+    )
+    assert msg and "flopscope" in msg and "0.4.2" in msg and "0.7.0" in msg
+
+
+def test_no_drift_no_warning():
+    from whestbench import cli
+
+    assert (
+        cli._version_drift_warning(installed={"flopscope": "0.7.0"}, pinned={"flopscope": "0.7.0"})
+        == ""
+    )
+
+
+def test_init_scaffolds_whestignore_and_setup(tmp_path):
+    from pathlib import Path
+
+    from whestbench.cli import _write_init_template
+
+    created = _write_init_template(tmp_path)
+    names = {Path(p).name for p in created}
+    assert {"estimator.py", "requirements.txt", ".whestignore"} <= names
+    est = (tmp_path / "estimator.py").read_text()
+    assert "def setup(self, ctx" in est
+    assert "submission_dir" in est  # the commented weight-load example
+
+
+def test_submit_dry_run_parses():
+    from whestbench.cli import _build_participant_parser
+
+    args = _build_participant_parser().parse_args(
+        ["submit", "--estimator", "estimator.py", "--dry-run"]
+    )
+    assert args.dry_run is True
