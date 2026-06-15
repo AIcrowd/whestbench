@@ -1,0 +1,75 @@
+{
+  "schema_version": "3.0",
+  "format": "hf-datasets-parquet",
+  "backend": "flopscope",
+  "seed_protocol": {
+    "name": "whestbench_explicit_per_mlp_seeds",
+    "version": "3.0"
+  },
+  "n_samples": 100,
+  "width": 8,
+  "depth": 2,
+  "created_at_utc": "2026-06-15T22:19:28.040384+00:00",
+  "hardware": {
+    "hostname": "MacBook-Pro-7.local",
+    "os": "Darwin",
+    "os_release": "25.3.0",
+    "platform": "macOS-26.3-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "python_version": "3.14.3",
+    "cpu_brand": "arm",
+    "cpu_count_logical": 16,
+    "cpu_count_physical": 16,
+    "ram_total_bytes": 68719476736,
+    "ram_available_bytes": null,
+    "numpy_version": "2.4.4",
+    "flopscope_version": "0.7.0"
+  },
+  "splits": {
+    "public": {
+      "n_mlps": 2,
+      "created_at_utc": "2026-06-15T22:19:28.040384+00:00",
+      "config": "default",
+      "hardware_fingerprints": [
+        {
+          "hostname": "MacBook-Pro-7.local",
+          "os": "Darwin",
+          "os_release": "25.3.0",
+          "platform": "macOS-26.3-arm64-arm-64bit-Mach-O",
+          "machine": "arm64",
+          "python_version": "3.14.3",
+          "cpu_brand": "arm",
+          "cpu_count_logical": 16,
+          "cpu_count_physical": 16,
+          "ram_total_bytes": 68719476736,
+          "ram_available_bytes": null,
+          "numpy_version": "2.4.4",
+          "flopscope_version": "0.7.0"
+        }
+      ]
+    },
+    "holdout": {
+      "n_mlps": 2,
+      "created_at_utc": "2026-06-15T22:19:28.099712+00:00",
+      "config": "holdout",
+      "hardware_fingerprints": [
+        {
+          "hostname": "MacBook-Pro-7.local",
+          "os": "Darwin",
+          "os_release": "25.3.0",
+          "platform": "macOS-26.3-arm64-arm-64bit-Mach-O",
+          "machine": "arm64",
+          "python_version": "3.14.3",
+          "cpu_brand": "arm",
+          "cpu_count_logical": 16,
+          "cpu_count_physical": 16,
+          "ram_total_bytes": 68719476736,
+          "ram_available_bytes": null,
+          "numpy_version": "2.4.4",
+          "flopscope_version": "0.7.0"
+        }
+      ]
+    }
+  },
+  "default_split": "public"
+}
