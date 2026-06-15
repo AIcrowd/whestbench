@@ -637,6 +637,19 @@ def _emit_prepared_download_notice(
     )
 
 
+def _local_parquet_available(loader_path: str, split: str, *, is_local: bool) -> bool:
+    """Whether this split's parquet shards exist on the local filesystem.
+
+    The fast path reads ``data/<split>-*.parquet`` directly. For remote repos
+    ``loader_path`` is an HF repo id, so the directory is not on disk and this
+    returns False (the config-manifest path is used instead).
+    """
+    if not is_local:
+        return False
+    data_dir = Path(loader_path) / "data"
+    return any(data_dir.glob(f"{split}-*.parquet"))
+
+
 def _hf_load_split(
     hf_datasets: Any,
     loader_path: str,
@@ -647,20 +660,21 @@ def _hf_load_split(
     hf_kwargs: Dict[str, Any],
     is_local: bool,
 ) -> Any:
-    """Call HF's ``load_dataset`` so it touches only the requested split.
+    """Load one split, preferring the fast local-parquet path with graceful
+    fallback to HF config-manifest conventions.
 
-    Multi-split datasets baked since the per-split-configs change carry one
-    HF dataset-card config per split: ``default`` (= ``default_split``) plus
-    one named config per non-default split. Requesting an explicit ``name=``
-    lets HF resolve only the matching config's ``data_files`` instead of
-    fetching the manifest for every parquet shard in the repo.
+    Preference chain (never hard-fails):
+      1. Fast path — when this split's parquet is on local disk, read it
+         directly via the glob loader (the performance path).
+      2. HF conventions — resolve the dataset card's ``configs:`` manifest by
+         passing ``name=<config>`` so HF fetches only that config's
+         ``data_files``. This is the production-remote path.
+      3. Final fallback — legacy single-config / no-name load.
 
-    For older multi-split datasets (no ``default_split`` declared, all splits
-    crammed under one ``default`` config), the ``name=`` lookup will raise;
-    fall back to the no-name call.
-
-    Config-aware local datasets carry the same README card shape as HF repos,
-    so the config mapping applies to both local and remote loads.
+    Multi-split datasets baked since the per-split-configs change carry one HF
+    dataset-card config per split: ``default`` (= ``default_split``) plus one
+    named config per non-default split. Older datasets (no ``default_split``,
+    all splits under one ``default`` config) resolve via step 3.
     """
     # Map split → HF config name. Mirrors the layout written by
     # `generate_readme`: default config = default_split; others self-named.
@@ -671,29 +685,34 @@ def _hf_load_split(
     elif default_split is not None:
         config_name = split
     else:
-        # Legacy single-config layout — no default_split declared. Defer to HF.
         config_name = None
 
-    try:
-        if is_local and config_name is not None:
+    # 1. Fast path — prefer local parquet when the shards are on disk.
+    if _local_parquet_available(loader_path, split, is_local=is_local):
+        try:
             return _load_local_parquet_split(
                 hf_datasets,
                 loader_path,
                 split=split,
                 hf_kwargs=hf_kwargs,
             )
-        if config_name is None:
-            return hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
-        return hf_datasets.load_dataset(
-            loader_path,
-            config_name,
-            split=split,
-            **hf_kwargs,
-        )
-    except (ValueError, KeyError, FileNotFoundError):
-        # Older dataset card with a single `default` config containing every
-        # split — `name=split` doesn't resolve. Retry with the legacy form.
-        return hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
+        except Exception:
+            pass  # fall through to HF conventions; never hard-fail
+
+    # 2. HF conventions — config-manifest resolution (production-remote path).
+    if config_name is not None:
+        try:
+            return hf_datasets.load_dataset(
+                loader_path,
+                config_name,
+                split=split,
+                **hf_kwargs,
+            )
+        except (ValueError, KeyError, FileNotFoundError):
+            pass  # older single-`default` card — fall through
+
+    # 3. Final fallback — legacy single-config / no-name load.
+    return hf_datasets.load_dataset(loader_path, split=split, **hf_kwargs)
 
 
 def _load_local_parquet_split(
