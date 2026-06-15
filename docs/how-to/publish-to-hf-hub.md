@@ -221,13 +221,12 @@ Rounds are versioned by git tag, not by config. To publish a new round (and/or c
 
 ```bash
 # New size (e.g. 256x32) + new round = a fresh bake pushed to a new tag.
-whest dataset generate-seeds --n-mlps 50 > public-r2-seeds.json
-whest dataset generate-seeds --n-mlps 50 > holdout-r2-seeds.json
-
+# Per-MLP seeds are auto-generated (secrets.randbits(63)) and recorded in the
+# parquet, so each round gets fresh, independent MLPs.
 whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 32 \
-    --split public  --config default --mlp-seeds public-r2-seeds.json  --output ./pub-r2
+    --split public  --config default --output ./pub-r2
 whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 32 \
-    --split holdout --config holdout --mlp-seeds holdout-r2-seeds.json --output ./hold-r2
+    --split holdout --config holdout --output ./hold-r2
 whest dataset combine-splits ./pub-r2 ./hold-r2 --output ./eval-r2
 whest dataset push ./eval-r2 --repo aicrowd/arc-whestbench-evals-2026 --tag round-2 --private
 ```

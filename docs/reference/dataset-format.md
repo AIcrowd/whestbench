@@ -533,7 +533,7 @@ The discriminator is the presence of the `splits` field. No `schema_version` bum
 
 whestbench multi-split datasets uphold these invariants; tooling and consumers rely on them:
 
-- **Config-per-split.** Each HF config holds exactly one split. The config name is an access + download namespace (holdout isolation + lazy per-config download), not a content descriptor — it carries no `width`/`depth`/sample information.
+- **Config-per-split (by convention).** whestbench eval/public datasets give each split its own HF config, so a config name maps one-to-one to a split. This is an authoring convention that the published datasets and the `combine-splits` auto-`default_split` behavior assume — it is not hard-enforced (`combine-splits` groups inputs by their declared config name). The config name is an access + download namespace (holdout isolation + lazy per-config download), not a content descriptor — it carries no `width`/`depth`/sample information.
 - **Globally-unique split names.** Split names are pairwise distinct within a dataset (enforced at `combine-splits`), so `split=` alone unambiguously selects the config. There is **no `config=` parameter** on `whestbench.load_dataset` by design — pass `split=` (and `revision=`).
 - **One size per round.** A dataset/revision uses a single network size (`width`, `depth`). Size lives in `metadata.json` and is compiled into the parquet schema, so different sizes cannot share a config or be combined. A new round with a different size (e.g. `256x32`) is a fresh bake pushed to a new git tag; the config/split names do not change.
 
