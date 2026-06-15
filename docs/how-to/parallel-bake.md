@@ -246,7 +246,15 @@ The merge step produces a dataset bit-equivalent to a single-host bake only when
    use different RNG algorithms and produce statistically equivalent but not bitwise
    identical results at the same seeds.
 3. For the `torch` backend on CUDA, bitwise reproducibility additionally requires
-   the same torch version (CUDA kernel implementations may differ between versions).
+   the same torch version (CUDA kernel implementations may differ between versions)
+   **and the same `--compile` setting on every worker**. The compiled path emits
+   inductor-generated reduction kernels that differ from the eager kernels; mixing
+   compiled and eager workers (or different torch versions across compiled workers)
+   breaks bit-equivalence. `metadata.json` records the actual setting as
+   `torch_compile` so a merge can be audited. `all_layer_means`/`final_means` stay
+   bit-exact between eager and compiled at a fixed torch version, but `avg_variance`
+   differs by ~1 fp64 ULP — compare it with the same `np.isclose(rtol=1e-12,
+   atol=1e-15)` already used below.
 4. For the `torch` backend on CUDA, **all workers and any reference re-bake must use
    the same `--chunk-size`**. The default is auto-tuned per call from
    `mlps_per_batch` (which derives from `--n-mlps` minus slicing) and the device's

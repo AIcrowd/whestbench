@@ -70,6 +70,7 @@ def create_dataset_torch(
     device: str = "auto",
     mlps_per_batch: Optional[int] = None,
     chunk_size: Optional[int] = None,
+    compile: bool = False,
     **deprecated_kwargs: Any,
 ) -> Path:
     """Torch-backed analog of whestbench.dataset.create_dataset.
@@ -97,6 +98,14 @@ def create_dataset_torch(
             None (default) auto-tunes to min(n_mlps, 16).
         chunk_size: Samples per chunk on device. None (default) is memory-aware
             on cuda; fixed 65536 on mps/cpu.
+        compile: When True (CUDA only), use an inductor-compiled + CUDA-graphed
+            fused sampling kernel (~1.85x faster at width=256 on measured
+            hardware). Default False. Bit-identical to the eager path on
+            layer/final means; avg_variance may differ by ~1 fp64 ULP, which is
+            within the parallel-bake contract's documented tolerance. Reproducible
+            and parallel-merge bakes that enable compile must pin the torch
+            version and re-bake any reference datasets — recorded in metadata as
+            torch_compile=True for provenance.
 
     Returns:
         Path to the written dataset directory.
@@ -243,6 +252,7 @@ def create_dataset_torch(
             generators=generators,
             chunk_size=resolved_chunk_size,
             progress=_on_chunk if progress is not None else None,
+            compile=compile,
         )
         wall_elapsed = time.perf_counter() - wall_start
 
@@ -293,6 +303,10 @@ def create_dataset_torch(
         "device": resolved_device,
         "mlps_per_batch": resolved_mlps_per_batch,
         "chunk_size": resolved_chunk_size,
+        # torch.compile fused/graphed path engages on CUDA only; record what
+        # actually ran so reproducible/parallel bakes can pin it (see
+        # docs/how-to/parallel-bake.md § "Bit-equivalence requirements").
+        "torch_compile": bool(compile) and resolved_device == "cuda",
         # Runtime state of torch's determinism levers + the cuBLAS workspace
         # env var. Bit-exact cross-host reproduction requires these to match
         # what the canonical bake used. See docs/how-to/parallel-bake.md §

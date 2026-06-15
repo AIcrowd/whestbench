@@ -399,6 +399,35 @@ def test_cuda_smoke_roundtrip(tmp_path: Path) -> None:
     assert "cuda_device_capability" in md
 
 
+@require_cuda
+def test_compile_path_matches_eager_means_bit_exact() -> None:
+    """The --compile fused/graphed path must be bit-identical to eager on
+    layer/final means and within ~1 fp64 ULP on avg_variance. The shape
+    (chunk_size < n_samples, with a ragged final chunk) exercises both the
+    compiled full-chunk path and the eager ragged-chunk fallback.
+    """
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+    width, depth, B = 256, 8, 4
+    n_samples, chunk = 250_000, 100_000  # 2 full chunks + 1 ragged (50_000)
+    wgen = torch.Generator(device="cuda").manual_seed(7)
+    weights = torch.randn((B, depth, width, width), device="cuda", generator=wgen) / (width**0.5)
+
+    def gens() -> list:
+        return [torch.Generator(device="cuda").manual_seed(100 + b) for b in range(B)]
+
+    lm0, fm0, av0 = sample_layer_statistics_torch(weights, n_samples, gens(), chunk_size=chunk)
+    lm1, fm1, av1 = sample_layer_statistics_torch(
+        weights, n_samples, gens(), chunk_size=chunk, compile=True
+    )
+    torch.cuda.synchronize()
+
+    assert torch.equal(lm0, lm1), "layer_means not bit-identical under --compile"
+    assert torch.equal(fm0, fm1), "final_means not bit-identical under --compile"
+    assert torch.isclose(av0, av1, rtol=1e-12, atol=1e-15).all(), "avg_variance beyond ULP tol"
+
+
 @require_mps
 def test_mps_smoke_roundtrip(tmp_path: Path) -> None:
     out = create_dataset_torch(

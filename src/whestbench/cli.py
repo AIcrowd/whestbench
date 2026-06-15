@@ -1174,6 +1174,16 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     bake_p.add_argument("--device", default="auto", choices=["auto", "cuda", "mps", "cpu"])
     bake_p.add_argument("--mlps-per-batch", type=int, default=None)
     bake_p.add_argument("--chunk-size", type=int, default=None)
+    bake_p.add_argument(
+        "--compile",
+        action="store_true",
+        help=(
+            "Torch backend (CUDA only): use an inductor-compiled + CUDA-graphed "
+            "fused sampling kernel (~1.85x faster at width=256). Bit-identical "
+            "means; avg_variance within ~1 fp64 ULP. Recorded in metadata as "
+            "torch_compile. Reproducible/parallel bakes must pin the torch version."
+        ),
+    )
     bake_p.add_argument("--slice", dest="slice_spec", help="K/N — this slice K of N (0-indexed).")
     bake_p.add_argument(
         "--mlp-range", dest="mlp_range_str", help="START-END (inclusive on both ends), e.g. 0-249."
@@ -1608,6 +1618,7 @@ def _dispatch_dataset_command(args) -> int:
                         device=args.device,
                         mlps_per_batch=args.mlps_per_batch,
                         chunk_size=args.chunk_size,
+                        compile=args.compile,
                         progress=_on_bake_progress,
                     )
                 else:

@@ -153,6 +153,35 @@ small because the small-matmul ceiling binds before peak compute matters.
 before committing to a multi-hour bake — see [Calibration recipe](#calibration-recipe)
 below.
 
+## Faster sampling with `--compile`
+
+The `--compile` flag (CUDA only) routes the per-chunk `bmm → relu → reduce`
+loop through an inductor-compiled, CUDA-graphed fused kernel: the activation
+tensor is read once for the reduction instead of being materialized in fp64 and
+re-read, and the thousands of per-chunk kernel launches collapse into a captured
+graph. At `width=256` this yields a **~1.85× speedup for the sampling phase**
+(measured on a single modern CUDA GPU). It is a constant-factor win on the
+per-chunk loop, so it applies uniformly across `n_mlps` and `n_samples`.
+
+```bash
+whest dataset bake --torch --device cuda --compile \
+    --n-mlps 10 --n-samples 1_000_000_000 \
+    --width 256 --depth 8 --output ./data
+```
+
+Compilation happens **once per MLP batch** (a few seconds), so it is negligible
+against a multi-minute bake but not worth it for tiny dev runs. The matmul stays
+a cuBLAS call — the win is the fused reduction epilogue + graph capture, not the
+GEMM itself.
+
+**Numerics.** `all_layer_means` and `final_means` are **bit-identical** to the
+eager path; `avg_variance` may differ by ~1 fp64 ULP (~6e-18, from reduction
+reordering) — within the parallel-bake contract's `np.isclose(rtol=1e-12,
+atol=1e-15)` tolerance. The setting is recorded in `metadata.json` as
+`torch_compile`. **Reproducible or parallel-merge bakes that enable `--compile`
+must pin the torch version and use `--compile` on every worker** (see
+[Parallel bake](../how-to/parallel-bake.md) § Bit-equivalence requirements).
+
 ## Calibration recipe
 
 A 60-second `N=10⁶` run on any GPU gives a precise wall-time projection for
