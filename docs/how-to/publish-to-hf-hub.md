@@ -215,4 +215,29 @@ See [Parallel bake](./parallel-bake.md).
 
 `whest dataset push` handles multi-split datasets natively. The local directory must contain one parquet per split in `data/` and a `metadata.json` with a `splits:` dict; this is the shape produced by `whest dataset combine-splits`. If the input bakes declared `--config`, the push preserves that config-per-split layout in the published dataset card. The push uploads all parquets in one commit; tag with `--tag round-N` for per-round eval datasets.
 
+### Next round / new network size
+
+Rounds are versioned by git tag, not by config. To publish a new round (and/or change the network size), bake fresh MLPs at the desired size and push to a new tag on the **same** repo — the config/split names stay the same:
+
+```bash
+# New size (e.g. 256x32) + new round = a fresh bake pushed to a new tag.
+whest dataset generate-seeds --n-mlps 50 > public-r2-seeds.json
+whest dataset generate-seeds --n-mlps 50 > holdout-r2-seeds.json
+
+whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 32 \
+    --split public  --config default --mlp-seeds public-r2-seeds.json  --output ./pub-r2
+whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 32 \
+    --split holdout --config holdout --mlp-seeds holdout-r2-seeds.json --output ./hold-r2
+whest dataset combine-splits ./pub-r2 ./hold-r2 --output ./eval-r2
+whest dataset push ./eval-r2 --repo aicrowd/arc-whestbench-evals-2026 --tag round-2 --private
+```
+
+Consumers pin the round (and thus the size) by revision:
+
+```python
+load_dataset("aicrowd/arc-whestbench-evals-2026", split="public", revision="round-2")
+```
+
+Each dataset/revision holds exactly one network size; to offer a different size, use a new tag (optionally encode the size in the tag, e.g. `round-2-256x32`).
+
 For private repos (e.g. the evaluation dataset), pass `--private` on first push to create the repo as private. Subsequent pushes preserve the privacy setting.

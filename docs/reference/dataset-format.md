@@ -529,6 +529,14 @@ the parquet `mlp_seed` column for each split.
 
 The discriminator is the presence of the `splits` field. No `schema_version` bump — the multi-split shape is a purely additive extension of schema 3.0.
 
+### Invariants
+
+whestbench multi-split datasets uphold these invariants; tooling and consumers rely on them:
+
+- **Config-per-split.** Each HF config holds exactly one split. The config name is an access + download namespace (holdout isolation + lazy per-config download), not a content descriptor — it carries no `width`/`depth`/sample information.
+- **Globally-unique split names.** Split names are pairwise distinct within a dataset (enforced at `combine-splits`), so `split=` alone unambiguously selects the config. There is **no `config=` parameter** on `whestbench.load_dataset` by design — pass `split=` (and `revision=`).
+- **One size per round.** A dataset/revision uses a single network size (`width`, `depth`). Size lives in `metadata.json` and is compiled into the parquet schema, so different sizes cannot share a config or be combined. A new round with a different size (e.g. `256x32`) is a fresh bake pushed to a new git tag; the config/split names do not change.
+
 ### Loading
 
 ```python
