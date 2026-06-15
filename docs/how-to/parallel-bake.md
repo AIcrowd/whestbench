@@ -27,7 +27,7 @@ use the **same** `--mlp-seeds` file, `--n-mlps`, `--n-samples`, `--width`, and
 Generate the seeds file once before launching workers:
 
 ```bash
-whest dataset generate-seeds --n-mlps 1000 > seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(1000)]))' > seeds.json
 ```
 
 The following example bakes 1000 MLPs across 4 workers. Run each command on its own
@@ -291,8 +291,8 @@ to preserve cross-split independence.
 
 ```bash
 # Generate independent seed files for each split (once, before launching workers).
-whest dataset generate-seeds --n-mlps 50 > public-seeds.json
-whest dataset generate-seeds --n-mlps 50 > holdout-seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(50)]))' > public-seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(50)]))' > holdout-seeds.json
 
 # Parallel-bake the public split (4 workers, same seeds file).
 for K in 0 1 2 3; do

@@ -435,7 +435,7 @@ slice K (0-indexed). The output metadata is marked `is_partial=true` and include
 
 ```bash
 # Generate once, share the same file with all workers.
-whest dataset generate-seeds --n-mlps 1000 > seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(1000)]))' > seeds.json
 
 # 4 workers each bake 250 of 1000 MLPs
 whest dataset bake --slice 0/4 --n-mlps 1000 --mlp-seeds seeds.json ... --output ./p0
@@ -559,8 +559,8 @@ Bake each split as a complete single-split dataset, then combine. Under seed_pro
 
 ```bash
 # Generate independent seed files for each split.
-whest dataset generate-seeds --n-mlps 50 > public-seeds.json
-whest dataset generate-seeds --n-mlps 50 > holdout-seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(50)]))' > public-seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(50)]))' > holdout-seeds.json
 
 whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split public  --config default --mlp-seeds public-seeds.json  --output ./pub
 whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split holdout --config holdout --mlp-seeds holdout-seeds.json --output ./hold
