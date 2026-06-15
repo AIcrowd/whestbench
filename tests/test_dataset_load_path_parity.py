@@ -34,5 +34,5 @@ def test_manifest_default_config_returns_only_public():
     pub = hf_datasets.load_dataset(str(FIXTURE), "default", split="public")
     assert len(pub) == 2
     # The default config does not expose the holdout split.
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError, match="Unknown split"):
         hf_datasets.load_dataset(str(FIXTURE), "default", split="holdout")
