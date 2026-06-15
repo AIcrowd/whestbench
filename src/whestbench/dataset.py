@@ -696,8 +696,8 @@ def _hf_load_split(
                 split=split,
                 hf_kwargs=hf_kwargs,
             )
-        except Exception:
-            pass  # fall through to HF conventions; never hard-fail
+        except Exception:  # noqa: BLE001 — fast-path failure; fall through to HF conventions
+            pass
 
     # 2. HF conventions — config-manifest resolution (production-remote path).
     if config_name is not None:

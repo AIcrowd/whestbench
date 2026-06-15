@@ -66,3 +66,6 @@ def test_load_falls_through_to_manifest_when_fast_path_raises(tmp_path: Path, mo
 
     ds = wd.load_dataset(ds_dir, split="holdout")
     assert len(ds) == 2
+
+    ds_pub = wd.load_dataset(ds_dir, split="public")
+    assert len(ds_pub) == 2
