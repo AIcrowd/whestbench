@@ -21,6 +21,13 @@ run_ci_like_checks() {
   echo "==> pyright"
   uv run pyright
 
+  echo "==> gitlint (conventional commits)"
+  if git rev-parse --verify --quiet origin/main >/dev/null; then
+    uv run gitlint --commits "origin/main..HEAD"
+  else
+    echo "   skipped: origin/main not found locally (run 'git fetch origin main' to enable)"
+  fi
+
   echo "==> pytest (non-exhaustive)"
   uv run pytest -m "not exhaustive" -x -q
 
