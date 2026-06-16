@@ -264,7 +264,7 @@ and continue to load correctly. New bakes always write seed_protocol 3.0.
 - Reproducibility information including the exact `whest dataset bake` command to re-bake.
 - Hardware provenance (for merged datasets, lists each host's GPU and mlp_range).
 
-When `whest dataset push` uploads a local directory, it re-renders `README.md` with
+When `whest dataset upload` uploads a local directory, it re-renders `README.md` with
 the actual `repo_id` and `revision` (tag) so the published card has real values rather
 than placeholders.
 
@@ -565,7 +565,7 @@ python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in
 whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split public  --config default --mlp-seeds public-seeds.json  --output ./pub
 whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split holdout --config holdout --mlp-seeds holdout-seeds.json --output ./hold
 whest dataset combine-splits ./pub ./hold --output ./eval-r1
-whest dataset push ./eval-r1 --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
+whest dataset upload ./eval-r1 --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
 ```
 
 `combine-splits` preserves the baked config coordinate. If exactly one input

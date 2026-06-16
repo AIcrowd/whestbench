@@ -190,10 +190,10 @@ publish walkthrough.
 
 ```bash
 # Inspect
-whest dataset inspect ./final-eval
+whest dataset info ./final-eval
 
 # Publish
-whest dataset push ./final-eval \
+whest dataset upload ./final-eval \
     --repo aicrowd/arc-whestbench-2026 \
     --tag v1 \
     --message "Parallel bake: 1000 MLPs, 4 workers"
@@ -316,8 +316,8 @@ whest dataset merge ./hold-p* --output ./hold-complete
 whest dataset combine-splits ./pub-complete ./hold-complete --output ./eval
 
 # Inspect, push.
-whest dataset inspect ./eval
-whest dataset push ./eval --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
+whest dataset info ./eval
+whest dataset upload ./eval --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
 ```
 
 Each per-split bake is independent — workers in different splits don't share any seed

@@ -240,10 +240,6 @@ add custom content.
 The card's YAML front-matter is what HuggingFace Hub renders on the dataset
 page (tags, license, language, etc.). Don't strip it.
 
-> `whest dataset push` continues to work as a deprecated alias for `upload`
-> through v0.6. v0.7 will remove it. Same applies to `pull` → `download` and
-> `inspect` → `info`.
-
 > If it broke (401, 403, repo already exists, network errors), jump to
 > [Troubleshooting](#troubleshooting).
 
@@ -326,9 +322,6 @@ Full reference: [HF cache management](https://huggingface.co/docs/huggingface_hu
 
 When running on NFS, point `HF_XET_CACHE=/local/ssd` to avoid roundtrips.
 See [Performance tuning](#performance-tuning) for more knobs.
-
-> `whest dataset pull` continues to work as a deprecated alias for `download`
-> through v0.6.
 
 > If it broke (long pause, disk full, gated dataset, `cas-bridge.xethub.hf.co`
 > URLs you don't recognise), jump to [Troubleshooting](#troubleshooting).
@@ -561,19 +554,16 @@ wb.combine_split_datasets(
 )
 ```
 
-### CLI verbs (canonical names)
+### CLI verbs
 
-| Verb | Purpose | Deprecated alias |
-|---|---|---|
-| `whest dataset bake` | Generate locally | — |
-| `whest dataset upload` | Publish to HF | `push` |
-| `whest dataset download` | Fetch from HF | `pull` |
-| `whest dataset info` | Show metadata | `inspect` |
-| `whest dataset merge` | Concatenate partials | — |
-| `whest dataset combine-splits` | Assemble multi-split | — |
-
-Deprecated aliases continue to work through v0.6 and emit a deprecation
-warning. v0.7 removes them.
+| Verb | Purpose |
+|---|---|
+| `whest dataset bake` | Generate locally |
+| `whest dataset upload` | Publish to HF |
+| `whest dataset download` | Fetch from HF |
+| `whest dataset info` | Show metadata |
+| `whest dataset merge` | Concatenate partials |
+| `whest dataset combine-splits` | Assemble multi-split |
 
 ### Environment variables
 
