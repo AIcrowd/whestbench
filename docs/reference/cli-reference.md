@@ -7,7 +7,7 @@ Use this page for exact command syntax and key flags.
 ## Environment variables
 
 - `WHEST_SKIP_HARDWARE_FALLBACK_PROBES=1` — skip OS-native fallback probes when collecting `run_meta.host` or dataset `metadata.hardware`. Cheap fields and `psutil`-backed fields are still collected; fallback-backed fields may remain `null`.
-- `HF_TOKEN` — HuggingFace Hub authentication token. Used by `whest dataset push`, `whest dataset pull`, and `whest run --dataset hf://...` as a fallback when `--token` is not provided.
+- `HF_TOKEN` — HuggingFace Hub authentication token. Used by `whest dataset upload`, `whest dataset download`, and `whest run --dataset hf://...` as a fallback when `--token` is not provided.
 
 ## Commands
 
@@ -266,12 +266,12 @@ whest dataset bake \
     --output ./gpu-eval
 ```
 
-### `whest dataset inspect`
+### `whest dataset info`
 
 Print metadata from a local directory or a HF Hub repo.
 
 ```bash
-whest dataset inspect <DIR_OR_REPO_ID> [--revision REV]
+whest dataset info <DIR_OR_REPO_ID> [--revision REV]
 ```
 
 Arguments:
@@ -283,20 +283,20 @@ Arguments:
 
 ```bash
 # Local
-whest dataset inspect ./my-eval
+whest dataset info ./my-eval
 
 # Remote
-whest dataset inspect aicrowd/arc-whestbench-2026 --revision v1
+whest dataset info aicrowd/arc-whestbench-2026 --revision v1
 ```
 
 Output prints key metadata fields: `schema_version`, `format`, `backend`, `split`, `config`, `n_mlps`, `n_samples`, `width`, `depth`, `created_at_utc`, and device provenance for torch bakes. Multi-split datasets print each split's `config` when present.
 
-### `whest dataset push`
+### `whest dataset upload`
 
 Upload a baked dataset directory to HuggingFace Hub. Requires `HF_TOKEN` set in the environment or `--token`.
 
 ```bash
-whest dataset push <LOCAL_DIR> \
+whest dataset upload <LOCAL_DIR> \
     --repo REPO_ID \
     [--tag TAG] \
     [--private] \
@@ -317,24 +317,24 @@ Arguments:
 
 ```bash
 # Publish with a version tag
-whest dataset push ./my-eval \
+whest dataset upload ./my-eval \
     --repo aicrowd/arc-whestbench-2026 \
     --tag v1 \
     --message "Bake: 10 MLPs, seed=42"
 
 # Private repo
-whest dataset push ./my-eval \
+whest dataset upload ./my-eval \
     --repo aicrowd/arc-whestbench-2026-holdout \
     --tag v1 \
     --private
 ```
 
-### `whest dataset pull`
+### `whest dataset download`
 
 Download a dataset from HuggingFace Hub to a local directory.
 
 ```bash
-whest dataset pull <REPO_ID> \
+whest dataset download <REPO_ID> \
     [--revision REV] \
     --output DIR \
     [--token TOKEN]
@@ -350,7 +350,7 @@ Arguments:
 ### Example
 
 ```bash
-whest dataset pull aicrowd/arc-whestbench-2026 \
+whest dataset download aicrowd/arc-whestbench-2026 \
     --revision v1 \
     --output ./eval-v1
 ```
@@ -391,16 +391,16 @@ whest dataset bake \
     --output ./my-eval
 
 # 2. Inspect locally
-whest dataset inspect ./my-eval
+whest dataset info ./my-eval
 
 # 3. Publish
 export HF_TOKEN=hf_...
-whest dataset push ./my-eval \
+whest dataset upload ./my-eval \
     --repo aicrowd/arc-whestbench-2026 \
     --tag v1
 
 # 4. Pull on another machine
-whest dataset pull aicrowd/arc-whestbench-2026 \
+whest dataset download aicrowd/arc-whestbench-2026 \
     --revision v1 --output ./local-copy
 
 # 5. Run evaluation

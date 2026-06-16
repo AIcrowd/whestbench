@@ -264,7 +264,7 @@ and continue to load correctly. New bakes always write seed_protocol 3.0.
 - Reproducibility information including the exact `whest dataset bake` command to re-bake.
 - Hardware provenance (for merged datasets, lists each host's GPU and mlp_range).
 
-When `whest dataset push` uploads a local directory, it re-renders `README.md` with
+When `whest dataset upload` uploads a local directory, it re-renders `README.md` with
 the actual `repo_id` and `revision` (tag) so the published card has real values rather
 than placeholders.
 
@@ -435,7 +435,7 @@ slice K (0-indexed). The output metadata is marked `is_partial=true` and include
 
 ```bash
 # Generate once, share the same file with all workers.
-whest dataset generate-seeds --n-mlps 1000 > seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(1000)]))' > seeds.json
 
 # 4 workers each bake 250 of 1000 MLPs
 whest dataset bake --slice 0/4 --n-mlps 1000 --mlp-seeds seeds.json ... --output ./p0
@@ -529,6 +529,14 @@ the parquet `mlp_seed` column for each split.
 
 The discriminator is the presence of the `splits` field. No `schema_version` bump — the multi-split shape is a purely additive extension of schema 3.0.
 
+### Invariants
+
+whestbench multi-split datasets uphold these invariants; tooling and consumers rely on them:
+
+- **Config-per-split (by convention).** whestbench eval/public datasets give each split its own HF config, so a config name maps one-to-one to a split. This is an authoring convention that the published datasets and the `combine-splits` auto-`default_split` behavior assume — it is not hard-enforced (`combine-splits` groups inputs by their declared config name). The config name is an access + download namespace (holdout isolation + lazy per-config download), not a content descriptor — it carries no `width`/`depth`/sample information.
+- **Globally-unique split names.** Split names are pairwise distinct within a dataset (enforced at `combine-splits`), so `split=` alone unambiguously selects the config. There is **no `config=` parameter** on `whestbench.load_dataset` by design — pass `split=` (and `revision=`).
+- **One size per round.** A dataset/revision uses a single network size (`width`, `depth`). Size lives in `metadata.json` and is compiled into the parquet schema, so different sizes cannot share a config or be combined. A new round with a different size (e.g. `256x32`) is a fresh bake pushed to a new git tag; the config/split names do not change.
+
 ### Loading
 
 ```python
@@ -551,13 +559,13 @@ Bake each split as a complete single-split dataset, then combine. Under seed_pro
 
 ```bash
 # Generate independent seed files for each split.
-whest dataset generate-seeds --n-mlps 50 > public-seeds.json
-whest dataset generate-seeds --n-mlps 50 > holdout-seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(50)]))' > public-seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(50)]))' > holdout-seeds.json
 
 whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split public  --config default --mlp-seeds public-seeds.json  --output ./pub
 whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split holdout --config holdout --mlp-seeds holdout-seeds.json --output ./hold
 whest dataset combine-splits ./pub ./hold --output ./eval-r1
-whest dataset push ./eval-r1 --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
+whest dataset upload ./eval-r1 --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
 ```
 
 `combine-splits` preserves the baked config coordinate. If exactly one input

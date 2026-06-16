@@ -27,7 +27,7 @@ use the **same** `--mlp-seeds` file, `--n-mlps`, `--n-samples`, `--width`, and
 Generate the seeds file once before launching workers:
 
 ```bash
-whest dataset generate-seeds --n-mlps 1000 > seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(1000)]))' > seeds.json
 ```
 
 The following example bakes 1000 MLPs across 4 workers. Run each command on its own
@@ -190,10 +190,10 @@ publish walkthrough.
 
 ```bash
 # Inspect
-whest dataset inspect ./final-eval
+whest dataset info ./final-eval
 
 # Publish
-whest dataset push ./final-eval \
+whest dataset upload ./final-eval \
     --repo aicrowd/arc-whestbench-2026 \
     --tag v1 \
     --message "Parallel bake: 1000 MLPs, 4 workers"
@@ -291,8 +291,8 @@ to preserve cross-split independence.
 
 ```bash
 # Generate independent seed files for each split (once, before launching workers).
-whest dataset generate-seeds --n-mlps 50 > public-seeds.json
-whest dataset generate-seeds --n-mlps 50 > holdout-seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(50)]))' > public-seeds.json
+python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in range(50)]))' > holdout-seeds.json
 
 # Parallel-bake the public split (4 workers, same seeds file).
 for K in 0 1 2 3; do
@@ -316,8 +316,8 @@ whest dataset merge ./hold-p* --output ./hold-complete
 whest dataset combine-splits ./pub-complete ./hold-complete --output ./eval
 
 # Inspect, push.
-whest dataset inspect ./eval
-whest dataset push ./eval --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
+whest dataset info ./eval
+whest dataset upload ./eval --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
 ```
 
 Each per-split bake is independent — workers in different splits don't share any seed

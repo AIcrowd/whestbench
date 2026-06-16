@@ -1110,7 +1110,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     # ----- whest dataset {bake,push,pull,merge,inspect} -----
     dataset_parser = subparsers.add_parser(
-        "dataset", help="Dataset bake/publish/load/merge/inspect commands."
+        "dataset", help="Dataset bake/publish/load/merge/info commands."
     )
     dataset_sub = dataset_parser.add_subparsers(dest="dataset_cmd", required=True)
 
@@ -1191,7 +1191,6 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     upload_p = dataset_sub.add_parser(
         "upload",
-        aliases=["push"],
         help="Upload a baked dataset to HF Hub.",
         epilog="See docs/guides/datasets.md for a complete walk-through.",
     )
@@ -1204,7 +1203,6 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     download_p = dataset_sub.add_parser(
         "download",
-        aliases=["pull"],
         help="Download a dataset from HF Hub.",
         epilog="See docs/guides/datasets.md for a complete walk-through.",
     )
@@ -1229,7 +1227,6 @@ def _build_participant_parser() -> argparse.ArgumentParser:
 
     info_p = dataset_sub.add_parser(
         "info",
-        aliases=["inspect"],
         help="Print dataset metadata.",
         epilog="See docs/guides/datasets.md for a complete walk-through.",
     )
@@ -1512,23 +1509,11 @@ def _resolve_dataset_arg(arg, *, revision):
     raise SystemExit(f"--dataset {arg!r} not recognized as local path or HF repo.")
 
 
-_DEPRECATED_DATASET_ALIASES = {"push": "upload", "pull": "download", "inspect": "info"}
-
-
 def _dispatch_dataset_command(args) -> int:
     import json as _json
     from pathlib import Path as _Path
 
     sub = args.dataset_cmd
-    if sub in _DEPRECATED_DATASET_ALIASES:
-        from .ui import say
-
-        canonical = _DEPRECATED_DATASET_ALIASES[sub]
-        say.warn(
-            f"`whest dataset {sub}` is deprecated; use `whest dataset {canonical}`. "
-            f"Aliases will be removed in v0.7."
-        )
-        sub = canonical
 
     if sub == "bake":
         import time as _time

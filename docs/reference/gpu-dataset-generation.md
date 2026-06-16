@@ -52,7 +52,7 @@ Output is a **directory** (schema 3.0 layout), not a single `.npz` file:
 ```
 
 Load it with `whestbench.load_dataset` or push to HF Hub with
-`whest dataset push`. The array schema is identical to a CPU bake — the same
+`whest dataset upload`. The array schema is identical to a CPU bake — the same
 8 Parquet columns, same `mlp_name` values at the same seed.
 
 > The seed → name mapping is stable across machines as long as the installed
@@ -85,7 +85,7 @@ walkthrough.
 After baking (and optionally merging), push to HF Hub:
 
 ```bash
-whest dataset push ./ground-truth \
+whest dataset upload ./ground-truth \
     --repo aicrowd/arc-whestbench-2026 \
     --tag v1
 ```

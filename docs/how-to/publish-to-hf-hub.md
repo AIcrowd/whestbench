@@ -19,7 +19,7 @@ huggingface-cli login
 export HF_TOKEN=hf_your_write_token_here
 ```
 
-The `HF_TOKEN` environment variable is read automatically by `whest dataset push`
+The `HF_TOKEN` environment variable is read automatically by `whest dataset upload`
 and `whestbench.publish_dataset`. You can also pass it explicitly via `--token`.
 
 ## 2. Bake locally
@@ -46,7 +46,7 @@ Verify the bake parameters before uploading. This is cheap and catches any
 misconfiguration before it goes out:
 
 ```bash
-whest dataset inspect ./my-bake
+whest dataset info ./my-bake
 ```
 
 Expected output:
@@ -82,7 +82,7 @@ Push the local directory to HF Hub. Use `--tag` to create a versioned git tag �
 this is strongly recommended so participants can pin a specific version.
 
 ```bash
-whest dataset push ./my-bake \
+whest dataset upload ./my-bake \
     --repo aicrowd/arc-whestbench-2026 \
     --tag v1 \
     --message "Bake: 10 MLPs, seed=42, 10M samples"
@@ -97,7 +97,7 @@ Uploaded to aicrowd/arc-whestbench-2026; commit abc1234def; tag v1
 For a private repo (e.g. holdout sets), add `--private`:
 
 ```bash
-whest dataset push ./my-bake \
+whest dataset upload ./my-bake \
     --repo aicrowd/arc-whestbench-2026-holdout \
     --tag v1 \
     --private \
@@ -124,7 +124,7 @@ dataset card rendered from the README.
 You can also inspect from the CLI without downloading:
 
 ```bash
-whest dataset inspect aicrowd/arc-whestbench-2026 --revision v1
+whest dataset info aicrowd/arc-whestbench-2026 --revision v1
 ```
 
 ## 6. Pull on another machine
@@ -132,7 +132,7 @@ whest dataset inspect aicrowd/arc-whestbench-2026 --revision v1
 On any other machine with `whestbench` installed:
 
 ```bash
-whest dataset pull aicrowd/arc-whestbench-2026 \
+whest dataset download aicrowd/arc-whestbench-2026 \
     --revision v1 \
     --output ./local-copy
 ```
@@ -199,7 +199,7 @@ repo, or it has expired. Generate a new token at
 [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) with
 `write` scope.
 
-**`404 Repository not found`** — The repo doesn't exist yet. `whest dataset push`
+**`404 Repository not found`** — The repo doesn't exist yet. `whest dataset upload`
 creates it automatically; ensure you have permission to create repos under the
 target org (e.g. `aicrowd/`).
 
@@ -213,6 +213,30 @@ See [Parallel bake](./parallel-bake.md).
 
 ### Multi-split datasets
 
-`whest dataset push` handles multi-split datasets natively. The local directory must contain one parquet per split in `data/` and a `metadata.json` with a `splits:` dict; this is the shape produced by `whest dataset combine-splits`. If the input bakes declared `--config`, the push preserves that config-per-split layout in the published dataset card. The push uploads all parquets in one commit; tag with `--tag round-N` for per-round eval datasets.
+`whest dataset upload` handles multi-split datasets natively. The local directory must contain one parquet per split in `data/` and a `metadata.json` with a `splits:` dict; this is the shape produced by `whest dataset combine-splits`. If the input bakes declared `--config`, the push preserves that config-per-split layout in the published dataset card. The push uploads all parquets in one commit; tag with `--tag round-N` for per-round eval datasets.
+
+### Next round / new network size
+
+Rounds are versioned by git tag, not by config. To publish a new round (and/or change the network size), bake fresh MLPs at the desired size and push to a new tag on the **same** repo — the config/split names stay the same:
+
+```bash
+# New size (e.g. 256x32) + new round = a fresh bake pushed to a new tag.
+# Per-MLP seeds are auto-generated (secrets.randbits(63)) and recorded in the
+# parquet, so each round gets fresh, independent MLPs.
+whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 32 \
+    --split public  --config default --output ./pub-r2
+whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 32 \
+    --split holdout --config holdout --output ./hold-r2
+whest dataset combine-splits ./pub-r2 ./hold-r2 --output ./eval-r2
+whest dataset upload ./eval-r2 --repo aicrowd/arc-whestbench-evals-2026 --tag round-2 --private
+```
+
+Consumers pin the round (and thus the size) by revision:
+
+```python
+load_dataset("aicrowd/arc-whestbench-evals-2026", split="public", revision="round-2")
+```
+
+Each dataset/revision holds exactly one network size; to offer a different size, use a new tag (optionally encode the size in the tag, e.g. `round-2-256x32`).
 
 For private repos (e.g. the evaluation dataset), pass `--private` on first push to create the repo as private. Subsequent pushes preserve the privacy setting.
