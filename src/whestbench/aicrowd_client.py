@@ -30,6 +30,7 @@ api/v1/api_users_controller.rb + base_controller.rb):
 
 from __future__ import annotations
 
+import datetime
 import os
 import random
 import time
@@ -78,7 +79,8 @@ POLL_RETRY = RetryPolicy(max_attempts=3, base_delay=0.5, max_delay=4.0, deadline
 
 def _parse_retry_after(value: Optional[str]) -> Optional[float]:
     """Parse a Retry-After header to seconds. Supports the integer-seconds form
-    and the HTTP-date form; returns None on absence or garbage."""
+    and the (timezone-aware) HTTP-date form; returns None on absence, garbage,
+    or a timezone-naive date."""
     if not value:
         return None
     try:
@@ -89,11 +91,9 @@ def _parse_retry_after(value: Optional[str]) -> Optional[float]:
         dt = parsedate_to_datetime(value)
     except (TypeError, ValueError):
         return None
-    if dt is None:
+    if dt.tzinfo is None:
         return None
-    import datetime as _dt
-
-    now = _dt.datetime.now(tz=dt.tzinfo)
+    now = datetime.datetime.now(tz=dt.tzinfo)
     return max(0.0, (dt - now).total_seconds())
 
 

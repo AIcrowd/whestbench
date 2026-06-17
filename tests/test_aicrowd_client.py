@@ -296,6 +296,18 @@ def test_get_submission_status_exhausts_poll_budget(monkeypatch):
     assert calls["n"] == 3  # POLL_RETRY.max_attempts (not the submit budget of 5)
 
 
+def test_parse_retry_after_http_date_returns_positive_seconds():
+    # A far-future GMT (tz-aware) date yields a positive number of seconds.
+    secs = _parse_retry_after("Wed, 01 Jan 2200 00:00:00 GMT")
+    assert isinstance(secs, float) and secs > 0
+
+
+def test_parse_retry_after_naive_datetime_is_rejected():
+    # A date string without a timezone is naive and must be rejected (None),
+    # not used to compute a timezone-incorrect delta.
+    assert _parse_retry_after("Wed, 01 Jan 2200 00:00:00") is None
+
+
 def test_upload_to_s3_sends_no_token_and_retries(monkeypatch, tmp_path):
     monkeypatch.setattr(client_mod, "_sleep", lambda s: None)
     seen = {"n": 0, "auth": []}
