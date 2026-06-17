@@ -403,6 +403,40 @@ def test_configs_block_with_default_split_holdout_layout():
     assert "split: holdout" not in default_block
 
 
+def test_configs_block_per_split_even_when_combine_tags_all_default():
+    """Regression: ``combine_split_datasets`` stamps EVERY split ``config="default"``.
+    With a ``default_split`` declared, that must STILL yield config-per-split — not a
+    single lumped ``default`` config. Previously the all-``"default"`` per-split
+    ``config`` fields shadowed the ``default_split`` layout, so the card emitted one
+    ``default`` config holding both splits → ``load_dataset(repo, split="mini")``
+    fetched the WHOLE repo and the generated ``load_dataset(repo, "full", …)`` example
+    broke (no ``full`` config existed)."""
+    from whestbench.dataset_io import generate_readme
+
+    md = _base_metadata_with_default_split("mini")
+    # Mimic real combine_split_datasets output: every split carries config="default".
+    for name in md["splits"]:
+        md["splits"][name]["config"] = "default"
+    rendered = generate_readme(
+        md,
+        splits=_mini_full_splits(),
+        ds_size=1100,
+        repo_id="aicrowd/arc-whestbench-public-2026",
+        revision="v1-warmup",
+    )
+    yaml_str = rendered.split("---", 2)[1]
+    assert yaml_str.count("config_name:") == 2, (
+        "all-'default' per-split configs + default_split must STILL yield "
+        f"config-per-split; got {yaml_str.count('config_name:')} configs:\n{yaml_str}"
+    )
+    assert "config_name: default" in yaml_str and "config_name: full" in yaml_str
+    default_block = yaml_str[yaml_str.find("config_name: default"):yaml_str.find("config_name: full")]
+    assert "split: mini" in default_block, "default config must contain mini"
+    assert "split: full" not in default_block, "default config must NOT contain full"
+    # And the rendered full-split example must use the now-existing `full` config.
+    assert 'load_dataset("aicrowd/arc-whestbench-public-2026", "full"' in rendered
+
+
 def test_configs_block_uses_declared_per_split_configs():
     """Config-aware metadata groups data_files by declared config, not split names."""
     from whestbench.dataset_io import generate_readme
