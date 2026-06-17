@@ -12,7 +12,12 @@ import json as _json
 import httpx
 import pytest
 
-from whestbench.aicrowd_client import AIcrowdAPIError, AIcrowdClient, extract_submission_id
+from whestbench.aicrowd_client import (
+    AIcrowdAPIError,
+    AIcrowdClient,
+    AIcrowdTransientError,
+    extract_submission_id,
+)
 
 
 def _client(handler) -> AIcrowdClient:
@@ -131,3 +136,16 @@ def test_extract_submission_id_handles_response_shapes():
     assert extract_submission_id({"id": 3}) == 3
     assert extract_submission_id({"data": {"id": 4}}) == 4
     assert extract_submission_id({"nope": 1}) is None
+
+
+def test_apierror_defaults_to_non_transient():
+    err = AIcrowdAPIError(status=404, message="missing")
+    assert err.status == 404
+    assert err.transient is False
+
+
+def test_transient_error_is_apierror_subclass_and_transient():
+    err = AIcrowdTransientError(status=503, message="maintenance")
+    assert isinstance(err, AIcrowdAPIError)
+    assert err.transient is True
+    assert err.status == 503

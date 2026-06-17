@@ -62,10 +62,18 @@ def extract_submission_id(resp: dict[str, Any]) -> Optional[int]:
 class AIcrowdAPIError(RuntimeError):
     """Non-2xx from an AIcrowd endpoint."""
 
-    def __init__(self, *, status: int, message: str) -> None:
+    def __init__(self, *, status: int, message: str, transient: bool = False) -> None:
         super().__init__(f"AIcrowd API error ({status}): {message}")
         self.status = status
         self.message = message
+        self.transient = transient
+
+
+class AIcrowdTransientError(AIcrowdAPIError):
+    """A retryable failure (429/5xx/network) that exhausted its retry budget."""
+
+    def __init__(self, *, status: int, message: str) -> None:
+        super().__init__(status=status, message=message, transient=True)
 
 
 class AIcrowdClient:
