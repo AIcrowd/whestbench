@@ -51,16 +51,28 @@ def test_login_rejects_invalid_key(monkeypatch):
     assert rc != 0
 
 
-def _stub_submit_pipeline(monkeypatch, *, registered=True, status_after=None, watch_raises=False):
+def _stub_submit_pipeline(
+    monkeypatch,
+    *,
+    registered=True,
+    status_after=None,
+    watch_raises=False,
+    transient_polls=0,
+    transient_forever=False,
+    create_raises=False,
+):
     """Stub the whole AIcrowdClient so submit() runs offline.
 
-    Matches the real client API (create_submission takes challenge_slug; the
-    create response is `data`-wrapped with submission_id)."""
+    - watch_raises=True       -> get_submission_status raises a permanent 404
+    - transient_forever=True  -> always raises AIcrowdTransientError (503)
+    - transient_polls=N       -> raises AIcrowdTransientError N times, then returns
+    """
     calls: dict = {"created": None}
 
     class _FakeClient:
         def __init__(self, *, api_key, **kw):
             self.api_key = api_key
+            self._poll_n = 0
 
         def verify_identity(self):
             return 4242
@@ -78,14 +90,23 @@ def _stub_submit_pipeline(monkeypatch, *, registered=True, status_after=None, wa
             return "subs/submission.tar.gz"
 
         def create_submission(self, *, challenge_slug, s3_key, description):
+            if create_raises:
+                from whestbench.aicrowd_client import AIcrowdTransientError
+
+                raise AIcrowdTransientError(status=503, message="maintenance")
             calls["created"] = {"challenge_slug": challenge_slug, "s3_key": s3_key}
             return {"data": {"submission_id": 7777, "created_at": "t"}}
 
         def get_submission_status(self, sid):
-            if watch_raises:
-                from whestbench.aicrowd_client import AIcrowdAPIError
+            from whestbench.aicrowd_client import AIcrowdAPIError, AIcrowdTransientError
 
+            if watch_raises:
                 raise AIcrowdAPIError(status=404, message="no participant status endpoint")
+            if transient_forever:
+                raise AIcrowdTransientError(status=503, message="maintenance")
+            if transient_polls and self._poll_n < transient_polls:
+                self._poll_n += 1
+                raise AIcrowdTransientError(status=503, message="maintenance")
             return status_after or {
                 "id": sid,
                 "grading_status_cd": "graded",
@@ -194,3 +215,67 @@ def test_submit_unregistered_errors(monkeypatch, tmp_path):
     art.write_bytes(b"x")
     rc = cli.main(["submit", str(art)])
     assert rc != 0
+
+
+def test_submit_watch_absorbs_transient_then_grades(monkeypatch, tmp_path):
+    # Transient 503s during polling are silent; the watcher still reaches graded
+    # and never prints the old scary "Couldn't poll grading status" warning.
+    monkeypatch.setattr("time.sleep", lambda *_: None)
+    captured = _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    _stub_submit_pipeline(
+        monkeypatch,
+        transient_polls=2,
+        status_after={"id": 7777, "grading_status_cd": "graded", "score": 0.0845},
+    )
+    art = tmp_path / "submission.tar.gz"
+    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    rc = cli.main(["submit", str(art), "--watch"])
+    assert rc == 0
+    assert any("Graded" in line for line in captured)
+    assert not any("Couldn't poll grading status" in line for line in captured)
+
+
+def test_submit_watch_deadline_detaches_cleanly(monkeypatch, tmp_path):
+    # If the platform stays unreachable, --watch-timeout detaches with a friendly
+    # tracking link and exit 0 (never a scary error, never rc=1).
+    monkeypatch.setattr("time.sleep", lambda *_: None)
+    captured = _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    _stub_submit_pipeline(monkeypatch, transient_forever=True)
+    art = tmp_path / "submission.tar.gz"
+    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    rc = cli.main(["submit", str(art), "--watch", "--watch-timeout", "0"])
+    assert rc == 0
+    assert any("Still grading" in line for line in captured)
+    assert not any("Couldn't poll grading status" in line for line in captured)
+
+
+def test_submit_watch_permanent_error_degrades_gracefully(monkeypatch, tmp_path):
+    # A permanent 404 (deployment without a status endpoint) degrades immediately
+    # to a tracking hint, exit 0 — it must not spin until the deadline.
+    monkeypatch.setattr("time.sleep", lambda *_: None)
+    captured = _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    _stub_submit_pipeline(monkeypatch, watch_raises=True)
+    art = tmp_path / "submission.tar.gz"
+    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    rc = cli.main(["submit", str(art), "--watch", "--watch-timeout", "0"])
+    assert rc == 0
+    assert any("view it at" in line for line in captured)
+    assert not any("Couldn't poll grading status" in line for line in captured)
+
+
+def test_submit_path_transient_exhaustion_reports_failure(monkeypatch, tmp_path):
+    # When a submit-path call exhausts its retries (transient error bubbles up),
+    # the CLI surfaces a normal "Submission failed" error and a nonzero exit —
+    # never a silent success.
+    monkeypatch.setattr("time.sleep", lambda *_: None)
+    captured = _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    _stub_submit_pipeline(monkeypatch, create_raises=True)
+    art = tmp_path / "submission.tar.gz"
+    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    rc = cli.main(["submit", str(art)])
+    assert rc != 0
+    assert any("Submission failed" in line for line in captured)
