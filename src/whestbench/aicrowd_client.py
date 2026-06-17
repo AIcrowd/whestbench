@@ -39,7 +39,7 @@ import time
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Protocol
 
 import httpx
 
@@ -99,13 +99,19 @@ def _parse_retry_after(value: Optional[str]) -> Optional[float]:
     return max(0.0, (dt - now).total_seconds())
 
 
+class _RandomLike(Protocol):
+    """Minimal RNG surface used by ``_compute_backoff`` (satisfied by ``random.Random``)."""
+
+    def uniform(self, a: float, b: float, /) -> float: ...
+
+
 def _compute_backoff(
     attempt: int,
     *,
     retry_after: Optional[float],
     base: float,
     cap: float,
-    rng: "random.Random",
+    rng: "_RandomLike",
 ) -> float:
     """1-based attempt. Exponential base*2**(attempt-1), capped at `cap`, with
     full jitter in [0, exp]. An explicit, larger Retry-After wins (no jitter)."""

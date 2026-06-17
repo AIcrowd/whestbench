@@ -158,12 +158,12 @@ def test_transient_error_is_apierror_subclass_and_transient():
 
 
 class _MaxJitter:
-    def uniform(self, lo, hi):
+    def uniform(self, lo: float, hi: float) -> float:
         return hi  # full-jitter upper bound — makes backoff deterministic
 
 
 class _ZeroJitter:
-    def uniform(self, lo, hi):
+    def uniform(self, lo: float, hi: float) -> float:
         return lo
 
 

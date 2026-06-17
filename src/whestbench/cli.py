@@ -2181,6 +2181,61 @@ def _submit_dry_run(args: "Any", *, json_output: bool) -> int:
     return 0
 
 
+def _watch_submission(
+    client,
+    sub_id,
+    *,
+    challenge,
+    watch_timeout,
+    debug,
+    json_output,
+    initial,
+):
+    """Poll AIcrowd grading status until a terminal state or the watch deadline.
+
+    Transient blips (already retried inside the client) stay silent here; a
+    permanent error or the ``--watch-timeout`` deadline degrades gracefully with
+    a tracking link. Never raises, and never reports a non-terminal state as
+    graded. Returns the last status dict seen.
+    """
+    from .ui import say
+
+    final = initial
+    terminal = {"graded", "failed"}
+    submission_url = f"https://www.aicrowd.com/challenges/{challenge}/submissions/{sub_id}"
+    deadline = time.monotonic() + watch_timeout
+    while str(final.get("grading_status_cd")) not in terminal:
+        time.sleep(POLL_INTERVAL_S)
+        try:
+            final = client.get_submission_status(int(sub_id))
+            say.step(f"status: {final.get('grading_status_cd')}", quiet=json_output)
+        except AIcrowdTransientError as e:
+            # Transient blip — stay silent (visible only under --debug).
+            if debug and not json_output:
+                say.warn(f"[debug] transient poll error, still waiting ({e})")
+        except AIcrowdAPIError:
+            # Permanent (e.g. 404: deployment exposes no status endpoint) —
+            # degrade gracefully instead of spinning.
+            if not json_output:
+                say.hint(f"Couldn't track automatically — view it at {submission_url}")
+            break
+        if str(final.get("grading_status_cd")) in terminal:
+            break
+        if time.monotonic() >= deadline:
+            if not json_output:
+                say.hint(
+                    f"Still grading after {int(watch_timeout)}s — track it at {submission_url}"
+                )
+            break
+    status = str(final.get("grading_status_cd"))
+    if not json_output and status in terminal:
+        if status == "graded":
+            say.ok(f"Graded — score {final.get('score')}")
+        else:
+            say.warn(f"Grading {status}: {final.get('grading_message', '')}")
+    return final
+
+
 def _main_participant(argv: "list[str]") -> int:
     parser = _build_participant_parser()
     if argv and not argv[0].startswith("-"):
@@ -3243,48 +3298,16 @@ def _main_participant(argv: "list[str]") -> int:
 
             final = sub
             if args.watch and sub_id is not None:
-                # Best-effort poll. The submission is already created + grading
-                # asynchronously on AIcrowd; status polling is a convenience and
-                # must never turn a successful submit into a failure. Transient
-                # platform blips (5xx/429/network) are absorbed by the client's
-                # retry; here we stay silent through them and keep polling until a
-                # terminal state or the overall --watch-timeout deadline.
                 say.intent("Waiting for grading", quiet=json_output)
-                terminal = {"graded", "failed"}
-                submission_url = (
-                    f"https://www.aicrowd.com/challenges/{args.challenge}/submissions/{sub_id}"
+                final = _watch_submission(
+                    client,
+                    sub_id,
+                    challenge=args.challenge,
+                    watch_timeout=args.watch_timeout,
+                    debug=debug,
+                    json_output=json_output,
+                    initial=sub,
                 )
-                deadline = _time.monotonic() + args.watch_timeout
-                while str(final.get("grading_status_cd")) not in terminal:
-                    _time.sleep(POLL_INTERVAL_S)
-                    try:
-                        final = client.get_submission_status(int(sub_id))
-                        say.step(f"status: {final.get('grading_status_cd')}", quiet=json_output)
-                    except AIcrowdTransientError as e:
-                        # Transient blip — stay silent (visible only under --debug).
-                        if debug and not json_output:
-                            say.warn(f"[debug] transient poll error, still waiting ({e})")
-                    except AIcrowdAPIError:
-                        # Permanent (e.g. 404: deployment exposes no status
-                        # endpoint) — degrade gracefully instead of spinning.
-                        if not json_output:
-                            say.hint(f"Couldn't track automatically — view it at {submission_url}")
-                        break
-                    if str(final.get("grading_status_cd")) in terminal:
-                        break
-                    if _time.monotonic() >= deadline:
-                        if not json_output:
-                            say.hint(
-                                f"Still grading after {int(args.watch_timeout)}s — "
-                                f"track it at {submission_url}"
-                            )
-                        break
-                status = str(final.get("grading_status_cd"))
-                if not json_output and status in terminal:
-                    if status == "graded":
-                        say.ok(f"Graded — score {final.get('score')}")
-                    else:
-                        say.warn(f"Grading {status}: {final.get('grading_message', '')}")
 
             if json_output:
                 print(json.dumps({"ok": True, "submission_id": sub_id, "submission": final}))
