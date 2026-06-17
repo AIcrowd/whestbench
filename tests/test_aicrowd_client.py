@@ -326,5 +326,5 @@ def test_upload_to_s3_sends_no_token_and_retries(monkeypatch, tmp_path):
         file_path=str(f),
     )
     assert key == "subs/submission.tar.gz"
-    assert seen["n"] == 2                 # retried the transient 503 once
-    assert seen["auth"] == [None, None]   # never sends the AIcrowd token to S3
+    assert seen["n"] == 2  # retried the transient 503 once
+    assert seen["auth"] == [None, None]  # never sends the AIcrowd token to S3

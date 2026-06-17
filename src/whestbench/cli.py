@@ -3259,9 +3259,7 @@ def _main_participant(argv: "list[str]") -> int:
                     _time.sleep(POLL_INTERVAL_S)
                     try:
                         final = client.get_submission_status(int(sub_id))
-                        say.step(
-                            f"status: {final.get('grading_status_cd')}", quiet=json_output
-                        )
+                        say.step(f"status: {final.get('grading_status_cd')}", quiet=json_output)
                     except AIcrowdTransientError as e:
                         # Transient blip — stay silent (visible only under --debug).
                         if debug and not json_output:

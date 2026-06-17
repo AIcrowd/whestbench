@@ -159,8 +159,9 @@ class AIcrowdClient:
         self._auth = {"Authorization": f"Token {api_key}"}
 
     # --- helpers ----------------------------------------------------------
-    def _request(self, method: str, url: str, *, policy: RetryPolicy = SUBMIT_RETRY,
-                 auth: bool = True, **kw) -> httpx.Response:
+    def _request(
+        self, method: str, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, auth: bool = True, **kw
+    ) -> httpx.Response:
         """Issue one logical request, retrying transient failures (429/5xx and
         httpx transport errors) within `policy`'s budget. Permanent non-2xx
         (e.g. 401/403/404) raise immediately. `auth=False` omits the AIcrowd
@@ -185,8 +186,11 @@ class AIcrowdClient:
             if attempt >= policy.max_attempts:
                 break
             delay = _compute_backoff(
-                attempt, retry_after=retry_after,
-                base=policy.base_delay, cap=policy.max_delay, rng=_rng,
+                attempt,
+                retry_after=retry_after,
+                base=policy.base_delay,
+                cap=policy.max_delay,
+                rng=_rng,
             )
             if deadline is not None and _monotonic() + delay >= deadline:
                 break
@@ -246,8 +250,12 @@ class AIcrowdClient:
         fields["key"] = s3_key
         content = Path(file_path).read_bytes()
         self._request(
-            "POST", upload["url"], policy=SUBMIT_RETRY, auth=False,
-            data=fields, files={"file": (fname, content)},
+            "POST",
+            upload["url"],
+            policy=SUBMIT_RETRY,
+            auth=False,
+            data=fields,
+            files={"file": (fname, content)},
         )
         return s3_key
 
@@ -272,6 +280,4 @@ class AIcrowdClient:
         """Fetch a single submission's grading state (Api::SubmissionSerializer):
         {"grading_status_cd": ..., "score": ..., "grading_message": ..., ...}.
         Uses the lighter POLL_RETRY budget; the --watch loop supplies patience."""
-        return self._get(
-            f"{_rails_base()}/submissions/{submission_id}", policy=POLL_RETRY
-        ).json()
+        return self._get(f"{_rails_base()}/submissions/{submission_id}", policy=POLL_RETRY).json()
