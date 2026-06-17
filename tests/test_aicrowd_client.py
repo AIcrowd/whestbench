@@ -12,6 +12,7 @@ import json as _json
 import httpx
 import pytest
 
+import whestbench.aicrowd_client as client_mod
 from whestbench.aicrowd_client import (
     _RETRYABLE_STATUS,
     POLL_RETRY,
@@ -192,3 +193,76 @@ def test_retry_presets_and_status_set():
     assert SUBMIT_RETRY.max_attempts == 5
     assert POLL_RETRY.max_attempts == 3
     assert 503 in _RETRYABLE_STATUS and 401 not in _RETRYABLE_STATUS
+
+
+def test_request_retries_transient_then_succeeds(monkeypatch):
+    monkeypatch.setattr(client_mod, "_sleep", lambda s: None)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            return httpx.Response(503, text="maintenance")
+        return httpx.Response(200, json={"ok": True})
+
+    r = _client(handler)._get("https://www.aicrowd.com/api/v1/x")
+    assert r.status_code == 200
+    assert calls["n"] == 3
+
+
+def test_request_permanent_4xx_raises_immediately(monkeypatch):
+    monkeypatch.setattr(client_mod, "_sleep", lambda s: None)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        return httpx.Response(401, json={"message": "bad key"})
+
+    with pytest.raises(AIcrowdAPIError) as ei:
+        _client(handler)._get("https://www.aicrowd.com/api/v1/x")
+    assert ei.value.transient is False
+    assert calls["n"] == 1
+
+
+def test_request_exhausts_transient_raises_transient(monkeypatch):
+    monkeypatch.setattr(client_mod, "_sleep", lambda s: None)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        return httpx.Response(503, text="down")
+
+    with pytest.raises(AIcrowdTransientError) as ei:
+        _client(handler)._get("https://www.aicrowd.com/api/v1/x")
+    assert ei.value.transient is True
+    assert calls["n"] == 5
+
+
+def test_request_retries_transport_error(monkeypatch):
+    monkeypatch.setattr(client_mod, "_sleep", lambda s: None)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        if calls["n"] < 2:
+            raise httpx.ConnectError("boom")
+        return httpx.Response(200, json={"ok": True})
+
+    r = _client(handler)._get("https://www.aicrowd.com/api/v1/x")
+    assert r.status_code == 200
+    assert calls["n"] == 2
+
+
+def test_request_honors_retry_after_header(monkeypatch):
+    slept = []
+    monkeypatch.setattr(client_mod, "_sleep", lambda s: slept.append(s))
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(503, headers={"Retry-After": "2"}, text="down")
+        return httpx.Response(200, json={"ok": True})
+
+    _client(handler)._get("https://www.aicrowd.com/api/v1/x")
+    assert slept == [2.0]

@@ -157,17 +157,46 @@ class AIcrowdClient:
         self._auth = {"Authorization": f"Token {api_key}"}
 
     # --- helpers ----------------------------------------------------------
-    def _get(self, url: str, **kw) -> httpx.Response:
-        r = self._http.get(url, headers=self._auth, **kw)
-        if not r.is_success:
-            raise AIcrowdAPIError(status=r.status_code, message=r.text[:300])
-        return r
+    def _request(self, method: str, url: str, *, policy: RetryPolicy = SUBMIT_RETRY,
+                 auth: bool = True, **kw) -> httpx.Response:
+        """Issue one logical request, retrying transient failures (429/5xx and
+        httpx transport errors) within `policy`'s budget. Permanent non-2xx
+        (e.g. 401/403/404) raise immediately. `auth=False` omits the AIcrowd
+        token (for the presigned S3 upload to a different host)."""
+        headers = self._auth if auth else None
+        deadline = _monotonic() + policy.deadline_s if policy.deadline_s is not None else None
+        last_exc: Optional[AIcrowdTransientError] = None
+        for attempt in range(1, policy.max_attempts + 1):
+            retry_after: Optional[float] = None
+            try:
+                r = self._http.request(method, url, headers=headers, **kw)
+            except httpx.TransportError as e:
+                last_exc = AIcrowdTransientError(status=0, message=f"{type(e).__name__}: {e}")
+            else:
+                if r.is_success:
+                    return r
+                if r.status_code in _RETRYABLE_STATUS:
+                    last_exc = AIcrowdTransientError(status=r.status_code, message=r.text[:300])
+                    retry_after = _parse_retry_after(r.headers.get("Retry-After"))
+                else:
+                    raise AIcrowdAPIError(status=r.status_code, message=r.text[:300])
+            if attempt >= policy.max_attempts:
+                break
+            delay = _compute_backoff(
+                attempt, retry_after=retry_after,
+                base=policy.base_delay, cap=policy.max_delay, rng=_rng,
+            )
+            if deadline is not None and _monotonic() + delay >= deadline:
+                break
+            _sleep(delay)
+        assert last_exc is not None  # loop only exits early via return/raise above
+        raise last_exc
 
-    def _post(self, url: str, **kw) -> httpx.Response:
-        r = self._http.post(url, headers=self._auth, **kw)
-        if not r.is_success:
-            raise AIcrowdAPIError(status=r.status_code, message=r.text[:300])
-        return r
+    def _get(self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, **kw) -> httpx.Response:
+        return self._request("GET", url, policy=policy, **kw)
+
+    def _post(self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, **kw) -> httpx.Response:
+        return self._request("POST", url, policy=policy, **kw)
 
     # --- identity + challenge --------------------------------------------
     def verify_identity(self) -> int:
