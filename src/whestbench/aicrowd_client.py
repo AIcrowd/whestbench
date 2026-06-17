@@ -31,6 +31,10 @@ api/v1/api_users_controller.rb + base_controller.rb):
 from __future__ import annotations
 
 import os
+import random
+import time
+from dataclasses import dataclass
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any, Optional
 
@@ -44,6 +48,70 @@ def _rails_base() -> str:
 
 def _aicrowd_base() -> str:
     return os.environ.get("AICROWD_API_ENDPOINT", "https://api.aicrowd.com")
+
+
+# --- retry layer (transient-error resilience) ----------------------------
+# Status codes worth retrying: rate-limit + transient server/proxy errors.
+_RETRYABLE_STATUS = frozenset({408, 425, 429, 500, 502, 503, 504})
+
+# Injectable seams so tests never actually sleep and jitter is deterministic.
+_sleep = time.sleep
+_monotonic = time.monotonic
+_rng = random.Random()
+
+
+@dataclass(frozen=True)
+class RetryPolicy:
+    """Bounded retry budget for one logical API call."""
+
+    max_attempts: int
+    base_delay: float
+    max_delay: float
+    deadline_s: Optional[float] = None
+
+
+# Submit path: user is blocked, so retry briefly then surface a real error.
+SUBMIT_RETRY = RetryPolicy(max_attempts=5, base_delay=0.5, max_delay=8.0, deadline_s=45.0)
+# Watch poll: light per-call retry; the --watch loop supplies the real patience.
+POLL_RETRY = RetryPolicy(max_attempts=3, base_delay=0.5, max_delay=4.0, deadline_s=20.0)
+
+
+def _parse_retry_after(value: Optional[str]) -> Optional[float]:
+    """Parse a Retry-After header to seconds. Supports the integer-seconds form
+    and the HTTP-date form; returns None on absence or garbage."""
+    if not value:
+        return None
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        pass
+    try:
+        dt = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if dt is None:
+        return None
+    import datetime as _dt
+
+    now = _dt.datetime.now(tz=dt.tzinfo)
+    return max(0.0, (dt - now).total_seconds())
+
+
+def _compute_backoff(
+    attempt: int,
+    *,
+    retry_after: Optional[float],
+    base: float,
+    cap: float,
+    rng: "random.Random",
+) -> float:
+    """1-based attempt. Exponential base*2**(attempt-1), capped at `cap`, with
+    full jitter in [0, exp]. An explicit, larger Retry-After wins (no jitter)."""
+    exp = min(cap, base * (2 ** (attempt - 1)))
+    delay = rng.uniform(0.0, exp)
+    if retry_after is not None and retry_after > delay:
+        return retry_after
+    return delay
 
 
 def extract_submission_id(resp: dict[str, Any]) -> Optional[int]:

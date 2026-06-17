@@ -13,9 +13,14 @@ import httpx
 import pytest
 
 from whestbench.aicrowd_client import (
+    _RETRYABLE_STATUS,
+    POLL_RETRY,
+    SUBMIT_RETRY,
     AIcrowdAPIError,
     AIcrowdClient,
     AIcrowdTransientError,
+    _compute_backoff,
+    _parse_retry_after,
     extract_submission_id,
 )
 
@@ -149,3 +154,41 @@ def test_transient_error_is_apierror_subclass_and_transient():
     assert isinstance(err, AIcrowdAPIError)
     assert err.transient is True
     assert err.status == 503
+
+
+class _MaxJitter:
+    def uniform(self, lo, hi):
+        return hi  # full-jitter upper bound — makes backoff deterministic
+
+
+class _ZeroJitter:
+    def uniform(self, lo, hi):
+        return lo
+
+
+def test_compute_backoff_is_exponential_and_capped():
+    rng = _MaxJitter()
+    assert _compute_backoff(1, retry_after=None, base=0.5, cap=8.0, rng=rng) == 0.5
+    assert _compute_backoff(2, retry_after=None, base=0.5, cap=8.0, rng=rng) == 1.0
+    assert _compute_backoff(5, retry_after=None, base=0.5, cap=8.0, rng=rng) == 8.0  # 0.5*16 -> cap
+    assert _compute_backoff(6, retry_after=None, base=0.5, cap=8.0, rng=rng) == 8.0  # stays capped
+
+
+def test_compute_backoff_jitter_lower_bound_is_zero():
+    assert _compute_backoff(3, retry_after=None, base=0.5, cap=8.0, rng=_ZeroJitter()) == 0.0
+
+
+def test_compute_backoff_retry_after_wins_when_larger():
+    assert _compute_backoff(1, retry_after=30.0, base=0.5, cap=8.0, rng=_MaxJitter()) == 30.0
+
+
+def test_parse_retry_after_seconds_and_garbage():
+    assert _parse_retry_after("2") == 2.0
+    assert _parse_retry_after(None) is None
+    assert _parse_retry_after("not-a-date") is None
+
+
+def test_retry_presets_and_status_set():
+    assert SUBMIT_RETRY.max_attempts == 5
+    assert POLL_RETRY.max_attempts == 3
+    assert 503 in _RETRYABLE_STATUS and 401 not in _RETRYABLE_STATUS
