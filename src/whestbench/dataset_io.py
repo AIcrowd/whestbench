@@ -251,7 +251,15 @@ def generate_readme(
                 if isinstance(info, dict) and isinstance(info.get("config"), str):
                     split_config_names[name] = info["config"]
 
-        if split_config_names:
+        # Only honor explicit per-split `config` assignments when they actually
+        # DISTINGUISH the splits (>1 distinct config name). When every split
+        # carries the trivial "default" (the create_dataset / combine_split_datasets
+        # default), fall through to the default_split-driven config-per-split layout
+        # below. Otherwise that UX fix is silently shadowed: all splits lump under a
+        # single `default` config, so `load_dataset(repo, split=X)` fetches the WHOLE
+        # repo, and the generated `load_dataset(repo, "<split>", ...)` examples break
+        # (no such config exists).
+        if split_config_names and len(set(split_config_names.values())) > 1:
             ordered_configs: list[dict[str, Any]] = []
             config_to_files: dict[str, list[dict[str, str]]] = {}
             config_order: list[str] = []
