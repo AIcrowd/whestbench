@@ -59,6 +59,7 @@ def _stub_submit_pipeline(
     watch_raises=False,
     transient_polls=0,
     transient_forever=False,
+    create_raises=False,
 ):
     """Stub the whole AIcrowdClient so submit() runs offline.
 
@@ -89,6 +90,10 @@ def _stub_submit_pipeline(
             return "subs/submission.tar.gz"
 
         def create_submission(self, *, challenge_slug, s3_key, description):
+            if create_raises:
+                from whestbench.aicrowd_client import AIcrowdTransientError
+
+                raise AIcrowdTransientError(status=503, message="maintenance")
             calls["created"] = {"challenge_slug": challenge_slug, "s3_key": s3_key}
             return {"data": {"submission_id": 7777, "created_at": "t"}}
 
@@ -259,3 +264,18 @@ def test_submit_watch_permanent_error_degrades_gracefully(monkeypatch, tmp_path)
     assert rc == 0
     assert any("view it at" in line for line in captured)
     assert not any("Couldn't poll grading status" in line for line in captured)
+
+
+def test_submit_path_transient_exhaustion_reports_failure(monkeypatch, tmp_path):
+    # When a submit-path call exhausts its retries (transient error bubbles up),
+    # the CLI surfaces a normal "Submission failed" error and a nonzero exit —
+    # never a silent success.
+    monkeypatch.setattr("time.sleep", lambda *_: None)
+    captured = _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    _stub_submit_pipeline(monkeypatch, create_raises=True)
+    art = tmp_path / "submission.tar.gz"
+    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    rc = cli.main(["submit", str(art)])
+    assert rc != 0
+    assert any("Submission failed" in line for line in captured)

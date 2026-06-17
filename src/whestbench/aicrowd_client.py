@@ -24,8 +24,10 @@ api/v1/api_users_controller.rb + base_controller.rb):
                 participant-token auth, authorized to the caller's own submission)
                 -> {..., "grading_status_cd": "ready"|"submitted"|"initiated"|"graded"|"failed",
                     "score": ..., "score_secondary": ..., "grading_message": ...}.
-                The --watch loop keeps a best-effort try/except so a poll failure never
-                turns a successful submit into a failure.
+                Transient failures (429/5xx/network) are retried with bounded
+                backoff inside this client; the --watch loop additionally rides
+                out blips silently until a terminal state or its --watch-timeout,
+                so a poll failure never turns a successful submit into a failure.
 """
 
 from __future__ import annotations
