@@ -235,15 +235,18 @@ class AIcrowdClient:
         AIcrowd's presigned POST returns fields where `key` contains a
         `${filename}` placeholder S3 substitutes with the uploaded filename.
         We substitute it locally too so we can report the final key to Rails.
-        """
+        The body is read into memory (artifacts are ≤50 MB, typically a few KB)
+        so it is re-sendable across retries; `auth=False` keeps the AIcrowd token
+        off the S3 request."""
         fields = dict(upload["fields"])
         fname = Path(file_path).name
         s3_key = fields.get("key", "").replace("${filename}", fname)
         fields["key"] = s3_key
-        with open(file_path, "rb") as fh:
-            r = self._http.post(upload["url"], data=fields, files={"file": (fname, fh)})
-        if not r.is_success:
-            raise AIcrowdAPIError(status=r.status_code, message=r.text[:300])
+        content = Path(file_path).read_bytes()
+        self._request(
+            "POST", upload["url"], policy=SUBMIT_RETRY, auth=False,
+            data=fields, files={"file": (fname, content)},
+        )
         return s3_key
 
     def create_submission(
@@ -265,5 +268,8 @@ class AIcrowdClient:
 
     def get_submission_status(self, submission_id: int) -> dict[str, Any]:
         """Fetch a single submission's grading state (Api::SubmissionSerializer):
-        {"grading_status_cd": ..., "score": ..., "grading_message": ..., ...}."""
-        return self._get(f"{_rails_base()}/submissions/{submission_id}").json()
+        {"grading_status_cd": ..., "score": ..., "grading_message": ..., ...}.
+        Uses the lighter POLL_RETRY budget; the --watch loop supplies patience."""
+        return self._get(
+            f"{_rails_base()}/submissions/{submission_id}", policy=POLL_RETRY
+        ).json()

@@ -266,3 +266,53 @@ def test_request_honors_retry_after_header(monkeypatch):
 
     _client(handler)._get("https://www.aicrowd.com/api/v1/x")
     assert slept == [2.0]
+
+
+def test_get_submission_status_retries_then_returns(monkeypatch):
+    monkeypatch.setattr(client_mod, "_sleep", lambda s: None)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        if calls["n"] < 3:
+            return httpx.Response(503, text="down")
+        return httpx.Response(200, json={"id": 1, "grading_status_cd": "graded"})
+
+    st = _client(handler).get_submission_status(1)
+    assert st["grading_status_cd"] == "graded"
+    assert calls["n"] == 3  # POLL_RETRY succeeds on the 3rd attempt
+
+
+def test_get_submission_status_exhausts_poll_budget(monkeypatch):
+    monkeypatch.setattr(client_mod, "_sleep", lambda s: None)
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        return httpx.Response(503, text="down")
+
+    with pytest.raises(AIcrowdTransientError):
+        _client(handler).get_submission_status(1)
+    assert calls["n"] == 3  # POLL_RETRY.max_attempts (not the submit budget of 5)
+
+
+def test_upload_to_s3_sends_no_token_and_retries(monkeypatch, tmp_path):
+    monkeypatch.setattr(client_mod, "_sleep", lambda s: None)
+    seen = {"n": 0, "auth": []}
+
+    def handler(req):
+        seen["n"] += 1
+        seen["auth"].append(req.headers.get("Authorization"))
+        if seen["n"] < 2:
+            return httpx.Response(503, text="s3 down")
+        return httpx.Response(204)
+
+    f = tmp_path / "submission.tar.gz"
+    f.write_bytes(b"payload")
+    key = _client(handler).upload_to_s3(
+        upload={"url": "https://s3.test/upload", "fields": {"key": "subs/${filename}"}},
+        file_path=str(f),
+    )
+    assert key == "subs/submission.tar.gz"
+    assert seen["n"] == 2                 # retried the transient 503 once
+    assert seen["auth"] == [None, None]   # never sends the AIcrowd token to S3
