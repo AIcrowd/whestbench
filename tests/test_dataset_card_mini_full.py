@@ -430,7 +430,9 @@ def test_configs_block_per_split_even_when_combine_tags_all_default():
         f"config-per-split; got {yaml_str.count('config_name:')} configs:\n{yaml_str}"
     )
     assert "config_name: default" in yaml_str and "config_name: full" in yaml_str
-    default_block = yaml_str[yaml_str.find("config_name: default"):yaml_str.find("config_name: full")]
+    default_block = yaml_str[
+        yaml_str.find("config_name: default") : yaml_str.find("config_name: full")
+    ]
     assert "split: mini" in default_block, "default config must contain mini"
     assert "split: full" not in default_block, "default config must NOT contain full"
     # And the rendered full-split example must use the now-existing `full` config.
