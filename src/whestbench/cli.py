@@ -1102,15 +1102,43 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     create_ds_parser = subparsers.add_parser(
         "create-dataset", help="[Deprecated] Use `whest dataset bake` instead."
     )
-    create_ds_parser.add_argument("--n-mlps", type=int, default=None)
-    create_ds_parser.add_argument("--n-samples", type=int, default=None)
-    create_ds_parser.add_argument("--width", type=int, default=None)
-    create_ds_parser.add_argument("--depth", type=int, default=None)
-    create_ds_parser.add_argument("--seed", type=int, default=None)
-    create_ds_parser.add_argument("-o", "--output", "--output-path", default=None)
-    create_ds_parser.add_argument("--debug", action="store_true")
-    create_ds_parser.add_argument("--max-threads", type=int, default=None)
-    create_ds_parser.add_argument("--device", default=None, choices=["auto", "cuda", "mps", "cpu"])
+    create_ds_parser.add_argument(
+        "--n-mlps", type=int, default=None, help="Total number of MLPs in the dataset."
+    )
+    create_ds_parser.add_argument(
+        "--n-samples", type=int, default=None, help="Ground-truth samples per MLP."
+    )
+    create_ds_parser.add_argument(
+        "--width", type=int, default=None, help="Neurons per layer (MLP hidden width)."
+    )
+    create_ds_parser.add_argument(
+        "--depth", type=int, default=None, help="Number of weight matrices (MLP depth)."
+    )
+    create_ds_parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Legacy random seed (no longer supported; use `dataset bake --mlp-seeds`).",
+    )
+    create_ds_parser.add_argument(
+        "-o",
+        "--output",
+        "--output-path",
+        default=None,
+        help="Output dataset directory (must not exist).",
+    )
+    create_ds_parser.add_argument(
+        "--debug", action="store_true", help="Enable verbose debug logging."
+    )
+    create_ds_parser.add_argument(
+        "--max-threads", type=int, default=None, help="Limit BLAS to at most N CPU threads."
+    )
+    create_ds_parser.add_argument(
+        "--device",
+        default=None,
+        choices=["auto", "cuda", "mps", "cpu"],
+        help="Compute device for generation (auto, cuda, mps, or cpu).",
+    )
     create_ds_parser.add_argument("--flop-budget", action=_RemovedFlopBudgetAction)
     add_output_format_arguments(create_ds_parser)
 
