@@ -123,9 +123,9 @@ class _RemovedFlopBudgetAction(argparse.Action):
 def _default_contest_spec() -> ContestSpec:
     return ContestSpec(
         width=256,
-        depth=8,
+        depth=32,
         n_mlps=10,
-        flop_budget=68_000_000_000,
+        flop_budget=272_000_000_000,
         ground_truth_samples=100 * 100 * 256,
     )
 
@@ -239,7 +239,7 @@ def _default_resource_limits() -> ResourceLimits:
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
         memory_limit_mb=65_536,
-        flop_budget=68_000_000_000,
+        flop_budget=272_000_000_000,
         cpu_time_limit_s=None,
         wall_time_limit_s=60.0,
     )
@@ -287,21 +287,22 @@ def run_default_score(profile: bool = False) -> "Any":
 def _smoke_test_contest_spec() -> ContestSpec:
     """Lightweight spec for the smoke test.
 
-    Matches the competition shape (width=256, depth=8, flop_budget=6.8e10
+    Matches the competition shape (width=256, depth=32, flop_budget=2.72e11
     per ContestSpec defaults) so participants exercising the smoke path
     hit the same code paths as the real grader. Only n_mlps and
     ground_truth_samples are scaled down so the smoke runs in well under
     a second — accuracy of the resulting score is not meaningful, this is
     a plumbing check.
 
-    Local timing on a typical dev box: ~0.2s total (ground truth ~0.15s,
-    evaluation ~0.03s, CombinedEstimator ~3% budget utilization).
+    Local timing on a typical dev box: well under a second
+    (CombinedEstimator ~3% budget utilization — invariant under the 4×/4×
+    depth-and-budget scaling from the warmup round).
     """
     return ContestSpec(
         width=256,
-        depth=8,
+        depth=32,
         n_mlps=3,
-        flop_budget=68_000_000_000,
+        flop_budget=272_000_000_000,
         ground_truth_samples=10_000,
     )
 
@@ -1031,7 +1032,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
             "C_m = F_m + lambda*R_m (analytical FLOPs plus charged residual "
             "wall time). Always honored; any flop_budget stored in "
             "--dataset's metadata is ignored. "
-            "Default: 68_000_000_000 (6.8e10)."
+            "Default: 272_000_000_000 (2.72e11)."
         ),
     )
     run_parser.add_argument(

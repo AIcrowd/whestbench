@@ -184,7 +184,7 @@ Each row is one MLP. Eight columns:
 {% if not splits %}
 ## Your task as a participant
 
-You implement a class with a `predict(mlp: MLP, budget: int) -> ndarray[depth, width]` method that returns your estimate of `all_layer_means` for the given MLP. The harness gives you the weights and a strict per-MLP FLOP budget `B_m` — **B_m = 6.8 × 10¹⁰** for the initial competition configuration (roughly 6.5 × 10⁴ Monte Carlo forward passes' worth of compute).
+You implement a class with a `predict(mlp: MLP, budget: int) -> ndarray[depth, width]` method that returns your estimate of `all_layer_means` for the given MLP. The harness gives you the weights and a strict per-MLP FLOP budget `B_m` — **B_m = 2.72 × 10¹¹** for the phase-1 competition configuration (roughly 6.5 × 10⁴ Monte Carlo forward passes' worth of compute).
 
 Your spend is tracked as **effective compute**:
 
