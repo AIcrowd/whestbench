@@ -95,6 +95,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Flag non-final tags (e.g. v0.11.0rc0, v0.11.0a1, *.dev*) as GitHub
+          # prereleases so a release candidate never shows up as "Latest". A
+          # final release tag is exactly vX.Y.Z; anything else is a prerelease.
+          prerelease_flag=""
+          if ! printf '%s' "$GITHUB_REF_NAME" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            prerelease_flag="--prerelease"
+          fi
+
           gh release create "$GITHUB_REF_NAME" \
             --title "$GITHUB_REF_NAME" \
-            --notes-file release-notes.md
+            --notes-file release-notes.md \
+            $prerelease_flag
