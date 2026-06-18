@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.11.0rc0 (2026-06-18)
+
+### BREAKING CHANGE
+
+- `whest run` without `--dataset` now defaults to depth=32 and flop_budget=2.72e11 (was depth=8 / 6.8e10).
+- flopscope 0.8 changes absolute FLOP counts; re-baseline pinned FLOP/score assertions.
+- `whest dataset push`, `pull`, and `inspect` are removed; use `whest dataset upload`, `download`, and `info`.
+
+### Feat
+
+- phase-1 config - pin v1-phase1, default 256x32 @ 2.72e11 (#92)
+- **deps**: pin flopscope to >=0.8.0rc0,<0.9.0 (#89)
+- **dataset**: unify load path, lock config-per-split, drop deprecated CLI aliases (#85)
+- **dataset**: add opt-in --compile fast path for torch GPU bake (#84)
+- folder-based submissions, DX delight, 50MB/50-file caps (#82)
+- flopscope 0.7.0 + configurable lambda + budget de-dup (#81)
+- **scoring**: combined-budget exhaustion via shared budget primitives + warnings (#80)
+
+### Fix
+
+- **cli**: document deprecated create-dataset options to restore Docs CI (#88)
+- make whest submit resilient to transient AIcrowd errors (#87)
+- **dataset**: config-per-split shadowed when combine stamps all splits config='default' (#86)
+
+### Refactor
+
+- read flopscope 0.6.0 _s timing props; uniform _s convention (#79)
+
 ## v0.10.0 (2026-06-06)
 
 ### BREAKING CHANGE
