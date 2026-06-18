@@ -54,7 +54,7 @@ deterministic and ~10× faster.
   repo's tag pins which exact dataset everyone scores against. See
   [Publishing to HuggingFace Hub](#publishing-to-huggingface-hub) and
   [Downloading from HF Hub and the local cache](#downloading-from-hf-hub-and-the-local-cache).
-- **CI / leaderboard workflow:** `bake → upload --tag v1-warmup`. Participants
+- **CI / leaderboard workflow:** `bake → upload --tag v1-phase1`. Participants
   pull by tag. Streaming (`whest run --streaming`) is the natural fit for
   per-PR CI gates — see [Streaming mode](#streaming-mode).
 
@@ -129,7 +129,7 @@ hardware fingerprint, and per-split row counts. `info` also works against HF
 Hub directly:
 
 ```bash
-whest dataset info aicrowd/arc-whestbench-public-2026 --revision v1-warmup
+whest dataset info aicrowd/arc-whestbench-public-2026 --revision v1-phase1
 ```
 
 No download required — `info` only fetches `metadata.json`.
@@ -229,7 +229,7 @@ pins to this exact revision.
 hyphen-separated (e.g. `aicrowd/arc-whestbench-public-2026`).
 
 **Tag conventions.** HF doesn't enforce semver; the de-facto pattern is
-`v<MAJOR>.<MINOR>` (e.g. `v1.0`, `v1.1`) or descriptive (`v1-warmup`,
+`v<MAJOR>.<MINOR>` (e.g. `v1.0`, `v1.1`) or descriptive (`v1-phase1`,
 `v1-holdout`). See
 [HF's revision docs](https://huggingface.co/docs/huggingface_hub/guides/cli).
 
@@ -255,6 +255,12 @@ page (tags, license, language, etc.). Don't strip it.
 You want to score against a dataset published by your team or the contest
 organisers. There are two paths.
 
+> **Always pin a revision.** Use `@v1-phase1` (or `--revision v1-phase1`), not
+> bare `main`. The contest repo's `main` advances each phase, so an unpinned
+> load can silently switch the underlying MLPs between runs — and an offline
+> cache can just as silently keep serving the *old* phase. A tag is immutable,
+> so pinning is the only way to guarantee everyone scores the same data.
+
 ### `whest dataset download` — explicit fetch
 
 Use when you want a real on-disk copy you can inspect, ship to another
@@ -262,14 +268,14 @@ machine, or commit to a separate artifact store:
 
 ```bash
 whest dataset download aicrowd/arc-whestbench-public-2026 \
-    --revision v1-warmup \
+    --revision v1-phase1 \
     --output ./eval
 ```
 
 Representative output:
 
 ```
-→ Downloading aicrowd/arc-whestbench-public-2026@v1-warmup → ./eval
+→ Downloading aicrowd/arc-whestbench-public-2026@v1-phase1 → ./eval
   Preflight: 1 parquet shard, 2.0 GB, 1,000 MLPs
   ✓ Downloaded 2.0 GB              ████████████████████ 100%   28.9s
 ✓ Wrote ./eval (cache: ~/.cache/huggingface/hub/datasets--aicrowd--arc-whestbench-public-2026)
@@ -284,7 +290,7 @@ You can skip the explicit download — `whest run` does it lazily on first use:
 
 ```bash
 whest run --estimator estimator.py \
-          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-warmup
+          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1
 ```
 
 This downloads on first invocation (showing a progress bar) and caches.
@@ -379,7 +385,7 @@ Unauthenticated requests to HF are rate-limited and noticeably slower. Run
 
 ```bash
 whest run --estimator estimator.py \
-          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-warmup \
+          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 \
           --streaming \
           --n-mlps 5
 ```

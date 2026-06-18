@@ -56,8 +56,12 @@ For HF-hosted datasets:
 
 ```bash
 whest run --estimator estimator.py \
-          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-warmup
+          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1
 ```
+
+> **Always pin a revision** (`@v1-phase1`) rather than tracking `main`. `main`
+> advances each phase, so an unpinned load can silently change the dataset
+> underneath you; a tag is immutable and reproducible.
 
 See `docs/reference/dataset-format.md` for the schema 3.0 specification.
 

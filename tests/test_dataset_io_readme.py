@@ -397,11 +397,11 @@ def test_readme_explains_estimator_task():
 
 
 def test_readme_quantifies_per_mlp_budget_and_lambda():
-    """B_m = 6.8×10^10 FLOPs and λ = 10^11 FLOPs/s (the deployed value in
-    scoring.py:LAMBDA_FLOPS_PER_SECOND, which differs from the paper's
-    calibration estimate)."""
+    """B_m = 2.72×10^11 FLOPs (phase-1 competition budget) and λ = 10^11 FLOPs/s
+    (the deployed value in scoring.py:LAMBDA_FLOPS_PER_SECOND, which differs from
+    the paper's calibration estimate)."""
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
-    assert "6.8 × 10¹⁰" in out
+    assert "2.72 × 10¹¹" in out
     assert "10¹¹" in out
     # Effective-compute formula C_m = F_m + λ · R_m is spelled out
     assert "F_m + λ" in out

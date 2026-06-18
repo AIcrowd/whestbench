@@ -136,7 +136,7 @@ Key options:
 - `--class <name>` — estimator class name (if the module exports more than one).
 - `--runner local|subprocess|server|inprocess`
 - `--n-mlps <int>` — number of MLPs to evaluate. Default: 10 without `--dataset`; full dataset size with `--dataset`. Clamped to dataset size when `--dataset` is set.
-- `--flop-budget <int>` — cap on effective compute C_m = F_m + λ·R_m per MLP. Default: `68_000_000_000` (6.8e10). Always honored; any `flop_budget` stored in `--dataset`'s metadata is ignored.
+- `--flop-budget <int>` — cap on effective compute C_m = F_m + λ·R_m per MLP. Default: `272_000_000_000` (2.72e11; the phase-1 competition budget — the `v1-warmup` round used `6.8e10`). Always honored; any `flop_budget` stored in `--dataset`'s metadata is ignored.
 - `--wall-time-limit <seconds>` (default: `60.0`) — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`. Operational backstop matching the Phase 1 grader cap; the primary compute constraint is `--flop-budget`.
 - `--residual-wall-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported.
 - `--detail raw|full`
