@@ -19,6 +19,17 @@ def _seed_torch_generator(seed: int, device: str) -> Any:
     return g
 
 
+def _mlp_seeds(n: int) -> list[int]:
+    """Deterministic explicit per-MLP seeds for tests.
+
+    The legacy ``seed=`` kwarg was removed from create_dataset[_torch]() in the
+    seed-protocol 3.0 refactor; callers now pass an explicit list of ``n_mlps``
+    distinct non-negative int63 seeds (or omit it to auto-generate). A fixed list
+    keeps determinism and cross-backend equality, which several tests below rely on.
+    """
+    return [42_000 + i for i in range(n)]
+
+
 def test_sample_layer_statistics_torch_returns_expected_shapes() -> None:
     width = 4
     depth = 3
@@ -152,7 +163,7 @@ def test_create_dataset_torch_roundtrip_cpu(tmp_path: Path) -> None:
         n_samples=128,
         width=8,
         depth=2,
-        seed=42,
+        mlp_seeds=_mlp_seeds(2),
         output_path=tmp_path / "torch_cpu",
         device="cpu",
     )
@@ -172,7 +183,7 @@ def test_create_dataset_torch_metadata_includes_backend_info(tmp_path: Path) -> 
         n_samples=64,
         width=4,
         depth=2,
-        seed=42,
+        mlp_seeds=_mlp_seeds(1),
         output_path=tmp_path / "torch_meta",
         device="cpu",
     )
@@ -192,7 +203,7 @@ def test_create_dataset_torch_is_deterministic_with_same_seed(tmp_path: Path) ->
         n_samples=128,
         width=4,
         depth=2,
-        seed=42,
+        mlp_seeds=_mlp_seeds(2),
         output_path=tmp_path / "torch_det_a",
         device="cpu",
     )
@@ -201,7 +212,7 @@ def test_create_dataset_torch_is_deterministic_with_same_seed(tmp_path: Path) ->
         n_samples=128,
         width=4,
         depth=2,
-        seed=42,
+        mlp_seeds=_mlp_seeds(2),
         output_path=tmp_path / "torch_det_b",
         device="cpu",
     )
@@ -224,7 +235,7 @@ def test_create_dataset_torch_statistically_matches_cpu_path(tmp_path: Path) -> 
         "n_samples": 100_000,
         "width": 4,
         "depth": 2,
-        "seed": 42,
+        "mlp_seeds": _mlp_seeds(2),
     }
     out_cpu = create_dataset(**common_kwargs, output_path=tmp_path / "cpu")
     out_torch = create_dataset_torch(**common_kwargs, output_path=tmp_path / "torch", device="cpu")
@@ -246,7 +257,7 @@ def test_create_dataset_torch_statistically_matches_cpu_path(tmp_path: Path) -> 
 
 def test_torch_and_cpu_backends_produce_identical_names_at_same_seed(tmp_path: Path) -> None:
     """Names are derived from mlp.seed, and both backends produce identical seed lists
-    at the same `--seed`. Therefore name lists must be exactly equal — not just
+    at the same `mlp_seeds`. Therefore name lists must be exactly equal — not just
     statistically — across backends. A drift here would mean the seed protocol
     diverged between backends and is a release-blocker.
     """
@@ -257,7 +268,7 @@ def test_torch_and_cpu_backends_produce_identical_names_at_same_seed(tmp_path: P
         "n_samples": 256,
         "width": 4,
         "depth": 2,
-        "seed": 42,
+        "mlp_seeds": _mlp_seeds(4),
     }
     out_cpu = create_dataset(**common, output_path=tmp_path / "cpu_names")
     out_torch = create_dataset_torch(**common, output_path=tmp_path / "torch_names", device="cpu")
@@ -276,7 +287,7 @@ def test_create_dataset_torch_writes_mlp_names_to_parquet(tmp_path: Path) -> Non
         n_samples=64,
         width=4,
         depth=2,
-        seed=42,
+        mlp_seeds=_mlp_seeds(3),
         output_path=tmp_path / "torch_names_in_parquet",
         device="cpu",
     )
@@ -295,7 +306,7 @@ def test_mini_batch_correctness_uneven_n_mlps(tmp_path: Path) -> None:
         n_samples=64,
         width=4,
         depth=2,
-        seed=42,
+        mlp_seeds=_mlp_seeds(7),
         output_path=tmp_path / "uneven",
         device="cpu",
         mlps_per_batch=3,
@@ -321,7 +332,7 @@ def test_mini_batch_equivalence_to_single_batch(tmp_path: Path) -> None:
         "n_samples": 128,
         "width": 4,
         "depth": 2,
-        "seed": 42,
+        "mlp_seeds": _mlp_seeds(4),
         "device": "cpu",
     }
     out_big = create_dataset_torch(**common, output_path=tmp_path / "big", mlps_per_batch=4)
@@ -346,7 +357,7 @@ def test_progress_events_have_expected_schema(tmp_path: Path) -> None:
         n_samples=128,
         width=4,
         depth=2,
-        seed=42,
+        mlp_seeds=_mlp_seeds(2),
         output_path=tmp_path / "progress",
         device="cpu",
         progress=events.append,
@@ -387,7 +398,7 @@ def test_cuda_smoke_roundtrip(tmp_path: Path) -> None:
         n_samples=256,
         width=8,
         depth=2,
-        seed=42,
+        mlp_seeds=_mlp_seeds(2),
         output_path=tmp_path / "cuda_smoke",
         device="cuda",
     )
@@ -435,7 +446,7 @@ def test_mps_smoke_roundtrip(tmp_path: Path) -> None:
         n_samples=256,
         width=8,
         depth=2,
-        seed=42,
+        mlp_seeds=_mlp_seeds(2),
         output_path=tmp_path / "mps_smoke",
         device="mps",
     )
