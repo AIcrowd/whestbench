@@ -358,7 +358,12 @@ def test_package_command_renders_artifact_summary(
     # A real estimator file so the package preview's summarize_submission() runs;
     # package_submission itself is mocked so no real archive is written.
     estimator = tmp_path / "estimator.py"
-    estimator.write_text("x = 1\n")
+    estimator.write_text(
+        "from whestbench import BaseEstimator\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        return None\n"
+    )
     artifact_path = Path("/tmp/submission.tar.gz")
     monkeypatch.setattr(
         cli,

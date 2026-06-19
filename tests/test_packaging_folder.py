@@ -66,7 +66,7 @@ def test_summary_reports_total_count_and_unreachable(tmp_path):
     (tmp_path / "helper.py").write_text("def f():\n    return 0\n")
     (tmp_path / "orphan.py").write_text("# never imported\n")
     (tmp_path / "weights.npz").write_bytes(b"\x00" * 8)
-    s = summarize_submission(tmp_path / "estimator.py")
+    s = summarize_submission(tmp_path)
     assert s.file_count == 4
     assert s.total_bytes > 0
     assert "orphan.py" in s.unreachable_py
@@ -85,7 +85,7 @@ def test_package_bundles_sibling_module_and_data(tmp_path):
     (tmp_path / "helper.py").write_text("def f():\n    return 0\n")
     (tmp_path / "weights.npz").write_bytes(b"\x00" * 16)
     out = tmp_path / "submission.tar.gz"
-    package_submission(tmp_path / "estimator.py", output_path=out)
+    package_submission(tmp_path, output_path=out)
     with tarfile.open(out) as tf:
         names = set(tf.getnames())
         manifest_member = tf.extractfile("manifest.json")

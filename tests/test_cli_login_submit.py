@@ -189,7 +189,12 @@ def test_submit_estimator_packages_first(monkeypatch, tmp_path):
     packaged.write_bytes(b"\x1f\x8b\x08\x00fake")
     monkeypatch.setattr(cli, "package_submission", lambda *a, **k: packaged)
     est = tmp_path / "estimator.py"
-    est.write_text("from whestbench import BaseEstimator\nclass Estimator(BaseEstimator): ...\n")
+    est.write_text(
+        "from whestbench import BaseEstimator\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        return None\n"
+    )
     rc = cli.main(["submit", "--estimator", str(est)])
     assert rc == 0
 

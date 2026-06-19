@@ -99,7 +99,12 @@ def test_package_emits_intent_and_ok_lines(monkeypatch: pytest.MonkeyPatch, tmp_
     captured = _spy_console_print(monkeypatch)
 
     estimator = tmp_path / "estimator.py"
-    estimator.write_text("class Estimator:\n    pass\n")
+    estimator.write_text(
+        "from whestbench import BaseEstimator\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        return None\n"
+    )
     output = tmp_path / "out.tar.gz"
 
     def fake_package(*_args: Any, **kwargs: Any) -> Path:
@@ -127,7 +132,7 @@ def test_package_emits_intent_and_ok_lines(monkeypatch: pytest.MonkeyPatch, tmp_
     assert rc == 0
     joined = "\n".join(captured)
     assert "Packaging" in joined
-    assert str(estimator) in joined
+    assert estimator.name in joined
     # say.ok with size + duration suffix.
     assert "Wrote" in joined
     assert "✓" in joined

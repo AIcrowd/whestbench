@@ -410,29 +410,33 @@ whest run --estimator ./estimator.py \
 
 ## `whest package`
 
-Build a submission artifact from a project folder.
+Build a submission artifact from your estimator.
 
 ```bash
 whest package --estimator <path> [--output <path>] [--yes|-y] [options]
 ```
 
-`whest package` bundles the **entire project folder** containing `estimator.py` (i.e. the directory that `estimator.py` lives in), minus a built-in ignore set plus any patterns in `.gitignore` and `.whestignore` in that directory.
+`--estimator` accepts **either a directory or a file**, and that choice decides what ships:
 
-Before writing the archive, `whest package` prints a **preview** listing each file, its size, the total size, and the file count. It also warns about any `.py` files that are not reachable by import from `estimator.py` (likely dead code; add to `.whestignore` if they shouldn't ship). After the preview, it prompts for confirmation unless `--yes` / `-y` is passed or stdin is non-interactive.
+- **A directory** (e.g. `--estimator .` or `--estimator ./my-submission`) packages the **whole folder**: every file in it, minus the built-in ignore set, credential files (see below), and any `.gitignore` / `.whestignore` patterns. Use this when your estimator imports sibling modules or loads weights/data files.
+- **A file** (e.g. `--estimator ./estimator.py`) packages **only that one file**. Use this for a self-contained single-file estimator. Sibling modules and data files are **not** included; `whest package` prints a warning saying so and points you at the folder form.
+
+> **Credential files are never bundled, in either mode.** Patterns like `.env`, `.env.*`, `*.pem`, `*.key`, `id_rsa`, `.netrc`, `.aws/`, `.ssh/` are always excluded for security — a submission ships to a public leaderboard, so a leaked secret would be exposed. Excluded credential files are listed in the preview so you can see exactly what was dropped.
+
+Before writing the archive, `whest package` prints a **preview**: the submission mode, every file that will ship and its size, the total size and count, any credential files excluded for security, and any `.py` files not reachable by import from `estimator.py` (likely dead code; add to `.whestignore` if they shouldn't ship). In **folder mode** it then asks for confirmation unless `--yes` / `-y` is passed or stdin is non-interactive. **File mode** does not prompt — it ships exactly the one file you named, after warning you that's all it ships.
 
 Submissions are capped at **50 MB** total and **50 files**. Exceeding either cap aborts with an actionable error that names the largest files and suggests using `.whestignore`.
 
 Key options:
 
 - `--class <name>` — estimator class name (auto-detected if omitted)
-- `--requirements <path>` — `requirements.txt` to include
-- `--submission-metadata <path>` — `submission.yaml` metadata file to include
-- `--approach <path>` — `approach.md` write-up to include
 - `--output <path>` — output path for the `.tar.gz` archive (default: `submission-<timestamp>.tar.gz` in the current directory)
-- `--yes` / `-y` — skip the confirmation prompt (for CI)
+- `--yes` / `-y` — skip the folder-submission confirmation prompt (for CI)
 - `--format rich|plain|json`
 - `--json` — alias for `--format json`
 - `--debug`
+
+> **Deprecated:** `--requirements`, `--submission-metadata`, and `--approach` no longer do anything — files are bundled by being present in the submission folder, not by being named on the command line. Passing them prints a warning; they will be removed in a future release.
 
 ### Built-in ignore set
 
@@ -442,19 +446,28 @@ The following are always excluded, regardless of `.gitignore` / `.whestignore`:
 `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `.ipynb_checkpoints`, `.DS_Store`,
 `*.tar.gz`, `*.tgz`, `*.zip`, `.whestignore`, `.gitignore`, `manifest.json`
 
+Credential files are **always** excluded too, and (unlike the patterns above) this cannot be overridden — rename or remove the file if a match is a false positive:
+
+`.env`, `.env.*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.keystore`, `*.jks`,
+`id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519`, `.netrc`, `.pypirc`, `.npmrc`,
+`.aws/`, `.ssh/`, `.gnupg/`, `credentials.json`, `credentials.yaml`, `credentials.yml`
+
 To exclude additional files (scratch data, notebooks, large test fixtures), add patterns to `.whestignore` using the same glob syntax as `.gitignore`. `whest init` creates a starter `.whestignore` in new project directories.
 
 ### Examples
 
 ```bash
-# Preview and confirm interactively
+# Package your whole project folder (recommended for multi-file submissions)
+whest package --estimator .
+
+# Package a single self-contained file (ships only this file)
 whest package --estimator ./estimator.py
 
-# Skip confirmation (CI)
-whest package --estimator ./estimator.py --yes
+# Skip the folder confirmation (CI)
+whest package --estimator . --yes
 
 # Custom output path
-whest package --estimator ./estimator.py --output ./my-submission.tar.gz --yes
+whest package --estimator . --output ./my-submission.tar.gz --yes
 ```
 
 ## `whest submit`
@@ -469,8 +482,9 @@ whest submit --estimator <path> --dry-run [options]
 
 Key options:
 
-- `--estimator <path>` — package `estimator.py` on-the-fly before submitting (equivalent to running `whest package` then `whest submit`).
-- `--dry-run` — preview what would be uploaded (runs packaging, shows the file list and sizes), then stop without submitting. Useful for inspecting a submission before it goes to the leaderboard.
+- `--estimator <path>` — package on-the-fly before submitting (equivalent to running `whest package` then `whest submit`). Accepts a **directory** (packages the whole folder) or a **file** (packages only that file), exactly like `whest package`. The same preview is shown before upload — in folder mode it asks for confirmation unless `--yes` is passed.
+- `--yes` / `-y` — skip the folder-submission confirmation prompt (for CI).
+- `--dry-run` — preview what would be uploaded (shows the mode, file list, sizes, and — in folder mode — any credential files excluded for security), then stop without submitting. Useful for inspecting a submission before it goes to the leaderboard.
 - `--class <name>` — estimator class name (for `--estimator` packaging).
 - `--description <text>` — label attached to the submission on AIcrowd (default: `"Submitted via whest submit"`).
 - `--format rich|plain|json`
@@ -483,11 +497,14 @@ Key options:
 # Submit a pre-packaged artifact
 whest submit ./my-submission.tar.gz
 
-# Package and submit in one step
+# Package the whole folder and submit in one step (shows a preview + confirm)
+whest submit --estimator .
+
+# Package a single self-contained file and submit
 whest submit --estimator ./estimator.py
 
 # Preview (dry run) without submitting
-whest submit --estimator ./estimator.py --dry-run
+whest submit --estimator . --dry-run
 ```
 
 ## `whest profile-simulation`
