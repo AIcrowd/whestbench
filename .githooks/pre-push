@@ -23,7 +23,11 @@ run_ci_like_checks() {
 
   echo "==> gitlint (conventional commits)"
   if git rev-parse --verify --quiet origin/main >/dev/null; then
-    uv run gitlint --commits "origin/main..HEAD"
+    # Redirect stdin from /dev/null: git pipes the push ref-line
+    # ("<local-ref> <local-sha> <remote-ref> <remote-sha>") to the pre-push hook
+    # on stdin, and gitlint would otherwise lint that line as a commit message
+    # instead of the --commits range — failing every push with a bogus title error.
+    uv run gitlint --commits "origin/main..HEAD" </dev/null
   else
     echo "   skipped: origin/main not found locally (run 'git fetch origin main' to enable)"
   fi
