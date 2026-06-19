@@ -406,3 +406,38 @@ def test_describe_error_for_typed_and_generic():
     assert typed["hint"]
     generic = describe_error(ValueError("boom"))
     assert generic == {"message": "boom", "hint": None, "code": "error", "status": None}
+
+
+def test_create_submission_403_raises_not_allowed_with_op():
+    def handler(req):
+        return httpx.Response(403, json={"error": "Submissions are not open.", "success": False})
+    with pytest.raises(AIcrowdNotAllowedError) as ei:
+        _client(handler).create_submission(challenge_slug="c", s3_key="k", description="d")
+    assert ei.value.op == "creating your submission"
+    assert ei.value.message == "Submissions are not open."
+
+
+def test_create_submission_redirect_raises_auth_error():
+    def handler(req):
+        return httpx.Response(302, headers={"location": "https://www.aicrowd.com/"},
+                              text="<html>You are being redirected.</html>")
+    with pytest.raises(AIcrowdAuthError):
+        _client(handler).create_submission(challenge_slug="c", s3_key="k", description="d")
+
+
+def test_verify_identity_401_is_auth_error_with_op():
+    def handler(req):
+        return httpx.Response(401, json={"error": "bad key"})
+    with pytest.raises(AIcrowdAuthError) as ei:
+        _client(handler).verify_identity()
+    assert ei.value.op == "verifying your API key"
+
+
+def test_transient_exhaustion_carries_op_and_no_html(monkeypatch):
+    monkeypatch.setattr(client_mod, "_sleep", lambda *_: None)
+    def handler(req):
+        return httpx.Response(503, text="<html>maintenance</html>")
+    with pytest.raises(AIcrowdTransientError) as ei:
+        _client(handler).create_submission(challenge_slug="c", s3_key="k", description="d")
+    assert ei.value.op == "creating your submission"
+    assert "<html>" not in ei.value.message

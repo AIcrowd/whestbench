@@ -297,12 +297,19 @@ class AIcrowdClient:
 
     # --- helpers ----------------------------------------------------------
     def _request(
-        self, method: str, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, auth: bool = True, **kw
+        self,
+        method: str,
+        url: str,
+        *,
+        policy: RetryPolicy = SUBMIT_RETRY,
+        auth: bool = True,
+        op: Optional[str] = None,
+        **kw,
     ) -> httpx.Response:
-        """Issue one logical request, retrying transient failures (429/5xx and
-        httpx transport errors) within `policy`'s budget. Permanent non-2xx
-        (e.g. 401/403/404) raise immediately. `auth=False` omits the AIcrowd
-        token (for the presigned S3 upload to a different host)."""
+        """Issue one logical request, retrying transient failures (429/5xx and httpx
+        transport errors) within `policy`'s budget. Permanent non-2xx (and redirects)
+        raise a typed, human-readable error via `_classify`. `auth=False` omits the
+        AIcrowd token (for the presigned S3 upload to a different host)."""
         headers = self._auth if auth else None
         deadline = _monotonic() + policy.deadline_s if policy.deadline_s is not None else None
         last_exc: Optional[AIcrowdTransientError] = None
@@ -311,15 +318,23 @@ class AIcrowdClient:
             try:
                 r = self._http.request(method, url, headers=headers, **kw)
             except httpx.TransportError as e:
-                last_exc = AIcrowdTransientError(status=0, message=f"{type(e).__name__}: {e}")
+                last_exc = AIcrowdTransientError(
+                    status=0,
+                    message=f"Could not reach AIcrowd ({type(e).__name__}).",
+                    op=op,
+                )
             else:
                 if r.is_success:
                     return r
                 if r.status_code in _RETRYABLE_STATUS:
-                    last_exc = AIcrowdTransientError(status=r.status_code, message=r.text[:300])
+                    last_exc = AIcrowdTransientError(
+                        status=r.status_code,
+                        message=_server_message(r) or "AIcrowd is temporarily unavailable.",
+                        op=op,
+                    )
                     retry_after = _parse_retry_after(r.headers.get("Retry-After"))
                 else:
-                    raise AIcrowdAPIError(status=r.status_code, message=r.text[:300])
+                    raise _classify(r, op=op)
             if attempt >= policy.max_attempts:
                 break
             delay = _compute_backoff(
@@ -335,20 +350,20 @@ class AIcrowdClient:
         assert last_exc is not None  # loop only exits early via return/raise above
         raise last_exc
 
-    def _get(self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, **kw) -> httpx.Response:
-        return self._request("GET", url, policy=policy, **kw)
+    def _get(self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, op: Optional[str] = None, **kw) -> httpx.Response:
+        return self._request("GET", url, policy=policy, op=op, **kw)
 
-    def _post(self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, **kw) -> httpx.Response:
-        return self._request("POST", url, policy=policy, **kw)
+    def _post(self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, op: Optional[str] = None, **kw) -> httpx.Response:
+        return self._request("POST", url, policy=policy, op=op, **kw)
 
     # --- identity + challenge --------------------------------------------
     def verify_identity(self) -> int:
         """Validate the key; return the participant id."""
-        return int(self._get(f"{_rails_base()}/api_user").json()["id"])
+        return int(self._get(f"{_rails_base()}/api_user", op="verifying your API key").json()["id"])
 
     def resolve_challenge(self, slug: str) -> int:
         """Resolve a challenge slug -> numeric challenge id (for the registration check)."""
-        r = self._get(f"{_aicrowd_base()}/challenges/", params={"slug": slug})
+        r = self._get(f"{_aicrowd_base()}/challenges/", params={"slug": slug}, op="resolving the challenge")
         data = r.json()
         items = data if isinstance(data, list) else data.get("data", [])
         for item in items:
@@ -362,13 +377,18 @@ class AIcrowdClient:
         r = self._get(
             f"{_aicrowd_base()}/challenges/{challenge_id}/participant",
             params={"participant_id": participant_id},
+            op="checking your challenge registration",
         )
         return bool(r.json().get("registered"))
 
     # --- submission upload + create --------------------------------------
     def get_upload_details(self, *, challenge_slug: str) -> dict[str, Any]:
         """Presigned S3 POST details: {"url": ..., "fields": {...}}."""
-        r = self._get(f"{_rails_base()}/submissions", params={"challenge_id": challenge_slug})
+        r = self._get(
+            f"{_rails_base()}/submissions",
+            params={"challenge_id": challenge_slug},
+            op="preparing the upload",
+        )
         data = r.json()
         return data.get("data", data)
 
@@ -391,6 +411,7 @@ class AIcrowdClient:
             upload["url"],
             policy=SUBMIT_RETRY,
             auth=False,
+            op="uploading the artifact",
             data=fields,
             files={"file": (fname, content)},
         )
@@ -405,6 +426,7 @@ class AIcrowdClient:
         submission_files_attributes and sets submission_type='artifact' itself)."""
         r = self._post(
             f"{_rails_base()}/submissions",
+            op="creating your submission",
             json={
                 "challenge_id": challenge_slug,
                 "submission": {"description": description},
@@ -417,4 +439,6 @@ class AIcrowdClient:
         """Fetch a single submission's grading state (Api::SubmissionSerializer):
         {"grading_status_cd": ..., "score": ..., "grading_message": ..., ...}.
         Uses the lighter POLL_RETRY budget; the --watch loop supplies patience."""
-        return self._get(f"{_rails_base()}/submissions/{submission_id}", policy=POLL_RETRY).json()
+        return self._get(
+            f"{_rails_base()}/submissions/{submission_id}", policy=POLL_RETRY, op="checking submission status"
+        ).json()
