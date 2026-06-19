@@ -136,20 +136,90 @@ def extract_submission_id(resp: dict[str, Any]) -> Optional[int]:
 
 
 class AIcrowdAPIError(RuntimeError):
-    """Non-2xx from an AIcrowd endpoint."""
+    """A non-2xx (or redirect) from an AIcrowd endpoint, rendered for humans."""
 
-    def __init__(self, *, status: int, message: str, transient: bool = False) -> None:
-        super().__init__(f"AIcrowd API error ({status}): {message}")
+    def __init__(
+        self,
+        *,
+        status: int,
+        message: str,
+        hint: Optional[str] = None,
+        code: str = "api_error",
+        op: Optional[str] = None,
+        transient: bool = False,
+    ) -> None:
         self.status = status
         self.message = message
+        self.hint = hint
+        self.code = code
+        self.op = op
         self.transient = transient
+        super().__init__(self.summary)
+
+    @property
+    def summary(self) -> str:
+        prefix = f"While {self.op}: " if self.op else ""
+        suffix = f" (HTTP {self.status})" if self.status and self.status > 0 else ""
+        return f"{prefix}{self.message}{suffix}"
+
+
+class AIcrowdAuthError(AIcrowdAPIError):
+    """401, or a redirect to a web login page — missing/invalid API key, or not authorized."""
+
+    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+        super().__init__(
+            status=status,
+            message=message,
+            code="auth",
+            op=op,
+            hint="Run `whest login` (copy your API key from your AIcrowd profile page).",
+        )
+
+
+class AIcrowdNotAllowedError(AIcrowdAPIError):
+    """403 — not authorized for this action (e.g. submissions not open, rules not accepted)."""
+
+    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+        super().__init__(
+            status=status,
+            message=message,
+            code="not_allowed",
+            op=op,
+            hint="Open the challenge page: accept the rules and confirm submissions are open.",
+        )
+
+
+class AIcrowdNotFoundError(AIcrowdAPIError):
+    """404 — the challenge or endpoint was not found."""
+
+    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+        super().__init__(
+            status=status,
+            message=message,
+            code="not_found",
+            op=op,
+            hint="Check the challenge slug (e.g. arc-white-box-estimation-challenge-2026).",
+        )
+
+
+class AIcrowdValidationError(AIcrowdAPIError):
+    """400/422 — the request/submission was rejected."""
+
+    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+        super().__init__(
+            status=status,
+            message=message,
+            code="validation",
+            op=op,
+            hint="Check your submission file and metadata, then try again.",
+        )
 
 
 class AIcrowdTransientError(AIcrowdAPIError):
     """A retryable failure (429/5xx/network) that exhausted its retry budget."""
 
-    def __init__(self, *, status: int, message: str) -> None:
-        super().__init__(status=status, message=message, transient=True)
+    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+        super().__init__(status=status, message=message, code="transient", op=op, transient=True)
 
 
 class AIcrowdClient:

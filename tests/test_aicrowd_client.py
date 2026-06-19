@@ -18,8 +18,12 @@ from whestbench.aicrowd_client import (
     POLL_RETRY,
     SUBMIT_RETRY,
     AIcrowdAPIError,
+    AIcrowdAuthError,
     AIcrowdClient,
+    AIcrowdNotAllowedError,
+    AIcrowdNotFoundError,
     AIcrowdTransientError,
+    AIcrowdValidationError,
     _compute_backoff,
     _parse_retry_after,
     extract_submission_id,
@@ -328,3 +332,31 @@ def test_upload_to_s3_sends_no_token_and_retries(monkeypatch, tmp_path):
     assert key == "subs/submission.tar.gz"
     assert seen["n"] == 2  # retried the transient 503 once
     assert seen["auth"] == [None, None]  # never sends the AIcrowd token to S3
+
+
+def test_error_summary_includes_op_and_status():
+    e = AIcrowdAPIError(status=403, message="nope", op="creating your submission")
+    assert e.summary == "While creating your submission: nope (HTTP 403)"
+
+
+def test_error_summary_omits_http_for_nonpositive_status():
+    e = AIcrowdAPIError(status=0, message="network down", op="uploading the artifact")
+    assert e.summary == "While uploading the artifact: network down"
+
+
+def test_error_summary_without_op():
+    assert AIcrowdAPIError(status=404, message="missing").summary == "missing (HTTP 404)"
+
+
+def test_subclasses_carry_stable_code_and_default_hint():
+    assert AIcrowdAuthError(status=401, message="x").code == "auth"
+    assert "whest login" in AIcrowdAuthError(status=401, message="x").hint
+    assert AIcrowdNotAllowedError(status=403, message="x").code == "not_allowed"
+    assert AIcrowdNotFoundError(status=404, message="x").code == "not_found"
+    assert AIcrowdValidationError(status=422, message="x").code == "validation"
+    assert AIcrowdTransientError(status=503, message="x").code == "transient"
+
+
+def test_hierarchy_preserved():
+    assert isinstance(AIcrowdAuthError(status=401, message="x"), AIcrowdAPIError)
+    assert isinstance(AIcrowdTransientError(status=503, message="x"), AIcrowdAPIError)
