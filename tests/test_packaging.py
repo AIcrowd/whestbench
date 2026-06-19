@@ -84,22 +84,15 @@ def test_manifest_records_local_tool_and_runtime_versions(tmp_path: Path) -> Non
     assert manifest["numpy_version"] == np.__version__
 
 
-def test_optional_submission_yaml_and_approach_md_are_included_when_present(tmp_path: Path) -> None:
-    estimator = _write_estimator_module(tmp_path)
-    requirements = tmp_path / "requirements.txt"
-    requirements.write_text("numpy\\n", encoding="utf-8")
-    submission_yaml = tmp_path / "submission.yaml"
-    submission_yaml.write_text("title: test\\n", encoding="utf-8")
-    approach_md = tmp_path / "APPROACH.md"
-    approach_md.write_text("# Approach\\n", encoding="utf-8")
+def test_folder_mode_bundles_adjacent_metadata_files(tmp_path: Path) -> None:
+    # Folder mode (directory argument) bundles every file in the folder, so
+    # requirements.txt / submission.yaml / APPROACH.md ride along by presence.
+    _write_estimator_module(tmp_path)
+    (tmp_path / "requirements.txt").write_text("numpy\n", encoding="utf-8")
+    (tmp_path / "submission.yaml").write_text("title: test\n", encoding="utf-8")
+    (tmp_path / "APPROACH.md").write_text("# Approach\n", encoding="utf-8")
 
-    artifact = package_submission(
-        estimator,
-        requirements_path=requirements,
-        submission_yaml_path=submission_yaml,
-        approach_md_path=approach_md,
-        output_path=tmp_path / "submission.tar.gz",
-    )
+    artifact = package_submission(tmp_path, output_path=tmp_path / "submission.tar.gz")
 
     with tarfile.open(artifact, "r:gz") as archive:
         members = set(archive.getnames())

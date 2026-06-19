@@ -1,5 +1,7 @@
-# whest package bundles your whole project folder, minus these.
-# (A built-in set is always excluded: .venv, __pycache__, .git, *.tar.gz, caches.)
+# `whest package --estimator .` bundles your whole project folder, minus these.
+# (A built-in set is always excluded: .venv, __pycache__, .git, *.tar.gz, caches.
+#  Credential files — .env, *.pem, *.key, id_rsa, .aws/, .ssh/ … — are ALWAYS
+#  excluded for security and cannot ship, even if not listed here.)
 .venv/
 __pycache__/
 *.pyc

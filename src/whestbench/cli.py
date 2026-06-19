@@ -156,6 +156,157 @@ def _version_drift_warning(installed: "dict[str, str]", pinned: "dict[str, str]"
     )
 
 
+def _warn_deprecated_packaging_flags(args: Any, *, quiet: bool = False) -> None:
+    """Warn (don't error) when the no-op packaging flags are passed.
+
+    ``--requirements`` / ``--submission-metadata`` / ``--approach`` never affected
+    the archive — files ship by being present in the submission folder. They are
+    kept accepted-and-ignored for one deprecation cycle so existing scripts and the
+    published starter-kit commands don't break at parse time.
+
+    ``quiet`` (pass ``json_output``) suppresses the warning so it never corrupts a
+    machine-readable JSON payload on stdout."""
+    from .ui import say
+
+    flags = []
+    if getattr(args, "requirements", None):
+        flags.append("--requirements")
+    if getattr(args, "submission_metadata", None):
+        flags.append("--submission-metadata")
+    if getattr(args, "approach", None):
+        flags.append("--approach")
+    if not flags:
+        return
+    joined = ", ".join(flags)
+    verb = "is" if len(flags) == 1 else "are"
+    say.warn(
+        f"{joined} {verb} ignored — files are bundled by being present in the "
+        f"submission folder, not by being named here. This flag will be removed "
+        f"in a future release.",
+        quiet=quiet,
+    )
+
+
+def _emit_drift_warning(root: Path, *, quiet: bool = False) -> None:
+    """Warn if installed flopscope/whestbench versions differ from pins in a
+    requirements.txt at ``root`` (best-effort)."""
+    import importlib.metadata as _ilmd
+    import re as _re
+
+    from .ui import say
+
+    installed: dict[str, str] = {}
+    for pkg in ("flopscope", "whestbench"):
+        try:
+            installed[pkg] = _ilmd.version(pkg)
+        except _ilmd.PackageNotFoundError:
+            pass
+    pinned: dict[str, str] = {}
+    req_path = root / "requirements.txt"
+    if req_path.is_file():
+        for line in req_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            for pkg in ("flopscope", "whestbench"):
+                m = _re.match(
+                    rf"^{_re.escape(pkg)}\s*[><=!]{{1,2}}\s*([^\s,;]+)", line, _re.IGNORECASE
+                )
+                if m:
+                    pinned[pkg] = m.group(1)
+    msg = _version_drift_warning(installed, pinned)
+    if msg:
+        say.warn(msg, quiet=quiet)
+
+
+def _preview_and_confirm_submission(
+    estimator_arg: str,
+    *,
+    class_name: "str | None",
+    output_label: str,
+    skip_confirm: bool,
+    json_output: bool,
+) -> bool:
+    """Loud, shared preview for `whest package` and `whest submit --estimator`.
+
+    Validates the entrypoint class *first* (so a confirmed package can't then fail
+    to build). File mode warns that only the single named file ships. Folder mode
+    lists every bundled file, notes credential files dropped for security, flags
+    unreachable .py modules + version drift, then asks for confirmation unless
+    ``skip_confirm`` (``--yes``) or stdin is non-interactive.
+
+    Returns True to proceed, False if the user declined. Resolve/validation errors
+    propagate to the caller's error handler."""
+    from .loader import load_estimator_from_path
+    from .packaging import find_secret_files, resolve_submission, summarize_submission
+    from .ui import format_bytes, say
+
+    root, entry, mode = resolve_submission(estimator_arg)
+    # Validate the entrypoint BEFORE any preview/confirm.
+    load_estimator_from_path(entry, class_name=class_name)
+
+    if json_output:
+        say.intent(f"Packaging {estimator_arg} → {output_label}", quiet=json_output)
+        return True
+
+    summary = summarize_submission(estimator_arg)
+
+    if mode == "file":
+        say.intent(f"Packaging single file {entry.name} → {output_label}")
+        say.warn(
+            f"Single-file submission: only {entry.name} will be submitted. Any "
+            f"sibling modules, data files, or configs in {root} are NOT included. "
+            f"Point --estimator at the folder to package the whole directory."
+        )
+        return True
+
+    # Folder mode: ship the whole directory — be loud about exactly what that means.
+    say.intent(f"Packaging folder {root}{os.sep} → {output_label}")
+    say.step(
+        "Everything in this folder will be submitted, except .gitignore / "
+        ".whestignore matches and credential files (excluded for security)."
+    )
+    say.step(
+        f"Submitting {summary.file_count} file{'s' if summary.file_count != 1 else ''} "
+        f"({format_bytes(summary.total_bytes)}):"
+    )
+    for f in summary.files:
+        try:
+            rel = f.relative_to(root)
+        except ValueError:
+            rel = f
+        say.step(f"  {rel}  ({format_bytes(f.stat().st_size)})")
+    for secret in find_secret_files(root):
+        try:
+            rel = secret.relative_to(root)
+        except ValueError:
+            rel = secret
+        say.warn(
+            f"excluded {rel} — credential files are never allowed in a submission "
+            f"for security reasons"
+        )
+    for unreachable in summary.unreachable_py:
+        say.warn(
+            f"{unreachable} is not imported from estimator.py — add to .whestignore "
+            f"if it shouldn't ship"
+        )
+    _emit_drift_warning(root)
+
+    if not skip_confirm and sys.stdin.isatty():
+        answer = (
+            input(
+                f"Submit all {summary.file_count} files "
+                f"({format_bytes(summary.total_bytes)})? [y/N] "
+            )
+            .strip()
+            .lower()
+        )
+        if answer not in ("y", "yes"):
+            say.hint("Aborted. Nothing packaged.")
+            return False
+    return True
+
+
 def _json_payload_with_metadata(payload: Dict[str, Any]) -> Dict[str, Any]:
     payload_with_metadata = dict(payload)
     payload_with_metadata["whestbench_version"] = _resolve_whestbench_version()
@@ -1448,6 +1599,12 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     submit_parser.add_argument("--submission-metadata", help="submission.yaml for packaging.")
     submit_parser.add_argument("--approach", help="approach.md for packaging.")
     submit_parser.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        help="Skip the folder-submission confirmation prompt (for CI).",
+    )
+    submit_parser.add_argument(
         "--challenge",
         default="arc-white-box-estimation-challenge-2026",
         help="Challenge slug (default: arc-white-box-estimation-challenge-2026).",
@@ -2172,19 +2329,17 @@ def _submit_dry_run(args: "Any", *, json_output: bool) -> int:
         say.warn("--dry-run requires --estimator (no artifact path to inspect).")
         return 2
     say.intent(f"Dry-run preview for {args.estimator}", quiet=json_output)
-    _summary = _summarize_submission(args.estimator)
-    _root = Path(args.estimator).resolve().parent
-    say.step(
-        f"Files to bundle ({_summary.file_count} file{'s' if _summary.file_count != 1 else ''}, "
-        f"{format_bytes(_summary.total_bytes)}):",
-        quiet=json_output,
+    _warn_deprecated_packaging_flags(args, quiet=json_output)
+    # Loud, file/folder-aware preview (notes credential files excluded for
+    # security). skip_confirm=True: a dry run never prompts.
+    _preview_and_confirm_submission(
+        args.estimator,
+        class_name=getattr(args, "class_name", None),
+        output_label="(dry run — nothing written)",
+        skip_confirm=True,
+        json_output=json_output,
     )
-    for _f in _summary.files:
-        try:
-            _rel = _f.relative_to(_root)
-        except ValueError:
-            _rel = _f
-        say.step(f"  {_rel}  ({format_bytes(_f.stat().st_size)})", quiet=json_output)
+    _summary = _summarize_submission(args.estimator)
     for _pkg in ("flopscope", "whestbench"):
         try:
             _ver = _ilmd.version(_pkg)
@@ -2195,9 +2350,6 @@ def _submit_dry_run(args: "Any", *, json_output: bool) -> int:
         _dry_artifact = package_submission(
             args.estimator,
             class_name=getattr(args, "class_name", None),
-            requirements_path=getattr(args, "requirements", None),
-            submission_yaml_path=getattr(args, "submission_metadata", None),
-            approach_md_path=getattr(args, "approach", None),
             output_path=str(Path(_tmp) / "submission-dryrun.tar.gz"),
         )
         _dry_size = _dry_artifact.stat().st_size
@@ -3004,114 +3156,34 @@ def _main_participant(argv: "list[str]") -> int:
             return 0
 
         if command == "package":
-            import importlib.metadata as _ilmd
             import time as _time
 
-            from .packaging import summarize_submission as _summarize_submission
             from .ui import format_bytes, format_duration, progress_bytes, say
 
-            # --- Preview: show files, sizes, total, count, and unreachable-py warnings ---
-            if not json_output:
-                _summary = _summarize_submission(args.estimator)
-                _root = Path(args.estimator).resolve().parent
-                say.intent(
-                    f"Packaging {args.estimator} → {args.output or 'submission-*.tar.gz'}",
-                    quiet=json_output,
-                )
-                say.step(
-                    f"Files to bundle ({_summary.file_count} file{'s' if _summary.file_count != 1 else ''}, "
-                    f"{format_bytes(_summary.total_bytes)}):",
-                    quiet=json_output,
-                )
-                for _f in _summary.files:
-                    try:
-                        _rel = _f.relative_to(_root)
-                    except ValueError:
-                        _rel = _f
-                    _fsz = format_bytes(_f.stat().st_size)
-                    say.step(f"  {_rel}  ({_fsz})", quiet=json_output)
-                for _unr in _summary.unreachable_py:
-                    say.warn(
-                        f"⚠ {_unr} is not imported from estimator.py — "
-                        f"add to .whestignore if it shouldn't ship",
-                        quiet=json_output,
-                    )
+            _warn_deprecated_packaging_flags(args, quiet=json_output)
+            if not _preview_and_confirm_submission(
+                args.estimator,
+                class_name=args.class_name,
+                output_label=args.output or "submission-*.tar.gz",
+                skip_confirm=getattr(args, "yes", False),
+                json_output=json_output,
+            ):
+                return 0
 
-                # --- Drift check ---
-                _installed: dict[str, str] = {}
-                for _pkg in ("flopscope", "whestbench"):
-                    try:
-                        _installed[_pkg] = _ilmd.version(_pkg)
-                    except _ilmd.PackageNotFoundError:
-                        pass
+            # The bytes flowing into the bar are gzipped output bytes; the
+            # uncompressed bundle size (the single file, or the whole folder) is a
+            # roughly honest target (compressed size is typically ≤ input size +
+            # per-file tar headers + manifest blob). The ~1 KB pad covers manifest +
+            # tar overhead so the bar reaches ~100% rather than overshooting.
+            from .packaging import summarize_submission as _summarize_submission
 
-                # Best-effort: parse requirements.txt adjacent to estimator.py
-                _pinned: dict[str, str] = {}
-                _req_path = _root / "requirements.txt"
-                if _req_path.is_file():
-                    import re as _re
-
-                    _req_text = _req_path.read_text(encoding="utf-8", errors="replace")
-                    for _line in _req_text.splitlines():
-                        _line = _line.strip()
-                        if _line.startswith("#") or not _line:
-                            continue
-                        for _pkg in ("flopscope", "whestbench"):
-                            # Match lines like: flopscope>=0.7.0 or flopscope==0.7.0
-                            _m = _re.match(
-                                rf"^{_re.escape(_pkg)}\s*[><=!]{{1,2}}\s*([^\s,;]+)",
-                                _line,
-                                _re.IGNORECASE,
-                            )
-                            if _m:
-                                _pinned[_pkg] = _m.group(1)
-
-                _drift_msg = _version_drift_warning(_installed, _pinned)
-                if _drift_msg:
-                    say.warn(_drift_msg, quiet=json_output)
-
-                # --- Confirmation prompt (skip in CI / with --yes) ---
-                if not getattr(args, "yes", False) and sys.stdin.isatty():
-                    _prompt = (
-                        f"Package these {_summary.file_count} files "
-                        f"({format_bytes(_summary.total_bytes)})? [y/N] "
-                    )
-                    _answer = input(_prompt).strip().lower()
-                    if _answer not in ("y", "yes"):
-                        say.hint("Aborted. No archive written.")
-                        return 0
-            else:
-                say.intent(
-                    f"Packaging {args.estimator} → {args.output or 'submission-*.tar.gz'}",
-                    quiet=json_output,
-                )
-
-            # The bytes flowing into the bar are gzipped output bytes; counting
-            # uncompressed input bytes as the bar's target gives a roughly
-            # honest progress signal (compressed size is typically ≤ input
-            # size + per-file tar headers + manifest blob). A small overshoot
-            # is benign — the bar still conveys real-time motion. We add a
-            # ~1 KB pad for the manifest + tar overhead so the bar reaches
-            # close to 100% rather than sitting at "1.5x" by the time the
-            # last file is added.
-            _estimator = Path(args.estimator)
-            _input_paths: list[Path] = [_estimator] if _estimator.is_file() else []
-            for _opt in (args.requirements, args.submission_metadata, args.approach):
-                if _opt is None:
-                    continue
-                _p = Path(_opt)
-                if _p.is_file():
-                    _input_paths.append(_p)
-            _total = sum(p.stat().st_size for p in _input_paths) + 1024
+            _total = _summarize_submission(args.estimator).total_bytes + 1024
 
             _t0 = _time.perf_counter()
             with progress_bytes(total=_total, label="Packaging", quiet=json_output) as _bar:
                 artifact_path = package_submission(
                     args.estimator,
                     class_name=args.class_name,
-                    requirements_path=args.requirements,
-                    submission_yaml_path=args.submission_metadata,
-                    approach_md_path=args.approach,
                     output_path=args.output,
                     progress=lambda n: _bar.advance(n),
                 )
@@ -3268,14 +3340,19 @@ def _main_participant(argv: "list[str]") -> int:
 
             # Resolve the artifact: package an estimator if --estimator was given.
             if args.estimator:
-                say.intent(f"Packaging {args.estimator}", quiet=json_output)
+                _warn_deprecated_packaging_flags(args, quiet=json_output)
+                if not _preview_and_confirm_submission(
+                    args.estimator,
+                    class_name=args.class_name,
+                    output_label="submission-*.tar.gz",
+                    skip_confirm=getattr(args, "yes", False),
+                    json_output=json_output,
+                ):
+                    return 0
                 artifact = str(
                     package_submission(
                         args.estimator,
                         class_name=args.class_name,
-                        requirements_path=args.requirements,
-                        submission_yaml_path=args.submission_metadata,
-                        approach_md_path=args.approach,
                     )
                 )
             else:

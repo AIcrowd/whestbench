@@ -9,14 +9,17 @@ from whestbench import BaseEstimator, MLP, SetupContext
 
 class Estimator(BaseEstimator):
     def setup(self, ctx: SetupContext) -> None:
-        # setup() runs once, off the FLOP budget. Files you ship next to
-        # estimator.py are bundled automatically by `whest package` and
-        # extracted to ctx.submission_dir on the grader. Load weights there:
+        # setup() runs once, off the FLOP budget. Package the FOLDER
+        # (`whest package --estimator .`) and every file beside estimator.py is
+        # bundled automatically and extracted to ctx.submission_dir on the grader.
+        # Load weights there:
         #
         #   weights = fnp.load(Path(ctx.submission_dir) / "weights.npz")  # 0 FLOPs
         #   self._W = weights["W"]
         #
-        # You can also split your code across modules — siblings ship + import fine.
+        # You can also split your code across modules — siblings ship + import fine
+        # in folder mode. (Packaging the single file, `--estimator estimator.py`,
+        # ships ONLY this file — no siblings, no weights.)
         self._ctx = ctx
 
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
