@@ -292,7 +292,7 @@ class AIcrowdClient:
         timeout: float = 60.0,
     ) -> None:
         self._key = api_key
-        self._http = http or httpx.Client(timeout=timeout)
+        self._http = http or httpx.Client(timeout=timeout, follow_redirects=False)
         self._auth = {"Authorization": f"Token {api_key}"}
 
     # --- helpers ----------------------------------------------------------

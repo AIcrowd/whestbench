@@ -288,7 +288,6 @@ def test_submit_failure_prints_message_and_hint(monkeypatch, tmp_path):
     from whestbench.aicrowd_client import AIcrowdNotAllowedError
 
     _stub_submit_pipeline(monkeypatch)
-    monkeypatch.setattr(cli, "_aicrowd_verify_identity", lambda key: {"id": 1})
     # After _stub_submit_pipeline, cli.AIcrowdClient IS _FakeClient — patch its method.
     monkeypatch.setattr(
         cli.AIcrowdClient,
@@ -313,7 +312,6 @@ def test_submit_failure_json_has_error_code_and_status(monkeypatch, tmp_path, ca
     from whestbench.aicrowd_client import AIcrowdNotAllowedError
 
     _stub_submit_pipeline(monkeypatch)
-    monkeypatch.setattr(cli, "_aicrowd_verify_identity", lambda key: {"id": 1})
     # After _stub_submit_pipeline, cli.AIcrowdClient IS _FakeClient — patch its method.
     monkeypatch.setattr(
         cli.AIcrowdClient,
