@@ -7,7 +7,7 @@ packages = ["src/whestbench"]
 
 [project]
 name = "whestbench"
-version = "0.11.0rc0"
+version = "0.12.0rc0"
 requires-python = ">=3.10"
 dependencies = [
     "datasets>=2.20",

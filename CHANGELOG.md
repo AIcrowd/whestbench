@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.12.0rc0 (2026-06-19)
+
+### BREAKING CHANGE
+
+- `whest package --estimator estimator.py` now ships only that file. Multi-file submissions must use `whest package --estimator .`.
+
+### Feat
+
+- **packaging**: file-vs-folder scope, hard secret filter, loud submit confirm (#93)
+
+### Fix
+
+- **deps**: bump flopscope pin to >=0.8.0rc1,<0.9.0 (#95)
+- **hooks**: redirect gitlint stdin in pre-push so it lints the commit range (#94)
+
 ## v0.11.0rc0 (2026-06-18)
 
 ### BREAKING CHANGE
