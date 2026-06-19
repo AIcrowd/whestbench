@@ -33,6 +33,7 @@ api/v1/api_users_controller.rb + base_controller.rb):
 from __future__ import annotations
 
 import datetime
+import json as _jsonlib
 import os
 import random
 import time
@@ -220,6 +221,66 @@ class AIcrowdTransientError(AIcrowdAPIError):
 
     def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
         super().__init__(status=status, message=message, code="transient", op=op, transient=True)
+
+
+_STATUS_DEFAULTS = {
+    400: "The request was rejected.",
+    401: "Your AIcrowd API key is missing or invalid.",
+    403: "You're not authorized to perform this action — submissions may not be open for "
+         "this challenge, or you may need to accept the challenge rules.",
+    404: "Not found.",
+    422: "Your submission was rejected.",
+}
+
+_REDIRECT_MESSAGE = (
+    "The AIcrowd API redirected to a web page instead of returning data — your API key is "
+    "likely invalid, or you're not authorized to perform this action."
+)
+
+
+def _server_message(response: "httpx.Response") -> Optional[str]:
+    """Return a human message from a JSON error body ({"error"|"message": ...}), else None.
+    HTML and non-JSON bodies are intentionally ignored so they never reach the user."""
+    ctype = response.headers.get("content-type", "")
+    if "application/json" not in ctype:
+        return None
+    try:
+        data = response.json()
+    except (ValueError, _jsonlib.JSONDecodeError):
+        return None
+    if isinstance(data, dict):
+        for key in ("error", "message"):
+            val = data.get(key)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+    return None
+
+
+def _classify(response: "httpx.Response", *, op: Optional[str] = None) -> AIcrowdAPIError:
+    """Map an AIcrowd HTTP response to a typed, human-readable error.
+    Prefers the server's JSON message; never surfaces HTML; redirects → auth error."""
+    status = response.status_code
+    if 300 <= status < 400:
+        return AIcrowdAuthError(status=status, message=_REDIRECT_MESSAGE, op=op)
+    message = _server_message(response) or _STATUS_DEFAULTS.get(status) or (
+        f"Unexpected response from AIcrowd (HTTP {status})."
+    )
+    if status == 401:
+        return AIcrowdAuthError(status=status, message=message, op=op)
+    if status == 403:
+        return AIcrowdNotAllowedError(status=status, message=message, op=op)
+    if status == 404:
+        return AIcrowdNotFoundError(status=status, message=message, op=op)
+    if status in (400, 422):
+        return AIcrowdValidationError(status=status, message=message, op=op)
+    return AIcrowdAPIError(status=status, message=message, op=op)
+
+
+def describe_error(exc: BaseException) -> dict:
+    """Uniform fields for surfacing any error (CLI text + --json), for typed and generic errors."""
+    if isinstance(exc, AIcrowdAPIError):
+        return {"message": exc.summary, "hint": exc.hint, "code": exc.code, "status": exc.status}
+    return {"message": str(exc), "hint": None, "code": "error", "status": None}
 
 
 class AIcrowdClient:
