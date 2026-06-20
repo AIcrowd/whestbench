@@ -1682,7 +1682,8 @@ def _resolve_dataset_arg(arg, *, revision):
         - Local path: starts with ./, /, ~/, Windows drive letter, or exists on disk
         - hf:// URL: "hf://owner/repo@v1" (embedded pin), or "hf://owner/repo"
           combined with --revision. An embedded ``@rev`` takes precedence over
-          --revision.
+          --revision; a conflicting --revision is dropped with a warning — see
+          :func:`_warn_if_revision_conflict`.
         - "owner/repo" with --revision flag explicitly set
 
     Bare "owner/repo" without --revision is rejected to force explicit pinning.
@@ -1734,6 +1735,28 @@ def _warn_if_hf_dataset_unpinned(repo: str, revision: Optional[str]) -> None:
         f"warning: no revision pinned for hf://{repo}; loading the default branch "
         f"(main). Pass --revision <tag> or use hf://{repo}@<tag> to pin a specific "
         f"revision.",
+        file=sys.stderr,
+    )
+
+
+def _warn_if_revision_conflict(
+    repo: str, resolved_revision: Optional[str], revision_flag: Optional[str]
+) -> None:
+    """Warn on stderr when ``--revision`` is overridden by an embedded ``@rev``.
+
+    For ``hf://owner/repo@<rev>`` the embedded ``@rev`` pins explicitly and wins
+    over ``--revision`` (see :func:`_resolve_dataset_arg`). When the caller also
+    passed a *different* ``--revision``, that flag is dropped — silently, until
+    now. Warn so the override is visible; ``@rev`` still wins. Identical values
+    are not a conflict, and a missing flag or an unpinned load
+    (``resolved_revision is None``) is a no-op. Goes to **stderr unconditionally**
+    for the same reason as :func:`_warn_if_hf_dataset_unpinned`.
+    """
+    if revision_flag is None or resolved_revision is None or revision_flag == resolved_revision:
+        return
+    print(
+        f"warning: --revision {revision_flag} ignored; hf://{repo}@{resolved_revision} "
+        f"takes precedence (using {resolved_revision}).",
         file=sys.stderr,
     )
 
@@ -2788,6 +2811,7 @@ def _main_participant(argv: "list[str]") -> int:
                 else:
                     _console = _RichConsole()
                     _warn_if_hf_dataset_unpinned(repo_or_path, rev)
+                    _warn_if_revision_conflict(repo_or_path, rev, getattr(args, "revision", None))
                     _title = f"hf://{repo_or_path}@{rev or 'main'}"
                     say.step(f"Resolving {_title}", console=_console, quiet=json_output)
 
