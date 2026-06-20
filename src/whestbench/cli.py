@@ -1687,8 +1687,9 @@ def _resolve_dataset_arg(arg, *, revision):
 
     Bare "owner/repo" without --revision is rejected to force explicit pinning.
     The "hf://owner/repo" form without ``@rev`` falls back to --revision; when
-    that is also unset the revision is None (downstream loads the default
-    branch).
+    that is also unset the revision is None and downstream loads the default
+    branch (``main``) — see :func:`_warn_if_hf_dataset_unpinned`, which warns
+    loudly in that case rather than loading ``main`` silently.
     """
     from pathlib import Path
 
@@ -1715,6 +1716,26 @@ def _resolve_dataset_arg(arg, *, revision):
         return (arg, revision, False)
 
     raise SystemExit(f"--dataset {arg!r} not recognized as local path or HF repo.")
+
+
+def _warn_if_hf_dataset_unpinned(repo: str, revision: Optional[str]) -> None:
+    """Warn on stderr when an hf:// dataset is loaded with no pinned revision.
+
+    A bare ``hf://owner/repo`` (no ``@rev`` and no ``--revision``) falls back to
+    the repo's default branch (``main``). That fallback used to be silent — the
+    footgun this resolver fix addresses — so make it loud and actionable. The
+    warning goes to **stderr unconditionally** (not gated on ``--json``): stderr
+    does not corrupt JSON on stdout, and automated/CI consumers are exactly the
+    ones most likely to score ``main`` by accident.
+    """
+    if revision is not None:
+        return
+    print(
+        f"warning: no revision pinned for hf://{repo}; loading the default branch "
+        f"(main). Pass --revision <tag> or use hf://{repo}@<tag> to pin a specific "
+        f"revision.",
+        file=sys.stderr,
+    )
 
 
 def _dispatch_dataset_command(args) -> int:
@@ -2766,6 +2787,7 @@ def _main_participant(argv: "list[str]") -> int:
                     )
                 else:
                     _console = _RichConsole()
+                    _warn_if_hf_dataset_unpinned(repo_or_path, rev)
                     _title = f"hf://{repo_or_path}@{rev or 'main'}"
                     say.step(f"Resolving {_title}", console=_console, quiet=json_output)
 

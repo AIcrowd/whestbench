@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from whestbench.cli import _resolve_dataset_arg
+from whestbench.cli import _resolve_dataset_arg, _warn_if_hf_dataset_unpinned
 
 
 def _run_whest(*args, cwd=None, check=False):
@@ -76,6 +76,24 @@ def test_resolves_repo_with_revision_flag():
 def test_rejects_bare_repo_without_revision_or_prefix():
     with pytest.raises(SystemExit, match="hf://"):
         _resolve_dataset_arg("aicrowd/arc-whestbench-2026", revision=None)
+
+
+def test_warns_on_stderr_when_hf_dataset_unpinned(capsys):
+    """An unpinned hf:// load must announce the main fallback (no silent main)."""
+    _warn_if_hf_dataset_unpinned("aicrowd/arc-whestbench-2026", None)
+    captured = capsys.readouterr()
+    assert captured.out == ""  # nothing on stdout — must not corrupt --json output
+    assert "no revision pinned" in captured.err
+    assert "main" in captured.err
+    assert "--revision" in captured.err  # actionable: tells the user how to pin
+
+
+def test_no_warning_when_hf_dataset_pinned(capsys):
+    """A pinned revision (tag or @rev) is the happy path — stay silent."""
+    _warn_if_hf_dataset_unpinned("aicrowd/arc-whestbench-2026", "v1")
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
 
 
 def test_whest_run_accepts_split_flag_on_dataset(tmp_path: Path):
