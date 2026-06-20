@@ -45,6 +45,27 @@ def test_resolves_hf_url_without_tag():
     assert rev is None
 
 
+def test_hf_url_without_tag_honors_revision_flag():
+    """Regression: `hf://owner/repo` (no @rev) must honor --revision.
+
+    Previously this branch returned None unconditionally, silently dropping
+    --revision so the run loaded the default branch (`main`) instead of the
+    pinned tag.
+    """
+    repo, rev, is_local = _resolve_dataset_arg("hf://aicrowd/arc-whestbench-2026", revision="v1")
+    assert is_local is False
+    assert repo == "aicrowd/arc-whestbench-2026"
+    assert rev == "v1"
+
+
+def test_hf_embedded_rev_takes_precedence_over_revision_flag():
+    """An embedded @rev pins explicitly and wins over a conflicting --revision."""
+    repo, rev, is_local = _resolve_dataset_arg("hf://aicrowd/arc-whestbench-2026@v1", revision="v2")
+    assert is_local is False
+    assert repo == "aicrowd/arc-whestbench-2026"
+    assert rev == "v1"
+
+
 def test_resolves_repo_with_revision_flag():
     repo, rev, is_local = _resolve_dataset_arg("aicrowd/arc-whestbench-2026", revision="v1")
     assert is_local is False

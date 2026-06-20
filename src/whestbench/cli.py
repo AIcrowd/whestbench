@@ -1680,19 +1680,28 @@ def _resolve_dataset_arg(arg, *, revision):
 
     Accepts:
         - Local path: starts with ./, /, ~/, Windows drive letter, or exists on disk
-        - hf:// URL: e.g. "hf://owner/repo@v1" or "hf://owner/repo"
+        - hf:// URL: "hf://owner/repo@v1" (embedded pin), or "hf://owner/repo"
+          combined with --revision. An embedded ``@rev`` takes precedence over
+          --revision.
         - "owner/repo" with --revision flag explicitly set
 
     Bare "owner/repo" without --revision is rejected to force explicit pinning.
+    The "hf://owner/repo" form without ``@rev`` falls back to --revision; when
+    that is also unset the revision is None (downstream loads the default
+    branch).
     """
     from pathlib import Path
 
     if arg.startswith("hf://"):
         body = arg[len("hf://") :]
         if "@" in body:
+            # An embedded @rev pins explicitly; it wins over --revision.
             repo, rev = body.split("@", 1)
             return (repo, rev, False)
-        return (body, None, False)
+        # No embedded @rev: honor the --revision flag. (Previously this
+        # returned None unconditionally, silently dropping --revision and
+        # loading the default branch.)
+        return (body, revision, False)
 
     if arg.startswith(("./", "/", "~/")) or Path(arg).exists() or (len(arg) >= 2 and arg[1] == ":"):
         return (arg, revision, True)
