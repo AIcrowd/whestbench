@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from whestbench.cli import _resolve_dataset_arg
+from whestbench.cli import _resolve_dataset_arg, _warn_if_hf_dataset_unpinned
 
 
 def _run_whest(*args, cwd=None, check=False):
@@ -45,6 +45,27 @@ def test_resolves_hf_url_without_tag():
     assert rev is None
 
 
+def test_hf_url_without_tag_honors_revision_flag():
+    """Regression: `hf://owner/repo` (no @rev) must honor --revision.
+
+    Previously this branch returned None unconditionally, silently dropping
+    --revision so the run loaded the default branch (`main`) instead of the
+    pinned tag.
+    """
+    repo, rev, is_local = _resolve_dataset_arg("hf://aicrowd/arc-whestbench-2026", revision="v1")
+    assert is_local is False
+    assert repo == "aicrowd/arc-whestbench-2026"
+    assert rev == "v1"
+
+
+def test_hf_embedded_rev_takes_precedence_over_revision_flag():
+    """An embedded @rev pins explicitly and wins over a conflicting --revision."""
+    repo, rev, is_local = _resolve_dataset_arg("hf://aicrowd/arc-whestbench-2026@v1", revision="v2")
+    assert is_local is False
+    assert repo == "aicrowd/arc-whestbench-2026"
+    assert rev == "v1"
+
+
 def test_resolves_repo_with_revision_flag():
     repo, rev, is_local = _resolve_dataset_arg("aicrowd/arc-whestbench-2026", revision="v1")
     assert is_local is False
@@ -55,6 +76,24 @@ def test_resolves_repo_with_revision_flag():
 def test_rejects_bare_repo_without_revision_or_prefix():
     with pytest.raises(SystemExit, match="hf://"):
         _resolve_dataset_arg("aicrowd/arc-whestbench-2026", revision=None)
+
+
+def test_warns_on_stderr_when_hf_dataset_unpinned(capsys):
+    """An unpinned hf:// load must announce the main fallback (no silent main)."""
+    _warn_if_hf_dataset_unpinned("aicrowd/arc-whestbench-2026", None)
+    captured = capsys.readouterr()
+    assert captured.out == ""  # nothing on stdout — must not corrupt --json output
+    assert "no revision pinned" in captured.err
+    assert "main" in captured.err
+    assert "--revision" in captured.err  # actionable: tells the user how to pin
+
+
+def test_no_warning_when_hf_dataset_pinned(capsys):
+    """A pinned revision (tag or @rev) is the happy path — stay silent."""
+    _warn_if_hf_dataset_unpinned("aicrowd/arc-whestbench-2026", "v1")
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
 
 
 def test_whest_run_accepts_split_flag_on_dataset(tmp_path: Path):
