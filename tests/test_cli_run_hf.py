@@ -7,7 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from whestbench.cli import _resolve_dataset_arg, _warn_if_hf_dataset_unpinned
+from whestbench.cli import (
+    _resolve_dataset_arg,
+    _warn_if_hf_dataset_unpinned,
+    _warn_if_revision_conflict,
+)
 
 
 def _run_whest(*args, cwd=None, check=False):
@@ -94,6 +98,33 @@ def test_no_warning_when_hf_dataset_pinned(capsys):
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == ""
+
+
+def test_warns_when_embedded_rev_overrides_revision_flag(capsys):
+    """`hf://repo@v1 --revision v2`: @rev wins, but the dropped flag is announced."""
+    _warn_if_revision_conflict("aicrowd/arc-whestbench-2026", "v1", "v2")
+    captured = capsys.readouterr()
+    assert captured.out == ""  # stderr only — must not corrupt --json output
+    assert "--revision v2 ignored" in captured.err
+    assert "v1" in captured.err  # names the winning revision
+
+
+def test_no_conflict_warning_when_rev_and_flag_agree(capsys):
+    """Identical embedded @rev and --revision is not a conflict."""
+    _warn_if_revision_conflict("aicrowd/arc-whestbench-2026", "v1", "v1")
+    assert capsys.readouterr().err == ""
+
+
+def test_no_conflict_warning_without_revision_flag(capsys):
+    """`hf://repo@v1` with no --revision: nothing to conflict with."""
+    _warn_if_revision_conflict("aicrowd/arc-whestbench-2026", "v1", None)
+    assert capsys.readouterr().err == ""
+
+
+def test_no_conflict_warning_when_unpinned(capsys):
+    """An unpinned load (resolved revision None) defers to the unpinned warning."""
+    _warn_if_revision_conflict("aicrowd/arc-whestbench-2026", None, "v2")
+    assert capsys.readouterr().err == ""
 
 
 def test_whest_run_accepts_split_flag_on_dataset(tmp_path: Path):
