@@ -352,7 +352,7 @@ def test_error_summary_without_op():
 
 def test_subclasses_carry_stable_code_and_default_hint():
     assert AIcrowdAuthError(status=401, message="x").code == "auth"
-    assert "whest login" in AIcrowdAuthError(status=401, message="x").hint
+    assert "whest login" in (AIcrowdAuthError(status=401, message="x").hint or "")
     assert AIcrowdNotAllowedError(status=403, message="x").code == "not_allowed"
     assert AIcrowdNotFoundError(status=404, message="x").code == "not_found"
     assert AIcrowdValidationError(status=422, message="x").code == "validation"
