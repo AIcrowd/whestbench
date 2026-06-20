@@ -227,7 +227,7 @@ _STATUS_DEFAULTS = {
     400: "The request was rejected.",
     401: "Your AIcrowd API key is missing or invalid.",
     403: "You're not authorized to perform this action — submissions may not be open for "
-         "this challenge, or you may need to accept the challenge rules.",
+    "this challenge, or you may need to accept the challenge rules.",
     404: "Not found.",
     422: "Your submission was rejected.",
 }
@@ -262,8 +262,10 @@ def _classify(response: "httpx.Response", *, op: Optional[str] = None) -> AIcrow
     status = response.status_code
     if 300 <= status < 400:
         return AIcrowdAuthError(status=status, message=_REDIRECT_MESSAGE, op=op)
-    message = _server_message(response) or _STATUS_DEFAULTS.get(status) or (
-        f"Unexpected response from AIcrowd (HTTP {status})."
+    message = (
+        _server_message(response)
+        or _STATUS_DEFAULTS.get(status)
+        or (f"Unexpected response from AIcrowd (HTTP {status}).")
     )
     if status == 401:
         return AIcrowdAuthError(status=status, message=message, op=op)
@@ -350,10 +352,14 @@ class AIcrowdClient:
         assert last_exc is not None  # loop only exits early via return/raise above
         raise last_exc
 
-    def _get(self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, op: Optional[str] = None, **kw) -> httpx.Response:
+    def _get(
+        self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, op: Optional[str] = None, **kw
+    ) -> httpx.Response:
         return self._request("GET", url, policy=policy, op=op, **kw)
 
-    def _post(self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, op: Optional[str] = None, **kw) -> httpx.Response:
+    def _post(
+        self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, op: Optional[str] = None, **kw
+    ) -> httpx.Response:
         return self._request("POST", url, policy=policy, op=op, **kw)
 
     # --- identity + challenge --------------------------------------------
@@ -363,7 +369,9 @@ class AIcrowdClient:
 
     def resolve_challenge(self, slug: str) -> int:
         """Resolve a challenge slug -> numeric challenge id (for the registration check)."""
-        r = self._get(f"{_aicrowd_base()}/challenges/", params={"slug": slug}, op="resolving the challenge")
+        r = self._get(
+            f"{_aicrowd_base()}/challenges/", params={"slug": slug}, op="resolving the challenge"
+        )
         data = r.json()
         items = data if isinstance(data, list) else data.get("data", [])
         for item in items:
@@ -440,5 +448,7 @@ class AIcrowdClient:
         {"grading_status_cd": ..., "score": ..., "grading_message": ..., ...}.
         Uses the lighter POLL_RETRY budget; the --watch loop supplies patience."""
         return self._get(
-            f"{_rails_base()}/submissions/{submission_id}", policy=POLL_RETRY, op="checking submission status"
+            f"{_rails_base()}/submissions/{submission_id}",
+            policy=POLL_RETRY,
+            op="checking submission status",
         ).json()

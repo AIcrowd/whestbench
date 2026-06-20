@@ -365,12 +365,20 @@ def test_hierarchy_preserved():
 
 
 def _resp(status, *, json=None, text=None, headers=None):
-    return httpx.Response(status, json=json, text=text, headers=headers or {},
-                          request=httpx.Request("GET", "https://www.aicrowd.com/api/v1/x"))
+    return httpx.Response(
+        status,
+        json=json,
+        text=text,
+        headers=headers or {},
+        request=httpx.Request("GET", "https://www.aicrowd.com/api/v1/x"),
+    )
 
 
 def test_classify_403_prefers_server_json_message():
-    e = _classify(_resp(403, json={"error": "Submissions are not open.", "success": False}), op="creating your submission")
+    e = _classify(
+        _resp(403, json={"error": "Submissions are not open.", "success": False}),
+        op="creating your submission",
+    )
     assert isinstance(e, AIcrowdNotAllowedError)
     assert e.message == "Submissions are not open."
     assert e.op == "creating your submission"
@@ -381,8 +389,14 @@ def test_classify_401_is_auth_error():
 
 
 def test_classify_redirect_is_auth_error_and_discards_html():
-    e = _classify(_resp(302, text="<html><body>You are being <a href='/'>redirected</a>.</body></html>",
-                        headers={"location": "https://www.aicrowd.com/"}), op="creating your submission")
+    e = _classify(
+        _resp(
+            302,
+            text="<html><body>You are being <a href='/'>redirected</a>.</body></html>",
+            headers={"location": "https://www.aicrowd.com/"},
+        ),
+        op="creating your submission",
+    )
     assert isinstance(e, AIcrowdAuthError)
     assert "<html>" not in e.message and "<a" not in e.message
     assert e.status == 302
@@ -400,7 +414,9 @@ def test_classify_404_and_422():
 
 
 def test_describe_error_for_typed_and_generic():
-    typed = describe_error(AIcrowdNotAllowedError(status=403, message="nope", op="creating your submission"))
+    typed = describe_error(
+        AIcrowdNotAllowedError(status=403, message="nope", op="creating your submission")
+    )
     assert typed["code"] == "not_allowed" and typed["status"] == 403
     assert typed["message"] == "While creating your submission: nope (HTTP 403)"
     assert typed["hint"]
@@ -411,6 +427,7 @@ def test_describe_error_for_typed_and_generic():
 def test_create_submission_403_raises_not_allowed_with_op():
     def handler(req):
         return httpx.Response(403, json={"error": "Submissions are not open.", "success": False})
+
     with pytest.raises(AIcrowdNotAllowedError) as ei:
         _client(handler).create_submission(challenge_slug="c", s3_key="k", description="d")
     assert ei.value.op == "creating your submission"
@@ -419,8 +436,12 @@ def test_create_submission_403_raises_not_allowed_with_op():
 
 def test_create_submission_redirect_raises_auth_error():
     def handler(req):
-        return httpx.Response(302, headers={"location": "https://www.aicrowd.com/"},
-                              text="<html>You are being redirected.</html>")
+        return httpx.Response(
+            302,
+            headers={"location": "https://www.aicrowd.com/"},
+            text="<html>You are being redirected.</html>",
+        )
+
     with pytest.raises(AIcrowdAuthError):
         _client(handler).create_submission(challenge_slug="c", s3_key="k", description="d")
 
@@ -428,6 +449,7 @@ def test_create_submission_redirect_raises_auth_error():
 def test_verify_identity_401_is_auth_error_with_op():
     def handler(req):
         return httpx.Response(401, json={"error": "bad key"})
+
     with pytest.raises(AIcrowdAuthError) as ei:
         _client(handler).verify_identity()
     assert ei.value.op == "verifying your API key"
@@ -435,8 +457,10 @@ def test_verify_identity_401_is_auth_error_with_op():
 
 def test_transient_exhaustion_carries_op_and_no_html(monkeypatch):
     monkeypatch.setattr(client_mod, "_sleep", lambda *_: None)
+
     def handler(req):
         return httpx.Response(503, text="<html>maintenance</html>")
+
     with pytest.raises(AIcrowdTransientError) as ei:
         _client(handler).create_submission(challenge_slug="c", s3_key="k", description="d")
     assert ei.value.op == "creating your submission"

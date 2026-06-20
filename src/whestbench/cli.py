@@ -3203,13 +3203,22 @@ def _main_participant(argv: "list[str]") -> int:
             except Exception as e:  # AIcrowdAPIError or transport error
                 info = describe_error(e)
                 if json_output:
-                    print(json.dumps({
-                        "ok": False, "error": info["message"],
-                        "error_code": info["code"], "status": info["status"],
-                    }))
+                    print(
+                        json.dumps(
+                            {
+                                "ok": False,
+                                "error": info["message"],
+                                "error_code": info["code"],
+                                "status": info["status"],
+                            }
+                        )
+                    )
                 else:
                     say.warn(info["message"])
-                    say.hint(info["hint"] or "Copy your key from your AIcrowd profile page and try again.")
+                    say.hint(
+                        info["hint"]
+                        or "Copy your key from your AIcrowd profile page and try again."
+                    )
                 return 1
 
             path = _cfg.save_api_key(api_key)
@@ -3289,10 +3298,16 @@ def _main_participant(argv: "list[str]") -> int:
             except Exception as e:
                 info = describe_error(e)
                 if json_output:
-                    print(json.dumps({
-                        "ok": False, "error": info["message"],
-                        "error_code": info["code"], "status": info["status"],
-                    }))
+                    print(
+                        json.dumps(
+                            {
+                                "ok": False,
+                                "error": info["message"],
+                                "error_code": info["code"],
+                                "status": info["status"],
+                            }
+                        )
+                    )
                 else:
                     say.warn(info["message"])
                     if info["hint"]:
