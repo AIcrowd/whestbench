@@ -33,6 +33,7 @@ api/v1/api_users_controller.rb + base_controller.rb):
 from __future__ import annotations
 
 import datetime
+import json as _jsonlib
 import os
 import random
 import time
@@ -136,20 +137,152 @@ def extract_submission_id(resp: dict[str, Any]) -> Optional[int]:
 
 
 class AIcrowdAPIError(RuntimeError):
-    """Non-2xx from an AIcrowd endpoint."""
+    """A non-2xx (or redirect) from an AIcrowd endpoint, rendered for humans."""
 
-    def __init__(self, *, status: int, message: str, transient: bool = False) -> None:
-        super().__init__(f"AIcrowd API error ({status}): {message}")
+    def __init__(
+        self,
+        *,
+        status: int,
+        message: str,
+        hint: Optional[str] = None,
+        code: str = "api_error",
+        op: Optional[str] = None,
+        transient: bool = False,
+    ) -> None:
         self.status = status
         self.message = message
+        self.hint = hint
+        self.code = code
+        self.op = op
         self.transient = transient
+        super().__init__(self.summary)
+
+    @property
+    def summary(self) -> str:
+        prefix = f"While {self.op}: " if self.op else ""
+        suffix = f" (HTTP {self.status})" if self.status and self.status > 0 else ""
+        return f"{prefix}{self.message}{suffix}"
+
+
+class AIcrowdAuthError(AIcrowdAPIError):
+    """401, or a redirect to a web login page — missing/invalid API key, or not authorized."""
+
+    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+        super().__init__(
+            status=status,
+            message=message,
+            code="auth",
+            op=op,
+            hint="Run `whest login` (copy your API key from your AIcrowd profile page).",
+        )
+
+
+class AIcrowdNotAllowedError(AIcrowdAPIError):
+    """403 — not authorized for this action (e.g. submissions not open, rules not accepted)."""
+
+    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+        super().__init__(
+            status=status,
+            message=message,
+            code="not_allowed",
+            op=op,
+            hint="Open the challenge page: accept the rules and confirm submissions are open.",
+        )
+
+
+class AIcrowdNotFoundError(AIcrowdAPIError):
+    """404 — the challenge or endpoint was not found."""
+
+    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+        super().__init__(
+            status=status,
+            message=message,
+            code="not_found",
+            op=op,
+            hint="Check the challenge slug (e.g. arc-white-box-estimation-challenge-2026).",
+        )
+
+
+class AIcrowdValidationError(AIcrowdAPIError):
+    """400/422 — the request/submission was rejected."""
+
+    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+        super().__init__(
+            status=status,
+            message=message,
+            code="validation",
+            op=op,
+            hint="Check your submission file and metadata, then try again.",
+        )
 
 
 class AIcrowdTransientError(AIcrowdAPIError):
     """A retryable failure (429/5xx/network) that exhausted its retry budget."""
 
-    def __init__(self, *, status: int, message: str) -> None:
-        super().__init__(status=status, message=message, transient=True)
+    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+        super().__init__(status=status, message=message, code="transient", op=op, transient=True)
+
+
+_STATUS_DEFAULTS = {
+    400: "The request was rejected.",
+    401: "Your AIcrowd API key is missing or invalid.",
+    403: "You're not authorized to perform this action — submissions may not be open for "
+    "this challenge, or you may need to accept the challenge rules.",
+    404: "Not found.",
+    422: "Your submission was rejected.",
+}
+
+_REDIRECT_MESSAGE = (
+    "The AIcrowd API redirected to a web page instead of returning data — your API key is "
+    "likely invalid, or you're not authorized to perform this action."
+)
+
+
+def _server_message(response: "httpx.Response") -> Optional[str]:
+    """Return a human message from a JSON error body ({"error"|"message": ...}), else None.
+    HTML and non-JSON bodies are intentionally ignored so they never reach the user."""
+    ctype = response.headers.get("content-type", "")
+    if "application/json" not in ctype:
+        return None
+    try:
+        data = response.json()
+    except (ValueError, _jsonlib.JSONDecodeError):
+        return None
+    if isinstance(data, dict):
+        for key in ("error", "message"):
+            val = data.get(key)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+    return None
+
+
+def _classify(response: "httpx.Response", *, op: Optional[str] = None) -> AIcrowdAPIError:
+    """Map an AIcrowd HTTP response to a typed, human-readable error.
+    Prefers the server's JSON message; never surfaces HTML; redirects → auth error."""
+    status = response.status_code
+    if 300 <= status < 400:
+        return AIcrowdAuthError(status=status, message=_REDIRECT_MESSAGE, op=op)
+    message = (
+        _server_message(response)
+        or _STATUS_DEFAULTS.get(status)
+        or (f"Unexpected response from AIcrowd (HTTP {status}).")
+    )
+    if status == 401:
+        return AIcrowdAuthError(status=status, message=message, op=op)
+    if status == 403:
+        return AIcrowdNotAllowedError(status=status, message=message, op=op)
+    if status == 404:
+        return AIcrowdNotFoundError(status=status, message=message, op=op)
+    if status in (400, 422):
+        return AIcrowdValidationError(status=status, message=message, op=op)
+    return AIcrowdAPIError(status=status, message=message, op=op)
+
+
+def describe_error(exc: BaseException) -> dict:
+    """Uniform fields for surfacing any error (CLI text + --json), for typed and generic errors."""
+    if isinstance(exc, AIcrowdAPIError):
+        return {"message": exc.summary, "hint": exc.hint, "code": exc.code, "status": exc.status}
+    return {"message": str(exc), "hint": None, "code": "error", "status": None}
 
 
 class AIcrowdClient:
@@ -161,17 +294,24 @@ class AIcrowdClient:
         timeout: float = 60.0,
     ) -> None:
         self._key = api_key
-        self._http = http or httpx.Client(timeout=timeout)
+        self._http = http or httpx.Client(timeout=timeout, follow_redirects=False)
         self._auth = {"Authorization": f"Token {api_key}"}
 
     # --- helpers ----------------------------------------------------------
     def _request(
-        self, method: str, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, auth: bool = True, **kw
+        self,
+        method: str,
+        url: str,
+        *,
+        policy: RetryPolicy = SUBMIT_RETRY,
+        auth: bool = True,
+        op: Optional[str] = None,
+        **kw,
     ) -> httpx.Response:
-        """Issue one logical request, retrying transient failures (429/5xx and
-        httpx transport errors) within `policy`'s budget. Permanent non-2xx
-        (e.g. 401/403/404) raise immediately. `auth=False` omits the AIcrowd
-        token (for the presigned S3 upload to a different host)."""
+        """Issue one logical request, retrying transient failures (429/5xx and httpx
+        transport errors) within `policy`'s budget. Permanent non-2xx (and redirects)
+        raise a typed, human-readable error via `_classify`. `auth=False` omits the
+        AIcrowd token (for the presigned S3 upload to a different host)."""
         headers = self._auth if auth else None
         deadline = _monotonic() + policy.deadline_s if policy.deadline_s is not None else None
         last_exc: Optional[AIcrowdTransientError] = None
@@ -180,15 +320,23 @@ class AIcrowdClient:
             try:
                 r = self._http.request(method, url, headers=headers, **kw)
             except httpx.TransportError as e:
-                last_exc = AIcrowdTransientError(status=0, message=f"{type(e).__name__}: {e}")
+                last_exc = AIcrowdTransientError(
+                    status=0,
+                    message=f"Could not reach AIcrowd ({type(e).__name__}).",
+                    op=op,
+                )
             else:
                 if r.is_success:
                     return r
                 if r.status_code in _RETRYABLE_STATUS:
-                    last_exc = AIcrowdTransientError(status=r.status_code, message=r.text[:300])
+                    last_exc = AIcrowdTransientError(
+                        status=r.status_code,
+                        message=_server_message(r) or "AIcrowd is temporarily unavailable.",
+                        op=op,
+                    )
                     retry_after = _parse_retry_after(r.headers.get("Retry-After"))
                 else:
-                    raise AIcrowdAPIError(status=r.status_code, message=r.text[:300])
+                    raise _classify(r, op=op)
             if attempt >= policy.max_attempts:
                 break
             delay = _compute_backoff(
@@ -204,20 +352,26 @@ class AIcrowdClient:
         assert last_exc is not None  # loop only exits early via return/raise above
         raise last_exc
 
-    def _get(self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, **kw) -> httpx.Response:
-        return self._request("GET", url, policy=policy, **kw)
+    def _get(
+        self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, op: Optional[str] = None, **kw
+    ) -> httpx.Response:
+        return self._request("GET", url, policy=policy, op=op, **kw)
 
-    def _post(self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, **kw) -> httpx.Response:
-        return self._request("POST", url, policy=policy, **kw)
+    def _post(
+        self, url: str, *, policy: RetryPolicy = SUBMIT_RETRY, op: Optional[str] = None, **kw
+    ) -> httpx.Response:
+        return self._request("POST", url, policy=policy, op=op, **kw)
 
     # --- identity + challenge --------------------------------------------
     def verify_identity(self) -> int:
         """Validate the key; return the participant id."""
-        return int(self._get(f"{_rails_base()}/api_user").json()["id"])
+        return int(self._get(f"{_rails_base()}/api_user", op="verifying your API key").json()["id"])
 
     def resolve_challenge(self, slug: str) -> int:
         """Resolve a challenge slug -> numeric challenge id (for the registration check)."""
-        r = self._get(f"{_aicrowd_base()}/challenges/", params={"slug": slug})
+        r = self._get(
+            f"{_aicrowd_base()}/challenges/", params={"slug": slug}, op="resolving the challenge"
+        )
         data = r.json()
         items = data if isinstance(data, list) else data.get("data", [])
         for item in items:
@@ -231,13 +385,18 @@ class AIcrowdClient:
         r = self._get(
             f"{_aicrowd_base()}/challenges/{challenge_id}/participant",
             params={"participant_id": participant_id},
+            op="checking your challenge registration",
         )
         return bool(r.json().get("registered"))
 
     # --- submission upload + create --------------------------------------
     def get_upload_details(self, *, challenge_slug: str) -> dict[str, Any]:
         """Presigned S3 POST details: {"url": ..., "fields": {...}}."""
-        r = self._get(f"{_rails_base()}/submissions", params={"challenge_id": challenge_slug})
+        r = self._get(
+            f"{_rails_base()}/submissions",
+            params={"challenge_id": challenge_slug},
+            op="preparing the upload",
+        )
         data = r.json()
         return data.get("data", data)
 
@@ -260,6 +419,7 @@ class AIcrowdClient:
             upload["url"],
             policy=SUBMIT_RETRY,
             auth=False,
+            op="uploading the artifact",
             data=fields,
             files={"file": (fname, content)},
         )
@@ -274,6 +434,7 @@ class AIcrowdClient:
         submission_files_attributes and sets submission_type='artifact' itself)."""
         r = self._post(
             f"{_rails_base()}/submissions",
+            op="creating your submission",
             json={
                 "challenge_id": challenge_slug,
                 "submission": {"description": description},
@@ -286,4 +447,8 @@ class AIcrowdClient:
         """Fetch a single submission's grading state (Api::SubmissionSerializer):
         {"grading_status_cd": ..., "score": ..., "grading_message": ..., ...}.
         Uses the lighter POLL_RETRY budget; the --watch loop supplies patience."""
-        return self._get(f"{_rails_base()}/submissions/{submission_id}", policy=POLL_RETRY).json()
+        return self._get(
+            f"{_rails_base()}/submissions/{submission_id}",
+            policy=POLL_RETRY,
+            op="checking submission status",
+        ).json()

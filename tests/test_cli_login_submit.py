@@ -283,4 +283,58 @@ def test_submit_path_transient_exhaustion_reports_failure(monkeypatch, tmp_path)
     art.write_bytes(b"\x1f\x8b\x08\x00fake")
     rc = cli.main(["submit", str(art)])
     assert rc != 0
-    assert any("Submission failed" in line for line in captured)
+    assert any("HTTP 503" in line for line in captured)
+
+
+def test_submit_failure_prints_message_and_hint(monkeypatch, tmp_path):
+    captured = _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+
+    from whestbench.aicrowd_client import AIcrowdNotAllowedError
+
+    _stub_submit_pipeline(monkeypatch)
+    # After _stub_submit_pipeline, cli.AIcrowdClient IS _FakeClient — patch its method.
+    monkeypatch.setattr(
+        cli.AIcrowdClient,
+        "create_submission",
+        lambda self, **kw: (_ for _ in ()).throw(
+            AIcrowdNotAllowedError(
+                status=403, message="Submissions are not open.", op="creating your submission"
+            )
+        ),
+    )
+
+    art = tmp_path / "submission.tar.gz"
+    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    rc = cli.main(["submit", str(art)])
+    assert rc != 0
+    assert any("Submissions are not open." in line for line in captured)
+    assert any("tip:" in line and "challenge page" in line for line in captured)
+
+
+def test_submit_failure_json_has_error_code_and_status(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    from whestbench.aicrowd_client import AIcrowdNotAllowedError
+
+    _stub_submit_pipeline(monkeypatch)
+    # After _stub_submit_pipeline, cli.AIcrowdClient IS _FakeClient — patch its method.
+    monkeypatch.setattr(
+        cli.AIcrowdClient,
+        "create_submission",
+        lambda self, **kw: (_ for _ in ()).throw(
+            AIcrowdNotAllowedError(
+                status=403, message="Submissions are not open.", op="creating your submission"
+            )
+        ),
+    )
+    art = tmp_path / "submission.tar.gz"
+    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    rc = cli.main(["submit", str(art), "--json"])
+    assert rc != 0
+    import json as _j
+
+    payload = _j.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert payload["ok"] is False
+    assert payload["error_code"] == "not_allowed"
+    assert payload["status"] == 403
+    assert "Submissions are not open." in payload["error"]
