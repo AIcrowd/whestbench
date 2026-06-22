@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.12.0rc1 (2026-06-23)
+
+### Feat
+
+- **cli**: readable AIcrowd API errors — typed errors with clear messages and hints instead of raw HTTP redirect dumps (#98)
+- **cli**: warn when --revision conflicts with an embedded @rev (#101)
+
+### Fix
+
+- **deps**: bump flopscope pin to >=0.8.0rc2
+- **cli**: honor --revision for hf:// datasets + warn when unpinned (#100)
+
 ## v0.12.0rc0 (2026-06-19)
 
 ### BREAKING CHANGE

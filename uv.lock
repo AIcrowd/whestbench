@@ -2524,7 +2524,7 @@ wheels = [
 
 [[package]]
 name = "whestbench"
-version = "0.12.0rc0"
+version = "0.12.0rc1"
 source = { editable = "." }
 dependencies = [
     { name = "datasets" },
