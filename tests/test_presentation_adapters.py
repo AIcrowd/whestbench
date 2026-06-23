@@ -253,7 +253,7 @@ def test_build_validate_presentation_includes_structured_checklist() -> None:
 
 def test_build_init_presentation_includes_created_files() -> None:
     doc = build_init_presentation(
-        {"ok": True, "created": ["/tmp/demo/estimator.py", "/tmp/demo/requirements.txt"]}
+        {"ok": True, "created": ["/tmp/demo/estimator.py", "/tmp/demo/.whestignore"]}
     )
 
     created_files = next(
@@ -265,7 +265,7 @@ def test_build_init_presentation_includes_created_files() -> None:
     assert doc.command == "init"
     assert doc.status == "success"
     assert doc.title == "Starter Files"
-    assert list(created_files.steps) == ["/tmp/demo/estimator.py", "/tmp/demo/requirements.txt"]
+    assert list(created_files.steps) == ["/tmp/demo/estimator.py", "/tmp/demo/.whestignore"]
 
 
 def test_build_init_presentation_includes_noop_status_when_no_files_created() -> None:

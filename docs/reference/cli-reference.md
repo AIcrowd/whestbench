@@ -436,7 +436,7 @@ Key options:
 - `--json` — alias for `--format json`
 - `--debug`
 
-> **Deprecated:** `--requirements`, `--submission-metadata`, and `--approach` no longer do anything — files are bundled by being present in the submission folder, not by being named on the command line. Passing them prints a warning; they will be removed in a future release.
+> **Deprecated:** `--requirements`, `--submission-metadata`, and `--approach` no longer do anything — files are bundled by being present in the submission folder, not by being named on the command line. Passing them prints a warning; they will be removed in a future release. Note that the grader installs **no** third-party packages (the sandbox provides only `flopscope`, the `whestbench` API, and the Python stdlib), so a shipped `requirements.txt` has no effect either — do dependency-heavy work offline and ship the result as data.
 
 ### Built-in ignore set
 

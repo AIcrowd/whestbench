@@ -169,7 +169,7 @@ def test_init_command_renders_created_files_section(
         "_write_init_template",
         lambda _path: [
             str(Path("/tmp/demo/estimator.py")),
-            str(Path("/tmp/demo/requirements.txt")),
+            str(Path("/tmp/demo/.whestignore")),
         ],
     )
 
@@ -263,7 +263,8 @@ def test_init_command_writes_real_estimator_template_from_package_data(
     text = estimator.read_text(encoding="utf-8")
     assert "class Estimator(BaseEstimator)" in text
     assert "fnp.zeros" in text
-    assert (tmp_path / "requirements.txt").is_file()
+    assert (tmp_path / ".whestignore").is_file()
+    assert not (tmp_path / "requirements.txt").exists()  # no longer scaffolded
 
 
 def test_create_dataset_command_emits_redirect(

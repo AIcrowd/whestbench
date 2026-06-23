@@ -1063,7 +1063,8 @@ def test_init_scaffolds_whestignore_and_setup(tmp_path):
 
     created = _write_init_template(tmp_path)
     names = {Path(p).name for p in created}
-    assert {"estimator.py", "requirements.txt", ".whestignore"} <= names
+    assert {"estimator.py", ".whestignore"} <= names
+    assert "requirements.txt" not in names  # the grader installs no third-party deps
     est = (tmp_path / "estimator.py").read_text()
     assert "def setup(self, ctx" in est
     assert "submission_dir" in est  # the commented weight-load example
