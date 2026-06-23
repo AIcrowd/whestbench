@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.12.0rc2 (2026-06-23)
+
+### Fix
+
+- **cli**: drop misleading requirements.txt guidance
+- **packaging**: ship single files as estimator.py; validate predict signature
+
 ## v0.12.0rc1 (2026-06-23)
 
 ### Feat
