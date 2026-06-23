@@ -5,9 +5,11 @@ from __future__ import annotations
 import ast
 import fnmatch
 import hashlib
+import inspect
 import json
 import platform
 import tarfile
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from importlib import metadata as importlib_metadata
@@ -118,14 +120,11 @@ def resolve_submission(estimator_path: "str | Path") -> "tuple[Path, Path, str]"
             )
         return target, entry, "folder"
     if target.is_file():
-        # The grader loads the module named "estimator" (manifest entrypoint), so a
-        # single-file submission must be estimator.py — otherwise it packages locally
-        # but the grader rejects it with a missing-module error.
-        if target.name != "estimator.py":
-            raise ValueError(
-                f"Single-file submissions must be named estimator.py (got {target.name}). "
-                f"Rename it, or pass the folder to package the whole directory."
-            )
+        # The grader loads the module named "estimator" (manifest entrypoint). A
+        # single-file submission is always shipped AS estimator.py — the packager
+        # renames it on the way into the archive (see package_submission), so a
+        # file named 01_random.py / my_solution.py "just works" instead of being
+        # rejected by the grader with a missing-module error (prod bug 312082).
         return target.parent, target, "file"
     raise FileNotFoundError(f"Estimator path not found: {target}")
 
@@ -141,21 +140,102 @@ def package_submission(
     progress: Optional[Callable[[int], None]] = None,
 ) -> Path:
     root, entry, mode = resolve_submission(estimator_path)
-    # Resolve and validate class entrypoint before packing.
-    _, metadata = load_estimator_from_path(entry, class_name=class_name)
+    # Resolve and validate the class entrypoint before packing: the module must
+    # import, the Estimator class must resolve, and predict() must accept the
+    # (mlp, budget) the grader calls it with. This runs for both `whest package`
+    # and `whest submit` (submit packages first), so a broken entrypoint is caught
+    # locally instead of failing once per MLP in the grader.
+    estimator, metadata = load_estimator_from_path(entry, class_name=class_name)
+    _validate_predict_signature(estimator)
 
-    # Folder mode bundles the whole directory (minus ignores + secrets); file mode
-    # ships only the named file.
-    bundled = collect_submission_files(root) if mode == "folder" else [entry]
-    if mode == "folder" and entry not in bundled:
+    if mode == "file":
+        # Single-file submissions are always shipped AS estimator.py: the manifest
+        # entrypoint module is hardcoded "estimator", so a file named 01_random.py /
+        # my_solution.py would otherwise package locally but be rejected by the grader
+        # ("missing module file: estimator.py" — prod bug 312082). Stage a renamed copy
+        # in a temp dir and package from there so the archive + manifest agree.
+        with tempfile.TemporaryDirectory() as tmp:
+            staged_root = Path(tmp)
+            staged_entry = staged_root / "estimator.py"
+            staged_entry.write_bytes(entry.read_bytes())
+            return _finalize_package(
+                root=staged_root,
+                bundled=[staged_entry],
+                class_name=metadata.class_name,
+                output_path=output_path,
+                progress=progress,
+            )
+
+    # Folder mode bundles the whole directory (minus ignores + secrets).
+    bundled = collect_submission_files(root)
+    if entry not in bundled:
         # A .gitignore/.whestignore pattern matched estimator.py — without this guard
         # we'd ship an archive whose manifest declares an entrypoint it doesn't contain.
         raise ValueError(
             f"estimator.py is excluded by a .gitignore/.whestignore pattern in {root}, "
             f"but it must ship. Remove the pattern that matches it."
         )
+    return _finalize_package(
+        root=root,
+        bundled=bundled,
+        class_name=metadata.class_name,
+        output_path=output_path,
+        progress=progress,
+    )
+
+
+def _validate_predict_signature(estimator: Any) -> None:
+    """Reject an estimator whose ``predict`` can't accept the grader's call.
+
+    The grader invokes ``estimator.predict(mlp, budget)``. ``estimator.predict``
+    here is a *bound* method, so its signature excludes ``self`` and we bind two
+    positional placeholders. Lenient by design: ``*args`` or extra defaulted
+    params are fine; only a genuinely incompatible arity (e.g. ``def predict(self)``)
+    is rejected. Uninspectable callables (C-implemented) are not blocked.
+    """
+    try:
+        sig = inspect.signature(estimator.predict)
+    except (TypeError, ValueError):
+        return
+    try:
+        sig.bind(None, None)
+    except TypeError as e:
+        raise ValueError(
+            f"Estimator.predict has an incompatible signature: the grader calls "
+            f"predict(mlp, budget), but binding two positional arguments failed ({e}). "
+            f"Expected `def predict(self, mlp, budget)`."
+        ) from e
+
+
+def _finalize_package(
+    *,
+    root: Path,
+    bundled: "List[Path]",
+    class_name: str,
+    output_path: "Any",
+    progress: Optional[Callable[[int], None]],
+) -> Path:
+    """Build the manifest + deterministic tarball for an already-resolved bundle.
+
+    Shared by single-file (staged estimator.py) and folder packaging so the
+    manifest/archive invariants live in exactly one place.
+    """
     enforce_submission_caps(bundled)
-    manifest = build_manifest(class_name=metadata.class_name, root=root, files=bundled)
+    manifest = build_manifest(class_name=class_name, root=root, files=bundled)
+
+    # Belt-and-suspenders: the archive we are about to write MUST contain the
+    # entrypoint module file the manifest declares (estimator.py). This is the
+    # exact consistency that broke in prod bug 312082 — guard it at the source so
+    # a manifest can never name an entry file the bundle does not ship.
+    arcnames = {str(p.relative_to(root)) for p in bundled}
+    entry_file = f"{manifest['entrypoint']['module']}.py"
+    if entry_file not in arcnames:
+        raise ValueError(
+            f"Refusing to package: manifest declares entrypoint module "
+            f"{manifest['entrypoint']['module']!r} (the grader imports {entry_file}), but "
+            f"{entry_file} is not in the bundle ({sorted(arcnames)})."
+        )
+
     manifest_blob = json.dumps(manifest, indent=2).encode("utf-8")
 
     target = (
