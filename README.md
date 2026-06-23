@@ -2,6 +2,7 @@
   <img src="assets/logo/logo.png" alt="ARC Whitebox Estimation Challenge logo" style="height: 120px;">
   <br>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-green?logo=python&logoColor=white" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
 </div>
 
 # ARC Whitebox Estimation Challenge — `whestbench`
@@ -135,4 +136,4 @@ Underlying FLOP accounting library: [`AIcrowd/flopscope`](https://github.com/AIc
 
 ## License
 
-See [LICENSE](LICENSE).
+Released under the [MIT License](LICENSE).
