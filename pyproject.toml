@@ -9,6 +9,7 @@ packages = ["src/whestbench"]
 name = "whestbench"
 version = "0.12.0rc2"
 requires-python = ">=3.10"
+license = "MIT"
 dependencies = [
     "datasets>=2.20",
     "faker~=37.0",
