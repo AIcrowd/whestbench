@@ -197,7 +197,7 @@ def test_init_emits_intent_and_ok_lines(
     monkeypatch.setattr(
         cli,
         "_write_init_template",
-        lambda _path: [str(target / "estimator.py"), str(target / "requirements.txt")],
+        lambda _path: [str(target / "estimator.py"), str(target / ".whestignore")],
     )
 
     rc = cli.main(["init", str(target)])

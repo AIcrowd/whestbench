@@ -925,11 +925,6 @@ def _write_init_template(target_dir: Path) -> "list[str]":
         estimator_file.write_text(template.read_text(encoding="utf-8") + "\n", encoding="utf-8")
         created.append(str(estimator_file))
 
-    requirements_file = target_dir / "requirements.txt"
-    if not requirements_file.exists():
-        requirements_file.write_text("# Optional custom dependencies\n", encoding="utf-8")
-        created.append(str(requirements_file))
-
     whestignore_file = target_dir / ".whestignore"
     if not whestignore_file.exists():
         whestignore_tmpl = files("whestbench") / "templates" / "whestignore.tmpl"
@@ -1060,7 +1055,7 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "path",
         nargs="?",
         default=".",
-        help="Target directory to write starter estimator.py and requirements.txt into (default: current directory).",
+        help="Target directory to write the starter estimator.py and .whestignore into (default: current directory).",
     )
     init_parser.add_argument(
         "--debug",
@@ -1488,15 +1483,18 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     package_parser.add_argument(
         "--requirements",
-        help="Path to a requirements.txt to include in the submission archive.",
+        help="(Deprecated; ignored — has no effect.) The grader installs no third-party "
+        "packages; files ship by being present in the submission folder.",
     )
     package_parser.add_argument(
         "--submission-metadata",
-        help="Path to a submission.yaml metadata file to include in the submission archive.",
+        help="(Deprecated; ignored — has no effect.) Files ship by being present in the "
+        "submission folder.",
     )
     package_parser.add_argument(
         "--approach",
-        help="Path to an approach.md write-up to include in the submission archive.",
+        help="(Deprecated; ignored — has no effect.) Files ship by being present in the "
+        "submission folder.",
     )
     package_parser.add_argument(
         "--output",
@@ -1596,9 +1594,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     submit_grp.add_argument("artifact", nargs="?", help="Path to a submission .tar.gz.")
     submit_grp.add_argument("--estimator", help="Path to estimator.py (packaged before submit).")
     submit_parser.add_argument("--class", dest="class_name", help="Estimator class name.")
-    submit_parser.add_argument("--requirements", help="requirements.txt for packaging.")
-    submit_parser.add_argument("--submission-metadata", help="submission.yaml for packaging.")
-    submit_parser.add_argument("--approach", help="approach.md for packaging.")
+    submit_parser.add_argument("--requirements", help="(Deprecated; ignored — has no effect.)")
+    submit_parser.add_argument(
+        "--submission-metadata", help="(Deprecated; ignored — has no effect.)"
+    )
+    submit_parser.add_argument("--approach", help="(Deprecated; ignored — has no effect.)")
     submit_parser.add_argument(
         "--yes",
         "-y",
@@ -3567,15 +3567,22 @@ def _enriched_import_error_message(exc: ModuleNotFoundError) -> str:
     """Return an actionable message for a missing-module import failure.
 
     Extracts the missing module name from ``exc.name`` when available and
-    explains how to fix it (either as a sibling file or a requirements.txt
-    entry). Keeps the original bare error as a fallback.
+    explains the two real causes: a helper module that did not ship (fixed by
+    folder packaging), or a third-party package that the grader sandbox does
+    not provide (it offers only flopscope + the whestbench API + the stdlib;
+    there is no dependency-install step). Keeps the original bare error as a
+    fallback.
     """
     missing = getattr(exc, "name", None) or str(exc)
     return (
         f"Your estimator couldn't import `{missing}`. "
-        "Submissions are packaged as a folder — keep your helper modules "
-        "next to estimator.py and they ship automatically. "
-        f"If `{missing}` is a third-party package, add it to requirements.txt."
+        "The grader sandbox has only flopscope (flopscope.numpy as fnp), the whestbench "
+        "API (BaseEstimator, MLP, SetupContext), and the Python standard library — there "
+        "is no dependency/requirements.txt install step, so third-party packages (numpy, "
+        "scipy, torch, …) are unavailable. "
+        f"If `{missing}` is one of your own helper modules, package the FOLDER "
+        "(whest package --estimator .) so it ships beside estimator.py; if it's a "
+        "third-party package, compute it offline and ship a pickle-free .npz loaded in setup()."
     )
 
 

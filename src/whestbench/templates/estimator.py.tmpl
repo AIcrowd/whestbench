@@ -20,6 +20,11 @@ class Estimator(BaseEstimator):
         # You can also split your code across modules — siblings ship + import fine
         # in folder mode. (Packaging the single file, `--estimator estimator.py`,
         # ships ONLY this file — no siblings, no weights.)
+        #
+        # The grader sandbox has only flopscope (flopscope.numpy as fnp), the
+        # whestbench API, and the Python stdlib — no third-party packages
+        # (numpy, scipy, torch, …) and no requirements.txt install. Do heavier
+        # work offline and ship the result as a pickle-free .npz (loaded above).
         self._ctx = ctx
 
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:

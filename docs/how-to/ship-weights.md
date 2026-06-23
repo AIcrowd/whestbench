@@ -20,7 +20,6 @@ my-submission/
   layers.py       ← helper module
   utils.py        ← another helper
   weights.npz     ← pre-trained weights
-  requirements.txt
 ```
 
 Import helpers with a plain relative import — they're on `sys.path` when the
@@ -50,7 +49,8 @@ np.savez("weights.npz", W1=W1, W2=W2)
 ```
 
 `np.savez` writes a standard `.npz` archive (zip of `.npy` files, no pickle).
-The file can be read back with `np.load` or `fnp.load` (the flopscope wrapper).
+On the grader, load it with `fnp.load` (the flopscope wrapper) — plain `numpy`
+is not available in the grader sandbox, so use `fnp.load`, not `np.load`.
 
 ## 3. Bundle: files are picked up automatically
 
@@ -172,7 +172,6 @@ my-submission/
   weights.npz
   .whestignore     (contains: train.py)
   train.py         (excluded — in .whestignore)
-  requirements.txt
 ```
 
 ```bash
