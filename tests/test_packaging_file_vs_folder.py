@@ -128,3 +128,29 @@ def test_folder_mode_errors_if_estimator_excluded_by_whestignore(tmp_path: Path)
 
     with pytest.raises(ValueError, match="estimator.py"):
         package_submission(tmp_path, output_path=tmp_path.parent / "x.tar.gz")
+
+
+def test_file_mode_drops_subpackage_folder_mode_ships_it(tmp_path: Path) -> None:
+    # ship-weights.md teaches: package the FOLDER for multi-file submissions. A FILE
+    # arg ships only estimator.py, so a helper subpackage is silently dropped (the
+    # archive validates locally but fails at grading with a missing import). Lock both
+    # halves of that distinction.
+    (tmp_path / "estimator.py").write_text(_SELF_CONTAINED, encoding="utf-8")
+    pkg = tmp_path / "arc_tools"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("\n", encoding="utf-8")
+    (pkg / "_arc_mlp.py").write_text("def f():\n    return 0\n", encoding="utf-8")
+
+    # File arg → only estimator.py (subpackage dropped).
+    file_out = tmp_path.parent / "file.tar.gz"
+    package_submission(tmp_path / "estimator.py", output_path=file_out)
+    assert _archive_names(file_out) == {"estimator.py", "manifest.json"}
+
+    # Folder arg → the subpackage ships, listed individually.
+    folder_out = tmp_path.parent / "folder.tar.gz"
+    package_submission(tmp_path, output_path=folder_out)
+    assert {
+        "estimator.py",
+        "arc_tools/__init__.py",
+        "arc_tools/_arc_mlp.py",
+    } <= _archive_names(folder_out)

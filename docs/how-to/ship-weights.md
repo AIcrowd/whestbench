@@ -36,9 +36,10 @@ it (it's likely dead code). Add it to `.whestignore` if it shouldn't ship.
 
 ### Shipping a helper subpackage (a directory)
 
-Larger helpers can live in a package directory, not just flat sibling modules. It
-ships automatically too — `whest package` bundles every file under your estimator's
-directory and lists them **individually** in the manifest:
+Larger helpers can live in a package directory, not just flat sibling modules. As
+long as you package the **folder** (`whest package --estimator ./my-submission` — see
+step 3 — not the bare `estimator.py`), the subpackage ships automatically, listed
+**individually** in the manifest:
 
 ```
 my-submission/
@@ -85,20 +86,28 @@ is not available in the grader sandbox, so use `fnp.load`, not `np.load`.
 
 ## 3. Bundle: files are picked up automatically
 
-Run `whest package` from any directory:
+Point `whest` at your submission **folder** (not at `estimator.py`) so the whole
+directory — helpers, weights, subpackages — is bundled:
 
 ```bash
-whest package --estimator ./my-submission/estimator.py
+whest package --estimator ./my-submission
 ```
 
-`whest package` bundles every file in the `estimator.py` directory except the
-built-in ignore set (`.git`, `__pycache__`, `*.pyc`, `*.tar.gz`, etc.) and any
-patterns in `.gitignore` / `.whestignore`.
+> **Folder vs. file — this matters for multi-file submissions.** A *directory*
+> argument (`./my-submission`) is a folder submission: every file under it ships. A
+> *file* argument (`./my-submission/estimator.py`) is a single-file submission — it
+> ships **only** that one file, so helper modules and subpackages are silently
+> dropped (the archive validates locally but fails at grading with a missing import).
+> Pass the folder whenever your submission is more than one file.
+
+`whest package` bundles every file in the folder except the built-in ignore set
+(`.git`, `__pycache__`, `*.pyc`, `*.tar.gz`, etc.) and any patterns in `.gitignore`
+/ `.whestignore`.
 
 The preview lists every file that will be included with its size and total count:
 
 ```
-Packaging ./my-submission/estimator.py → submission-*.tar.gz
+Packaging ./my-submission → submission-*.tar.gz
 Files to bundle (4 files, 1.2 MB):
   estimator.py  (3.1 KB)
   layers.py     (1.8 KB)
@@ -110,7 +119,7 @@ Package these 4 files (1.2 MB)? [y/N]
 Press `y` to confirm, or pass `--yes` / `-y` to skip the prompt (for CI):
 
 ```bash
-whest package --estimator ./my-submission/estimator.py --yes
+whest package --estimator ./my-submission --yes
 ```
 
 ### Caps
@@ -209,20 +218,20 @@ my-submission/
 # 1. Train offline (not shipped)
 uv run python train.py
 
-# 2. Validate the estimator loads correctly
+# 2. Validate the estimator loads correctly (validate takes the estimator FILE)
 whest validate --estimator ./my-submission/estimator.py
 
-# 3. Preview and package
-whest package --estimator ./my-submission/estimator.py
+# 3. Preview and package the whole FOLDER (so helpers/subpackages ship)
+whest package --estimator ./my-submission
 
 # 3b. Verify the archive will pass the grader's integrity check
 whest validate-package ./submission-*.tar.gz
 
 # 4. Dry-run to verify what would be submitted
-whest submit --estimator ./my-submission/estimator.py --dry-run
+whest submit --estimator ./my-submission --dry-run
 
 # 5. Submit
-whest submit --estimator ./my-submission/estimator.py
+whest submit --estimator ./my-submission
 ```
 
 ## Next step
