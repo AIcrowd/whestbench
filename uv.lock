@@ -618,7 +618,7 @@ wheels = [
 
 [[package]]
 name = "flopscope"
-version = "0.8.0rc2"
+version = "0.8.0rc5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -626,14 +626,14 @@ dependencies = [
     { name = "opt-einsum" },
     { name = "rich" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3a/e9/78f45b00daf3ff5137987034e500bfcc345ba48c378325002db1cea4a47d/flopscope-0.8.0rc2.tar.gz", hash = "sha256:d08c6732446214c72e539fc29c0a50c7d836c18d596b7d2833cec6fce9c9f98d", size = 6748751, upload-time = "2026-06-22T16:11:55.964Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/70/a7/3680252f53312807d57a2a61c3389f9c3db40c3a67bbab32cfc78680d917/flopscope-0.8.0rc5.tar.gz", hash = "sha256:c0fcb1d754a9ee8905e7d067b7eb23834eeb3c7b820b28aab66c371139c795dd", size = 6778095, upload-time = "2026-06-24T22:13:46.538Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/d1/4bf75ea2a7e50593124ec354ecb05d0efa85954ee322fa8e60e38daca3fd/flopscope-0.8.0rc2-py3-none-any.whl", hash = "sha256:9909de5a35011b4a03720c912fe83524e776cb8b20b80a1fc4a95ae2b812d8db", size = 403921, upload-time = "2026-06-22T16:11:53.987Z" },
+    { url = "https://files.pythonhosted.org/packages/26/c1/50f1354da8afbb5cd585802d3b1396f5d574f0c1831f6c114982c04bde6d/flopscope-0.8.0rc5-py3-none-any.whl", hash = "sha256:21c51ece941eb75dd9d7ffc581913384a37a0a6a7defe1319148c8e3e1bdc73b", size = 403505, upload-time = "2026-06-24T22:13:44.789Z" },
 ]
 
 [[package]]
 name = "flopscope-server"
-version = "0.8.0rc2"
+version = "0.8.0rc5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "flopscope" },
@@ -642,9 +642,9 @@ dependencies = [
     { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "pyzmq" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3b/14/d088544a24a10dbd86cfe7d7cf9ae82c6b443d8675ba03e0d4147acd4cbb/flopscope_server-0.8.0rc2.tar.gz", hash = "sha256:76f27ac26cbb5190247111ffe861d5acd1a40adc39487aca3604296ecb0ec888", size = 71616, upload-time = "2026-06-22T16:11:58.872Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ed/48/9ed14505a285342a56812fb68038189e7a8aab09678e5a5a9a35d4ccf8ba/flopscope_server-0.8.0rc5.tar.gz", hash = "sha256:4c35a483d36481fefd7a4290a40d1d1bcd924b27967c1f5436b52ba94ee650a7", size = 73444, upload-time = "2026-06-24T22:13:42.922Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5b/d6/e472ca6102ce6ae462d9a481bce236a6c6860deab9465d41f258e8dd4e62/flopscope_server-0.8.0rc2-py3-none-any.whl", hash = "sha256:3baa5648c688a974b67a29657b9ae522c4d9306edc0129cbe53a644e46229d05", size = 23081, upload-time = "2026-06-22T16:11:57.626Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/6f/712ce5e0266983fd5a05cd6ca818781e25791dedab435c978e1625857cd3/flopscope_server-0.8.0rc5-py3-none-any.whl", hash = "sha256:1b2955b0775479ce44a794d3593fa46d77d10143afdacab85fd612612ef1ffbd", size = 24160, upload-time = "2026-06-24T22:13:41.736Z" },
 ]
 
 [[package]]
@@ -2524,7 +2524,7 @@ wheels = [
 
 [[package]]
 name = "whestbench"
-version = "0.12.0rc1"
+version = "0.12.0rc2"
 source = { editable = "." }
 dependencies = [
     { name = "datasets" },
@@ -2563,7 +2563,7 @@ server = [
 requires-dist = [
     { name = "datasets", specifier = ">=2.20" },
     { name = "faker", specifier = "~=37.0" },
-    { name = "flopscope", specifier = ">=0.8.0rc2,<0.9.0" },
+    { name = "flopscope", specifier = ">=0.8.0rc5,<0.9.0" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "huggingface-hub", specifier = ">=0.24" },
     { name = "jinja2", specifier = ">=3.1" },
@@ -2586,7 +2586,7 @@ dev = [
     { name = "pytest", specifier = ">=8.2.0" },
     { name = "ruff", specifier = ">=0.6.0" },
 ]
-server = [{ name = "flopscope-server", specifier = ">=0.8.0rc2,<0.9.0" }]
+server = [{ name = "flopscope-server", specifier = ">=0.8.0rc5,<0.9.0" }]
 
 [[package]]
 name = "wrapt"

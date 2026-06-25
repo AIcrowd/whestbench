@@ -41,9 +41,10 @@ def test_validate_predictions_rejects_wrong_shape() -> None:
 
 
 def test_validate_predictions_rejects_non_finite() -> None:
-    arr = fnp.ones((3, 4), dtype=fnp.float32)
-    arr[0, 0] = float("nan")
-    arr = fnp.array(arr)
+    # flopscope arrays are immutable, so build the non-finite input functionally
+    # rather than by item assignment (arr[0, 0] = nan).
+    row = [float("nan"), 1.0, 1.0, 1.0]
+    arr = fnp.array([row, [1.0, 1.0, 1.0, 1.0], [1.0, 1.0, 1.0, 1.0]], dtype=fnp.float32)
     with pytest.raises(ValueError, match="finite") as exc_info:
         validate_predictions(arr, depth=3, width=4)
     details = getattr(exc_info.value, "details", None)
