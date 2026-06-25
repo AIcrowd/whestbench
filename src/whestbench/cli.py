@@ -3470,6 +3470,30 @@ def _main_participant(argv: "list[str]") -> int:
                     say.warn(msg)
                 return 2
 
+            from .validation import validate_package as _validate_package
+
+            _vr = _validate_package(artifact)
+            if not _vr.ok:
+                if json_output:
+                    print(
+                        json.dumps(
+                            {
+                                "ok": False,
+                                "error": "submission archive failed local validation",
+                                "issues": [
+                                    {"code": i.code, "name": i.name, "message": i.message}
+                                    for i in _vr.issues
+                                ],
+                            }
+                        )
+                    )
+                else:
+                    say.warn(f"Refusing to submit: {artifact} failed local validation.")
+                    for i in _vr.issues:
+                        say.hint(f"[{i.code}] {i.name or 'archive'}: {i.message}")
+                    say.hint("Re-package with `whest package` and try again.")
+                return 2
+
             client = AIcrowdClient(api_key=api_key)
             try:
                 say.intent("Submitting to AIcrowd", quiet=json_output)
