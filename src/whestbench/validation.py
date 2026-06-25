@@ -84,19 +84,21 @@ def validate_package(tarball: "str | Path") -> PackageValidation:
     with archive:
         members = {m.name: m for m in archive.getmembers()}
 
-        if "manifest.json" not in members:
+        manifest_member = members.get("manifest.json")
+        if manifest_member is None or not manifest_member.isreg():
             return PackageValidation(
                 False,
                 [
                     ValidationIssue(
                         "missing_manifest",
                         "manifest.json",
-                        "Archive has no manifest.json. Build the archive with `whest package`.",
+                        "Archive has no readable manifest.json (missing or not a regular file). "
+                        "Build the archive with `whest package`.",
                     )
                 ],
             )
         try:
-            manifest = json.loads(archive.extractfile("manifest.json").read())  # type: ignore[union-attr]
+            manifest = json.loads(archive.extractfile(manifest_member).read())  # type: ignore[union-attr]
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
             return PackageValidation(
                 False,
@@ -105,6 +107,19 @@ def validate_package(tarball: "str | Path") -> PackageValidation:
                         "invalid_manifest_json",
                         "manifest.json",
                         f"manifest.json is not valid JSON: {e}.",
+                    )
+                ],
+            )
+
+        if not isinstance(manifest, dict):
+            return PackageValidation(
+                False,
+                [
+                    ValidationIssue(
+                        "invalid_manifest_json",
+                        "manifest.json",
+                        f"manifest.json must be a JSON object, not a {type(manifest).__name__}. "
+                        "Build the archive with `whest package`.",
                     )
                 ],
             )
@@ -130,7 +145,9 @@ def validate_package(tarball: "str | Path") -> PackageValidation:
                 )
             )
 
-        entrypoint = manifest.get("entrypoint") or {}
+        entrypoint = manifest.get("entrypoint")
+        if not isinstance(entrypoint, dict):
+            entrypoint = {}
         module = entrypoint.get("module")
         if not module:
             issues.append(
@@ -198,7 +215,23 @@ def validate_package(tarball: "str | Path") -> PackageValidation:
                     )
                 )
                 continue
-            actual = hashlib.sha256(archive.extractfile(m).read()).hexdigest()  # type: ignore[union-attr]
+            handle = archive.extractfile(m)
+            if handle is None:  # defensive: isreg() above guarantees a readable body
+                issues.append(
+                    ValidationIssue(
+                        "not_a_regular_file",
+                        name,
+                        f"manifest entry {name!r} could not be read from the archive.",
+                    )
+                )
+                continue
+            digest = hashlib.sha256()
+            while True:
+                chunk = handle.read(65536)
+                if not chunk:
+                    break
+                digest.update(chunk)
+            actual = digest.hexdigest()
             if declared != actual:
                 issues.append(
                     ValidationIssue(

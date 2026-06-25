@@ -201,3 +201,59 @@ def test_missing_file_rejected(tmp_path: Path) -> None:
     result = validate_package(tmp_path / "does-not-exist.tar.gz")
     assert result.ok is False
     assert "archive_missing" in _codes(result)
+
+
+def test_non_dict_manifest_does_not_crash(tmp_path: Path) -> None:
+    # manifest.json is valid JSON but not an object (a list). json.loads returns a
+    # list, and the old code called manifest.get(...) on it -> AttributeError.
+    blob = b"[1, 2, 3]"
+    p = tmp_path / "listmani.tar.gz"
+    with tarfile.open(p, "w:gz") as tf:
+        mi = tarfile.TarInfo("manifest.json")
+        mi.size = len(blob)
+        tf.addfile(mi, io.BytesIO(blob))
+    result = validate_package(p)  # must not raise
+    assert result.ok is False
+    assert "invalid_manifest_json" in _codes(result)
+
+
+def test_non_dict_entrypoint_does_not_crash(tmp_path: Path) -> None:
+    # entrypoint is a truthy non-dict (a list). The old `... or {}` let it through to
+    # entrypoint.get("module") -> AttributeError.
+    body = _EST.encode("utf-8")
+    p = tmp_path / "badentry.tar.gz"
+    manifest = _manifest([{"name": "estimator.py", "sha256": _sha(body)}])
+    manifest["entrypoint"] = ["estimator"]
+    _write_tarball(p, file_bytes={"estimator.py": body}, manifest=manifest)
+    result = validate_package(p)  # must not raise
+    assert result.ok is False
+    assert "missing_entrypoint" in _codes(result)
+
+
+def test_directory_manifest_member_does_not_crash(tmp_path: Path) -> None:
+    # manifest.json exists as a DIRTYPE member. `"manifest.json" in members` passed, then
+    # archive.extractfile(...) returned None -> .read() AttributeError.
+    p = tmp_path / "dirmani.tar.gz"
+    with tarfile.open(p, "w:gz") as tf:
+        info = tarfile.TarInfo("manifest.json")
+        info.type = tarfile.DIRTYPE
+        info.mode = 0o755
+        tf.addfile(info)
+    result = validate_package(p)  # must not raise
+    assert result.ok is False
+    assert "missing_manifest" in _codes(result)
+
+
+def test_folder_submission_with_subpackage_validates_ok(tmp_path: Path) -> None:
+    # Real folder submission carrying a subpackage shipped as individual files.
+    # estimator.py is self-contained (does NOT import arc_tools) so packaging's
+    # predict-signature validation stays simple.
+    sub = tmp_path / "submission"
+    pkg = sub / "arc_tools"
+    pkg.mkdir(parents=True)
+    (sub / "estimator.py").write_text(_EST, encoding="utf-8")
+    (pkg / "__init__.py").write_text("from ._arc_mlp import helper\n", encoding="utf-8")
+    (pkg / "_arc_mlp.py").write_text("def helper():\n    return 42\n", encoding="utf-8")
+    out = tmp_path / "submission.tar.gz"
+    package_submission(sub, output_path=out)
+    assert validate_package(out).ok is True
