@@ -1088,6 +1088,13 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     add_output_format_arguments(validate_parser)
 
+    validate_pkg_parser = subparsers.add_parser(
+        "validate-package",
+        help="Validate a packaged submission .tar.gz against its manifest.",
+    )
+    validate_pkg_parser.add_argument("artifact", help="Path to a submission .tar.gz.")
+    add_output_format_arguments(validate_pkg_parser)
+
     run_parser = subparsers.add_parser(
         "run",
         help="Run local evaluation for an estimator.",
@@ -3271,6 +3278,35 @@ def _main_participant(argv: "list[str]") -> int:
                     f"`whest submit {artifact_path}` (or `whest submit --estimator estimator.py`)"
                 )
             return 0
+
+        if command == "validate-package":
+            from .ui import say
+            from .validation import validate_package
+
+            result = validate_package(args.artifact)
+            if json_output:
+                print(
+                    json.dumps(
+                        _json_payload_with_metadata(
+                            {
+                                "ok": result.ok,
+                                "artifact": str(args.artifact),
+                                "issues": [
+                                    {"code": i.code, "name": i.name, "message": i.message}
+                                    for i in result.issues
+                                ],
+                            }
+                        ),
+                        indent=2,
+                    )
+                )
+            elif result.ok:
+                say.ok(f"{args.artifact} is a valid submission archive.")
+            else:
+                say.warn(f"{args.artifact} is not a valid submission archive:")
+                for i in result.issues:
+                    say.hint(f"[{i.code}] {i.name or 'archive'}: {i.message}")
+            return 0 if result.ok else 1
 
         if command == "doctor":
             import time as _time
