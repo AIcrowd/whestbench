@@ -44,3 +44,18 @@ def test_submit_aborts_on_invalid_archive_before_upload(tmp_path: Path, monkeypa
 
     rc = cli.main(["submit", str(bad), "--json"])
     assert rc == 2
+
+
+def test_submit_dry_run_self_checks_packaged_archive(tmp_path: Path) -> None:
+    # --dry-run packages from --estimator and runs the same local validation the
+    # upload path uses; a real whest archive passes (rc 0, no upload, no auth).
+    (tmp_path / "estimator.py").write_text(
+        "from whestbench import BaseEstimator\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        import flopscope.numpy as fnp\n"
+        "        return fnp.zeros((mlp.depth, mlp.width))\n",
+        encoding="utf-8",
+    )
+    rc = cli.main(["submit", "--estimator", str(tmp_path / "estimator.py"), "--dry-run"])
+    assert rc == 0

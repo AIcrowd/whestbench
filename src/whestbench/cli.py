@@ -2414,6 +2414,32 @@ def _submit_dry_run(args: "Any", *, json_output: bool) -> int:
             output_path=str(Path(_tmp) / "submission-dryrun.tar.gz"),
         )
         _dry_size = _dry_artifact.stat().st_size
+        # Self-check: the archive whest just built must pass the same local
+        # validation `whest submit` runs before upload (whestbench#107). For a
+        # whest-built archive this always passes; a failure here means a packaging
+        # regression — surface it now instead of at the grader.
+        from .validation import validate_package as _validate_package
+
+        _vr = _validate_package(_dry_artifact)
+        if not _vr.ok:
+            if json_output:
+                print(
+                    json.dumps(
+                        {
+                            "ok": False,
+                            "error": "packaged archive failed local validation",
+                            "issues": [
+                                {"code": i.code, "name": i.name, "message": i.message}
+                                for i in _vr.issues
+                            ],
+                        }
+                    )
+                )
+            else:
+                say.warn("Dry run: the packaged archive failed local validation:")
+                for i in _vr.issues:
+                    say.hint(f"[{i.code}] {i.name or 'archive'}: {i.message}")
+            return 2
     say.ok(
         f"Archive would be {format_bytes(_dry_size)} "
         f"({_summary.file_count} file{'s' if _summary.file_count != 1 else ''})",
