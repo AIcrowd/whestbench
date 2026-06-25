@@ -34,6 +34,37 @@ from utils import normalize      # utils.py is in the same directory
 If a `.py` file is not imported from `estimator.py`, `whest package` warns about
 it (it's likely dead code). Add it to `.whestignore` if it shouldn't ship.
 
+### Shipping a helper subpackage (a directory)
+
+Larger helpers can live in a package directory, not just flat sibling modules. It
+ships automatically too — `whest package` bundles every file under your estimator's
+directory and lists them **individually** in the manifest:
+
+```
+my-submission/
+  estimator.py
+  arc_tools/
+    __init__.py
+    _arc_mlp.py
+    polynomial/
+      __init__.py
+      basis.py
+```
+
+Import it as a normal package — the submission directory is on `sys.path` when the
+archive is extracted:
+
+```python
+# estimator.py
+from arc_tools import helper
+from arc_tools.polynomial import basis
+```
+
+> **Do not hand-write `manifest.json`.** `whest package` generates it with a
+> per-file SHA-256. A hand-rolled manifest that lists a bare directory (e.g.
+> `arc_tools/`) is rejected by the grader's integrity check. Always package with
+> `whest`, and verify locally with `whest validate-package submission.tar.gz`.
+
 ## 2. Author weights offline (plain numpy is fine)
 
 Compute and save weights in a separate training script before packaging:
@@ -183,6 +214,9 @@ whest validate --estimator ./my-submission/estimator.py
 
 # 3. Preview and package
 whest package --estimator ./my-submission/estimator.py
+
+# 3b. Verify the archive will pass the grader's integrity check
+whest validate-package ./submission-*.tar.gz
 
 # 4. Dry-run to verify what would be submitted
 whest submit --estimator ./my-submission/estimator.py --dry-run

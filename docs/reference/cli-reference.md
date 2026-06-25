@@ -470,6 +470,18 @@ whest package --estimator . --yes
 whest package --estimator . --output ./my-submission.tar.gz --yes
 ```
 
+## `whest validate-package`
+
+Verify a packaged submission archive against its bundled `manifest.json` — the same
+integrity check the grader runs: the entrypoint module is present, and every
+`files[]` entry is a regular file whose SHA-256 matches the archive bytes (no
+directory entries). Exits non-zero and lists each problem if the archive is invalid.
+`whest submit` runs this automatically before uploading.
+
+```bash
+whest validate-package <submission.tar.gz> [--format rich|plain|json] [--json]
+```
+
 ## `whest submit`
 
 Submit a packaged artifact (or an estimator folder) to the AIcrowd leaderboard.
