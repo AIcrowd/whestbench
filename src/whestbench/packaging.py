@@ -38,6 +38,18 @@ class SubmissionFiles:
 
 
 def _sha256(path: Path) -> str:
+    # A manifest entry must be a regular file. Hashing a directory opens it for
+    # reading and raises a bare ``IsADirectoryError``; if such an entry ever reaches
+    # a manifest it crashes the grader's post-extraction integrity check (prod
+    # whestbench#107: a hand-rolled manifest listing a bare ``arc_tools/`` directory
+    # took down every eval worker with ``IsADirectoryError``). Fail loudly here with
+    # an actionable message instead of leaking the low-level errno.
+    if not path.is_file():
+        raise ValueError(
+            f"Cannot hash {path}: a submission manifest entry must be a regular file, "
+            f"not a directory or special file. Ship a subpackage as its individual "
+            f"files (folder packaging lists them automatically)."
+        )
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(65536), b""):
@@ -52,6 +64,21 @@ def build_manifest(
     files: "List[Path]",
     packager_version: str = "0.1.0",
 ) -> Dict[str, Any]:
+    # Every ``files[]`` entry must be a regular file. A directory cannot be hashed
+    # and, if it reaches the grader's manifest-verify step, crashes it with
+    # ``IsADirectoryError`` (prod whestbench#107). The supported CLI paths never
+    # feed a directory here — folder mode lists individual files — but guard the
+    # builder itself so a bad entry fails loudly at package time, naming exactly
+    # what to fix, rather than crashing obscurely downstream.
+    non_files = [p for p in files if not p.is_file()]
+    if non_files:
+        offending = ", ".join(sorted(str(p.relative_to(root)) for p in non_files))
+        raise ValueError(
+            f"Refusing to build a manifest: every files[] entry must be a regular file, "
+            f"but these are a directory or special file: {offending}. A directory cannot "
+            f"be hashed and crashes the grader's integrity check — ship a subpackage as "
+            f"its individual files instead (folder packaging lists them automatically)."
+        )
     manifest_files = [
         {
             "name": str(p.relative_to(root)),
