@@ -8,9 +8,12 @@ pushed people to hand-roll a manifest (which crashed the grader)."""
 
 from __future__ import annotations
 
+import importlib
+import sys
+import tarfile
 from pathlib import Path
 
-from whestbench.packaging import summarize_submission
+from whestbench.packaging import package_submission, summarize_submission
 
 _EST_IMPORTS_PKG = (
     "from whestbench import BaseEstimator\n"
@@ -57,3 +60,31 @@ def test_unimported_subpackage_is_flagged_as_a_unit(tmp_path: Path) -> None:
     assert "unused_pkg/__init__.py" in s.unreachable_py
     assert "unused_pkg/thing.py" in s.unreachable_py
     assert "arc_tools/__init__.py" not in s.unreachable_py
+
+
+def test_packaged_subpackage_is_importable(tmp_path: Path) -> None:
+    src = tmp_path / "sub"
+    src.mkdir()
+    (src / "estimator.py").write_text(_EST_IMPORTS_PKG, encoding="utf-8")
+    pkg = src / "arc_tools"
+    (pkg / "polynomial").mkdir(parents=True)
+    (pkg / "__init__.py").write_text("from ._arc_mlp import helper\n", encoding="utf-8")
+    (pkg / "_arc_mlp.py").write_text("def helper():\n    return 0\n", encoding="utf-8")
+    (pkg / "polynomial" / "__init__.py").write_text("\n", encoding="utf-8")
+    out = tmp_path / "submission.tar.gz"
+
+    package_submission(src, output_path=out)
+
+    extract = tmp_path / "extracted"
+    with tarfile.open(out, "r:gz") as tf:
+        tf.extractall(extract, filter="data")  # filter="data" silences Py3.12 warning
+
+    sys.path.insert(0, str(extract))
+    try:
+        mod = importlib.import_module("arc_tools")
+        assert hasattr(mod, "helper")
+        importlib.import_module("arc_tools.polynomial")
+    finally:
+        sys.path.remove(str(extract))
+        for name in [m for m in sys.modules if m == "arc_tools" or m.startswith("arc_tools.")]:
+            del sys.modules[name]
