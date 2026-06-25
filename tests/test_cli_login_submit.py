@@ -2,12 +2,36 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import List
 
 from rich.console import Console as _RichConsole
 
 import whestbench.aicrowd_config as cfg
 import whestbench.cli as cli
+from whestbench.packaging import package_submission
+
+_VALID_ESTIMATOR = (
+    "from whestbench import BaseEstimator\n"
+    "class Estimator(BaseEstimator):\n"
+    "    def predict(self, mlp, budget):\n"
+    "        import flopscope.numpy as fnp\n"
+    "        return fnp.zeros((mlp.depth, mlp.width))\n"
+)
+
+
+def _valid_artifact(tmp_path: Path) -> Path:
+    """Build a real, valid submission archive.
+
+    `whest submit` validates the archive locally before uploading (rejecting
+    directory manifest entries and drift — whestbench#107), so submit-pipeline
+    tests must hand it a genuine archive, not fake bytes."""
+    src = tmp_path / "_src"
+    src.mkdir(exist_ok=True)
+    (src / "estimator.py").write_text(_VALID_ESTIMATOR, encoding="utf-8")
+    out = tmp_path / "submission.tar.gz"
+    package_submission(src / "estimator.py", output_path=out)
+    return out
 
 
 def _spy_console_print(monkeypatch) -> List[str]:
@@ -125,8 +149,7 @@ def test_submit_watch_poll_failure_is_graceful(monkeypatch, tmp_path):
     _spy_console_print(monkeypatch)
     monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
     _stub_submit_pipeline(monkeypatch, watch_raises=True)
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art), "--watch"])
     assert rc == 0
 
@@ -141,8 +164,7 @@ def test_submit_watch_reaches_graded_and_prints_score(monkeypatch, tmp_path):
         monkeypatch,
         status_after={"id": 7777, "grading_status_cd": "graded", "score": 0.0845},
     )
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art), "--watch"])
     assert rc == 0
     assert any("0.0845" in line for line in captured)
@@ -162,8 +184,7 @@ def test_submit_watch_failed_grading_returns_nonzero(monkeypatch, tmp_path):
             "grading_message": "boom",
         },
     )
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art), "--watch"])
     assert rc == 1
     assert any("boom" in line for line in captured)
@@ -173,8 +194,7 @@ def test_submit_file_runs_full_hop_a(monkeypatch, tmp_path):
     captured = _spy_console_print(monkeypatch)
     monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
     calls = _stub_submit_pipeline(monkeypatch)
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art)])
     assert rc == 0
     assert calls["created"]["challenge_slug"] == "arc-white-box-estimation-challenge-2026"
@@ -185,8 +205,7 @@ def test_submit_estimator_packages_first(monkeypatch, tmp_path):
     _spy_console_print(monkeypatch)
     monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
     _stub_submit_pipeline(monkeypatch)
-    packaged = tmp_path / "submission-packaged.tar.gz"
-    packaged.write_bytes(b"\x1f\x8b\x08\x00fake")
+    packaged = _valid_artifact(tmp_path)
     monkeypatch.setattr(cli, "package_submission", lambda *a, **k: packaged)
     est = tmp_path / "estimator.py"
     est.write_text(
@@ -216,8 +235,7 @@ def test_submit_unregistered_errors(monkeypatch, tmp_path):
     _spy_console_print(monkeypatch)
     monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
     _stub_submit_pipeline(monkeypatch, registered=False)
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"x")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art)])
     assert rc != 0
 
@@ -233,8 +251,7 @@ def test_submit_watch_absorbs_transient_then_grades(monkeypatch, tmp_path):
         transient_polls=2,
         status_after={"id": 7777, "grading_status_cd": "graded", "score": 0.0845},
     )
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art), "--watch"])
     assert rc == 0
     assert any("Graded" in line for line in captured)
@@ -248,8 +265,7 @@ def test_submit_watch_deadline_detaches_cleanly(monkeypatch, tmp_path):
     captured = _spy_console_print(monkeypatch)
     monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
     _stub_submit_pipeline(monkeypatch, transient_forever=True)
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art), "--watch", "--watch-timeout", "0"])
     assert rc == 0
     assert any("Still grading" in line for line in captured)
@@ -263,8 +279,7 @@ def test_submit_watch_permanent_error_degrades_gracefully(monkeypatch, tmp_path)
     captured = _spy_console_print(monkeypatch)
     monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
     _stub_submit_pipeline(monkeypatch, watch_raises=True)
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art), "--watch", "--watch-timeout", "0"])
     assert rc == 0
     assert any("view it at" in line for line in captured)
@@ -279,8 +294,7 @@ def test_submit_path_transient_exhaustion_reports_failure(monkeypatch, tmp_path)
     captured = _spy_console_print(monkeypatch)
     monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
     _stub_submit_pipeline(monkeypatch, create_raises=True)
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art)])
     assert rc != 0
     assert any("HTTP 503" in line for line in captured)
@@ -304,8 +318,7 @@ def test_submit_failure_prints_message_and_hint(monkeypatch, tmp_path):
         ),
     )
 
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art)])
     assert rc != 0
     assert any("Submissions are not open." in line for line in captured)
@@ -327,8 +340,7 @@ def test_submit_failure_json_has_error_code_and_status(monkeypatch, tmp_path, ca
             )
         ),
     )
-    art = tmp_path / "submission.tar.gz"
-    art.write_bytes(b"\x1f\x8b\x08\x00fake")
+    art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art), "--json"])
     assert rc != 0
     import json as _j
