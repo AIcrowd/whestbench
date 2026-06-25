@@ -460,15 +460,38 @@ def _local_imports(py_path: Path) -> set[str]:
     return names
 
 
-def _reachable_py(root: Path, entry: Path, py_files: "dict[str, Path]") -> set[str]:
-    reachable: set[str] = {entry.stem}
+def _module_index(root: Path, py_files: "list[Path]") -> "dict[str, list[Path]]":
+    """Map each importable top-level name to the .py files it covers.
+
+    A top-level module ``helper.py`` maps ``helper`` -> ``[helper.py]``. A top-level
+    package directory ``pkg/`` (directly under ``root``, containing ``__init__.py``)
+    maps ``pkg`` -> *every* .py file under ``pkg/``. Importing a package therefore
+    marks the whole package reachable: we do not trace submodule-level usage, because
+    the unreachable hint is a soft warning and mislabeling real package code (the bug
+    behind whestbench#107) is worse than missing one truly-dead file."""
+    index: "dict[str, list[Path]]" = {}
+    for p in py_files:
+        rel = p.relative_to(root)
+        if len(rel.parts) == 1:
+            index.setdefault(rel.stem, []).append(p)
+        else:
+            top = rel.parts[0]
+            if (root / top / "__init__.py").is_file():
+                index.setdefault(top, []).append(p)
+    return index
+
+
+def _reachable_files(root: Path, entry: Path, index: "dict[str, list[Path]]") -> "set[Path]":
+    """Set of .py files reachable by import from ``entry`` (including ``entry``)."""
+    reachable: "set[Path]" = {entry}
     frontier = [entry]
     while frontier:
         cur = frontier.pop()
         for imp in _local_imports(cur):
-            if imp in py_files and imp not in reachable:
-                reachable.add(imp)
-                frontier.append(py_files[imp])
+            for f in index.get(imp, ()):
+                if f not in reachable:
+                    reachable.add(f)
+                    frontier.append(f)
     return reachable
 
 
@@ -491,11 +514,10 @@ def summarize_submission(estimator_path: "str | Path") -> SubmissionSummary:
     root, entry, mode = resolve_submission(estimator_path)
     if mode == "folder":
         files = collect_submission_files(root)
-        py_files = {p.stem: p for p in files if p.suffix == ".py"}
-        reachable = _reachable_py(root, entry, py_files)
-        unreachable = sorted(
-            str(p.relative_to(root)) for p in files if p.suffix == ".py" and p.stem not in reachable
-        )
+        py = [p for p in files if p.suffix == ".py"]
+        index = _module_index(root, py)
+        reachable = _reachable_files(root, entry, index)
+        unreachable = sorted(str(p.relative_to(root)) for p in py if p not in reachable)
     else:
         files = [entry]
         unreachable = []
