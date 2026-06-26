@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.12.0rc3 (2026-06-26)
+
+### Feat
+
+- **cli**: self-check the packaged archive on whest submit --dry-run (#107)
+- **cli**: validate the submission archive before upload in `whest submit` (#107)
+- **cli**: add `whest validate-package` (#107)
+- **validation**: local submission-archive validator mirroring the grader (#107)
+
+### Fix
+
+- adopt flopscope 0.8.0rc5 immutable-array API; pin floor to rc5
+- **validation**: never crash on malformed manifests; chunked hashing (#107)
+- **packaging**: package-aware reachability so subpackages aren't flagged dead (#107)
+- **packaging**: reject directory entries in build_manifest/_sha256 (#107)
+
 ## v0.12.0rc2 (2026-06-23)
 
 ### Fix
