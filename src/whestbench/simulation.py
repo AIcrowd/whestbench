@@ -109,7 +109,10 @@ def sample_layer_statistics(
         rng = fnp.random.default_rng()
     assert rng is not None  # narrows for pyright; flopscope's default_rng is untyped
 
-    layer_sums = fnp.zeros((depth, width), dtype=fnp.float64)
+    # flopscope arrays are immutable (no in-place ``+=`` / item assignment), so
+    # accumulate per-layer sums in a Python list and stack once at the end, and
+    # rebind ``final_sum_sq`` with a whole-array add instead of ``+=``.
+    layer_sums = [fnp.zeros(width, dtype=fnp.float64) for _ in range(depth)]
     final_sum_sq = fnp.zeros(width, dtype=fnp.float64)
     n_processed = 0
 
@@ -124,14 +127,14 @@ def sample_layer_statistics(
             for layer_idx, w in enumerate(mlp.weights):
                 x = fnp.maximum(fnp.matmul(x, w), 0.0)
                 x_f64 = fnp.asarray(x, dtype=fnp.float64)
-                layer_sums[layer_idx] += fnp.sum(x_f64, axis=0)
+                layer_sums[layer_idx] = layer_sums[layer_idx] + fnp.sum(x_f64, axis=0)
             x_f64 = fnp.asarray(x, dtype=fnp.float64)
-            final_sum_sq += fnp.sum(x_f64**2, axis=0)
+            final_sum_sq = final_sum_sq + fnp.sum(x_f64**2, axis=0)
             n_processed += n
             if progress is not None:
                 progress({"completed": chunk_index, "total": total_chunks, "unit": "chunks"})
 
-    layer_means = fnp.asarray(layer_sums / n_processed, dtype=fnp.float32)
+    layer_means = fnp.asarray(fnp.stack(layer_sums) / n_processed, dtype=fnp.float32)
     final_mean = layer_means[-1].copy()
     avg_variance = float(
         fnp.mean(final_sum_sq / n_processed - fnp.asarray(final_mean, dtype=fnp.float64) ** 2)

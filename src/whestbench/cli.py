@@ -1088,6 +1088,13 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     add_output_format_arguments(validate_parser)
 
+    validate_pkg_parser = subparsers.add_parser(
+        "validate-package",
+        help="Validate a packaged submission .tar.gz against its manifest.",
+    )
+    validate_pkg_parser.add_argument("artifact", help="Path to a submission .tar.gz.")
+    add_output_format_arguments(validate_pkg_parser)
+
     run_parser = subparsers.add_parser(
         "run",
         help="Run local evaluation for an estimator.",
@@ -2407,6 +2414,32 @@ def _submit_dry_run(args: "Any", *, json_output: bool) -> int:
             output_path=str(Path(_tmp) / "submission-dryrun.tar.gz"),
         )
         _dry_size = _dry_artifact.stat().st_size
+        # Self-check: the archive whest just built must pass the same local
+        # validation `whest submit` runs before upload (whestbench#107). For a
+        # whest-built archive this always passes; a failure here means a packaging
+        # regression — surface it now instead of at the grader.
+        from .validation import validate_package as _validate_package
+
+        _vr = _validate_package(_dry_artifact)
+        if not _vr.ok:
+            if json_output:
+                print(
+                    json.dumps(
+                        {
+                            "ok": False,
+                            "error": "packaged archive failed local validation",
+                            "issues": [
+                                {"code": i.code, "name": i.name, "message": i.message}
+                                for i in _vr.issues
+                            ],
+                        }
+                    )
+                )
+            else:
+                say.warn("Dry run: the packaged archive failed local validation:")
+                for i in _vr.issues:
+                    say.hint(f"[{i.code}] {i.name or 'archive'}: {i.message}")
+            return 2
     say.ok(
         f"Archive would be {format_bytes(_dry_size)} "
         f"({_summary.file_count} file{'s' if _summary.file_count != 1 else ''})",
@@ -3272,6 +3305,35 @@ def _main_participant(argv: "list[str]") -> int:
                 )
             return 0
 
+        if command == "validate-package":
+            from .ui import say
+            from .validation import validate_package
+
+            result = validate_package(args.artifact)
+            if json_output:
+                print(
+                    json.dumps(
+                        _json_payload_with_metadata(
+                            {
+                                "ok": result.ok,
+                                "artifact": str(args.artifact),
+                                "issues": [
+                                    {"code": i.code, "name": i.name, "message": i.message}
+                                    for i in result.issues
+                                ],
+                            }
+                        ),
+                        indent=2,
+                    )
+                )
+            elif result.ok:
+                say.ok(f"{args.artifact} is a valid submission archive.")
+            else:
+                say.warn(f"{args.artifact} is not a valid submission archive:")
+                for i in result.issues:
+                    say.hint(f"[{i.code}] {i.name or 'archive'}: {i.message}")
+            return 0 if result.ok else 1
+
         if command == "doctor":
             import time as _time
 
@@ -3432,6 +3494,30 @@ def _main_participant(argv: "list[str]") -> int:
                     print(json.dumps({"ok": False, "error": msg}))
                 else:
                     say.warn(msg)
+                return 2
+
+            from .validation import validate_package as _validate_package
+
+            _vr = _validate_package(artifact)
+            if not _vr.ok:
+                if json_output:
+                    print(
+                        json.dumps(
+                            {
+                                "ok": False,
+                                "error": "submission archive failed local validation",
+                                "issues": [
+                                    {"code": i.code, "name": i.name, "message": i.message}
+                                    for i in _vr.issues
+                                ],
+                            }
+                        )
+                    )
+                else:
+                    say.warn(f"Refusing to submit: {artifact} failed local validation.")
+                    for i in _vr.issues:
+                        say.hint(f"[{i.code}] {i.name or 'archive'}: {i.message}")
+                    say.hint("Re-package with `whest package` and try again.")
                 return 2
 
             client = AIcrowdClient(api_key=api_key)

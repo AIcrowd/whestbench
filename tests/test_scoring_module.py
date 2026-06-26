@@ -287,8 +287,9 @@ def test_validate_predictions_transposed_hint_mentions_fnp_stack() -> None:
 def test_validate_predictions_rejects_nonfinite() -> None:
     from whestbench.scoring import validate_predictions
 
-    arr = fnp.zeros((2, 4), dtype=fnp.float32)
-    arr[0, 0] = float("inf")
+    # flopscope arrays are immutable, so build the non-finite input functionally
+    # rather than by item assignment (arr[0, 0] = inf).
+    arr = fnp.array([[float("inf"), 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]], dtype=fnp.float32)
     with pytest.raises(ValueError, match="finite"):
         validate_predictions(arr, depth=2, width=4)
 
