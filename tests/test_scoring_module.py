@@ -791,7 +791,7 @@ def test_make_contest_from_dataset_returns_full_dataset() -> None:
 
     ds = _build_dataset_from_contest(n_mlps=3)
     spec = ContestSpec(width=8, depth=2, n_mlps=3, flop_budget=1_000_000, ground_truth_samples=100)
-    data = make_contest_from_dataset(spec, ds, n_mlps=3)
+    data = make_contest_from_dataset(spec, ds, n_mlps=3, seed_protocol_version="3.0")
 
     assert len(data.mlps) == 3
     assert len(data.all_layer_targets) == 3
@@ -808,7 +808,7 @@ def test_make_contest_from_dataset_subsets_first_n() -> None:
 
     ds = _build_dataset_from_contest(n_mlps=5)
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
-    data = make_contest_from_dataset(spec, ds, n_mlps=2)
+    data = make_contest_from_dataset(spec, ds, n_mlps=2, seed_protocol_version="3.0")
 
     assert len(data.mlps) == 2
     assert np.allclose(np.asarray(data.final_targets[0]), ds[0]["final_means"])
@@ -898,7 +898,7 @@ def test_make_contest_from_dataset_restores_sampling_breakdown_for_subset() -> N
     _METADATA_BY_DS[ds] = {"width": width, "depth": depth, "n_mlps": n_mlps}
 
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
-    data = make_contest_from_dataset(spec, ds, n_mlps=2)
+    data = make_contest_from_dataset(spec, ds, n_mlps=2, seed_protocol_version="3.0")
 
     assert data.sampling_budget_breakdown is not None
     assert data.sampling_budget_breakdown["flops_used"] == 30
@@ -917,7 +917,7 @@ def test_make_contest_from_dataset_rejects_oversize() -> None:
     ds = _build_dataset_from_contest(n_mlps=2)
     spec = ContestSpec(width=8, depth=2, n_mlps=5, flop_budget=1_000_000, ground_truth_samples=100)
     with pytest.raises(ValueError, match="exceeds dataset size"):
-        make_contest_from_dataset(spec, ds, n_mlps=5)
+        make_contest_from_dataset(spec, ds, n_mlps=5, seed_protocol_version="3.0")
 
 
 def test_make_contest_from_dataset_rejects_non_positive() -> None:

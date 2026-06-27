@@ -210,6 +210,8 @@ def make_contest_from_dataset(
     spec: ContestSpec,
     ds: "Union[hf_datasets.Dataset, hf_datasets.IterableDataset]",
     n_mlps: int,
+    *,
+    seed_protocol_version: "str | None" = None,
 ) -> ContestData:
     """Build ContestData from a precomputed Dataset OR IterableDataset.
 
@@ -239,8 +241,18 @@ def make_contest_from_dataset(
 
     from .dataset import _METADATA_BY_DS  # local import to avoid circular dependency
 
-    ds_md = _METADATA_BY_DS.get(ds, {})
-    proto_version = ds_md.get("seed_protocol", {}).get("version", "2.0")
+    if seed_protocol_version is not None:
+        proto_version = seed_protocol_version
+    else:
+        ds_md = _METADATA_BY_DS.get(ds, {})
+        proto_version = ds_md.get("seed_protocol", {}).get("version")
+    if proto_version is None:
+        raise ValueError(
+            "seed_protocol could not be resolved for this dataset: it is not "
+            "registered (loaded outside whestbench.load_dataset, e.g. concatenated) "
+            "and no seed_protocol_version was passed. Pass seed_protocol_version "
+            "explicitly (e.g. from the dataset's metadata.json)."
+        )
 
     if isinstance(ds, _IterableDataset):
         mlps: List[MLP] = []
