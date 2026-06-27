@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from datasets import Dataset
 
+from whestbench.domain import MLP
 from whestbench.scoring import ContestSpec, make_contest_from_dataset
 from whestbench.seeds import derive_estimator_seed
 
@@ -44,3 +45,29 @@ def test_explicit_protocol_2_0_uses_raw_seed():
     cd = make_contest_from_dataset(_spec(), _ds(), n_mlps=2, seed_protocol_version="2.0")
     assert cd.mlps[0].seed == 1
     assert cd.mlps[1].seed == 1001
+
+
+def test_explicit_protocol_invalid_version_string_raises():
+    # A typo like "3" must not silently fall through to raw (2.0) seed handling —
+    # that is the exact silent-wrong-score class the explicit path is meant to make loud.
+    with pytest.raises(ValueError, match="unsupported seed_protocol_version"):
+        make_contest_from_dataset(_spec(), _ds(), n_mlps=2, seed_protocol_version="3")
+
+
+def test_explicit_protocol_non_string_raises():
+    # e.g. accidentally passing the whole `seed_protocol` object from metadata.json.
+    # The wrong type is the point of the test, so the static arg-type error is expected.
+    with pytest.raises(ValueError, match="unsupported seed_protocol_version"):
+        make_contest_from_dataset(
+            _spec(),
+            _ds(),
+            n_mlps=2,
+            seed_protocol_version={"version": "3.0"},  # type: ignore[arg-type]
+        )
+
+
+def test_from_row_rejects_unsupported_version():
+    # Validation lives in the interpreter, so every caller (iter_mlps/load_mlp/direct) is guarded.
+    row = _ds(n=1)[0]
+    with pytest.raises(ValueError, match="unsupported seed_protocol_version"):
+        MLP.from_row(row, seed_protocol_version="v3")

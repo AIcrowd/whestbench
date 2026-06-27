@@ -101,12 +101,25 @@ class MLP:
         width = weight_layers[0].shape[0] if weight_layers[0].ndim else 0
 
         raw_seed = int(row.get("mlp_seed", 0))
-        if seed_protocol_version == "3.0":
+        # Validate the version here, in the one place that interprets it, so every
+        # caller (make_contest_from_dataset, iter_mlps, load_mlp, direct) is guarded.
+        # An unrecognised value (a typo like "3", or the whole seed_protocol dict)
+        # must raise — silently treating it as legacy raw seed would reintroduce the
+        # wrong-score class the explicit-protocol path exists to prevent.
+        from .dataset_io import SEED_PROTOCOL_VERSION, SEED_PROTOCOL_VERSION_V3
+
+        if seed_protocol_version == SEED_PROTOCOL_VERSION_V3:
             from .seeds import derive_estimator_seed
 
             estimator_seed = derive_estimator_seed(raw_seed)
-        else:  # "2.0" or any other legacy
-            estimator_seed = raw_seed
+        elif seed_protocol_version == SEED_PROTOCOL_VERSION:
+            estimator_seed = raw_seed  # legacy: parquet mlp_seed IS the estimator seed
+        else:
+            raise ValueError(
+                f"unsupported seed_protocol_version {seed_protocol_version!r}; expected "
+                f"{SEED_PROTOCOL_VERSION!r} (legacy raw seed) or "
+                f"{SEED_PROTOCOL_VERSION_V3!r} (derived per-MLP seed)"
+            )
 
         mlp = cls(
             width=width,
