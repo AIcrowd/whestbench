@@ -102,8 +102,9 @@ class MLP:
 
         raw_seed = int(row.get("mlp_seed", 0))
         if seed_protocol_version == "3.0":
-            ss = fnp.random.SeedSequence(raw_seed).spawn(3)
-            estimator_seed = int(ss[2].generate_state(1)[0])
+            from .seeds import derive_estimator_seed
+
+            estimator_seed = derive_estimator_seed(raw_seed)
         else:  # "2.0" or any other legacy
             estimator_seed = raw_seed
 

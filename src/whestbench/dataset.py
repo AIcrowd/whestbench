@@ -176,23 +176,19 @@ def create_dataset(
         mlp_seeds = generated
     _validate_mlp_seeds(mlp_seeds, n_mlps)
 
+    from .seeds import derive_seed_streams
+
     # Phase 1: generate MLPs in the slice.
-    # Per-MLP SeedSequence: spawn(3) gives [weight_ss, sample_ss, estimator_ss].
     mlps: List[MLP] = []
     for slice_idx, i in enumerate(range(start, end)):
-        ss = fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)
-        weight_stream = fnp.random.default_rng(ss[0])
-        estimator_seed_i = int(ss[2].generate_state(1)[0])
+        weight_ss, _sample_ss, estimator_seed_i = derive_seed_streams(mlp_seeds[i])
+        weight_stream = fnp.random.default_rng(weight_ss)
         mlps.append(sample_mlp(width, depth, weight_stream, seed=estimator_seed_i))
         if progress is not None:
             progress({"phase": "generating", "completed": slice_idx + 1, "total": end - start})
 
-    # Names: derived from ALL logical estimator seeds, then sliced. Guarantees
-    # slice's names match the corresponding slice of a single-host bake.
-    all_logical_seeds = [
-        int(fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)[2].generate_state(1)[0])
-        for i in range(n_mlps)
-    ]
+    # Names: derived from ALL logical estimator seeds, then sliced.
+    all_logical_seeds = [derive_seed_streams(mlp_seeds[i])[2] for i in range(n_mlps)]
     all_names = assign_unique_names(all_logical_seeds)
     slice_names = all_names[start:end]
     mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, slice_names)]
@@ -208,8 +204,8 @@ def create_dataset(
     total_sampling_chunks = (end - start) * chunks_per_mlp
 
     for slice_idx, i in enumerate(range(start, end)):
-        ss = fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)
-        sample_stream = fnp.random.default_rng(ss[1])
+        _weight_ss, sample_ss, _est = derive_seed_streams(mlp_seeds[i])
+        sample_stream = fnp.random.default_rng(sample_ss)
         mlp = mlps[slice_idx]
 
         def _on_chunk(

@@ -165,22 +165,20 @@ def create_dataset_torch(
         mlp_seeds = generated
     _validate_mlp_seeds(mlp_seeds, n_mlps)
 
+    from .seeds import derive_seed_streams
+
     # Phase 1: generate MLPs on CPU (same protocol as create_dataset())
     mlps = []
     for slice_idx, i in enumerate(range(start, end)):
-        ss = fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)
-        weight_stream = fnp.random.default_rng(ss[0])
-        estimator_seed_i = int(ss[2].generate_state(1)[0])
+        weight_ss, _sample_ss, estimator_seed_i = derive_seed_streams(mlp_seeds[i])
+        weight_stream = fnp.random.default_rng(weight_ss)
         mlps.append(sample_mlp(width, depth, weight_stream, seed=estimator_seed_i))
         if progress is not None:
             progress({"phase": "generating", "completed": slice_idx + 1, "total": end - start})
 
     # Names from ALL logical estimator seeds (so slice's names equal slice of single-host bake).
     # Mirrors create_dataset() so both backends produce identical name lists at same mlp_seeds.
-    all_logical_seeds = [
-        int(fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)[2].generate_state(1)[0])
-        for i in range(n_mlps)
-    ]
+    all_logical_seeds = [derive_seed_streams(mlp_seeds[i])[2] for i in range(n_mlps)]
     all_names = assign_unique_names(all_logical_seeds)
     slice_names = all_names[start:end]
     mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, slice_names)]
@@ -206,12 +204,12 @@ def create_dataset_torch(
         batch_size = batch_end_local - batch_start_local
 
         # Per-MLP torch generators seeded from the per-MLP SeedSequence stream.
-        # Use logical index i to access mlp_seeds[i].spawn(3)[1] for the sample stream.
+        # Use logical index i to access sample_ss (spawn[1]) for the sample stream.
         generators = []
         for local_idx in range(batch_start_local, batch_end_local):
             i = local_idx + start  # logical index
-            ss = fnp.random.SeedSequence(mlp_seeds[i]).spawn(3)
-            torch_seed = int(ss[1].generate_state(1)[0])
+            _weight_ss, sample_ss, _est = derive_seed_streams(mlp_seeds[i])
+            torch_seed = int(sample_ss.generate_state(1)[0])
             gen = torch.Generator(device=resolved_device)
             gen.manual_seed(torch_seed)
             generators.append(gen)
