@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.12.0rc4 (2026-06-27)
+
+### Fix
+
+- Single-source the per-MLP `SeedSequence(mlp_seed).spawn(3)[2]` estimator-seed
+  derivation in `whestbench/seeds.py` (used by both dataset baking and `MLP.from_row`),
+  and make `make_contest_from_dataset` seed-protocol resolution explicit and fail-loud:
+  it takes a `seed_protocol_version` argument and raises on an unresolved or unsupported
+  version (e.g. a typo, or the whole `seed_protocol` dict) instead of silently falling
+  back to legacy raw seeds. No behavior change for `whest run --dataset` on a registered
+  dataset. Enables the grader to ship the dataset's baked seed so local scores reproduce
+  (AIcrowd/whestbench-evaluator#153; PR #109).
+
 ## v0.12.0rc3 (2026-06-26)
 
 ### Feat
