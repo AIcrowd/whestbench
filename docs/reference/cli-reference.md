@@ -340,7 +340,8 @@ materialise a copy into a local directory.
 whest dataset download <REPO_ID> \
     [--revision REV] \
     [--output DIR] \
-    [--token TOKEN]
+    [--token TOKEN] \
+    [--split SPLIT]
 ```
 
 Arguments:
@@ -350,6 +351,9 @@ Arguments:
 - `--output <dir>` — optional: also materialise the files into this directory.
   Without it, the dataset is fetched into the HF hub cache only.
 - `--token <token>` — HF Hub token for private repos. Falls back to `HF_TOKEN` env var.
+- `--split <name>` — optional: download only the specified split's parquet
+  (plus `metadata.json` and `README.md`). Errors if the split matches no
+  parquet files in the repo.
 
 ### Example
 

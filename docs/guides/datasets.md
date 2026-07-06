@@ -264,13 +264,12 @@ whest dataset download aicrowd/arc-whestbench-public-2026 \
     --revision v1-phase1
 ```
 
-Representative output:
+Representative output (a progress bar shows during the transfer):
 
 ```
-→ Downloading aicrowd/arc-whestbench-public-2026@v1-phase1 → HF cache
-  Preflight: 1 parquet shard, 2.0 GB, 1,000 MLPs
-  ✓ Downloaded 2.0 GB              ████████████████████ 100%   28.9s
-✓ Cached aicrowd/arc-whestbench-public-2026@v1-phase1 (2.0 GB on disk)
+→ Downloading hf://aicrowd/arc-whestbench-public-2026@v1-phase1 → HF cache
+  Preflight: 3 files, 2.0 GB — not cached.
+✓ Cached hf://aicrowd/arc-whestbench-public-2026@v1-phase1 in 28.9s (2.0 GB on disk)
   Location: ~/.cache/huggingface/hub/datasets--aicrowd--arc-whestbench-public-2026/snapshots/<sha>
 ```
 
