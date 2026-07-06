@@ -256,22 +256,35 @@ organisers. There are two paths.
 
 ### `whest dataset download` — explicit fetch
 
-Use when you want a real on-disk copy you can inspect, ship to another
-machine, or commit to a separate artifact store:
+The default form prefetches into the HF hub cache and stops there — no
+materialised copy:
 
 ```bash
 whest dataset download aicrowd/arc-whestbench-public-2026 \
-    --revision v1-phase1 \
-    --output ./eval
+    --revision v1-phase1
 ```
 
 Representative output:
 
 ```
-→ Downloading aicrowd/arc-whestbench-public-2026@v1-phase1 → ./eval
+→ Downloading aicrowd/arc-whestbench-public-2026@v1-phase1 → HF cache
   Preflight: 1 parquet shard, 2.0 GB, 1,000 MLPs
   ✓ Downloaded 2.0 GB              ████████████████████ 100%   28.9s
-✓ Wrote ./eval (cache: ~/.cache/huggingface/hub/datasets--aicrowd--arc-whestbench-public-2026)
+✓ Cached aicrowd/arc-whestbench-public-2026@v1-phase1 (2.0 GB on disk)
+  Location: ~/.cache/huggingface/hub/datasets--aicrowd--arc-whestbench-public-2026/snapshots/<sha>
+```
+
+A later `whest run --dataset hf://…@v1-phase1` then scores straight from the
+cache — no re-download. The fetch honours `HF_HUB_CACHE` / `HF_HOME` (see
+[Cache location overrides](#cache-location-overrides)).
+
+Add `--output` when you want a real on-disk copy you can inspect, ship to
+another machine, or commit to a separate artifact store:
+
+```bash
+whest dataset download aicrowd/arc-whestbench-public-2026 \
+    --revision v1-phase1 \
+    --output ./eval
 ```
 
 With `--output` set, files are materialised under the named directory; the HF
