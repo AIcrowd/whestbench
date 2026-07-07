@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.12.0rc5 (2026-07-07)
+
+### Feat
+
+- **cli**: make --output optional on whest dataset download (#110)
+
+### Fix
+
+- **tests**: never evict one-init C extensions in the isolation fixture (#111)
+
 ## v0.12.0rc4 (2026-06-27)
 
 ### Fix
