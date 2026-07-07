@@ -1,12 +1,49 @@
 import gc
 import sys
+import sysconfig
 from pathlib import Path
+from types import ModuleType
+from typing import Mapping
 
 import pytest
 
 repo_root = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(repo_root / "src"))
 sys.path.insert(0, str(repo_root))
+
+# Packages with process-global one-init state that a re-import after eviction
+# trips over: numpy 2.x raises "ImportError: cannot load module more than once
+# per process" when its C extension re-initialises; torch's extension registry
+# is similarly single-init; `datasets` registers pyarrow extension types
+# (e.g. Array2DExtensionType) in Arrow's process-global registry at import, so
+# a re-import raises ArrowKeyError "already defined". Once a test pulls one of
+# these in, it must stay in sys.modules for the life of the process — evicting
+# it poisons every later import. Full-suite runs used to mask this only
+# because some test module imported them at collection time, putting them in
+# every snapshot; a single-file run (e.g. `pytest tests/test_cli_dataset.py`)
+# had no such luck.
+_ONE_INIT_PACKAGES = ("numpy", "torch", "pyarrow", "datasets")
+
+_SITE_DIRS = tuple({Path(sysconfig.get_paths()[key]).resolve() for key in ("purelib", "platlib")})
+
+
+def _keep_during_eviction(name: str, modules: Mapping[str, ModuleType]) -> bool:
+    """True if ``name`` must survive the fixture's eviction pass.
+
+    Only the *installed* one-init packages qualify. The estimator loader puts
+    the submission dir at ``sys.path[0]``, so a submission shipping a sibling
+    named e.g. ``numpy.py`` can get imported under a whitelisted name; such an
+    impostor never initialised the real C extension, so it is evicted like any
+    other module (retaining it would shadow the real package for later tests).
+    """
+    top = name.split(".", 1)[0]
+    if top not in _ONE_INIT_PACKAGES:
+        return False
+    origin = getattr(getattr(modules.get(top), "__spec__", None), "origin", None)
+    if not isinstance(origin, str):
+        return False
+    origin_path = Path(origin).resolve()
+    return any(site in origin_path.parents for site in _SITE_DIRS)
 
 
 @pytest.fixture(autouse=True)
@@ -28,6 +65,9 @@ def _isolate_import_state():
 
     Snapshotting module *objects* (not just names) lets us both drop modules
     imported during the test and restore any the test evicted or swapped.
+    One-init-per-process C extensions (see ``_ONE_INIT_PACKAGES``) are exempt
+    from the drop: re-importing them after eviction is a hard error, so they
+    stay put once loaded.
     """
     saved_path = list(sys.path)
     saved_modules = dict(sys.modules)
@@ -35,6 +75,8 @@ def _isolate_import_state():
         yield
     finally:
         for name in set(sys.modules) - set(saved_modules):
+            if _keep_during_eviction(name, sys.modules):
+                continue
             del sys.modules[name]
         for name, module in saved_modules.items():
             if sys.modules.get(name) is not module:
