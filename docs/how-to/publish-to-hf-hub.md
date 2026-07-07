@@ -133,11 +133,12 @@ On any other machine with `whestbench` installed:
 
 ```bash
 whest dataset download aicrowd/arc-whestbench-2026 \
-    --revision v1 \
-    --output ./local-copy
+    --revision v1
 ```
 
-For a private repo, pass `--token` or set `HF_TOKEN` first.
+This lands in the HF hub cache, so the load in the next step is a cache hit.
+Add `--output <dir>` if you also want a materialised copy. For a private
+repo, pass `--token` or set `HF_TOKEN` first.
 
 ## 7. Load in a participant script
 

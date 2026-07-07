@@ -943,6 +943,146 @@ def test_whest_dataset_download_materialize_says_downloaded(
     )
 
 
+def test_whest_dataset_download_no_output_is_cache_only(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Without ``--output`` the download lands in the HF cache only: no
+    ``local_dir`` is passed to ``snapshot_download`` and the completion line
+    says "Cached" with the cache path.
+    """
+    import whestbench.cli as cli
+    import whestbench.hf_progress as _hf_progress_mod
+    from whestbench.hf_progress import HFPreflight
+
+    captured = _spy_console_print(monkeypatch)
+
+    fake_preflight = HFPreflight(
+        repo_id="aicrowd/test",
+        revision="v1",
+        file_count=2,
+        total_bytes=2048,
+        is_cached=False,
+        files=[("metadata.json", 48), ("data/public-00000-of-00001.parquet", 2000)],
+    )
+    monkeypatch.setattr(_hf_progress_mod, "hf_preflight", lambda *_a, **_k: fake_preflight)
+
+    cache_snapshot = tmp_path / "hub" / "datasets--aicrowd--test" / "snapshots" / "abc123"
+    seen_kwargs: dict[str, Any] = {}
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        seen_kwargs.update(kwargs)
+        cache_snapshot.mkdir(parents=True, exist_ok=True)
+        return str(cache_snapshot)
+
+    import huggingface_hub
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+
+    rc = cli.main(["dataset", "download", "aicrowd/test", "--revision", "v1"])
+    assert rc == 0
+    assert seen_kwargs.get("local_dir") is None, (
+        f"cache-only mode must not materialize a copy; got local_dir={seen_kwargs.get('local_dir')!r}"
+    )
+    joined = "\n".join(captured)
+    assert "Cached hf://aicrowd/test@v1" in joined, (
+        f"cache-only completion line missing; got: {joined!r}"
+    )
+    assert str(cache_snapshot) in joined, f"cache path missing from output; got: {joined!r}"
+
+
+def test_whest_dataset_download_no_output_cache_hit_says_loaded_from_cache(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Cache-only mode with everything already cached keeps the "from cache" verb."""
+    import whestbench.cli as cli
+    import whestbench.hf_progress as _hf_progress_mod
+    from whestbench.hf_progress import HFPreflight
+
+    captured = _spy_console_print(monkeypatch)
+
+    fake_preflight = HFPreflight(
+        repo_id="aicrowd/test",
+        revision="v1",
+        file_count=2,
+        total_bytes=2048,
+        is_cached=True,
+        files=[("metadata.json", 48), ("data/public-00000-of-00001.parquet", 2000)],
+    )
+    monkeypatch.setattr(_hf_progress_mod, "hf_preflight", lambda *_a, **_k: fake_preflight)
+
+    cache_snapshot = tmp_path / "hub" / "datasets--aicrowd--test" / "snapshots" / "abc123"
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        cache_snapshot.mkdir(parents=True, exist_ok=True)
+        return str(cache_snapshot)
+
+    import huggingface_hub
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+
+    rc = cli.main(["dataset", "download", "aicrowd/test", "--revision", "v1"])
+    assert rc == 0
+    joined = "\n".join(captured)
+    assert "Loaded hf://aicrowd/test@v1 from cache" in joined, (
+        f"cache-hit completion line missing; got: {joined!r}"
+    )
+
+
+def test_whest_dataset_download_no_output_split_validation_still_applies(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """--split verification (no matching parquet → exit 1) also fires in cache-only mode."""
+    import whestbench.cli as cli
+    import whestbench.hf_progress as _hf_progress_mod
+
+    monkeypatch.setattr(_hf_progress_mod, "hf_preflight", lambda *_a, **_k: None)
+
+    cache_snapshot = tmp_path / "hub" / "datasets--aicrowd--test" / "snapshots" / "abc123"
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        # Simulate a bogus split: snapshot exists but has no matching parquet.
+        (cache_snapshot / "data").mkdir(parents=True, exist_ok=True)
+        return str(cache_snapshot)
+
+    import huggingface_hub
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+
+    rc = cli.main(["dataset", "download", "aicrowd/test", "--revision", "v1", "--split", "bogus"])
+    assert rc == 1
+    assert "matched no parquet" in capsys.readouterr().err
+
+
+def test_whest_dataset_download_output_flag_still_materializes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """--output keeps today's behavior: snapshot_download gets local_dir=<output>."""
+    import whestbench.cli as cli
+    import whestbench.hf_progress as _hf_progress_mod
+
+    monkeypatch.setattr(_hf_progress_mod, "hf_preflight", lambda *_a, **_k: None)
+
+    out_dir = tmp_path / "pulled"
+    seen_kwargs: dict[str, Any] = {}
+
+    def fake_snapshot_download(**kwargs: Any) -> str:
+        seen_kwargs.update(kwargs)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        return str(out_dir)
+
+    import huggingface_hub
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot_download)
+
+    rc = cli.main(
+        ["dataset", "download", "aicrowd/test", "--revision", "v1", "--output", str(out_dir)]
+    )
+    assert rc == 0
+    assert seen_kwargs.get("local_dir") == str(out_dir)
+
+
 def test_whest_dataset_upload_singular_pluralization(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

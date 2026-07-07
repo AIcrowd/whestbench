@@ -331,25 +331,38 @@ whest dataset upload ./my-eval \
 
 ### `whest dataset download`
 
-Download a dataset from HuggingFace Hub to a local directory.
+Download a dataset from HuggingFace Hub. By default the files land in the HF
+hub cache only (honouring `HF_HUB_CACHE` / `HF_HOME`), so a later
+`whest run --dataset hf://…` is a cache hit. Pass `--output` to additionally
+materialise a copy into a local directory.
 
 ```bash
 whest dataset download <REPO_ID> \
     [--revision REV] \
-    --output DIR \
-    [--token TOKEN]
+    [--output DIR] \
+    [--token TOKEN] \
+    [--split SPLIT]
 ```
 
 Arguments:
 
 - `REPO_ID` — HF Hub repo id (e.g. `aicrowd/arc-whestbench-2026`).
 - `--revision <tag>` — HF Hub git tag or commit SHA. Default: `main`.
-- `--output <dir>` — local destination directory.
+- `--output <dir>` — optional: also materialise the files into this directory.
+  Without it, the dataset is fetched into the HF hub cache only.
 - `--token <token>` — HF Hub token for private repos. Falls back to `HF_TOKEN` env var.
+- `--split <name>` — optional: download only the specified split's parquet
+  (plus `metadata.json` and `README.md`). Errors if the split matches no
+  parquet files in the repo.
 
 ### Example
 
 ```bash
+# Prefetch into the HF cache (no local copy)
+whest dataset download aicrowd/arc-whestbench-2026 \
+    --revision v1
+
+# Materialise an on-disk copy as well
 whest dataset download aicrowd/arc-whestbench-2026 \
     --revision v1 \
     --output ./eval-v1
@@ -399,11 +412,11 @@ whest dataset upload ./my-eval \
     --repo aicrowd/arc-whestbench-2026 \
     --tag v1
 
-# 4. Pull on another machine
+# 4. Prefetch on another machine (lands in the HF cache)
 whest dataset download aicrowd/arc-whestbench-2026 \
-    --revision v1 --output ./local-copy
+    --revision v1
 
-# 5. Run evaluation
+# 5. Run evaluation (cache hit — no re-download)
 whest run --estimator ./estimator.py \
     --dataset hf://aicrowd/arc-whestbench-2026@v1
 ```

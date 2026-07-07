@@ -1397,7 +1397,14 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     )
     download_p.add_argument("repo_id")
     download_p.add_argument("--revision", default=None)
-    download_p.add_argument("--output", required=True)
+    download_p.add_argument(
+        "--output",
+        default=None,
+        help=(
+            "Optional: also materialise the files into this directory. "
+            "Without it, the dataset is fetched into the HF hub cache only."
+        ),
+    )
     download_p.add_argument("--token", default=None)
     download_p.add_argument(
         "--split",
@@ -1948,7 +1955,8 @@ def _dispatch_dataset_command(args) -> int:
         _revision_label = args.revision or "main"
         _title = f"hf://{args.repo_id}@{_revision_label}"
         _console = Console()
-        say.intent(f"Downloading {_title} → {args.output}", console=_console)
+        _dest_label = args.output if args.output is not None else "HF cache"
+        say.intent(f"Downloading {_title} → {_dest_label}", console=_console)
 
         # Preflight: surface file count, byte total, cache state before any work.
         preflight = hf_preflight(args.repo_id, revision=args.revision, split=_split)
@@ -1979,6 +1987,9 @@ def _dispatch_dataset_command(args) -> int:
 
         _t0 = _time.perf_counter()
         with hf_download(_console, title=_title, preflight=preflight, mode=mode):
+            # No --output → cache-only fetch: omit local_dir so snapshot_download
+            # lands in the HF hub cache (honoring HF_HUB_CACHE / HF_HOME) and
+            # returns the cache snapshot path.
             local = snapshot_download(
                 repo_id=args.repo_id,
                 repo_type="dataset",
@@ -2004,13 +2015,22 @@ def _dispatch_dataset_command(args) -> int:
                 return 1
 
         _local_path = Path(local)
+        # Cache snapshots are symlink farms into the blob store, so follow
+        # symlinks there; materialised copies count real files only.
         _size = sum(
-            p.stat().st_size for p in _local_path.rglob("*") if p.is_file() and not p.is_symlink()
+            p.stat().st_size
+            for p in _local_path.rglob("*")
+            if p.is_file() and (args.output is None or not p.is_symlink())
         )
         if mode == "cache_hit":
             say.ok(
                 f"Loaded {_title} from cache in {format_duration(_elapsed)} "
                 f"({format_bytes(_size)} on disk)",
+                console=_console,
+            )
+        elif args.output is None:
+            say.ok(
+                f"Cached {_title} in {format_duration(_elapsed)} ({format_bytes(_size)} on disk)",
                 console=_console,
             )
         else:
