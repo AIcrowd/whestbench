@@ -1,6 +1,9 @@
 import gc
 import sys
+import sysconfig
 from pathlib import Path
+from types import ModuleType
+from typing import Mapping
 
 import pytest
 
@@ -21,10 +24,26 @@ sys.path.insert(0, str(repo_root))
 # had no such luck.
 _ONE_INIT_PACKAGES = ("numpy", "torch", "pyarrow", "datasets")
 
+_SITE_DIRS = tuple({Path(sysconfig.get_paths()[key]).resolve() for key in ("purelib", "platlib")})
 
-def _is_one_init_module(name: str) -> bool:
+
+def _keep_during_eviction(name: str, modules: Mapping[str, ModuleType]) -> bool:
+    """True if ``name`` must survive the fixture's eviction pass.
+
+    Only the *installed* one-init packages qualify. The estimator loader puts
+    the submission dir at ``sys.path[0]``, so a submission shipping a sibling
+    named e.g. ``numpy.py`` can get imported under a whitelisted name; such an
+    impostor never initialised the real C extension, so it is evicted like any
+    other module (retaining it would shadow the real package for later tests).
+    """
     top = name.split(".", 1)[0]
-    return top in _ONE_INIT_PACKAGES
+    if top not in _ONE_INIT_PACKAGES:
+        return False
+    origin = getattr(getattr(modules.get(top), "__spec__", None), "origin", None)
+    if not isinstance(origin, str):
+        return False
+    origin_path = Path(origin).resolve()
+    return any(site in origin_path.parents for site in _SITE_DIRS)
 
 
 @pytest.fixture(autouse=True)
@@ -56,7 +75,7 @@ def _isolate_import_state():
         yield
     finally:
         for name in set(sys.modules) - set(saved_modules):
-            if _is_one_init_module(name):
+            if _keep_during_eviction(name, sys.modules):
                 continue
             del sys.modules[name]
         for name, module in saved_modules.items():

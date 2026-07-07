@@ -39,3 +39,37 @@ def test_cli_dataset_file_subset_runs_standalone():
         f"import-isolation fixture evicted a one-init-per-process C extension:\n{combined}"
     )
     assert res.returncode == 0, f"single-file subset run failed (rc={res.returncode}):\n{combined}"
+
+
+def test_one_init_retention_is_limited_to_installed_packages(tmp_path: Path):
+    """Only the *installed* one-init packages are exempt from eviction.
+
+    The estimator loader puts the submission dir at ``sys.path[0]``, so a
+    submission shipping a sibling named ``numpy.py`` or ``datasets.py`` can
+    get imported under a whitelisted top-level name. Such an impostor never
+    initialised the real C extension, so it must still be evicted — retaining
+    it would shadow the real package for every later test.
+    """
+    import importlib.machinery
+    import types
+
+    import conftest as _conftest
+    import numpy
+
+    # The real installed package is retained.
+    assert _conftest._keep_during_eviction("numpy", {"numpy": numpy})
+    assert _conftest._keep_during_eviction("numpy.linalg", {"numpy": numpy})
+
+    # A same-named impostor from a submission dir is NOT retained.
+    fake_path = tmp_path / "numpy.py"
+    fake_path.write_text("")
+    fake = types.ModuleType("numpy")
+    fake.__spec__ = importlib.machinery.ModuleSpec("numpy", None, origin=str(fake_path))
+    assert not _conftest._keep_during_eviction("numpy", {"numpy": fake})
+
+    # No spec/origin (e.g. a bare types.ModuleType stub) is NOT retained.
+    bare = types.ModuleType("datasets")
+    assert not _conftest._keep_during_eviction("datasets", {"datasets": bare})
+
+    # Non-whitelisted names are never retained, installed or not.
+    assert not _conftest._keep_during_eviction("rich", {"numpy": numpy})
