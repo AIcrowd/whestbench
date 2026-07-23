@@ -369,72 +369,81 @@ def _synthesize_sampling_breakdown(
     - by_namespace is a FLAT dict keyed by dot-notation strings (e.g.
       "sampling.sample_layer_statistics"), NOT nested dicts.
 
-    Formula derivation (matched exactly against flopscope's operation-level accounting):
+    Formula derivation (matched against flopscope 0.9.0's operation-level accounting;
+    validated across single- and multi-chunk dims by
+    test_closed_form_matches_flopscope_count). Below, n = n_samples and k = n_chunks.
 
-    Per-sample ops (scale with n_samples):
-      - standard_normal((n, width)):  16 FLOPs/element * n * width
-        (flopscope counts RNG generation at 16 FLOPs/element, not 1)
-      - array cast to fnp:             1 FLOPs/element * n * width
-      - matmul (n,w)@(w,w) per layer:  n * w * (2*w - 1) per layer
-        (BLAS MAC convention: w multiplies + (w-1) additions per output element;
-        flopscope upgraded from `n * w^2` to this in their 2026 accounting)
-      - maximum (ReLU) per layer:      n * w per layer      (1 FLOP/element)
-      - sum along axis=0 per layer:    (n - 1) * w per layer
-        (actual additions, not input size; flopscope upgraded from `n * w` to this)
-      - power x_f64**2:               16 FLOPs/element * n * width
-        (flopscope charges power at 16 FLOPs/element, unlike x*x which is 1)
-      - sum for final_sum_sq:          (n - 1) * width      (actual additions)
+    flopscope 0.9.0 bills under a dtype-aware model, so an op on float64 data costs
+    2x the same op on float32. sample_layer_statistics runs the forward pass in
+    float32 (rate 1) and accumulates statistics in float64 (rate 2); the 2x is folded
+    into the float64 terms below. Reductions cost (rows - 1) additions per output
+    column, so a sum over a chunk of n_c rows costs (n_c - 1); summed over the k
+    chunks that tile n_samples this is (n - k). Per-chunk whole-array accumulations
+    happen once per chunk, so they scale with k.
 
-    Per-chunk ops (scale with n_chunks):
-      - add layer_sums += per layer:   width per layer per chunk
-      - add final_sum_sq += :          width per chunk
+    Forward pass — float32 (rate 1), linear in n:
+      - standard_normal((n, width)):   16 * n * width          (RNG: 16 FLOPs/element)
+      - array wrap:                    n * width               (1 FLOP/element)
+      - matmul (n,w)@(w,w) per layer:  depth * n * width * (2*width - 1)
+        (BLAS MAC: width multiplies + (width-1) adds per output element)
+      - maximum (ReLU) per layer:      depth * n * width       (1 FLOP/element)
 
-    Post-loop ops (once):
-      - true_divide layer_sums/n:      depth * width
-      - true_divide final_sum_sq/n:    width
-      - power final_mean**2:           16 * width           (same 16 FLOPs/element rule)
-      - subtract (sq/n - mean^2):      width
-      - mean (avg variance):           width
+    Statistics accumulation — float64 (rate 2):
+      - asarray float32->float64:      2 * width * (depth+1) * (n+1)
+        ((depth+1) activation casts/chunk + 2 once-off casts; max(src,dst) rate = 2)
+      - sum(axis=0) reductions:        2 * (depth+1) * (n - k) * width
+      - add accumulations (per chunk): 2 * (depth+1) * k * width
+      - power (x_f64**2):              32 * width * (n+1)      (16 FLOPs/element * rate 2)
+
+    Post-loop reductions — float64 (rate 2), once; plus one float32 copy:
+      - stack(layer_sums) -> (depth,w): 2 * depth * width
+      - true_divide (/n_processed):    2 * width * (depth+1)   (layer means + final_sum_sq)
+      - subtract (var = E[x^2] - mu^2): 2 * width
+      - mean (avg variance):           2 * width
+      - copy (final_mean):             width                   (float32, rate 1)
     """
     # chunk_size mirrors simulation._pick_chunk_size
     chunk_size = max(1024, min(16384, 2**20 // width))
     n_chunks = math.ceil(n_samples / chunk_size)
 
-    # Per-sample costs
+    # Forward pass — float32 (rate 1), linear in total samples.
     standard_normal = 16 * n_samples * width
-    array_cast = n_samples * width
-    # BLAS MAC convention: (n, w) @ (w, w) costs n * w * (2*w - 1) per call.
+    array = n_samples * width
+    # BLAS MAC convention: (n, w) @ (w, w) costs n * w * (2*w - 1) per call, depth layers.
     matmul = depth * n_samples * width * (2 * width - 1)
-    relu = depth * n_samples * width
-    # sum along axis=0 on (n, w): (n - 1) actual additions per output column.
-    sum_layer = depth * (n_samples - 1) * width
-    power_sq = 16 * n_samples * width
-    sum_sq = (n_samples - 1) * width
+    maximum = depth * n_samples * width
 
-    # Per-chunk costs
-    add_costs = n_chunks * (depth * width + width)
+    # Statistics accumulation — float64 (rate 2); the 2x is folded into each term.
+    # (depth+1) activation casts float32->float64 per chunk + 2 once-off casts.
+    asarray = 2 * width * (depth + 1) * (n_samples + 1)
+    # (depth+1) sum(axis=0) reductions: (n_c - 1) adds/col per chunk -> (n - k) total.
+    sum_reduce = 2 * (depth + 1) * (n_samples - n_chunks) * width
+    # (depth+1) whole-array accumulations of `width`, once per chunk (k chunks).
+    add_accumulate = 2 * (depth + 1) * n_chunks * width
+    # x_f64**2 per chunk (16 FLOPs/elem * rate 2) + final_mean**2 once.
+    power = 32 * width * (n_samples + 1)
 
-    # Post-loop costs
-    true_divide_layer = depth * width
-    true_divide_sq = width
-    power_mean = 16 * width
-    subtract = width
-    mean_reduction = width
+    # Post-loop reductions — float64 (rate 2), once; plus one float32 copy.
+    stack = 2 * depth * width
+    true_divide = 2 * width * (depth + 1)
+    subtract = 2 * width
+    mean_reduction = 2 * width
+    copy = width
 
     total = (
         standard_normal
-        + array_cast
+        + array
         + matmul
-        + relu
-        + sum_layer
-        + power_sq
-        + sum_sq
-        + add_costs
-        + true_divide_layer
-        + true_divide_sq
-        + power_mean
+        + maximum
+        + asarray
+        + sum_reduce
+        + add_accumulate
+        + power
+        + stack
+        + true_divide
         + subtract
         + mean_reduction
+        + copy
     )
 
     flops_remaining = max(0, flop_budget - total)

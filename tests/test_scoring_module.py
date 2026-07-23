@@ -1082,7 +1082,7 @@ def test_per_mlp_record_uses_new_score_key_names():
         ),
         mlps=[mlp],
         all_layer_targets=[target],
-        final_targets=[target[-1]],
+        final_targets=[fnp.asarray(target[-1])],
         avg_variances=[0.0],
     )
     result = evaluate_estimator(_Z(), data)
