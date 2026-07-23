@@ -189,8 +189,8 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
     assert "effective_compute/flop_budget" in score.subtitle
 
 
-def test_bake_tagged_sampling_breakdown_renders_bake_wall_time_not_residual() -> None:
-    """Bake-derived sampling times must not be presented as run-time residual."""
+def test_bake_tagged_sampling_breakdown_attributes_times_to_bake_machine() -> None:
+    """Bake-derived sampling times stay visible but are attributed to the bake."""
     doc = build_run_presentation(
         {
             "run_meta": {"run_duration_s": 1.0, "host": {}},
@@ -211,7 +211,7 @@ def test_bake_tagged_sampling_breakdown_renders_bake_wall_time_not_residual() ->
                         "wall_time_s": 39806.906344,
                         "flopscope_backend_time_s": 0.0,
                         "flopscope_overhead_time_s": 0.0,
-                        "residual_wall_time_s": 0.0,
+                        "residual_wall_time_s": 39806.906344,
                         "time_source": "bake",
                         "by_namespace": {},
                     },
@@ -242,13 +242,14 @@ def test_bake_tagged_sampling_breakdown_renders_bake_wall_time_not_residual() ->
         and section.title == "Estimator Budget Breakdown"
     )
 
-    assert sampling.residual_wall_time_s is None
-    assert sampling.bake_wall_time_s == "39806.906344s"
+    # The bake measurement stays visible; the tag drives the attribution.
+    assert sampling.residual_wall_time_s == "39806.906344s"
+    assert sampling.time_source == "bake"
     assert sampling.source_note is not None
-    assert "bake" in sampling.source_note
-    # Live-measured estimator timing is untouched.
+    assert "bake machine" in sampling.source_note
+    # Live-measured estimator timing is untouched and untagged.
     assert estimator.residual_wall_time_s == "0.010000s"
-    assert estimator.bake_wall_time_s is None
+    assert estimator.time_source is None
 
 
 def test_build_run_presentation_marks_dataset_sampling_breakdown_as_unavailable() -> None:

@@ -66,12 +66,13 @@ def test_closed_form_matches_flopscope_count(tmp_path) -> None:
     assert synthesized["flops_remaining"] == flop_budget - actual_flops
 
 
-def test_synthesized_breakdown_reports_bake_provenance_not_residual() -> None:
-    """The bake wall clock must not masquerade as run-time residual.
+def test_synthesized_breakdown_carries_bake_tag_and_full_decomposition() -> None:
+    """The synthesized row is the bake machine's own timing decomposition.
 
-    residual_wall_time_s is the billed quantity (C_m = F_m + lambda*R_m); the
-    torch bake's wall clock belongs under wall_time_s with an explicit bake tag
-    so run-time reports can label it honestly (discourse #18093).
+    The torch path runs outside flopscope, so all bake wall clock is residual
+    (wall = backend + overhead + residual with backend = overhead = 0). The
+    time_source tag lets run-time reports attribute these times to the bake
+    machine instead of the current run (discourse #18093).
     """
     synthesized = _synthesize_sampling_breakdown(
         width=8,
@@ -82,5 +83,7 @@ def test_synthesized_breakdown_reports_bake_provenance_not_residual() -> None:
     )
 
     assert synthesized["wall_time_s"] == 123.5
-    assert synthesized["residual_wall_time_s"] == 0.0
+    assert synthesized["residual_wall_time_s"] == 123.5
+    assert synthesized["flopscope_backend_time_s"] == 0.0
+    assert synthesized["flopscope_overhead_time_s"] == 0.0
     assert synthesized["time_source"] == "bake"

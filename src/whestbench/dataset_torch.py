@@ -368,10 +368,11 @@ def _synthesize_sampling_breakdown(
       by_namespace — plus a "time_source": "bake" tag.
     - by_namespace is a FLAT dict keyed by dot-notation strings (e.g.
       "sampling.sample_layer_statistics"), NOT nested dicts.
-    - The bake machine's wall clock is stored under wall_time_s only.
-      residual_wall_time_s stays 0: residual is the billed run-time quantity
-      (C_m = F_m + lambda*R_m), and reports restoring this row must not present
-      bake wall clock as run-time residual (discourse #18093).
+    - Times are the bake machine's decomposition: the torch path runs outside
+      flopscope, so backend = overhead = 0 and ALL bake wall clock is residual
+      (wall = backend + overhead + residual holds). The "time_source" tag lets
+      run-time reports attribute these to the bake machine instead of the
+      current run — they are informational and never billed (discourse #18093).
 
     Formula derivation (matched exactly against flopscope's operation-level accounting):
 
@@ -450,7 +451,7 @@ def _synthesize_sampling_breakdown(
         "wall_time_s": wall_time_s,
         "flopscope_backend_time_s": 0.0,
         "flopscope_overhead_time_s": 0.0,
-        "residual_wall_time_s": 0.0,
+        "residual_wall_time_s": wall_time_s,
         "time_source": "bake",
         "by_namespace": {
             "sampling.sample_layer_statistics": {

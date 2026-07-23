@@ -904,10 +904,10 @@ def test_make_contest_from_dataset_restores_sampling_breakdown_for_subset() -> N
     assert data.sampling_budget_breakdown["flops_used"] == 30
     assert data.sampling_budget_breakdown["flopscope_backend_time_s"] == pytest.approx(0.012)
     assert data.sampling_budget_breakdown["flopscope_overhead_time_s"] == pytest.approx(0.003)
-    # Restored (bake-time) rows never contribute run-time residual.
-    assert data.sampling_budget_breakdown["residual_wall_time_s"] == 0.0
-    assert data.sampling_budget_breakdown["time_source"] == "bake"
+    # Bake-machine measurements restore verbatim, tagged with their provenance.
+    assert data.sampling_budget_breakdown["residual_wall_time_s"] == pytest.approx(0.006)
     assert data.sampling_budget_breakdown["wall_time_s"] == pytest.approx(0.03)
+    assert data.sampling_budget_breakdown["time_source"] == "bake"
     assert (
         data.sampling_budget_breakdown["by_namespace"]["sampling.sample_layer_statistics"][
             "flops_used"
@@ -916,11 +916,12 @@ def test_make_contest_from_dataset_restores_sampling_breakdown_for_subset() -> N
     )
 
 
-def test_make_contest_from_dataset_zeroes_bake_residual_and_tags_source() -> None:
-    """Stored sampling breakdowns carry the BAKE machine's wall clock in
-    residual_wall_time_s (the torch bake synthesizes residual = wall). No
-    sampling runs at load time, so the restored aggregate must report zero
-    run-time residual and tag its times as bake-derived (discourse #18093)."""
+def test_make_contest_from_dataset_restores_bake_times_verbatim_and_tags_source() -> None:
+    """Stored sampling breakdowns are the bake machine's own measurements
+    (the torch bake synthesizes residual = wall). The restored aggregate keeps
+    them verbatim — wall = backend + overhead + residual still holds — and
+    tags them time_source="bake" so reports attribute them to the bake
+    machine instead of this run (discourse #18093)."""
     import json
 
     from datasets import Dataset
@@ -964,10 +965,10 @@ def test_make_contest_from_dataset_zeroes_bake_residual_and_tags_source() -> Non
 
     agg = data.sampling_budget_breakdown
     assert agg is not None
-    assert agg["residual_wall_time_s"] == 0.0
-    assert agg["time_source"] == "bake"
-    # The bake wall clock stays visible under its own (honest) key.
+    # Bake-machine measurements are restored verbatim, only tagged.
+    assert agg["residual_wall_time_s"] == pytest.approx(sum(bake_walls))
     assert agg["wall_time_s"] == pytest.approx(sum(bake_walls))
+    assert agg["time_source"] == "bake"
     assert agg["flops_used"] == 30
 
 

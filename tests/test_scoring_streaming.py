@@ -95,8 +95,8 @@ def test_make_contest_accepts_iterable_dataset() -> None:
         assert tuple(final.shape) == (width,)
 
 
-def test_streaming_restore_zeroes_bake_residual_and_tags_source() -> None:
-    """Streaming restore must also zero bake residual and tag provenance."""
+def test_streaming_restore_keeps_bake_times_and_tags_source() -> None:
+    """Streaming restore also keeps bake measurements verbatim and tags them."""
     n, width, depth = 3, 4, 2
     ds = _fake_materialized_dataset(n, width, depth, bake_wall_time_s=50.0)
     spec = ContestSpec(
@@ -118,9 +118,9 @@ def test_streaming_restore_zeroes_bake_residual_and_tags_source() -> None:
     contest = make_contest_from_dataset(spec, iter_ds, n)
     agg = contest.sampling_budget_breakdown
     assert agg is not None
-    assert agg["residual_wall_time_s"] == 0.0
-    assert agg["time_source"] == "bake"
+    assert agg["residual_wall_time_s"] == pytest.approx(150.0)
     assert agg["wall_time_s"] == pytest.approx(150.0)
+    assert agg["time_source"] == "bake"
 
 
 def test_make_contest_streaming_too_few_rows_raises() -> None:

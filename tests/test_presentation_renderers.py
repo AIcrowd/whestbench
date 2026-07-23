@@ -263,8 +263,8 @@ def test_rich_table_renderer_preserves_literal_markup_text() -> None:
         assert text in rich
 
 
-def test_budget_breakdown_block_renders_bake_wall_time_row() -> None:
-    """A bake-tagged sampling section shows Bake Wall Time, never Residual."""
+def test_budget_breakdown_block_marks_bake_residual_row() -> None:
+    """A bake-tagged section labels its residual row as measured at bake."""
     doc = CommandPresentation(
         command="run",
         status="success",
@@ -276,21 +276,30 @@ def test_budget_breakdown_block_renders_bake_wall_time_row() -> None:
                 total_flops="80",
                 flopscope_backend_time_s="0.000000s",
                 flopscope_overhead_time_s="0.000000s",
-                residual_wall_time_s=None,
-                bake_wall_time_s="39806.906344s",
+                residual_wall_time_s="39806.906344s",
+                time_source="bake",
                 source_note=(
                     "restored from dataset metadata for the MLPs used in this run. "
-                    "Wall time reflects the dataset bake, not this run."
+                    "Times were measured on the dataset bake machine, not in this run."
                 ),
+            ),
+            BudgetBreakdownSection(
+                title="Estimator Budget Breakdown",
+                available=True,
+                total_flops="90",
+                flopscope_backend_time_s="0.030000s",
+                flopscope_overhead_time_s="0.007500s",
+                residual_wall_time_s="0.010000s",
             ),
         ],
     )
 
     for rendered in (_render_plain(doc), _strip_ansi(_render_rich(doc))):
-        assert "Bake Wall Time" in rendered
-        assert "[wall_time_s]" in rendered
+        assert "Residual Wall Time (at bake) [residual_wall_time_s]" in rendered
         assert "39806.906344s" in rendered
-        assert "Residual Wall Time" not in rendered
+        assert "bake machine" in rendered
+        # The untagged estimator section keeps the plain label.
+        assert "Residual Wall Time [residual_wall_time_s]" in rendered
 
 
 def test_renderers_render_budget_breakdowns_before_final_score() -> None:

@@ -259,16 +259,15 @@ def make_contest_from_dataset(
     ) -> Optional[Dict[str, Any]]:
         """Aggregate sampling breakdowns restored from a baked dataset.
 
-        Stored rows carry the bake machine's wall clock in
-        ``residual_wall_time_s`` (the torch bake synthesizes residual = wall).
-        No sampling runs in this process, so the run-time residual — the billed
-        quantity in C_m = F_m + lambda*R_m — is zero. The bake wall clock stays
-        visible under ``wall_time_s``, tagged so renderers label it honestly.
+        Stored rows are the bake machine's own timing decomposition (for the
+        torch bake, all wall clock is residual since nothing ran under
+        flopscope). They restore verbatim; the ``time_source`` tag lets
+        renderers attribute them to the bake machine instead of this run —
+        they are never billed (C_m only charges the estimator's residual).
         """
         aggregate = _aggregate_budget_breakdowns(restored)
         if aggregate is None:
             return None
-        aggregate["residual_wall_time_s"] = 0.0
         aggregate["time_source"] = "bake"
         return aggregate
 

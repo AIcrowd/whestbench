@@ -445,14 +445,14 @@ def _breakdown_section(
                 f"All counted as failures."
             )
 
-    # Bake-derived sections (restored from a baked dataset) have no run-time
-    # residual; their wall clock belongs to the bake machine, not this run.
+    # Bake-derived sections (restored from a baked dataset) carry the bake
+    # machine's measurements; attribute them so they don't read as this run's.
     bake_derived = breakdown.get("time_source") == "bake"
 
     if breakdown_key == "sampling" and (dataset_backed or bake_derived):
         source_note = "restored from dataset metadata for the MLPs used in this run."
         if bake_derived:
-            source_note += " Wall time reflects the dataset bake, not this run."
+            source_note += " Times were measured on the dataset bake machine, not in this run."
     else:
         source_note = None
 
@@ -465,14 +465,8 @@ def _breakdown_section(
             breakdown.get("flopscope_backend_time_s", 0.0)
         ),
         flopscope_overhead_time_s=_display_time_seconds(breakdown["flopscope_overhead_time_s"]),
-        residual_wall_time_s=(
-            None
-            if bake_derived
-            else _display_time_seconds(breakdown.get("residual_wall_time_s", 0.0))
-        ),
-        bake_wall_time_s=(
-            _display_time_seconds(breakdown.get("wall_time_s", 0.0)) if bake_derived else None
-        ),
+        residual_wall_time_s=_display_time_seconds(breakdown.get("residual_wall_time_s", 0.0)),
+        time_source="bake" if bake_derived else None,
         namespace_rows=namespace_rows,
         gauge=gauge,
         over_budget_rows=over_budget_rows,
