@@ -128,6 +128,16 @@ Each breakdown summary also includes timing totals:
 For `results.breakdowns.*`, those values are aggregated across all evaluated
 MLPs.
 
+When a run evaluates against a baked dataset (`--dataset`), the sampling
+breakdown is restored from dataset metadata rather than measured:
+
+- `results.breakdowns.sampling.time_source` is `"bake"`
+- `residual_wall_time_s` is `0.0` - no ground-truth sampling ran in this
+  process, so there is no run-time residual to bill
+- `wall_time_s` is the wall clock the bake machine spent sampling ground truth
+  (shown as `Bake Wall Time` in the panel); it is unrelated to this run's
+  duration and is never charged against your budget
+
 ## Budget-adjusted scoring
 
 The leaderboard ranks submissions by `adjusted_final_layer_score`, the suite mean of the

@@ -263,6 +263,36 @@ def test_rich_table_renderer_preserves_literal_markup_text() -> None:
         assert text in rich
 
 
+def test_budget_breakdown_block_renders_bake_wall_time_row() -> None:
+    """A bake-tagged sampling section shows Bake Wall Time, never Residual."""
+    doc = CommandPresentation(
+        command="run",
+        status="success",
+        title="WhestBench Report",
+        sections=[
+            BudgetBreakdownSection(
+                title="Sampling Budget Breakdown (Ground Truth)",
+                available=True,
+                total_flops="80",
+                flopscope_backend_time_s="0.000000s",
+                flopscope_overhead_time_s="0.000000s",
+                residual_wall_time_s=None,
+                bake_wall_time_s="39806.906344s",
+                source_note=(
+                    "restored from dataset metadata for the MLPs used in this run. "
+                    "Wall time reflects the dataset bake, not this run."
+                ),
+            ),
+        ],
+    )
+
+    for rendered in (_render_plain(doc), _strip_ansi(_render_rich(doc))):
+        assert "Bake Wall Time" in rendered
+        assert "[wall_time_s]" in rendered
+        assert "39806.906344s" in rendered
+        assert "Residual Wall Time" not in rendered
+
+
 def test_renderers_render_budget_breakdowns_before_final_score() -> None:
     doc = CommandPresentation(
         command="run",

@@ -13,17 +13,23 @@ from whestbench import metadata
 from whestbench.scoring import ContestSpec, make_contest_from_dataset
 
 
-def _fake_materialized_dataset(n: int, width: int = 4, depth: int = 2) -> Dataset:
-    """Build a minimal Dataset matching whestbench's row shape."""
+def _fake_materialized_dataset(
+    n: int, width: int = 4, depth: int = 2, *, bake_wall_time_s: float = 0.0
+) -> Dataset:
+    """Build a minimal Dataset matching whestbench's row shape.
+
+    ``bake_wall_time_s`` mimics the torch bake, which stores the bake machine's
+    wall clock in both ``wall_time_s`` and ``residual_wall_time_s``.
+    """
     # Use the keys that _aggregate_budget_breakdowns indexes into directly.
     _zero_breakdown = {
         "flop_budget": 0,
         "flops_used": 0,
         "flops_remaining": 0,
-        "wall_time_s": 0.0,
+        "wall_time_s": bake_wall_time_s,
         "flopscope_backend_time_s": 0.0,
         "flopscope_overhead_time_s": 0.0,
-        "residual_wall_time_s": 0.0,
+        "residual_wall_time_s": bake_wall_time_s,
         "by_namespace": {},
     }
     rows = []
@@ -87,6 +93,34 @@ def test_make_contest_accepts_iterable_dataset() -> None:
         assert tuple(arr.shape) == (depth, width)
         final = fnp.asarray(contest.final_targets[i])
         assert tuple(final.shape) == (width,)
+
+
+def test_streaming_restore_zeroes_bake_residual_and_tags_source() -> None:
+    """Streaming restore must also zero bake residual and tag provenance."""
+    n, width, depth = 3, 4, 2
+    ds = _fake_materialized_dataset(n, width, depth, bake_wall_time_s=50.0)
+    spec = ContestSpec(
+        width=width,
+        depth=depth,
+        n_mlps=n,
+        flop_budget=10_000_000,
+        ground_truth_samples=10,
+        seed=0,
+        wall_time_limit_s=None,
+        residual_wall_time_limit_s=None,
+    )
+
+    iter_ds = ds.to_iterable_dataset()
+    from whestbench.dataset import _METADATA_BY_DS
+
+    _METADATA_BY_DS[iter_ds] = metadata(ds)
+
+    contest = make_contest_from_dataset(spec, iter_ds, n)
+    agg = contest.sampling_budget_breakdown
+    assert agg is not None
+    assert agg["residual_wall_time_s"] == 0.0
+    assert agg["time_source"] == "bake"
+    assert agg["wall_time_s"] == pytest.approx(150.0)
 
 
 def test_make_contest_streaming_too_few_rows_raises() -> None:

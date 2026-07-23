@@ -254,6 +254,24 @@ def make_contest_from_dataset(
             "explicitly (e.g. from the dataset's metadata.json)."
         )
 
+    def _restored_sampling_aggregate(
+        restored: List[Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """Aggregate sampling breakdowns restored from a baked dataset.
+
+        Stored rows carry the bake machine's wall clock in
+        ``residual_wall_time_s`` (the torch bake synthesizes residual = wall).
+        No sampling runs in this process, so the run-time residual — the billed
+        quantity in C_m = F_m + lambda*R_m — is zero. The bake wall clock stays
+        visible under ``wall_time_s``, tagged so renderers label it honestly.
+        """
+        aggregate = _aggregate_budget_breakdowns(restored)
+        if aggregate is None:
+            return None
+        aggregate["residual_wall_time_s"] = 0.0
+        aggregate["time_source"] = "bake"
+        return aggregate
+
     if isinstance(ds, _IterableDataset):
         mlps: List[MLP] = []
         all_layer_targets: List[fnp.ndarray] = []
@@ -282,7 +300,7 @@ def make_contest_from_dataset(
             all_layer_targets=all_layer_targets,
             final_targets=final_targets,
             avg_variances=avg_variances,
-            sampling_budget_breakdown=_aggregate_budget_breakdowns(sampling_breakdowns),
+            sampling_budget_breakdown=_restored_sampling_aggregate(sampling_breakdowns),
         )
 
     # Materialised Dataset path — preserved verbatim from the prior implementation.
@@ -307,7 +325,7 @@ def make_contest_from_dataset(
         all_layer_targets=all_layer_targets,
         final_targets=final_targets,
         avg_variances=avg_variances,
-        sampling_budget_breakdown=_aggregate_budget_breakdowns(breakdowns),
+        sampling_budget_breakdown=_restored_sampling_aggregate(breakdowns),
     )
 
 

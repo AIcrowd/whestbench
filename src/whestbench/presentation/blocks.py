@@ -172,6 +172,11 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
             make_keyed_label("Residual Wall Time", "residual_wall_time_s", "bold bright_green"),
             Text(section.residual_wall_time_s),
         )
+    if section.bake_wall_time_s is not None:
+        summary.add_row(
+            make_keyed_label("Bake Wall Time", "wall_time_s", "bold cyan"),
+            Text(section.bake_wall_time_s),
+        )
     if summary.row_count:
         body.append(Align.center(summary))
 
