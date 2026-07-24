@@ -128,7 +128,7 @@ specific version explicitly, use `cz bump --increment PATCH|MINOR|MAJOR`.
 
 ### Pin updates for flopscope
 
-Whestbench pins `flopscope>=0.4.1` and `flopscope-server>=0.4.1`.
+Whestbench pins `flopscope>=0.9.1,<0.10.0` and `flopscope-server>=0.9.1,<0.10.0`.
 When flopscope ships a new minor or major version, bump these floors
 in `pyproject.toml` and re-run `uv lock` before cutting the next
 whestbench release. (Out of scope for an automated workflow; flag if
