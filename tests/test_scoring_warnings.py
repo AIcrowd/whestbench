@@ -49,7 +49,7 @@ def _make_tiny_data(width: int = 4, depth: int = 2, n_mlps: int = 2) -> ContestD
         spec=spec,
         mlps=mlps,
         all_layer_targets=[target for _ in range(n_mlps)],
-        final_targets=[target[-1] for _ in range(n_mlps)],
+        final_targets=[fnp.asarray(target[-1]) for _ in range(n_mlps)],
         avg_variances=[0.0 for _ in range(n_mlps)],
     )
 

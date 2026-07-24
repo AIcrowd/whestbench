@@ -39,7 +39,7 @@ def _make_data(width: int = 4, depth: int = 2) -> ContestData:
         ),
         mlps=[mlp],
         all_layer_targets=[target],
-        final_targets=[target[-1]],
+        final_targets=[fnp.asarray(target[-1])],
         avg_variances=[0.0],
     )
 

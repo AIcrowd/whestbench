@@ -13,7 +13,7 @@ license = "MIT"
 dependencies = [
     "datasets>=2.20",
     "faker~=37.0",
-    "flopscope>=0.8.0rc5,<0.9.0",  # 0.8.x: cost-model re-bill (astype casts charged, data-movement/gather freed) — absolute FLOP counts change, re-baseline scores. rc5 makes arrays fully immutable (no in-place `+=` / item assignment). Floor pinned to the latest 0.8.x so CI's `--upgrade-package` resolution is deterministic. <0.9.0 caps the next breaking minor.
+    "flopscope>=0.9.1,<0.10.0",  # 0.9.1: dtype-aware four-factor cost model + batch/broadcast under-bill fixes + quantile/FFT/asarray/select accuracy fixes — absolute FLOP counts change, re-baseline scores. Floor pinned to 0.9.1 (the grader's version) so CI's `--upgrade-package` resolution is deterministic. <0.10.0 caps the next breaking minor.
     "httpx>=0.27",
     "huggingface_hub>=0.24",
     "jinja2>=3.1",
@@ -42,7 +42,7 @@ dev = [
     "ruff>=0.6.0",
 ]
 server = [
-    "flopscope-server>=0.8.0rc5,<0.9.0",
+    "flopscope-server>=0.9.1,<0.10.0",
 ]
 
 [tool.ruff]
