@@ -904,13 +904,83 @@ def test_make_contest_from_dataset_restores_sampling_breakdown_for_subset() -> N
     assert data.sampling_budget_breakdown["flops_used"] == 30
     assert data.sampling_budget_breakdown["flopscope_backend_time_s"] == pytest.approx(0.012)
     assert data.sampling_budget_breakdown["flopscope_overhead_time_s"] == pytest.approx(0.003)
-    assert data.sampling_budget_breakdown["residual_wall_time_s"] == 0.006
+    # Bake-machine measurements restore verbatim, tagged with their provenance.
+    assert data.sampling_budget_breakdown["residual_wall_time_s"] == pytest.approx(0.006)
+    assert data.sampling_budget_breakdown["wall_time_s"] == pytest.approx(0.03)
+    assert data.sampling_budget_breakdown["time_source"] == "bake"
     assert (
         data.sampling_budget_breakdown["by_namespace"]["sampling.sample_layer_statistics"][
             "flops_used"
         ]
         == 30
     )
+
+
+def test_make_contest_from_dataset_restores_bake_times_verbatim_and_tags_source() -> None:
+    """Stored sampling breakdowns are the bake machine's own measurements
+    (the torch bake synthesizes residual = wall). The restored aggregate keeps
+    them verbatim — wall = backend + overhead + residual still holds — and
+    tags them time_source="bake" so reports attribute them to the bake
+    machine instead of this run (discourse #18093)."""
+    import json
+
+    from datasets import Dataset
+
+    from whestbench.dataset import _METADATA_BY_DS
+    from whestbench.dataset_io import make_features
+
+    width, depth, n_mlps = 8, 2, 2
+    bake_walls = [117.5, 396.25]
+    breakdowns = [
+        {
+            "flop_budget": 1000,
+            "flops_used": 10 * (i + 1),
+            "flops_remaining": 990 - 10 * i,
+            "wall_time_s": bake_walls[i],
+            "flopscope_backend_time_s": 0.0,
+            "flopscope_overhead_time_s": 0.0,
+            "residual_wall_time_s": bake_walls[i],
+            "by_namespace": {},
+        }
+        for i in range(n_mlps)
+    ]
+    base_ds = _build_dataset_from_contest(n_mlps=n_mlps, width=width, depth=depth)
+    ds = Dataset.from_dict(
+        {
+            "mlp_id": base_ds["mlp_id"],
+            "mlp_name": base_ds["mlp_name"],
+            "mlp_seed": base_ds["mlp_seed"],
+            "weights": [base_ds[i]["weights"] for i in range(n_mlps)],
+            "all_layer_means": [base_ds[i]["all_layer_means"] for i in range(n_mlps)],
+            "final_means": [base_ds[i]["final_means"] for i in range(n_mlps)],
+            "avg_variance": base_ds["avg_variance"],
+            "sampling_budget_breakdown": [json.dumps(b) for b in breakdowns],
+        },
+        features=make_features(width=width, depth=depth),
+    )
+    _METADATA_BY_DS[ds] = {"width": width, "depth": depth, "n_mlps": n_mlps}
+
+    spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=100)
+    data = make_contest_from_dataset(spec, ds, n_mlps=2, seed_protocol_version="3.0")
+
+    agg = data.sampling_budget_breakdown
+    assert agg is not None
+    # Bake-machine measurements are restored verbatim, only tagged.
+    assert agg["residual_wall_time_s"] == pytest.approx(sum(bake_walls))
+    assert agg["wall_time_s"] == pytest.approx(sum(bake_walls))
+    assert agg["time_source"] == "bake"
+    assert agg["flops_used"] == 30
+
+
+def test_make_contest_live_sampling_breakdown_is_not_bake_tagged() -> None:
+    """Live sampling measures its own timing; it must not carry the bake tag."""
+    spec = ContestSpec(width=8, depth=2, n_mlps=1, flop_budget=1_000_000, ground_truth_samples=100)
+    data = make_contest(spec)
+
+    agg = data.sampling_budget_breakdown
+    assert agg is not None
+    assert "time_source" not in agg
+    assert agg["residual_wall_time_s"] >= 0.0
 
 
 def test_make_contest_from_dataset_rejects_oversize() -> None:

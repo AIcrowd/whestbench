@@ -263,6 +263,44 @@ def test_rich_table_renderer_preserves_literal_markup_text() -> None:
         assert text in rich
 
 
+def test_budget_breakdown_block_omits_residual_row_without_value() -> None:
+    """A section with no residual value renders no residual row at all."""
+    doc = CommandPresentation(
+        command="run",
+        status="success",
+        title="WhestBench Report",
+        sections=[
+            BudgetBreakdownSection(
+                title="Sampling Budget Breakdown (Ground Truth)",
+                available=True,
+                total_flops="80",
+                flopscope_backend_time_s="0.000000s",
+                flopscope_overhead_time_s="0.000000s",
+                residual_wall_time_s=None,
+                source_note=(
+                    "restored from dataset metadata for the MLPs used in this run. "
+                    "Times were measured on the dataset bake machine, not in this run."
+                ),
+            ),
+            BudgetBreakdownSection(
+                title="Estimator Budget Breakdown",
+                available=True,
+                total_flops="90",
+                flopscope_backend_time_s="0.030000s",
+                flopscope_overhead_time_s="0.007500s",
+                residual_wall_time_s="0.010000s",
+            ),
+        ],
+    )
+
+    for rendered in (_render_plain(doc), _strip_ansi(_render_rich(doc))):
+        assert "bake machine" in rendered
+        # Exactly one residual row: the estimator's live measurement.
+        assert rendered.count("Residual Wall Time") == 1
+        assert "Residual Wall Time [residual_wall_time_s]" in rendered
+        assert "39806" not in rendered
+
+
 def test_renderers_render_budget_breakdowns_before_final_score() -> None:
     doc = CommandPresentation(
         command="run",

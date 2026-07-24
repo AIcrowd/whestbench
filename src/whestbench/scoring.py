@@ -254,6 +254,23 @@ def make_contest_from_dataset(
             "explicitly (e.g. from the dataset's metadata.json)."
         )
 
+    def _restored_sampling_aggregate(
+        restored: List[Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        """Aggregate sampling breakdowns restored from a baked dataset.
+
+        Stored rows are the bake machine's own timing decomposition (for the
+        torch bake, all wall clock is residual since nothing ran under
+        flopscope). They restore verbatim; the ``time_source`` tag lets
+        renderers attribute them to the bake machine instead of this run —
+        they are never billed (C_m only charges the estimator's residual).
+        """
+        aggregate = _aggregate_budget_breakdowns(restored)
+        if aggregate is None:
+            return None
+        aggregate["time_source"] = "bake"
+        return aggregate
+
     if isinstance(ds, _IterableDataset):
         mlps: List[MLP] = []
         all_layer_targets: List[fnp.ndarray] = []
@@ -282,7 +299,7 @@ def make_contest_from_dataset(
             all_layer_targets=all_layer_targets,
             final_targets=final_targets,
             avg_variances=avg_variances,
-            sampling_budget_breakdown=_aggregate_budget_breakdowns(sampling_breakdowns),
+            sampling_budget_breakdown=_restored_sampling_aggregate(sampling_breakdowns),
         )
 
     # Materialised Dataset path — preserved verbatim from the prior implementation.
@@ -307,7 +324,7 @@ def make_contest_from_dataset(
         all_layer_targets=all_layer_targets,
         final_targets=final_targets,
         avg_variances=avg_variances,
-        sampling_budget_breakdown=_aggregate_budget_breakdowns(breakdowns),
+        sampling_budget_breakdown=_restored_sampling_aggregate(breakdowns),
     )
 
 

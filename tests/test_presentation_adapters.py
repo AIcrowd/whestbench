@@ -189,6 +189,68 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
     assert "effective_compute/flop_budget" in score.subtitle
 
 
+def test_bake_tagged_sampling_breakdown_omits_residual_row() -> None:
+    """Bake-derived sampling must not present a residual row for this run."""
+    doc = build_run_presentation(
+        {
+            "run_meta": {"run_duration_s": 1.0, "host": {}},
+            "run_config": {
+                "n_mlps": 2,
+                "width": 4,
+                "depth": 3,
+                "flop_budget": 100,
+                "dataset": {"path": "hf://aicrowd/example", "split": "mini"},
+            },
+            "results": {
+                "primary_score": 0.123,
+                "secondary_score": 0.456,
+                "per_mlp": [],
+                "breakdowns": {
+                    "sampling": {
+                        "flops_used": 80,
+                        "wall_time_s": 39806.906344,
+                        "flopscope_backend_time_s": 0.0,
+                        "flopscope_overhead_time_s": 0.0,
+                        "residual_wall_time_s": 39806.906344,
+                        "time_source": "bake",
+                        "by_namespace": {},
+                    },
+                    "estimator": {
+                        "flop_budget": 200,
+                        "flops_used": 90,
+                        "flopscope_backend_time_s": 0.03,
+                        "flopscope_overhead_time_s": 0.0075,
+                        "residual_wall_time_s": 0.01,
+                        "by_namespace": {},
+                    },
+                },
+            },
+        },
+        debug=False,
+    )
+
+    sampling = next(
+        section
+        for section in doc.sections
+        if isinstance(section, BudgetBreakdownSection)
+        and section.title == "Sampling Budget Breakdown (Ground Truth)"
+    )
+    estimator = next(
+        section
+        for section in doc.sections
+        if isinstance(section, BudgetBreakdownSection)
+        and section.title == "Estimator Budget Breakdown"
+    )
+
+    # Bake-restored sampling omits the residual row: it would read as time
+    # spent in this run. The JSON report still carries the verbatim values.
+    assert sampling.residual_wall_time_s is None
+    assert sampling.source_note is not None
+    assert "bake machine" in sampling.source_note
+    # Live-measured estimator timing keeps its row.
+    assert estimator.residual_wall_time_s == "0.010000s"
+
+
 def test_build_run_presentation_marks_dataset_sampling_breakdown_as_unavailable() -> None:
     doc = build_run_presentation(
         {

@@ -365,9 +365,14 @@ def _synthesize_sampling_breakdown(
     Output shape mirrors flopscope's normalized output exactly:
     - Top-level keys: flop_budget, flops_used, flops_remaining, wall_time_s,
       flopscope_backend_time_s, flopscope_overhead_time_s, residual_wall_time_s,
-      by_namespace.
+      by_namespace — plus a "time_source": "bake" tag.
     - by_namespace is a FLAT dict keyed by dot-notation strings (e.g.
       "sampling.sample_layer_statistics"), NOT nested dicts.
+    - Times are the bake machine's decomposition: the torch path runs outside
+      flopscope, so backend = overhead = 0 and ALL bake wall clock is residual
+      (wall = backend + overhead + residual holds). The "time_source" tag lets
+      run-time reports attribute these to the bake machine instead of the
+      current run — they are informational and never billed (discourse #18093).
 
     Formula derivation (matched exactly against flopscope's operation-level accounting):
 
@@ -447,6 +452,7 @@ def _synthesize_sampling_breakdown(
         "flopscope_backend_time_s": 0.0,
         "flopscope_overhead_time_s": 0.0,
         "residual_wall_time_s": wall_time_s,
+        "time_source": "bake",
         "by_namespace": {
             "sampling.sample_layer_statistics": {
                 "flops_used": total,

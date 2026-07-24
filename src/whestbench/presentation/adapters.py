@@ -445,6 +445,17 @@ def _breakdown_section(
                 f"All counted as failures."
             )
 
+    # Bake-derived sections (restored from a baked dataset) carry the bake
+    # machine's measurements; attribute them so they don't read as this run's.
+    bake_derived = breakdown.get("time_source") == "bake"
+
+    if breakdown_key == "sampling" and (dataset_backed or bake_derived):
+        source_note = "restored from dataset metadata for the MLPs used in this run."
+        if bake_derived:
+            source_note += " Times were measured on the dataset bake machine, not in this run."
+    else:
+        source_note = None
+
     return BudgetBreakdownSection(
         title=title,
         available=True,
@@ -454,17 +465,20 @@ def _breakdown_section(
             breakdown.get("flopscope_backend_time_s", 0.0)
         ),
         flopscope_overhead_time_s=_display_time_seconds(breakdown["flopscope_overhead_time_s"]),
-        residual_wall_time_s=_display_time_seconds(breakdown.get("residual_wall_time_s", 0.0)),
+        # Bake-restored sections omit the residual row: the stored value is the
+        # bake machine's, and rendering it here reads as time spent in this
+        # run. The JSON report still carries it verbatim, tagged time_source.
+        residual_wall_time_s=(
+            None
+            if bake_derived
+            else _display_time_seconds(breakdown.get("residual_wall_time_s", 0.0))
+        ),
         namespace_rows=namespace_rows,
         gauge=gauge,
         over_budget_rows=over_budget_rows,
         over_budget_summary=over_budget_summary,
         over_budget_truncated_remainder=over_budget_truncated_remainder,
-        source_note=(
-            "restored from dataset metadata for the MLPs used in this run."
-            if breakdown_key == "sampling" and dataset_backed
-            else None
-        ),
+        source_note=source_note,
         footer_note="aggregated across all evaluated MLPs",
     )
 

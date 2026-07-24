@@ -64,3 +64,26 @@ def test_closed_form_matches_flopscope_count(tmp_path) -> None:
 
     # Sanity check on flops_remaining
     assert synthesized["flops_remaining"] == flop_budget - actual_flops
+
+
+def test_synthesized_breakdown_carries_bake_tag_and_full_decomposition() -> None:
+    """The synthesized row is the bake machine's own timing decomposition.
+
+    The torch path runs outside flopscope, so all bake wall clock is residual
+    (wall = backend + overhead + residual with backend = overhead = 0). The
+    time_source tag lets run-time reports attribute these times to the bake
+    machine instead of the current run (discourse #18093).
+    """
+    synthesized = _synthesize_sampling_breakdown(
+        width=8,
+        depth=2,
+        n_samples=100,
+        wall_time_s=123.5,
+        flop_budget=10**15,
+    )
+
+    assert synthesized["wall_time_s"] == 123.5
+    assert synthesized["residual_wall_time_s"] == 123.5
+    assert synthesized["flopscope_backend_time_s"] == 0.0
+    assert synthesized["flopscope_overhead_time_s"] == 0.0
+    assert synthesized["time_source"] == "bake"
