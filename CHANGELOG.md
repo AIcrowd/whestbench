@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.13.0 (2026-07-24)
+
+### BREAKING CHANGE
+
+- absolute FLOP counts change with flopscope 0.9.1; consumers that
+budget or score on FLOP counts must re-baseline.
+
+### Feat
+
+- **deps**: adopt flopscope 0.9.1 and recalibrate sampling FLOP synthesis (#115)
+
+### Fix
+
+- **reporting**: stop presenting dataset bake time as run-time sampling residual (#113)
+
+### Refactor
+
+- **reporting**: drop the dead legacy budget-breakdown panel renderer (#114)
+
 ## v0.12.0rc5 (2026-07-07)
 
 ### Feat
