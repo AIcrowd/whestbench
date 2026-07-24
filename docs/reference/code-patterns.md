@@ -32,31 +32,46 @@ available but are no longer required for tracking purposes.
 
 ## Operation costs
 
-| What you want | Code | FLOP cost | Notes |
+flopscope 0.9.1 prices each op as **`flop_cost x weight x dtype_rate`**. The `weight`
+falls into four tiers, and `dtype_rate` multiplies the bill by **~2x for float64** (and
+more for complex):
+
+- **Free (0)** — views only: basic indexing/slices, `transpose`, `diag` extraction, `real`/`imag`.
+- **1x per element** — arithmetic and data movement: element-wise ops, `sqrt`/`abs`, `copy`,
+  `reshape`/`ravel`, `stack`/`concatenate`/`tile`/`repeat`, fills (`ones`/`full`/`eye`),
+  scatters (`fill_diagonal`, `put`).
+- **4x per element** — value lookup / reordering: **fancy and boolean indexing**, `take`,
+  `sort`/`argsort`, set-ops, histograms, random reordering, and **3-arg `where`**.
+- **16x per element** — transcendentals: `exp`, `log`, `sin`/`cos`, `tanh`, `**`.
+- **`matmul`** is `O(m x n x k)` and dominates budgets.
+
+> Figures below are **float32 baselines** — a guide, not a guarantee. **The ground truth is
+> `budget.summary()`**, and the authoritative per-op model is the
+> [flopscope cost reference](https://aicrowd.github.io/flopscope/docs/understanding/flop-counting-model/).
+
+| What you want | Code | FLOP cost (float32) | Notes |
 |---|---|---|---|
-| Create zeros | `fnp.zeros((n, n))` | 0 | Free |
-| Create ones | `fnp.ones(n)` | 0 | Free |
-| Identity matrix | `fnp.eye(n)` | 0 | Free |
-| Wrap existing data | `fnp.array(data)` | 0 | Free |
+| Create zeros | `fnp.zeros((n, n))` | 0 | Free (also `empty`) |
+| Create ones / full / eye | `fnp.ones(n)` | n | Fills are charged (only `zeros` is free) |
+| Wrap existing data | `fnp.array(data)` | n | Materializes a copy |
 | Matrix multiply | `fnp.matmul(A, B)` | O(m x n x k) | Dominates budgets |
-| Element-wise add | `fnp.add(a, b)` | 1 per element | |
-| Element-wise multiply | `fnp.multiply(a, b)` | 1 per element | |
-| Element-wise divide | `fnp.divide(a, b)` | 1 per element | |
+| Element-wise add | `fnp.add(a, b)` | 1 per element | Also `sub`, `mul`, `div` |
 | ReLU | `fnp.maximum(x, 0.0)` | 1 per element | |
-| Square root | `fnp.sqrt(x)` | 1 per element | |
-| Exponential | `fnp.exp(x)` | 1 per element | |
-| Logarithm | `fnp.log(x)` | 1 per element | |
-| Transpose | `fnp.transpose(W)` | 0 | Free |
-| Reshape | `fnp.reshape(x, shape)` | 0 | Free |
+| Square root / abs | `fnp.sqrt(x)`, `fnp.abs(x)` | 1 per element | |
+| Exponential | `fnp.exp(x)` | 16 per element | Transcendental |
+| Logarithm | `fnp.log(x)` | 16 per element | Transcendental |
+| Power / trig | `x ** 2`, `fnp.sin(x)` | 16 per element | Transcendental; use `x * x` for squares |
+| Transpose | `fnp.transpose(W)` | 0 | Free (view) |
+| Reshape / ravel | `fnp.reshape(x, shape)` | n | Materializes |
 | Extract diagonal | `fnp.diag(M)` | 0 | Free |
-| Set diagonal | `fnp.fill_diagonal(M, v)` | 0 | Free, in-place |
+| Set diagonal | `fnp.fill_diagonal(M, v)` | n | Scatter write |
 | Outer product | `fnp.outer(a, b)` | n x m | |
-| Sum | `fnp.sum(x, axis=0)` | input size | |
-| Mean | `fnp.mean(x, axis=0)` | input size | |
-| Max | `fnp.max(x)` | input size | |
-| Stack arrays | `fnp.stack(rows, axis=0)` | 0 | Free |
-| Concatenate | `fnp.concatenate([a, b])` | 0 | Free |
-| Index/slice | `x[0]`, `x[:, 3]` | 0 | Free |
+| Sum / mean / max | `fnp.sum(x, axis=0)` | input size | |
+| Stack / concatenate | `fnp.stack(rows, axis=0)` | total size | Materializes |
+| Basic index / slice | `x[0]`, `x[:, 3]` | 0 | Free (view) |
+| Fancy / boolean index | `x[idx]`, `x[mask]` | 4 per element | Gather (mask: `numel + 4 x selected`) |
+| Select with `where` | `fnp.where(c, a, b)` | 4 per element | Was free before 0.9.0 |
+| Sort / gather | `fnp.sort(x)`, `fnp.take(x, i)` | 4 per element | Order / selector-deriving |
 
 ## Common patterns
 
