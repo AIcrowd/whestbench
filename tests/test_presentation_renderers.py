@@ -263,8 +263,8 @@ def test_rich_table_renderer_preserves_literal_markup_text() -> None:
         assert text in rich
 
 
-def test_budget_breakdown_block_marks_bake_residual_row() -> None:
-    """A bake-tagged section labels its residual row as measured at bake."""
+def test_budget_breakdown_block_omits_residual_row_without_value() -> None:
+    """A section with no residual value renders no residual row at all."""
     doc = CommandPresentation(
         command="run",
         status="success",
@@ -276,8 +276,7 @@ def test_budget_breakdown_block_marks_bake_residual_row() -> None:
                 total_flops="80",
                 flopscope_backend_time_s="0.000000s",
                 flopscope_overhead_time_s="0.000000s",
-                residual_wall_time_s="39806.906344s",
-                time_source="bake",
+                residual_wall_time_s=None,
                 source_note=(
                     "restored from dataset metadata for the MLPs used in this run. "
                     "Times were measured on the dataset bake machine, not in this run."
@@ -295,11 +294,11 @@ def test_budget_breakdown_block_marks_bake_residual_row() -> None:
     )
 
     for rendered in (_render_plain(doc), _strip_ansi(_render_rich(doc))):
-        assert "Residual Wall Time (at bake) [residual_wall_time_s]" in rendered
-        assert "39806.906344s" in rendered
         assert "bake machine" in rendered
-        # The untagged estimator section keeps the plain label.
+        # Exactly one residual row: the estimator's live measurement.
+        assert rendered.count("Residual Wall Time") == 1
         assert "Residual Wall Time [residual_wall_time_s]" in rendered
+        assert "39806" not in rendered
 
 
 def test_renderers_render_budget_breakdowns_before_final_score() -> None:

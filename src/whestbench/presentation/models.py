@@ -167,11 +167,9 @@ class BudgetBreakdownSection:
     effective_compute: str | None = None
     flopscope_backend_time_s: str | None = None
     flopscope_overhead_time_s: str | None = None
+    # None for bake-restored sections: the stored residual is the bake
+    # machine's, not this run's, so no row is rendered (discourse #18093).
     residual_wall_time_s: str | None = None
-    # "bake" when this section's times were measured at dataset bake time
-    # rather than during this run; renderers attribute them accordingly
-    # (discourse #18093).
-    time_source: str | None = None
     namespace_rows: list[BudgetBreakdownNamespaceRow] = field(default_factory=list)
     gauge: BudgetBreakdownGauge | None = None
     over_budget_rows: list[BudgetBreakdownOverBudgetRow] = field(default_factory=list)

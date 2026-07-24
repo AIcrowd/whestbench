@@ -189,8 +189,8 @@ def test_build_run_presentation_restores_main_style_score_and_context_fields() -
     assert "effective_compute/flop_budget" in score.subtitle
 
 
-def test_bake_tagged_sampling_breakdown_attributes_times_to_bake_machine() -> None:
-    """Bake-derived sampling times stay visible but are attributed to the bake."""
+def test_bake_tagged_sampling_breakdown_omits_residual_row() -> None:
+    """Bake-derived sampling must not present a residual row for this run."""
     doc = build_run_presentation(
         {
             "run_meta": {"run_duration_s": 1.0, "host": {}},
@@ -242,14 +242,13 @@ def test_bake_tagged_sampling_breakdown_attributes_times_to_bake_machine() -> No
         and section.title == "Estimator Budget Breakdown"
     )
 
-    # The bake measurement stays visible; the tag drives the attribution.
-    assert sampling.residual_wall_time_s == "39806.906344s"
-    assert sampling.time_source == "bake"
+    # Bake-restored sampling omits the residual row: it would read as time
+    # spent in this run. The JSON report still carries the verbatim values.
+    assert sampling.residual_wall_time_s is None
     assert sampling.source_note is not None
     assert "bake machine" in sampling.source_note
-    # Live-measured estimator timing is untouched and untagged.
+    # Live-measured estimator timing keeps its row.
     assert estimator.residual_wall_time_s == "0.010000s"
-    assert estimator.time_source is None
 
 
 def test_build_run_presentation_marks_dataset_sampling_breakdown_as_unavailable() -> None:

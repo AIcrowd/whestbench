@@ -465,8 +465,14 @@ def _breakdown_section(
             breakdown.get("flopscope_backend_time_s", 0.0)
         ),
         flopscope_overhead_time_s=_display_time_seconds(breakdown["flopscope_overhead_time_s"]),
-        residual_wall_time_s=_display_time_seconds(breakdown.get("residual_wall_time_s", 0.0)),
-        time_source="bake" if bake_derived else None,
+        # Bake-restored sections omit the residual row: the stored value is the
+        # bake machine's, and rendering it here reads as time spent in this
+        # run. The JSON report still carries it verbatim, tagged time_source.
+        residual_wall_time_s=(
+            None
+            if bake_derived
+            else _display_time_seconds(breakdown.get("residual_wall_time_s", 0.0))
+        ),
         namespace_rows=namespace_rows,
         gauge=gauge,
         over_budget_rows=over_budget_rows,

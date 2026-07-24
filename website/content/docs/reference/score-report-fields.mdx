@@ -136,8 +136,9 @@ breakdown is restored from dataset metadata rather than measured:
 - `results.breakdowns.sampling.time_source` is `"bake"`
 - the timing totals (`wall_time_s`, `flopscope_backend_time_s`,
   `flopscope_overhead_time_s`, `residual_wall_time_s`) are the bake machine's
-  own measurements of the ground-truth sampling, restored verbatim; the panel
-  renders the residual row as `Residual Wall Time (at bake)`
+  own measurements of the ground-truth sampling, restored verbatim in the
+  JSON report; the panel omits its `Residual Wall Time` row so a bake-time
+  measurement cannot read as time spent in this run
 - none of these values relate to this run or count against your budget - the
   estimator breakdown is the only place run-time residual is measured and
   billed

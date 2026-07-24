@@ -168,13 +168,8 @@ def build_budget_breakdown_block(section: BudgetBreakdownSection) -> Panel:
             Text(section.flopscope_overhead_time_s),
         )
     if section.residual_wall_time_s is not None:
-        residual_label = (
-            "Residual Wall Time (at bake)"
-            if section.time_source == "bake"
-            else "Residual Wall Time"
-        )
         summary.add_row(
-            make_keyed_label(residual_label, "residual_wall_time_s", "bold bright_green"),
+            make_keyed_label("Residual Wall Time", "residual_wall_time_s", "bold bright_green"),
             Text(section.residual_wall_time_s),
         )
     if summary.row_count:
