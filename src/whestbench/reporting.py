@@ -682,9 +682,9 @@ def _gauge_bar_fragment(utilization: float) -> str:
 def _gauge_renderable(report: "dict[str, Any]") -> ConsoleRenderable:
     """Return the gauge line as a Rich renderable without printing it.
 
-    Used both by the standalone ``_render_budget_gauge`` backward-compat
-    wrapper and by ``_breakdown_panel`` when embedding the gauge inside the
-    Estimator Budget Breakdown panel.
+    Used by the standalone ``_render_budget_gauge`` backward-compat wrapper;
+    the Estimator Budget Breakdown panel embeds its gauge via the presentation
+    pipeline (``presentation.adapters.build_run_presentation`` + blocks).
 
     The bar itself is a ``rich.progress_bar.ProgressBar`` (responsive width,
     ``━``-style glyphs) to match the in-run progress bars shown during
@@ -793,7 +793,7 @@ def _render_budget_gauge(console: Console, report: "dict[str, Any]") -> None:
     """Backward-compat wrapper that prints the gauge line standalone.
 
     The gauge is normally embedded inside the Estimator Budget Breakdown
-    panel (see ``_breakdown_panel``); this wrapper preserves the original
+    panel by the presentation pipeline; this wrapper preserves the original
     standalone call surface for existing unit tests.
     """
     console.print(_gauge_renderable(report))
@@ -886,120 +886,6 @@ def _render_errors_section(
             border_style="red",
             expand=True,
         )
-    )
-
-
-def _render_breakdown_sections(console: Console, report: "dict[str, Any]") -> None:
-    for breakdown_key, title in (
-        ("sampling", "Sampling Budget Breakdown"),
-        ("estimator", "Estimator Budget Breakdown"),
-    ):
-        panel = _breakdown_panel(report, breakdown_key=breakdown_key, title=title)
-        if panel is not None:
-            console.print(panel)
-
-
-def _breakdown_panel(
-    report: "dict[str, Any]", *, breakdown_key: str, title: str
-) -> Optional[Panel]:
-    results = report.get("results", {})
-    if not isinstance(results, dict):
-        return None
-    breakdowns = results.get("breakdowns")
-    if not isinstance(breakdowns, dict):
-        return None
-    breakdown = breakdowns.get(breakdown_key)
-    if not isinstance(breakdown, dict):
-        return None
-    by_namespace = breakdown.get("by_namespace")
-    if not isinstance(by_namespace, dict):
-        by_namespace = {}
-
-    run_config = report.get("run_config", {})
-    n_mlps = int(run_config.get("n_mlps", 0) or 0) if isinstance(run_config, dict) else 0
-    if n_mlps <= 0:
-        n_mlps = 1
-
-    total_flops = _as_float(breakdown.get("flops_used", 0.0))
-    if total_flops <= 0.0:
-        total_flops = sum(
-            _as_float(bucket.get("flops_used", 0.0)) for bucket in by_namespace.values()
-        )
-
-    summary = Table(box=box.SIMPLE_HEAVY, show_header=False)
-    summary.add_column("field", style="bold")
-    summary.add_column("value")
-    summary.add_row(
-        _label_with_code("Total FLOPs", "flops_used", "bold bright_yellow"),
-        _fmt_flops(total_flops),
-    )
-    summary.add_row(
-        _label_with_code("Flopscope Backend", "flopscope_backend_time_s", "bold bright_green"),
-        f"{_as_float(breakdown.get('flopscope_backend_time_s', 0.0)):.6f}s",
-    )
-    summary.add_row(
-        _label_with_code("Flopscope Overhead", "flopscope_overhead_time_s", "bold bright_yellow"),
-        f"{_as_float(breakdown['flopscope_overhead_time_s']):.6f}s",
-    )
-    summary.add_row(
-        _label_with_code("Residual Wall Time", "residual_wall_time_s", "bold bright_green"),
-        f"{_as_float(breakdown.get('residual_wall_time_s', 0.0)):.6f}s",
-    )
-
-    table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style="bold")
-    table.add_column("namespace", style="bold", no_wrap=False)
-    table.add_column("total flops", justify="right")
-    table.add_column("% of section flops", justify="right")
-    table.add_column("mean flops / MLP", justify="right")
-    table.add_column("tracked time", justify="right")
-    table.add_column("flopscope overhead", justify="right")
-
-    for namespace, bucket in sorted(
-        by_namespace.items(),
-        key=lambda item: _as_float(item[1].get("flops_used", 0.0)),
-        reverse=True,
-    ):
-        namespace_label = (
-            "(unlabeled)" if namespace in {None, "", "null", "None"} else str(namespace)
-        )
-        flops_used = _as_float(bucket.get("flops_used", 0.0))
-        percent = (flops_used / total_flops * 100.0) if total_flops > 0.0 else 0.0
-        mean_flops = flops_used / n_mlps if n_mlps > 0 else 0.0
-        flopscope_backend_time_s = _as_float(bucket.get("flopscope_backend_time_s", 0.0))
-        overhead_time_s = _as_float(bucket["flopscope_overhead_time_s"])
-        table.add_row(
-            namespace_label,
-            _fmt_flops(flops_used),
-            f"{percent:.1f}%",
-            _fmt_flops(mean_flops),
-            f"{flopscope_backend_time_s:.6f}s",
-            f"{overhead_time_s:.6f}s",
-        )
-
-    body: "list[Any]" = []
-    if breakdown_key == "estimator":
-        body.append(_gauge_renderable(report))
-        over_budget = _over_budget_renderable(report)
-        if over_budget is not None:
-            body.append(Text(""))
-            body.append(Text("Over-Budget MLPs", style="bold red"))
-            body.append(over_budget)
-        body.append(Text(""))
-    body.append(Align.center(summary))
-    if by_namespace:
-        body.append(Align.center(table))
-
-    if breakdown_key == "estimator":
-        any_busted = _compute_gauge_state(report).any_busted
-        border_style = "red" if any_busted else "bright_magenta"
-    else:
-        border_style = "bright_yellow"
-    return Panel(
-        Group(*body),
-        title=title,
-        subtitle="aggregated across all evaluated MLPs",
-        subtitle_align="left",
-        border_style=border_style,
     )
 
 
