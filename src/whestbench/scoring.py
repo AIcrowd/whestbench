@@ -366,7 +366,12 @@ def validate_predictions(predictions: fnp.ndarray, *, depth: int, width: int) ->
         exc = ValueError("Predictions must contain only finite values.")
         setattr(exc, "details", details)
         raise exc
-    return predictions
+    # Return the COERCED array, not the caller's object. Returning the original
+    # meant downstream scoring re-materialised it independently, so the array
+    # that passed the finiteness check above was not the array actually scored
+    # -- a lazy or stateful return value could pass validation as zeros and then
+    # score as something else, defeating the NaN/Inf gate entirely.
+    return pred_np
 
 
 def _predict_stats_to_dict(stats: Any) -> Optional[Dict[str, Any]]:
@@ -625,6 +630,12 @@ def evaluate_estimator(
         try:
             with budget_ctx:
                 raw_predictions = estimator.predict(mlp, spec.flop_budget)
+                # Materialise inside the metered window -- see the note in
+                # validate_predictions. A return value only has to expose
+                # ``.shape`` and ``__array__``, so coercing after ``__exit__``
+                # (when wall_time_s is already frozen) let arbitrary work run
+                # billed neither FLOPs nor residual seconds.
+                raw_predictions = fnp.asarray(raw_predictions, dtype=fnp.float32)
             stats = _predict_stats_to_dict(
                 last_predict_stats() if callable(last_predict_stats) else None
             )

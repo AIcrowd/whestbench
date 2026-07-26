@@ -71,9 +71,18 @@ def _handle_predict(
     try:
         with budget_ctx as ctx:
             predictions = estimator.predict(mlp, budget)
+            # Materialise and validate INSIDE the metered window. A return value
+            # is not required to be a concrete array -- any object exposing
+            # ``.shape`` and ``__array__`` satisfies the checks below -- so
+            # coercing after ``__exit__`` let arbitrary computation run in
+            # ``__array__`` billed neither FLOPs nor residual seconds, and the
+            # clock was already frozen. Scoring re-coerced separately, so the
+            # array that passed the finiteness check was not the array scored.
+            validated_predictions = validate_predictions(
+                predictions, depth=mlp.depth, width=mlp.width
+            )
+            arr = fnp.asarray(validated_predictions, dtype=fnp.float32)
             flops_used = ctx.flops_used
-        validated_predictions = validate_predictions(predictions, depth=mlp.depth, width=mlp.width)
-        arr = fnp.asarray(validated_predictions, dtype=fnp.float32)
         _write_response(
             {
                 "status": "ok",
