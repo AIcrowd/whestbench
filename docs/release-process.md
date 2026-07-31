@@ -30,8 +30,10 @@ the relocked file. If you ran plain `cz bump` anyway: `uv lock`,
 `git add uv.lock && git commit --amend --no-edit`, and re-point the tag
 with `git tag -fa v<new> -m "v<new>"` before pushing.
 
-Pre-release tags: `uv run cz bump --prerelease alpha` produces tags
-like `v0.5.0a0`.
+Pre-release tags follow the same files-only flow with `--prerelease
+alpha` added (`uv run cz bump --files-only --changelog --prerelease
+alpha`); the relock, commit, and tag steps are identical, with the
+prerelease version to tag (e.g. `v0.5.0a0`) shown in the bump output.
 
 ## What happens after `git push --follow-tags`
 
