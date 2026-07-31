@@ -10,11 +10,25 @@ notes.
 ```bash
 git checkout main && git pull origin main
 uv run cz bump --dry-run                  # preview the next version + CHANGELOG entry
-uv run cz bump                            # writes pyproject version + CHANGELOG.md + creates v<x.y.z> tag
+uv run cz bump --files-only --changelog   # write pyproject version + CHANGELOG.md — no commit or tag yet
+uv lock                                   # uv.lock records whestbench's own version; stale after every bump
+git add pyproject.toml CHANGELOG.md uv.lock
+git commit -m "bump: version <old> → <new>"
+git tag -a v<new> -m "v<new>"             # annotated, like every existing release tag
 git push --follow-tags                    # tag push triggers the publish workflow
-# … open GitHub Actions → approve the `publish-pypi` job → wait ~30s →
-# package on PyPI + GitHub Release created
+# … the publish workflow builds, publishes to PyPI, and creates the
+# GitHub Release. NOTE: with no Required Reviewers on the `pypi`
+# environment (the current state — see "One-time setup" §2) it runs
+# straight through with NO approval pause.
 ```
+
+Why not plain `uv run cz bump`? It commits and tags in one shot, *before*
+`uv.lock` can be refreshed — so the bump commit ships a stale lockfile and
+the next `uv run` on anyone's machine rewrites it as uncommitted drift.
+Every real bump commit (v0.13.0's `68b50bb`, v0.14.0's `a2d65e3`) includes
+the relocked file. If you ran plain `cz bump` anyway: `uv lock`,
+`git add uv.lock && git commit --amend --no-edit`, and re-point the tag
+with `git tag -fa v<new> -m "v<new>"` before pushing.
 
 Pre-release tags: `uv run cz bump --prerelease alpha` produces tags
 like `v0.5.0a0`.
@@ -26,14 +40,17 @@ The tag push fires
 which:
 
 1. Builds the sdist + wheel with `uv build`.
-2. Pauses for approval in the `pypi` GitHub environment (manual gate).
+2. Pauses for approval in the `pypi` GitHub environment — **only if**
+   Required Reviewers are configured on it. As of v0.14.0 they are not
+   (see "One-time setup" §2), so the publish proceeds immediately.
 3. Publishes to PyPI via Trusted Publishing (OIDC; no API token stored
    in repo secrets).
 4. Creates a GitHub Release whose body is the matching CHANGELOG
    section for the tag.
 
 End result: `uv add whestbench` / `pip install whestbench` works ~2
-minutes after a maintainer clicks "approve" on the `publish-pypi` job.
+minutes after the tag push (or after the approval click, once Required
+Reviewers are configured).
 
 ## One-time setup (per maintainer, per repo)
 
@@ -51,7 +68,7 @@ creating it, if not yet published):
 2. Fill in:
    - PyPI project name: `whestbench`
    - Owner: `AIcrowd`
-   - Repository name: `whestbench-public`
+   - Repository name: `whestbench`
    - Workflow filename: `pypi-publish.yml`
    - Environment name: `pypi`
 
@@ -60,7 +77,8 @@ succeed on the very first publish of a brand-new project name.
 
 ### 2. GitHub `pypi` environment
 
-In the whestbench-public repo on GitHub:
+In the [AIcrowd/whestbench](https://github.com/AIcrowd/whestbench) repo
+on GitHub:
 
 1. Settings → Environments → "New environment" → name: `pypi`.
 2. Enable "Required reviewers".
@@ -70,6 +88,14 @@ In the whestbench-public repo on GitHub:
 Without this, publishes proceed without a human approval gate. The
 Trusted Publishing OIDC handshake will still work — there is just no
 gate to abort a bad tag.
+
+> **Current state (as of v0.14.0, 2026-07-31):** the `pypi` environment
+> on AIcrowd/whestbench has **no** Required Reviewers — the v0.14.0
+> publish ran straight through with no approval pause (workflow run
+> 30600703882). Until a repo admin adds Required Reviewers under
+> Settings → Environments → `pypi`, treat every `v*` tag push as an
+> immediate, ungated publish: everything must be verified green
+> *before* `git push --follow-tags`.
 
 ## How CHANGELOG entries get into the GitHub Release
 
@@ -102,8 +128,8 @@ the tag locally and on the remote, bump to the next version, retag:
 ```bash
 git tag -d v0.5.0
 git push origin :refs/tags/v0.5.0
-uv run cz bump   # bumps to v0.5.1
-git push --follow-tags
+# then run the TL;DR flow from `cz bump --dry-run` onward — it lands on
+# the next patch version (v0.5.1) and retags
 ```
 
 ### GitHub Release step fails after PyPI succeeded
