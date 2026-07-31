@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.14.0 (2026-07-31)
+
+### BREAKING CHANGE
+
+- absolute FLOP counts change with flopscope 0.10.0;
+consumers that budget or score on FLOP counts must re-baseline.
+
+### Feat
+
+- **deps**: adopt flopscope 0.10.0 and re-cap at <0.11.0 (#117)
+
 ## v0.13.0 (2026-07-24)
 
 ### BREAKING CHANGE
