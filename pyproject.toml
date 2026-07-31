@@ -13,7 +13,7 @@ license = "MIT"
 dependencies = [
     "datasets>=2.20",
     "faker~=37.0",
-    "flopscope>=0.9.1,<0.10.0",  # 0.9.1: dtype-aware four-factor cost model + batch/broadcast under-bill fixes + quantile/FFT/asarray/select accuracy fixes — absolute FLOP counts change, re-baseline scores. Floor pinned to 0.9.1 (the grader's version) so CI's `--upgrade-package` resolution is deterministic. <0.10.0 caps the next breaking minor.
+    "flopscope>=0.10.0,<0.11.0",  # 0.10.0: out=/symmetry-tag billing-integrity fixes (destination writes priced, tag-forgery discounts voided, refusals uniformly free) + einsum out= now follows numpy's casting rule (BREAKING: silently-truncating calls raise TypeError) — absolute FLOP counts change, re-baseline scores. Floor pinned to 0.10.0 (the grader's version) so CI's `--upgrade-package` resolution is deterministic. <0.11.0 caps the next breaking minor.
     "httpx>=0.27",
     "huggingface_hub>=0.24",
     "jinja2>=3.1",
@@ -42,7 +42,7 @@ dev = [
     "ruff>=0.6.0",
 ]
 server = [
-    "flopscope-server>=0.9.1,<0.10.0",
+    "flopscope-server>=0.10.0,<0.11.0",
 ]
 
 [tool.ruff]
