@@ -27,15 +27,36 @@ class MLP:
         depth: Number of weight matrices (layers).
         weights: Ordered list of weight matrices, each shape ``(width, width)``.
         seed: Per-MLP grader-supplied seed. Estimators using randomness should
-            seed off this so their submission reproduces under regrade. Derived
-            deterministically from ``ContestSpec.seed`` and the MLP index by
-            the evaluator; 0 when no spec seed is provided.
+            seed off this so their submission reproduces under regrade. Under
+            seed-protocol 3.0 it is ``derive_estimator_seed(row["mlp_seed"])``
+            (see ``whestbench.seeds``); on the live ``make_contest`` path it is
+            derived from ``ContestSpec.seed`` and the MLP index; 0 when no seed
+            is available.
         name: Human-readable per-MLP slug like ``"danielle-johnson"``. Stable
             across runs and backends at the WhestBench release's pinned
             ``faker`` version (see ``whestbench.naming``). Empty string when
             the MLP is constructed outside an evaluator bake path (e.g. in
-            unit tests). Estimators may read it for log lines; the leakage
-            surface is nil because it is a pure function of ``seed``.
+            unit tests). Estimators may read it for log lines.
+
+    Note:
+        ``name`` being a pure function of ``seed`` does NOT make its leakage
+        surface nil. That is precisely what makes both a *stable identifier*
+        for an instance across runs and submissions, and anything holding
+        ``seed`` can always recompute ``name`` via ``naming.generate_mlp_name``.
+        Withholding ``name`` while still supplying ``seed`` is therefore not a
+        mitigation. (The reverse does not hold: ``name`` does not yield
+        ``seed``, since the slug space is far smaller than the uint32 range.)
+
+        What contains the exposure is that the addressing stops at ``seed``.
+        It is a uint32 truncation of the third of three independent substreams
+        spawned off a per-row ``secrets.randbits(63)`` input seed, so neither
+        the weight stream (``ss[0]``) nor the ground-truth stream (``ss[1]``)
+        is recoverable from it: inversion costs ~2**63 work, and ~2**31 input
+        seeds collide onto any one ``seed``. Recognising an instance therefore
+        yields identity only, never its weights or targets — and recognition
+        alone gains little, since holdout scores are never returned to the
+        submitter and the final evaluation runs on a separately generated
+        dataset.
     """
 
     width: int
