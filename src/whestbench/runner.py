@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import subprocess
 import sys
@@ -33,6 +34,7 @@ except ImportError:  # pragma: no cover
     psutil = None
 
 _LOGGER = logging.getLogger(__name__)
+_PREDICT_RESPONSE_GRACE_S = 5.0
 
 RunnerStage = Literal["load", "setup", "predict", "validate", "package", "submit"]
 
@@ -68,6 +70,18 @@ class ResourceLimits:
             raise ValueError("wall_time_limit_s must be positive when provided.")
         if self.residual_wall_time_limit_s is not None and self.residual_wall_time_limit_s <= 0:
             raise ValueError("residual_wall_time_limit_s must be positive when provided.")
+
+
+def _predict_response_timeout_s(limits: ResourceLimits) -> float:
+    if limits.wall_time_limit_s is None:
+        return limits.predict_timeout_s
+    wall_timeout_s = limits.wall_time_limit_s + _PREDICT_RESPONSE_GRACE_S
+    if not math.isfinite(wall_timeout_s) or wall_timeout_s > threading.TIMEOUT_MAX:
+        return limits.predict_timeout_s
+    return max(
+        limits.predict_timeout_s,
+        wall_timeout_s,
+    )
 
 
 @dataclass(frozen=True)
@@ -324,7 +338,7 @@ class SubprocessRunner:
             }
         )
         try:
-            response = self._read_response(timeout_s=self._limits.predict_timeout_s)
+            response = self._read_response(timeout_s=_predict_response_timeout_s(self._limits))
         except TimeoutError:
             self._terminate_process()
             self._started = False
