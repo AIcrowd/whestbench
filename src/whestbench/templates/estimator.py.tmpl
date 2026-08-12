@@ -9,7 +9,11 @@ from whestbench import BaseEstimator, MLP, SetupContext
 
 class Estimator(BaseEstimator):
     def setup(self, ctx: SetupContext) -> None:
-        # setup() runs once, off the FLOP budget. Package the FOLDER
+        # setup() is off the FLOP budget, but it is NOT a once-per-submission
+        # hook: the grader runs it once per worker process, which in practice
+        # means roughly 5-15 times per submission, and each run has its own
+        # hard 30 s ceiling (predict() gets a separate 60 s per MLP). So load
+        # here, don't compute here. Package the FOLDER
         # (`whest package --estimator .`) and every file beside estimator.py is
         # bundled automatically and extracted to ctx.submission_dir on the grader.
         # Load weights there:
