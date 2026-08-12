@@ -145,8 +145,13 @@ checkpoints/
 
 ## 4. Load weights at predict time
 
-Load weights in `setup()`, not `predict()`. `setup()` runs once before FLOP
+Load weights in `setup()`, not `predict()`. `setup()` runs before FLOP
 tracking starts, so the load costs **0 FLOPs**.
+
+Load, don't compute. On the grader `setup()` runs once per worker process —
+roughly 5-15 times per submission, not once — and each run is capped at 30 s.
+Reading an `.npz` fits that easily; training a model in `setup()` does not,
+and you would pay for it on every worker.
 
 ```python
 from pathlib import Path
