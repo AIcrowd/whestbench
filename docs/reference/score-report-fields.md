@@ -80,7 +80,7 @@ When the estimator raised an unhandled exception (not budget/time exhaustion), t
 | Field | Type | Description |
 |---|---|---|
 | `error` | `str` \| `dict` | Legacy string message, or structured object: `{"message": str, "details": object}` |
-| `error_code` | `str` | Stable identifier: `PREDICT_ERROR` for a `RunnerError`, or the Python exception class name otherwise |
+| `error_code` | `str` | Stable identifier, never a raw Python class name: the `RunnerError`'s own code (e.g. `PREDICT_ERROR`); `ESTIMATOR_MISSING_MODULE` for a `ModuleNotFoundError`; `ESTIMATOR_UNSUPPORTED_DTYPE` for a `flopscope.errors.UnsupportedDtypeError`; `ESTIMATOR_BAD_SHAPE`, `ESTIMATOR_NON_FINITE` or `SCORING_VALIDATION_ERROR` for a `ValueError`; and `SCORING_RUNTIME_ERROR` for anything else. `ESTIMATOR_UNSUPPORTED_DTYPE` means a non-numeric dtype (anything whose `kind` is not one of `b`, `i`, `u`, `f`, `c`) reached a metered flopscope operation — as an operand, an explicit `dtype=`, a fill value or distribution parameter, or an `out=` destination. |
 
 For structured `error` objects, `error.details` includes:
 

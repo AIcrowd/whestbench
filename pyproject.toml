@@ -13,7 +13,7 @@ license = "MIT"
 dependencies = [
     "datasets>=2.20",
     "faker~=37.0",
-    "flopscope>=0.10.0,<0.11.0",  # 0.10.0: out=/symmetry-tag billing-integrity fixes (destination writes priced, tag-forgery discounts voided, refusals uniformly free) + einsum out= now follows numpy's casting rule (BREAKING: silently-truncating calls raise TypeError) — absolute FLOP counts change, re-baseline scores. Floor pinned to 0.10.0 (the grader's version) so CI's `--upgrade-package` resolution is deterministic. <0.11.0 caps the next breaking minor.
+    "flopscope>=0.11.0,<0.12.0",  # 0.11.0: the >52-letter contraction fallback now bills the honest FMA count, so padding both tensordot operands with singleton axes no longer buys the arithmetic at ~half price (~2x on affected calls; tensordot only — matmul uses ellipsis subscripts), and `ix_` moves from a shipped weight of 0.0 to 1.0. Both move FLOPs the GRADER charges for calls that already ran — scored submissions need RE-EVALUATION, not just a re-baseline. BREAKING: non-numeric dtypes (object, str, bytes, datetime64, timedelta64, structured/void) now raise UnsupportedDtypeError wherever they reach a metered op, on a numeric allowlist (dtype.kind in "biufc"). Separately, linalg/cross/outer/contraction/fft/bmat results are now wrapped so downstream arithmetic is billed LOCALLY — that raises the in-process estimate onto what the grader already charged and implies no re-eval. Floor pinned to 0.11.0 so CI's `--upgrade-package` resolution is deterministic; whestbench-evaluator moves its own v0.10.0 pins to v0.11.0 once this release is tagged (they are an atomic pair). <0.12.0 caps the next breaking minor.
     "httpx>=0.27",
     "huggingface_hub>=0.24",
     "jinja2>=3.1",
@@ -42,7 +42,7 @@ dev = [
     "ruff>=0.6.0",
 ]
 server = [
-    "flopscope-server>=0.10.0,<0.11.0",
+    "flopscope-server>=0.11.0,<0.12.0",
 ]
 
 [tool.ruff]

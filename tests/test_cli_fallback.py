@@ -3,6 +3,10 @@ from __future__ import annotations
 from contextlib import contextmanager
 from typing import Any
 
+import flopscope.numpy as fnp
+import pytest
+from flopscope.errors import UnsupportedDtypeError
+
 import whestbench.cli as cli
 
 
@@ -392,6 +396,32 @@ def test_error_code_mapping_for_validation_messages() -> None:
     assert cli._error_code(ValueError(bad_shape), bad_shape) == "ESTIMATOR_BAD_SHAPE"
     non_finite = "Predictions must contain only finite values."
     assert cli._error_code(ValueError(non_finite), non_finite) == "ESTIMATOR_NON_FINITE"
+
+
+def test_error_code_maps_flopscope_unsupported_dtype() -> None:
+    # Raised for real rather than constructed: UnsupportedDtypeError subclasses
+    # TypeError, not ValueError and not FlopscopeError, so a change to flopscope's
+    # hierarchy would silently drop this back into SCORING_RUNTIME_ERROR — the
+    # bucket a bare framework crash lands in.
+    with pytest.raises(UnsupportedDtypeError) as excinfo:
+        fnp.zeros(3, dtype=object)
+    exc = excinfo.value
+    assert cli._error_code(exc, str(exc)) == "ESTIMATOR_UNSUPPORTED_DTYPE"
+
+
+def test_error_payload_enriches_unsupported_dtype_with_sandbox_remedy() -> None:
+    # A str_ operand rather than a mixed [1.0, None] list: both are refused at
+    # runtime, but the mixed list is also a static type error, so it cannot stand
+    # in for the participant mistake this message is written for.
+    with pytest.raises(UnsupportedDtypeError) as excinfo:
+        fnp.array(["a", "b"])
+    payload = cli._error_payload(excinfo.value, include_traceback=False)
+    assert payload["error"]["code"] == "ESTIMATOR_UNSUPPORTED_DTYPE"
+    message = payload["error"]["message"]
+    # flopscope's own advice is to convert with plain numpy first, which the grader
+    # sandbox cannot do; the payload must carry the in-sandbox remedy instead.
+    assert "no numpy" in message
+    assert "dtype=fnp.float64" in message
 
 
 def test_error_payload_shape_is_stable() -> None:

@@ -53,7 +53,7 @@ more for complex):
 |---|---|---|---|
 | Create zeros | `fnp.zeros((n, n))` | 0 | Free (also `empty`) |
 | Create ones / full / eye | `fnp.ones(n)` | n | Fills are charged (only `zeros` is free) |
-| Wrap existing data | `fnp.array(data)` | n | Materializes a copy |
+| Wrap existing data | `fnp.array(data)` | n | Materializes a copy; numeric dtypes only (see below) |
 | Matrix multiply | `fnp.matmul(A, B)` | O(m x n x k) | Dominates budgets |
 | Element-wise add | `fnp.add(a, b)` | 1 per element | Also `sub`, `mul`, `div` |
 | ReLU | `fnp.maximum(x, 0.0)` | 1 per element | |
@@ -72,6 +72,15 @@ more for complex):
 | Fancy / boolean index | `x[idx]`, `x[mask]` | 4 per element | Gather (mask: `numel + 4 x selected`) |
 | Select with `where` | `fnp.where(c, a, b)` | 4 per element | Was free before 0.9.0 |
 | Sort / gather | `fnp.sort(x)`, `fnp.take(x, i)` | 4 per element | Order / selector-deriving |
+| Open-mesh index grid | `fnp.ix_(i, j)` | total output size | Was free before 0.11.0; each Boolean argument adds `numel(arg)` for the internal `nonzero` scan; rejects ndarray subclasses such as `MaskedArray` / `memmap` |
+
+> **Numeric dtypes only.** `fnp.array(data)` requires data that coerces to a numeric
+> dtype — bool, integer, unsigned integer, float or complex. Mixed, string,
+> bytes, `datetime64`, `timedelta64` and object input now raise
+> `flopscope.errors.UnsupportedDtypeError`. Do not plan on converting with plain
+> `numpy` first — the grader sandbox does not provide it. Build numeric arrays from
+> already-numeric scalars with an explicit `dtype=fnp.float64`, and hold ragged or
+> mixed data in a Python list of numeric arrays rather than one object array.
 
 ## Common patterns
 
