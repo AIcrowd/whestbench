@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.15.0 (2026-08-18)
+
+### BREAKING CHANGE
+
+- flopscope 0.11.0 moves FLOPs the GRADER charges for calls
+that already ran, so scored submissions need re-evaluation, not only a
+re-baseline. The >52-letter contraction fallback now bills the honest FMA
+count, so tensordot calls built on singleton-axis padding bill ~2x, and ix_
+moves from a shipped weight of 0.0 to 1.0. Separately, non-numeric dtypes
+(object, str, bytes, datetime64, timedelta64, structured/void) now raise
+UnsupportedDtypeError wherever they reach a metered op, on a numeric
+allowlist. Results from linalg/cross/outer/contraction/fft/bmat are now
+wrapped so downstream arithmetic is billed locally; that raises the
+in-process estimate onto what the grader already charged and implies no
+re-evaluation.
+
+### Feat
+
+- **deps**: adopt flopscope 0.11.0 and re-cap at <0.12.0
+
+### Fix
+
+- **runner**: honor wall limit before transport timeout
+
 ## v0.14.0 (2026-07-31)
 
 ### BREAKING CHANGE
