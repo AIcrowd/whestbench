@@ -27,6 +27,7 @@ from typing import (
 )
 
 import flopscope.numpy as fnp
+from flopscope.errors import UnsupportedDtypeError
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
@@ -3692,6 +3693,27 @@ def _enriched_import_error_message(exc: ModuleNotFoundError) -> str:
     )
 
 
+def _enriched_unsupported_dtype_message(exc: UnsupportedDtypeError) -> str:
+    """Return an actionable message for a dtype flopscope refuses to meter.
+
+    flopscope meters a numeric allowlist only (bool, integer, float, complex);
+    object, string, bytes, datetime64, timedelta64 and structured/void are
+    refused wherever they reach a metered op — as an operand, an explicit
+    ``dtype=``, a fill value, or an ``out=`` destination. flopscope's own advice
+    is to convert with plain NumPy first, which does not apply in the grader
+    sandbox: there is no numpy there to convert with. Keeps the original error,
+    which already names the offending dtype and op, and appends the remediation
+    that works in-sandbox.
+    """
+    return (
+        f"{exc} "
+        "The grader sandbox has no numpy to convert with first, so build the array "
+        "inside flopscope from numeric values with an explicit dtype "
+        "(fnp.array(values, dtype=fnp.float64)), or hold ragged/mixed data in a "
+        "Python list of numeric arrays and meter each one separately."
+    )
+
+
 def _error_payload(
     exc: Exception,
     *,
@@ -3701,6 +3723,8 @@ def _error_payload(
     """Build stable error payload shape for human/JSON mode outputs."""
     if isinstance(exc, ModuleNotFoundError):
         message = _enriched_import_error_message(exc)
+    elif isinstance(exc, UnsupportedDtypeError):
+        message = _enriched_unsupported_dtype_message(exc)
     else:
         message = str(exc) or exc.__class__.__name__
     error: Dict[str, Any] = {
@@ -3722,6 +3746,10 @@ def _error_code(exc: Exception, message: str) -> str:
         return exc.detail.code
     if isinstance(exc, ModuleNotFoundError):
         return "ESTIMATOR_MISSING_MODULE"
+    if isinstance(exc, UnsupportedDtypeError):
+        # Subclasses TypeError, so without this it lands in SCORING_RUNTIME_ERROR —
+        # the bucket for framework crashes, which misattributes an estimator fault.
+        return "ESTIMATOR_UNSUPPORTED_DTYPE"
     lowered = message.lower()
     if isinstance(exc, ValueError):
         if "must have shape" in lowered:

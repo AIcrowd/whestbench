@@ -374,11 +374,11 @@ def _synthesize_sampling_breakdown(
       run-time reports attribute these to the bake machine instead of the
       current run — they are informational and never billed (discourse #18093).
 
-    Formula derivation (matched against flopscope 0.9.0's operation-level accounting;
+    Formula derivation (matched against flopscope 0.11.0's operation-level accounting;
     validated across single- and multi-chunk dims by
     test_closed_form_matches_flopscope_count). Below, n = n_samples and k = n_chunks.
 
-    flopscope 0.9.0 bills under a dtype-aware model, so an op on float64 data costs
+    flopscope 0.11.0 bills under a dtype-aware model, so an op on float64 data costs
     2x the same op on float32. sample_layer_statistics runs the forward pass in
     float32 (rate 1) and accumulates statistics in float64 (rate 2); the 2x is folded
     into the float64 terms below. Reductions cost (rows - 1) additions per output

@@ -135,7 +135,7 @@ def sample_layer_statistics(
                 progress({"completed": chunk_index, "total": total_chunks, "unit": "chunks"})
 
     layer_means = fnp.asarray(fnp.stack(layer_sums) / n_processed, dtype=fnp.float32)
-    # flopscope 0.9.0 types FlopscopeArray.__getitem__ / .copy() as np.ndarray, but
+    # flopscope 0.11.0 types FlopscopeArray.__getitem__ / .copy() as np.ndarray, but
     # the runtime value is a FlopscopeArray; cast to match the declared return type.
     final_mean = cast(fnp.ndarray, layer_means[-1].copy())
     avg_variance = float(

@@ -143,11 +143,11 @@ work; pure-Python solutions trade some FLOP headroom for residual time.
 
 ## Common Gotchas
 
-**numpy arrays still count FLOPs.** Since `fnp.ndarray` is backed by numpy, a raw numpy array passed to flopscope operations will still be tracked. Use `fnp.array()` or `fnp.asarray()` to convert explicitly.
+**numpy arrays still count FLOPs.** Since `fnp.ndarray` is backed by numpy, a raw numpy array passed to flopscope operations will still be tracked. Convert explicitly with `fnp.array()` or `fnp.asarray()` — but those conversions are themselves subject to the numeric-dtype rule below, so `fnp.array([1.0, None])` and `fnp.array(['a', 'b'])` raise `UnsupportedDtypeError` rather than producing an `object` or string array. Build numeric data with `fnp.array(..., dtype=fnp.float64)` from values that are already numeric scalars, and keep ragged or mixed data in a Python list of numeric arrays instead of one array. Converting with plain numpy first is not a remedy: the grader sandbox ships no numpy.
 
 **Pythonic operators are tracked.** `x @ w` counts the same FLOPs as `fnp.matmul(x, w)`. Use whichever reads better.
 
-**dtype matters for precision, not FLOPs.** `float32` and `float64` operations cost the same FLOPs. Use `float32` for memory efficiency and `float64` for numerical stability where needed.
+**dtype decides both cost and admission.** dtype scales FLOP cost: the charged cost is `flop_cost * dtype_rate * complex_factor * weight`, and `float64` carries a rate of `2.0`, so a `float64` operation costs twice the same operation in `float32`. dtype also decides admission — flopscope accepts only numeric dtypes (`dtype.kind in "biufc"`: bool, signed and unsigned integer, float, complex). Anything else raises `UnsupportedDtypeError` (importable from `flopscope.errors`) wherever it reaches a registered operation, whether as an operand, an explicit `dtype=`, a fill value or distribution parameter, or an `out=` destination. The one carve-out is a dtype NumPy materialises with zero itemsize, such as an empty structured spec (`'V0'`); `'U0'` and `'S0'` are not exempt, because NumPy promotes them to `'U1'`/`'S1'` on allocation.
 
 ## Testing
 
