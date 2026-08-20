@@ -1,8 +1,12 @@
-name: Starter-kit docs drift
+name: Starter-kit drift
 
 on:
   schedule:
     - cron: '0 6 * * 1'   # Mondays 06:00 UTC
+  push:
+    branches: [main]
+    paths:
+      - 'pyproject.toml'   # a dependency bump here is what puts the kit behind
   workflow_dispatch: {}
 
 permissions:
@@ -11,6 +15,9 @@ permissions:
 
 jobs:
   drift:
+    # Docs drift moves on the kit's cadence, not ours: only the weekly sweep and
+    # manual runs need it, never our own pyproject pushes.
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,4 +53,47 @@ jobs:
           else
             gh issue create --title "$TITLE" --body-file body.md --label documentation || \
               gh issue create --title "$TITLE" --body-file body.md
+          fi
+
+  deps:
+    # The docs pin says nothing about which flopscope/whestbench the kit resolves.
+    # Participants profile against those, so a kit behind this repo publishes FLOP
+    # counts submissions are not scored on — report it, don't block on it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - name: Compare kit dependency pins against this repo's
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if uv run --no-project --with toml \
+              python scripts/bump_starterkit_pin.py --check-deps > deps.txt; then
+            cat deps.txt
+            cat deps.txt >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "## Starter-kit dependency drift detected"
+            echo ""
+            echo '```'
+            cat deps.txt
+            echo '```'
+            echo ""
+            echo "The starter kit is the published spec of the round: participants profile against"
+            echo "the dependencies it resolves. A kit behind this repo reports FLOP counts that"
+            echo "submissions are not actually scored on."
+            echo ""
+            echo "Fix upstream in AIcrowd/whest-starterkit (\`pyproject.toml\` + \`uv lock\`), then run"
+            echo "\`python scripts/bump_starterkit_pin.py\` here to re-pin the federated docs."
+          } > deps-body.md
+          cat deps-body.md >> "$GITHUB_STEP_SUMMARY"
+          TITLE="starter-kit dependency drift: kit pins differ from whestbench"
+          EXISTING="$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number' || true)"
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body-file deps-body.md
+          else
+            gh issue create --title "$TITLE" --body-file deps-body.md --label dependencies || \
+              gh issue create --title "$TITLE" --body-file deps-body.md
           fi
