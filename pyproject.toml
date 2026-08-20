@@ -45,6 +45,34 @@ server = [
     "flopscope-server>=0.11.0,<0.12.0",
 ]
 
+# TEMPORARY — track flopscope's main branch until v0.12.0 is released.
+#
+# The grader meters against flopscope's current accounting, which between releases
+# lives on main rather than on PyPI. Resolving from the last release makes the local
+# harness report FLOP counts a submission is not actually scored on, so the harness
+# tracks main for as long as that gap is open.
+#
+# This is a [tool.uv.sources] redirect rather than a direct URL in
+# [project.dependencies] on purpose: PyPI rejects direct-URL dependencies in an
+# uploaded distribution, and `tool.uv.sources` is stripped from built wheel metadata.
+# So the published requirement stays the plain range above, and only local/CI
+# resolution is redirected. The range still reads <0.12.0 because main has not been
+# version-bumped yet — it reports 0.11.0 until the release commit lands.
+#
+# uv.lock records the exact resolved commit, so a plain `uv sync --frozen` is
+# reproducible. CI syncs with `--upgrade-package flopscope --upgrade-package
+# flopscope-server` (.github/workflows/ci.yml), which re-resolves the branch to its
+# newest commit — that is the intended tracking behaviour, and it means CI can go red
+# on an upstream flopscope commit that no whestbench change caused.
+#
+# WHEN flopscope v0.12.0 IS TAGGED: delete this whole block and set both ranges to
+# >=0.12.0,<0.13.0. Note whestbench's declared flopscope cap is what
+# whestbench-evaluator's scripts/check_flopscope_pins.py reads for its atomic-pair
+# check, so that re-pin is the evaluator's cue too.
+[tool.uv.sources]
+flopscope = { git = "https://github.com/AIcrowd/flopscope.git", branch = "main" }
+flopscope-server = { git = "https://github.com/AIcrowd/flopscope.git", branch = "main", subdirectory = "flopscope-server" }
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"

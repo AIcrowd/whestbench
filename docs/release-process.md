@@ -159,6 +159,25 @@ major version, bump these floors in `pyproject.toml` and re-run `uv lock`
 before cutting the next whestbench release. (Out of scope for an automated
 workflow; flag if Dependabot becomes worth the noise.)
 
+> **Currently tracking flopscope `main`, not a release.** `[tool.uv.sources]` in
+> `pyproject.toml` redirects both requirements to the flopscope repository's `main`
+> branch, so the local harness meters the way the grader does between releases. Two
+> consequences for a release cut:
+>
+> 1. **Do not cut a whestbench release while the redirect is in place** unless you
+>    mean to. `tool.uv.sources` is stripped from built wheel metadata, so the wheel
+>    would declare the plain `>=0.11.0,<0.12.0` range and resolve a *different*
+>    flopscope from PyPI than the one every test here ran against.
+> 2. CI syncs with `--upgrade-package flopscope --upgrade-package flopscope-server`,
+>    which re-resolves the branch to its newest commit. CI can therefore go red on an
+>    upstream flopscope commit that no whestbench change caused. Check the resolved
+>    commit in the failing job before assuming the break is local.
+>
+> When flopscope v0.12.0 is tagged: delete the `[tool.uv.sources]` block, set both
+> ranges to `>=0.12.0,<0.13.0`, re-run `uv lock`, and re-run the full suite —
+> especially `tests/test_torch_flop_synthesis.py`, which is the gate on whether the
+> bake's closed form still matches flopscope's actual count.
+
 A flopscope bump that changes absolute FLOP *counts* requires a re-baseline + full re-eval plan (see the 0.5.0 incident); 0.11.0 is one — a contraction whose combined operand rank exceeds the 52-letter subscript budget now bills the honest FMA count instead of multiplies only, so `tensordot` calls built on singleton-axis padding bill ~2x, and `fnp.ix_` moving from weight 0.0 to 1.0 is a second, smaller mover. A bump that only re-attributes *timing* (e.g. 0.7.0: data-movement → backend) shifts residual-based scores and warrants a measure-then-decide re-eval. A bump that only raises the *local* in-process estimate to match what the grader was already charging is participant-visible but triggers no re-evaluation: 0.11.0's linalg, cross, outer, contraction, fft and `bmat` return-type wrapping is that case — grader-side counts do not move.
 
 ### Docs
