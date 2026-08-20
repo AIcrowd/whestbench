@@ -23,16 +23,17 @@ What it is not is a once-per-submission hook. The grader runs `setup()` once
 per worker process, and a submission is served by several workers (a worker
 also restarts its participant process after certain failures), so in practice
 `setup()` runs roughly 5-15 times per submission. Each run gets its own hard
-30 s budget; blowing it fails the whole submission with `SETUP_TIMEOUT`, not
-just one MLP. `predict()` has a separate hard 60 s per MLP — setup does not
-borrow from it and cannot spend it.
+**5 s** budget; blowing it fails the whole submission with `SETUP_TIMEOUT`, not
+just one MLP. `predict()` has a separate hard per-MLP wall-clock cap — setup
+does not borrow from it and cannot spend it.
 
 So `setup()` is the place to *load* precomputed work, not to *do* it. Compute
 offline, ship the artifact, and read it here.
 
-Locally, `whest run` and `whest validate` cap `setup()` at 5 s rather than
-30 s. That is a CLI default, not the grading rule — if a local run trips it,
-check the real cost before assuming the grader would have failed too.
+The 5 s cap is the same locally and on the grader: `whest run` and
+`whest validate` enforce it too, so a local `SETUP_TIMEOUT` means what a graded
+one does. Budget accordingly — 5 s is enough to read an `.npz`, and is not
+enough to build one.
 
 ### `SetupContext` fields
 

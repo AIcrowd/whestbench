@@ -149,9 +149,10 @@ Load weights in `setup()`, not `predict()`. `setup()` runs before FLOP
 tracking starts, so the load costs **0 FLOPs**.
 
 Load, don't compute. On the grader `setup()` runs once per worker process —
-roughly 5-15 times per submission, not once — and each run is capped at 30 s.
+roughly 5-15 times per submission, not once — and each run is capped at **5 s**.
 Reading an `.npz` fits that easily; training a model in `setup()` does not,
-and you would pay for it on every worker.
+and you would pay for it on every worker. The same 5 s cap applies locally, so
+`whest run` will tell you before the grader does.
 
 ```python
 from pathlib import Path
