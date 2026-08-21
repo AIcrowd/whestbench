@@ -255,11 +255,27 @@ def _preview_and_confirm_submission(
 
     if mode == "file":
         say.intent(f"Packaging single file {entry.name} → {output_label}")
-        say.warn(
-            f"Single-file submission: only {entry.name} will be submitted. Any "
-            f"sibling modules, data files, or configs in {root} are NOT included. "
-            f"Point --estimator at the folder to package the whole directory."
-        )
+        # Name what is being left behind. The old wording ("any sibling modules, data
+        # files, or configs are NOT included") was true of every single-file run,
+        # which is exactly why it read as boilerplate and got skimmed. People do not
+        # skim the name of the folder they created an hour ago.
+        orphans = summary.orphaned_siblings
+        if orphans:
+            shown = ", ".join(orphans[:8])
+            more = f", and {len(orphans) - 8} more" if len(orphans) > 8 else ""
+            # The names are the payload, so they lead. Spelling out an absolute root
+            # path here pushed them past the wrap and buried the one thing worth reading.
+            say.warn(
+                f"Single-file submission: only {entry.name} will be submitted. "
+                f"{len(orphans)} item{'s' if len(orphans) != 1 else ''} beside it "
+                f"will NOT be included: {shown}{more}. "
+                f"Point --estimator at the folder to package the whole directory."
+            )
+        else:
+            say.warn(
+                f"Single-file submission: only {entry.name} will be submitted. "
+                f"Nothing else beside it is in scope."
+            )
         return True
 
     # Folder mode: ship the whole directory — be loud about exactly what that means.

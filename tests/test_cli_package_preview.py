@@ -206,3 +206,59 @@ def test_submit_estimator_folder_shows_file_list_before_upload(tmp_path: Path, m
 
     assert rc == 0
     assert "helper.py" in "\n".join(captured)
+
+
+def test_package_file_mode_names_the_orphaned_siblings(tmp_path: Path, monkeypatch) -> None:
+    # The warning has to say WHAT is being dropped. A generic "sibling files are not
+    # included" line is true of every single-file run and gets skimmed (whestbench#119).
+    (tmp_path / "estimator.py").write_text(_EST, encoding="utf-8")
+    (tmp_path / "weights.npz").write_bytes(b"\x00" * 16)
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "assets" / "table.npy").write_bytes(b"\x00" * 16)
+    out = tmp_path.parent / "named.tar.gz"
+    captured = _spy(monkeypatch)
+
+    rc = cli.main(["package", "--estimator", str(tmp_path / "estimator.py"), "--output", str(out)])
+
+    assert rc == 0
+    joined = "\n".join(captured)
+    assert "assets/" in joined
+    assert "weights.npz" in joined
+
+
+def test_package_file_mode_omits_ignored_siblings_from_the_warning(
+    tmp_path: Path, monkeypatch
+) -> None:
+    # .venv/ was never going to ship, so naming it would make the list noise again.
+    (tmp_path / "estimator.py").write_text(_EST, encoding="utf-8")
+    venv = tmp_path / ".venv" / "lib"
+    venv.mkdir(parents=True)
+    (venv / "thing.py").write_text("\n", encoding="utf-8")
+    out = tmp_path.parent / "quiet.tar.gz"
+    captured = _spy(monkeypatch)
+
+    rc = cli.main(["package", "--estimator", str(tmp_path / "estimator.py"), "--output", str(out)])
+
+    assert rc == 0
+    assert ".venv" not in "\n".join(captured)
+
+
+def test_package_file_mode_refuses_an_imported_sibling(tmp_path: Path, monkeypatch) -> None:
+    entry = (
+        "import helper\n"
+        "from whestbench import BaseEstimator\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        import flopscope.numpy as fnp\n"
+        "        return fnp.zeros((mlp.depth, mlp.width)) + helper.f()\n"
+    )
+    (tmp_path / "estimator.py").write_text(entry, encoding="utf-8")
+    (tmp_path / "helper.py").write_text("def f():\n    return 0\n", encoding="utf-8")
+    out = tmp_path.parent / "broken.tar.gz"
+    captured = _spy(monkeypatch)
+
+    rc = cli.main(["package", "--estimator", str(tmp_path / "estimator.py"), "--output", str(out)])
+
+    assert rc != 0
+    assert "helper" in "\n".join(captured)
+    assert not out.exists()
