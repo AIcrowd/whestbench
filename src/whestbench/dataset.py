@@ -817,6 +817,7 @@ def resolve_seed_context(
     ds: "Any",
     *,
     seed_protocol_version: "str | None" = None,
+    seed_salt: "bytes | str | None" = None,
 ) -> "tuple[str, bytes | None]":
     """Return ``(seed_protocol_version, seed_salt)`` for a loaded dataset.
 
@@ -839,7 +840,15 @@ def resolve_seed_context(
     if proto_version != SEED_PROTOCOL_VERSION_V4:
         return proto_version, None
 
-    from .seeds import resolve_salt
+    from .seeds import _decode_salt, resolve_salt
+
+    if seed_salt is not None:
+        # Explicit salt wins, and is the only way to read a 4.0 dataset that is
+        # not registered in _METADATA_BY_DS -- a concatenated or hand-built
+        # Dataset, or one loaded outside whestbench.load_dataset. Without this
+        # escape hatch such a dataset is unreadable, because resolve_salt has
+        # nothing to resolve from and correctly refuses to guess.
+        return proto_version, _decode_salt(seed_salt, origin="seed_salt")
 
     return proto_version, resolve_salt(seed_proto)
 
