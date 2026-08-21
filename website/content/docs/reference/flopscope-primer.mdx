@@ -152,14 +152,59 @@ gated regime `C_m = F_m`, so that post-hoc check is a backstop on the same FLOP 
 that `budget_exhausted` already guards — blowing the residual cap surfaces separately,
 as `residual_wall_time_exhausted`.
 
-### Why two regimes
+<details>
+<summary><strong>Why does Phase 2 remove λ and hard-cap residual wall time instead?</strong></summary>
 
-Both answer the same question — you may write any Python you like, but you cannot use
-uninstrumented work to dodge the meter. Pricing lets wall time and FLOPs trade against
-each other, which is expressive but makes a score depend on how fast the grader's
-machine happened to be that day. Gating removes that coupling: `C_m` is then a pure
-analytical quantity, identical on your laptop and on the grader, and residual time is
-held to a fixed allowance instead.
+Because λ priced something Phase 2 no longer permits.
+
+The competition asks how accurate an estimate a solution can produce for a fixed amount
+of computation. That question is only meaningful if computation is counted the same way
+for every participant, and flopscope is what keeps that count.
+
+**Phase 1 permitted unmetered computation, so it priced it.** A submission could call out
+to any other library, numerical backend, programming language, executable, or saved file
+of the participant's choice. That was real work the meter could not see, so it was charged
+against the budget through the residual-wall-time conversion. λ was that price.
+
+**Phase 2 withdraws the permission.** All computation must be performed through flopscope,
+and a solution's own Python exists to decide which flopscope operations to call. A
+submission may use only the Python interpreter provided by the grader, the flopscope
+client API, and pure-Python standard-library modules for control flow and bookkeeping.
+This design encourages a focus on estimation algorithms rather than on optimizing numeric
+primitives — or on optimizing against the meter.
+
+Once unmetered computation is *prohibited* rather than *priced*, there is nothing left for
+λ to charge for. Residual wall time stops being a channel for doing work and becomes
+plumbing — unpacking `mlp`, control flow around your `fnp` calls, assembling the returned
+array. Plumbing needs a bound, not a price. So it gets a hard **400 ms per MLP**, and
+`C_m = F_m`.
+
+The following are prohibited in Phase 2. This list is not exhaustive: each entry describes
+a way of performing computation that flopscope does not count, and any other mechanism
+having that effect is equally prohibited.
+
+- bundled or vendored numpy, scipy, or any BLAS or LAPACK implementation;
+- compiled kernels of any kind, however delivered, including wheels, shared objects,
+  static binaries, and code generated at runtime;
+- ctypes, cffi, or any other foreign-function mechanism;
+- asyncio, threads, subprocesses, multiprocessing, and threading runtimes;
+- computation of any kind performed while a flopscope operation is in flight; and
+- modifying, monkeypatching, or otherwise interfering with the flopscope client, its
+  transport, or its accounting.
+
+**Data files remain permitted**, including weights, lookup tables and precomputed
+artifacts. Doing heavy work offline and shipping the result is the intended path, not a
+loophole.
+
+There is a second benefit. Pricing coupled a score to wall-clock time, so the same
+submission could score differently depending on how fast the grader's machine happened to
+be that day. With λ = 0, `C_m` is a pure analytical quantity — identical on your laptop
+and on the grader.
+
+*The competition rules are authoritative on what is permitted; this note explains why the
+harness behaves as it does.*
+
+</details>
 
 ### Reproducing an earlier round
 
