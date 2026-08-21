@@ -29,33 +29,134 @@ competition has used each in turn:
 The default is GATED, so C == F unless a caller opts back in. Nothing about the
 two modes is hard-coded to a phase: pass any rate you like.
 
-Reproducing a Phase 1 round means restoring FOUR settings, not just the rate:
-  - lambda_flops_per_second = PHASE1_LAMBDA_FLOPS_PER_SECOND (1e11)
-  - residual_wall_time_limit_s = None   (that round gated nothing)
-  - flop_budget                         (that round's own budget)
-  - wall_time_limit_s = 60.0            (Phase 1's per-predict cap; the default is
-                                         now 120.0, and a submission that took
-                                         between 60 s and 120 s was time_exhausted
-                                         then but would pass here)
-Restoring only the rate re-scores an old run under a mix of both rulebooks.
+Reproducing an older round means restoring ALL of its settings, not just the
+rate — restoring only some re-scores the run under a mix of both rulebooks and
+produces a number that matches neither. Every round is therefore kept whole, in
+``ROUNDS``, keyed by its dataset tag:
+
+    from whestbench.budget import ROUNDS
+    r = ROUNDS["v1-phase1"]
+    r.flop_budget, r.lambda_flops_per_second, r.residual_wall_time_limit_s,
+    r.wall_time_limit_s, r.width, r.depth
+
+The two settings easiest to forget are the wall cap and the gate. A submission
+taking between 60 s and 120 s was time_exhausted under the v1-* rounds but passes
+under the current 120 s default; and those rounds gated nothing, so leaving
+today's 0.4 s residual cap in place fails MLPs they would have allowed.
+
+``CURRENT_ROUND`` is the round being graded, and every default below is derived
+from it, so advancing a phase is one edit rather than a hunt through the
+codebase. See docs/reference/rounds.md for the round-by-round comparison.
 """
 
 from __future__ import annotations
 
-# Per-MLP effective-compute budget B_m. The default is the current round's.
-# The historical values are kept named rather than inlined so a re-score of an
-# older round cites a constant instead of a magic number.
-DEFAULT_FLOP_BUDGET: int = 2**41  # 2,199,023,255,552 - Phase 2
-PHASE1_FLOP_BUDGET: int = 272_000_000_000  # 2.72e11
-WARMUP_FLOP_BUDGET: int = 68_000_000_000  # 6.8e10 - the v1-warmup round
+from dataclasses import dataclass
+from typing import Dict, Optional
+
+
+@dataclass(frozen=True)
+class RoundConfig:
+    """Every setting that defines one competition round.
+
+    Rounds are kept side by side rather than replaced, because re-scoring an
+    older submission means restoring ALL of these together. Restoring only some
+    of them scores that run under a mix of two rulebooks and silently produces a
+    number that matches neither -- see the module docstring above.
+
+    ``lambda_flops_per_second`` is the residual RATE. It is meaningful only in
+    the priced model (``residual_mode == "priced"``); under gating the rate is
+    0.0 and ``residual_wall_time_limit_s`` does the work instead.
+    """
+
+    #: Dataset revision tag on the HF repos, e.g. ``"v2-phase2"``.
+    tag: str
+    #: MLP shape the round was baked at.
+    width: int
+    depth: int
+    #: Ground-truth Monte-Carlo draws per MLP.
+    n_samples: int
+    #: Per-MLP effective-compute budget B_m.
+    flop_budget: int
+    #: Residual rate. See ``residual_mode``.
+    lambda_flops_per_second: float
+    #: Hard cap on residual seconds, or ``None`` when the round gated nothing.
+    residual_wall_time_limit_s: Optional[float]
+    #: Per-``predict()`` wall-clock cap.
+    wall_time_limit_s: float
+    #: ``"priced"`` (residual converted to FLOPs via lambda) or ``"gated"``
+    #: (residual capped separately and not priced).
+    residual_mode: str
+    #: One-line summary of what changed relative to the previous round.
+    note: str
+
+
+WARMUP_ROUND = RoundConfig(
+    tag="v1-warmup",
+    width=256,
+    depth=8,
+    n_samples=1_000_000_000,
+    flop_budget=68_000_000_000,  # 6.8e10
+    lambda_flops_per_second=1e11,
+    residual_wall_time_limit_s=None,
+    wall_time_limit_s=60.0,
+    residual_mode="priced",
+    note="First public round. Residual wall time priced at 1e11; nothing gated.",
+)
+
+PHASE1_ROUND = RoundConfig(
+    tag="v1-phase1",
+    width=256,
+    depth=32,
+    n_samples=1_000_000_000,
+    flop_budget=272_000_000_000,  # 2.72e11
+    lambda_flops_per_second=1e11,
+    residual_wall_time_limit_s=None,
+    wall_time_limit_s=60.0,
+    residual_mode="priced",
+    note="Deeper MLPs (8 -> 32) and a 4x budget. Same priced-residual rulebook.",
+)
+
+PHASE2_ROUND = RoundConfig(
+    tag="v2-phase2",
+    width=1024,
+    depth=16,
+    n_samples=1_000_000_000,
+    flop_budget=2**41,  # 2,199,023,255,552
+    lambda_flops_per_second=0.0,
+    residual_wall_time_limit_s=0.4,
+    wall_time_limit_s=120.0,
+    residual_mode="gated",
+    note=(
+        "Wider and shallower (256x32 -> 1024x16). Residual PRICING is deprecated: "
+        "lambda is 0.0 and residual time is capped at 0.4 s instead, so C == F and "
+        "the FLOP budget means what it says."
+    ),
+)
+
+#: Every round, newest last. Keyed by dataset tag so a metadata revision maps
+#: straight onto the rulebook it was scored under.
+ROUNDS: Dict[str, RoundConfig] = {r.tag: r for r in (WARMUP_ROUND, PHASE1_ROUND, PHASE2_ROUND)}
+
+#: The round currently being graded. Every default below derives from it, so
+#: advancing a phase is one edit here rather than a hunt through the codebase.
+CURRENT_ROUND: RoundConfig = PHASE2_ROUND
+
+# --- Derived defaults ---------------------------------------------------------
+# These names predate RoundConfig and stay for compatibility, but they are now
+# derived rather than restated so the two can never disagree.
+
+DEFAULT_FLOP_BUDGET: int = CURRENT_ROUND.flop_budget
+PHASE1_FLOP_BUDGET: int = PHASE1_ROUND.flop_budget
+WARMUP_FLOP_BUDGET: int = WARMUP_ROUND.flop_budget
 
 # Phase 1 rate: residual wall time priced at 1e11 FLOP-equivalents per second.
-# Pass this explicitly to re-score a Phase 1 round.
-PHASE1_LAMBDA_FLOPS_PER_SECOND: float = 1e11
+# Pass this explicitly to re-score a Phase 1 or warmup round.
+PHASE1_LAMBDA_FLOPS_PER_SECOND: float = PHASE1_ROUND.lambda_flops_per_second
 
 # The default. 0.0 means residual wall time is not priced into effective compute
 # at all — it is gated by residual_wall_time_limit_s instead — so C == F.
-DEFAULT_LAMBDA_FLOPS_PER_SECOND: float = 0.0
+DEFAULT_LAMBDA_FLOPS_PER_SECOND: float = CURRENT_ROUND.lambda_flops_per_second
 
 # Deprecated alias, kept so existing imports neither break nor silently change
 # value. It has always meant the Phase 1 rate and still does; it is NOT the

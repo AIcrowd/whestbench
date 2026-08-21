@@ -57,10 +57,10 @@ For HF-hosted datasets:
 
 ```bash
 whest run --estimator estimator.py \
-          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+          --dataset hf://aicrowd/arc-whestbench-public-2026@v2-phase2
 ```
 
-> **Always pin a revision** (`@v1-phase1`) rather than tracking `main`. `main`
+> **Always pin a revision** (`@v2-phase2`) rather than tracking `main`. `main`
 > advances each phase, so an unpinned load can silently change the dataset
 > underneath you; a tag is immutable and reproducible.
 
