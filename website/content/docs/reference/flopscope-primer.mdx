@@ -116,10 +116,22 @@ If you see `residual_wall_time_exhausted`, that came from WhestBench scoring
 logic comparing Flopscope's measured `residual_wall_time_s` with the configured
 `--residual-wall-time-limit`.
 
-## Residual wall-time charging (lambda)
+## Residual wall time: gated, not priced
 
-WhestBench's effective compute budget combines analytical FLOPs and residual wall time
-via a conversion rate `λ` (`LAMBDA_FLOPS_PER_SECOND` in `whestbench.scoring`):
+Residual wall time is the part of `predict()` that flopscope does not meter. There are
+two ways to stop that being a free lunch, and WhestBench supports both — the difference
+is one number, `λ`:
+
+| Regime | `λ` | What happens to residual seconds | `C_m` |
+|---|---|---|---|
+| **Gated** (default) | `0` | Capped by `--residual-wall-time-limit` (default `0.4` s). Crossing the cap fails the MLP. | `C_m = F_m` |
+| **Priced** | `> 0` | Converted to FLOPs and added to the bill. Wall time is spendable, at a price. | `C_m = F_m + λ · R_m` |
+
+**The default is gated**, so `C_m = F_m` — the FLOP budget means exactly what it says,
+and the two resources do not trade against each other. This is the current round's
+design. The priced regime is the earlier one, at `λ = 1e11` FLOP-equivalents per second.
+
+The general formula covers both, since `λ = 0` collapses it:
 
 ```
 C_m = F_m + λ · R_m
@@ -130,15 +142,95 @@ C_m = F_m + λ · R_m
   `residual_wall_time_s` = `wall_time_s − flopscope_backend_time_s − flopscope_overhead_time_s`.
   This is participant Python (loops, control flow), GC pauses, and uninstrumented numpy.
   It explicitly **excludes** flopscope's own dispatch overhead (the second bucket).
-- `λ` = 1e11 FLOPs/second. This rate is fixed for the initial competition round.
+- `λ` = the residual price, in FLOP-equivalents per second. Defaults to `0`
+  (`whestbench.budget.DEFAULT_LAMBDA_FLOPS_PER_SECOND`); set per-run with
+  `whest run --lambda-flops-per-second`.
 
 The combined `C_m` is capped at `B_m = flop_budget`. If `C_m > B_m`, the MLP is marked
-`combined_budget_exhausted` and the prediction is replaced with zeros.
+`combined_budget_exhausted` and the prediction is replaced with zeros. Under the default
+gated regime `C_m = F_m`, so that post-hoc check is a backstop on the same FLOP count
+that `budget_exhausted` already guards — blowing the residual cap surfaces separately,
+as `residual_wall_time_exhausted`.
 
-Why charge non-flopscope time at all? It lets participants use any Python they like —
-not just flopscope-instrumented operations — but holds them accountable for that work
-in the compute budget. Pure-flopscope solutions get the entire budget for analytical
-work; pure-Python solutions trade some FLOP headroom for residual time.
+<details>
+<summary><strong>Why does Phase 2 remove λ and hard-cap residual wall time instead?</strong></summary>
+
+Because λ priced something Phase 2 no longer permits.
+
+The competition asks how accurate an estimate a solution can produce for a fixed amount
+of computation. That question is only meaningful if computation is counted the same way
+for every participant, and flopscope is what keeps that count.
+
+**Phase 1 permitted unmetered computation, so it priced it.** A submission could call out
+to any other library, numerical backend, programming language, executable, or saved file
+of the participant's choice. That was real work the meter could not see, so it was charged
+against the budget through the residual-wall-time conversion. λ was that price.
+
+**Phase 2 withdraws the permission.** All computation must be performed through flopscope,
+and a solution's own Python exists to decide which flopscope operations to call. A
+submission may use only the Python interpreter provided by the grader, the flopscope
+client API, and pure-Python standard-library modules for control flow and bookkeeping.
+This design encourages a focus on estimation algorithms rather than on optimizing numeric
+primitives — or on optimizing against the meter.
+
+Once unmetered computation is *prohibited* rather than *priced*, there is nothing left for
+λ to charge for. Residual wall time stops being a channel for doing work and becomes
+plumbing — unpacking `mlp`, control flow around your `fnp` calls, assembling the returned
+array. Plumbing needs a bound, not a price. So it gets a hard **400 ms per MLP**, and
+`C_m = F_m`.
+
+The following are prohibited in Phase 2. This list is not exhaustive: each entry describes
+a way of performing computation that flopscope does not count, and any other mechanism
+having that effect is equally prohibited.
+
+- bundled or vendored numpy, scipy, or any BLAS or LAPACK implementation;
+- compiled kernels of any kind, however delivered, including wheels, shared objects,
+  static binaries, and code generated at runtime;
+- ctypes, cffi, or any other foreign-function mechanism;
+- asyncio, threads, subprocesses, multiprocessing, and threading runtimes;
+- computation of any kind performed while a flopscope operation is in flight; and
+- modifying, monkeypatching, or otherwise interfering with the flopscope client, its
+  transport, or its accounting.
+
+**Data files remain permitted**, including weights, lookup tables and precomputed
+artifacts. Doing heavy work offline and shipping the result is the intended path, not a
+loophole.
+
+There is a second benefit. Pricing coupled a score to wall-clock time, so the same
+submission could score differently depending on how fast the grader's machine happened to
+be that day. With λ = 0, `C_m` is a pure analytical quantity — identical on your laptop
+and on the grader.
+
+*The competition rules are authoritative on what is permitted; this note explains why the
+harness behaves as it does.*
+
+</details>
+
+### Reproducing an earlier round
+
+Nothing here is hard-coded to a round. To re-score against the priced regime, ask for
+its rate and turn the gate off — it did not exist then, and leaving it armed would fail
+MLPs against a rule they were never scored under:
+
+```bash
+whest run --estimator estimator.py \
+  --lambda-flops-per-second 1e11 \
+  --no-residual-wall-time-limit \
+  --flop-budget 272000000000 \
+  --wall-time-limit 60
+```
+
+All four matter. `--wall-time-limit` is easy to forget because it is not part of the
+pricing change, but Phase 1 graded `predict()` at **60 s** and the current default is
+120 s: a submission whose `predict()` took between 60 s and 120 s was `time_exhausted`
+in the graded round — zeroed, no compute discount — and would otherwise score normally
+here, silently and in the participant's favour. Pass `--dataset` with that round's
+revision too, so the MLP shape and seeds match; the flags above only restore the
+scoring rules.
+
+`whestbench.budget.PHASE1_LAMBDA_FLOPS_PER_SECOND` is that rate, kept as a named
+constant for the same purpose. `run_config.lambda_flops_per_second` and
+`run_config.residual_wall_time_limit_s` in every report record which regime produced it.
 
 ## Common Gotchas
 

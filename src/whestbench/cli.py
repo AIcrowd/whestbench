@@ -51,7 +51,7 @@ from .aicrowd_client import (  # module-level for monkeypatch + reuse in `submit
     AIcrowdTransientError,
     describe_error,
 )
-from .budget import LAMBDA_FLOPS_PER_SECOND
+from .budget import DEFAULT_FLOP_BUDGET, DEFAULT_LAMBDA_FLOPS_PER_SECOND
 from .dataset import metadata as _wb_metadata
 from .dataset_io import _validate_config_name, _validate_split_name
 from .dataset_io import metadata_file_hash as _metadata_file_hash
@@ -123,12 +123,26 @@ class _RemovedFlopBudgetAction(argparse.Action):
 
 
 def _default_contest_spec() -> ContestSpec:
+    """The no-dataset default: the graded shape, with a dev-scale ground truth.
+
+    width/depth are the graded Phase 2 shape, so an estimator written against this
+    default meets the same array shapes the grader will hand it.
+
+    ground_truth_samples is NOT the graded value (the published dataset bakes far
+    more) and is a deliberate speed/fidelity trade for the local loop. Monte-Carlo
+    error on a per-neuron mean is avg_variance / N, so with the measured Phase 2
+    avg_variance of ~0.0748 this floor sits at ~3.7e-7 — about 9% of the ~4e-6
+    final-layer MSE a strong covariance-propagation estimator reaches, so it
+    informs rather than dominates the number you see. Measured cost at this shape:
+    ~6.1 s per MLP, ~61 s for the default 10. Raise it with --n-samples when you
+    need a quieter comparison; the graded score always comes from --dataset.
+    """
     return ContestSpec(
-        width=256,
-        depth=32,
+        width=1024,
+        depth=16,
         n_mlps=10,
-        flop_budget=272_000_000_000,
-        ground_truth_samples=100 * 100 * 256,
+        flop_budget=DEFAULT_FLOP_BUDGET,
+        ground_truth_samples=200_000,
     )
 
 
@@ -403,6 +417,20 @@ class _PlainRunProgressLogger:
         )
 
 
+def _resolve_residual_wall_time_limit(args: "argparse.Namespace") -> "Optional[float]":
+    """Read the residual gate off `args`, honouring the explicit off-switch.
+
+    Returns None when --no-residual-wall-time-limit is passed, which is one of the
+    four settings a Phase 1 re-score needs: that round priced residual seconds
+    through lambda instead of gating them, so leaving the Phase 2 gate armed would
+    fail MLPs against a rule they were never scored under. The others are the rate
+    itself, that round's flop_budget, and --wall-time-limit 60.
+    """
+    if getattr(args, "no_residual_wall_time_limit", False):
+        return None
+    return getattr(args, "residual_wall_time_limit", None)
+
+
 def _resolve_setup_timeout(args: "argparse.Namespace") -> float:
     """Read --setup-timeout off `args`, falling back to the graded 5 s cap.
 
@@ -421,8 +449,8 @@ def _default_resource_limits() -> ResourceLimits:
     return ResourceLimits(
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
-        memory_limit_mb=65_536,
-        flop_budget=272_000_000_000,
+        memory_limit_mb=8_192,
+        flop_budget=DEFAULT_FLOP_BUDGET,
         cpu_time_limit_s=None,
         wall_time_limit_s=120.0,
         residual_wall_time_limit_s=0.4,
@@ -471,23 +499,22 @@ def run_default_score(profile: bool = False) -> "Any":
 def _smoke_test_contest_spec() -> ContestSpec:
     """Lightweight spec for the smoke test.
 
-    Matches the competition shape (width=256, depth=32, flop_budget=2.72e11
-    per ContestSpec defaults) so participants exercising the smoke path
-    hit the same code paths as the real grader. Only n_mlps and
-    ground_truth_samples are scaled down so the smoke runs in well under
-    a second — accuracy of the resulting score is not meaningful, this is
-    a plumbing check.
+    Carries the graded shape and the default per-MLP budget, so the smoke path
+    exercises the same code and the same array shapes as a real run. Only n_mlps
+    and ground_truth_samples are scaled down — measured at 0.69 s total, keeping
+    this a plumbing check rather than a wait. The resulting score is not
+    meaningful at this sample count and is not intended to be.
 
     Local timing on a typical dev box: well under a second
     (CombinedEstimator ~3% budget utilization — invariant under the 4×/4×
     depth-and-budget scaling from the warmup round).
     """
     return ContestSpec(
-        width=256,
-        depth=32,
+        width=1024,
+        depth=16,
         n_mlps=3,
-        flop_budget=272_000_000_000,
-        ground_truth_samples=10_000,
+        flop_budget=DEFAULT_FLOP_BUDGET,
+        ground_truth_samples=5_000,
     )
 
 
@@ -622,6 +649,7 @@ def _pre_run_report(
             "setup_timeout_s": contest_spec.setup_timeout_s,
             "wall_time_limit_s": contest_spec.wall_time_limit_s,
             "residual_wall_time_limit_s": contest_spec.residual_wall_time_limit_s,
+            "lambda_flops_per_second": contest_spec.lambda_flops_per_second,
             "profile_enabled": bool(profile),
             "estimator_class": estimator_class,
             "estimator_path": estimator_path,
@@ -987,8 +1015,36 @@ def _run_validate_checks(
     checks: list[dict[str, str]] = []
     try:
         checks.append({"name": "class resolved", "status": "ok", "detail": metadata.class_name})
+        # Time setup against the graded cap. The estimator contract promises that
+        # `whest validate` enforces the same 5 s ceiling as `whest run`, so that a
+        # local SETUP_TIMEOUT means what a graded one does; without this, validate
+        # would pass a submission the grader fails outright — and a setup overrun
+        # fails the WHOLE submission, not one MLP. Measured after the fact rather
+        # than interrupted, which is how LocalRunner enforces it too.
+        _setup_cap_s = _default_resource_limits().setup_timeout_s
+        _t0 = time.perf_counter()
         estimator.setup(context)
-        checks.append({"name": "setup(context) completed", "status": "ok", "detail": "ok"})
+        _setup_elapsed = time.perf_counter() - _t0
+        if _setup_elapsed > _setup_cap_s:
+            checks.append(
+                {
+                    "name": "setup(context) within the graded cap",
+                    "status": "fail",
+                    "detail": (
+                        f"setup took {_setup_elapsed:.2f}s, over the {_setup_cap_s:.0f}s cap; "
+                        f"the grader fails the entire submission with SETUP_TIMEOUT. "
+                        f"Load precomputed work here rather than computing it."
+                    ),
+                }
+            )
+        else:
+            checks.append(
+                {
+                    "name": "setup(context) completed",
+                    "status": "ok",
+                    "detail": f"{_setup_elapsed:.2f}s (cap {_setup_cap_s:.0f}s)",
+                }
+            )
         predictions = estimator.predict(mlp, 100)
         arr = validate_predictions(predictions, depth=mlp.depth, width=mlp.width)
         checks.append(
@@ -1219,10 +1275,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help=(
             "Effective compute budget per MLP in FLOPs. Caps "
-            "C_m = F_m + lambda*R_m (analytical FLOPs plus charged residual "
-            "wall time). Always honored; any flop_budget stored in "
+            "C_m = F_m + lambda*R_m, which under the default lambda of 0 is a "
+            "pure FLOP cap. Always honored; any flop_budget stored in "
             "--dataset's metadata is ignored. "
-            "Default: 272_000_000_000 (2.72e11)."
+            "Default: 2_199_023_255_552 (2**41). Earlier rounds: 272_000_000_000 "
+            "(2.72e11) and 68_000_000_000 (6.8e10) for v1-warmup."
         ),
     )
     run_parser.add_argument(
@@ -1231,8 +1288,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="RATE",
         help=(
-            "Residual wall-time penalty rate lambda in C_m = F_m + lambda*R_m "
-            "(FLOP-equivalents per second of residual wall time). Default: 1e11."
+            "Price of one second of residual wall time, in FLOP-equivalents, for "
+            "C_m = F_m + lambda*R_m. Default: 0 — residual time is not priced, it "
+            "is gated by --residual-wall-time-limit, so C_m = F_m. To re-score a "
+            "Phase 1 round pass 1e11 with --no-residual-wall-time-limit AND "
+            "--wall-time-limit 60 (that round's cap). Must not be negative."
         ),
     )
     run_parser.add_argument(
@@ -1240,7 +1300,12 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="Ground truth samples per MLP (default: width*width*256). Lower values speed up generation at the cost of noisier scores.",
+        help=(
+            "Ground-truth Monte-Carlo samples per MLP for --dataset-less runs "
+            "(default: 200_000). Monte-Carlo error on a per-neuron mean falls as "
+            "1/N, so raise this for a quieter comparison and lower it for a faster "
+            "loop. Ignored when --dataset supplies baked targets."
+        ),
     )
     run_parser.add_argument(
         "--debug",
@@ -1290,6 +1355,17 @@ def _build_participant_parser() -> argparse.ArgumentParser:
             "mlp, control flow around your fnp calls, assembling the result — not "
             "computation. Exceeding it zeroes that MLP's predictions. Raise it to "
             "debug under a profiler; lower it to leave headroom for a slower grader."
+        ),
+    )
+    run_parser.add_argument(
+        "--no-residual-wall-time-limit",
+        dest="no_residual_wall_time_limit",
+        action="store_true",
+        help=(
+            "Disable the residual wall-time gate entirely (no cap). Needed to "
+            "re-score a Phase 1 round, which was priced with a lambda rate rather "
+            "than gated; pair it with --lambda-flops-per-second 1e11 and "
+            "--wall-time-limit 60. Overrides --residual-wall-time-limit."
         ),
     )
     run_parser.add_argument(
@@ -2458,6 +2534,7 @@ def _run_estimator_with_runner(
             "setup_timeout_s": spec.setup_timeout_s,
             "wall_time_limit_s": spec.wall_time_limit_s,
             "residual_wall_time_limit_s": spec.residual_wall_time_limit_s,
+            "lambda_flops_per_second": spec.lambda_flops_per_second,
         },
     }
 
@@ -2878,7 +2955,7 @@ def _main_participant(argv: "list[str]") -> int:
             lambda_flops_per_second = (
                 float(args.lambda_flops_per_second)
                 if args.lambda_flops_per_second is not None
-                else LAMBDA_FLOPS_PER_SECOND
+                else DEFAULT_LAMBDA_FLOPS_PER_SECOND
             )
             gt_samples = (
                 int(args.n_samples)
@@ -3152,7 +3229,7 @@ def _main_participant(argv: "list[str]") -> int:
                     seed=run_seed,
                     setup_timeout_s=_resolve_setup_timeout(args),
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
-                    residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
+                    residual_wall_time_limit_s=_resolve_residual_wall_time_limit(args),
                     lambda_flops_per_second=lambda_flops_per_second,
                 )
                 contest_data = make_contest_from_dataset(contest_spec, ds, n_mlps)
@@ -3167,7 +3244,7 @@ def _main_participant(argv: "list[str]") -> int:
                     seed=run_seed,
                     setup_timeout_s=_resolve_setup_timeout(args),
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
-                    residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
+                    residual_wall_time_limit_s=_resolve_residual_wall_time_limit(args),
                     lambda_flops_per_second=lambda_flops_per_second,
                 )
 
@@ -3223,7 +3300,7 @@ def _main_participant(argv: "list[str]") -> int:
                 _dataset_tip = (
                     "\n[bold bright_yellow]Tip:[/] Ground truth is recomputed on every run. "
                     "Consider baking and reusing a dataset:\n"
-                    "   [cyan]whest dataset bake[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]--width[/] [yellow]256[/] [green]--depth[/] [yellow]8[/] [green]--output[/] [yellow]./my-eval[/]\n"
+                    "   [cyan]whest dataset bake[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]200000[/] [green]--width[/] [yellow]1024[/] [green]--depth[/] [yellow]16[/] [green]--output[/] [yellow]./my-eval[/]\n"
                     "   [cyan]whest run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]./my-eval[/]\n"
                 )
                 gen_label = (

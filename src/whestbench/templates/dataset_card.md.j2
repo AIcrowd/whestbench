@@ -188,15 +188,30 @@ Each row is one MLP. Eight columns:
 {% if not splits %}
 ## Your task as a participant
 
-You implement a class with a `predict(mlp: MLP, budget: int) -> ndarray[depth, width]` method that returns your estimate of `all_layer_means` for the given MLP. The harness gives you the weights and a strict per-MLP FLOP budget `B_m` — **B_m = 2.72 × 10¹¹** for the phase-1 competition configuration (roughly 6.5 × 10⁴ Monte Carlo forward passes' worth of compute).
+You implement a class with a `predict(mlp: MLP, budget: int) -> ndarray[depth, width]` method that returns your estimate of `all_layer_means` for the given MLP. The harness gives you the weights and a strict per-MLP FLOP budget `B_m` — **B_m = 2⁴¹ = 2,199,023,255,552** in Phase 2. (Phase 1 used 2.72 × 10¹¹.)
 
-Your spend is tracked as **effective compute**:
+Your spend is tracked as **effective compute**. In Phase 2 that is simply your analytical FLOP count:
 
 ```
-C_m = F_m + λ · R_m
+C_m = F_m
 ```
 
-where `F_m` is analytical FLOPs counted by [`flopscope`](https://github.com/AIcrowd/flopscope), `R_m` is residual wall-clock time spent in uninstrumented code, and `λ = 10¹¹` FLOPs/s is the per-phase wall-time-to-FLOPs conversion rate. Going outside `flopscope` is allowed; you just pay for it.
+where `F_m` is the FLOPs counted by [`flopscope`](https://github.com/AIcrowd/flopscope).
+
+**All computation must go through `flopscope`.** In Phase 2 a submission may use only the
+grader's Python interpreter, the flopscope client API, and pure-Python standard-library
+modules for control flow and bookkeeping. Bundled or vendored numpy/scipy/BLAS, compiled
+kernels of any kind, `ctypes`/`cffi` or other FFI, threads/asyncio/subprocesses/
+multiprocessing, computation performed while a flopscope operation is in flight, and
+anything that modifies or interferes with the flopscope client or its accounting are all
+prohibited — that list is not exhaustive, and any other way of computing that flopscope
+does not count is equally prohibited. Data files (weights, lookup tables, precomputed
+artifacts) remain permitted.
+
+Residual wall time — the part of `predict()` flopscope does not meter — is therefore **not
+priced** in Phase 2. It exists so your Python can loop, index and decide which flopscope
+operations to call, and it is capped at **400 ms per MLP**. (Phase 1 instead priced it into
+`C_m` at `λ = 10¹¹` FLOPs/s and permitted computation outside flopscope.)
 
 Your **primary score** is final-layer MSE — your prediction's last row vs. `final_means` — multiplied by a budget-adjusted factor:
 
@@ -206,7 +221,7 @@ s_m = mse_final · max(0.1, C_m / B_m)
 
 so that staying well under budget pays off (down to a factor-of-ten cap). The **earlier-layer rows** (`all_layer_means[0..depth-2]`) are a **diagnostic** — they show where approximation error accumulates across layers but do not enter the primary score.
 
-If your estimator goes over budget, raises, returns non-finite or wrong-shape output, or trips an operational guard (per-MLP wall-clock cap, memory cap), the grader **zeros your prediction for that MLP AND forces the multiplier to 1.0** — no compute discount on failed runs. Other MLPs in the suite are unaffected.
+If your estimator goes over budget, raises, returns non-finite or wrong-shape output, or trips an operational guard (per-MLP wall-clock cap, the 400 ms residual cap, memory cap), the grader **zeros your prediction for that MLP AND forces the multiplier to 1.0** — no compute discount on failed runs. Other MLPs in the suite are unaffected.
 
 See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked end-to-end example, plus baselines for Monte Carlo sampling, mean propagation, covariance propagation, and a budget-aware combined estimator.
 {% endif %}

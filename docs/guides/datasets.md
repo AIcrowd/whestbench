@@ -69,19 +69,25 @@ ground-truth statistics to `./my-eval/`:
 
 ```bash
 whest dataset bake \
-    --n-mlps 100 \
+    --n-mlps 20 \
     --n-samples 10000 \
-    --width 256 --depth 8 \
+    --width 1024 --depth 16 \
     --output ./my-eval
 ```
 
-Representative output:
+Bake at the **graded shape** (`--width 1024 --depth 16`). A dataset overrides the
+harness defaults, so a set baked at some other shape silently puts your estimator
+back on arrays the grader will never hand it — which is exactly the bug a local
+iteration set is supposed to catch. Weights dominate the size at this shape
+(~67 MB per MLP), so scale `--n-mlps`, not the shape, to fit your disk.
+
+Representative output (measured: 20 MLPs, 16.8 s wall, on a laptop):
 
 ```
-→ Baking 100 MLPs (width=256, depth=8, n_samples=10000) to ./my-eval
-  ✓ Generated weights         100/100
-  ✓ Computed ground truth     100/100   31.7s
-✓ Wrote ./my-eval (2.0 GB)
+→ Baking 20 MLPs (width=1024, depth=16, n_samples=10000) to ./my-eval
+  ✓ Generated weights          20/20
+  ✓ Computed ground truth      20/20    16.1s
+✓ Wrote ./my-eval (1.3 GB)
 ```
 
 The result on disk:

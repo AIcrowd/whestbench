@@ -43,6 +43,9 @@ def _make_data(width: int = 4, depth: int = 2, flop_budget: int = 10_000_000_000
             flop_budget=flop_budget,
             ground_truth_samples=100,
             residual_wall_time_limit_s=None,  # Disable mid-call cap to test the post-hoc check.
+            # The post-hoc combined check only bites when residual time is PRICED, so ask
+            # for the Phase 1 rate explicitly — the default is now 0 (gated, C_m == F_m).
+            lambda_flops_per_second=LAMBDA_FLOPS_PER_SECOND,
         ),
         mlps=[mlp],
         all_layer_targets=[all_target],

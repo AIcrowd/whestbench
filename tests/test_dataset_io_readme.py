@@ -399,17 +399,35 @@ def test_readme_explains_estimator_task():
     assert "flopscope" in out
 
 
-def test_readme_quantifies_per_mlp_budget_and_lambda():
-    """B_m = 2.72×10^11 FLOPs (phase-1 competition budget) and λ = 10^11 FLOPs/s
-    (the deployed value in scoring.py:LAMBDA_FLOPS_PER_SECOND, which differs from
-    the paper's calibration estimate)."""
+def test_readme_publishes_the_phase2_budget_regime():
+    """The card is the README of the dataset participants download, so it must
+    state the CURRENT regime: B_m = 2**41 and C_m = F_m.
+
+    It previously published the Phase 1 regime — a 2.72e11 budget, C_m = F_m + λ·R_m,
+    and "Going outside flopscope is allowed; you just pay for it" — which is not
+    merely stale but the opposite of the Phase 2 rule, where computation outside
+    flopscope is prohibited rather than priced.
+    """
     out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
-    assert "2.72 × 10¹¹" in out
-    assert "10¹¹" in out
-    # Effective-compute formula C_m = F_m + λ · R_m is spelled out
-    assert "F_m + λ" in out
-    # The card must NOT use the paper's pre-calibration estimate (7.7 × 10¹¹).
-    assert "7.7 × 10¹¹" not in out
+    assert "2,199,023,255,552" in out or "2⁴¹" in out
+    assert "C_m = F_m" in out
+    # the priced formula must not be presented as the current one
+    assert "C_m = F_m + λ · R_m" not in out
+    assert "Going outside `flopscope` is allowed" not in out
+    # the earlier budget may appear, but only as a labelled historical reference
+    if "2.72 × 10¹¹" in out:
+        assert "Phase 1" in out
+
+
+def test_readme_states_the_phase2_code_restriction_and_residual_cap():
+    """Two things a participant must not learn too late: what they may run, and
+    that residual time is capped rather than billed."""
+    out = generate_readme(_flopscope_metadata(), split="public", ds_size=4)
+    assert "400 ms" in out
+    assert "not\npriced" in out or "not priced" in out.replace("\n", " ")
+    lowered = out.lower()
+    assert "prohibited" in lowered
+    assert "data files" in lowered  # the permission must survive alongside the ban
 
 
 def test_readme_failure_path_disables_compute_discount():

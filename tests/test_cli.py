@@ -683,7 +683,10 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     assert "results" in captured.out
     assert observed["initial_finished"] == "n/a"
     assert observed["initial_duration"] is None
-    assert observed["total"] == 10 * cli.sample_layer_statistics_chunk_count(256, 100 * 100 * 256)
+    _spec = cli._default_contest_spec()
+    assert observed["total"] == 10 * cli.sample_layer_statistics_chunk_count(
+        _spec.width, _spec.ground_truth_samples
+    )
     assert observed["progress_event"] == {"completed": 1}
     assert observed["final_meta"]["run_finished_at_utc"] == "2026-03-01T00:00:03+00:00"
     assert observed["final_meta"]["run_duration_s"] == 3.0
@@ -1008,15 +1011,36 @@ def test_plain_run_progress_logs_sampling_chunks_with_throttle(
     ]
 
 
-def test_default_contest_spec_matches_proposal():
-    """Default contest spec should match the phase-1 competition: width=256, depth=32, flop_budget=2.72e11."""
+def test_default_contest_spec_matches_the_graded_round():
+    """The no-dataset default must be the GRADED shape and budget.
+
+    An estimator developed against this default should meet the same array shapes
+    and the same per-MLP budget the grader hands it, so a shape bug surfaces
+    locally rather than on submission.
+    """
     from whestbench.cli import _default_contest_spec
 
     spec = _default_contest_spec()
-    assert spec.width == 256
-    assert spec.depth == 32
-    assert spec.flop_budget == 272_000_000_000
+    assert spec.width == 1024
+    assert spec.depth == 16
+    assert spec.flop_budget == 2**41  # 2,199,023,255,552
     assert spec.n_mlps == 10
+    # ground_truth_samples is deliberately NOT the graded value - it is a local
+    # speed/fidelity trade documented on _default_contest_spec.
+    assert spec.ground_truth_samples == 200_000
+
+
+def test_default_memory_limit_is_the_solution_process_share() -> None:
+    """8 GB is what the Solution's own process gets, not the instance's 64 GB.
+
+    memory_limit_mb feeds setrlimit(RLIMIT_AS) on the worker in
+    subprocess_worker.py, so it must be the Solution's share; using the instance
+    total would let a submission that OOMs on the grader pass locally.
+    """
+    from whestbench.cli import _default_contest_spec, _default_resource_limits
+
+    assert _default_resource_limits().memory_limit_mb == 8_192
+    assert _default_contest_spec().memory_limit_mb == 8_192
 
 
 def test_default_resource_limits_matches_proposal():
@@ -1024,7 +1048,7 @@ def test_default_resource_limits_matches_proposal():
     from whestbench.cli import _default_resource_limits
 
     limits = _default_resource_limits()
-    assert limits.flop_budget == 272_000_000_000
+    assert limits.flop_budget == 2**41  # 2,199,023,255,552 - the Phase 2 budget
 
 
 def test_run_parser_accepts_lambda_flops_per_second():
@@ -1130,3 +1154,105 @@ def test_submit_dry_run_parses():
         ["submit", "--estimator", "estimator.py", "--dry-run"]
     )
     assert args.dry_run is True
+
+
+def test_run_parser_lambda_and_residual_gate_defaults():
+    """Phase 2 defaults: residual gated at 400 ms, not priced."""
+    from whestbench.cli import _build_participant_parser
+
+    args = _build_participant_parser().parse_args(["run", "--estimator", "estimator.py"])
+    assert args.lambda_flops_per_second is None  # sentinel -> DEFAULT (0.0)
+    assert args.residual_wall_time_limit == 0.4
+    assert args.no_residual_wall_time_limit is False
+
+
+def test_resolve_residual_wall_time_limit_off_switch():
+    """--no-residual-wall-time-limit disables the gate, overriding any numeric value.
+
+    This is the escape hatch that keeps Phase 1 rounds reproducible: they priced
+    residual seconds through lambda instead of gating them, so leaving the Phase 2
+    gate armed would fail MLPs against a rule they were never scored under.
+    """
+    import argparse
+
+    from whestbench.cli import _resolve_residual_wall_time_limit
+
+    assert _resolve_residual_wall_time_limit(argparse.Namespace()) is None
+    on = argparse.Namespace(residual_wall_time_limit=0.4, no_residual_wall_time_limit=False)
+    assert _resolve_residual_wall_time_limit(on) == 0.4
+    off = argparse.Namespace(residual_wall_time_limit=0.4, no_residual_wall_time_limit=True)
+    assert _resolve_residual_wall_time_limit(off) is None
+
+
+def test_phase1_recipe_reaches_contest_spec(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The documented Phase 1 recipe must reach ContestSpec, not merely parse.
+
+    Asserting on `args` alone would keep passing if either ContestSpec construction
+    site dropped `_resolve_residual_wall_time_limit(args)` or `lambda_flops_per_second`
+    — there are two near-identical sites — while the published recipe silently produced
+    a Phase 2-gated, unpriced run. So capture the spec the run actually builds.
+
+    All FOUR settings are checked. `--wall-time-limit 60` is the easy one to forget: it
+    is not part of the pricing change, but Phase 1 graded predict() at 60 s against
+    today's 120 s default, so omitting it re-scores an old run under a mix of both
+    rulebooks — passing submissions that were time_exhausted at the time.
+    """
+    captured: dict[str, Any] = {}
+
+    def fake_run(*_args: Any, **kwargs: Any) -> dict:
+        captured["spec"] = kwargs["contest_spec"]
+        return _sample_report(profile_enabled=False, detail="raw")
+
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run)
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+
+    exit_code = cli.main(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--lambda-flops-per-second",
+            "1e11",
+            "--no-residual-wall-time-limit",
+            "--flop-budget",
+            "272000000000",
+            "--wall-time-limit",
+            "60",
+        ]
+    )
+
+    assert exit_code == 0
+    spec = captured["spec"]
+    assert spec.lambda_flops_per_second == 1e11  # priced, not gated
+    assert spec.residual_wall_time_limit_s is None  # gate off
+    assert spec.flop_budget == 272_000_000_000  # that round's budget
+    assert spec.wall_time_limit_s == 60.0  # that round's wall cap
+
+
+def test_default_run_builds_a_gated_contest_spec(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The mirror of the above: with no flags, the spec must be Phase 2-shaped."""
+    captured: dict[str, Any] = {}
+
+    def fake_run(*_args: Any, **kwargs: Any) -> dict:
+        captured["spec"] = kwargs["contest_spec"]
+        return _sample_report(profile_enabled=False, detail="raw")
+
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run)
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+
+    assert cli.main(["run", "--estimator", "estimator.py"]) == 0
+    spec = captured["spec"]
+    assert spec.lambda_flops_per_second == 0.0  # gated: C_m = F_m
+    assert spec.residual_wall_time_limit_s == 0.4
+    assert spec.wall_time_limit_s == 120.0
+    assert spec.setup_timeout_s == 5.0
