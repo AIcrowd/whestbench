@@ -264,6 +264,13 @@ def make_contest_from_dataset(
             "explicitly (e.g. from the dataset's metadata.json)."
         )
 
+    # Protocol 4.0 also needs the per-dataset salt. Resolved once here rather than
+    # per row: it is the same value for every MLP, and resolution raises rather
+    # than defaulting, so a mis-specified dataset fails before any scoring work.
+    from .dataset import resolve_seed_context
+
+    _, seed_salt = resolve_seed_context(ds, seed_protocol_version=proto_version)
+
     def _restored_sampling_aggregate(
         restored: List[Dict[str, Any]],
     ) -> Optional[Dict[str, Any]]:
@@ -290,7 +297,7 @@ def make_contest_from_dataset(
         for i, row in enumerate(ds):
             if i >= n_mlps:
                 break
-            mlps.append(MLP.from_row(row, seed_protocol_version=proto_version))
+            mlps.append(MLP.from_row(row, seed_protocol_version=proto_version, seed_salt=seed_salt))
             all_layer_targets.append(fnp.asarray(row["all_layer_means"], dtype=fnp.float32))
             final_targets.append(fnp.asarray(row["final_means"], dtype=fnp.float32))
             avg_variances.append(float(row["avg_variance"]))
@@ -317,7 +324,8 @@ def make_contest_from_dataset(
     if n_mlps > ds_size:
         raise ValueError(f"n_mlps={n_mlps} exceeds dataset size {ds_size}; clamp before calling.")
     mlps = [
-        MLP.from_row(row, seed_protocol_version=proto_version) for row in ds.select(range(n_mlps))
+        MLP.from_row(row, seed_protocol_version=proto_version, seed_salt=seed_salt)
+        for row in ds.select(range(n_mlps))
     ]
     all_layer_targets = [
         fnp.asarray(ds[i]["all_layer_means"], dtype=fnp.float32) for i in range(n_mlps)

@@ -346,6 +346,43 @@ whest dataset bake \
 ```
 
 </details>
+{% elif proto_name == 'whestbench_kdf_per_mlp_seeds' %}
+{% set seed_proto = metadata.get('seed_protocol', {}) %}
+This dataset was baked with **seed_protocol 4.0 (keyed per-MLP seeds)**. Every MLP's input seed lives in the parquet `mlp_seed` column, exactly as under 3.0, and the weights and ground truth are generated from it the same way — so a 3.0 and a 4.0 bake of the same seeds produce identical data.
+
+What differs is the two participant-facing values. `mlp.seed` and `mlp_name` are each derived from the input seed by a **keyed BLAKE2b** under this dataset's salt, domain-separated so that neither yields the other. `mlp.seed` stays in the same `uint32` range 3.0 produced, so estimator code needs no changes.
+
+{% if seed_proto.get('salt_source') == 'env' %}
+> **This dataset's salt is not published.** `seed_protocol.salt_source` is `env`, so reading it
+> requires exporting the salt as hex in `WHEST_SEED_SALT`{% if seed_proto.get('salt_id') %} (salt id: `{{ seed_proto.salt_id }}`){% endif %}.
+> Without it, `mlp.seed` cannot be derived and loading will fail rather than return wrong values.
+{% else %}
+The salt is recorded in `metadata.json` under `seed_protocol.salt`, so the dataset is self-contained.
+{% endif %}
+
+<details>
+<summary><b>Re-bake this dataset locally from its seeds</b></summary>
+
+Follow the 3.0 recipe for extracting `mlp_seed` per split, then pass the same salt so the derived
+seeds and names match:
+
+```bash
+whest dataset bake \
+    --seed-protocol 4.0 \
+    --seed-salt env:WHEST_SEED_SALT \
+    --mlp-seeds ./seeds-<split>.json \
+    --n-mlps {{ metadata.n_mlps }} \
+    --n-samples {{ metadata.n_samples }} \
+    --width {{ metadata.width }} \
+    --depth {{ metadata.depth }} \
+    --output ./rebake{% if metadata.backend == 'torch' %} \
+    --torch --device cuda{% endif %}
+```
+
+Baking with a different salt reproduces the same weights and ground truth, but different
+`mlp.seed` values and different `mlp_name` slugs.
+
+</details>
 {% elif proto_name == 'whestbench_seedsequence_hierarchy' %}
 This dataset was baked with **seed_protocol 2.0 (legacy single-root)**. To re-bake:
 
