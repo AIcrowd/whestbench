@@ -51,7 +51,7 @@ from .aicrowd_client import (  # module-level for monkeypatch + reuse in `submit
     AIcrowdTransientError,
     describe_error,
 )
-from .budget import LAMBDA_FLOPS_PER_SECOND
+from .budget import DEFAULT_LAMBDA_FLOPS_PER_SECOND
 from .dataset import metadata as _wb_metadata
 from .dataset_io import _validate_config_name, _validate_split_name
 from .dataset_io import metadata_file_hash as _metadata_file_hash
@@ -387,6 +387,19 @@ class _PlainRunProgressLogger:
         )
 
 
+def _resolve_residual_wall_time_limit(args: "argparse.Namespace") -> "Optional[float]":
+    """Read the residual gate off `args`, honouring the explicit off-switch.
+
+    Returns None when --no-residual-wall-time-limit is passed, which is how a
+    Phase 1 round is reproduced: that round priced residual seconds through
+    lambda instead of gating them, so leaving the Phase 2 gate armed would fail
+    MLPs against a rule they were never scored under.
+    """
+    if getattr(args, "no_residual_wall_time_limit", False):
+        return None
+    return getattr(args, "residual_wall_time_limit", None)
+
+
 def _resolve_setup_timeout(args: "argparse.Namespace") -> float:
     """Read --setup-timeout off `args`, falling back to the graded 5 s cap.
 
@@ -606,6 +619,7 @@ def _pre_run_report(
             "setup_timeout_s": contest_spec.setup_timeout_s,
             "wall_time_limit_s": contest_spec.wall_time_limit_s,
             "residual_wall_time_limit_s": contest_spec.residual_wall_time_limit_s,
+            "lambda_flops_per_second": contest_spec.lambda_flops_per_second,
             "profile_enabled": bool(profile),
             "estimator_class": estimator_class,
             "estimator_path": estimator_path,
@@ -1215,8 +1229,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         default=None,
         metavar="RATE",
         help=(
-            "Residual wall-time penalty rate lambda in C_m = F_m + lambda*R_m "
-            "(FLOP-equivalents per second of residual wall time). Default: 1e11."
+            "Price of one second of residual wall time, in FLOP-equivalents, for "
+            "C_m = F_m + lambda*R_m. Default: 0 — residual time is not priced, it "
+            "is gated by --residual-wall-time-limit, so C_m = F_m. Pass 1e11 "
+            "together with --no-residual-wall-time-limit to re-score a Phase 1 "
+            "round under its own rate. Must not be negative."
         ),
     )
     run_parser.add_argument(
@@ -1274,6 +1291,16 @@ def _build_participant_parser() -> argparse.ArgumentParser:
             "mlp, control flow around your fnp calls, assembling the result — not "
             "computation. Exceeding it zeroes that MLP's predictions. Raise it to "
             "debug under a profiler; lower it to leave headroom for a slower grader."
+        ),
+    )
+    run_parser.add_argument(
+        "--no-residual-wall-time-limit",
+        dest="no_residual_wall_time_limit",
+        action="store_true",
+        help=(
+            "Disable the residual wall-time gate entirely (no cap). Needed to "
+            "re-score a Phase 1 round, which was priced with a lambda rate rather "
+            "than gated. Overrides --residual-wall-time-limit."
         ),
     )
     run_parser.add_argument(
@@ -2437,6 +2464,7 @@ def _run_estimator_with_runner(
             "setup_timeout_s": spec.setup_timeout_s,
             "wall_time_limit_s": spec.wall_time_limit_s,
             "residual_wall_time_limit_s": spec.residual_wall_time_limit_s,
+            "lambda_flops_per_second": spec.lambda_flops_per_second,
         },
     }
 
@@ -2857,7 +2885,7 @@ def _main_participant(argv: "list[str]") -> int:
             lambda_flops_per_second = (
                 float(args.lambda_flops_per_second)
                 if args.lambda_flops_per_second is not None
-                else LAMBDA_FLOPS_PER_SECOND
+                else DEFAULT_LAMBDA_FLOPS_PER_SECOND
             )
             gt_samples = (
                 int(args.n_samples)
@@ -3131,7 +3159,7 @@ def _main_participant(argv: "list[str]") -> int:
                     seed=run_seed,
                     setup_timeout_s=_resolve_setup_timeout(args),
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
-                    residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
+                    residual_wall_time_limit_s=_resolve_residual_wall_time_limit(args),
                     lambda_flops_per_second=lambda_flops_per_second,
                 )
                 contest_data = make_contest_from_dataset(contest_spec, ds, n_mlps)
@@ -3146,7 +3174,7 @@ def _main_participant(argv: "list[str]") -> int:
                     seed=run_seed,
                     setup_timeout_s=_resolve_setup_timeout(args),
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
-                    residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
+                    residual_wall_time_limit_s=_resolve_residual_wall_time_limit(args),
                     lambda_flops_per_second=lambda_flops_per_second,
                 )
 

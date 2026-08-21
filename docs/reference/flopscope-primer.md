@@ -115,11 +115,22 @@ If you see `residual_wall_time_exhausted`, that came from WhestBench scoring
 logic comparing Flopscope's measured `residual_wall_time_s` with the configured
 `--residual-wall-time-limit`.
 
-## Residual wall-time charging (lambda)
+## Residual wall time: gated, not priced
 
-WhestBench's effective compute budget combines analytical FLOPs and residual wall time
-via a conversion rate `λ` (`whestbench.budget.LAMBDA_FLOPS_PER_SECOND`, default `1e11`;
-configurable per run via `whest run --lambda-flops-per-second`):
+Residual wall time is the part of `predict()` that flopscope does not meter. There are
+two ways to stop that being a free lunch, and WhestBench supports both — the difference
+is one number, `λ`:
+
+| Regime | `λ` | What happens to residual seconds | `C_m` |
+|---|---|---|---|
+| **Gated** (default) | `0` | Capped by `--residual-wall-time-limit` (default `0.4` s). Crossing the cap fails the MLP. | `C_m = F_m` |
+| **Priced** | `> 0` | Converted to FLOPs and added to the bill. Wall time is spendable, at a price. | `C_m = F_m + λ · R_m` |
+
+**The default is gated**, so `C_m = F_m` — the FLOP budget means exactly what it says,
+and the two resources do not trade against each other. This is the current round's
+design. The priced regime is the earlier one, at `λ = 1e11` FLOP-equivalents per second.
+
+The general formula covers both, since `λ = 0` collapses it:
 
 ```
 C_m = F_m + λ · R_m
@@ -131,15 +142,41 @@ C_m = F_m + λ · R_m
   This is participant Python (loops, control flow), GC pauses, and Python-callback ops.
   It explicitly **excludes** flopscope's own dispatch overhead (the second bucket) and,
   as of flopscope 0.7.0, data-movement numpy ops (those now bill to backend).
-- `λ` = the configured residual-penalty rate λ (default 1e11 FLOPs/s; set per-run with `whest run --lambda-flops-per-second`).
+- `λ` = the residual price, in FLOP-equivalents per second. Defaults to `0`
+  (`whestbench.budget.DEFAULT_LAMBDA_FLOPS_PER_SECOND`); set per-run with
+  `whest run --lambda-flops-per-second`.
 
 The combined `C_m` is capped at `B_m = flop_budget`. If `C_m > B_m`, the MLP is marked
-`combined_budget_exhausted` and the prediction is replaced with zeros.
+`combined_budget_exhausted` and the prediction is replaced with zeros. Under the default
+gated regime `C_m = F_m`, so that post-hoc check is a backstop on the same FLOP count
+that `budget_exhausted` already guards — blowing the residual cap surfaces separately,
+as `residual_wall_time_exhausted`.
 
-Why charge non-flopscope time at all? It lets participants use any Python they like —
-not just flopscope-instrumented operations — but holds them accountable for that work
-in the compute budget. Pure-flopscope solutions get the entire budget for analytical
-work; pure-Python solutions trade some FLOP headroom for residual time.
+### Why two regimes
+
+Both answer the same question — you may write any Python you like, but you cannot use
+uninstrumented work to dodge the meter. Pricing lets wall time and FLOPs trade against
+each other, which is expressive but makes a score depend on how fast the grader's
+machine happened to be that day. Gating removes that coupling: `C_m` is then a pure
+analytical quantity, identical on your laptop and on the grader, and residual time is
+held to a fixed allowance instead.
+
+### Reproducing an earlier round
+
+Nothing here is hard-coded to a round. To re-score against the priced regime, ask for
+its rate and turn the gate off — it did not exist then, and leaving it armed would fail
+MLPs against a rule they were never scored under:
+
+```bash
+whest run --estimator estimator.py \
+  --lambda-flops-per-second 1e11 \
+  --no-residual-wall-time-limit \
+  --flop-budget 272000000000
+```
+
+`whestbench.budget.PHASE1_LAMBDA_FLOPS_PER_SECOND` is that rate, kept as a named
+constant for the same purpose. `run_config.lambda_flops_per_second` and
+`run_config.residual_wall_time_limit_s` in every report record which regime produced it.
 
 ## Common Gotchas
 

@@ -23,7 +23,7 @@ Typical report sections include:
 | Field | Description |
 |---|---|
 | `seed` | The `--seed` value passed at the CLI, or `null` when `--seed` is omitted. When set, it determines both MLP generation (without `--dataset`) and `SetupContext.seed` for the participant's `setup()` call. When `null`, `ctx.seed` defaults to `0`. See [estimator-contract.md](estimator-contract.md) for the reproducibility contract and [cli-reference.md](cli-reference.md) for `--seed` flag semantics. |
-| `lambda_flops_per_second` | The configured residual-penalty rate λ used for this run (default `1e11` FLOPs/s). Controls the `C_m = F_m + λ·R_m` effective-compute formula. Set per-run with `whest run --lambda-flops-per-second`. |
+| `lambda_flops_per_second` | Price of one second of residual wall time, in FLOP-equivalents, for `C_m = F_m + λ·R_m`. **Default `0`** — residual time is gated by `residual_wall_time_limit_s`, not priced, so `C_m = F_m`. A non-zero value means this run used the earlier priced regime. Set with `whest run --lambda-flops-per-second`. |
 | `dataset` | Present when `--dataset` is used. See [Dataset traceability fields](#dataset-traceability-fields) below. |
 
 ## Host metadata
@@ -59,9 +59,9 @@ Each entry in `per_mlp`:
 | `mlp_index` | `int` | Index of the MLP in the evaluation set |
 | `mlp_name` | `str` | Human-readable slug for this MLP (e.g. `"danielle-johnson"`). Same value as `mlps[i].name` on the corresponding `MLP`; derived deterministically from `mlp_index`'s per-MLP seed. Use it as a stable label in your own logs and dashboards. |
 | `flops_used` | `int` | Total FLOPs used by your estimator for this MLP |
-| `effective_compute` | `float` | C_m = F_m + λ·R_m. Combined FLOP-equivalent compute used by the estimator. |
+| `effective_compute` | `float` | C_m = F_m + λ·R_m. Equal to `flops_used` under the default λ=0. |
 | `adjusted_final_layer_score` | `float` | s_m. The per-MLP budget-adjusted score that flows into the suite mean. |
-| `combined_budget_exhausted` | `bool` | Whether the post-hoc check `C_m > B_m` fired (predictions zeroed if true). |
+| `combined_budget_exhausted` | `bool` | Whether the post-hoc check `C_m > B_m` fired (predictions zeroed if true). Under the default λ=0 this is a backstop on the same FLOP count as `budget_exhausted`; residual overruns surface as `residual_wall_time_exhausted` instead. |
 | `budget_exhausted` | `bool` | Whether the estimator exceeded the FLOP budget (predictions zeroed if true) |
 | `time_exhausted` | `bool` | Whether the estimator exceeded the wall-clock limit for this MLP (predictions zeroed if true) |
 | `residual_wall_time_exhausted` | `bool` | Whether WhestBench judged non-flopscope time to exceed `residual_wall_time_limit_s` (predictions zeroed if true) |

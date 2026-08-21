@@ -15,8 +15,9 @@ def test_default_lambda_is_1e11():
 
 
 def test_effective_compute_default_lambda():
-    # 0 FLOPs + 1e11 * 1.0s = 1e11
-    assert effective_compute(0.0, 1.0) == 1e11
+    # Default lambda is 0 (gated regime): residual seconds add nothing, so C == F.
+    assert effective_compute(0.0, 1.0) == 0.0
+    assert effective_compute(2_500.0, 1.0) == 2_500.0
 
 
 def test_effective_compute_uses_configured_lambda():
@@ -39,14 +40,49 @@ def _spec(**over):
     return ContestSpec(**base)
 
 
-def test_contestspec_lambda_defaults_to_1e11():
-    assert _spec().lambda_flops_per_second == 1e11
+def test_contestspec_lambda_defaults_to_zero():
+    """Gated, not priced — see whestbench.budget for the two regimes."""
+    assert _spec().lambda_flops_per_second == 0.0
 
 
 def test_contestspec_accepts_custom_lambda():
     assert _spec(lambda_flops_per_second=2e11).lambda_flops_per_second == 2e11
 
 
-def test_contestspec_rejects_nonpositive_lambda():
-    with pytest.raises(ValueError, match="lambda_flops_per_second"):
-        _spec(lambda_flops_per_second=0.0).validate()
+def test_contestspec_accepts_zero_lambda():
+    """0 is the default and must validate — it selects the gated regime."""
+    _spec(lambda_flops_per_second=0.0).validate()
+
+
+def test_contestspec_rejects_negative_lambda():
+    """A negative rate would pay an estimator for burning wall time."""
+    with pytest.raises(ValueError, match="must not be negative"):
+        _spec(lambda_flops_per_second=-1.0).validate()
+
+
+def test_default_lambda_is_zero_gated_regime() -> None:
+    """The default is GATED: residual seconds are not priced, so C == F.
+
+    Phase 2 caps residual wall time (residual_wall_time_limit_s) and fails the MLP
+    on crossing it, rather than converting seconds into FLOPs. A non-zero default
+    here would silently re-price every run against a rule the round does not use.
+    """
+    from whestbench.budget import DEFAULT_LAMBDA_FLOPS_PER_SECOND, effective_compute
+
+    assert DEFAULT_LAMBDA_FLOPS_PER_SECOND == 0.0
+    assert effective_compute(1_000_000, 2.5) == 1_000_000
+
+
+def test_phase1_rate_still_available_and_unchanged() -> None:
+    """Phase 1 rounds must stay reproducible from this codebase."""
+    from whestbench.budget import (
+        LAMBDA_FLOPS_PER_SECOND,
+        PHASE1_LAMBDA_FLOPS_PER_SECOND,
+        effective_compute,
+    )
+
+    assert PHASE1_LAMBDA_FLOPS_PER_SECOND == 1e11
+    # the legacy name has always meant the Phase 1 rate; it must not silently
+    # change value just because the default moved off it
+    assert LAMBDA_FLOPS_PER_SECOND == PHASE1_LAMBDA_FLOPS_PER_SECOND
+    assert effective_compute(1_000_000, 2.5, PHASE1_LAMBDA_FLOPS_PER_SECOND) == 1_000_000 + 2.5e11

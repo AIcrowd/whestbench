@@ -1130,3 +1130,49 @@ def test_submit_dry_run_parses():
         ["submit", "--estimator", "estimator.py", "--dry-run"]
     )
     assert args.dry_run is True
+
+
+def test_run_parser_lambda_and_residual_gate_defaults():
+    """Phase 2 defaults: residual gated at 400 ms, not priced."""
+    from whestbench.cli import _build_participant_parser
+
+    args = _build_participant_parser().parse_args(["run", "--estimator", "estimator.py"])
+    assert args.lambda_flops_per_second is None  # sentinel -> DEFAULT (0.0)
+    assert args.residual_wall_time_limit == 0.4
+    assert args.no_residual_wall_time_limit is False
+
+
+def test_resolve_residual_wall_time_limit_off_switch():
+    """--no-residual-wall-time-limit disables the gate, overriding any numeric value.
+
+    This is the escape hatch that keeps Phase 1 rounds reproducible: they priced
+    residual seconds through lambda instead of gating them, so leaving the Phase 2
+    gate armed would fail MLPs against a rule they were never scored under.
+    """
+    import argparse
+
+    from whestbench.cli import _resolve_residual_wall_time_limit
+
+    assert _resolve_residual_wall_time_limit(argparse.Namespace()) is None
+    on = argparse.Namespace(residual_wall_time_limit=0.4, no_residual_wall_time_limit=False)
+    assert _resolve_residual_wall_time_limit(on) == 0.4
+    off = argparse.Namespace(residual_wall_time_limit=0.4, no_residual_wall_time_limit=True)
+    assert _resolve_residual_wall_time_limit(off) is None
+
+
+def test_phase1_round_is_reproducible_from_the_cli():
+    """The documented Phase 1 recipe must actually parse into the priced regime."""
+    from whestbench.cli import _build_participant_parser, _resolve_residual_wall_time_limit
+
+    args = _build_participant_parser().parse_args(
+        [
+            "run",
+            "--estimator",
+            "estimator.py",
+            "--lambda-flops-per-second",
+            "1e11",
+            "--no-residual-wall-time-limit",
+        ]
+    )
+    assert args.lambda_flops_per_second == 1e11
+    assert _resolve_residual_wall_time_limit(args) is None

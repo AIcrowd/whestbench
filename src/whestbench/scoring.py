@@ -11,8 +11,14 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 import flopscope as flops
 import flopscope.numpy as fnp
 
-from .budget import (
+# LAMBDA_FLOPS_PER_SECOND and PHASE1_LAMBDA_FLOPS_PER_SECOND are unused here but
+# re-exported: callers have long imported them from this module (the evaluator among
+# them). LAMBDA_FLOPS_PER_SECOND still names the Phase 1 rate and still equals 1e11 —
+# it is simply no longer the default. See whestbench.budget for the two regimes.
+from .budget import (  # noqa: F401
+    DEFAULT_LAMBDA_FLOPS_PER_SECOND,
     LAMBDA_FLOPS_PER_SECOND,
+    PHASE1_LAMBDA_FLOPS_PER_SECOND,
     is_combined_budget_exhausted,
     score_multiplier,
 )
@@ -65,7 +71,7 @@ class ContestSpec:
     wall_time_limit_s: Optional[float] = 120.0
     residual_wall_time_limit_s: Optional[float] = 0.4
     seed: Optional[int] = None
-    lambda_flops_per_second: float = LAMBDA_FLOPS_PER_SECOND
+    lambda_flops_per_second: float = DEFAULT_LAMBDA_FLOPS_PER_SECOND
 
     def validate(self) -> None:
         """Validate that all contest specification fields are positive and consistent."""
@@ -83,8 +89,12 @@ class ContestSpec:
             raise ValueError("wall_time_limit_s must be positive when provided.")
         if self.residual_wall_time_limit_s is not None and self.residual_wall_time_limit_s <= 0:
             raise ValueError("residual_wall_time_limit_s must be positive when provided.")
-        if self.lambda_flops_per_second <= 0:
-            raise ValueError("lambda_flops_per_second must be positive.")
+        if self.lambda_flops_per_second < 0:
+            # 0 is the default and is meaningful: it selects the gated regime, in
+            # which residual wall time is capped by residual_wall_time_limit_s
+            # instead of being priced into C_m. Only a negative rate is incoherent
+            # (it would pay an estimator for burning wall time).
+            raise ValueError("lambda_flops_per_second must not be negative.")
         if self.seed is not None and not isinstance(self.seed, int):
             raise ValueError("seed must be an integer when provided.")
 

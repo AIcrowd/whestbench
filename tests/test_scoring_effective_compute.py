@@ -35,7 +35,16 @@ def _make_data(width: int = 4, depth: int = 2) -> ContestData:
     target = fnp.zeros((depth, width), dtype=fnp.float32)
     return ContestData(
         spec=ContestSpec(
-            width=width, depth=depth, n_mlps=1, flop_budget=10_000_000_000, ground_truth_samples=100
+            width=width,
+            depth=depth,
+            n_mlps=1,
+            flop_budget=10_000_000_000,
+            ground_truth_samples=100,
+            # This module tests the PRICED regime, so name the rate explicitly. The
+            # ContestSpec default is now 0 (gated), which would make C_m == F_m and
+            # silently turn every assertion here into a tautology.
+            lambda_flops_per_second=LAMBDA_FLOPS_PER_SECOND,
+            residual_wall_time_limit_s=None,
         ),
         mlps=[mlp],
         all_layer_targets=[target],
