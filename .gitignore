@@ -251,3 +251,5 @@ internal docs/
 
 # website/lib/ is TypeScript source, not a Python virtualenv (root `lib/` rule must not catch it)
 !/website/lib/
+# Artifacts written by `whest submit --estimator` / `whest package` into the CWD.
+submission-*.tar.gz

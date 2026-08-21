@@ -59,22 +59,99 @@ def test_verify_identity_401_raises():
         _client(handler).verify_identity()
 
 
-def test_resolve_challenge_returns_id():
+def test_check_eligibility_queries_the_eligibility_endpoint():
+    """The pre-flight must ask the endpoint that applies the real submission checks,
+    not infer the answer from a registration flag."""
+    seen = {}
+
     def handler(req):
-        assert "/challenges/" in str(req.url)
+        seen["url"] = str(req.url)
         return httpx.Response(
-            200, json=[{"id": 99, "slug": "arc-white-box-estimation-challenge-2026"}]
+            200,
+            json={
+                "submissions_allowed": False,
+                "denied_reason": "challenge_completed",
+                "message": "Phase 1 is completed — submissions are closed.",
+                "rules_accepted": True,
+                "participation_terms_accepted": True,
+            },
         )
 
-    cid = _client(handler).resolve_challenge("arc-white-box-estimation-challenge-2026")
-    assert cid == 99
+    out = _client(handler).check_eligibility(challenge_slug="some-challenge")
+    assert "www.aicrowd.com/api/v1/challenges/some-challenge/eligibility" in seen["url"]
+    assert "api.aicrowd.com" not in seen["url"]
+    assert out["submissions_allowed"] is False
+    assert out["denied_reason"] == "challenge_completed"
 
 
-def test_check_registration_true():
+def test_whoami_keeps_the_username():
+    """`whest login` greets the participant by name, so identity must not be
+    reduced to an id on the way through."""
+
     def handler(req):
-        return httpx.Response(200, json={"registered": True})
+        return httpx.Response(200, json={"id": 4242, "username": "bob", "is_admin": False})
 
-    assert _client(handler).check_registration(challenge_id=99, participant_id=4242) is True
+    ident = _client(handler).whoami()
+    assert ident["username"] == "bob"
+    assert ident["id"] == 4242
+
+
+def test_401_after_identity_is_a_permission_error_not_an_auth_one():
+    """A 401 can mean "terms not accepted", not "bad key". Once the key has been
+    validated, reporting a later 401 as an auth failure sends people to re-login for
+    no reason."""
+    from whestbench.aicrowd_client import AIcrowdAuthError, AIcrowdNotAllowedError
+
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return httpx.Response(200, json={"id": 1, "username": "bob"})
+        return httpx.Response(
+            401,
+            json={"message": "Please accept challenge terms before making submission here: url"},
+        )
+
+    client = _client(handler)
+    client.verify_identity()
+    with pytest.raises(AIcrowdNotAllowedError) as exc:
+        client.get_upload_details(challenge_slug="c")
+    assert not isinstance(exc.value, AIcrowdAuthError)
+    assert "accept challenge terms" in exc.value.message
+    # AIcrowd explained itself; we must not staple a second, contradicting cause on.
+    assert exc.value.hint is None
+
+
+def test_401_before_identity_is_still_an_auth_error():
+    def handler(req):
+        return httpx.Response(401, json={"message": "bad key"})
+
+    from whestbench.aicrowd_client import AIcrowdAuthError
+
+    with pytest.raises(AIcrowdAuthError):
+        _client(handler).get_upload_details(challenge_slug="c")
+
+
+def test_403_with_a_server_explanation_adds_no_hint():
+    """A closed round is not fixed by accepting anything, so the old
+    "accept the rules and confirm submissions are open" tip must not appear."""
+    from whestbench.aicrowd_client import AIcrowdNotAllowedError
+
+    def handler(req):
+        return httpx.Response(
+            403,
+            json={
+                "message": "Phase 1 is completed — submissions are closed. "
+                "Phase 2 opens on August 21, 2026 23:59."
+            },
+        )
+
+    with pytest.raises(AIcrowdNotAllowedError) as exc:
+        _client(handler).get_upload_details(challenge_slug="c")
+    assert "submissions are closed" in exc.value.message
+    assert exc.value.hint is None
+    assert "rules" not in (exc.value.hint or "")
 
 
 def test_get_upload_details_unwraps_data_and_passes_slug():

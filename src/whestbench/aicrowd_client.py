@@ -6,11 +6,10 @@ api/v1/api_users_controller.rb + base_controller.rb):
 
 - Auth header: `Authorization: Token <api_key>`  (NOT Bearer)
 - Rails API base: https://www.aicrowd.com/api/v1   (RAILS_HOST env overrides host)
-- AIcrowd API base: https://api.aicrowd.com         (AICROWD_API_ENDPOINT env overrides)
-- Identity:     GET  {rails}/api_user                          -> {"id": <participant_id>, ...}
-- Challenge id: GET  {aicrowd}/challenges/?slug=...            -> [{"id": ..., "slug": ...}]
-- Registration: GET  {aicrowd}/challenges/{id}/participant?participant_id=<id>
-                                                               -> {"registered": bool}
+- Identity:     GET  {rails}/api_user                          -> {"id": ..., "username": ..., ...}
+- Eligibility:  GET  {rails}/challenges/<slug>/eligibility     -> {"submissions_allowed": bool,
+                "denied_reason": str|null, "message": str|null, "rules_accepted": bool,
+                "participation_terms_accepted": bool, "rules_url": ..., "rounds": [...]}
 - Presign:      GET  {rails}/submissions?challenge_id=<slug>   -> {"data": {"fields": {...}, "url": ...}, "success": true}
 - S3 upload:    multipart POST to data.url with data.fields; substitute ${filename} in fields["key"].
 - Create:       POST {rails}/submissions  (handle_artifact_based_submissions, is_api_request:
@@ -28,6 +27,10 @@ api/v1/api_users_controller.rb + base_controller.rb):
                 backoff inside this client; the --watch loop additionally rides
                 out blips silently until a terminal state or its --watch-timeout,
                 so a poll failure never turns a successful submit into a failure.
+
+The submit pre-flight asks AIcrowd whether a submission is allowed, rather than
+inferring it from a registration flag that can disagree with the answer the submit
+call would give. See `check_eligibility`.
 """
 
 from __future__ import annotations
@@ -48,10 +51,6 @@ import httpx
 def _rails_base() -> str:
     host = os.environ.get("RAILS_HOST", "www.aicrowd.com")
     return f"https://{host}/api/v1"
-
-
-def _aicrowd_base() -> str:
-    return os.environ.get("AICROWD_API_ENDPOINT", "https://api.aicrowd.com")
 
 
 # --- retry layer (transient-error resilience) ----------------------------
@@ -178,15 +177,35 @@ class AIcrowdAuthError(AIcrowdAPIError):
 
 
 class AIcrowdNotAllowedError(AIcrowdAPIError):
-    """403 — not authorized for this action (e.g. submissions not open, rules not accepted)."""
+    """The key is valid but this action is refused — submissions closed, terms not accepted.
 
-    def __init__(self, *, status: int, message: str, op: Optional[str] = None) -> None:
+    Covers 403, and also 401 *after* the key has been validated: AIcrowd reuses 401
+    for "you have not accepted the challenge terms", which is a permission problem,
+    not an authentication one.
+
+    `explained=True` means AIcrowd sent its own message and it is already
+    actionable. In that case we add no hint: guessing a second cause underneath a
+    first-hand explanation sends people to fix the wrong thing.
+    """
+
+    def __init__(
+        self,
+        *,
+        status: int,
+        message: str,
+        op: Optional[str] = None,
+        explained: bool = False,
+    ) -> None:
         super().__init__(
             status=status,
             message=message,
             code="not_allowed",
             op=op,
-            hint="Open the challenge page: accept the rules and confirm submissions are open.",
+            hint=(
+                None
+                if explained
+                else "Open the challenge page to check whether submissions are open."
+            ),
         )
 
 
@@ -226,8 +245,10 @@ class AIcrowdTransientError(AIcrowdAPIError):
 _STATUS_DEFAULTS = {
     400: "The request was rejected.",
     401: "Your AIcrowd API key is missing or invalid.",
-    403: "You're not authorized to perform this action — submissions may not be open for "
-    "this challenge, or you may need to accept the challenge rules.",
+    # Deliberately does NOT guess between "submissions are closed" and "rules not
+    # accepted". AIcrowd now says which one it is, and this default is only reached
+    # when it said nothing at all — in which case naming a cause would be inventing one.
+    403: "AIcrowd refused this action.",
     404: "Not found.",
     422: "Your submission was rejected.",
 }
@@ -256,21 +277,46 @@ def _server_message(response: "httpx.Response") -> Optional[str]:
     return None
 
 
-def _classify(response: "httpx.Response", *, op: Optional[str] = None) -> AIcrowdAPIError:
+def _classify(
+    response: "httpx.Response",
+    *,
+    op: Optional[str] = None,
+    identity_verified: bool = False,
+) -> AIcrowdAPIError:
     """Map an AIcrowd HTTP response to a typed, human-readable error.
-    Prefers the server's JSON message; never surfaces HTML; redirects → auth error."""
+    Prefers the server's JSON message; never surfaces HTML.
+
+    `identity_verified` is the key distinction. Every submit run validates the API
+    key first, so once that has succeeded a later 401 or redirect cannot be an
+    authentication problem, whatever the status code suggests — it is a permission
+    one. Reporting it as bad credentials sends people to fix the one thing that is
+    provably fine.
+    """
     status = response.status_code
+    server_said = _server_message(response)
+
     if 300 <= status < 400:
+        # A redirect to a web page means the API declined to answer. Before the key
+        # is validated that is most likely a bad key; after, it is a permission wall.
+        if identity_verified:
+            return AIcrowdNotAllowedError(
+                status=status,
+                message="AIcrowd redirected to a web page instead of answering.",
+                op=op,
+            )
         return AIcrowdAuthError(status=status, message=_REDIRECT_MESSAGE, op=op)
+
     message = (
-        _server_message(response)
+        server_said
         or _STATUS_DEFAULTS.get(status)
         or (f"Unexpected response from AIcrowd (HTTP {status}).")
     )
-    if status == 401:
+    if status == 401 and not identity_verified:
         return AIcrowdAuthError(status=status, message=message, op=op)
-    if status == 403:
-        return AIcrowdNotAllowedError(status=status, message=message, op=op)
+    if status in (401, 403):
+        return AIcrowdNotAllowedError(
+            status=status, message=message, op=op, explained=bool(server_said)
+        )
     if status == 404:
         return AIcrowdNotFoundError(status=status, message=message, op=op)
     if status in (400, 422):
@@ -296,6 +342,10 @@ class AIcrowdClient:
         self._key = api_key
         self._http = http or httpx.Client(timeout=timeout, follow_redirects=False)
         self._auth = {"Authorization": f"Token {api_key}"}
+        # Set once verify_identity() succeeds. From then on the key is known good,
+        # so a later 401 is a permission problem and must not be reported as an
+        # authentication one. See _classify.
+        self._identity_verified = False
 
     # --- helpers ----------------------------------------------------------
     def _request(
@@ -336,7 +386,7 @@ class AIcrowdClient:
                     )
                     retry_after = _parse_retry_after(r.headers.get("Retry-After"))
                 else:
-                    raise _classify(r, op=op)
+                    raise _classify(r, op=op, identity_verified=self._identity_verified)
             if attempt >= policy.max_attempts:
                 break
             delay = _compute_backoff(
@@ -363,31 +413,32 @@ class AIcrowdClient:
         return self._request("POST", url, policy=policy, op=op, **kw)
 
     # --- identity + challenge --------------------------------------------
+    def whoami(self) -> dict[str, Any]:
+        """Validate the key and return the caller's identity.
+
+        Returns the whole /api_user payload (id, username, ...) rather than just the
+        id, so callers can greet the participant by name.
+        """
+        ident = self._get(f"{_rails_base()}/api_user", op="verifying your API key").json()
+        self._identity_verified = True
+        return ident
+
     def verify_identity(self) -> int:
         """Validate the key; return the participant id."""
-        return int(self._get(f"{_rails_base()}/api_user", op="verifying your API key").json()["id"])
+        return int(self.whoami()["id"])
 
-    def resolve_challenge(self, slug: str) -> int:
-        """Resolve a challenge slug -> numeric challenge id (for the registration check)."""
-        r = self._get(
-            f"{_aicrowd_base()}/challenges/", params={"slug": slug}, op="resolving the challenge"
-        )
-        data = r.json()
-        items = data if isinstance(data, list) else data.get("data", [])
-        for item in items:
-            if item.get("slug") == slug:
-                return int(item["id"])
-        if items:
-            return int(items[0]["id"])
-        raise AIcrowdAPIError(status=404, message=f"challenge not found: {slug}")
+    def check_eligibility(self, *, challenge_slug: str) -> dict[str, Any]:
+        """Ask AIcrowd whether this participant may submit, before uploading anything.
 
-    def check_registration(self, *, challenge_id: int, participant_id: int) -> bool:
-        r = self._get(
-            f"{_aicrowd_base()}/challenges/{challenge_id}/participant",
-            params={"participant_id": participant_id},
-            op="checking your challenge registration",
-        )
-        return bool(r.json().get("registered"))
+        Applies the same checks the submit endpoint applies, in the same order, and
+        returns a reason plus a human-readable message when it refuses. Asking up
+        front means a refusal costs nothing, and the reason given here is the reason
+        the submit call would give.
+        """
+        return self._get(
+            f"{_rails_base()}/challenges/{challenge_slug}/eligibility",
+            op="checking whether you can submit",
+        ).json()
 
     # --- submission upload + create --------------------------------------
     def get_upload_details(self, *, challenge_slug: str) -> dict[str, Any]:

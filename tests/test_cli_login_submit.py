@@ -101,11 +101,29 @@ def _stub_submit_pipeline(
         def verify_identity(self):
             return 4242
 
-        def resolve_challenge(self, slug):
-            return 99
-
-        def check_registration(self, *, challenge_id, participant_id):
-            return registered
+        def check_eligibility(self, *, challenge_slug):
+            # Mirrors GET /api/v1/challenges/<slug>/eligibility. The `registered`
+            # knob is kept so existing callers read the same, but it now means
+            # "may this participant submit", which is what the CLI actually asks.
+            if registered:
+                return {
+                    "submissions_allowed": True,
+                    "denied_reason": None,
+                    "message": None,
+                    "rules_accepted": True,
+                    "participation_terms_accepted": True,
+                }
+            return {
+                "submissions_allowed": False,
+                "denied_reason": "rules_not_accepted",
+                "message": (
+                    "Please accept challenge terms before making submission here: "
+                    "www.aicrowd.com/challenges/c/challenge_rules"
+                ),
+                "rules_accepted": False,
+                "participation_terms_accepted": True,
+                "rules_url": "https://www.aicrowd.com/challenges/c/challenge_rules",
+            }
 
         def get_upload_details(self, *, challenge_slug):
             return {"url": "https://s3.test/upload", "fields": {"key": "subs/${filename}"}}
@@ -238,6 +256,68 @@ def test_submit_unregistered_errors(monkeypatch, tmp_path):
     art = _valid_artifact(tmp_path)
     rc = cli.main(["submit", str(art)])
     assert rc != 0
+
+
+def test_submit_relays_aicrowds_own_refusal_and_stops_before_upload(monkeypatch, tmp_path):
+    """A refused pre-flight must print what AIcrowd said, verbatim, and upload nothing.
+
+    whest used to print a sentence of its own ("You are not registered for
+    '<slug>'."), which was often wrong and buried the real reason. Relay AIcrowd's
+    sentence instead.
+    """
+    captured = _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    _stub_submit_pipeline(monkeypatch, registered=False)
+    art = _valid_artifact(tmp_path)
+
+    rc = cli.main(["submit", str(art)])
+
+    assert rc != 0
+    text = "\n".join(captured)
+    assert "Please accept challenge terms" in text
+    # whest must not invent a cause of its own alongside AIcrowd's.
+    assert "You are not registered" not in text
+    # And it must never tell someone to re-login: the key was already validated.
+    assert "whest login" not in text
+
+
+def test_submit_does_not_blame_the_rules_when_the_round_is_closed(monkeypatch, tmp_path):
+    """The reported bug, at the CLI boundary: rules are fine, the round is shut.
+
+    Nothing in the output may suggest accepting anything — that advice sent
+    participants to re-accept rules that were already current.
+    """
+    captured = _spy_console_print(monkeypatch)
+    monkeypatch.setattr(cfg, "resolve_api_key", lambda explicit: "K")
+    _stub_submit_pipeline(monkeypatch)
+
+    import whestbench.cli as _cli
+
+    closed = {
+        "submissions_allowed": False,
+        "denied_reason": "challenge_completed",
+        "message": "Phase 1 is completed — submissions are closed. Phase 2 opens on Nov 02, 2026 00:00.",
+        "rules_accepted": True,
+        "participation_terms_accepted": True,
+        "rules_url": "https://www.aicrowd.com/challenges/c/challenge_rules",
+    }
+    original = _cli.AIcrowdClient
+
+    class _Closed(original):  # type: ignore[misc, valid-type]
+        def check_eligibility(self, *, challenge_slug):
+            return closed
+
+    monkeypatch.setattr(_cli, "AIcrowdClient", _Closed)
+    art = _valid_artifact(tmp_path)
+
+    rc = cli.main(["submit", str(art)])
+
+    assert rc != 0
+    text = "\n".join(captured)
+    assert "submissions are closed" in text
+    assert "Phase 2 opens on" in text
+    assert "accept" not in text.lower()
+    assert "challenge_rules" not in text
 
 
 def test_submit_watch_absorbs_transient_then_grades(monkeypatch, tmp_path):
