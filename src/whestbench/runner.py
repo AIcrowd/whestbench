@@ -133,6 +133,10 @@ def _mlp_to_payload(mlp: MLP) -> Dict[str, Any]:
 
 
 class LocalRunner:
+    # The participant runs in this process, so the caller's BudgetContext IS the
+    # participant's clock: scoring must keep enforcing the wall limit on it.
+    enforces_wall_time_limit: bool = False
+
     def __init__(self) -> None:
         self._estimator: Optional[BaseEstimator] = None
         self._limits: Optional[ResourceLimits] = None
@@ -243,6 +247,14 @@ InProcessRunner = LocalRunner
 
 
 class SubprocessRunner:
+    # The worker enforces the wall limit inside its OWN BudgetContext, around the
+    # participant's predict() alone (see subprocess_worker._handle_predict), and
+    # reports the verdict back as ``status: time_exhausted``. A caller that also put
+    # the limit on its own context would be timing the IPC round-trip — request
+    # serialization, the pipe, response decode — and charging it to the participant
+    # (whestbench#129). Wall-limit enforcement belongs to exactly one clock.
+    enforces_wall_time_limit: bool = True
+
     def __init__(self, *, worker_command: Optional[List[str]] = None) -> None:
         self._worker_command = (
             worker_command

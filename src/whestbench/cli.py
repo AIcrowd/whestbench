@@ -2253,6 +2253,11 @@ class _RunnerEstimator(BaseEstimator):
 
     def __init__(self, runner: "Any") -> None:
         self._runner = runner
+        # Forwarded so scoring can tell whose clock the wall limit belongs to: a
+        # subprocess runner already enforces it around the participant's predict(),
+        # and double-enforcing on the host side would bill the IPC round-trip to the
+        # participant (whestbench#129).
+        self.enforces_wall_time_limit = bool(getattr(runner, "enforces_wall_time_limit", False))
 
     def predict(self, mlp: "Any", budget: int) -> fnp.ndarray:
         return self._runner.predict(mlp, budget)

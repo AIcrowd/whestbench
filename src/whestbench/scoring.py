@@ -607,6 +607,15 @@ def evaluate_estimator(
     secondary_scores: List[float] = []
     normalized_breakdowns: List[Dict[str, Any]] = []
     last_predict_stats = getattr(estimator, "last_predict_stats", None)
+    # Whoever runs the participant owns the wall clock. An out-of-process runner times
+    # predict() inside the worker and reports the verdict back, so putting the limit on
+    # the host context too would time the IPC round-trip and charge it to the
+    # participant — flagging an MLP whose own wall_time_s is under the limit
+    # (whestbench#129). The post-predict check below still holds the WORKER-reported
+    # time to the limit, so enforcement is moved, not dropped.
+    host_wall_time_limit_s = (
+        None if getattr(estimator, "enforces_wall_time_limit", False) else spec.wall_time_limit_s
+    )
 
     for i, mlp in enumerate(data.mlps):
         flops_used = 0
@@ -619,7 +628,7 @@ def evaluate_estimator(
 
         budget_ctx = flops.BudgetContext(
             flop_budget=spec.flop_budget,
-            wall_time_limit_s=spec.wall_time_limit_s,
+            wall_time_limit_s=host_wall_time_limit_s,
             quiet=True,
         )
         try:
