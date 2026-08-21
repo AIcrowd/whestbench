@@ -71,6 +71,7 @@ def create_dataset_torch(
     mlps_per_batch: Optional[int] = None,
     chunk_size: Optional[int] = None,
     compile: bool = False,
+    flop_budget: Optional[int] = None,
     **deprecated_kwargs: Any,
 ) -> Path:
     """Torch-backed analog of whestbench.dataset.create_dataset.
@@ -94,6 +95,15 @@ def create_dataset_torch(
             function does not set that flag — on CUDA, run-to-run output is
             deterministic in practice for the matmul/sum kernels used here,
             but not formally guaranteed by torch.
+        flop_budget: The FLOP budget this bake is being run under, recorded per row in
+            `sampling_budget_breakdown`. None (default) means the bake is NOT
+            budget-limited -- the normal case for a ground-truth reference bake -- and
+            records `flop_budget == flops_used` with `flops_remaining == 0`, so the
+            identity holds without inventing a cap. This was previously hardcoded to
+            1e15, a placeholder a production bake exceeds by ~34x while
+            `max(0, budget - used)` clamped the remainder to 0, so every row claimed to
+            have spent 34x its budget with none of it missing. It is unrelated to the
+            estimator's FLOP budget at evaluation time.
         mlps_per_batch: How many MLPs to process in parallel on device.
             None (default) auto-tunes to min(n_mlps, 16).
         chunk_size: Samples per chunk on device. None (default) is memory-aware
@@ -262,8 +272,10 @@ def create_dataset_torch(
                     width=width,
                     depth=depth,
                     n_samples=n_samples,
+                    # The chunking the bake ACTUALLY ran with, not the CPU path's rule.
+                    chunk_size=resolved_chunk_size,
                     wall_time_s=amortized_wall,
-                    flop_budget=int(1e15),
+                    flop_budget=flop_budget,
                 )
             )
 
@@ -353,108 +365,133 @@ def _synthesize_sampling_breakdown(
     width: int,
     depth: int,
     n_samples: int,
+    chunk_size: int,
     wall_time_s: float,
-    flop_budget: int,
+    flop_budget: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Closed-form analog of flopscope's BudgetContext.summary_dict for the torch path.
 
-    The torch path computes outside flopscope's instrumentation, so this helper
-    synthesizes the same dict shape using analytical FLOP counts. Verified
-    against flopscope's actual count by test_closed_form_matches_flopscope_count.
+    The torch path computes outside flopscope's instrumentation, so this helper synthesizes
+    the same dict shape using analytical FLOP counts, per operation. Verified against
+    flopscope's actual per-operation count by tests/test_torch_flop_synthesis.py.
 
     Output shape mirrors flopscope's normalized output exactly:
     - Top-level keys: flop_budget, flops_used, flops_remaining, wall_time_s,
       flopscope_backend_time_s, flopscope_overhead_time_s, residual_wall_time_s,
-      by_namespace — plus a "time_source": "bake" tag.
+      by_namespace -- plus a "time_source": "bake" tag.
     - by_namespace is a FLAT dict keyed by dot-notation strings (e.g.
       "sampling.sample_layer_statistics"), NOT nested dicts.
-    - Times are the bake machine's decomposition: the torch path runs outside
-      flopscope, so backend = overhead = 0 and ALL bake wall clock is residual
-      (wall = backend + overhead + residual holds). The "time_source" tag lets
-      run-time reports attribute these to the bake machine instead of the
-      current run — they are informational and never billed (discourse #18093).
+    - Each namespace bucket carries `calls` and an `operations` map whose entries are
+      {flop_cost, calls, flopscope_backend_time_s, flopscope_overhead_time_s} -- the same
+      shape flopscope emits, and the same one whestbench.scoring._merge_operation_timing
+      reads. Note `flop_cost`, not `flops`: the aggregator reads `flop_cost` and silently
+      contributes zero for any other key.
+    - Times are the bake machine's decomposition: the torch path runs outside flopscope, so
+      backend = overhead = 0 and ALL bake wall clock is residual (wall = backend + overhead
+      + residual holds). The "time_source" tag lets run-time reports attribute these to the
+      bake machine instead of the current run -- informational, never billed (discourse
+      #18093).
 
-    Formula derivation (matched against flopscope 0.11.0's operation-level accounting;
-    validated across single- and multi-chunk dims by
-    test_closed_form_matches_flopscope_count). Below, n = n_samples and k = n_chunks.
+    CHUNK SIZE IS A PARAMETER, NOT A GUESS. It was previously re-derived here from
+    `simulation._pick_chunk_size(width)`, which is the CPU path's rule and has nothing to do
+    with what the torch path ran: `create_dataset_torch` resolves chunk_size from its own
+    argument or from free VRAM. At width 1024 the two differ by 512x. That never showed up
+    in `flops_used`, because the two chunk-dependent terms cancel --
 
-    flopscope 0.11.0 bills under a dtype-aware model, so an op on float64 data costs
-    2x the same op on float32. sample_layer_statistics runs the forward pass in
-    float32 (rate 1) and accumulates statistics in float64 (rate 2); the 2x is folded
-    into the float64 terms below. Reductions cost (rows - 1) additions per output
-    column, so a sum over a chunk of n_c rows costs (n_c - 1); summed over the k
-    chunks that tile n_samples this is (n - k). Per-chunk whole-array accumulations
-    happen once per chunk, so they scale with k.
+        sum + add = 2(d+1)w(n - k) + 2(d+1)wk = 2(d+1)wn
 
-    Forward pass — float32 (rate 1), linear in n:
+    -- so k drops out of the TOTAL while surviving in the SPLIT. The total was right and
+    every per-operation number derived from it would have been wrong, which is exactly the
+    combination nobody notices.
+
+    Formula derivation (matched against flopscope's operation-level accounting, from 0.10.0
+    through current main; validated across single-chunk, multi-chunk and ragged-final-chunk
+    dims by test_torch_flop_synthesis.py). Below, n = n_samples and k = n_chunks.
+
+    flopscope bills under a dtype-aware model, so an op on float64 data costs 2x the same op
+    on float32. sample_layer_statistics runs the forward pass in float32 (rate 1) and
+    accumulates statistics in float64 (rate 2); the 2x is folded into the float64 terms
+    below. Reductions cost (rows - 1) additions per output column, so a sum over a chunk of
+    n_c rows costs (n_c - 1); summed over the k chunks that tile n_samples this is (n - k).
+    Per-chunk whole-array accumulations happen once per chunk, so they scale with k.
+
+    Forward pass -- float32 (rate 1), linear in n:
       - standard_normal((n, width)):   16 * n * width          (RNG: 16 FLOPs/element)
       - array wrap:                    n * width               (1 FLOP/element)
       - matmul (n,w)@(w,w) per layer:  depth * n * width * (2*width - 1)
         (BLAS MAC: width multiplies + (width-1) adds per output element)
       - maximum (ReLU) per layer:      depth * n * width       (1 FLOP/element)
 
-    Statistics accumulation — float64 (rate 2):
+    Statistics accumulation -- float64 (rate 2):
       - asarray float32->float64:      2 * width * (depth+1) * (n+1)
         ((depth+1) activation casts/chunk + 2 once-off casts; max(src,dst) rate = 2)
       - sum(axis=0) reductions:        2 * (depth+1) * (n - k) * width
       - add accumulations (per chunk): 2 * (depth+1) * k * width
       - power (x_f64**2):              32 * width * (n+1)      (16 FLOPs/element * rate 2)
 
-    Post-loop reductions — float64 (rate 2), once; plus one float32 copy:
+    Buffer allocation -- free, but flopscope records the calls:
+      - zeros:                         0 FLOPs, depth+1 calls  (layer_sums + final_sum_sq)
+
+    Post-loop reductions -- float64 (rate 2), once; plus one float32 copy:
       - stack(layer_sums) -> (depth,w): 2 * depth * width
       - true_divide (/n_processed):    2 * width * (depth+1)   (layer means + final_sum_sq)
       - subtract (var = E[x^2] - mu^2): 2 * width
       - mean (avg variance):           2 * width
       - copy (final_mean):             width                   (float32, rate 1)
+
+    Args:
+        chunk_size: the chunk size the bake ACTUALLY ran with (create_dataset_torch passes
+            its resolved value). Required -- there is no correct default.
+        flop_budget: the budget this bake was run under, or None for an unbudgeted
+            reference bake. None records flop_budget == flops_used and flops_remaining == 0,
+            so `flop_budget - flops_used == flops_remaining` holds without inventing a cap.
     """
-    # chunk_size mirrors simulation._pick_chunk_size
-    chunk_size = max(1024, min(16384, 2**20 // width))
-    n_chunks = math.ceil(n_samples / chunk_size)
+    w, d, n = width, depth, n_samples
+    k = math.ceil(n / chunk_size)
 
-    # Forward pass — float32 (rate 1), linear in total samples.
-    standard_normal = 16 * n_samples * width
-    array = n_samples * width
-    # BLAS MAC convention: (n, w) @ (w, w) costs n * w * (2*w - 1) per call, depth layers.
-    matmul = depth * n_samples * width * (2 * width - 1)
-    maximum = depth * n_samples * width
+    # A FINAL CHUNK OF EXACTLY ONE ROW IS BILLED DIFFERENTLY.
+    # The reduction model charges (n_c - 1) accumulation steps per column, which is 0 for a
+    # 1-row chunk. flopscope instead bills a fixed per-call cost there, making the closed
+    # form exactly 2*(depth+1) low. Measured against live flopscope at five width/depth
+    # combinations: the delta is independent of width and linear in depth, and appears only
+    # for a final chunk of exactly one row (2, 3, 10, 904 and full-size finals all match to
+    # the unit). Correcting it keeps flops_used exact for every chunking rather than for
+    # most of them.
+    degenerate_tail = 2 * (d + 1) if (k > 1 and n - chunk_size * (k - 1) == 1) else 0
 
-    # Statistics accumulation — float64 (rate 2); the 2x is folded into each term.
-    # (depth+1) activation casts float32->float64 per chunk + 2 once-off casts.
-    asarray = 2 * width * (depth + 1) * (n_samples + 1)
-    # (depth+1) sum(axis=0) reductions: (n_c - 1) adds/col per chunk -> (n - k) total.
-    sum_reduce = 2 * (depth + 1) * (n_samples - n_chunks) * width
-    # (depth+1) whole-array accumulations of `width`, once per chunk (k chunks).
-    add_accumulate = 2 * (depth + 1) * n_chunks * width
-    # x_f64**2 per chunk (16 FLOPs/elem * rate 2) + final_mean**2 once.
-    power = 32 * width * (n_samples + 1)
+    ops: Dict[str, tuple] = {
+        # Forward pass -- float32 (rate 1), once per chunk.
+        "random.Generator.standard_normal": (16 * n * w, k),
+        "array": (n * w, k),
+        "matmul": (d * n * w * (2 * w - 1), d * k),
+        "maximum": (d * n * w, d * k),
+        # Statistics accumulation -- float64 (rate 2), (depth+1) per chunk.
+        "asarray": (2 * w * (d + 1) * (n + 1), (d + 1) * k + 2),
+        "sum": (2 * (d + 1) * (n - k) * w + degenerate_tail, (d + 1) * k),
+        "add": (2 * (d + 1) * k * w, (d + 1) * k),
+        "power": (32 * w * (n + 1), k + 1),
+        # Free, but counted.
+        "zeros": (0, d + 1),
+        # Post-loop reductions -- once.
+        "stack": (2 * d * w, 1),
+        "true_divide": (2 * w * (d + 1), 2),
+        "subtract": (2 * w, 1),
+        "mean": (2 * w, 1),
+        "copy": (w, 1),
+    }
 
-    # Post-loop reductions — float64 (rate 2), once; plus one float32 copy.
-    stack = 2 * depth * width
-    true_divide = 2 * width * (depth + 1)
-    subtract = 2 * width
-    mean_reduction = 2 * width
-    copy = width
+    total = sum(flops for flops, _ in ops.values())
+    calls = sum(c for _, c in ops.values())
 
-    total = (
-        standard_normal
-        + array
-        + matmul
-        + maximum
-        + asarray
-        + sum_reduce
-        + add_accumulate
-        + power
-        + stack
-        + true_divide
-        + subtract
-        + mean_reduction
-        + copy
-    )
-
-    flops_remaining = max(0, flop_budget - total)
+    # An unbudgeted reference bake records budget == used, so the identity holds without
+    # fabricating a cap. A stated budget is recorded verbatim, and the remainder is the
+    # true one: clamping a negative remainder to 0 reports "exactly exhausted" for a run
+    # that blew through its budget, which is the more dangerous of the two readings.
+    budget = total if flop_budget is None else int(flop_budget)
+    flops_remaining = budget - total
 
     return {
-        "flop_budget": flop_budget,
+        "flop_budget": budget,
         "flops_used": total,
         "flops_remaining": flops_remaining,
         "wall_time_s": wall_time_s,
@@ -465,11 +502,40 @@ def _synthesize_sampling_breakdown(
         "by_namespace": {
             "sampling.sample_layer_statistics": {
                 "flops_used": total,
-                "calls": 0,
+                "calls": calls,
                 "flopscope_backend_time_s": 0.0,
                 "flopscope_overhead_time_s": 0.0,
-                "operations": {},
+                "operations": {
+                    name: {
+                        "flop_cost": flops,
+                        "calls": c,
+                        "flopscope_backend_time_s": 0.0,
+                        "flopscope_overhead_time_s": 0.0,
+                    }
+                    for name, (flops, c) in ops.items()
+                },
             }
+        },
+        # Extra keys are safe: scoring._normalize_sampling_budget_breakdown and
+        # _aggregate_budget_breakdowns both build a fresh dict from named keys.
+        #
+        # chunk_size is the point of this block. Float64 accumulation is not associative,
+        # so reproducing a bake's means bit-for-bit requires the same chunk decomposition —
+        # and chunk_size is not recorded anywhere else, which is why the card's re-bake
+        # recipe could only promise the same MLPs and statistically equivalent means.
+        # Recording it per row closes that gap for the value that auto-resolves from free
+        # VRAM and is otherwise unrecoverable after the fact.
+        "provenance": {
+            "method": "closed-form",
+            "operation_model": "whestbench.simulation.sample_layer_statistics",
+            "chunk_size": chunk_size,
+            "n_chunks": k,
+            "note": (
+                "The torch backend computes outside flopscope's instrumentation, so these "
+                "are closed-form FLOP counts for the numpy reference implementation's "
+                "operations, evaluated at the chunking this bake actually used. Pass "
+                "chunk_size back to reproduce the same accumulation order."
+            ),
         },
     }
 

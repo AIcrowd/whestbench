@@ -149,8 +149,11 @@ def test_readme_split_aware_release_label():
     assert "public` split of the WhestBench 2026 evaluation set" not in out_pub
 
     assert "Holdout split for WhestBench 2026" in out_hld
-    # Holdout points participants at the public release.
-    assert "aicrowd/arc-whestbench-2026" in out_hld
+    # No companion_repo was supplied, so no public-release cross-link is rendered. The
+    # template used to fall back to a hardcoded "aicrowd/arc-whestbench-2026", which does
+    # not exist (404) and stamped AIcrowd ids into cards rendered by anyone bundling
+    # whestbench. See test_companion_repo_link_is_rendered_only_when_supplied.
+    assert "aicrowd/arc-whestbench-2026" not in out_hld
 
 
 # --- Badge row (replaces the bullet-list Links section) ---
@@ -689,7 +692,8 @@ def test_generate_readme_single_split_public_unchanged_modulo_eval_repo_link():
         revision="v1",
     )
     assert "Public Dataset Release" in out
-    assert "arc-whestbench-2026-evals" in out
+    # No companion_repo supplied -> no fabricated evals link (see the companion test below).
+    assert "arc-whestbench-2026-evals" not in out
 
 
 def test_generate_readme_single_split_holdout_unchanged():
@@ -921,3 +925,39 @@ def _v2_single_split_md_for_readme():
         "created_at_utc": "2026-05-25T00:00:00+00:00",
         "hardware": {},
     }
+
+
+def test_companion_repo_link_is_rendered_only_when_supplied():
+    """An empty companion_repo means "no participant-facing counterpart", not "guess one".
+
+    The template previously resolved a missing companion to a hardcoded
+    ``aicrowd/arc-whestbench-2026`` (or ``…-2026-evals`` for the public split). Both are
+    404s, and both are AIcrowd-specific ids appearing in cards rendered by anyone who
+    bundles whestbench. Supplying a companion must still produce the link; omitting one
+    must produce a sentence that reads correctly without it.
+    """
+    from whestbench.dataset_io import generate_readme
+
+    md = _multi_split_metadata()
+    del md["splits"]
+    md["n_mlps"] = 1000
+    md["seed"] = 42
+
+    without = generate_readme(
+        md, split="public", ds_size=1000, repo_id="acme/my-dataset", revision="v1"
+    )
+    assert "aicrowd/arc-whestbench-2026" not in without
+    assert "arc-whestbench-2026-evals" not in without
+    # The sentence still has to make sense with the clause removed.
+    assert "The actual contest evaluation runs against private" in without
+
+    with_companion = generate_readme(
+        md,
+        split="public",
+        ds_size=1000,
+        repo_id="acme/my-dataset",
+        revision="v1",
+        companion_repo="acme/my-evals",
+    )
+    assert "acme/my-evals" in with_companion
+    assert "huggingface.co/datasets/acme/my-evals" in with_companion

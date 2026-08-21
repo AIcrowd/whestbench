@@ -22,11 +22,15 @@
 </p>
 
 WhestBench is a benchmark for *white-box activation estimation*: given the weights of a randomly initialized ReLU multi-layer perceptron (MLP) and a strict floating-point-operation (FLOP) budget, predict the average post-activation value of every neuron when the network is fed standard Gaussian inputs.
-{%- set companion = companion_repo or ("aicrowd/arc-whestbench-2026-evals" if (not splits and split == "public") else "aicrowd/arc-whestbench-2026") %}
+{#- An empty companion_repo means "this dataset has no participant-facing counterpart",
+    which is a legitimate choice for an internal artifact. Falling back to a guessed repo
+    id turned that choice into a 404 in the rendered card, so the cross-reference is now
+    simply omitted when no companion is supplied. -#}
+{%- set companion = companion_repo %}
 {% if not splits and split == "public" %}
-**This is the Public Dataset Release for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics, free to download and use while you develop your estimator. The actual contest evaluation runs against the private `public` and `holdout` splits of [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}), released per round under the same schema.
+**This is the Public Dataset Release for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics, free to download and use while you develop your estimator. The actual contest evaluation runs against private `public` and `holdout` splits{% if companion %} of [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}){% endif %}, released per round under the same schema.
 {%- elif not splits and split == "holdout" %}
-**This is the private Holdout split for WhestBench 2026** — consumed by the evaluator at grading time. It is not intended for participant download; the public release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}) is what you'll develop against.
+**This is the private Holdout split for WhestBench 2026** — consumed by the evaluator at grading time. It is not intended for participant download{% if companion %}; the public release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}) is what you'll develop against{% endif %}.
 {%- elif not splits %}
 **This is the `{{ split }}` dataset for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics.
 {%- endif %}
@@ -38,7 +42,7 @@ WhestBench is a benchmark for *white-box activation estimation*: given the weigh
 - **`public`** ({{ '{:,}'.format(splits["public"].n_mlps) }} MLPs) — submissions are scored against this split with scores visible to participants on the **public leaderboard** in real time.
 - **`holdout`** ({{ '{:,}'.format(splits["holdout"].n_mlps) }} MLPs) — submissions are also scored against this split, but the scores power the **private/final leaderboard** and are revealed only at the conclusion of the round.
 
-This dataset is intentionally not part of the Public Release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}); develop your estimator against the public release first.
+This dataset is intentionally not part of the Public Release{% if companion %} at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}){% endif %}; develop your estimator against the public release first.
 {%- elif "mini" in splits and "full" in splits -%}
 **This is the WhestBench 2026 Public Dataset Release** — pre-baked MLPs paired with their ground-truth activation statistics. Two **independent** splits, baked with **disjoint seeds**:
 
@@ -104,7 +108,7 @@ The whestbench convenience wrapper (adds schema validation + `metadata.json` acc
 ```python
 import whestbench
 
-ds = whestbench.load_dataset("{{ repo_id }}", revision="{{ revision }}")
+ds = whestbench.load_dataset("{{ repo_id }}", revision="{{ revision }}"{% if splits %}, split="{% if metadata.default_split %}{{ metadata.default_split }}{% else %}{{ splits.keys()|list|first }}{% endif %}"{% endif %})
 for mlp in whestbench.iter_mlps(ds):
     # `mlp` is a whestbench.MLP with .weights, .seed, .name, .width, .depth
     ...
@@ -162,7 +166,7 @@ whest run \
 Each row is one MLP, paired with the Monte-Carlo–computed ground-truth statistics of its post-activation outputs. Four things travel together per row:
 
 1. The **MLP weights** (the network you'll analyse).
-2. The **per-layer ground-truth means** — what your estimator is trying to predict. Computed by direct Monte Carlo over **N = {{ '{:,}'.format(metadata.n_samples) }}** independent standard-Gaussian input draws per MLP{% if metadata.n_samples != 1000000000 %} (production WhestBench 2026 uses **N = 10⁹**, giving a per-neuron standard deviation of `σ_activation/√N ≈ 3×10⁻⁵`){% else %}, giving a per-neuron standard deviation of `σ_activation/√N ≈ 3×10⁻⁵` (activation units; ground-truth MSE ≈ 10⁻⁹){% endif %}.
+2. The **per-layer ground-truth means** — what your estimator is trying to predict. Computed by direct Monte Carlo over **N = {{ '{:,}'.format(metadata.n_samples) }}** independent standard-Gaussian input draws per MLP{% if metadata.n_samples != 1000000000 %} (production WhestBench 2026 uses **N = 10⁹**){% else %}, giving a per-neuron standard deviation of `sqrt(Var[h_j]/N)` — computable exactly for this release from the published `avg_variance` column{% endif %}.
 3. A **per-MLP variance scalar** — final-layer mean per-neuron variance, computed alongside the means over the same N draws. Shipped as diagnostic provenance; not consumed by the score.
 4. A **per-MLP seed** — passed to your estimator if it uses any randomness, so submissions reproduce under regrade.
 {% endif %}
@@ -175,11 +179,11 @@ Each row is one MLP. Eight columns:
 | `mlp_id` | `int32` | 0-based index of this MLP within the dataset (the absolute index across all parallel-bake slices). |
 | `mlp_name` | `string` | Stable, deterministic human-readable slug like `"danielle-johnson"`, derived from `mlp_seed`. Useful for log lines; carries no information beyond `mlp_seed`. |
 | `mlp_seed` | `int64` | Per-MLP seed exposed in the dataset. Under seed_protocol 3.0 (`whestbench_explicit_per_mlp_seeds`), this is the **input** seed for the MLP — `MLP.seed` (the estimator seed) is derived locally. Under seed_protocol 2.0 (`whestbench_seedsequence_hierarchy`, legacy), this is the **derived** estimator seed itself. Estimators read `mlp.seed` and see the same kind of value in both protocols (a deterministic int derived from the dataset's seed material). |
-| `weights` | `float32[depth, width, width]` | The MLP's layer weight matrices. The network has **no biases** and **no separate linear output layer** — every weight matrix is followed by a ReLU. Layer `l` computes `h_l(x) = max(0, W_l @ h_{l-1}(x))`. Weights are drawn i.i.d. from `N(0, 2/width)` (He initialization) at bake time. |
+| `weights` | `float32[depth, width, width]` | The MLP's layer weight matrices. The network has **no biases** and **no separate linear output layer** — every weight matrix is followed by a ReLU. Layer `l` computes `h_l(x) = max(0, h_{l-1}(x) @ W_l)` with `h_0(x) = x`, i.e. the activation is a **row vector multiplied on the left** of the weight matrix (equivalently `max(0, W_l^T @ h_{l-1}(x))` in column-vector form). Weights are drawn i.i.d. from `N(0, 2/width)` (He initialization) at bake time. |
 | `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over **N = {{ '{:,}'.format(metadata.n_samples) }}** independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`. Computed by direct Monte Carlo. **This is what your estimator predicts.** |
 | `final_means` | `float32[width]` | The last row of `all_layer_means` — i.e. `E[h_{depth}(x)_j]` for each output neuron `j`, again over N = {{ '{:,}'.format(metadata.n_samples) }} samples. Materialised as its own column because the **primary scoring metric** (`final_layer_mse`) only looks at this row. |
 | `avg_variance` | `float64` | Per-MLP mean of the per-neuron output variance at the final layer: `(1/width) Σ_j Var[h_{depth}(x)_j]`. A single scalar per MLP, computed alongside the means over the same Monte Carlo draws. Shipped as **diagnostic provenance** — useful for normalising your own MSE locally or as input to variance-aware estimators. **Not** consumed by the active scoring formula (the score is `mse_final · max(0.1, C_m / B_m)`). |
-| `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting for the bake that produced the ground truth for **this** row — useful as provenance. **Not** related to the estimator's FLOP budget at evaluation time. Decode with `json.loads(...)` to get a dict with keys: `flop_budget`, `flops_used`, `flops_remaining`, `wall_time_s`, `flopscope_backend_time_s`, `flopscope_overhead_time_s`, `residual_wall_time_s`, and `by_namespace` (per-namespace nested breakdown: each namespace key maps to its own `{flops_used, calls, flopscope_backend_time_s, flopscope_overhead_time_s, operations}`). |
+| `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting for the bake that produced the ground truth for **this** row — useful as provenance. **Not** related to the estimator's FLOP budget at evaluation time: the reference bake is not budget-limited, so `flop_budget` is recorded equal to `flops_used` and `flops_remaining` is `0`. Decode with `json.loads(...)` to get a dict with keys: `flop_budget`, `flops_used`, `flops_remaining`, `wall_time_s`, `flopscope_backend_time_s`, `flopscope_overhead_time_s`, `residual_wall_time_s`, `time_source`, `by_namespace` (per-namespace nested breakdown: each namespace key maps to its own `{flops_used, calls, flopscope_backend_time_s, flopscope_overhead_time_s, operations}`, where each entry of `operations` is `{flop_cost, calls, flopscope_backend_time_s, flopscope_overhead_time_s}`), and `provenance` (how the counts were derived, including the `chunk_size` and `n_chunks` the bake actually used — the two values the reproduction recipe above otherwise cannot recover). |
 
 {% if not splits %}
 ## Your task as a participant
@@ -209,13 +213,13 @@ See the [starter kit](https://github.com/AIcrowd/whest-starterkit) for a worked 
 
 ## How the ground truth was made
 
-> **Monte Carlo with N = {{ '{:,}'.format(metadata.n_samples) }} samples per MLP.** Every entry in `all_layer_means` and `final_means` is the empirical mean over this many independent standard-Gaussian input draws.{% if metadata.n_samples != 1000000000 %} The production WhestBench 2026 release uses **N = 10⁹**, where the per-neuron standard deviation of the published value is `σ_activation/√N ≈ 3×10⁻⁵` (in activation units; equivalently, ground-truth MSE on the order of `10⁻⁹`) — orders of magnitude smaller than any meaningful estimator gap.{% else %} The per-neuron standard deviation of the published value is `σ_activation/√N ≈ 3×10⁻⁵` (in activation units; equivalently, ground-truth MSE on the order of `10⁻⁹`) — orders of magnitude smaller than any meaningful estimator gap.{% endif %}
+> **Monte Carlo with N = {{ '{:,}'.format(metadata.n_samples) }} samples per MLP.** Every entry in `all_layer_means` and `final_means` is the empirical mean over this many independent standard-Gaussian input draws.{% if metadata.n_samples != 1000000000 %} The production WhestBench 2026 release uses **N = 10⁹**, where the per-neuron standard deviation of the published value is `sqrt(Var[h_j]/N)` and the ground-truth MSE is `avg_variance / N` — both computable exactly from the published `avg_variance` column, and orders of magnitude smaller than any meaningful estimator gap.{% else %} The per-neuron standard deviation of the published value is `sqrt(Var[h_j]/N)`, so the ground-truth MSE is `avg_variance / N` — both computable exactly for this release from the published `avg_variance` column, and orders of magnitude smaller than any meaningful estimator gap.{% endif %}
 
 **Input distribution.** Every Monte Carlo sample is a fresh `x ~ N(0, I)` of shape `(width,)`. The same input is forward-propagated through all `depth` layers in one pass, so the per-layer means at indices `[0..depth-1]` share the same input draws.
 
 **Estimator.** Sums of post-ReLU activations are accumulated in `float64` for numerical stability, then divided by N at the end and downcast to `float32`. The final-layer variance scalar (`avg_variance`) comes from `E[h²] - (E[h])²` over the same N draws.
 
-**Compute.** Sampling is chunked so memory stays bounded (`~4MB` per chunk on the flopscope CPU backend; tunable on the torch GPU backend via `chunk_size`). On the torch backend, under matched determinism config (`torch.use_deterministic_algorithms=True`, `cudnn.deterministic=True`, `CUBLAS_WORKSPACE_CONFIG=:4096:8`) on a fixed `torch` version and GPU architecture, the bake is **bit-exact**: `weights`, `all_layer_means`, and `final_means` reproduce byte-for-byte; `avg_variance` agrees to `1e-12` relative tolerance (1 float64 ULP from the `(sum_sq/n − mean²)` step). The two backends (flopscope CPU and torch GPU) produce statistically equivalent output: means agree within `~3×10⁻⁵` at N=10⁹.
+**Compute.** Sampling is chunked so memory stays bounded (`~4MB` per chunk on the flopscope CPU backend; tunable on the torch GPU backend via `chunk_size`). On the torch backend, under matched determinism config (`torch.use_deterministic_algorithms=True`, `cudnn.deterministic=True`, `CUBLAS_WORKSPACE_CONFIG=:4096:8`) on a fixed `torch` version and GPU architecture, the bake is **bit-exact**: `weights`, `all_layer_means`, and `final_means` reproduce byte-for-byte; `avg_variance` agrees to `1e-12` relative tolerance — a deliberately loose bound on the cancellation in the `(sum_sq/n − mean²)` step, not a tight one (one float64 ULP is `2⁻⁵² ≈ 2.2×10⁻¹⁶`). The two backends (flopscope CPU and torch GPU) produce statistically equivalent output: being two independent Monte-Carlo estimates, their means differ by `sqrt(2·avg_variance/N)`, of order `10⁻⁵` at N=10⁹.
 
 ## Dataset summary
 
@@ -266,7 +270,7 @@ This dataset was baked with:
 
 {% set proto_name = metadata.get('seed_protocol', {}).get('name', '') %}
 {% if proto_name == 'whestbench_explicit_per_mlp_seeds' %}
-This dataset was baked with **seed_protocol 3.0 (explicit per-MLP seeds)**: every MLP's input seed lives in the parquet `mlp_seed` column, so the bake is fully reproducible from the published data alone. You almost never need to do this — but if you want to regenerate the dataset byte-for-byte, expand the recipe below.
+This dataset was baked with **seed_protocol 3.0 (explicit per-MLP seeds)**: every MLP's input seed lives in the parquet `mlp_seed` column, so the same MLPs are reproducible from the published data alone. You almost never need to do this — but if you want to regenerate the dataset, expand the recipe below.
 
 <details>
 <summary><b>Re-bake this dataset locally from its seeds</b></summary>
@@ -289,6 +293,18 @@ json.dump([int(r["mlp_seed"]) for r in ds], open("{{ split }}-seeds.json", "w"))
 ```
 
 **2. Re-bake** each split with the same seeds:
+
+> The seeds fix the **weights** exactly. Reproducing the **means** bit-for-bit additionally
+> requires matching the chunking the original bake used — `--chunk-size` and
+> `--mlps-per-batch` — because float64 accumulation is not associative, so a different
+> chunk decomposition sums the same samples in a different order.
+>
+> **`--chunk-size` is published per row**: decode `sampling_budget_breakdown` and read
+> `provenance.chunk_size` (with `provenance.n_chunks` as a cross-check). Pass that value
+> back and the accumulation order matches. `--mlps-per-batch` is *not* recorded anywhere;
+> both flags auto-resolve from free VRAM when omitted. So with `--chunk-size` supplied the
+> recipe below reproduces the same MLPs and the same accumulation order, and without it,
+> the same MLPs and statistically equivalent means rather than identical bytes.
 
 ```bash
 {% if splits -%}
@@ -347,7 +363,7 @@ whest dataset bake \
 (Note: new bakes use seed_protocol 3.0 and `--mlp-seeds FILE` instead of `--seed N`.)
 {% endif %}
 
-The pins required for the bit-exactness guarantee (see *Compute* above) are recorded in `metadata.bake_config` alongside the `whestbench` and `faker` versions.
+The pins required for the bit-exactness guarantee (see *Compute* above) are recorded per hardware configuration in `metadata.hardware_fingerprints[*].bake_config`, alongside the `whestbench`, `flopscope`, `torch` and `numpy` versions that configuration used.
 
 ## Provenance
 
