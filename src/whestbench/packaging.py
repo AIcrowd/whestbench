@@ -176,6 +176,23 @@ def package_submission(
     _validate_predict_signature(estimator)
 
     if mode == "file":
+        # A sibling module the entry file IMPORTS cannot survive the trip: file mode
+        # ships one file, so the import resolves locally and raises ImportError in the
+        # grader. Refuse here rather than hand back an archive that validates cleanly
+        # and burns a submission slot (whestbench#119). Only provably-missing imports
+        # gate — a dropped assets/ dir stays a warning, since nothing static says
+        # whether setup() reads it.
+        _, missing_imports = _file_mode_orphans(root, entry)
+        if missing_imports:
+            names = ", ".join(missing_imports)
+            verb = "lives" if len(missing_imports) == 1 else "live"
+            raise ValueError(
+                f"{entry.name} imports {names}, which {verb} beside it and will NOT be "
+                f"bundled: a single-file submission ships only {entry.name}, so this "
+                f"archive would fail at grade time with ImportError. Package the folder "
+                f"instead (--estimator {root.name}), or inline what you need into "
+                f"{entry.name}."
+            )
         # Single-file submissions are always shipped AS estimator.py: the manifest
         # entrypoint module is hardcoded "estimator", so a file named 01_random.py /
         # my_solution.py would otherwise package locally but be rejected by the grader
@@ -495,6 +512,38 @@ def _reachable_files(root: Path, entry: Path, index: "dict[str, list[Path]]") ->
     return reachable
 
 
+def _file_mode_orphans(root: Path, entry: Path) -> "tuple[list[str], list[str]]":
+    """What a single-file submission leaves behind, and which of it is provably fatal.
+
+    Returns ``(orphaned_siblings, missing_imports)``.
+
+    ``orphaned_siblings`` are the direct children of ``root`` that a folder
+    submission would have shipped and this one will not. Ignored paths (``.venv/``,
+    ``__pycache__/``, ``.gitignore``/``.whestignore`` matches) and credential files
+    are left out: they were never going to ship either way, so naming them would
+    turn the warning back into noise (whestbench#96).
+
+    ``missing_imports`` are top-level names ``entry`` imports that resolve to a
+    *sibling* module or package rather than to the grading environment. Those are a
+    guaranteed ``ImportError`` at grade time, not a guess — which is what makes them
+    safe to hard-error on, while a dropped ``assets/`` (read at runtime through a
+    path string, if at all) is only ever a warning."""
+    patterns = _load_ignore_patterns(root)
+    orphans: "list[str]" = []
+    for child in sorted(root.iterdir()):
+        if child == entry or child.is_symlink():
+            continue
+        rel = child.relative_to(root)
+        if _is_ignored(rel, patterns) or _is_secret(rel):
+            continue
+        orphans.append(f"{child.name}/" if child.is_dir() else child.name)
+
+    local_py = [p for p in collect_submission_files(root) if p.suffix == ".py" and p != entry]
+    index = _module_index(root, local_py)
+    missing = sorted(_local_imports(entry) & index.keys())
+    return orphans, missing
+
+
 @dataclass
 class SubmissionSummary:
     mode: str
@@ -502,6 +551,8 @@ class SubmissionSummary:
     file_count: int
     total_bytes: int
     unreachable_py: "list[str]"
+    orphaned_siblings: "list[str]"
+    missing_imports: "list[str]"
 
 
 def summarize_submission(estimator_path: "str | Path") -> SubmissionSummary:
@@ -509,9 +560,15 @@ def summarize_submission(estimator_path: "str | Path") -> SubmissionSummary:
     only) local .py files not reachable by import from estimator.py (likely-unused;
     data files are never flagged, they're loaded by runtime path strings).
 
+    File mode reports the mirror image instead: ``orphaned_siblings`` (what a folder
+    submission would have shipped and this one drops) and ``missing_imports`` (the
+    subset of that which estimator.py actually imports, so cannot survive grading).
+
     A directory argument summarizes the whole folder; a file argument summarizes
     just that single file."""
     root, entry, mode = resolve_submission(estimator_path)
+    orphaned_siblings: "list[str]" = []
+    missing_imports: "list[str]" = []
     if mode == "folder":
         files = collect_submission_files(root)
         py = [p for p in files if p.suffix == ".py"]
@@ -521,6 +578,7 @@ def summarize_submission(estimator_path: "str | Path") -> SubmissionSummary:
     else:
         files = [entry]
         unreachable = []
+        orphaned_siblings, missing_imports = _file_mode_orphans(root, entry)
     total = sum(p.stat().st_size for p in files)
     return SubmissionSummary(
         mode=mode,
@@ -528,4 +586,6 @@ def summarize_submission(estimator_path: "str | Path") -> SubmissionSummary:
         file_count=len(files),
         total_bytes=total,
         unreachable_py=unreachable,
+        orphaned_siblings=orphaned_siblings,
+        missing_imports=missing_imports,
     )

@@ -96,8 +96,9 @@ whest package --estimator ./my-submission
 > **Folder vs. file — this matters for multi-file submissions.** A *directory*
 > argument (`./my-submission`) is a folder submission: every file under it ships. A
 > *file* argument (`./my-submission/estimator.py`) is a single-file submission — it
-> ships **only** that one file, so helper modules and subpackages are silently
-> dropped (the archive validates locally but fails at grading with a missing import).
+> ships **only** that one file. Data files and unused helpers beside it are dropped,
+> and `whest package` names them; if `estimator.py` imports one of those helpers,
+> packaging fails rather than shipping an archive that cannot import at grading.
 > Pass the folder whenever your submission is more than one file.
 
 `whest package` bundles every file in the folder except the built-in ignore set
