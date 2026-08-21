@@ -22,11 +22,15 @@
 </p>
 
 WhestBench is a benchmark for *white-box activation estimation*: given the weights of a randomly initialized ReLU multi-layer perceptron (MLP) and a strict floating-point-operation (FLOP) budget, predict the average post-activation value of every neuron when the network is fed standard Gaussian inputs.
-{%- set companion = companion_repo or ("aicrowd/arc-whestbench-2026-evals" if (not splits and split == "public") else "aicrowd/arc-whestbench-2026") %}
+{#- An empty companion_repo means "this dataset has no participant-facing counterpart",
+    which is a legitimate choice for an internal artifact. Falling back to a guessed repo
+    id turned that choice into a 404 in the rendered card, so the cross-reference is now
+    simply omitted when no companion is supplied. -#}
+{%- set companion = companion_repo %}
 {% if not splits and split == "public" %}
-**This is the Public Dataset Release for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics, free to download and use while you develop your estimator. The actual contest evaluation runs against the private `public` and `holdout` splits of [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}), released per round under the same schema.
+**This is the Public Dataset Release for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics, free to download and use while you develop your estimator. The actual contest evaluation runs against private `public` and `holdout` splits{% if companion %} of [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}){% endif %}, released per round under the same schema.
 {%- elif not splits and split == "holdout" %}
-**This is the private Holdout split for WhestBench 2026** — consumed by the evaluator at grading time. It is not intended for participant download; the public release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}) is what you'll develop against.
+**This is the private Holdout split for WhestBench 2026** — consumed by the evaluator at grading time. It is not intended for participant download{% if companion %}; the public release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}) is what you'll develop against{% endif %}.
 {%- elif not splits %}
 **This is the `{{ split }}` dataset for WhestBench 2026** — pre-baked MLPs paired with their ground-truth activation statistics.
 {%- endif %}
@@ -38,7 +42,7 @@ WhestBench is a benchmark for *white-box activation estimation*: given the weigh
 - **`public`** ({{ '{:,}'.format(splits["public"].n_mlps) }} MLPs) — submissions are scored against this split with scores visible to participants on the **public leaderboard** in real time.
 - **`holdout`** ({{ '{:,}'.format(splits["holdout"].n_mlps) }} MLPs) — submissions are also scored against this split, but the scores power the **private/final leaderboard** and are revealed only at the conclusion of the round.
 
-This dataset is intentionally not part of the Public Release at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}); develop your estimator against the public release first.
+This dataset is intentionally not part of the Public Release{% if companion %} at [`{{ companion }}`](https://huggingface.co/datasets/{{ companion }}){% endif %}; develop your estimator against the public release first.
 {%- elif "mini" in splits and "full" in splits -%}
 **This is the WhestBench 2026 Public Dataset Release** — pre-baked MLPs paired with their ground-truth activation statistics. Two **independent** splits, baked with **disjoint seeds**:
 
