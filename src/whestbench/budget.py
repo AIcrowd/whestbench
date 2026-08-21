@@ -42,6 +42,13 @@ Restoring only the rate re-scores an old run under a mix of both rulebooks.
 
 from __future__ import annotations
 
+# Per-MLP effective-compute budget B_m. The default is the current round's.
+# The historical values are kept named rather than inlined so a re-score of an
+# older round cites a constant instead of a magic number.
+DEFAULT_FLOP_BUDGET: int = 2**41  # 2,199,023,255,552 - Phase 2
+PHASE1_FLOP_BUDGET: int = 272_000_000_000  # 2.72e11
+WARMUP_FLOP_BUDGET: int = 68_000_000_000  # 6.8e10 - the v1-warmup round
+
 # Phase 1 rate: residual wall time priced at 1e11 FLOP-equivalents per second.
 # Pass this explicitly to re-score a Phase 1 round.
 PHASE1_LAMBDA_FLOPS_PER_SECOND: float = 1e11

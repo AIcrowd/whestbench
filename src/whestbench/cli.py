@@ -51,7 +51,7 @@ from .aicrowd_client import (  # module-level for monkeypatch + reuse in `submit
     AIcrowdTransientError,
     describe_error,
 )
-from .budget import DEFAULT_LAMBDA_FLOPS_PER_SECOND
+from .budget import DEFAULT_FLOP_BUDGET, DEFAULT_LAMBDA_FLOPS_PER_SECOND
 from .dataset import metadata as _wb_metadata
 from .dataset_io import _validate_config_name, _validate_split_name
 from .dataset_io import metadata_file_hash as _metadata_file_hash
@@ -127,7 +127,7 @@ def _default_contest_spec() -> ContestSpec:
         width=256,
         depth=32,
         n_mlps=10,
-        flop_budget=272_000_000_000,
+        flop_budget=DEFAULT_FLOP_BUDGET,
         ground_truth_samples=100 * 100 * 256,
     )
 
@@ -420,7 +420,7 @@ def _default_resource_limits() -> ResourceLimits:
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
         memory_limit_mb=65_536,
-        flop_budget=272_000_000_000,
+        flop_budget=DEFAULT_FLOP_BUDGET,
         cpu_time_limit_s=None,
         wall_time_limit_s=120.0,
         residual_wall_time_limit_s=0.4,
@@ -469,12 +469,14 @@ def run_default_score(profile: bool = False) -> "Any":
 def _smoke_test_contest_spec() -> ContestSpec:
     """Lightweight spec for the smoke test.
 
-    Matches the competition shape (width=256, depth=32, flop_budget=2.72e11
-    per ContestSpec defaults) so participants exercising the smoke path
-    hit the same code paths as the real grader. Only n_mlps and
-    ground_truth_samples are scaled down so the smoke runs in well under
-    a second — accuracy of the resulting score is not meaningful, this is
-    a plumbing check.
+    Carries the default per-MLP budget (DEFAULT_FLOP_BUDGET) so the smoke path
+    exercises the same code as a real run. Only n_mlps and ground_truth_samples
+    are scaled down, so it finishes in well under a second — the resulting score
+    is not meaningful, this is a plumbing check.
+
+    NOTE: width/depth here are still 256x32, the earlier round's shape, while the
+    budget is the current one. The smoke test only checks plumbing, so the mix is
+    harmless, but do not read this spec as "the competition shape".
 
     Local timing on a typical dev box: well under a second
     (CombinedEstimator ~3% budget utilization — invariant under the 4×/4×
@@ -484,7 +486,7 @@ def _smoke_test_contest_spec() -> ContestSpec:
         width=256,
         depth=32,
         n_mlps=3,
-        flop_budget=272_000_000_000,
+        flop_budget=DEFAULT_FLOP_BUDGET,
         ground_truth_samples=10_000,
     )
 
@@ -1218,10 +1220,11 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         metavar="N",
         help=(
             "Effective compute budget per MLP in FLOPs. Caps "
-            "C_m = F_m + lambda*R_m (analytical FLOPs plus charged residual "
-            "wall time). Always honored; any flop_budget stored in "
+            "C_m = F_m + lambda*R_m, which under the default lambda of 0 is a "
+            "pure FLOP cap. Always honored; any flop_budget stored in "
             "--dataset's metadata is ignored. "
-            "Default: 272_000_000_000 (2.72e11)."
+            "Default: 2_199_023_255_552 (2**41). Earlier rounds: 272_000_000_000 "
+            "(2.72e11) and 68_000_000_000 (6.8e10) for v1-warmup."
         ),
     )
     run_parser.add_argument(

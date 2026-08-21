@@ -1015,7 +1015,7 @@ def test_default_contest_spec_matches_proposal():
     spec = _default_contest_spec()
     assert spec.width == 256
     assert spec.depth == 32
-    assert spec.flop_budget == 272_000_000_000
+    assert spec.flop_budget == 2**41  # 2,199,023,255,552 - the Phase 2 budget
     assert spec.n_mlps == 10
 
 
@@ -1024,7 +1024,7 @@ def test_default_resource_limits_matches_proposal():
     from whestbench.cli import _default_resource_limits
 
     limits = _default_resource_limits()
-    assert limits.flop_budget == 272_000_000_000
+    assert limits.flop_budget == 2**41  # 2,199,023,255,552 - the Phase 2 budget
 
 
 def test_run_parser_accepts_lambda_flops_per_second():
