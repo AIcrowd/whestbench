@@ -179,7 +179,7 @@ Each row is one MLP. Eight columns:
 | `all_layer_means` | `float32[depth, width]` | **Ground truth.** Entry `[l, j]` is the empirical mean of neuron `j`'s post-ReLU output at layer `l`, averaged over **N = {{ '{:,}'.format(metadata.n_samples) }}** independent Gaussian inputs: `E_{x ~ N(0, I)}[ h_l(x)_j ] ≈ (1/N) Σ_i h_l(x_i)_j`. Computed by direct Monte Carlo. **This is what your estimator predicts.** |
 | `final_means` | `float32[width]` | The last row of `all_layer_means` — i.e. `E[h_{depth}(x)_j]` for each output neuron `j`, again over N = {{ '{:,}'.format(metadata.n_samples) }} samples. Materialised as its own column because the **primary scoring metric** (`final_layer_mse`) only looks at this row. |
 | `avg_variance` | `float64` | Per-MLP mean of the per-neuron output variance at the final layer: `(1/width) Σ_j Var[h_{depth}(x)_j]`. A single scalar per MLP, computed alongside the means over the same Monte Carlo draws. Shipped as **diagnostic provenance** — useful for normalising your own MSE locally or as input to variance-aware estimators. **Not** consumed by the active scoring formula (the score is `mse_final · max(0.1, C_m / B_m)`). |
-| `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting for the bake that produced the ground truth for **this** row — useful as provenance. **Not** related to the estimator's FLOP budget at evaluation time. Decode with `json.loads(...)` to get a dict with keys: `flop_budget`, `flops_used`, `flops_remaining`, `wall_time_s`, `flopscope_backend_time_s`, `flopscope_overhead_time_s`, `residual_wall_time_s`, and `by_namespace` (per-namespace nested breakdown: each namespace key maps to its own `{flops_used, calls, flopscope_backend_time_s, flopscope_overhead_time_s, operations}`). |
+| `sampling_budget_breakdown` | `string` (JSON) | FLOP accounting for the bake that produced the ground truth for **this** row — useful as provenance. **Not** related to the estimator's FLOP budget at evaluation time: the reference bake is not budget-limited, so `flop_budget` is recorded equal to `flops_used` and `flops_remaining` is `0`. Decode with `json.loads(...)` to get a dict with keys: `flop_budget`, `flops_used`, `flops_remaining`, `wall_time_s`, `flopscope_backend_time_s`, `flopscope_overhead_time_s`, `residual_wall_time_s`, `time_source`, `by_namespace` (per-namespace nested breakdown: each namespace key maps to its own `{flops_used, calls, flopscope_backend_time_s, flopscope_overhead_time_s, operations}`, where each entry of `operations` is `{flop_cost, calls, flopscope_backend_time_s, flopscope_overhead_time_s}`), and `provenance` (how the counts were derived, including the `chunk_size` and `n_chunks` the bake actually used — the two values the reproduction recipe above otherwise cannot recover). |
 
 {% if not splits %}
 ## Your task as a participant
@@ -293,10 +293,14 @@ json.dump([int(r["mlp_seed"]) for r in ds], open("{{ split }}-seeds.json", "w"))
 > The seeds fix the **weights** exactly. Reproducing the **means** bit-for-bit additionally
 > requires matching the chunking the original bake used — `--chunk-size` and
 > `--mlps-per-batch` — because float64 accumulation is not associative, so a different
-> chunk decomposition sums the same samples in a different order. Both flags auto-resolve
-> from free VRAM when omitted, and neither is currently recorded in `metadata.json`, so the
-> recipe below reproduces the same MLPs and statistically equivalent means rather than
-> identical bytes. Pass both explicitly if you know the values the bake used.
+> chunk decomposition sums the same samples in a different order.
+>
+> **`--chunk-size` is published per row**: decode `sampling_budget_breakdown` and read
+> `provenance.chunk_size` (with `provenance.n_chunks` as a cross-check). Pass that value
+> back and the accumulation order matches. `--mlps-per-batch` is *not* recorded anywhere;
+> both flags auto-resolve from free VRAM when omitted. So with `--chunk-size` supplied the
+> recipe below reproduces the same MLPs and the same accumulation order, and without it,
+> the same MLPs and statistically equivalent means rather than identical bytes.
 
 ```bash
 {% if splits -%}
