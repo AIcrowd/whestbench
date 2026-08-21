@@ -89,3 +89,63 @@ def test_collect_skips_symlinks(tmp_path: Path) -> None:
     names = {p.name for p in collect_submission_files(tmp_path)}
 
     assert names == {"estimator.py"}
+
+
+def test_find_secret_files_skips_builtin_ignored_dirs(tmp_path: Path) -> None:
+    # A virtualenv is in the built-in ignore set, so nothing under it can ever
+    # ship. Reporting certifi's CA bundle (`cacert.pem` — not a secret at all) as
+    # an excluded credential is misleading noise that trains participants to skim
+    # past the security warnings that DO matter. See whestbench#96.
+    _estimator(tmp_path)
+    certifi = tmp_path / ".venv" / "lib" / "python3.10" / "site-packages" / "certifi"
+    certifi.mkdir(parents=True)
+    (certifi / "cacert.pem").write_text("-----BEGIN CERTIFICATE-----\n", encoding="utf-8")
+
+    assert find_secret_files(tmp_path) == []
+    assert {p.name for p in collect_submission_files(tmp_path)} == {"estimator.py"}
+
+
+def test_find_secret_files_skips_pycache(tmp_path: Path) -> None:
+    _estimator(tmp_path)
+    cache = tmp_path / "__pycache__"
+    cache.mkdir()
+    (cache / "id_rsa").write_text("k\n", encoding="utf-8")
+
+    assert find_secret_files(tmp_path) == []
+    assert {p.name for p in collect_submission_files(tmp_path)} == {"estimator.py"}
+
+
+def test_find_secret_files_still_reports_in_scope_secrets(tmp_path: Path) -> None:
+    # Regression guard for the two tests above: filtering out ignored directories
+    # must NOT stop us reporting a secret that really was in scope and really was
+    # dropped — that warning is the whole point of the preview.
+    _estimator(tmp_path)
+    (tmp_path / ".env").write_text("AICROWD_API_KEY=secret\n", encoding="utf-8")
+    nested = tmp_path / "config"
+    nested.mkdir()
+    (nested / "deploy.pem").write_text("-----BEGIN PRIVATE KEY-----\n", encoding="utf-8")
+    venv = tmp_path / ".venv"
+    venv.mkdir()
+    (venv / "cacert.pem").write_text("cert\n", encoding="utf-8")
+
+    rels = {str(p.relative_to(tmp_path)) for p in find_secret_files(tmp_path)}
+
+    assert rels == {".env", "config/deploy.pem"}
+    assert {p.name for p in collect_submission_files(tmp_path)} == {"estimator.py"}
+
+
+def test_find_secret_files_honours_user_ignore_patterns(tmp_path: Path) -> None:
+    # Anything the participant already excluded via .gitignore / .whestignore is
+    # out of scope too, so it must not be reported as "excluded for security".
+    _estimator(tmp_path)
+    (tmp_path / ".gitignore").write_text("vendor/\n", encoding="utf-8")
+    (tmp_path / ".whestignore").write_text("scratch/\n", encoding="utf-8")
+    for name in ("vendor", "scratch"):
+        directory = tmp_path / name
+        directory.mkdir()
+        (directory / "bundle.pem").write_text("cert\n", encoding="utf-8")
+    (tmp_path / "server.key").write_text("k\n", encoding="utf-8")
+
+    rels = {str(p.relative_to(tmp_path)) for p in find_secret_files(tmp_path)}
+
+    assert rels == {"server.key"}
