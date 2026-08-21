@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 import numpy as np
@@ -153,6 +154,75 @@ def test_slices_sharing_a_salt_agree_with_the_whole_dataset_bake(tmp_path):
     whole_names = list(load_dataset(str(whole), split="public")["mlp_name"])
     part_ds = Dataset.from_parquet(str(next((part / "data").glob("*.parquet"))))
     assert list(part_ds["mlp_name"]) == whole_names[1:3]  # pyright: ignore[reportIndexIssue]
+
+
+# --- the salt must never reach the dataset card ------------------------------
+
+
+@pytest.mark.parametrize("withhold", [False, True])
+def test_dataset_card_never_contains_the_raw_salt(tmp_path, withhold):
+    """The card is the most public artifact a dataset has.
+
+    Protocol 4.0's whole guarantee is that the salt stays secret, so a template
+    edit that interpolates ``seed_protocol.salt`` -- easy to do by accident when
+    adding a re-bake recipe -- would silently void it for every dataset baked
+    afterwards. Checked in BOTH salt modes: the metadata-salt case is the one
+    that can leak, and the withheld case must not regress into embedding it.
+    """
+    extra = {"salt_id": "eval-2026", "withhold_salt": True} if withhold else {}
+    path = _bake(
+        tmp_path,
+        f"card-{withhold}",
+        seed_protocol_version=SEED_PROTOCOL_VERSION_V4,
+        **extra,
+    )
+    salt_hex = json.loads((path / METADATA_FILE).read_text())["seed_protocol"].get("salt")
+    card = (path / "README.md").read_text()
+
+    if salt_hex is not None:
+        assert salt_hex not in card, "the dataset card leaks the raw salt"
+        assert bytes.fromhex(salt_hex).hex() not in card.lower()
+    # Nothing salt-shaped at all: no bare 64-hex-char run anywhere in the card.
+    assert not re.search(r"\b[0-9a-fA-F]{64}\b", card), (
+        "the dataset card contains a 64-hex-character token; if that is the salt "
+        "(or its preimage) protocol 4.0's guarantee is void"
+    )
+
+
+def test_dataset_card_renders_the_protocol_4_section(tmp_path):
+    # Both existing branches match on protocol name, so a missing 4.0 branch
+    # drops the Reproducibility section silently rather than failing.
+    path = _bake(tmp_path, "card-render", seed_protocol_version=SEED_PROTOCOL_VERSION_V4)
+    card = (path / "README.md").read_text()
+    assert "seed_protocol 4.0 (keyed per-MLP seeds)" in card
+    assert "seed_protocol 4.0" in card
+
+
+def test_withheld_salt_card_tells_the_reader_which_salt_to_export(tmp_path):
+    path = _bake(
+        tmp_path,
+        "card-env",
+        seed_protocol_version=SEED_PROTOCOL_VERSION_V4,
+        salt_id="eval-2026",
+        withhold_salt=True,
+    )
+    card = (path / "README.md").read_text()
+    assert SEED_SALT_ENV_VAR in card
+    assert "eval-2026" in card
+
+
+def test_protocol_4_card_describes_the_readers_own_protocol(tmp_path):
+    # The mlp_seed / mlp_name schema rows must not silently describe 2.0/3.0
+    # semantics to a 4.0 reader.
+    v4 = _bake(tmp_path, "schema-v4", seed_protocol_version=SEED_PROTOCOL_VERSION_V4)
+    v3 = _bake(tmp_path, "schema-v3")
+    card4 = (v4 / "README.md").read_text()
+    card3 = (v3 / "README.md").read_text()
+
+    assert "This dataset uses seed_protocol 4.0" in card4
+    assert "This dataset uses seed_protocol 4.0" not in card3
+    assert "carries no information beyond `mlp_seed`" in card3
+    assert "carries no information beyond `mlp_seed`" not in card4
 
 
 # --- metadata validation -----------------------------------------------------
