@@ -999,8 +999,36 @@ def _run_validate_checks(
     checks: list[dict[str, str]] = []
     try:
         checks.append({"name": "class resolved", "status": "ok", "detail": metadata.class_name})
+        # Time setup against the graded cap. The estimator contract promises that
+        # `whest validate` enforces the same 5 s ceiling as `whest run`, so that a
+        # local SETUP_TIMEOUT means what a graded one does; without this, validate
+        # would pass a submission the grader fails outright — and a setup overrun
+        # fails the WHOLE submission, not one MLP. Measured after the fact rather
+        # than interrupted, which is how LocalRunner enforces it too.
+        _setup_cap_s = _default_resource_limits().setup_timeout_s
+        _t0 = time.perf_counter()
         estimator.setup(context)
-        checks.append({"name": "setup(context) completed", "status": "ok", "detail": "ok"})
+        _setup_elapsed = time.perf_counter() - _t0
+        if _setup_elapsed > _setup_cap_s:
+            checks.append(
+                {
+                    "name": "setup(context) within the graded cap",
+                    "status": "fail",
+                    "detail": (
+                        f"setup took {_setup_elapsed:.2f}s, over the {_setup_cap_s:.0f}s cap; "
+                        f"the grader fails the entire submission with SETUP_TIMEOUT. "
+                        f"Load precomputed work here rather than computing it."
+                    ),
+                }
+            )
+        else:
+            checks.append(
+                {
+                    "name": "setup(context) completed",
+                    "status": "ok",
+                    "detail": f"{_setup_elapsed:.2f}s (cap {_setup_cap_s:.0f}s)",
+                }
+            )
         predictions = estimator.predict(mlp, 100)
         arr = validate_predictions(predictions, depth=mlp.depth, width=mlp.width)
         checks.append(
@@ -3251,7 +3279,7 @@ def _main_participant(argv: "list[str]") -> int:
                 _dataset_tip = (
                     "\n[bold bright_yellow]Tip:[/] Ground truth is recomputed on every run. "
                     "Consider baking and reusing a dataset:\n"
-                    "   [cyan]whest dataset bake[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]10000[/] [green]--width[/] [yellow]256[/] [green]--depth[/] [yellow]8[/] [green]--output[/] [yellow]./my-eval[/]\n"
+                    "   [cyan]whest dataset bake[/] [green]--n-mlps[/] [yellow]10[/] [green]--n-samples[/] [yellow]200000[/] [green]--width[/] [yellow]1024[/] [green]--depth[/] [yellow]16[/] [green]--output[/] [yellow]./my-eval[/]\n"
                     "   [cyan]whest run[/] [green]--estimator[/] [yellow]...[/] [green]--dataset[/] [yellow]./my-eval[/]\n"
                 )
                 gen_label = (

@@ -1,4 +1,5 @@
 import threading
+from pathlib import Path
 
 import flopscope as flops
 import flopscope.numpy as fnp
@@ -81,6 +82,12 @@ def test_subprocess_runner_predict_uses_derived_response_timeout(small_mlp, monk
     monkeypatch.setattr(runner, "_started", True)
     monkeypatch.setattr(runner, "_process", object())
     monkeypatch.setattr(runner, "_limits", _limits(predict_timeout_s=0.1, wall_time_limit_s=2.0))
+    # predict() also needs these to tell "started" from "died and needs a restart";
+    # a runner faking the started state has to fake them too.
+    monkeypatch.setattr(
+        runner, "_context", SetupContext(width=8, depth=2, flop_budget=1, api_version="1.0")
+    )
+    monkeypatch.setattr(runner, "_entrypoint", EstimatorEntrypoint(file_path=Path("est.py")))
     monkeypatch.setattr(runner, "_send_request", lambda _payload: None)
     monkeypatch.setattr(runner, "_read_response", read_response)
 
@@ -255,3 +262,60 @@ def test_subprocess_runner_preserves_partial_budget_breakdown_on_exhaustion(
     assert "phase" in stats.budget_breakdown["by_namespace"]
     assert stats.budget_breakdown["by_namespace"]["phase"]["flops_used"] > 0
     runner.close()
+
+
+def test_worker_death_does_not_cascade_to_later_mlps(small_mlp, tmp_path) -> None:
+    """A worker that hard-dies must fail ONLY the MLP that killed it.
+
+    Before the restart path existed, SubprocessRunner.predict killed the process and
+    left _started clear with no way back, so every later MLP hit the corpse with
+    WORKER_BROKEN_PIPE. One OOM on MLP #1 of a 100-MLP suite was therefore scored as
+    100 zero-prediction failures instead of 1 — and each cascaded MLP took the forced
+    1.0 multiplier rather than the compute discount, despite never running. The
+    contest rules scope the zero-prediction fallback to the MLP that actually failed.
+
+    The estimator here dies exactly once, tracked through a file rather than instance
+    state: a restarted worker is a fresh process with a fresh Estimator, so an
+    in-memory counter would reset and every MLP would die again, hiding the fix.
+    """
+    marker = tmp_path / "died_once"
+    est = tmp_path / "est_die_once.py"
+    est.write_text(
+        "import os\n"
+        "import flopscope.numpy as fnp\n"
+        "from whestbench.sdk import BaseEstimator\n"
+        f"MARKER = {str(marker)!r}\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        if not os.path.exists(MARKER):\n"
+        "            open(MARKER, 'w').close()\n"
+        "            os._exit(1)\n"
+        "        return fnp.zeros((mlp.depth, mlp.width), dtype=fnp.float32)\n"
+    )
+    runner = SubprocessRunner()
+    ctx = SetupContext(width=8, depth=2, flop_budget=100_000_000, api_version="1.0")
+    runner.start(
+        EstimatorEntrypoint(file_path=est),
+        ctx,
+        _limits(predict_timeout_s=30.0, wall_time_limit_s=30.0),
+    )
+    try:
+        with pytest.raises(runner_module.RunnerError) as first:
+            runner.predict(small_mlp, budget=100_000_000)
+        assert first.value.detail.code in {"WORKER_EOF", "WORKER_BROKEN_PIPE"}
+
+        # the whole point: the suite continues on a replacement worker
+        for _ in range(2):
+            out = runner.predict(small_mlp, budget=100_000_000)
+            assert tuple(out.shape) == (small_mlp.depth, small_mlp.width)
+    finally:
+        runner.close()
+
+
+def test_runner_not_started_still_raises_before_any_start() -> None:
+    """The restart path must not turn a never-started runner into a silent restart."""
+    runner = SubprocessRunner()
+    mlp = sample_mlp(width=4, depth=2, rng=fnp.random.default_rng(0))
+    with pytest.raises(runner_module.RunnerError) as exc:
+        runner.predict(mlp, budget=1000)
+    assert exc.value.detail.code == "RUNNER_NOT_STARTED"

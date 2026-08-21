@@ -36,6 +36,13 @@ except ImportError:  # pragma: no cover
 _LOGGER = logging.getLogger(__name__)
 _PREDICT_RESPONSE_GRACE_S = 5.0
 
+# Failures that mean the worker PROCESS is gone, not that predict() returned badly.
+# The distinction matters: these leave no live pipe, so every later MLP would fail on
+# the corpse unless a fresh worker is brought up.
+_WORKER_DEATH_CODES = frozenset(
+    {"WORKER_EOF", "WORKER_BROKEN_PIPE", "WORKER_IO_ERROR", "PREDICT_TIMEOUT"}
+)
+
 RunnerStage = Literal["load", "setup", "predict", "validate", "package", "submit"]
 
 
@@ -252,6 +259,7 @@ class SubprocessRunner:
         self._process: Optional[subprocess.Popen] = None
         self._limits: Optional[ResourceLimits] = None
         self._context: Optional[SetupContext] = None
+        self._entrypoint: Optional[EstimatorEntrypoint] = None
         self._started = False
         self._last_predict_stats: Optional[PredictStats] = None
         self._stderr_lines: deque[str] = deque(maxlen=200)
@@ -266,6 +274,9 @@ class SubprocessRunner:
         self.close()
         self._limits = limits
         self._context = context
+        # Kept so a worker that dies mid-suite can be replaced without the caller
+        # having to re-drive start() — see _restart_after_worker_death.
+        self._entrypoint = entrypoint
         self._process = subprocess.Popen(
             self._worker_command,
             stdin=subprocess.PIPE,
@@ -334,7 +345,61 @@ class SubprocessRunner:
         return self._last_predict_stats
 
     def predict(self, mlp: MLP, budget: int) -> fnp.ndarray:
-        if not self._started or self._process is None or self._limits is None:
+        if self._entrypoint is None or self._context is None or self._limits is None:
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(code="RUNNER_NOT_STARTED", message="Runner must be started."),
+            )
+        if not self._started:
+            # A previous MLP killed the worker (OOM kill, segfault, non-zero exit).
+            # Without a fresh process every remaining MLP in the suite would fail on
+            # the corpse with WORKER_BROKEN_PIPE, so one death would be scored as a
+            # whole-suite failure — each of those MLPs taking the forced 1.0
+            # multiplier rather than the compute discount, despite never running.
+            # The contest rules scope the zero-prediction fallback to the MLP that
+            # actually failed, so bring up a replacement and carry on.
+            #
+            # This re-runs the estimator's setup(), which spends the setup budget
+            # again. That is the accepted cost: a submission whose setup is sound
+            # pays only latency, while one whose setup is broken fails anyway.
+            self._restart_after_worker_death()
+
+        try:
+            return self._predict_once(mlp, budget)
+        except RunnerError as exc:
+            if exc.detail.code in _WORKER_DEATH_CODES:
+                # Mark the process dead so the NEXT predict restarts. Not restarting
+                # here keeps this MLP's error faithful and avoids paying for a worker
+                # the caller may never use.
+                self._mark_worker_dead()
+            raise
+
+    def _restart_after_worker_death(self) -> None:
+        assert self._entrypoint is not None
+        assert self._context is not None
+        assert self._limits is not None
+        try:
+            self.start(self._entrypoint, self._context, self._limits)
+        except RunnerError:
+            raise
+        except Exception as exc:  # pragma: no cover - defensive
+            raise RunnerError(
+                "predict",
+                RunnerErrorDetail(
+                    code="WORKER_RESTART_FAILED",
+                    message=f"could not restart worker after it died: {exc}",
+                ),
+            ) from exc
+
+    def _mark_worker_dead(self) -> None:
+        try:
+            self._terminate_process()
+        except Exception:  # pragma: no cover - the process is already gone
+            pass
+        self._started = False
+
+    def _predict_once(self, mlp: MLP, budget: int) -> fnp.ndarray:
+        if self._process is None or self._limits is None:
             raise RunnerError(
                 "predict",
                 RunnerErrorDetail(code="RUNNER_NOT_STARTED", message="Runner must be started."),
