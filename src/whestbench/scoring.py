@@ -222,8 +222,22 @@ def make_contest_from_dataset(
     n_mlps: int,
     *,
     seed_protocol_version: "str | None" = None,
+    seed_salt: "bytes | str | None" = None,
 ) -> ContestData:
     """Build ContestData from a precomputed Dataset OR IterableDataset.
+
+    ``seed_protocol_version`` and ``seed_salt`` mirror :meth:`MLP.from_row`, and
+    exist for datasets that are not registered in ``_METADATA_BY_DS`` -- one that
+    was concatenated, sliced, or built by hand rather than loaded through
+    ``whestbench.load_dataset``. Registered datasets resolve both from their own
+    metadata and need neither argument.
+
+    ``seed_salt`` (bytes or hex string) is required for seed-protocol 4.0 on such
+    a dataset: there is no metadata to read it from, and the derivation refuses
+    to guess. Note that this path cannot verify the salt against ``salt_digest``
+    the way the registered path does, so the caller owns salt correctness --
+    passing the wrong one yields different seeds rather than an error. Ignored
+    for protocols 2.0 and 3.0, which do not consult it.
 
     For a materialised ``Dataset`` (random access): takes the first ``n_mlps``
     rows via ``ds.select(range(n_mlps))`` and ``ds[i]``.
@@ -264,12 +278,17 @@ def make_contest_from_dataset(
             "explicitly (e.g. from the dataset's metadata.json)."
         )
 
-    # Protocol 4.0 also needs the per-dataset salt. Resolved once here rather than
-    # per row: it is the same value for every MLP, and resolution raises rather
-    # than defaulting, so a mis-specified dataset fails before any scoring work.
+    # Protocol 4.0 also needs the per-dataset salt. An unregistered dataset has no
+    # metadata to resolve it from, so seed_salt= is the only way in -- see the
+    # docstring. Resolved once here rather than per row: it is the same value for
+    # every MLP, and resolution raises rather than defaulting, so a mis-specified
+    # dataset fails before any scoring work happens.
+
     from .dataset import resolve_seed_context
 
-    _, seed_salt = resolve_seed_context(ds, seed_protocol_version=proto_version)
+    _, seed_salt = resolve_seed_context(
+        ds, seed_protocol_version=proto_version, seed_salt=seed_salt
+    )
 
     def _restored_sampling_aggregate(
         restored: List[Dict[str, Any]],
