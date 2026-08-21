@@ -231,3 +231,40 @@ def test_synthesized_breakdown_carries_bake_tag_and_full_decomposition():
     assert d["flopscope_overhead_time_s"] == 0.0
     assert d["residual_wall_time_s"] == d["wall_time_s"]
     assert d["time_source"] == "bake"
+
+
+def test_provenance_records_the_chunking_and_nothing_deployment_specific():
+    """The card documents `provenance`, so the library has to emit it.
+
+    It also has to stay generic: this template ships to anyone baking their own dataset, so
+    round names, competition budgets and release labels belong in the operator's tooling,
+    not here. What IS generic — and otherwise unrecoverable — is the chunk decomposition,
+    since float64 accumulation is not associative and chunk_size auto-resolves from free
+    VRAM when omitted.
+    """
+    d = _synth(1024, 16, 10_000)
+    prov = d["provenance"]
+    assert prov["chunk_size"] == simulation._pick_chunk_size(1024)
+    assert prov["n_chunks"] == math.ceil(10_000 / prov["chunk_size"])
+    assert prov["method"] == "closed-form"
+
+    blob = json.dumps(prov).lower()
+    for leak in (
+        "aicrowd",
+        "phase 1",
+        "phase 2",
+        "cost_model",
+        "verified_against",
+        "0.12.0",
+        "0.16.0",
+        "leaderboard",
+    ):
+        assert leak not in blob, f"deployment-specific value {leak!r} leaked into provenance"
+
+
+def test_provenance_survives_the_scorer_untouched():
+    """Extra keys must not disturb the normalizer that every consumer goes through."""
+    d = _synth(8, 2, 100)
+    out = _normalize_sampling_budget_breakdown(d)
+    assert out["flops_used"] == d["flops_used"]
+    assert out["by_namespace"][NS]["calls"] == d["by_namespace"][NS]["calls"] > 0

@@ -516,6 +516,27 @@ def _synthesize_sampling_breakdown(
                 },
             }
         },
+        # Extra keys are safe: scoring._normalize_sampling_budget_breakdown and
+        # _aggregate_budget_breakdowns both build a fresh dict from named keys.
+        #
+        # chunk_size is the point of this block. Float64 accumulation is not associative,
+        # so reproducing a bake's means bit-for-bit requires the same chunk decomposition —
+        # and chunk_size is not recorded anywhere else, which is why the card's re-bake
+        # recipe could only promise the same MLPs and statistically equivalent means.
+        # Recording it per row closes that gap for the value that auto-resolves from free
+        # VRAM and is otherwise unrecoverable after the fact.
+        "provenance": {
+            "method": "closed-form",
+            "operation_model": "whestbench.simulation.sample_layer_statistics",
+            "chunk_size": chunk_size,
+            "n_chunks": k,
+            "note": (
+                "The torch backend computes outside flopscope's instrumentation, so these "
+                "are closed-form FLOP counts for the numpy reference implementation's "
+                "operations, evaluated at the chunking this bake actually used. Pass "
+                "chunk_size back to reproduce the same accumulation order."
+            ),
+        },
     }
 
 
