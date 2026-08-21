@@ -683,7 +683,10 @@ def test_run_rich_mode_updates_live_top_pane_with_final_run_meta(
     assert "results" in captured.out
     assert observed["initial_finished"] == "n/a"
     assert observed["initial_duration"] is None
-    assert observed["total"] == 10 * cli.sample_layer_statistics_chunk_count(256, 100 * 100 * 256)
+    _spec = cli._default_contest_spec()
+    assert observed["total"] == 10 * cli.sample_layer_statistics_chunk_count(
+        _spec.width, _spec.ground_truth_samples
+    )
     assert observed["progress_event"] == {"completed": 1}
     assert observed["final_meta"]["run_finished_at_utc"] == "2026-03-01T00:00:03+00:00"
     assert observed["final_meta"]["run_duration_s"] == 3.0
@@ -1008,15 +1011,36 @@ def test_plain_run_progress_logs_sampling_chunks_with_throttle(
     ]
 
 
-def test_default_contest_spec_matches_proposal():
-    """Default contest spec should match the phase-1 competition: width=256, depth=32, flop_budget=2.72e11."""
+def test_default_contest_spec_matches_the_graded_round():
+    """The no-dataset default must be the GRADED shape and budget.
+
+    An estimator developed against this default should meet the same array shapes
+    and the same per-MLP budget the grader hands it, so a shape bug surfaces
+    locally rather than on submission.
+    """
     from whestbench.cli import _default_contest_spec
 
     spec = _default_contest_spec()
-    assert spec.width == 256
-    assert spec.depth == 32
-    assert spec.flop_budget == 2**41  # 2,199,023,255,552 - the Phase 2 budget
+    assert spec.width == 1024
+    assert spec.depth == 16
+    assert spec.flop_budget == 2**41  # 2,199,023,255,552
     assert spec.n_mlps == 10
+    # ground_truth_samples is deliberately NOT the graded value - it is a local
+    # speed/fidelity trade documented on _default_contest_spec.
+    assert spec.ground_truth_samples == 200_000
+
+
+def test_default_memory_limit_is_the_solution_process_share() -> None:
+    """8 GB is what the Solution's own process gets, not the instance's 64 GB.
+
+    memory_limit_mb feeds setrlimit(RLIMIT_AS) on the worker in
+    subprocess_worker.py, so it must be the Solution's share; using the instance
+    total would let a submission that OOMs on the grader pass locally.
+    """
+    from whestbench.cli import _default_contest_spec, _default_resource_limits
+
+    assert _default_resource_limits().memory_limit_mb == 8_192
+    assert _default_contest_spec().memory_limit_mb == 8_192
 
 
 def test_default_resource_limits_matches_proposal():

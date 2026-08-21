@@ -123,12 +123,26 @@ class _RemovedFlopBudgetAction(argparse.Action):
 
 
 def _default_contest_spec() -> ContestSpec:
+    """The no-dataset default: the graded shape, with a dev-scale ground truth.
+
+    width/depth are the graded Phase 2 shape, so an estimator written against this
+    default meets the same array shapes the grader will hand it.
+
+    ground_truth_samples is NOT the graded value (the published dataset bakes far
+    more) and is a deliberate speed/fidelity trade for the local loop. Monte-Carlo
+    error on a per-neuron mean is avg_variance / N, so with the measured Phase 2
+    avg_variance of ~0.0748 this floor sits at ~3.7e-7 — about 9% of the ~4e-6
+    final-layer MSE a strong covariance-propagation estimator reaches, so it
+    informs rather than dominates the number you see. Measured cost at this shape:
+    ~6.1 s per MLP, ~61 s for the default 10. Raise it with --n-samples when you
+    need a quieter comparison; the graded score always comes from --dataset.
+    """
     return ContestSpec(
-        width=256,
-        depth=32,
+        width=1024,
+        depth=16,
         n_mlps=10,
         flop_budget=DEFAULT_FLOP_BUDGET,
-        ground_truth_samples=100 * 100 * 256,
+        ground_truth_samples=200_000,
     )
 
 
@@ -419,7 +433,7 @@ def _default_resource_limits() -> ResourceLimits:
     return ResourceLimits(
         setup_timeout_s=5.0,
         predict_timeout_s=30.0,
-        memory_limit_mb=65_536,
+        memory_limit_mb=8_192,
         flop_budget=DEFAULT_FLOP_BUDGET,
         cpu_time_limit_s=None,
         wall_time_limit_s=120.0,
@@ -469,25 +483,22 @@ def run_default_score(profile: bool = False) -> "Any":
 def _smoke_test_contest_spec() -> ContestSpec:
     """Lightweight spec for the smoke test.
 
-    Carries the default per-MLP budget (DEFAULT_FLOP_BUDGET) so the smoke path
-    exercises the same code as a real run. Only n_mlps and ground_truth_samples
-    are scaled down, so it finishes in well under a second — the resulting score
-    is not meaningful, this is a plumbing check.
-
-    NOTE: width/depth here are still 256x32, the earlier round's shape, while the
-    budget is the current one. The smoke test only checks plumbing, so the mix is
-    harmless, but do not read this spec as "the competition shape".
+    Carries the graded shape and the default per-MLP budget, so the smoke path
+    exercises the same code and the same array shapes as a real run. Only n_mlps
+    and ground_truth_samples are scaled down — measured at 0.69 s total, keeping
+    this a plumbing check rather than a wait. The resulting score is not
+    meaningful at this sample count and is not intended to be.
 
     Local timing on a typical dev box: well under a second
     (CombinedEstimator ~3% budget utilization — invariant under the 4×/4×
     depth-and-budget scaling from the warmup round).
     """
     return ContestSpec(
-        width=256,
-        depth=32,
+        width=1024,
+        depth=16,
         n_mlps=3,
         flop_budget=DEFAULT_FLOP_BUDGET,
-        ground_truth_samples=10_000,
+        ground_truth_samples=5_000,
     )
 
 
@@ -1245,7 +1256,12 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="Ground truth samples per MLP (default: width*width*256). Lower values speed up generation at the cost of noisier scores.",
+        help=(
+            "Ground-truth Monte-Carlo samples per MLP for --dataset-less runs "
+            "(default: 200_000). Monte-Carlo error on a per-neuron mean falls as "
+            "1/N, so raise this for a quieter comparison and lower it for a faster "
+            "loop. Ignored when --dataset supplies baked targets."
+        ),
     )
     run_parser.add_argument(
         "--debug",

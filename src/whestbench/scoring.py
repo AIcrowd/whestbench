@@ -67,7 +67,7 @@ class ContestSpec:
     ground_truth_samples: int
     setup_timeout_s: float = 5.0
     predict_timeout_s: float = 30.0
-    memory_limit_mb: int = 65_536
+    memory_limit_mb: int = 8_192  # the Solution process's share, not the instance total
     wall_time_limit_s: Optional[float] = 120.0
     residual_wall_time_limit_s: Optional[float] = 0.4
     seed: Optional[int] = None
