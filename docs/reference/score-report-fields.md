@@ -151,7 +151,9 @@ adjusted_final_layer_score = final_layer_mse × max(0.1, C_m / B_m)   for valid 
 adjusted_final_layer_score = final_layer_mse × 1.0                    for failures (no compute discount)
 
 C_m = F_m + λ · R_m                      (effective compute, FLOPs and FLOP-equivalents)
-λ = run_config.lambda_flops_per_second   (default 1e11 FLOPs/s; set with --lambda-flops-per-second; see flopscope-primer.md)
+λ = run_config.lambda_flops_per_second   (default 0 — residual time is gated by
+                                          residual_wall_time_limit_s, not priced, so C_m = F_m;
+                                          set with --lambda-flops-per-second; see flopscope-primer.md)
 ```
 
 Where `F_m` is the analytical FLOPs counted by flopscope (`flops_used`), `R_m` is the

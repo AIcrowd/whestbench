@@ -1,4 +1,4 @@
-"""λ (residual penalty rate) is a configurable parameter with a 1e11 default."""
+"""λ (residual price) is configurable. Default 0 = gated; 1e11 = the Phase 1 priced rate."""
 
 import pytest
 
@@ -10,7 +10,8 @@ from whestbench.budget import (
 from whestbench.scoring import ContestSpec
 
 
-def test_default_lambda_is_1e11():
+def test_legacy_lambda_constant_still_names_the_phase1_rate():
+    """Not the default any more — see test_contestspec_lambda_defaults_to_zero."""
     assert LAMBDA_FLOPS_PER_SECOND == 1e11
 
 

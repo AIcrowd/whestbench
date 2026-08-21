@@ -54,7 +54,10 @@ def _make_data(width: int = 4, depth: int = 2) -> ContestData:
 
 
 def test_lambda_constant_is_1e11():
-    """Module-level conversion rate must equal 10^11 FLOPs/second per the proposal."""
+    """The Phase 1 rate must stay 1e11 and stay importable from whestbench.scoring.
+
+    This is the legacy alias, not the current default (which is 0 — gated).
+    """
     assert LAMBDA_FLOPS_PER_SECOND == 1e11
 
 
