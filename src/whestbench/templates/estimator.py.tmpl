@@ -13,7 +13,7 @@ class Estimator(BaseEstimator):
         # hook: the grader runs it once per worker process, which in practice
         # means roughly 5-15 times per submission, and each run has its own
         # hard 5 s ceiling (predict() gets its own separate per-MLP wall-clock
-        # cap). So load here, don't compute here. Package the FOLDER
+        # cap of 120 s). So load here, don't compute here. Package the FOLDER
         # (`whest package --estimator .`) and every file beside estimator.py is
         # bundled automatically and extracted to ctx.submission_dir on the grader.
         # Load weights there:

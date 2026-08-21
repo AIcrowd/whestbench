@@ -141,7 +141,7 @@ Platforms without `RLIMIT_AS` (Windows, some BSDs) log a warning to the worker's
 
 ## Wall-clock cap
 
-`ContestSpec.wall_time_limit_s` (default `60.0` seconds — matches the Phase 1 grader cap) is an operational backstop on per-MLP `predict()` execution. If a single `predict()` call's elapsed wall-clock time exceeds the cap, the estimator's prediction is replaced with zeros and the MLP is scored through the failure path (zero-prediction MSE × 1.0, no compute discount). This is intentionally generous — the primary compute constraint is the effective FLOP budget `C_m = F_m + λ·R_m`; the wall-clock cap only catches stalled or runaway submissions.
+`ContestSpec.wall_time_limit_s` (default `120.0` seconds — matches the grader's per-`predict()` wall cap; override locally with `--wall-time-limit`) is an operational backstop on per-MLP `predict()` execution. If a single `predict()` call's elapsed wall-clock time exceeds the cap, the estimator's prediction is replaced with zeros and the MLP is scored through the failure path (zero-prediction MSE × 1.0, no compute discount). This is intentionally generous — the primary compute constraint is the effective FLOP budget `C_m = F_m + λ·R_m`; the wall-clock cap only catches stalled or runaway submissions.
 
 The CLI flag `--wall-time-limit SECONDS` accepts a positive float. To disable the cap programmatically, construct your own `ContestSpec` with `wall_time_limit_s=None`.
 

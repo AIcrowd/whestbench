@@ -1038,6 +1038,59 @@ def test_run_parser_accepts_lambda_flops_per_second():
     assert args.lambda_flops_per_second == 2e11
 
 
+def test_run_parser_time_limit_defaults():
+    """Both wall-clock caps default to the graded values: setup 5 s, predict 120 s."""
+    from whestbench.cli import _build_participant_parser
+
+    args = _build_participant_parser().parse_args(["run", "--estimator", "estimator.py"])
+    assert args.setup_timeout == 5.0
+    assert args.wall_time_limit == 120.0
+
+
+def test_run_parser_time_limits_are_overridable():
+    """Both caps are tunable — the point of the flags is rehearsing a tighter budget."""
+    from whestbench.cli import _build_participant_parser
+
+    args = _build_participant_parser().parse_args(
+        ["run", "--estimator", "estimator.py", "--setup-timeout", "2.5", "--wall-time-limit", "10"]
+    )
+    assert args.setup_timeout == 2.5
+    assert args.wall_time_limit == 10.0
+
+
+def test_resolve_setup_timeout_falls_back_when_flag_absent():
+    """Subcommands that never register --setup-timeout still get the graded 5 s cap."""
+    import argparse
+
+    from whestbench.cli import _resolve_setup_timeout
+
+    assert _resolve_setup_timeout(argparse.Namespace()) == 5.0
+    assert _resolve_setup_timeout(argparse.Namespace(setup_timeout=None)) == 5.0
+
+
+def test_resolve_setup_timeout_preserves_zero():
+    """0 must survive to ContestSpec, which rejects it loudly.
+
+    `getattr(...) or 5.0` would swallow it and silently run a 5 s setup for
+    someone who asked for zero — the opposite of what they typed.
+    """
+    import argparse
+
+    import pytest as _pytest
+
+    from whestbench.cli import _resolve_setup_timeout
+    from whestbench.runner import ResourceLimits
+
+    assert _resolve_setup_timeout(argparse.Namespace(setup_timeout=0)) == 0.0
+    with _pytest.raises(ValueError, match="setup_timeout_s must be positive"):
+        ResourceLimits(
+            setup_timeout_s=0.0,
+            predict_timeout_s=30.0,
+            memory_limit_mb=4096,
+            flop_budget=1_000_000,
+        )
+
+
 def test_version_drift_warning():
     from whestbench import cli
 

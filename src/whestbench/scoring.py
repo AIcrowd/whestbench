@@ -62,7 +62,7 @@ class ContestSpec:
     setup_timeout_s: float = 5.0
     predict_timeout_s: float = 30.0
     memory_limit_mb: int = 65_536
-    wall_time_limit_s: Optional[float] = 60.0
+    wall_time_limit_s: Optional[float] = 120.0
     residual_wall_time_limit_s: Optional[float] = None
     seed: Optional[int] = None
     lambda_flops_per_second: float = LAMBDA_FLOPS_PER_SECOND
