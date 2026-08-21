@@ -76,7 +76,7 @@ The counts are comparable only within a single flopscope version — a cost-tabl
 change moves them without the underlying bake changing. flopscope 0.10.0 →
 0.11.0 leaves baked counts unchanged: the bake path is rank-2 throughout and
 uses no `ix_`, `outer`, `linalg` or `fft` operations. The same holds through
-flopscope `main` @ `0812afe9` (the commit whestbench currently resolves): the
+flopscope **v0.12.0** (the version whestbench pins): the
 billing fixes landed since 0.11.0 touch ufunc-loop dtype resolution, `gradient`,
 `trace`/`cross`/`reduceat`, multi-output ufuncs and einsum path search, none of
 which the bake path reaches. `tests/test_torch_flop_synthesis.py` is the gate on

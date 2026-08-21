@@ -13,7 +13,7 @@ license = "MIT"
 dependencies = [
     "datasets>=2.20",
     "faker~=37.0",
-    "flopscope>=0.11.0,<0.12.0",  # 0.11.0: the >52-letter contraction fallback now bills the honest FMA count, so padding both tensordot operands with singleton axes no longer buys the arithmetic at ~half price (~2x on affected calls; tensordot only — matmul uses ellipsis subscripts), and `ix_` moves from a shipped weight of 0.0 to 1.0. Both move FLOPs the GRADER charges for calls that already ran — scored submissions need RE-EVALUATION, not just a re-baseline. BREAKING: non-numeric dtypes (object, str, bytes, datetime64, timedelta64, structured/void) now raise UnsupportedDtypeError wherever they reach a metered op, on a numeric allowlist (dtype.kind in "biufc"). Separately, linalg/cross/outer/contraction/fft/bmat results are now wrapped so downstream arithmetic is billed LOCALLY — that raises the in-process estimate onto what the grader already charged and implies no re-eval. Floor pinned to 0.11.0 so CI's `--upgrade-package` resolution is deterministic; whestbench-evaluator moves its own v0.10.0 pins to v0.11.0 once this release is tagged (they are an atomic pair). <0.12.0 caps the next breaking minor.
+    "flopscope>=0.12.0,<0.13.0",  # 0.12.0 is the Phase 2 meter. It corrects ~40 prices that did not match what the operations actually compute — nan-prefixed reductions now charge their NaN-scan pass, six boolean-returning ops that compute in a promoted float dtype move by exactly 2x (this includes is_symmetric/as_symmetric, which bill allclose's formula), and einsum path search, multi-output ufuncs, fill_diagonal(wrap=True) and SymmetricTensor construction are repriced. Some prices rise and some fall, so estimator totals move in both directions. flopscope's own CHANGELOG is explicit that this ships as a new version opening a new phase: nothing already scored is repriced, so no re-evaluation is owed for Phase 1. <0.13.0 caps the next breaking minor. Bump this in lockstep with flopscope-server below, and re-run tests/test_torch_flop_synthesis.py — it is the gate on whether a bump invalidates published dataset revisions.
     "httpx>=0.27",
     "huggingface_hub>=0.24",
     "jinja2>=3.1",
@@ -42,36 +42,8 @@ dev = [
     "ruff>=0.6.0",
 ]
 server = [
-    "flopscope-server>=0.11.0,<0.12.0",
+    "flopscope-server>=0.12.0,<0.13.0",
 ]
-
-# TEMPORARY — track flopscope's main branch until v0.12.0 is released.
-#
-# The grader meters against flopscope's current accounting, which between releases
-# lives on main rather than on PyPI. Resolving from the last release makes the local
-# harness report FLOP counts a submission is not actually scored on, so the harness
-# tracks main for as long as that gap is open.
-#
-# This is a [tool.uv.sources] redirect rather than a direct URL in
-# [project.dependencies] on purpose: PyPI rejects direct-URL dependencies in an
-# uploaded distribution, and `tool.uv.sources` is stripped from built wheel metadata.
-# So the published requirement stays the plain range above, and only local/CI
-# resolution is redirected. The range still reads <0.12.0 because main has not been
-# version-bumped yet — it reports 0.11.0 until the release commit lands.
-#
-# uv.lock records the exact resolved commit, so a plain `uv sync --frozen` is
-# reproducible. CI syncs with `--upgrade-package flopscope --upgrade-package
-# flopscope-server` (.github/workflows/ci.yml), which re-resolves the branch to its
-# newest commit — that is the intended tracking behaviour, and it means CI can go red
-# on an upstream flopscope commit that no whestbench change caused.
-#
-# WHEN flopscope v0.12.0 IS TAGGED: delete this whole block and set both ranges to
-# >=0.12.0,<0.13.0. Note whestbench's declared flopscope cap is what
-# whestbench-evaluator's scripts/check_flopscope_pins.py reads for its atomic-pair
-# check, so that re-pin is the evaluator's cue too.
-[tool.uv.sources]
-flopscope = { git = "https://github.com/AIcrowd/flopscope.git", branch = "main" }
-flopscope-server = { git = "https://github.com/AIcrowd/flopscope.git", branch = "main", subdirectory = "flopscope-server" }
 
 [tool.ruff]
 line-length = 100
