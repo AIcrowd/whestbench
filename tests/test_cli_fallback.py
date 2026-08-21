@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from contextlib import contextmanager
 from typing import Any
 
@@ -430,3 +431,88 @@ def test_error_payload_shape_is_stable() -> None:
     assert payload["error"]["stage"] == "scoring"
     assert payload["error"]["code"] == "SCORING_VALIDATION_ERROR"
     assert payload["error"]["message"] == "bad row"
+
+
+# --- packaging-stage error codes -------------------------------------------------
+#
+# `whest package` / `whest submit` failures used to fall through to the scoring
+# buckets, so a submission that was simply too large reported
+# `package:SCORING_VALIDATION_ERROR` — a scoring verdict on an artifact that had
+# not been scored, and never would be.
+
+
+def test_error_code_maps_packaging_valueerror_to_a_packaging_code() -> None:
+    message = "Submission has 51 files, over the 50-file cap."
+    assert cli._error_code(ValueError(message), message, stage="package") == (
+        "PACKAGING_VALIDATION_ERROR"
+    )
+
+
+def test_error_code_maps_submit_stage_valueerror_to_a_packaging_code() -> None:
+    # `whest submit` packages first, so the same failures reach the user under a
+    # different stage name.
+    message = "estimator.py is excluded by a .gitignore/.whestignore pattern"
+    assert cli._error_code(ValueError(message), message, stage="submit") == (
+        "PACKAGING_VALIDATION_ERROR"
+    )
+
+
+def test_error_code_maps_packaging_missing_path_to_a_packaging_code() -> None:
+    message = "Estimator path not found: /nope/estimator.py"
+    assert cli._error_code(FileNotFoundError(message), message, stage="package") == (
+        "PACKAGING_VALIDATION_ERROR"
+    )
+
+
+def test_error_code_maps_an_unexpected_packaging_crash_to_a_packaging_code() -> None:
+    # Still distinguishes "your submission is malformed" from "we crashed" — it just
+    # stops calling the crash a scoring failure.
+    assert cli._error_code(TypeError("boom"), "boom", stage="package") == (
+        "PACKAGING_RUNTIME_ERROR"
+    )
+
+
+def test_error_code_leaves_scoring_stage_untouched() -> None:
+    # The default stage must keep its existing codes: these are stable identifiers
+    # that consumers match on.
+    assert cli._error_code(ValueError("bad row"), "bad row") == "SCORING_VALIDATION_ERROR"
+    assert cli._error_code(TypeError("boom"), "boom") == "SCORING_RUNTIME_ERROR"
+
+
+def test_error_code_still_blames_the_estimator_during_packaging() -> None:
+    # A broken import is the estimator's fault whichever stage surfaces it, so the
+    # stage must not launder it into a generic packaging code.
+    exc = ModuleNotFoundError("No module named 'torchvision'")
+    assert cli._error_code(exc, str(exc), stage="package") == "ESTIMATOR_MISSING_MODULE"
+
+
+def test_packaging_failure_reports_a_packaging_code_end_to_end(tmp_path, capsys) -> None:
+    entry = tmp_path / "estimator.py"
+    entry.write_text(
+        "import helper\n"
+        "from whestbench import BaseEstimator\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        import flopscope.numpy as fnp\n"
+        "        return fnp.zeros((mlp.depth, mlp.width)) + helper.f()\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "helper.py").write_text("def f():\n    return 0\n", encoding="utf-8")
+
+    rc = cli.main(
+        [
+            "package",
+            "--estimator",
+            str(entry),
+            "--output",
+            str(tmp_path.parent / "out.tar.gz"),
+            "--yes",
+            "--json",
+        ]
+    )
+
+    assert rc == 1
+    out = capsys.readouterr().out
+    payload = json.loads(out[out.index("{") :])
+    assert payload["error"]["stage"] == "package"
+    assert payload["error"]["code"] == "PACKAGING_VALIDATION_ERROR"

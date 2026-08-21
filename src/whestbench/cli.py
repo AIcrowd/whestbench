@@ -3817,7 +3817,7 @@ def _error_payload(
         message = str(exc) or exc.__class__.__name__
     error: Dict[str, Any] = {
         "stage": stage,
-        "code": _error_code(exc, message),
+        "code": _error_code(exc, message, stage=stage),
         "message": message,
     }
     details = _extract_exception_details(exc)
@@ -3828,8 +3828,26 @@ def _error_payload(
     return {"ok": False, "error": error}
 
 
-def _error_code(exc: Exception, message: str) -> str:
-    """Map common failures to stable error codes."""
+# Stages where nothing has been scored yet: `whest package`, and `whest submit`
+# (which packages first). A failure here is about the artifact, not about how it
+# performed.
+_PACKAGING_STAGES = frozenset({"package", "submit"})
+
+
+def _error_code(exc: Exception, message: str, stage: str = "scoring") -> str:
+    """Map common failures to stable error codes.
+
+    ``stage`` is the command that failed (see the handler in ``_main_participant``,
+    which already derives it). It matters because the same exception type means
+    different things at different stages: a ``ValueError`` while packaging says the
+    submission is malformed, not that scoring rejected it. Without it a submission
+    merely over the size cap reported ``package:SCORING_VALIDATION_ERROR`` — a
+    scoring verdict on an artifact that had not been scored.
+
+    Fault attribution wins over stage: a missing module or a refused dtype is the
+    estimator's fault whichever stage surfaces it, so those codes are returned first
+    and a packaging stage must not launder them into a generic packaging error.
+    """
     if isinstance(exc, RunnerError):
         return exc.detail.code
     if isinstance(exc, ModuleNotFoundError):
@@ -3838,6 +3856,14 @@ def _error_code(exc: Exception, message: str) -> str:
         # Subclasses TypeError, so without this it lands in SCORING_RUNTIME_ERROR —
         # the bucket for framework crashes, which misattributes an estimator fault.
         return "ESTIMATOR_UNSUPPORTED_DTYPE"
+    if stage in _PACKAGING_STAGES:
+        # Keeps the malformed-submission / we-crashed split the scoring codes make,
+        # so a consumer matching on either keeps the same granularity. The two
+        # estimator-shaped ValueError checks below are scoring-time validations of a
+        # prediction array; nothing in packaging can produce them.
+        if isinstance(exc, (ValueError, FileNotFoundError)):
+            return "PACKAGING_VALIDATION_ERROR"
+        return "PACKAGING_RUNTIME_ERROR"
     lowered = message.lower()
     if isinstance(exc, ValueError):
         if "must have shape" in lowered:
