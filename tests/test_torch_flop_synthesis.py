@@ -213,6 +213,10 @@ def test_shape_parity_with_flopscopes_normalized_output(tmp_path):
     assert NS in synth["by_namespace"]
 
     norm = _normalize_sampling_budget_breakdown(synth)
+    # The normalizer returns None for a None input; a None here would mean it rejected a
+    # payload it is supposed to accept, which is worth failing on explicitly rather than
+    # via a TypeError three lines down.
+    assert norm is not None
     nb = norm["by_namespace"][NS]
     assert nb["flops_used"] == synth["flops_used"]
     assert nb["calls"] == synth["by_namespace"][NS]["calls"] > 0
@@ -266,5 +270,6 @@ def test_provenance_survives_the_scorer_untouched():
     """Extra keys must not disturb the normalizer that every consumer goes through."""
     d = _synth(8, 2, 100)
     out = _normalize_sampling_budget_breakdown(d)
+    assert out is not None, "the normalizer rejected a payload carrying extra keys"
     assert out["flops_used"] == d["flops_used"]
     assert out["by_namespace"][NS]["calls"] == d["by_namespace"][NS]["calls"] > 0
