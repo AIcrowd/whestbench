@@ -1,5 +1,55 @@
 # Changelog
 
+## v0.16.0 (2026-08-21)
+
+### BREAKING CHANGE
+
+- a subprocess worker that dies mid-suite is now replaced and the
+run continues, where previously every remaining MLP failed. Suite scores for
+submissions that crash on some MLPs will improve, because only the crashing MLPs
+are now scored as failures.
+- the no-dataset default contest is now 1024x16 with 200,000
+ground-truth samples and an 8 GB solution-process memory limit, replacing 256x32
+with 2,560,000 samples and 64 GB. Local scores from before this change are not
+comparable, and an estimator hardcoding 256x32 will now see 1024x16.
+- the default flop_budget moves from 272_000_000_000 to
+2**41 (2,199,023,255,552). Runs that relied on the old default without passing
+--flop-budget will meter against a ~8x larger cap.
+- ContestSpec.lambda_flops_per_second now defaults to 0.0 instead
+of 1e11, so effective_compute() and is_combined_budget_exhausted() return
+FLOP-only results unless a rate is passed. Callers re-scoring an earlier round
+must pass PHASE1_LAMBDA_FLOPS_PER_SECOND explicitly and set
+residual_wall_time_limit_s=None.
+
+### Feat
+
+- **budget**: keep every round's config side by side, and document the progression
+- **seeds**: add seed-protocol 4.0 with keyed per-MLP derivation
+- **config**: default to the graded 1024x16 shape and the 8 GB solution memory cap
+- **budget**: default the per-MLP budget to 2**41
+- **budget**: default lambda to 0 so residual wall time is gated, not priced
+- **limits**: set the predict wall cap to 120 s and make both caps configurable
+- **starterkit**: detect dependency drift against the starter kit
+- **dataset_torch**: record the bake's chunking in the synthesized breakdown
+
+### Fix
+
+- **docs**: declare rounds and gpu-dataset-generation in the llms.txt manifest
+- **docs**: add frontmatter to the rounds mirror so the site builds
+- **scoring**: let make_contest_from_dataset take an explicit seed_salt
+- **scoring**: bound the metered window without billing harness checks
+- **runner**: restart a dead worker so one death does not fail the whole suite
+- **docs**: Phase 1 re-score recipe must also pin the 60 s wall cap
+- **cli**: report packaging failures with a packaging code, not a scoring one
+- **scoring**: stop charging harness transport to the per-MLP wall clock
+- **packaging**: scope the secret-file preview to submission candidates
+- **packaging**: name dropped siblings, refuse a single file that imports one
+- **limits**: report wall-clock exhaustion correctly and cap residual at the graded 400 ms
+- **domain**: pin MLP weights to float32 on every construction path
+- **submit**: ask AIcrowd whether a submission is allowed
+- **dataset_torch**: emit operations, use the real chunk_size, drop the fake budget
+- **card**: an empty companion_repo must omit the cross-link, not invent one
+
 ## v0.15.0 (2026-08-18)
 
 ### BREAKING CHANGE
