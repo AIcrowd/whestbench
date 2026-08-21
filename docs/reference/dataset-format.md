@@ -261,7 +261,7 @@ stored in the parquet `mlp_seed` column.
 }
 ```
 
-Legacy datasets (e.g. `aicrowd/arc-whestbench-2026-smoke-test`) use seed_protocol 2.0
+Legacy datasets baked before protocol 3.0 use seed_protocol 2.0
 and continue to load correctly. New bakes always write seed_protocol 3.0.
 
 ## README.md (HF dataset card)
@@ -295,7 +295,7 @@ ds = load_dataset("./my-eval", split="public")
 
 # HF Hub
 ds = load_dataset(
-    "aicrowd/arc-whestbench-2026",
+    "aicrowd/arc-whestbench-public-2026",
     revision="v1",
     split="public",
 )
@@ -317,7 +317,7 @@ ds = whestbench.load_dataset("./my-eval")
 
 # HF Hub (pin a revision — bare repo without revision is rejected by whest run)
 ds = whestbench.load_dataset(
-    "aicrowd/arc-whestbench-2026",
+    "aicrowd/arc-whestbench-public-2026",
     revision="v1",
     split="public",
 )
@@ -419,7 +419,7 @@ create_dataset(n_mlps=100, n_samples=1_000_000_000, width=256, depth=8,
 ```python
 import whestbench
 
-ds = whestbench.load_dataset("aicrowd/arc-whestbench-2026", revision="v1", split="public")
+ds = whestbench.load_dataset("aicrowd/arc-whestbench-public-2026", revision="v1", split="public")
 md = whestbench.metadata(ds)
 if md["seed_protocol"]["version"] == "3.0":
     seeds = ds["mlp_seed"]   # list of input seeds
@@ -577,7 +577,7 @@ python -c 'import json, secrets; print(json.dumps([secrets.randbits(63) for _ in
 whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split public  --config default --mlp-seeds public-seeds.json  --output ./pub
 whest dataset bake --n-mlps 50 --n-samples 1e9 --width 256 --depth 8 --split holdout --config holdout --mlp-seeds holdout-seeds.json --output ./hold
 whest dataset combine-splits ./pub ./hold --output ./eval-r1
-whest dataset upload ./eval-r1 --repo aicrowd/arc-whestbench-2026-evals --tag round-1 --private
+whest dataset upload ./eval-r1 --repo aicrowd/arc-whestbench-evals-2026 --tag round-1 --private
 ```
 
 `combine-splits` preserves the baked config coordinate. If exactly one input

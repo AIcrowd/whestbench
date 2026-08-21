@@ -86,7 +86,7 @@ After baking (and optionally merging), push to HF Hub:
 
 ```bash
 whest dataset upload ./ground-truth \
-    --repo aicrowd/arc-whestbench-2026 \
+    --repo aicrowd/arc-whestbench-public-2026 \
     --tag v1
 ```
 

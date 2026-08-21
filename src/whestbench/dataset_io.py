@@ -203,7 +203,7 @@ def generate_readme(
     Args:
         companion_repo: HF Hub repo id of the companion dataset (public ↔ evals
             cross-link). When unset, the template falls back to the canonical
-            ``aicrowd/arc-whestbench-2026[-evals]`` names.
+            ``aicrowd/arc-whestbench-public-2026[-evals]`` names.
     """
     if (split is None) == (splits is None):
         raise ValueError("generate_readme requires exactly one of `split` or `splits` to be set.")
