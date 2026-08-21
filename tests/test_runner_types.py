@@ -15,13 +15,13 @@ def test_resource_limits_rejects_nonpositive_setup_timeout() -> None:
 
 
 def test_resource_limits_time_limits_defaults() -> None:
-    """wall_time_limit_s defaults to 60.0 (operational backstop matching Phase 1 grader cap);
-    residual_wall_time_limit_s defaults to None (no engine-side cap)."""
+    """Both graded wall-clock caps are the defaults: 120.0 s per predict() call,
+    and 0.4 s of residual (non-flopscope) time within it."""
     limits = ResourceLimits(
         setup_timeout_s=5.0, predict_timeout_s=30.0, memory_limit_mb=4096, flop_budget=100_000_000
     )
-    assert limits.wall_time_limit_s == 60.0
-    assert limits.residual_wall_time_limit_s is None
+    assert limits.wall_time_limit_s == 120.0
+    assert limits.residual_wall_time_limit_s == 0.4
 
 
 def test_resource_limits_accepts_time_limits() -> None:

@@ -102,3 +102,55 @@ def test_inprocess_runner_predict_preserves_estimator_error_details(
     assert exc_info.value.detail.code == "PREDICT_ERROR"
     assert exc_info.value.detail.details == details
     runner.close()
+
+
+def test_local_runner_preserves_time_exhausted_error(small_mlp, limits, tmp_path) -> None:
+    """TimeExhaustedError must escape LocalRunner with its TYPE intact.
+
+    scoring.py has a dedicated `except flops.TimeExhaustedError` handler that sets
+    time_exhausted=True and buckets the MLP under failure_breakdown["time_exhausted"].
+    LocalRunner.predict wraps unknown exceptions in RunnerError(PREDICT_ERROR); if
+    TimeExhaustedError falls into that generic clause, the dedicated handler becomes
+    unreachable and the very MLP that blew the wall cap reports time_exhausted=False
+    through the generic error path. BudgetExhaustedError is re-raised for exactly the
+    same reason, and SubprocessRunner preserves the type independently, so a
+    regression here would also make the two runners disagree.
+    """
+    import flopscope as flops
+
+    est_file = tmp_path / "est_time.py"
+    est_file.write_text(
+        "import flopscope as flops\n"
+        "from whestbench.sdk import BaseEstimator\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        raise flops.TimeExhaustedError('predict', elapsed_s=9.0, limit_s=1.0)\n"
+    )
+    runner = LocalRunner()
+    entry = EstimatorEntrypoint(file_path=est_file)
+    ctx = SetupContext(width=8, depth=2, flop_budget=100, api_version="1.0")
+    runner.start(entry, ctx, limits)
+    with pytest.raises(flops.TimeExhaustedError):
+        runner.predict(small_mlp, budget=100)
+    runner.close()
+
+
+def test_local_runner_preserves_budget_exhausted_error(small_mlp, limits, tmp_path) -> None:
+    """The sibling case, pinned alongside so the two cannot drift apart again."""
+    import flopscope as flops
+
+    est_file = tmp_path / "est_budget.py"
+    est_file.write_text(
+        "import flopscope as flops\n"
+        "from whestbench.sdk import BaseEstimator\n"
+        "class Estimator(BaseEstimator):\n"
+        "    def predict(self, mlp, budget):\n"
+        "        raise flops.BudgetExhaustedError('predict', flop_cost=9, flops_remaining=0)\n"
+    )
+    runner = LocalRunner()
+    entry = EstimatorEntrypoint(file_path=est_file)
+    ctx = SetupContext(width=8, depth=2, flop_budget=100, api_version="1.0")
+    runner.start(entry, ctx, limits)
+    with pytest.raises(flops.BudgetExhaustedError):
+        runner.predict(small_mlp, budget=100)
+    runner.close()

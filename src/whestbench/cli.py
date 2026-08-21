@@ -387,6 +387,20 @@ class _PlainRunProgressLogger:
         )
 
 
+def _resolve_setup_timeout(args: "argparse.Namespace") -> float:
+    """Read --setup-timeout off `args`, falling back to the graded 5 s cap.
+
+    Explicit ``is None`` rather than ``getattr(...) or 5.0``: ``0`` is falsy, so
+    ``or`` would quietly substitute 5.0 and run a five-second setup for someone
+    who asked for zero. ResourceLimits rejects a non-positive cap outright
+    ("setup_timeout_s must be positive"), and being told that beats being
+    silently given the opposite of what you typed. The getattr fallback covers
+    subcommands that build a ContestSpec without registering the flag.
+    """
+    value = getattr(args, "setup_timeout", None)
+    return 5.0 if value is None else float(value)
+
+
 def _default_resource_limits() -> ResourceLimits:
     return ResourceLimits(
         setup_timeout_s=5.0,
@@ -394,7 +408,8 @@ def _default_resource_limits() -> ResourceLimits:
         memory_limit_mb=65_536,
         flop_budget=272_000_000_000,
         cpu_time_limit_s=None,
-        wall_time_limit_s=60.0,
+        wall_time_limit_s=120.0,
+        residual_wall_time_limit_s=0.4,
     )
 
 
@@ -500,6 +515,7 @@ def run_default_report(
             "n_mlps": spec.n_mlps,
             "seed": spec.seed,
             "flop_budget": spec.flop_budget,
+            "setup_timeout_s": spec.setup_timeout_s,
             "wall_time_limit_s": spec.wall_time_limit_s,
             "residual_wall_time_limit_s": spec.residual_wall_time_limit_s,
             "lambda_flops_per_second": spec.lambda_flops_per_second,
@@ -587,6 +603,7 @@ def _pre_run_report(
             "depth": int(contest_spec.depth),
             "seed": contest_spec.seed,
             "flop_budget": int(contest_spec.flop_budget),
+            "setup_timeout_s": contest_spec.setup_timeout_s,
             "wall_time_limit_s": contest_spec.wall_time_limit_s,
             "residual_wall_time_limit_s": contest_spec.residual_wall_time_limit_s,
             "profile_enabled": bool(profile),
@@ -1225,17 +1242,39 @@ def _build_participant_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--wall-time-limit",
         type=float,
-        default=60.0,
+        default=120.0,
         metavar="SECONDS",
-        help="Wall-clock time limit per predict call (default: 60.0 seconds).",
+        help=(
+            "Wall-clock time limit per predict() call, in seconds "
+            "(default: 120.0, the graded cap). Lower it to reproduce a tighter "
+            "budget locally; exceeding it zeroes that MLP's predictions."
+        ),
+    )
+    run_parser.add_argument(
+        "--setup-timeout",
+        dest="setup_timeout",
+        type=float,
+        default=5.0,
+        metavar="SECONDS",
+        help=(
+            "Wall-clock time limit for the one-time setup() call, in seconds "
+            "(default: 5.0, the graded cap). Exceeding it fails the whole "
+            "submission rather than one MLP, so it is worth testing against."
+        ),
     )
     run_parser.add_argument(
         "--residual-wall-time-limit",
         dest="residual_wall_time_limit",
         type=float,
-        default=None,
+        default=0.4,
         metavar="SECONDS",
-        help="Time limit for non-flopscope operations per predict call (default: unlimited).",
+        help=(
+            "Wall-clock limit on non-flopscope time per predict() call, in seconds "
+            "(default: 0.4, the graded cap). Residual time is plumbing — unpacking "
+            "mlp, control flow around your fnp calls, assembling the result — not "
+            "computation. Exceeding it zeroes that MLP's predictions. Raise it to "
+            "debug under a profiler; lower it to leave headroom for a slower grader."
+        ),
     )
     run_parser.add_argument(
         "--seed",
@@ -2395,6 +2434,7 @@ def _run_estimator_with_runner(
             "depth": spec.depth,
             "seed": spec.seed,
             "flop_budget": spec.flop_budget,
+            "setup_timeout_s": spec.setup_timeout_s,
             "wall_time_limit_s": spec.wall_time_limit_s,
             "residual_wall_time_limit_s": spec.residual_wall_time_limit_s,
         },
@@ -3089,6 +3129,7 @@ def _main_participant(argv: "list[str]") -> int:
                     flop_budget=flop_budget,
                     ground_truth_samples=gt_samples,
                     seed=run_seed,
+                    setup_timeout_s=_resolve_setup_timeout(args),
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
                     residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
                     lambda_flops_per_second=lambda_flops_per_second,
@@ -3103,6 +3144,7 @@ def _main_participant(argv: "list[str]") -> int:
                     flop_budget=flop_budget,
                     ground_truth_samples=gt_samples,
                     seed=run_seed,
+                    setup_timeout_s=_resolve_setup_timeout(args),
                     wall_time_limit_s=getattr(args, "wall_time_limit", None),
                     residual_wall_time_limit_s=getattr(args, "residual_wall_time_limit", None),
                     lambda_flops_per_second=lambda_flops_per_second,

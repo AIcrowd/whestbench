@@ -295,11 +295,12 @@ def test_validate_predictions_rejects_nonfinite() -> None:
 
 
 def test_contest_spec_time_limits_defaults() -> None:
-    """wall_time_limit_s defaults to 60.0 (operational backstop matching Phase 1 grader cap);
-    residual_wall_time_limit_s defaults to None (no engine-side cap)."""
+    """Both graded wall-clock caps are the defaults: 120.0 s per predict() call,
+    and 0.4 s of residual (non-flopscope) time within it."""
     spec = ContestSpec(width=8, depth=2, n_mlps=2, flop_budget=1_000_000, ground_truth_samples=1000)
-    assert spec.wall_time_limit_s == 60.0
-    assert spec.residual_wall_time_limit_s is None
+    assert spec.wall_time_limit_s == 120.0
+    assert spec.residual_wall_time_limit_s == 0.4
+    assert spec.setup_timeout_s == 5.0
 
 
 def test_contest_spec_accepts_time_limits() -> None:

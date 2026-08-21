@@ -137,8 +137,9 @@ Key options:
 - `--runner local|subprocess|server|inprocess`
 - `--n-mlps <int>` — number of MLPs to evaluate. Default: 10 without `--dataset`; full dataset size with `--dataset`. Clamped to dataset size when `--dataset` is set.
 - `--flop-budget <int>` — cap on effective compute C_m = F_m + λ·R_m per MLP. Default: `272_000_000_000` (2.72e11; the phase-1 competition budget — the `v1-warmup` round used `6.8e10`). Always honored; any `flop_budget` stored in `--dataset`'s metadata is ignored.
-- `--wall-time-limit <seconds>` (default: `60.0`) — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`. Operational backstop matching the Phase 1 grader cap; the primary compute constraint is `--flop-budget`.
-- `--residual-wall-time-limit <seconds>` — limit for non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported.
+- `--wall-time-limit <seconds>` (default: `120.0`) — wall-clock limit per `predict()` call; forwarded to the estimator `BudgetContext`. Matches the grader's per-`predict()` wall cap; lower it to rehearse a tighter budget. Exceeding it zeroes that MLP's predictions. The primary compute constraint is `--flop-budget`.
+- `--setup-timeout <seconds>` (default: `5.0`) — wall-clock limit for the one-time `setup()` call. Matches the grader's setup cap. Exceeding it fails the whole submission rather than a single MLP, so a submission that loads large weights in `setup()` is worth timing against this locally. Must be positive.
+- `--residual-wall-time-limit <seconds>` (default: `0.4`) — limit on non-flopscope time per `predict()` call, enforced by WhestBench after timing is reported. Matches the graded cap. Residual time is plumbing (unpacking `mlp`, control flow around your `fnp` calls, assembling the result), not computation; crossing it zeroes that MLP's predictions and sets `residual_wall_time_exhausted`. Raise it to debug under a profiler.
 - `--detail raw|full`
 - `--seed <int>` — random seed for the run.
   - Without `--dataset`: seeds both MLP generation and estimator setup (`ctx.seed`).
