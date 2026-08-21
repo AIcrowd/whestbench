@@ -1160,11 +1160,34 @@ def test_resolve_residual_wall_time_limit_off_switch():
     assert _resolve_residual_wall_time_limit(off) is None
 
 
-def test_phase1_round_is_reproducible_from_the_cli():
-    """The documented Phase 1 recipe must actually parse into the priced regime."""
-    from whestbench.cli import _build_participant_parser, _resolve_residual_wall_time_limit
+def test_phase1_recipe_reaches_contest_spec(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The documented Phase 1 recipe must reach ContestSpec, not merely parse.
 
-    args = _build_participant_parser().parse_args(
+    Asserting on `args` alone would keep passing if either ContestSpec construction
+    site dropped `_resolve_residual_wall_time_limit(args)` or `lambda_flops_per_second`
+    — there are two near-identical sites — while the published recipe silently produced
+    a Phase 2-gated, unpriced run. So capture the spec the run actually builds.
+
+    All FOUR settings are checked. `--wall-time-limit 60` is the easy one to forget: it
+    is not part of the pricing change, but Phase 1 graded predict() at 60 s against
+    today's 120 s default, so omitting it re-scores an old run under a mix of both
+    rulebooks — passing submissions that were time_exhausted at the time.
+    """
+    captured: dict[str, Any] = {}
+
+    def fake_run(*_args: Any, **kwargs: Any) -> dict:
+        captured["spec"] = kwargs["contest_spec"]
+        return _sample_report(profile_enabled=False, detail="raw")
+
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run)
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+
+    exit_code = cli.main(
         [
             "run",
             "--estimator",
@@ -1172,7 +1195,40 @@ def test_phase1_round_is_reproducible_from_the_cli():
             "--lambda-flops-per-second",
             "1e11",
             "--no-residual-wall-time-limit",
+            "--flop-budget",
+            "272000000000",
+            "--wall-time-limit",
+            "60",
         ]
     )
-    assert args.lambda_flops_per_second == 1e11
-    assert _resolve_residual_wall_time_limit(args) is None
+
+    assert exit_code == 0
+    spec = captured["spec"]
+    assert spec.lambda_flops_per_second == 1e11  # priced, not gated
+    assert spec.residual_wall_time_limit_s is None  # gate off
+    assert spec.flop_budget == 272_000_000_000  # that round's budget
+    assert spec.wall_time_limit_s == 60.0  # that round's wall cap
+
+
+def test_default_run_builds_a_gated_contest_spec(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The mirror of the above: with no flags, the spec must be Phase 2-shaped."""
+    captured: dict[str, Any] = {}
+
+    def fake_run(*_args: Any, **kwargs: Any) -> dict:
+        captured["spec"] = kwargs["contest_spec"]
+        return _sample_report(profile_enabled=False, detail="raw")
+
+    monkeypatch.setattr(cli, "_run_estimator_with_runner", fake_run)
+    monkeypatch.setattr(
+        cli,
+        "resolve_estimator_class_metadata",
+        lambda *_a, **_k: type("Meta", (), {"class_name": "Estimator"})(),
+        raising=False,
+    )
+
+    assert cli.main(["run", "--estimator", "estimator.py"]) == 0
+    spec = captured["spec"]
+    assert spec.lambda_flops_per_second == 0.0  # gated: C_m = F_m
+    assert spec.residual_wall_time_limit_s == 0.4
+    assert spec.wall_time_limit_s == 120.0
+    assert spec.setup_timeout_s == 5.0

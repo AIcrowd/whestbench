@@ -390,10 +390,11 @@ class _PlainRunProgressLogger:
 def _resolve_residual_wall_time_limit(args: "argparse.Namespace") -> "Optional[float]":
     """Read the residual gate off `args`, honouring the explicit off-switch.
 
-    Returns None when --no-residual-wall-time-limit is passed, which is how a
-    Phase 1 round is reproduced: that round priced residual seconds through
-    lambda instead of gating them, so leaving the Phase 2 gate armed would fail
-    MLPs against a rule they were never scored under.
+    Returns None when --no-residual-wall-time-limit is passed, which is one of the
+    four settings a Phase 1 re-score needs: that round priced residual seconds
+    through lambda instead of gating them, so leaving the Phase 2 gate armed would
+    fail MLPs against a rule they were never scored under. The others are the rate
+    itself, that round's flop_budget, and --wall-time-limit 60.
     """
     if getattr(args, "no_residual_wall_time_limit", False):
         return None
@@ -1231,9 +1232,9 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help=(
             "Price of one second of residual wall time, in FLOP-equivalents, for "
             "C_m = F_m + lambda*R_m. Default: 0 — residual time is not priced, it "
-            "is gated by --residual-wall-time-limit, so C_m = F_m. Pass 1e11 "
-            "together with --no-residual-wall-time-limit to re-score a Phase 1 "
-            "round under its own rate. Must not be negative."
+            "is gated by --residual-wall-time-limit, so C_m = F_m. To re-score a "
+            "Phase 1 round pass 1e11 with --no-residual-wall-time-limit AND "
+            "--wall-time-limit 60 (that round's cap). Must not be negative."
         ),
     )
     run_parser.add_argument(
@@ -1300,7 +1301,8 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         help=(
             "Disable the residual wall-time gate entirely (no cap). Needed to "
             "re-score a Phase 1 round, which was priced with a lambda rate rather "
-            "than gated. Overrides --residual-wall-time-limit."
+            "than gated; pair it with --lambda-flops-per-second 1e11 and "
+            "--wall-time-limit 60. Overrides --residual-wall-time-limit."
         ),
     )
     run_parser.add_argument(

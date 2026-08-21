@@ -171,8 +171,17 @@ MLPs against a rule they were never scored under:
 whest run --estimator estimator.py \
   --lambda-flops-per-second 1e11 \
   --no-residual-wall-time-limit \
-  --flop-budget 272000000000
+  --flop-budget 272000000000 \
+  --wall-time-limit 60
 ```
+
+All four matter. `--wall-time-limit` is easy to forget because it is not part of the
+pricing change, but Phase 1 graded `predict()` at **60 s** and the current default is
+120 s: a submission whose `predict()` took between 60 s and 120 s was `time_exhausted`
+in the graded round — zeroed, no compute discount — and would otherwise score normally
+here, silently and in the participant's favour. Pass `--dataset` with that round's
+revision too, so the MLP shape and seeds match; the flags above only restore the
+scoring rules.
 
 `whestbench.budget.PHASE1_LAMBDA_FLOPS_PER_SECOND` is that rate, kept as a named
 constant for the same purpose. `run_config.lambda_flops_per_second` and

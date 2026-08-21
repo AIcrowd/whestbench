@@ -27,10 +27,17 @@ competition has used each in turn:
                         here.
 
 The default is GATED, so C == F unless a caller opts back in. Nothing about the
-two modes is hard-coded to a phase: pass any rate you like. To reproduce a Phase
-1 round, pass PHASE1_LAMBDA_FLOPS_PER_SECOND (or --lambda-flops-per-second 1e11)
-along with that round's flop_budget, and set residual_wall_time_limit_s=None so
-the Phase 2 gate does not fire on a run that was never scored against one.
+two modes is hard-coded to a phase: pass any rate you like.
+
+Reproducing a Phase 1 round means restoring FOUR settings, not just the rate:
+  - lambda_flops_per_second = PHASE1_LAMBDA_FLOPS_PER_SECOND (1e11)
+  - residual_wall_time_limit_s = None   (that round gated nothing)
+  - flop_budget                         (that round's own budget)
+  - wall_time_limit_s = 60.0            (Phase 1's per-predict cap; the default is
+                                         now 120.0, and a submission that took
+                                         between 60 s and 120 s was time_exhausted
+                                         then but would pass here)
+Restoring only the rate re-scores an old run under a mix of both rulebooks.
 """
 
 from __future__ import annotations

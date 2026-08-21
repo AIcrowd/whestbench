@@ -152,6 +152,15 @@ gated regime `C_m = F_m`, so that post-hoc check is a backstop on the same FLOP 
 that `budget_exhausted` already guards — blowing the residual cap surfaces separately,
 as `residual_wall_time_exhausted`.
 
+### Why two regimes
+
+Both answer the same question — you may write any Python you like, but you cannot use
+uninstrumented work to dodge the meter. Pricing lets wall time and FLOPs trade against
+each other, which is expressive but makes a score depend on how fast the grader's
+machine happened to be that day. Gating removes that coupling: `C_m` is then a pure
+analytical quantity, identical on your laptop and on the grader, and residual time is
+held to a fixed allowance instead.
+
 ### Reproducing an earlier round
 
 Nothing here is hard-coded to a round. To re-score against the priced regime, ask for
@@ -162,17 +171,21 @@ MLPs against a rule they were never scored under:
 whest run --estimator estimator.py \
   --lambda-flops-per-second 1e11 \
   --no-residual-wall-time-limit \
-  --flop-budget 272000000000
+  --flop-budget 272000000000 \
+  --wall-time-limit 60
 ```
+
+All four matter. `--wall-time-limit` is easy to forget because it is not part of the
+pricing change, but Phase 1 graded `predict()` at **60 s** and the current default is
+120 s: a submission whose `predict()` took between 60 s and 120 s was `time_exhausted`
+in the graded round — zeroed, no compute discount — and would otherwise score normally
+here, silently and in the participant's favour. Pass `--dataset` with that round's
+revision too, so the MLP shape and seeds match; the flags above only restore the
+scoring rules.
 
 `whestbench.budget.PHASE1_LAMBDA_FLOPS_PER_SECOND` is that rate, kept as a named
 constant for the same purpose. `run_config.lambda_flops_per_second` and
 `run_config.residual_wall_time_limit_s` in every report record which regime produced it.
-
-Why charge non-flopscope time at all? It lets participants use any Python they like —
-not just flopscope-instrumented operations — but holds them accountable for that work
-in the compute budget. Pure-flopscope solutions get the entire budget for analytical
-work; pure-Python solutions trade some FLOP headroom for residual time.
 
 ## Common Gotchas
 
