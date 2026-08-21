@@ -33,7 +33,6 @@ from .dataset_io import (
     DEFAULT_SPLIT,
     SCHEMA_FORMAT,
     SCHEMA_VERSION,
-    SEED_PROTOCOL_NAME_V3,
     SEED_PROTOCOL_VERSION_V3,
     _validate_config_name,
     _validate_mlp_seeds,
@@ -72,6 +71,10 @@ def create_dataset_torch(
     chunk_size: Optional[int] = None,
     compile: bool = False,
     flop_budget: Optional[int] = None,
+    seed_protocol_version: str = SEED_PROTOCOL_VERSION_V3,
+    seed_salt: "bytes | str | None" = None,
+    salt_id: Optional[str] = None,
+    withhold_salt: bool = False,
     **deprecated_kwargs: Any,
 ) -> Path:
     """Torch-backed analog of whestbench.dataset.create_dataset.
@@ -175,21 +178,35 @@ def create_dataset_torch(
         mlp_seeds = generated
     _validate_mlp_seeds(mlp_seeds, n_mlps)
 
-    from .seeds import derive_seed_streams
+    from .seeds import (
+        bake_seed_values,
+        build_seed_protocol_metadata,
+        derive_seed_streams,
+        resolve_bake_salt,
+    )
+
+    bake_salt = resolve_bake_salt(
+        seed_protocol_version=seed_protocol_version,
+        seed_salt=seed_salt,
+        is_partial=mlp_range is not None,
+    )
+    # Derived over ALL n_mlps then sliced, so a slice's names equal the corresponding
+    # slice of a single-host bake. Shared with create_dataset() via bake_seed_values so
+    # both backends produce identical seeds and names for the same mlp_seeds.
+    all_estimator_seeds, all_name_seeds = bake_seed_values(
+        mlp_seeds, seed_protocol_version=seed_protocol_version, salt=bake_salt
+    )
 
     # Phase 1: generate MLPs on CPU (same protocol as create_dataset())
     mlps = []
     for slice_idx, i in enumerate(range(start, end)):
-        weight_ss, _sample_ss, estimator_seed_i = derive_seed_streams(mlp_seeds[i])
+        weight_ss, _sample_ss, _est_v3 = derive_seed_streams(mlp_seeds[i])
         weight_stream = fnp.random.default_rng(weight_ss)
-        mlps.append(sample_mlp(width, depth, weight_stream, seed=estimator_seed_i))
+        mlps.append(sample_mlp(width, depth, weight_stream, seed=all_estimator_seeds[i]))
         if progress is not None:
             progress({"phase": "generating", "completed": slice_idx + 1, "total": end - start})
 
-    # Names from ALL logical estimator seeds (so slice's names equal slice of single-host bake).
-    # Mirrors create_dataset() so both backends produce identical name lists at same mlp_seeds.
-    all_logical_seeds = [derive_seed_streams(mlp_seeds[i])[2] for i in range(n_mlps)]
-    all_names = assign_unique_names(all_logical_seeds)
+    all_names = assign_unique_names(all_name_seeds)
     slice_names = all_names[start:end]
     mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, slice_names)]
 
@@ -295,10 +312,12 @@ def create_dataset_torch(
         "schema_version": SCHEMA_VERSION,
         "format": SCHEMA_FORMAT,
         "backend": "torch",
-        "seed_protocol": {
-            "name": SEED_PROTOCOL_NAME_V3,
-            "version": SEED_PROTOCOL_VERSION_V3,
-        },
+        "seed_protocol": build_seed_protocol_metadata(
+            seed_protocol_version=seed_protocol_version,
+            salt=bake_salt,
+            salt_id=salt_id,
+            withhold_salt=withhold_salt,
+        ),
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "split": split,
         "config": config,

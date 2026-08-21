@@ -31,6 +31,8 @@ SEED_PROTOCOL_NAME = "whestbench_seedsequence_hierarchy"
 SEED_PROTOCOL_VERSION = "2.0"
 SEED_PROTOCOL_NAME_V3 = "whestbench_explicit_per_mlp_seeds"
 SEED_PROTOCOL_VERSION_V3 = "3.0"
+SEED_PROTOCOL_NAME_V4 = "whestbench_kdf_per_mlp_seeds"
+SEED_PROTOCOL_VERSION_V4 = "4.0"
 
 DEFAULT_SPLIT = "public"
 HOLDOUT_SPLIT = "holdout"
@@ -38,6 +40,18 @@ HOLDOUT_SPLIT = "holdout"
 _KNOWN_SEED_PROTOCOLS = {
     (SEED_PROTOCOL_NAME, SEED_PROTOCOL_VERSION),  # 2.0
     (SEED_PROTOCOL_NAME_V3, SEED_PROTOCOL_VERSION_V3),  # 3.0
+    (SEED_PROTOCOL_NAME_V4, SEED_PROTOCOL_VERSION_V4),  # 4.0
+}
+
+# Protocols whose per-MLP seeds live in the parquet ``mlp_seed`` column rather
+# than in a metadata ``seed`` field. 3.0 and 4.0 share this storage shape -- they
+# differ only in how the participant-facing seed is derived from that column --
+# so every metadata shape rule below keys off membership here, NOT off a single
+# protocol name. Omitting 4.0 would drop it into the 2.0 branch, which demands a
+# top-level 'seed' field, and every 4.0 dataset would fail validation.
+_EXPLICIT_PER_MLP_SEED_PROTOCOLS = {
+    (SEED_PROTOCOL_NAME_V3, SEED_PROTOCOL_VERSION_V3),
+    (SEED_PROTOCOL_NAME_V4, SEED_PROTOCOL_VERSION_V4),
 }
 
 PARQUET_SUBDIR = "data"
@@ -367,6 +381,54 @@ class InvalidDatasetError(ValueError):
     """Raised when a dataset directory has missing/incompatible metadata."""
 
 
+def _validate_seed_protocol_v4_salt(seed_proto: Dict[str, Any]) -> None:
+    """Check that a 4.0 dataset declares a usable salt.
+
+    Validated at load time rather than at first derivation so a mis-specified
+    dataset fails on open, not part-way through a scoring run. This checks the
+    DECLARATION only -- the env var itself is resolved (and its digest verified)
+    by ``seeds.resolve_salt`` when a seed is actually derived, since the variable
+    may legitimately be set by the grader after validation.
+    """
+    source = seed_proto.get("salt_source", "metadata")
+    if source not in ("metadata", "env"):
+        raise InvalidDatasetError(
+            f"seed_protocol 4.0: salt_source must be 'metadata' or 'env'; got {source!r}."
+        )
+    if source == "metadata":
+        raw = seed_proto.get("salt")
+        if not raw:
+            raise InvalidDatasetError(
+                "seed_protocol 4.0: metadata is missing the 'salt' field. The "
+                "participant-facing seeds and MLP names cannot be derived without it."
+            )
+        if not isinstance(raw, str):
+            raise InvalidDatasetError(
+                f"seed_protocol 4.0: 'salt' must be a hex string; got {type(raw).__name__}."
+            )
+        try:
+            bytes.fromhex(raw)
+        except ValueError as exc:
+            raise InvalidDatasetError(f"seed_protocol 4.0: 'salt' is not valid hex: {exc}") from exc
+    elif "salt" in seed_proto:
+        raise InvalidDatasetError(
+            "seed_protocol 4.0: salt_source='env' but a 'salt' field is also present. "
+            "Remove the field -- shipping the salt defeats the point of withholding it."
+        )
+
+    digest = seed_proto.get("salt_digest")
+    if digest is not None and not isinstance(digest, str):
+        raise InvalidDatasetError(
+            f"seed_protocol 4.0: 'salt_digest' must be a string; got {type(digest).__name__}."
+        )
+    if source == "env" and not digest:
+        raise InvalidDatasetError(
+            "seed_protocol 4.0: salt_source='env' requires 'salt_digest' so a wrong "
+            "salt is caught immediately instead of silently deriving different seeds "
+            "and MLP names than the dataset was baked with."
+        )
+
+
 def metadata_file_hash(
     path: "Path | str",
     *,
@@ -508,7 +570,16 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
             + ", ".join(f"{n!r}@{v!r}" for n, v in sorted(_KNOWN_SEED_PROTOCOLS))
         )
 
-    is_v3 = proto_name == SEED_PROTOCOL_NAME_V3
+    # 3.0 and 4.0 share one metadata shape: no 'seed' field anywhere, because the
+    # per-MLP seeds live in the parquet. Only 2.0 carries a metadata seed.
+    has_explicit_per_mlp_seeds = (
+        proto_name,
+        proto_version,
+    ) in _EXPLICIT_PER_MLP_SEED_PROTOCOLS
+    proto_label = f"seed_protocol {proto_version}"
+
+    if proto_name == SEED_PROTOCOL_NAME_V4:
+        _validate_seed_protocol_v4_salt(seed_proto)
 
     if "split" in metadata:
         split_value = metadata["split"]
@@ -600,10 +671,10 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
                     raise InvalidDatasetError(
                         f"'prepared_splits[{split_name!r}].format' must be a string if present."
                     )
-        if is_v3:
+        if has_explicit_per_mlp_seeds:
             if "seed" in metadata:
                 raise InvalidDatasetError(
-                    "seed_protocol 3.0: multi-split metadata must not have a "
+                    f"{proto_label}: multi-split metadata must not have a "
                     "top-level 'seed' field; the parquet mlp_seed column is "
                     "the canonical per-MLP seed record."
                 )
@@ -639,10 +710,10 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
                     raise InvalidDatasetError(
                         f"invalid config in splits[{split_name!r}]: {exc}"
                     ) from exc
-            if is_v3:
+            if has_explicit_per_mlp_seeds:
                 if "seed" in info:
                     raise InvalidDatasetError(
-                        f"seed_protocol 3.0: splits[{split_name!r}] must not "
+                        f"{proto_label}: splits[{split_name!r}] must not "
                         f"have a 'seed' field; the parquet mlp_seed column "
                         f"is the canonical per-MLP seed record."
                     )
@@ -656,10 +727,10 @@ def validate_metadata(metadata: Dict[str, Any], *, allow_partial: bool = False) 
     # Single-split shape.
     if "n_mlps" not in metadata:
         raise InvalidDatasetError("single-split metadata missing required field 'n_mlps'.")
-    if is_v3:
+    if has_explicit_per_mlp_seeds:
         if "seed" in metadata:
             raise InvalidDatasetError(
-                "seed_protocol 3.0: single-split metadata must not have a "
+                f"{proto_label}: single-split metadata must not have a "
                 "top-level 'seed' field; the parquet mlp_seed column is "
                 "the canonical per-MLP seed record."
             )

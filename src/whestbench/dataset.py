@@ -34,7 +34,6 @@ from .dataset_io import (
     DEFAULT_SPLIT,
     SCHEMA_FORMAT,
     SCHEMA_VERSION,
-    SEED_PROTOCOL_NAME_V3,
     SEED_PROTOCOL_VERSION_V3,
     InvalidDatasetError,
     _validate_config_name,
@@ -103,6 +102,10 @@ def create_dataset(
     config: str = "default",
     mlp_range: Optional[Tuple[int, int]] = None,
     progress: Optional[Callable[[Dict[str, Any]], None]] = None,
+    seed_protocol_version: str = SEED_PROTOCOL_VERSION_V3,
+    seed_salt: "bytes | str | None" = None,
+    salt_id: Optional[str] = None,
+    withhold_salt: bool = False,
     **deprecated_kwargs: Any,
 ) -> Path:
     """Generate MLPs, compute ground-truth, and write a schema-3.0 dataset directory.
@@ -176,20 +179,34 @@ def create_dataset(
         mlp_seeds = generated
     _validate_mlp_seeds(mlp_seeds, n_mlps)
 
-    from .seeds import derive_seed_streams
+    from .seeds import (
+        bake_seed_values,
+        build_seed_protocol_metadata,
+        derive_seed_streams,
+        resolve_bake_salt,
+    )
+
+    bake_salt = resolve_bake_salt(
+        seed_protocol_version=seed_protocol_version,
+        seed_salt=seed_salt,
+        is_partial=mlp_range is not None,
+    )
+    # Derived over ALL n_mlps, then sliced — see bake_seed_values.
+    all_estimator_seeds, all_name_seeds = bake_seed_values(
+        mlp_seeds, seed_protocol_version=seed_protocol_version, salt=bake_salt
+    )
 
     # Phase 1: generate MLPs in the slice.
     mlps: List[MLP] = []
     for slice_idx, i in enumerate(range(start, end)):
-        weight_ss, _sample_ss, estimator_seed_i = derive_seed_streams(mlp_seeds[i])
+        weight_ss, _sample_ss, _est_v3 = derive_seed_streams(mlp_seeds[i])
         weight_stream = fnp.random.default_rng(weight_ss)
-        mlps.append(sample_mlp(width, depth, weight_stream, seed=estimator_seed_i))
+        mlps.append(sample_mlp(width, depth, weight_stream, seed=all_estimator_seeds[i]))
         if progress is not None:
             progress({"phase": "generating", "completed": slice_idx + 1, "total": end - start})
 
-    # Names: derived from ALL logical estimator seeds, then sliced.
-    all_logical_seeds = [derive_seed_streams(mlp_seeds[i])[2] for i in range(n_mlps)]
-    all_names = assign_unique_names(all_logical_seeds)
+    # Names: derived from ALL name seeds, then sliced.
+    all_names = assign_unique_names(all_name_seeds)
     slice_names = all_names[start:end]
     mlps = [dataclasses.replace(m, name=n) for m, n in zip(mlps, slice_names)]
 
@@ -270,10 +287,12 @@ def create_dataset(
         "schema_version": SCHEMA_VERSION,
         "format": SCHEMA_FORMAT,
         "backend": "flopscope",
-        "seed_protocol": {
-            "name": SEED_PROTOCOL_NAME_V3,
-            "version": SEED_PROTOCOL_VERSION_V3,
-        },
+        "seed_protocol": build_seed_protocol_metadata(
+            seed_protocol_version=seed_protocol_version,
+            salt=bake_salt,
+            salt_id=salt_id,
+            withhold_salt=withhold_salt,
+        ),
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "split": split,
         "config": config,
@@ -794,6 +813,37 @@ def metadata(
     return md
 
 
+def resolve_seed_context(
+    ds: "Any",
+    *,
+    seed_protocol_version: "str | None" = None,
+) -> "tuple[str, bytes | None]":
+    """Return ``(seed_protocol_version, seed_salt)`` for a loaded dataset.
+
+    Single place that turns a dataset's registered metadata into the two values
+    ``MLP.from_row`` needs. ``seed_protocol_version`` overrides the registered
+    value when given (used by ``make_contest_from_dataset`` for datasets loaded
+    outside ``load_dataset``).
+
+    The salt is resolved only for protocol 4.0, and resolution is fail-loud by
+    construction — see ``seeds.resolve_salt``. There is deliberately no unsalted
+    fallback: it would derive plausible-but-wrong estimator seeds rather than
+    raising, and every score computed from them would be silently wrong.
+    """
+    md = _METADATA_BY_DS.get(ds, {})
+    seed_proto = md.get("seed_protocol", {}) or {}
+    proto_version = seed_protocol_version or seed_proto.get("version", "2.0")
+
+    from .dataset_io import SEED_PROTOCOL_VERSION_V4
+
+    if proto_version != SEED_PROTOCOL_VERSION_V4:
+        return proto_version, None
+
+    from .seeds import resolve_salt
+
+    return proto_version, resolve_salt(seed_proto)
+
+
 def iter_mlps(ds: "Dataset | IterableDataset") -> Iterator[MLP]:
     """Iterate the MLPs in a Dataset, constructing MLP objects per row.
 
@@ -815,10 +865,9 @@ def iter_mlps(ds: "Dataset | IterableDataset") -> Iterator[MLP]:
             "multi-split datasets, call load_dataset(..., split='<name>') "
             "first or use ds[split]."
         )
-    md = _METADATA_BY_DS.get(ds, {})
-    proto_version = md.get("seed_protocol", {}).get("version", "2.0")
+    proto_version, seed_salt = resolve_seed_context(ds)
     for row in ds:
-        yield MLP.from_row(row, seed_protocol_version=proto_version)
+        yield MLP.from_row(row, seed_protocol_version=proto_version, seed_salt=seed_salt)
 
 
 def mlp_at(ds: Dataset, index: int) -> MLP:
@@ -848,6 +897,5 @@ def mlp_at(ds: Dataset, index: int) -> MLP:
             "`next(itertools.islice(iter_mlps(ds), i, i + 1))` "
             "(cost: O(i) rows scanned), or reload without streaming=True."
         )
-    md = _METADATA_BY_DS.get(ds, {})
-    proto_version = md.get("seed_protocol", {}).get("version", "2.0")
-    return MLP.from_row(ds[index], seed_protocol_version=proto_version)
+    proto_version, seed_salt = resolve_seed_context(ds)
+    return MLP.from_row(ds[index], seed_protocol_version=proto_version, seed_salt=seed_salt)
