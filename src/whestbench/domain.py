@@ -94,7 +94,18 @@ class MLP:
         Raises:
             ValueError: on malformed weights via MLP.validate().
         """
-        weight_layers = [fnp.array(w) for w in row["weights"]]
+        # float32 is the dtype contract, and it has to be asserted here rather than
+        # inherited. The parquet stores float32 (Arrow `float`), but `datasets` hands
+        # list columns back as nested PYTHON lists unless a format is set, and Python
+        # floats are C doubles — so `fnp.array(w)` on an unformatted row silently
+        # produces float64. That is a read-path artifact, not the bake: it doubled
+        # every estimator's bill on anything touching the weights (flopscope prices
+        # float64 at 2x float32) and doubled resident weight memory. The targets on
+        # this same path were already pinned to float32 in scoring.py; the weights
+        # were not. Pinning here covers every caller — iter_mlps, mlp_at,
+        # make_contest_from_dataset, streaming and materialised alike — because they
+        # all funnel through from_row.
+        weight_layers = [fnp.array(w, dtype=fnp.float32) for w in row["weights"]]
         if not weight_layers:
             raise ValueError("MLP row has empty weights.")
         depth = len(weight_layers)
