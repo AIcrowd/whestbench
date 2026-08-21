@@ -409,6 +409,7 @@ def _default_resource_limits() -> ResourceLimits:
         flop_budget=272_000_000_000,
         cpu_time_limit_s=None,
         wall_time_limit_s=120.0,
+        residual_wall_time_limit_s=0.4,
     )
 
 
@@ -1265,9 +1266,15 @@ def _build_participant_parser() -> argparse.ArgumentParser:
         "--residual-wall-time-limit",
         dest="residual_wall_time_limit",
         type=float,
-        default=None,
+        default=0.4,
         metavar="SECONDS",
-        help="Time limit for non-flopscope operations per predict call (default: unlimited).",
+        help=(
+            "Wall-clock limit on non-flopscope time per predict() call, in seconds "
+            "(default: 0.4, the graded cap). Residual time is plumbing — unpacking "
+            "mlp, control flow around your fnp calls, assembling the result — not "
+            "computation. Exceeding it zeroes that MLP's predictions. Raise it to "
+            "debug under a profiler; lower it to leave headroom for a slower grader."
+        ),
     )
     run_parser.add_argument(
         "--seed",

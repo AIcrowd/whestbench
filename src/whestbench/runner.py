@@ -53,7 +53,7 @@ class ResourceLimits:
     flop_budget: int
     cpu_time_limit_s: Optional[float] = None
     wall_time_limit_s: Optional[float] = 120.0
-    residual_wall_time_limit_s: Optional[float] = None
+    residual_wall_time_limit_s: Optional[float] = 0.4
 
     def __post_init__(self) -> None:
         if self.setup_timeout_s <= 0:
@@ -198,6 +198,16 @@ class LocalRunner:
         try:
             return self._estimator.predict(mlp, budget)
         except flops.BudgetExhaustedError:
+            raise
+        except flops.TimeExhaustedError:
+            # Re-raise unchanged, exactly like BudgetExhaustedError above. scoring.py
+            # has a dedicated `except flops.TimeExhaustedError` handler that sets
+            # time_exhausted=True and buckets the MLP under failure_breakdown
+            # ["time_exhausted"]; wrapping this in RunnerError would send it down the
+            # generic error path instead, leaving time_exhausted False on the very
+            # MLP that blew the wall cap. SubprocessRunner already preserves the type
+            # (it re-raises on status == "time_exhausted"), so without this clause the
+            # two runners disagree about how the same failure is reported.
             raise
         except Exception as exc:
             predict_details = getattr(exc, "details", None)
