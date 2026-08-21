@@ -50,11 +50,14 @@ class _FakeClient:
     def verify_identity(self):
         return 1
 
-    def resolve_challenge(self, _slug):
-        return 1
-
-    def check_registration(self, **_kw):
-        return True
+    def check_eligibility(self, **_kw):
+        return {
+            "submissions_allowed": True,
+            "denied_reason": None,
+            "message": None,
+            "rules_accepted": True,
+            "participation_terms_accepted": True,
+        }
 
     def get_upload_details(self, **_kw):
         return {"url": "https://s3.test/upload", "fields": {"key": "k"}}

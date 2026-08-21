@@ -993,13 +993,15 @@ def validate_submission_entrypoint(
 
 
 def _aicrowd_verify_identity(api_key: str) -> Dict[str, Any]:
-    """Validate an AIcrowd API key and return identity info ({"id": ...}).
+    """Validate an AIcrowd API key and return the caller's identity.
+
+    Returns the whole /api_user payload — {"id", "username", ...} — so the greeting
+    can use the username rather than falling back to the numeric id.
 
     Raises AIcrowdAPIError (or a transport error) on failure. Kept module-level
     so tests can monkeypatch it without hitting the network.
     """
-    pid = AIcrowdClient(api_key=api_key).verify_identity()
-    return {"id": pid}
+    return AIcrowdClient(api_key=api_key).whoami()
 
 
 def _build_participant_parser() -> argparse.ArgumentParser:
@@ -3544,18 +3546,41 @@ def _main_participant(argv: "list[str]") -> int:
             client = AIcrowdClient(api_key=api_key)
             try:
                 say.intent("Submitting to AIcrowd", quiet=json_output)
-                pid = client.verify_identity()
-                challenge_id = client.resolve_challenge(args.challenge)
-                if not client.check_registration(challenge_id=challenge_id, participant_id=pid):
-                    msg = f"You are not registered for '{args.challenge}'."
+                client.verify_identity()
+                # Ask AIcrowd whether a submission is allowed, rather than
+                # inferring it from a registration flag that can disagree with the
+                # answer the submit call would give. AIcrowd replies with the actual
+                # reason and a sentence written for a human; relay that instead of
+                # guessing a cause here.
+                elig = client.check_eligibility(challenge_slug=args.challenge)
+                if not elig.get("submissions_allowed", True):
+                    msg = elig.get("message") or (
+                        f"AIcrowd will not accept submissions to '{args.challenge}' right now."
+                    )
                     if json_output:
-                        print(json.dumps({"ok": False, "error": msg}))
+                        print(
+                            json.dumps(
+                                {
+                                    "ok": False,
+                                    "error": msg,
+                                    "error_code": elig.get("denied_reason"),
+                                    "rules_url": elig.get("rules_url"),
+                                }
+                            )
+                        )
                     else:
                         say.warn(msg)
-                        say.hint(
-                            "Accept the challenge rules at "
-                            f"https://www.aicrowd.com/challenges/{args.challenge}"
+                        # Point at the rules page only when the rules are genuinely
+                        # the blocker, and only when the message has not already
+                        # said so. A closed round is not fixed by accepting
+                        # anything, and repeating a URL the reader just read is
+                        # noise dressed up as help.
+                        rules_url = elig.get("rules_url")
+                        blocked_on_terms = not elig.get("rules_accepted", True) or not elig.get(
+                            "participation_terms_accepted", True
                         )
+                        if blocked_on_terms and rules_url and rules_url not in msg:
+                            say.hint(f"Accept the challenge rules at {rules_url}")
                     return 1
                 upload = client.get_upload_details(challenge_slug=args.challenge)
                 say.step("Uploading artifact to S3", quiet=json_output)
