@@ -398,7 +398,7 @@ def load_dataset(
 
     Args:
         path_or_repo: Local directory path, or HF Hub repo id (e.g.
-            "aicrowd/arc-whestbench-2026").
+            "aicrowd/arc-whestbench-public-2026").
         revision: HF Hub git tag or commit SHA. Ignored for local paths.
         split: Optional split name. Required for multi-split datasets unless
             you want a DatasetDict; defaults to "public" for single-split
