@@ -107,6 +107,30 @@ def test_package_folder_mode_lists_files_and_excludes_secret(tmp_path: Path, mon
     assert {"estimator.py", "helper.py", "requirements.txt", "manifest.json"} <= names
 
 
+def test_package_folder_mode_no_security_warning_for_ignored_dirs(
+    tmp_path: Path, monkeypatch
+) -> None:
+    # whestbench#96: `.venv/` is already in the built-in ignore set, so certifi's
+    # CA bundle never ships — warning that it was "excluded for security" is noise
+    # that devalues the real warnings. The in-scope `.env` must still be flagged.
+    (tmp_path / "estimator.py").write_text(_EST, encoding="utf-8")
+    certifi = tmp_path / ".venv" / "lib" / "python3.10" / "site-packages" / "certifi"
+    certifi.mkdir(parents=True)
+    (certifi / "cacert.pem").write_text("-----BEGIN CERTIFICATE-----\n", encoding="utf-8")
+    (tmp_path / ".env").write_text("AICROWD_API_KEY=secret\n", encoding="utf-8")
+    out = tmp_path.parent / "ignoreddirs.tar.gz"
+    captured = _spy(monkeypatch)
+
+    rc = cli.main(["package", "--estimator", str(tmp_path), "--output", str(out)])
+
+    assert rc == 0
+    joined = "\n".join(captured)
+    assert "cacert.pem" not in joined
+    assert ".env" in joined and "security" in joined.lower()
+    names = _archive_names(out)
+    assert names == {"estimator.py", "manifest.json"}
+
+
 @pytest.mark.parametrize("flag", ["--requirements", "--submission-metadata", "--approach"])
 def test_package_deprecated_flags_warn(tmp_path: Path, monkeypatch, flag: str) -> None:
     (tmp_path / "estimator.py").write_text(_EST, encoding="utf-8")

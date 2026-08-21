@@ -345,7 +345,9 @@ _BUILTIN_IGNORES: tuple[str, ...] = (
 # so a leaked .env / private key would be exposed). Unlike .whestignore patterns,
 # these cannot be overridden; rename or remove the file if a match is a false
 # positive. ``find_secret_files`` surfaces matches so the CLI can tell the user
-# exactly what was dropped and why.
+# exactly what was dropped and why — but only for files that were submission
+# candidates in the first place, since a file the ignore set already dropped was
+# never subject to this rule.
 _SECRET_IGNORES: tuple[str, ...] = (
     ".env",
     ".env.*",
@@ -433,13 +435,24 @@ def find_secret_files(root: "str | Path") -> list[Path]:
     """Files under ``root`` that were dropped for security (credential/secret
     patterns in :data:`_SECRET_IGNORES`). These are never bundled; this surfaces
     them so the CLI can report exactly what was excluded and why. Absolute paths,
-    sorted."""
+    sorted.
+
+    Scoped to the same candidate set as :func:`collect_submission_files`: a file
+    already dropped by the built-in / ``.gitignore`` / ``.whestignore`` ignore set
+    was never a submission candidate, so the credential rule never applied to it
+    and there is nothing to report. Without this, a ``.venv`` full of vendored
+    ``*.pem`` CA bundles (certifi ships one) buries the warnings that matter under
+    hundreds of false positives (whestbench#96)."""
     root = Path(root).resolve()
+    patterns = _load_ignore_patterns(root)
     out: list[Path] = []
     for path in sorted(root.rglob("*")):
         if path.is_symlink() or not path.is_file():
             continue
-        if _is_secret(path.relative_to(root)):
+        rel = path.relative_to(root)
+        if _is_ignored(rel, patterns):
+            continue
+        if _is_secret(rel):
             out.append(path)
     return out
 
