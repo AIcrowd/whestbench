@@ -54,7 +54,7 @@ deterministic and ~10× faster.
   repo's tag pins which exact dataset everyone scores against. See
   [Publishing to HuggingFace Hub](#publishing-to-huggingface-hub) and
   [Downloading from HF Hub and the local cache](#downloading-from-hf-hub-and-the-local-cache).
-- **CI / leaderboard workflow:** `bake → upload --tag v1-phase1`. Participants
+- **CI / leaderboard workflow:** `bake → upload --tag v2-phase2`. Participants
   pull by tag. Streaming (`whest run --streaming`) is the natural fit for
   per-PR CI gates — see [Streaming mode](#streaming-mode).
 
@@ -129,7 +129,7 @@ hardware fingerprint, and per-split row counts. `info` also works against HF
 Hub directly:
 
 ```bash
-whest dataset info aicrowd/arc-whestbench-public-2026 --revision v1-phase1
+whest dataset info aicrowd/arc-whestbench-public-2026 --revision v2-phase2
 ```
 
 No download required — `info` only fetches `metadata.json`.
@@ -255,7 +255,7 @@ page (tags, license, language, etc.). Don't strip it.
 You want to score against a dataset published by your team or the contest
 organisers. There are two paths.
 
-> **Always pin a revision.** Use `@v1-phase1` (or `--revision v1-phase1`), not
+> **Always pin a revision.** Use `@v2-phase2` (or `--revision v2-phase2`), not
 > bare `main`. The contest repo's `main` advances each phase, so an unpinned
 > load can silently switch the underlying MLPs between runs — and an offline
 > cache can just as silently keep serving the *old* phase. A tag is immutable,
@@ -268,14 +268,14 @@ machine, or commit to a separate artifact store:
 
 ```bash
 whest dataset download aicrowd/arc-whestbench-public-2026 \
-    --revision v1-phase1 \
+    --revision v2-phase2 \
     --output ./eval
 ```
 
 Representative output:
 
 ```
-→ Downloading aicrowd/arc-whestbench-public-2026@v1-phase1 → ./eval
+→ Downloading aicrowd/arc-whestbench-public-2026@v2-phase2 → ./eval
   Preflight: 1 parquet shard, 2.0 GB, 1,000 MLPs
   ✓ Downloaded 2.0 GB              ████████████████████ 100%   28.9s
 ✓ Wrote ./eval (cache: ~/.cache/huggingface/hub/datasets--aicrowd--arc-whestbench-public-2026)
@@ -290,7 +290,7 @@ You can skip the explicit download — `whest run` does it lazily on first use:
 
 ```bash
 whest run --estimator estimator.py \
-          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1
+          --dataset hf://aicrowd/arc-whestbench-public-2026@v2-phase2
 ```
 
 This downloads on first invocation (showing a progress bar) and caches.
@@ -351,8 +351,8 @@ row-group-by-row-group over HTTP instead of downloading it first.
 ### When to use
 
 - You're iterating on estimator code with `--n-mlps 5` (or some small K).
-  Streaming fetches only the first ⌈K/47⌉ row groups (~95 MB each for the
-  warmup dataset) instead of the full 2 GB.
+  Streaming fetches only the leading row groups instead of the whole
+  dataset.
 - You're on a constrained-disk environment (CI runner, container).
 - You want a fast first-row response time more than total throughput.
 
@@ -385,7 +385,7 @@ Unauthenticated requests to HF are rate-limited and noticeably slower. Run
 
 ```bash
 whest run --estimator estimator.py \
-          --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 \
+          --dataset hf://aicrowd/arc-whestbench-public-2026@v2-phase2 \
           --streaming \
           --n-mlps 5
 ```
@@ -502,8 +502,8 @@ For complete silence add `--quiet` to the `whest` invocation.
 ## Troubleshooting
 
 **"I see a long pause and no output."**
-Cache miss on a cold HF cache. Watch the progress bar — for the warmup
-dataset it's ~30 s on a 70 MB/s link. To avoid silent re-downloads, run
+Cache miss on a cold HF cache. Watch the progress bar — expect tens of
+seconds on a fast link. To avoid silent re-downloads, run
 [`whest dataset download`](#whest-dataset-download--explicit-fetch) ahead
 of time, or `ls ~/.cache/huggingface/hub/` to confirm progress.
 

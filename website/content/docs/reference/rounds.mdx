@@ -1,0 +1,97 @@
+# Competition rounds
+
+Every round has its own MLP shape, compute budget, and rules for how wall time is
+charged. They are kept side by side rather than replaced, so an old submission can
+be re-scored under the rulebook it actually ran against.
+
+The values here are generated from `whestbench.budget.ROUNDS`, which is the single
+source of truth — the defaults in `budget.py` are derived from `CURRENT_ROUND`
+rather than restated, so this table and the code cannot disagree.
+
+## How the rounds have changed
+
+| | `v1-warmup` | `v1-phase1` | `v2-phase2` (current) |
+|---|---|---|---|
+| **Dataset tag** | `v1-warmup` | `v1-phase1` | `v2-phase2` |
+| **MLP shape** (width × depth) | 256 × 8 | 256 × 32 | **1024 × 16** |
+| **Ground-truth samples** | 1e9 | 1e9 | 1e9 |
+| **`flop_budget`** `B` | 6.8e10 | 2.72e11 | **2⁴¹** (2,199,023,255,552) |
+| **`lambda_flops_per_second`** (residual rate) | 1e11 | 1e11 | **deprecated** — see below |
+| **`residual_wall_time_limit_s`** | none | none | **0.4 s** |
+| **`wall_time_limit_s`** per `predict()` | 60 s | 60 s | **120 s** |
+| **`residual_mode`** | priced | priced | **gated** |
+
+What changed, round to round:
+
+- **warmup → phase 1** — MLPs got deeper (8 → 32 layers) and the budget grew 4×.
+  Same rulebook otherwise.
+- **phase 1 → phase 2** — MLPs got wider and shallower (256×32 → 1024×16), the
+  budget grew ~8×, and residual wall time stopped being priced.
+
+## Residual wall time: priced, then gated
+
+"Residual" is the part of `predict()` that flopscope does not meter — your Python,
+control flow, GC. Left unpriced and uncapped it would be a free lunch, and the
+competition has closed that in two different ways.
+
+**Priced (`v1-warmup`, `v1-phase1`).** Residual seconds were converted to FLOPs at
+`λ = 1e11` and added to the bill, so effective compute was `C = F + λR`. Wall time
+was allowed but cost budget, and the two resources traded against each other.
+
+**Gated (`v2-phase2`, current).** `λ = 0`, so **residual pricing is deprecated**.
+Residual time is capped separately by `residual_wall_time_limit_s` (0.4 s) and
+crossing that limit fails the MLP outright. Effective compute is then exactly
+`C = F`, which means the FLOP budget means what it says — you no longer have to
+reason about a second currency.
+
+> The rate is deprecated, not removed. `PHASE1_LAMBDA_FLOPS_PER_SECOND` is still
+> exported precisely so a `v1-*` round can be re-scored correctly.
+
+Nothing about either model is hard-wired to a phase; `lambda_flops_per_second`
+accepts any rate.
+
+## Re-scoring an older round
+
+Restoring **all** of the round's settings is the whole point of keeping them
+named. Restoring only some of them scores that run under a mix of two rulebooks
+and produces a number that matches neither.
+
+```python
+from whestbench.budget import ROUNDS
+
+r = ROUNDS["v1-phase1"]
+r.flop_budget                  # 272_000_000_000
+r.lambda_flops_per_second      # 1e11   -- priced
+r.residual_wall_time_limit_s   # None   -- that round gated nothing
+r.wall_time_limit_s            # 60.0   -- not today's 120.0
+r.width, r.depth               # (256, 32)
+```
+
+From the CLI, the same four settings:
+
+```bash
+whest run --estimator ./estimator.py \
+    --dataset hf://aicrowd/arc-whestbench-public-2026@v1-phase1 \
+    --flop-budget 272000000000 \
+    --lambda-flops-per-second 1e11 \
+    --no-residual-wall-time-limit \
+    --wall-time-limit 60
+```
+
+The two easiest settings to forget are the last two. A submission that took
+between 60 s and 120 s was `time_exhausted` under Phase 1 but passes under the
+current default, and Phase 1 gated nothing — so leaving today's 0.4 s cap in place
+fails MLPs that round would have allowed.
+
+## Pinning the dataset
+
+Always pin a revision rather than tracking `main`. `main` advances each round, so
+an unpinned load can silently change the dataset underneath you; a tag is immutable
+and reproducible.
+
+```bash
+whest run --estimator estimator.py \
+          --dataset hf://aicrowd/arc-whestbench-public-2026@v2-phase2
+```
+
+See [datasets guide](/docs/guides/datasets) for the full loading and caching story.
