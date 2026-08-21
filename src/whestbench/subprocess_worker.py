@@ -13,7 +13,7 @@ import flopscope.numpy as fnp
 
 from .domain import MLP
 from .loader import load_estimator_from_path
-from .scoring import validate_predictions
+from .scoring import materialise_predictions, validate_predictions
 from .sdk import BaseEstimator, SetupContext
 
 
@@ -71,9 +71,19 @@ def _handle_predict(
     try:
         with budget_ctx as ctx:
             predictions = estimator.predict(mlp, budget)
+            # Materialise inside the window; see the note in materialise_predictions.
+            # Both this and the shape check are free ops, so nothing here is billed
+            # to the participant. The metered finiteness scan runs after __exit__.
+            arr = materialise_predictions(predictions, depth=mlp.depth, width=mlp.width)
+            # Drop our reference while the meter is still running. Otherwise the
+            # object outlives the window and a __del__ finaliser runs unbilled --
+            # after the response has already been written, so the flops_used we
+            # just reported can no longer account for it. The local path gets this
+            # for free by rebinding; here the binding would survive to function
+            # scope exit. (CPython refcounting makes this immediate.)
+            del predictions
             flops_used = ctx.flops_used
-        validated_predictions = validate_predictions(predictions, depth=mlp.depth, width=mlp.width)
-        arr = fnp.asarray(validated_predictions, dtype=fnp.float32)
+        arr = validate_predictions(arr, depth=mlp.depth, width=mlp.width)
         _write_response(
             {
                 "status": "ok",

@@ -346,8 +346,35 @@ def make_contest_from_dataset(
     )
 
 
-def validate_predictions(predictions: fnp.ndarray, *, depth: int, width: int) -> fnp.ndarray:
-    """Validate estimator prediction array shape and finiteness."""
+def materialise_predictions(predictions: "Any", *, depth: int, width: int) -> fnp.ndarray:
+    """Coerce an estimator's return value to a concrete float32 array.
+
+    MUST be called INSIDE the metered window, and is deliberately cheap enough
+    to be: the shape check and ``fnp.asarray`` are both free ops, so a correct
+    estimator is billed nothing for it.
+
+    ``predict()`` is not required to return a concrete array -- anything with
+    ``.shape`` and ``__array__`` satisfies the contract -- so both of those
+    hooks are participant code. Touching them after the ``BudgetContext`` has
+    exited runs that code with the clock stopped and the FLOP counter detached,
+    which is why this has to happen before the window closes.
+
+    The metered half of validation (the finiteness scan, which costs
+    ``2 * numel - 1``) stays in :func:`validate_predictions` and must run
+    OUTSIDE the window -- billing the harness's own checks to the participant is
+    its own defect.
+    """
+    _check_prediction_shape(predictions, depth=depth, width=width)
+    return fnp.asarray(predictions, dtype=fnp.float32)
+
+
+def _check_prediction_shape(predictions: "Any", *, depth: int, width: int) -> None:
+    """Raise the structured shape error, or return.
+
+    Split out so the shape check can run inside the metered window while the
+    finiteness scan runs outside it, without either caller losing the
+    participant-facing ``details`` payload.
+    """
     shape = tuple(predictions.shape) if hasattr(predictions, "shape") else ()
     expected_shape = (depth, width)
     if shape != expected_shape:
@@ -373,18 +400,34 @@ def validate_predictions(predictions: fnp.ndarray, *, depth: int, width: int) ->
         )
         setattr(exc, "details", details)
         raise exc
+
+
+def validate_predictions(predictions: "Any", *, depth: int, width: int) -> fnp.ndarray:
+    """Validate estimator prediction array shape and finiteness.
+
+    Call this OUTSIDE the metered window. The finiteness scan is built from
+    counted flopscope ops and costs ``2 * numel - 1`` -- 32,767 FLOPs at the
+    graded shape -- so running it inside a participant's ``BudgetContext`` bills
+    them for a check the harness performs on its own behalf, and can tip an
+    otherwise-passing submission into ``budget_exhausted``.
+
+    Returns the COERCED array, not the caller's object. Returning the original
+    meant a later consumer re-materialised it independently, so the values that
+    passed the finiteness gate were not necessarily the values that got scored.
+    """
+    _check_prediction_shape(predictions, depth=depth, width=width)
     pred_np = fnp.asarray(predictions, dtype=fnp.float32)
     if not fnp.all(fnp.isfinite(pred_np)):
         details = {
-            "expected_shape": list(expected_shape),
-            "got_shape": list(shape),
+            "expected_shape": [depth, width],
+            "got_shape": list(tuple(predictions.shape) if hasattr(predictions, "shape") else ()),
             "cause_hints": ["Predictions must contain finite values only."],
             "hint": "Prediction values must be finite and include neither inf nor NaN.",
         }
         exc = ValueError("Predictions must contain only finite values.")
         setattr(exc, "details", details)
         raise exc
-    return predictions
+    return pred_np
 
 
 def _predict_stats_to_dict(stats: Any) -> Optional[Dict[str, Any]]:
@@ -652,6 +695,14 @@ def evaluate_estimator(
         try:
             with budget_ctx:
                 raw_predictions = estimator.predict(mlp, spec.flop_budget)
+                # Materialise before the window closes. A return value only has to
+                # expose .shape and __array__, both of which are participant code;
+                # touching them after __exit__ runs that code with the clock stopped
+                # and the FLOP counter detached. Free ops, so a correct estimator
+                # pays nothing. The metered finiteness scan stays outside, below.
+                raw_predictions = materialise_predictions(
+                    raw_predictions, depth=spec.depth, width=spec.width
+                )
             stats = _predict_stats_to_dict(
                 last_predict_stats() if callable(last_predict_stats) else None
             )
