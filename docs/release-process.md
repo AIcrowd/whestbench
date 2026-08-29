@@ -153,10 +153,12 @@ specific version explicitly, use `cz bump --increment PATCH|MINOR|MAJOR`.
 
 ### Pin updates for flopscope
 
-Whestbench pins `flopscope>=0.11.0,<0.12.0` and
-`flopscope-server>=0.11.0,<0.12.0`. When flopscope ships a new minor or
-major version, bump these floors in `pyproject.toml` and re-run `uv lock`
-before cutting the next whestbench release. (Out of scope for an automated
+Whestbench pins `flopscope>=0.12.1,<0.13.0` and
+`flopscope-server>=0.12.1,<0.13.0`. When flopscope ships a new release,
+bump these floors in `pyproject.toml` and re-run `uv lock` before cutting
+the next whestbench release. Raise the floor for a patch too when the patch
+is the reason for the bump, so the pin states what was tested rather than
+merely what is tolerated. (Out of scope for an automated
 workflow; flag if Dependabot becomes worth the noise.)
 
 > **After any flopscope bump, re-run `tests/test_torch_flop_synthesis.py` first.**
