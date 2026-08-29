@@ -215,7 +215,7 @@ def mc_flops_per_sample(width: int, depth: int, *, dtype_aware_billing: bool) ->
     same operation on float32, and the float32->float64 cast -- previously free
     -- costs 2 FLOPs per element. Before it, every dtype billed alike. The
     forward pass is float32 throughout and is unaffected (verified identical
-    across every flopscope release from v0.2.0 to v0.12.0); only the float64
+    across every flopscope release from v0.2.0 to v0.12.1); only the float64
     accumulation moves, giving::
 
         k = 1   graded before flopscope v0.9.0   (asarray free, sum at rate 1)
@@ -253,9 +253,13 @@ def mc_flops_per_sample_for_round(round_config: RoundConfig) -> int:
 def mc_samples_at_budget(round_config: RoundConfig) -> float:
     """N -- how many Monte-Carlo samples the per-MLP budget B_m buys.
 
-    Deliberately fractional. The budget is a published rules figure and is used
-    exactly as published; only Phase 2 happens to divide evenly (2**41 / 2**25),
-    and reading anything into that coincidence has misled us before.
+    Deliberately fractional, and fractional in every round: no budget divides
+    evenly by its per-sample cost. Phase 2 looks as though it should -- its
+    budget is 2**41 and the leading term of the per-sample cost, 2*d*w**2, is
+    2**25 -- but the +17*w and +k*d*w terms break it, giving 33,637,376 per
+    sample and N = 65,374.3995. The budget is a published rules figure and is
+    used exactly as published; reading a round number into it has misled us
+    before.
     """
     return round_config.flop_budget / mc_flops_per_sample_for_round(round_config)
 

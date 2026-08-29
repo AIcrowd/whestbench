@@ -60,7 +60,7 @@ The cost of one sample is `2·d·w² + 17·w + k·d·w`; see
 | graded from v0.9.0 on | 4 | float64 bills 2×, and the cast bills 2 FLOPs/element |
 
 The forward pass is float32 throughout and is **identical in every flopscope
-release from v0.2.0 to v0.12.0** — only the float64 accumulation moves, which
+release from v0.2.0 to v0.12.1** — only the float64 accumulation moves, which
 the sampler uses for numerical stability.
 
 > This split is historical fidelity, not physics. For the final results in the
