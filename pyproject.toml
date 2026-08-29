@@ -13,7 +13,7 @@ license = "MIT"
 dependencies = [
     "datasets>=2.20",
     "faker~=37.0",
-    "flopscope>=0.12.0,<0.13.0",  # 0.12.0 is the Phase 2 meter. It corrects ~40 prices that did not match what the operations actually compute — nan-prefixed reductions now charge their NaN-scan pass, six boolean-returning ops that compute in a promoted float dtype move by exactly 2x (this includes is_symmetric/as_symmetric, which bill allclose's formula), and einsum path search, multi-output ufuncs, fill_diagonal(wrap=True) and SymmetricTensor construction are repriced. Some prices rise and some fall, so estimator totals move in both directions. flopscope's own CHANGELOG is explicit that this ships as a new version opening a new phase: nothing already scored is repriced, so no re-evaluation is owed for Phase 1. <0.13.0 caps the next breaking minor. Bump this in lockstep with flopscope-server below, and re-run tests/test_torch_flop_synthesis.py — it is the gate on whether a bump invalidates published dataset revisions.
+    "flopscope>=0.12.1,<0.13.0",  # 0.12.1 is the Phase 2 meter. It corrects ~40 prices that did not match what the operations actually compute — nan-prefixed reductions now charge their NaN-scan pass, six boolean-returning ops that compute in a promoted float dtype move by exactly 2x (this includes is_symmetric/as_symmetric, which bill allclose's formula), and einsum path search, multi-output ufuncs, fill_diagonal(wrap=True) and SymmetricTensor construction are repriced. Some prices rise and some fall, so estimator totals move in both directions. flopscope's own CHANGELOG is explicit that this ships as a new version opening a new phase: nothing already scored is repriced, so no re-evaluation is owed for Phase 1. <0.13.0 caps the next breaking minor. The floor is 0.12.1, not 0.12.0: 0.12.1 makes a symmetry tag describe the buffer it is attached to, so a tag granted by tolerant validation can no longer certify more than the data supports. It also stops full/full_like inferring symmetry from shape when fill_value is not a scalar; that raises what those results cost downstream, and no already-scored Phase 2 submission passes a non-scalar fill to either function, so none is repriced. 0.12.1 is otherwise price-identical to 0.12.0. Bump this in lockstep with flopscope-server below, and re-run tests/test_torch_flop_synthesis.py — it is the gate on whether a bump invalidates published dataset revisions.
     "httpx>=0.27",
     "huggingface_hub>=0.24",
     "jinja2>=3.1",
@@ -42,7 +42,7 @@ dev = [
     "ruff>=0.6.0",
 ]
 server = [
-    "flopscope-server>=0.12.0,<0.13.0",
+    "flopscope-server>=0.12.1,<0.13.0",
 ]
 
 [tool.ruff]
@@ -69,6 +69,12 @@ include = [
 name = "cz_conventional_commits"
 version_provider = "pep621"
 tag_format = "v$version"
+# Conventional-commit prefix for the bump commit. cz defaults to
+# "bump: version $current_version → $new_version", and `bump` is not a type
+# .gitlint accepts -- which never surfaced while bumps went straight to main,
+# because `gitlint --commits origin/main..HEAD` has nothing to check there.
+# Cutting a release through a PR exposes it.
+bump_message = "chore(release): bump version $current_version to $new_version"
 update_changelog_on_bump = true
 major_version_zero = true
 changelog_incremental = true
