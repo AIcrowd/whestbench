@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.16.1 (2026-08-29)
+
+Raises the flopscope floor to 0.12.1, which makes a symmetry tag describe the
+buffer it is attached to. No already-scored submission is repriced by it: the
+one change that moves a price is `full`/`full_like` with a non-scalar
+`fill_value`, and no scored submission in the current phase passes one.
+
+**The digit is a patch by decision, not by detection.** `cz` reports MINOR,
+because `mc_flops_per_sample()` below is a new public API. It publishes the
+cost of one Monte-Carlo sample -- the MC@B_m baseline submissions are compared
+against -- which was previously not stated anywhere participants could check.
+It adds a helper and changes no score.
+
+### Feat
+
+- **budget**: publish the Monte-Carlo per-sample cost model
+
+### Fix
+
+- **deps**: raise the flopscope floor to 0.12.1
+
 ## v0.16.0 (2026-08-21)
 
 ### BREAKING CHANGE
