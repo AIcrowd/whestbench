@@ -20,6 +20,9 @@ rather than restated, so this table and the code cannot disagree.
 | **`residual_wall_time_limit_s`** | none | none | **0.4 s** |
 | **`wall_time_limit_s`** per `predict()` | 60 s | 60 s | **120 s** |
 | **`residual_mode`** | priced | priced | **gated** |
+| **`dtype_aware_billing`** | false | true | true |
+| **MC FLOPs/sample** (derived) | 1,054,976 | 4,231,424 | 33,637,376 |
+| **MC samples at `B`** (derived) | 64,456.44 | 64,280.96 | 65,374.40 |
 
 What changed, round to round:
 
@@ -27,6 +30,42 @@ What changed, round to round:
   Same rulebook otherwise.
 - **phase 1 → phase 2** — MLPs got wider and shallower (256×32 → 1024×16), the
   budget grew ~8×, and residual wall time stopped being priced.
+
+## The Monte-Carlo sampling reference (MC@Bₘ)
+
+`sampling_mse` on a graded submission — and the "vs Sampling" column on the
+leaderboard — answers one question: *how does this compare with just sampling?*
+It is the score a pure Monte-Carlo estimator gets for spending the whole budget:
+
+```python
+from whestbench.budget import ROUNDS, mc_at_bm
+
+r = ROUNDS["v2-phase2"]
+mc_at_bm(mean_avg_variance, r)          # = sigma^2 / N
+```
+
+`sigma^2` is the mean of the dataset's own `avg_variance` column, and `N` is
+`mc_samples_at_budget(r)`. **`sigma^2` must be averaged over the same MLPs the
+result is compared against** — the graded split for a leaderboard, a convergence
+study's own MLPs for a convergence plot. Different samples of MLPs can carry
+materially different variance, so borrowing the wrong one mis-scales every
+comparison made against it.
+
+The cost of one sample is `2·d·w² + 17·w + k·d·w`; see
+`budget.mc_flops_per_sample` for the term-by-term derivation. Only `k` varies:
+
+| | `k` | why |
+|---|---|---|
+| graded before flopscope v0.9.0 | 1 | float64 billed like float32; the float32→float64 cast was free |
+| graded from v0.9.0 on | 4 | float64 bills 2×, and the cast bills 2 FLOPs/element |
+
+The forward pass is float32 throughout and is **identical in every flopscope
+release from v0.2.0 to v0.12.0** — only the float64 accumulation moves, which
+the sampler uses for numerical stability.
+
+> This split is historical fidelity, not physics. For the final results in the
+> paper every round will be re-scored under the latest stable flopscope, at
+> which point `k = 4` throughout and the parameter collapses to a constant.
 
 ## Residual wall time: priced, then gated
 
