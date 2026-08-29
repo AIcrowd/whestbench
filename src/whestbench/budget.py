@@ -87,6 +87,13 @@ class RoundConfig:
     #: ``"priced"`` (residual converted to FLOPs via lambda) or ``"gated"``
     #: (residual capped separately and not priced).
     residual_mode: str
+    #: Whether the flopscope this round was GRADED under bills float64 at 2x
+    #: float32 and charges for the float32->float64 cast. False for rounds
+    #: graded before flopscope v0.9.0, True after. Belongs here, beside the
+    #: other rulebook settings, for the reason in the module docstring: it is
+    #: one of the things you must restore to re-score an old round correctly.
+    #: See :func:`mc_flops_per_sample`.
+    dtype_aware_billing: bool
     #: One-line summary of what changed relative to the previous round.
     note: str
 
@@ -101,6 +108,9 @@ WARMUP_ROUND = RoundConfig(
     residual_wall_time_limit_s=None,
     wall_time_limit_s=60.0,
     residual_mode="priced",
+    # Predates the dtype-aware billing that landed in flopscope v0.9.0, so
+    # float64 cost the same as float32 and the float32->float64 cast was free.
+    dtype_aware_billing=False,
     note="First public round. Residual wall time priced at 1e11; nothing gated.",
 )
 
@@ -114,6 +124,7 @@ PHASE1_ROUND = RoundConfig(
     residual_wall_time_limit_s=None,
     wall_time_limit_s=60.0,
     residual_mode="priced",
+    dtype_aware_billing=True,
     note="Deeper MLPs (8 -> 32) and a 4x budget. Same priced-residual rulebook.",
 )
 
@@ -127,6 +138,7 @@ PHASE2_ROUND = RoundConfig(
     residual_wall_time_limit_s=0.4,
     wall_time_limit_s=120.0,
     residual_mode="gated",
+    dtype_aware_billing=True,
     note=(
         "Wider and shallower (256x32 -> 1024x16). Residual PRICING is deprecated: "
         "lambda is 0.0 and residual time is capped at 0.4 s instead, so C == F and "
@@ -162,6 +174,108 @@ DEFAULT_LAMBDA_FLOPS_PER_SECOND: float = CURRENT_ROUND.lambda_flops_per_second
 # value. It has always meant the Phase 1 rate and still does; it is NOT the
 # current default. Prefer the two explicit names above.
 LAMBDA_FLOPS_PER_SECOND: float = PHASE1_LAMBDA_FLOPS_PER_SECOND
+
+
+# --- The Monte-Carlo sampling reference (MC@B_m) -------------------------------
+# "How good is a submission compared to just sampling?" is answered by MC@B_m:
+# the score a pure Monte-Carlo estimator achieves if it spends the entire
+# per-MLP budget on forward passes. It is published as `sampling_mse` on every
+# graded submission and as the "vs Sampling" column on the leaderboard.
+#
+# The whole quantity reduces to sigma^2 / N, so it needs exactly two inputs: the
+# MLPs' mean output variance (the dataset's own `avg_variance` column, baked at
+# n_samples draws) and N, the number of samples the budget buys. N is the part
+# that needs a cost model, and it is defined here so that every consumer --
+# the grader, the challenge page, and the paper -- shares one definition.
+
+
+def mc_flops_per_sample(width: int, depth: int, *, dtype_aware_billing: bool) -> int:
+    """FLOPs flopscope charges for one Monte-Carlo sample through a (depth, width) MLP.
+
+    One "sample" is one standard-normal input vector pushed through the network,
+    with the per-layer activation means accumulated in float64 for numerical
+    stability -- i.e. exactly what ``simulation.sample_layer_statistics`` does,
+    minus the sum-of-squares it additionally needs for ``avg_variance``.
+
+    Term by term, at flopscope's published prices::
+
+        standard_normal((n, w))     16 * w          RNG, transcendental tier
+        fnp.array(...) wrap              w          1 FLOP per element written
+        matmul, once per layer      d * w * (2w-1)  w mults + (w-1) adds per output
+        maximum(., 0.0), per layer  d * w           1 FLOP per element
+        float64 accumulation        k * d * w       see below
+        -----------------------------------------------------------------
+        total                       2*d*w^2 + 17*w + k*d*w
+
+    (the matmul's ``-d*w`` and the ReLU's ``+d*w`` cancel exactly, which is why
+    the leading term is the clean ``2*d*w^2``.)
+
+    **Why k depends on the round.** flopscope gained dtype-aware billing in
+    **v0.9.0**: from that release a float64 operation costs 2x the
+    same operation on float32, and the float32->float64 cast -- previously free
+    -- costs 2 FLOPs per element. Before it, every dtype billed alike. The
+    forward pass is float32 throughout and is unaffected (verified identical
+    across every flopscope release from v0.2.0 to v0.12.0); only the float64
+    accumulation moves, giving::
+
+        k = 1   graded before flopscope v0.9.0   (asarray free, sum at rate 1)
+        k = 4   graded from flopscope v0.9.0 on  (asarray 2/elem, sum at rate 2)
+
+    Hence ``dtype_aware_billing`` is a per-round setting on
+    :class:`RoundConfig` rather than a constant: it is one more thing you must
+    restore to re-score an old round under its own rulebook.
+
+    **This split is historical fidelity, not a claim about the physics.** For
+    the final results in the paper we intend to re-score every round under the
+    latest stable flopscope, at which point all rounds use ``k = 4`` and this
+    parameter collapses to a constant.
+    """
+    if width <= 0 or depth <= 0:
+        raise ValueError("width and depth must be positive.")
+    k = 4 if dtype_aware_billing else 1
+    rng = 16 * width
+    wrap = width
+    matmul = depth * width * (2 * width - 1)
+    relu = depth * width
+    accumulate = k * depth * width
+    return rng + wrap + matmul + relu + accumulate
+
+
+def mc_flops_per_sample_for_round(round_config: RoundConfig) -> int:
+    """:func:`mc_flops_per_sample` resolved from a round's own geometry and regime."""
+    return mc_flops_per_sample(
+        round_config.width,
+        round_config.depth,
+        dtype_aware_billing=round_config.dtype_aware_billing,
+    )
+
+
+def mc_samples_at_budget(round_config: RoundConfig) -> float:
+    """N -- how many Monte-Carlo samples the per-MLP budget B_m buys.
+
+    Deliberately fractional. The budget is a published rules figure and is used
+    exactly as published; only Phase 2 happens to divide evenly (2**41 / 2**25),
+    and reading anything into that coincidence has misled us before.
+    """
+    return round_config.flop_budget / mc_flops_per_sample_for_round(round_config)
+
+
+def mc_at_bm(mean_avg_variance: float, round_config: RoundConfig) -> float:
+    """MC@B_m -- the adjusted score full-budget Monte-Carlo sampling achieves.
+
+    ``E[MSE(N)] = sigma^2 / N``, and MC spending the whole budget has FLOP
+    multiplier ``max(0.1, B_m/B_m) = 1``, so the adjusted score is that MSE.
+
+    ``mean_avg_variance`` MUST be the mean of the ``avg_variance`` column over
+    **the same MLPs the result will be compared against** -- the graded split
+    for a leaderboard, the convergence study's own MLPs for a convergence plot.
+    Mixing populations is the mistake this signature is shaped to prevent: two
+    samples of MLPs can carry materially different variance, so a reference
+    borrowed from the wrong one mis-scales every comparison made against it.
+    """
+    if mean_avg_variance <= 0:
+        raise ValueError("mean_avg_variance must be positive.")
+    return mean_avg_variance / mc_samples_at_budget(round_config)
 
 
 def effective_compute(
