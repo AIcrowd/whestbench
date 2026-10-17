@@ -7,7 +7,7 @@ import json
 import flopscope.numpy as fnp
 import numpy as np
 import pytest
-from datasets import Dataset
+from datasets import Dataset, IterableDataset
 
 from whestbench import metadata
 from whestbench.scoring import ContestSpec, make_contest_from_dataset
@@ -144,3 +144,83 @@ def test_make_contest_streaming_too_few_rows_raises() -> None:
 
     with pytest.raises(ValueError, match="yielded only 5 MLPs"):
         make_contest_from_dataset(spec, iter_ds, 10)
+
+
+@pytest.mark.parametrize("n", [1, 2])
+def test_streaming_does_not_read_failing_row_after_requested_prefix(n: int) -> None:
+    """An unavailable row outside the requested prefix must not fail the run."""
+    rows = _fake_materialized_dataset(n).to_list()
+
+    def generate():
+        yield from rows
+        raise OSError("The next, unrequested row is unavailable")
+
+    spec = ContestSpec(width=4, depth=2, n_mlps=n, flop_budget=10_000_000, ground_truth_samples=10)
+    contest = make_contest_from_dataset(
+        spec, IterableDataset.from_generator(generate), n, seed_protocol_version="3.0"
+    )
+    assert len(contest.mlps) == n
+
+
+@pytest.mark.parametrize("n", [1, 2])
+def test_streaming_consumes_only_requested_rows_and_matches_materialized(n: int) -> None:
+    ds = _fake_materialized_dataset(n + 1)
+    rows = ds.to_list()
+    consumed = []
+
+    def generate():
+        for row in rows:
+            consumed.append(row["mlp_id"])
+            yield row
+
+    spec = ContestSpec(width=4, depth=2, n_mlps=n, flop_budget=10_000_000, ground_truth_samples=10)
+    streamed = make_contest_from_dataset(
+        spec, IterableDataset.from_generator(generate), n, seed_protocol_version="3.0"
+    )
+    materialized = make_contest_from_dataset(spec, ds, n)
+
+    assert consumed == list(range(n))
+    assert [mlp.seed for mlp in streamed.mlps] == [mlp.seed for mlp in materialized.mlps]
+    assert [mlp.name for mlp in streamed.mlps] == [mlp.name for mlp in materialized.mlps]
+    for actual, expected in zip(streamed.mlps, materialized.mlps):
+        for actual_weight, expected_weight in zip(actual.weights, expected.weights):
+            np.testing.assert_array_equal(np.asarray(actual_weight), np.asarray(expected_weight))
+    for field in ("all_layer_targets", "final_targets"):
+        for actual, expected in zip(getattr(streamed, field), getattr(materialized, field)):
+            np.testing.assert_array_equal(np.asarray(actual), np.asarray(expected))
+    assert streamed.avg_variances == materialized.avg_variances
+    assert streamed.sampling_budget_breakdown == materialized.sampling_budget_breakdown
+
+
+@pytest.mark.parametrize("streaming", [False, True])
+@pytest.mark.parametrize("row_width,row_depth", [(2, 2), (4, 1)])
+@pytest.mark.parametrize("bad_index", [0, 1])
+def test_dataset_geometry_must_match_spec(
+    streaming: bool, row_width: int, row_depth: int, bad_index: int
+) -> None:
+    """Check every selected MLP, including a malformed row after a valid one."""
+    rows = _fake_materialized_dataset(2).to_list()
+    rows[bad_index] = _fake_materialized_dataset(1, row_width, row_depth)[0]
+    ds = Dataset.from_list(rows)
+    if streaming:
+        ds = ds.to_iterable_dataset()
+    spec = ContestSpec(width=4, depth=2, n_mlps=2, flop_budget=10_000_000, ground_truth_samples=10)
+
+    with pytest.raises(ValueError, match=rf"Dataset MLP {bad_index} .*expected width=4, depth=2"):
+        make_contest_from_dataset(spec, ds, 2, seed_protocol_version="3.0")
+
+
+@pytest.mark.parametrize("streaming", [False, True])
+def test_geometry_outside_requested_prefix_is_ignored(streaming: bool) -> None:
+    rows = _fake_materialized_dataset(1).to_list()
+    rows.extend(_fake_materialized_dataset(1, width=2, depth=1).to_list())
+    ds = Dataset.from_list(rows)
+    if streaming:
+        ds = ds.to_iterable_dataset()
+    spec = ContestSpec(width=4, depth=2, n_mlps=1, flop_budget=10_000_000, ground_truth_samples=10)
+
+    contest = make_contest_from_dataset(spec, ds, 1, seed_protocol_version="3.0")
+
+    assert len(contest.mlps) == 1
+    assert contest.mlps[0].width == spec.width
+    assert contest.mlps[0].depth == spec.depth

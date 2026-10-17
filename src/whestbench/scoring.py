@@ -6,6 +6,7 @@ import dataclasses
 import traceback as _tb
 import warnings
 from dataclasses import dataclass
+from itertools import islice
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
 import flopscope as flops
@@ -290,6 +291,15 @@ def make_contest_from_dataset(
         ds, seed_protocol_version=proto_version, seed_salt=seed_salt
     )
 
+    def _restore_mlp(row: Any, index: int) -> MLP:
+        mlp = MLP.from_row(row, seed_protocol_version=proto_version, seed_salt=seed_salt)
+        if mlp.width != spec.width or mlp.depth != spec.depth:
+            raise ValueError(
+                f"Dataset MLP {index} has width={mlp.width}, depth={mlp.depth}; "
+                f"expected width={spec.width}, depth={spec.depth}."
+            )
+        return mlp
+
     def _restored_sampling_aggregate(
         restored: List[Dict[str, Any]],
     ) -> Optional[Dict[str, Any]]:
@@ -313,10 +323,8 @@ def make_contest_from_dataset(
         final_targets: List[fnp.ndarray] = []
         avg_variances: List[float] = []
         sampling_breakdowns: List[Dict[str, Any]] = []
-        for i, row in enumerate(ds):
-            if i >= n_mlps:
-                break
-            mlps.append(MLP.from_row(row, seed_protocol_version=proto_version, seed_salt=seed_salt))
+        for i, row in enumerate(islice(ds, n_mlps)):
+            mlps.append(_restore_mlp(row, i))
             all_layer_targets.append(fnp.asarray(row["all_layer_means"], dtype=fnp.float32))
             final_targets.append(fnp.asarray(row["final_means"], dtype=fnp.float32))
             avg_variances.append(float(row["avg_variance"]))
@@ -338,14 +346,11 @@ def make_contest_from_dataset(
             sampling_budget_breakdown=_restored_sampling_aggregate(sampling_breakdowns),
         )
 
-    # Materialised Dataset path — preserved verbatim from the prior implementation.
+    # Materialised Dataset path.
     ds_size = len(ds)
     if n_mlps > ds_size:
         raise ValueError(f"n_mlps={n_mlps} exceeds dataset size {ds_size}; clamp before calling.")
-    mlps = [
-        MLP.from_row(row, seed_protocol_version=proto_version, seed_salt=seed_salt)
-        for row in ds.select(range(n_mlps))
-    ]
+    mlps = [_restore_mlp(row, i) for i, row in enumerate(ds.select(range(n_mlps)))]
     all_layer_targets = [
         fnp.asarray(ds[i]["all_layer_means"], dtype=fnp.float32) for i in range(n_mlps)
     ]
