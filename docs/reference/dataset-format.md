@@ -72,17 +72,14 @@ counts and wall time consumed by the ground-truth Monte Carlo, accounted via
 about the bake itself, **not** the estimator's FLOP budget at evaluation time
 (which is set at runtime via `whest run --flop-budget N`).
 
-The counts are comparable only within a single flopscope version — a cost-table
-change moves them without the underlying bake changing. flopscope 0.10.0 →
-0.11.0 leaves baked counts unchanged: the bake path is rank-2 throughout and
-uses no `ix_`, `outer`, `linalg` or `fft` operations. The same holds through
-flopscope **v0.12.0** (the version whestbench pins): the
-billing fixes landed since 0.11.0 touch ufunc-loop dtype resolution, `gradient`,
-`trace`/`cross`/`reduceat`, multi-output ufuncs and einsum path search, none of
-which the bake path reaches. `tests/test_torch_flop_synthesis.py` is the gate on
-that claim — it asserts the closed form equals flopscope's actual count exactly,
-so if a future bump does move the bake, that test fails rather than the number
-drifting silently.
+A cost-model change can move these counts without the underlying bake changing.
+The sampling path retains its pricing through flopscope **v0.12.3**, the version
+recorded in whestbench's lockfile. The corrections in 0.12.2 and 0.12.3 affect
+other billing and symmetry paths, including truncated SVD; the bake uses rank-2
+forward passes and reductions rather than those corrected calls.
+`tests/test_torch_flop_synthesis.py` verifies the closed form against flopscope's
+actual per-operation counts and total, including ragged sampling chunks. Run it
+on every meter upgrade before treating existing bake counts as comparable.
 
 ## metadata.json schema
 

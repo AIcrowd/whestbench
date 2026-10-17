@@ -34,7 +34,7 @@ available but are no longer required for tracking purposes.
 
 ## Operation costs
 
-flopscope 0.9.1 prices each op as **`flop_cost x weight x dtype_rate`**. The `weight`
+flopscope 0.12.3 prices each op as **`flop_cost x weight x dtype_rate`**. The `weight`
 falls into four tiers, and `dtype_rate` multiplies the bill by **~2x for float64** (and
 more for complex):
 
@@ -43,13 +43,20 @@ more for complex):
   `reshape`/`ravel`, `stack`/`concatenate`/`tile`/`repeat`, fills (`ones`/`full`/`eye`),
   scatters (`fill_diagonal`, `put`).
 - **4x per element** — value lookup / reordering: **fancy and boolean indexing**, `take`,
-  `sort`/`argsort`, set-ops, histograms, random reordering, and **3-arg `where`**.
+  selector-deriving operations and **3-arg `where`**. Sorting/searching charge
+  per comparison; histograms also charge bin search and edge construction,
+  with density normalization charged when requested.
 - **16x per element** — transcendentals: `exp`, `log`, `sin`/`cos`, `tanh`, `**`.
 - **`matmul`** is `O(m x n x k)` and dominates budgets.
 
 > Figures below are **float32 baselines** — a guide, not a guarantee. **The ground truth is
 > `budget.summary()`**, and the authoritative per-op model is the
 > [flopscope cost reference](https://aicrowd.github.io/flopscope/docs/understanding/flop-counting-model/).
+
+Element-wise counts use the broadcast computation/output shape. Explicit
+`dtype=`/`signature=` and wider `out=` buffers can raise the rate. The
+[0.12.3 upgrade notes](/docs/reference/flopscope-primer#billing-and-symmetry-changes-in-0123)
+cover corrected billing, symmetry canonicalization, and truncated SVD.
 
 | What you want | Code | FLOP cost (float32) | Notes |
 |---|---|---|---|
@@ -73,7 +80,8 @@ more for complex):
 | Basic index / slice | `x[0]`, `x[:, 3]` | 0 | Free (view) |
 | Fancy / boolean index | `x[idx]`, `x[mask]` | 4 per element | Gather (mask: `numel + 4 x selected`) |
 | Select with `where` | `fnp.where(c, a, b)` | 4 per element | Was free before 0.9.0 |
-| Sort / gather | `fnp.sort(x)`, `fnp.take(x, i)` | 4 per element | Order / selector-deriving |
+| Sort | `fnp.sort(x)` | About `4*N*ceil(log2(N))` | Per comparison |
+| Gather | `fnp.take(x, i)` | 4 per output element | Selected values |
 | Open-mesh index grid | `fnp.ix_(i, j)` | total output size | Was free before 0.11.0; each Boolean argument adds `numel(arg)` for the internal `nonzero` scan; rejects ndarray subclasses such as `MaskedArray` / `memmap` |
 
 > **Numeric dtypes only.** `fnp.array(data)` requires data that coerces to a numeric
