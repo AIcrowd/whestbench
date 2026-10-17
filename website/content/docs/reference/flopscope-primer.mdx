@@ -16,10 +16,13 @@ import flopscope as flops
 import flopscope.numpy as fnp
 
 with flops.BudgetContext(flop_budget=1_000_000) as ctx:
-    x = fnp.ones(100)
-    y = x @ fnp.eye(100)  # matmul: 100 * 100 * 100 = 1M FLOPs
-    # BudgetExhaustedError raised here if budget exceeded
+    x = fnp.ones((100, 100), dtype=fnp.float32)  # 10,000 FLOPs
+    w = fnp.ones((100, 100), dtype=fnp.float32)  # 10,000 FLOPs
+    y = x @ w  # 1,990,000 FLOPs: exceeds the 980,000 remaining
 ```
+
+Raise the example budget to `10_000_000` to complete it; the total is
+2,010,000 FLOPs.
 
 You don't need to create `BudgetContext` yourself — the framework does it before calling your `predict()` method. The `budget` argument tells you how many FLOPs you have.
 
@@ -37,14 +40,64 @@ each counted flopscope/NumPy call. If it is exceeded, flopscope raises
 
 ## Operation FLOP Costs
 
-| Category | Operations | Cost |
-|----------|-----------|------|
-| **Free** (0 FLOPs) | `fnp.array`, `fnp.zeros`, `fnp.ones`, `fnp.eye`, `fnp.asarray`, `fnp.reshape`, `.T`, indexing, `fnp.stack`, `fnp.concatenate`, `.copy()`, `.astype()` | 0 |
-| **Pointwise** (1 FLOP/element) | `+`, `-`, `*`, `/`, `fnp.exp`, `fnp.sqrt`, `fnp.abs`, `fnp.maximum`, `fnp.where`, `fnp.log`, comparisons | N elements |
-| **Reductions** (input size) | `fnp.sum`, `fnp.mean`, `fnp.var`, `fnp.max`, `fnp.min`, `fnp.all`, `fnp.any` | N elements |
-| **Matmul** | `@`, `fnp.matmul` | M \* N \* K for (M,N) @ (N,K) |
+Charges combine the analytical count, operation weight, dtype rate, and any
+complex factor. The table assumes float32 execution. Float64 work bills at
+2× that rate; explicit `dtype=`/`signature=` and wider output destinations can
+increase it. Element-wise counts use the broadcast computation/output shape.
 
-**Key insight:** Matmul dominates. A single `(100, 100) @ (100, 100)` costs 1M FLOPs. A pointwise `exp` on 100 elements costs 100 FLOPs.
+| Category | Operations | Float32 cost |
+| --- | --- | --- |
+| Free | `zeros`, `empty`, transpose and basic slices, no-copy `asarray`, RNG construction | 0 |
+| Arithmetic and movement | `+`, `-`, `*`, `/`, `sqrt`, copies, casts, reshape, stack, concatenate, fills | 1 per element; `eye` writes only the diagonal |
+| Transcendentals | `exp`, `log`, trig, power (including `x ** 2`) | 16 per element |
+| Gathers and selection | fancy indexing, `take`, three-argument `where` | 4 per selected/output element; boolean indexing also scans its mask |
+| Sorting | `sort`, `argsort` | About `4*N*ceil(log2(N))` FLOPs |
+| Reductions | `sum`, `max`, `min`; `mean`; ordinary `var`/`std` | Approximately `N-1`; `N`; `4*N`/`4*N+1` for a one-output reduction |
+| Matrix multiply | `(M,K) @ (K,N)` | `M*N*(2*K-1)`; structural discounts can apply |
+| Gaussian draws | `rng.standard_normal` | 16 per float32 element; 32 at the float64 default |
+
+For example, a dense `(100,100) @ (100,100)` costs 1,990,000 FLOPs at float32;
+`exp` on 100 float32 elements costs 1,600. Reductions depend on the reduced axes
+and optional arguments; composite helpers include their internal work. Consult
+the [full cost model](https://aicrowd.github.io/flopscope/docs/understanding/flop-counting-model/)
+and the actual `ctx.summary()` rather than treating an operation's weight as its
+whole price.
+
+### Billing and symmetry changes in 0.12.3
+
+Use flopscope 0.12.3 when remeasuring Phase 2 candidates. It includes the
+[0.12.2 corrections](https://github.com/AIcrowd/flopscope/releases/tag/v0.12.2)
+and the [0.12.3 truncated-SVD model](https://github.com/AIcrowd/flopscope/releases/tag/v0.12.3):
+
+- **Broadcast work:** affected operations bill the shape they actually compute,
+  including an enlarged `out=`/`where=` destination, `var`/`std` with an enlarging
+  `mean=`, polynomial evaluation, and array tolerances in closeness tests. A small
+  input does not imply a small bill when broadcasting expands the computation.
+- **Unary dtype selection:** `dtype=`, `signature=`/`sig=`, and wider `out=` buffers
+  can raise the bill above the input dtype's rate. For four float32 elements,
+  ordinary `exp(x)` costs 64 FLOPs; `exp(x, signature="d->d")` costs 128.
+- **Composite operations:** histogram edge construction and density normalization,
+  per-axis histogram searches, length-one FFT stages, and `polyfit` covariance
+  output now include work that was omitted. Follow the release notes for the
+  affected forms rather than assigning a flat per-element price.
+- **Symmetry:** `einsum(..., symmetry=...)` canonicalizes a validated result before
+  attaching its tag; values accepted within tolerance can therefore change to
+  make the declared symmetry exact. Positional output writes and shuffles
+  invalidate stale tags, while scans and reordered outputs retain only the
+  symmetry their axes support. Revalidate after modifying a tagged buffer.
+- **Truncated SVD:** pricing includes rank-dependent quadratic and cubic work,
+  capped at the corresponding full economy-decomposition price. Low-rank calls
+  can retain a discount; near-full-rank calls can cost the full amount. Use
+  `flops.accounting.svd_cost(m, n, k=k, with_vectors=compute_uv)` for the current
+  float32 estimate, with matching `full_matrices` for a full decomposition.
+  Truncated pricing is an analytical convention: the backend computes an exact
+  economy SVD and slices the outputs, so a billing discount is not a runtime
+  speed guarantee.
+
+Inspect `ctx.summary()` and the installed flopscope version when comparing old
+and new profiles. The starter kit's mean- and covariance-propagation examples retain
+their documented FLOP totals under 0.12.3; that does not establish that another
+estimator's costs or predictions are unchanged.
 
 ## Array Creation
 
@@ -59,7 +112,8 @@ a = fnp.array([1.0, 2.0, 3.0])             # from list
 b = fnp.asarray(numpy_array)                # convert from numpy (free)
 ```
 
-All array creation is **free** (0 FLOPs).
+Only zero/empty allocation and no-copy conversions are free. Nonzero fills,
+identity diagonals, materializing copies, and dtype conversions are billed.
 
 ## Random Number Generation
 
@@ -69,21 +123,23 @@ import flopscope.numpy as fnp
 
 rng = fnp.random.default_rng(42)            # seeded RNG
 x = rng.standard_normal((1000, 64))        # Gaussian samples
-x = x.astype(fnp.float32)                   # cast to float32 (free)
+x = x.astype(fnp.float32)                   # billed cast; request float32 draws instead
 ```
 
-Random generation itself is free. FLOPs are counted when you operate on the arrays.
+Constructing a generator is free; generating samples is billed. Prefer
+`rng.standard_normal((1000, 64), dtype=fnp.float32)` when float32 is sufficient,
+rather than paying for float64 draws and a subsequent cast.
 
 ## Budget Inspection
 
 Use `budget.summary()` for the current explicit context and
-`fnp.budget_summary()` for the accumulated session/global view:
+`flops.budget_summary()` for the accumulated session/global view:
 
 ```python
 with flops.BudgetContext(flop_budget=10_000_000) as ctx:
     # ... your computations ...
-    print(ctx.summary())        # current context only
-    print(fnp.budget_summary())  # process/session-wide summary
+    print(ctx.summary())         # current context only
+    flops.budget_summary()         # prints the process/session-wide summary
     print(ctx.flops_used)       # integer FLOP count
 ```
 
@@ -93,9 +149,11 @@ decomposition identity, `wall_time_s = flopscope_backend_time_s + flopscope_over
 - `wall_time_s`: total elapsed time in the context
 - `flopscope_backend_time_s`: time spent inside counted flopscope numpy kernels
 - `flopscope_overhead_time_s`: time spent inside flopscope's own dispatch (wrapper preambles, FLOP bookkeeping, namespace push/pop)
-- `residual_wall_time_s`: everything else - participant Python, GC, uninstrumented numpy
+- `residual_wall_time_s`: everything else - participant Python, GC, and any ops not attributed to a flopscope backend or callback bucket (see the 0.7.0 note below)
 
 This decomposition lets you see whether time is going to numpy compute, framework dispatch, or your own Python.
+
+> **flopscope 0.7.0 timing re-attribution.** As of flopscope 0.7.0, data-movement NumPy ops (concatenate, stack-family, tile, repeat, take, pad, …) are timed as `flopscope_backend_time_s`, not `residual_wall_time_s`; Python-callback ops bill their callback time to residual. The identity `wall_time_s = flopscope_backend_time_s + flopscope_overhead_time_s + residual_wall_time_s` still holds; FLOP counts are unchanged.
 
 ## WhestBench-specific limits
 
