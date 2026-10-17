@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.16.2 (2026-10-17)
+
+Raises the flopscope minimum to 0.12.3, including the 0.12.2 billing and
+symmetry corrections and the 0.12.3 truncated-SVD rank pricing. Local FLOP
+counts can change for affected estimators; remeasure candidates with the
+updated meter. The development flopscope-server floor moves in lockstep.
+
+### Fix
+
+- **scoring**: consume exactly the requested streaming-dataset prefix, so an
+  unavailable extra row cannot abort a complete load. Validate restored MLP
+  width and depth against the contest specification for both streaming and
+  materialized datasets, with an indexed diagnostic for incompatible rows.
+- **deps**: require flopscope 0.12.3 for local evaluation and refresh the lockfile.
+
+### Documentation
+
+- Explain corrected broadcast/dtype billing, symmetry handling and truncated
+  SVD; correct stale operation-cost guidance and refresh the Participant Guide
+  pin to the merged starter kit.
+
 ## v0.16.1 (2026-08-29)
 
 Raises the flopscope floor to 0.12.1, which makes a symmetry tag describe the
